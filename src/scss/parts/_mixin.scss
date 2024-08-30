@@ -1,0 +1,146 @@
+/*
+ Recommended breakpoints are:
+    - 1930
+    - 1650
+    - 1470
+    - 1280
+    - 1030
+    - 850
+    - 520
+    - 340
+ */
+
+@mixin overlay($content: '') {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    content: $content;
+}
+
+@mixin clamp($clamp){
+    display: -webkit-box;
+    -webkit-line-clamp: #{$clamp};
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+@mixin custom-scrollbar {
+    overflow-y: auto;
+    
+    &::-webkit-scrollbar {
+        width: 10px;
+        height: 10px;
+    }
+    
+    &::-webkit-scrollbar-track {
+        border-radius: 5px;
+        background: $--greys-white;
+    }
+    
+    &::-webkit-scrollbar-thumb {
+        transition: background-color .15s;
+        border-radius: 5px;
+        background: $--greys-black;
+    }
+    
+    &::-webkit-scrollbar-thumb:hover {
+        background: rgba($--greys-black, .8);
+    }
+    
+    &::-webkit-scrollbar-thumb:active {
+        background: rgba($--greys-black, .9);
+    }
+}
+
+// ==============================
+// Responsive titles mixin
+// ==============================
+
+%paragraph {
+
+}
+
+@mixin h1 {
+
+}
+
+@mixin h2 {
+
+}
+
+@mixin h3 {
+
+}
+
+@mixin h4 {
+
+}
+
+@mixin h5 {
+
+}
+
+@mixin h6 {
+
+}
+
+@mixin make-responsive-headers() {
+    h1 {
+        @include h1;
+    }
+    h2 {
+        @include h2;
+    }
+    h3 {
+        @include h3;
+    }
+    h4 {
+        @include h4;
+    }
+    h5 {
+        @include h5;
+    }
+    h6 {
+        @include h6;
+    }
+    @each $breakpoint in map-keys($grid-breakpoints) {
+        @include media-breakpoint-down($breakpoint) {
+            $infix: breakpoint-infix($breakpoint, $grid-breakpoints);
+            
+            .h1#{$infix} {
+                @include h1;
+            }
+            .h2#{$infix} {
+                @include h2;
+            }
+            .h3#{$infix} {
+                @include h3;
+            }
+            .h4#{$infix} {
+                @include h4;
+            }
+            .h5#{$infix} {
+                @include h5;
+            }
+            .h6#{$infix} {
+                @include h6;
+            }
+        }
+    }
+}
+
+
+@mixin max-break($point) {
+    @media only screen and (max-width : $point) {
+        @content;
+    }
+}
+
+@mixin min-break($point) {
+    @media only screen and (min-width : $point) {
+        @content;
+    }
+}
+

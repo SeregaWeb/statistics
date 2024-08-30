@@ -1,0 +1,153 @@
+{
+  "name": "wp-webpack-workflow",
+  "version": "2.1.0",
+  "author": "WP-Strap + Eugene Chernomor",
+  "license": "MIT",
+  "homepage": "https://github.com/wp-strap/wordpress-webpack-workflow",
+  "description": "Modern WebPack workflow for WordPress front-end development and testing (plugins & themes) with handy tools included. Supports Typescript and PHP validation \n",
+  "main": "index.js",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/wp-strap/wordpress-webpack-workflow.git"
+  },
+  "bugs": {
+    "url": "https://github.com/wp-strap/wordpress-webpack-workflow/issues"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "prod": "webpack --env NODE_ENV=production --env production",
+    "prod:watch": "webpack --env NODE_ENV=production --env production --watch",
+    "dev": "webpack --env NODE_ENV=development",
+    "dev:watch": "webpack --env NODE_ENV=development --watch",
+    "eslint": "eslint src/js/**/*.{ts,js}",
+    "eslint:fix": "eslint src/js/**/*.{ts,js} --fix",
+    "stylelint": "stylelint src/**/*.{scss,pcss}",
+    "stylelint:fix": "stylelint src/**/*.scss --fix",
+    "prettier": "prettier src/js/**/*.{ts,js}",
+    "prettier:fix": "prettier --write src/js/**/*.{ts,js}",
+    "phplint": "./vendor/bin/phpcs --standard=phpcs.xml --warning-severity=0 ./",
+    "phplint:fix": "./vendor/bin/phpcbf --standard=phpcs.xml --tab-width=4 --warning-severity=0  ./",
+    "translate": "wp-pot --src '**/**/**/*.php' --dest-file 'languages/wordpress-webpack.pot' --package '{{the-project-name}}' --domain '{{the-project-text-domain}}' --last-translator '{{author_name}} <{{author_email}}>' --team '{{author_name}} <{{author_email}}>' --bug-report '{{author_url}}'",
+    "prepare": "cd ../../../ && husky install wp-content/themes/wp-rock/.husky",
+    "pre-push": "yarn prod",
+    "lint-staged": "yarn lint-staged"
+  },
+  "babel": {
+    "extends": "./webpack/babel.config.js"
+  },
+  "eslintConfig": {
+    "extends": [
+      "./webpack/.eslintrc.js"
+    ]
+  },
+  "prettier": "./webpack/.prettierrc.js",
+  "stylelint": {
+    "ignoreFiles": [
+      "./assets/public/css/**/*.css",
+      "./vendor/**/**/*.css",
+      "./node_modules/**/**/*.css",
+      "./tests/**/**/*.css"
+    ],
+    "extends": [
+      "./webpack/.stylelintrc.js"
+    ]
+  },
+  "devDependencies": {
+    "@babel/core": "^7.12.10",
+    "@babel/eslint-parser": "^7.12.1",
+    "@babel/preset-env": "^7.12.11",
+    "@tsconfig/recommended": "^1.0.1",
+    "@typescript-eslint/eslint-plugin": "^5.48.0",
+    "@typescript-eslint/parser": "^5.48.0",
+    "@wordpress/eslint-plugin": "^7.4.0",
+    "autoprefixer": "^10.2.1",
+    "babel-loader": "^8.2.2",
+    "browser-sync": "^2.26.13",
+    "browser-sync-webpack-plugin": "^2.3.0",
+    "browserslist": "^4.17.1",
+    "copy-webpack-plugin": "^7.0.0",
+    "css-loader": "^5.0.1",
+    "css-minimizer-webpack-plugin": "^4.2.2",
+    "eslint": "^7.17.0",
+    "eslint-config-airbnb-base": "^15.0.0",
+    "eslint-plugin-import": "^2.27.5",
+    "eslint-plugin-prettier": "^3.3.1",
+    "eslint-webpack-plugin": "^2.4.1",
+    "file-loader": "^6.2.0",
+    "glob-all": "^3.2.1",
+    "husky": "^8.0.0",
+    "image-minimizer-webpack-plugin": "^2.2.0",
+    "imagemin-gifsicle": "^7.0.0",
+    "imagemin-jpegtran": "^7.0.0",
+    "imagemin-optipng": "^8.0.0",
+    "imagemin-svgo": "^8.0.0",
+    "include-media": "^2.0.0",
+    "lint-staged": "^13.1.0",
+    "mini-css-extract-plugin": "^1.3.3",
+    "node-sass-magic-importer": "^5.3.2",
+    "postcss": "^8.2.4",
+    "postcss-advanced-variables": "^3.0.1",
+    "postcss-focus-within": "^6.1.1",
+    "postcss-import": "^14.0.0",
+    "postcss-import-ext-glob": "^2.0.0",
+    "postcss-loader": "^4.1.0",
+    "postcss-nested": "^5.0.3",
+    "postcss-nested-ancestors": "^2.0.0",
+    "prettier": "^2.2.1",
+    "purgecss-webpack-plugin": "^3.1.3",
+    "sass": "^1.32.2",
+    "sass-loader": "^10.1.0",
+    "style-loader": "^3.3.1",
+    "stylelint": "^13.8.0",
+    "stylelint-scss": "^3.18.0",
+    "stylelint-webpack-plugin": "^2.1.1",
+    "ts-loader": "^9.4.2",
+    "typescript": "^4.9.4",
+    "url-loader": "^4.1.1",
+    "webpack": "^5.12.3",
+    "webpack-cli": "^4.3.1",
+    "webpackbar": "^5.0.0-3",
+    "wp-pot-cli": "^1.5.0"
+  },
+  "keywords": [
+    "wordpress",
+    "workflow",
+    "webpack",
+    "theme",
+    "plugin",
+    "WebPack",
+    "BrowserSync",
+    "PostCSS",
+    "Autoprefixer",
+    "PurgeCSS",
+    "BabelJS",
+    "Eslint",
+    "Stylelint",
+    "SCSS",
+    "WP-Pot"
+  ],
+  "dependencies": {
+    "bootstrap": "^5.3.3",
+    "smoothscroll-polyfill": "^0.4.4",
+    "swiper": "^8.4.7",
+    "universal-cookie": "^4.0.4"
+  },
+  "lint-staged": {
+    "*.{js,ts}": [
+      "prettier --write src/js/**/*.ts",
+      "eslint src/js/**/*.ts --fix"
+    ],
+    "*.{scss}": [
+      "stylelint src/**/*.scss --fix"
+    ],
+    "*.php": [
+      "./vendor/bin/phpcbf --standard=phpcs.xml --tab-width=4 --warning-severity=0  ./",
+      "./vendor/bin/phpcs --standard=phpcs.xml --warning-severity=0 ./"
+    ]
+  },
+  "browserslist": [
+    "last 1 version",
+    "> 1%",
+    "IE 10"
+  ]
+}

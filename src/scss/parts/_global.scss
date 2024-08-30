@@ -1,0 +1,35 @@
+#wrapper {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+}
+
+#main-wrapper {
+    flex-basis: 0;
+    flex-grow: 1;
+    max-width: 100%;
+}
+
+.cover-bg {
+    position: relative;
+    background-position: center;
+    background-size: cover;
+    background-repeat: no-repeat;
+}
+
+.responsive-image {
+    display: inline-block;
+    max-width: 100%;
+    height: auto;
+    object-fit: cover;
+}
+
+.list-reset {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+iframe {
+    max-width: 100%;
+}

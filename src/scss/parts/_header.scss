@@ -1,0 +1,14 @@
+.site-header {
+    position: relative;
+    top: 0;
+    left: 0;
+    z-index: $zindex-sticky;
+    width: 100%;
+
+    &__absolute {
+        position: absolute;
+    }
+    &__sticky {
+        position: sticky;
+    }
+}

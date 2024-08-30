@@ -1,0 +1,91 @@
+// Bootstrap variables
+$grid-columns: 12 !default;
+$grid-gutter-width: 32px;
+$grid-row-columns: 6 !default;
+$enable-grid-classes: true !default;
+
+// grid-breakpoints
+$grid-breakpoints: (
+    xs: 0,
+    sm: 576px,
+    md: 768px,
+    lg: 992px,
+    xl: 1200px,
+    xxl: 1440px
+) !default;
+
+// container-max-widths
+$container-max-widths: (
+    sm: 540px,
+    md: 720px,
+    lg: 960px,
+    xl: 1140px,
+    xxl: 1390px
+) !default;
+
+// Z-index master list
+//
+// Warning: Avoid customizing these values. They're used for a bird's eye view
+// of components dependent on the z-axis and are designed to all work together.
+
+$zindex-dropdown: 1000 !default;
+$zindex-sticky: 1020 !default;
+$zindex-fixed: 1030 !default;
+$zindex-modal-backdrop: 1040 !default;
+$zindex-modal: 1050 !default;
+$zindex-popover: 1060 !default;
+$zindex-tooltip: 1070 !default;
+
+// Utilities
+$displays: none, inline, inline-block, block, table, table-row, table-cell, flex, inline-flex !default;
+$positions: static, relative, absolute, fixed, sticky, initial !default;
+
+// Spacing
+//
+// Control the default styling of most Bootstrap elements by modifying these
+// variables. Mostly focused on spacing.
+// You can add more entries to the $spacers map, should you need more variation.
+$spacer: 8px !default;
+$spacers: () !default;
+$spacers: map-merge(
+    (
+        0: 0,
+        50: calc($spacer / 2),
+        1: $spacer,
+        2: calc($spacer * 2),
+        3: calc($spacer * 3),
+        4: calc($spacer * 4),
+        5: calc($spacer * 5),
+        6: calc($spacer * 6),
+        7: calc($spacer * 7),
+        8: calc($spacer * 8),
+        9: calc($spacer * 9),
+        10: calc($spacer * 10),
+        11: calc($spacer * 11),
+        12: calc($spacer * 12),
+        13: calc($spacer * 13),
+        14: calc($spacer * 14),
+        15: calc($spacer * 15),
+        16: calc($spacer * 16),
+    ),
+    $spacers
+);
+
+// This variable affects the `.h-*` and `.w-*` classes.
+$sizes: () !default;
+$sizes: map-merge(
+    (
+        25: 25%,
+        50: 50%,
+        75: 75%,
+        100: 100%,
+        auto: auto
+    ),
+    $sizes
+);
+
+$font-weight-lighter: lighter !default;
+$font-weight-light: 300 !default;
+$font-weight-normal: 400 !default;
+$font-weight-bold: 600 !default;
+$font-weight-bolder: bolder !default;

@@ -22,12 +22,11 @@ global $global_options;
                     )
                 );
                 ?>
-                <button class="btn btn-outline-primary js-open-popup-activator" data-href="#popup_add">Add report</button>
                 <button class="btn btn-outline-primary js-open-popup-activator" data-href="#popup_add_company">Add company</button>
                 <button class="btn btn-outline-primary js-open-popup-activator" data-href="#popup_add_shipper">Add shipper</button>
             </div>
             <div class="col-auto order-1">
-               <H2>TMS Statistics</H2>
+               <H2>TMS Portal</H2>
             </div>
             <div class="col-auto d-lg-none order-2">
                 <button type="button" class="menu-btn js-menu-btn" aria-label="Menu" title="Menu" data-role="menu-action"></button>

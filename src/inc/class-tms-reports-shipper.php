@@ -7,6 +7,8 @@ class TMSReportsShipper extends TMSReportsHelper {
 	
 	public function ajax_actions() {
 		add_action( 'wp_ajax_add_new_shipper', array( $this, 'add_new_shipper' ) );
+		add_action( 'wp_ajax_search_shipper', array( $this, 'search_shipper' ) );
+		
 	}
 	
 	public function init() {
@@ -31,10 +33,15 @@ class TMSReportsShipper extends TMSReportsHelper {
 				"LastName"     => FILTER_SANITIZE_STRING,
 				"Phone"        => FILTER_SANITIZE_STRING,
 				"Email"        => FILTER_SANITIZE_EMAIL,
-				"status_post"  => FILTER_SANITIZE_STRING,
 			] );
 			
-			$MY_INPUT[ "status_post" ] = 'publish';
+			$st = !empty($MY_INPUT['Addr1']) ? $MY_INPUT['Addr1'] . ', ' : '';
+			$city = !empty($MY_INPUT['City']) ? $MY_INPUT['City'] . ', ' : '';
+			$state = !empty($MY_INPUT['State']) ? $MY_INPUT['State'] . ' ' : '';
+			$zip = !empty($MY_INPUT['ZipCode']) ? $MY_INPUT['ZipCode'] : ' ';
+			$country = $MY_INPUT['country'] !== 'USA' ? ' '.$MY_INPUT['country'] : '';
+			
+			$MY_INPUT[ "full_address" ] = $st . $city . $state . $zip . $country;
 			
 			// Insert the company report
 			$result = $this->add_shipper( $MY_INPUT );
@@ -76,7 +83,7 @@ class TMSReportsShipper extends TMSReportsHelper {
 			'date_created'       => current_time( 'mysql' ),
 			'user_id_updated'    => $user_id,
 			'date_updated'       => current_time( 'mysql' ),
-			'status_post'        => $data[ 'status_post' ],
+			'full_address'       => $data[ 'full_address' ],
 		);
 		
 		$result = $wpdb->insert( $table_name, $insert_params, array(
@@ -95,7 +102,7 @@ class TMSReportsShipper extends TMSReportsHelper {
 				'%s',  // date_created
 				'%d',  // user_id_updated
 				'%s',  // date_updated
-				'%s',  // status_post
+				'%s',  // full_address
 			) );
 		
 		// Check if the insert was successful
@@ -136,18 +143,114 @@ class TMSReportsShipper extends TMSReportsHelper {
         contact_last_name varchar(100),
         phone_number varchar(20),
         email varchar(255),
-        mc_number varchar(50),
-        dot_number varchar(50),
+        full_address varchar(255),
         user_id_added mediumint(9) NOT NULL,
         date_created datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
         user_id_updated mediumint(9) NULL,
         date_updated datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-        status_post varchar(255) NULL DEFAULT NULL,
         PRIMARY KEY (id),
         UNIQUE KEY shipper_name (shipper_name)
     ) $charset_collate;";
 		
 		dbDelta( $sql );
+	}
+	
+	
+	public function search_shipper() {
+		if ( defined( 'DOING_AJAX' ) && DOING_AJAX ) {
+			$MY_INPUT = filter_var_array( $_POST, [
+				"search" => FILTER_SANITIZE_STRING
+			] );
+			
+			$tmp = '';
+			
+			if ( empty( $MY_INPUT[ 'search' ] ) ) {
+				wp_send_json_success( array( 'template' => $tmp ) );
+			}
+			
+			$response = $this->search_shipper_in_db( $MY_INPUT[ 'search' ] );
+			if ( is_array( $response ) ) {
+				if ( sizeof( $response ) === 0 ) {
+					
+					$tmp = '
+						<li class="my-dropdown-search__item">
+	                        <p class="my-dropdown-search__not-found">
+		                        Not found
+		                        <a class="js-open-popup-activator link-primary"
+		                           href="#popup_add_shipper">
+		                           click here
+		                        </a> to add a new shipper.
+	                        </p>
+	                    </li>
+					';
+					
+					wp_send_json_success( array( 'template' => $tmp ) );
+				}
+				
+				foreach ( $response as $value ) {
+					$address = $value->full_address;
+					
+					$tmp .= '
+						<li class="my-dropdown-search__item">
+	                        <a class="my-dropdown-search__link js-link-search-result" href="#">
+	                            <span class="my-dropdown-search__name">
+	                                <span>' . $address . '</span>
+	                            </span>
+	                            <div class="d-none">
+		                            <div class="js-content-company my-dropdown-search__hidden">
+		                                ' . $this->print_list_shipper( $address, $value->id ) . '
+									</div>
+								</div>
+	                        </a>
+	                    </li>
+					';
+				}
+				
+				wp_send_json_success( array( 'template' => $tmp) );
+			}
+		}
+	}
+	
+	public function print_list_shipper( $address = '', $id ) {
+		
+		if ( ! $id ) {
+			return false;
+		}
+		
+		$template = '<input type="hidden" class="js-full-address" data-current-address="'. $address .'" name="shipper_id" value="' . $id . '">';
+		
+		return $template;
+	}
+	
+	public function get_shipper_by_id( $ID ) {
+		global $wpdb;
+		$query = $wpdb->prepare( "
+        SELECT * FROM {$wpdb->prefix}{$this->table_main}
+        WHERE id = %d
+    	", $ID );
+		
+		// Execute the query
+		$results = $wpdb->get_results( $query );
+		
+		return $results;
+	}
+	
+	public function search_shipper_in_db( $search_term ) {
+		global $wpdb;
+		
+		// Ensure the search term is sanitized
+		$search_term = '%' . $wpdb->esc_like( $search_term ) . '%';
+		
+		// Define the query to search in the specified fields, ignoring case sensitivity
+		$query = $wpdb->prepare( "
+        SELECT * FROM {$wpdb->prefix}{$this->table_main}
+        WHERE LOWER(full_address) LIKE LOWER(%s) LIMIT 5
+    ", $search_term, $search_term, $search_term );
+		
+		// Execute the query
+		$results = $wpdb->get_results( $query );
+		
+		return $results;
 	}
 	
 }

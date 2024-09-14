@@ -1,5 +1,6 @@
 // eslint-disable-next-line import/prefer-default-export
 import Popup from '../parts/popup-window';
+import { printMessage } from "./info-messages";
 
 // eslint-disable-next-line import/prefer-default-export
 export const actionCreateShipperInit = (ajaxUrl) => {
@@ -26,12 +27,14 @@ export const actionCreateShipperInit = (ajaxUrl) => {
                         if (requestStatus.success) {
                             console.log('Shipper added successfully:', requestStatus.data);
                             popupInstance.forceCloseAllPopup();
+                            printMessage(requestStatus.data.message, 'success', 8000);
                         } else {
                             // eslint-disable-next-line no-alert
-                            alert(`Error adding shipper:${requestStatus.data.message}`);
+                            printMessage(`Error adding shipper: ${requestStatus.data.message}`, 'danger', 8000);
                         }
                     })
                     .catch((error) => {
+                        printMessage(`Request failed: ${error}`, 'danger', 8000);
                         console.error('Request failed:', error);
                     });
             });

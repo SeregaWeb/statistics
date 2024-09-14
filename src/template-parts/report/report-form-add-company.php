@@ -30,10 +30,6 @@ $states = $helper->get_states();
                     <input type="radio" name="country" value="Mexico" id="country-mx" class="form-check-input">
                     <label for="country-mx" class="form-check-label">Mexico</label>
                 </div>
-<!--				<div>-->
-<!--					<input type="radio" name="country" value="other" id="country-other" class="form-check-input">-->
-<!--					<label for="country-other" class="form-check-label">Other</label>-->
-<!--				</div>-->
 			</div>
 		</div>
 		
@@ -72,8 +68,8 @@ $states = $helper->get_states();
 		</div>
 		
 		<div class="form-group mt-3 col-6">
-			<label for="input-firstname" class="form-label">Contact Name <span class="required-star text-danger">*</span></label>
-			<input id="input-firstname" required type="text" name="FirstName" placeholder="First Name" class="form-control">
+			<label for="input-firstname" class="form-label">Contact Name </label>
+			<input id="input-firstname" type="text" name="FirstName" placeholder="First Name" class="form-control">
 		</div>
 		
 		<div class="form-group mt-3 col-6">
@@ -87,13 +83,13 @@ $states = $helper->get_states();
 		</div>
 		
 		<div class="form-group mt-3 col-6">
-			<label for="input-email" class="form-label">Email <span class="required-star text-danger">*</span></label>
-			<input id="input-email" type="text" required name="Email" placeholder="Email" class="form-control">
+			<label for="input-email" class="form-label">Email</label>
+			<input id="input-email" type="text" name="Email" placeholder="Email" class="form-control">
 		</div>
 		
 		<div class="form-group mt-3 col-6">
-			<label for="input-mcnumber" class="form-label">MC Number</label>
-			<input id="input-mcnumber" type="text" name="MotorCarrNo" placeholder="MC Number" class="form-control">
+			<label for="input-mcnumber" class="form-label">MC Number <span class="required-star text-danger">*</span></label>
+			<input id="input-mcnumber" required type="text" name="MotorCarrNo" placeholder="MC Number" class="form-control">
 		</div>
 		
 		<div class="form-group mt-3 col-6">

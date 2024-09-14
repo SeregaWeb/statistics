@@ -68,8 +68,8 @@ $states = $helper->get_states();
 		</div>
 		
 		<div class="form-group mt-3 col-6">
-			<label for="input-firstname" class="form-label">Contact Name <span class="required-star text-danger">*</span></label>
-			<input id="input-firstname" required type="text" name="FirstName" placeholder="First Name" class="form-control">
+			<label for="input-firstname" class="form-label">Contact Name</label>
+			<input id="input-firstname" type="text" name="FirstName" placeholder="First Name" class="form-control">
 		</div>
 		
 		<div class="form-group mt-3 col-6">
@@ -78,13 +78,13 @@ $states = $helper->get_states();
 		</div>
 		
 		<div class="form-group mt-3 col-6">
-			<label for="input-phone" class="form-label">Phone Number <span class="required-star text-danger">*</span></label>
-			<input id="input-phone" required type="text" name="Phone" placeholder="Phone" class="form-control">
+			<label for="input-phone" class="form-label">Phone Number</label>
+			<input id="input-phone" type="text" name="Phone" placeholder="Phone" class="form-control">
 		</div>
 		
 		<div class="form-group mt-3 col-6">
-			<label for="input-email" class="form-label">Email <span class="required-star text-danger">*</span></label>
-			<input id="input-email" type="text" required name="Email" placeholder="Email" class="form-control">
+			<label for="input-email" class="form-label">Email</label>
+			<input id="input-email" type="text" name="Email" placeholder="Email" class="form-control">
 		</div>
 	</div>
 	

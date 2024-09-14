@@ -7,12 +7,150 @@ class TMSReportsCompany extends TMSReportsHelper {
 	
 	public function ajax_actions() {
 		add_action( 'wp_ajax_add_new_company', array( $this, 'add_new_company' ) );
+		add_action( 'wp_ajax_search_company', array( $this, 'search_company' ) );
 	}
 	
 	public function init() {
 		add_action( 'after_setup_theme', array( $this, 'create_table_company' ) );
-		
 		$this->ajax_actions();
+	}
+	
+	public function search_company() {
+		if ( defined( 'DOING_AJAX' ) && DOING_AJAX ) {
+			$MY_INPUT = filter_var_array( $_POST, [
+				"search" => FILTER_SANITIZE_STRING
+			] );
+			
+			$tmp = '';
+			
+			if ( empty( $MY_INPUT[ 'search' ] ) ) {
+				wp_send_json_success( array( 'template' => $tmp ) );
+			}
+			
+			$response = $this->search_company_in_db( $MY_INPUT[ 'search' ] );
+			if ( is_array( $response ) ) {
+				if ( sizeof( $response ) === 0 ) {
+					
+					$tmp = '
+						<li class="my-dropdown-search__item">
+	                        <p class="my-dropdown-search__not-found">
+		                        Not found
+		                        <a class="js-open-popup-activator link-primary"
+		                           href="#popup_add_company">
+		                           click here
+		                        </a> to add a new customer.
+	                        </p>
+	                    </li>
+					';
+					
+					wp_send_json_success( array( 'template' => $tmp ) );
+				}
+				
+				foreach ( $response as $value ) {
+					$contact = $value->contact_first_name . ' ' . $value->contact_last_name;
+					$phone   = $value->phone_number;
+					$email   = $value->email;
+					$name    = $value->company_name;
+					$address = $value->address1 . ', ' . $this->get_label_by_key( $value->state ) . ' ' . $value->zip_code . ', ' . $value->country;
+					$dot     = $value->dot_number;
+					$mc      = $value->mc_number;
+					
+					$dot_tmpl = ! empty( $dot ) ? '<span>
+	                                <strong>#DOT:</strong>' . $dot . '
+	                              </span>' : '';
+					
+					$mc_tmpl = ! empty( $mc ) ? '<span>
+                                    <strong>#MC:</strong>' . $mc . '
+                                </span>' : '';
+					
+					$tmp .= '
+						<li class="my-dropdown-search__item">
+	                        <a class="my-dropdown-search__link js-link-search-result" href="#">
+	                            <span class="my-dropdown-search__name">
+	                                <strong>' . $name . '</strong>
+	                                <span>' . $address . '</span>
+	                            </span>
+	                            <span class="my-dropdown-search__others">
+	                               ' . $dot_tmpl . $mc_tmpl . '
+	                            </span>
+	                            
+	                            <div class="d-none">
+		                            <div class="js-content-company my-dropdown-search__hidden">
+		                                ' . $this->print_list_customers( $name, $address, $mc, $dot, $contact, $phone, $email, $value->id ) . '
+									</div>
+								</div>
+	                        </a>
+	                    </li>
+					';
+				}
+				
+				wp_send_json_success( array( 'template' => $tmp ) );
+			}
+		}
+	}
+	
+	public function print_list_customers(
+		$name = '', $address = '', $mc = '', $dot = '', $contact = '', $phone = '', $email = '', $id
+	) {
+		
+		if ( ! $id ) {
+			return false;
+		}
+		
+		$dot_tmpl = ! empty( $dot ) ? '<span>
+	                                <strong>#DOT:</strong>' . $dot . '
+	                              </span>' : '';
+		
+		$mc_tmpl = ! empty( $mc ) ? '<span>
+                                    <strong>#MC:</strong>' . $mc . '
+                                </span>' : '';
+		
+		$template = '<ul class="result-search-el">
+                        <li class="name">' . $name . '</li>
+                        <li class="address">' . $address . '</li>
+                        <li>' . $mc_tmpl . '</li>
+                        <li>' . $dot_tmpl . '</li>
+                        <li>' . $contact . '</li>
+                        <li>' . $phone . '</li>
+                        <li>' . $email . '</li>
+					</ul>
+					<input type="hidden" name="customer_id" value="' . $id . '">';
+		
+		return $template;
+	}
+	
+	public function get_company_by_id( $ID ) {
+		global $wpdb;
+		$query = $wpdb->prepare( "
+        SELECT * FROM {$wpdb->prefix}{$this->table_main}
+        WHERE id = %d
+    	", $ID );
+		
+		// Execute the query
+		$results = $wpdb->get_results( $query );
+		
+		return $results;
+	}
+	
+	public function search_company_in_db( $search_term ) {
+		global $wpdb;
+		
+		// Ensure the search term is sanitized
+		$search_term = '%' . $wpdb->esc_like( $search_term ) . '%';
+		
+		// Define the query to search in the specified fields, ignoring case sensitivity
+		$query = $wpdb->prepare( "
+        SELECT * FROM {$wpdb->prefix}{$this->table_main}
+        WHERE LOWER(company_name) LIKE LOWER(%s)
+        OR mc_number LIKE %s
+        OR dot_number LIKE %s
+        LIMIT 5
+    ", $search_term, $search_term, $search_term );
+		
+		// Execute the query
+		$results = $wpdb->get_results( $query );
+		
+		return $results;
 	}
 	
 	public function add_new_company() {
@@ -33,10 +171,8 @@ class TMSReportsCompany extends TMSReportsHelper {
 				"Email"        => FILTER_SANITIZE_EMAIL,
 				"MotorCarrNo"  => FILTER_SANITIZE_STRING,
 				"DotNo"        => FILTER_SANITIZE_STRING,
-				"status_post"  => FILTER_SANITIZE_STRING,
 			] );
 			
-			$MY_INPUT[ "status_post" ] = 'publish';
 			
 			// Insert the company report
 			$result = $this->add_company( $MY_INPUT );
@@ -80,29 +216,27 @@ class TMSReportsCompany extends TMSReportsHelper {
 			'date_created'       => current_time( 'mysql' ),
 			'user_id_updated'    => $user_id,
 			'date_updated'       => current_time( 'mysql' ),
-			'status_post'        => $data[ 'status_post' ],
 		);
 		
 		$result = $wpdb->insert( $table_name, $insert_params, array(
-				'%s',  // company_name
-				'%s',  // country
-				'%s',  // address1
-				'%s',  // address2
-				'%s',  // city
-				'%s',  // state
-				'%s',  // zip_code
-				'%s',  // contact_first_name
-				'%s',  // contact_last_name
-				'%s',  // phone_number
-				'%s',  // email
-				'%s',  // mc_number
-				'%s',  // dot_number
-				'%d',  // user_id_added
-				'%s',  // date_created
-				'%d',  // user_id_updated
-				'%s',  // date_updated
-				'%s',  // status_post
-			) );
+			'%s',  // company_name
+			'%s',  // country
+			'%s',  // address1
+			'%s',  // address2
+			'%s',  // city
+			'%s',  // state
+			'%s',  // zip_code
+			'%s',  // contact_first_name
+			'%s',  // contact_last_name
+			'%s',  // phone_number
+			'%s',  // email
+			'%s',  // mc_number
+			'%s',  // dot_number
+			'%d',  // user_id_added
+			'%s',  // date_created
+			'%d',  // user_id_updated
+			'%s',  // date_updated
+		) );
 		
 		// Check if the insert was successful
 		if ( $result ) {
@@ -152,13 +286,10 @@ class TMSReportsCompany extends TMSReportsHelper {
         date_created datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
         user_id_updated mediumint(9) NULL,
         date_updated datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-        status_post varchar(255) NULL DEFAULT NULL,
         PRIMARY KEY (id),
         UNIQUE KEY company_name (company_name),
-        UNIQUE KEY mc_number (mc_number),
-        UNIQUE KEY dot_number (dot_number)
+        UNIQUE KEY mc_number (mc_number)
     ) $charset_collate;";
-		
 		dbDelta( $sql );
 	}
 	

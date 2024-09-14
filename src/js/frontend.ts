@@ -2,6 +2,7 @@
  * SASS
  */
 import '../scss/frontend.scss';
+import { createPopper } from '@popperjs/core';
 import 'bootstrap/dist/js/bootstrap.bundle';
 /**
  * JavaScript
@@ -9,9 +10,20 @@ import 'bootstrap/dist/js/bootstrap.bundle';
 import Sliders from './components/swiper-init';
 import Popup from './parts/popup-window';
 import { initMoneyMask } from './components/input-helpers';
-import { actionCreateReportInit, previewFileUpload } from './components/create-report';
+import {
+    actionCreateReportInit,
+    additionalContactsInit,
+    addShipperPointInit,
+    createDraftPosts,
+    previewFileUpload,
+    removeOneFileInitial,
+    updateFilesReportInit,
+} from './components/create-report';
 import { actionCreateCompanyInit } from './components/create-company';
 import { actionCreateShipperInit } from './components/create-shipper';
+import { nextTabTrigger } from './components/tab-helper';
+import { addSearchAction } from './components/search-action';
+import { toggleBlocksInit } from './components/toggle-blocks-init';
 
 function ready() {
     // @ts-ignore
@@ -19,13 +31,21 @@ function ready() {
     const popupInstance = new Popup();
     popupInstance.init();
 
-    // Mask input for money and count total
-    initMoneyMask();
-    // Action reports
+    // Ajax Actions
     actionCreateReportInit(urlAjax);
+    createDraftPosts(urlAjax);
+    updateFilesReportInit(urlAjax);
     actionCreateCompanyInit(urlAjax);
     actionCreateShipperInit(urlAjax);
-    previewFileUpload();
+    addSearchAction(urlAjax);
+    removeOneFileInitial(urlAjax);
+    additionalContactsInit();
+    toggleBlocksInit();
+    addShipperPointInit();
+    // Helpers
+    initMoneyMask(); // Money helper
+    previewFileUpload(); // File preview
+    nextTabTrigger(); // Buttons trigger next bootstrap tab
 }
 
 window.document.addEventListener('DOMContentLoaded', ready);

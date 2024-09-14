@@ -127,6 +127,7 @@
     "WP-Pot"
   ],
   "dependencies": {
+    "@popperjs/core": "^2.11.8",
     "bootstrap": "^5.3.3",
     "smoothscroll-polyfill": "^0.4.4",
     "swiper": "^8.4.7",

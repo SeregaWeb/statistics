@@ -14,6 +14,8 @@ echo esc_html( get_template_part( 'src/template-parts/report/report', 'popup-add
 
 ?>
 
+<div class="message-container js-show-info-message"></div>
+
 <footer id="site-footer" class="site-footer">
     <div class="container site-footer__container">
         <div class="site-footer__wrapper">

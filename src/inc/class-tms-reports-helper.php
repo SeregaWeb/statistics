@@ -148,6 +148,41 @@ class TMSReportsHelper extends TMSReportsIcons {
 		'partial'             => 'Partial'
 	);
 	
+	public $types = array (
+		'container' => 'Container',
+		'drop_and_hook' => 'Drop and Hook',
+		'last_mile' => 'Last Mile',
+		'ltl' => 'LTL',
+		'other' => 'Other',
+		'truck_load' => 'Truck Load',
+	);
+	
+	public $set_up = array (
+		'completed' => 'Completed',
+		'not_completed' => 'Not completed',
+		'error' => 'Error',
+	);
+	
+	public $set_up_platform = array (
+		'rmis' => 'RMIS',
+		'dat' => 'DAT',
+		'highway' => 'Highway',
+		'manual' => 'Manual',
+		'mcp' => 'MCP',
+		'other' => 'Other',
+	);
+	
+	function get_set_up_platform() {
+		return $this->set_up_platform;
+	}
+	
+	function get_set_up() {
+		return $this->set_up;
+	}
+	
+	function get_load_types() {
+		return $this->types;
+	}
 	
 	function get_states() {
 		return $this->select;
@@ -180,6 +215,10 @@ class TMSReportsHelper extends TMSReportsIcons {
 		
 		if ( $search_list === 'statuses' ) {
 			return isset( $this->statuses[ $key ] ) ? $this->statuses[ $key ] : $key;
+		}
+		
+		if ( $search_list === 'types' ) {
+			return isset( $this->types[ $key ] ) ? $this->types[ $key ] : $key;
 		}
 		
 		if ( $search_list === 'sources' ) {

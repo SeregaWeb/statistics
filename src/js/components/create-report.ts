@@ -19,6 +19,10 @@ export const actionCreateReportInit = (ajaxUrl) => {
             item.addEventListener('submit', (event) => {
                 event.preventDefault();
                 const { target } = event;
+
+                const nextTargetTab = 'pills-trip-tab';
+                const tab = new Tab(document.getElementById(nextTargetTab));
+
                 // @ts-ignore
                 const formData = new FormData(target);
                 formData.append('action', 'add_new_report');
@@ -34,6 +38,9 @@ export const actionCreateReportInit = (ajaxUrl) => {
                         if (requestStatus.success) {
                             console.log('Load added successfully:', requestStatus.data);
                             popupInstance.forceCloseAllPopup();
+
+                            // @ts-ignore
+                            tab.show();
                             printMessage(requestStatus.data.message, 'success', 8000);
                         } else {
                             // eslint-disable-next-line no-alert
@@ -557,6 +564,68 @@ export const additionalContactsInit = () => {
     addActionsEditAdditionalCard();
 };
 
+const editShipperStopInit = () => {
+    const btnsEditPoint = document.querySelectorAll('.js-edit-ship');
+
+    btnsEditPoint &&
+        btnsEditPoint.forEach((item) => {
+            item.addEventListener('click', (event) => {
+                event.preventDefault();
+
+                const { target } = event;
+
+                if (!target) return;
+
+                const btnAdd = document.querySelector('.js-add-ship');
+                const btnEdit = document.querySelector('.js-end-edit-ship');
+
+                // @ts-ignore
+                if (btnAdd && btnEdit) {
+                    btnAdd.classList.add('d-none');
+                    btnEdit.classList.remove('d-none');
+                }
+
+                // @ts-ignore
+                const card = target.closest('.js-current-shipper');
+
+                // @ts-ignore
+                const form = target.closest('.js-shipper');
+
+                if (form && card) {
+                    card.classList.add('active');
+                    const resultSearch = form.querySelector('.js-result-search');
+                    const stopType = form.querySelector('.js-shipper-stop-type');
+                    const contact = form.querySelector('.js-shipper-contact');
+                    const date = form.querySelector('.js-shipper-date');
+                    const info = form.querySelector('.js-shipper-info');
+                    const addressSearch = form.querySelector('.js-search-shipper');
+
+                    const currentID = card.querySelector('.js-current-shipper_address_id');
+                    const currentAddress = card.querySelector('.js-current-shipper_address');
+                    const currentContact = card.querySelector('.js-current-shipper_contact');
+                    const currentDate = card.querySelector('.js-current-shipper_date');
+                    const currentInfo = card.querySelector('.js-current-shipper_info');
+                    const currentType = card.querySelector('.js-current-shipper_type');
+
+                    const templateInputEdit = `
+                        <input type="hidden" class="js-full-address" data-current-address="${currentAddress.value}" name="shipper_id" value="${currentID.value}">
+                    `;
+
+                    if (!resultSearch) return;
+
+                    resultSearch.innerHTML = templateInputEdit;
+                    stopType.value = currentType.value;
+                    addressSearch.value = currentAddress.value;
+                    contact.value = currentContact.value;
+                    date.value = currentDate.value;
+                    info.value = currentInfo.value;
+
+                    card.remove();
+                }
+            });
+        });
+};
+
 export const addShipperPointInit = () => {
     const btnAddPoint = document.querySelectorAll('.js-add-point');
 
@@ -580,6 +649,12 @@ export const addShipperPointInit = () => {
                     const date = form.querySelector('.js-shipper-date');
                     const info = form.querySelector('.js-shipper-info');
                     const addressSearch = form.querySelector('.js-search-shipper');
+
+                    if (!address) {
+                        printMessage(`The address must be selected from the drop-down list`, 'danger', 5000);
+                        // eslint-disable-next-line consistent-return
+                        return false;
+                    }
 
                     const addressValueID = address.value;
                     const addressValueFullAddrres = address.getAttribute('data-current-address');
@@ -625,21 +700,21 @@ export const addShipperPointInit = () => {
                     }
 
                     const template = `
-                <div class="row js-current-shipper">
+                <div class="row js-current-shipper card-shipper">
                     <div class="d-none">
-                        <input type="hidden" name="${stopTypeValue}_address_id[]" value="${addressValueID}" >
-                        <input type="hidden" name="${stopTypeValue}_address[]" value="${addressValueFullAddrres}" >
-                        <input type="hidden" name="${stopTypeValue}_contact[]" value="${contactValue}" >
-                        <input type="hidden" name="${stopTypeValue}_date[]" value="${dateValue}" >
-                        <input type="hidden" name="${stopTypeValue}_info[]" value="${infoValue}" >
-                        <input type="hidden" name="${stopTypeValue}_type[]" value="${stopTypeValue}" >
+                        <input type="hidden" class="js-current-shipper_address_id" name="${stopTypeValue}_address_id[]" value="${addressValueID}" >
+                        <input type="hidden" class="js-current-shipper_address" name="${stopTypeValue}_address[]" value="${addressValueFullAddrres}" >
+                        <input type="hidden" class="js-current-shipper_contact" name="${stopTypeValue}_contact[]" value="${contactValue}" >
+                        <input type="hidden" class="js-current-shipper_date" name="${stopTypeValue}_date[]" value="${dateValue}" >
+                        <input type="hidden" class="js-current-shipper_info" name="${stopTypeValue}_info[]" value="${infoValue}" >
+                        <input type="hidden" class="js-current-shipper_type" name="${stopTypeValue}_type[]" value="${stopTypeValue}" >
                     </div>
                     <div class="col-12 col-md-1">${typeDelivery}</div>
                     <div class="col-12 col-md-2">${dateValue}</div>
                     <div class="col-12 col-md-3">${addressValueFullAddrres}</div>
                     <div class="col-12 col-md-2">${contactValue}</div>
                     <div class="col-12 col-md-3">${infoValue}</div>
-                    <div class="col-12 col-md-1 p-0">
+                    <div class="col-12 col-md-1 p-0 card-shipper__btns">
                         <button class="additional-card__edit js-edit-ship">
                             <svg width="668" height="668" viewBox="0 0 668 668" fill="none" xmlns="http://www.w3.org/2000/svg">
                                 <path d="M640.46 27.5413C676.29 63.3746 676.29 121.472 640.46 157.305L623.94 173.823C619.13 172.782 613.073 171.196 606.17 168.801C587.693 162.391 563.41 150.276 540.567 127.433C517.723 104.591 505.61 80.3076 499.2 61.8299C496.803 54.9269 495.22 48.8696 494.177 44.0596L510.697 27.5413C546.53 -8.29175 604.627 -8.29175 640.46 27.5413Z" fill="#1C274C"/>
@@ -666,8 +741,108 @@ export const addShipperPointInit = () => {
                     date.value = '';
                     info.value = '';
                     addressSearch.value = '';
+
+                    const btnAdd = document.querySelector('.js-add-ship');
+                    const btnEdit = document.querySelector('.js-end-edit-ship');
+
                     addActionsDeleteUniversalCard('.js-remove-ship', '.js-current-shipper');
+                    editShipperStopInit();
+                    // @ts-ignore
+                    if (btnAdd && btnEdit && target.classList.contains('js-end-edit-ship')) {
+                        btnAdd.classList.remove('d-none');
+                        btnEdit.classList.add('d-none');
+                        // @ts-ignore
+                        console.log(btnAdd, btnEdit, target.classList.contains('js-end-edit-ship'));
+                    }
                 }
+            });
+        });
+
+    addActionsDeleteUniversalCard('.js-remove-ship', '.js-current-shipper');
+    editShipperStopInit();
+};
+
+export const sendShipperFormInit = (ajaxUrl) => {
+    const shipperForm = document.querySelector('.js-shipper');
+
+    shipperForm &&
+        shipperForm.addEventListener('submit', (event) => {
+            event.preventDefault();
+            const { target } = event;
+
+            const nextTargetTab = 'pills-documents-tab';
+            const tab = new Tab(document.getElementById(nextTargetTab));
+            // @ts-ignore
+            const formData = new FormData(target);
+            const action = 'update_shipper_info';
+
+            formData.append('action', action);
+
+            const options = {
+                method: 'POST',
+                body: formData,
+            };
+
+            fetch(ajaxUrl, options)
+                .then((res) => res.json())
+                .then((requestStatus) => {
+                    if (requestStatus.success) {
+                        printMessage(requestStatus.data.message, 'success', 8000);
+                        // @ts-ignore
+                        tab.show();
+                    } else {
+                        printMessage(`Error adding shipper info:${requestStatus.data.message}`, 'danger', 8000);
+                    }
+                })
+                .catch((error) => {
+                    printMessage(`Request failed: ${error}`, 'danger', 8000);
+                    console.error('Request failed:', error);
+                });
+        });
+};
+
+export const updateStatusPost = (ajaxUrl) => {
+    const btns = document.querySelectorAll('.js-update-post-status');
+    btns &&
+        btns.forEach((btn) => {
+            btn.addEventListener('click', (event) => {
+                event.preventDefault();
+
+                const { target } = event;
+
+                // @ts-ignore
+                const formData = new FormData();
+                const action = 'update_post_status';
+
+                const postId = document.querySelector('.js-post-id');
+
+                if (!postId) {
+                    printMessage('Post id not found', 'danger', 8000);
+                    return;
+                }
+
+                formData.append('action', action);
+                // @ts-ignore
+                formData.append('post_id', postId.value);
+
+                const options = {
+                    method: 'POST',
+                    body: formData,
+                };
+
+                fetch(ajaxUrl, options)
+                    .then((res) => res.json())
+                    .then((requestStatus) => {
+                        if (requestStatus.success) {
+                            printMessage(requestStatus.data.message, 'success', 8000);
+                        } else {
+                            printMessage(requestStatus.data.message, 'danger', 8000);
+                        }
+                    })
+                    .catch((error) => {
+                        printMessage(`Request failed: ${error}`, 'danger', 8000);
+                        console.error('Request failed:', error);
+                    });
             });
         });
 };

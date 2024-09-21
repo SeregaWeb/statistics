@@ -3051,7 +3051,9 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */   createDraftPosts: function() { return /* binding */ createDraftPosts; },
 /* harmony export */   previewFileUpload: function() { return /* binding */ previewFileUpload; },
 /* harmony export */   removeOneFileInitial: function() { return /* binding */ removeOneFileInitial; },
-/* harmony export */   updateFilesReportInit: function() { return /* binding */ updateFilesReportInit; }
+/* harmony export */   sendShipperFormInit: function() { return /* binding */ sendShipperFormInit; },
+/* harmony export */   updateFilesReportInit: function() { return /* binding */ updateFilesReportInit; },
+/* harmony export */   updateStatusPost: function() { return /* binding */ updateStatusPost; }
 /* harmony export */ });
 /* harmony import */ var bootstrap__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! bootstrap */ "./node_modules/bootstrap/dist/js/bootstrap.esm.js");
 /* harmony import */ var _parts_popup_window__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ../parts/popup-window */ "./src/js/parts/popup-window.js");
@@ -3066,6 +3068,8 @@ var actionCreateReportInit = function actionCreateReportInit(ajaxUrl) {
     item.addEventListener('submit', function (event) {
       event.preventDefault();
       var target = event.target;
+      var nextTargetTab = 'pills-trip-tab';
+      var tab = new bootstrap__WEBPACK_IMPORTED_MODULE_0__.Tab(document.getElementById(nextTargetTab));
       var formData = new FormData(target);
       formData.append('action', 'add_new_report');
       var options = {
@@ -3078,6 +3082,7 @@ var actionCreateReportInit = function actionCreateReportInit(ajaxUrl) {
         if (requestStatus.success) {
           console.log('Load added successfully:', requestStatus.data);
           popupInstance.forceCloseAllPopup();
+          tab.show();
           (0,_info_messages__WEBPACK_IMPORTED_MODULE_2__.printMessage)(requestStatus.data.message, 'success', 8000);
         } else {
           (0,_info_messages__WEBPACK_IMPORTED_MODULE_2__.printMessage)("Error adding Load:".concat(requestStatus.data.message), 'danger', 8000);
@@ -3395,6 +3400,48 @@ var additionalContactsInit = function additionalContactsInit() {
   addActionsDeleteUniversalCard('.js-remove-contact', '.js-additional-card');
   addActionsEditAdditionalCard();
 };
+var editShipperStopInit = function editShipperStopInit() {
+  var btnsEditPoint = document.querySelectorAll('.js-edit-ship');
+  btnsEditPoint && btnsEditPoint.forEach(function (item) {
+    item.addEventListener('click', function (event) {
+      event.preventDefault();
+      var target = event.target;
+      if (!target) return;
+      var btnAdd = document.querySelector('.js-add-ship');
+      var btnEdit = document.querySelector('.js-end-edit-ship');
+      if (btnAdd && btnEdit) {
+        btnAdd.classList.add('d-none');
+        btnEdit.classList.remove('d-none');
+      }
+      var card = target.closest('.js-current-shipper');
+      var form = target.closest('.js-shipper');
+      if (form && card) {
+        card.classList.add('active');
+        var resultSearch = form.querySelector('.js-result-search');
+        var stopType = form.querySelector('.js-shipper-stop-type');
+        var contact = form.querySelector('.js-shipper-contact');
+        var date = form.querySelector('.js-shipper-date');
+        var info = form.querySelector('.js-shipper-info');
+        var addressSearch = form.querySelector('.js-search-shipper');
+        var currentID = card.querySelector('.js-current-shipper_address_id');
+        var currentAddress = card.querySelector('.js-current-shipper_address');
+        var currentContact = card.querySelector('.js-current-shipper_contact');
+        var currentDate = card.querySelector('.js-current-shipper_date');
+        var currentInfo = card.querySelector('.js-current-shipper_info');
+        var currentType = card.querySelector('.js-current-shipper_type');
+        var templateInputEdit = "\n                        <input type=\"hidden\" class=\"js-full-address\" data-current-address=\"".concat(currentAddress.value, "\" name=\"shipper_id\" value=\"").concat(currentID.value, "\">\n                    ");
+        if (!resultSearch) return;
+        resultSearch.innerHTML = templateInputEdit;
+        stopType.value = currentType.value;
+        addressSearch.value = currentAddress.value;
+        contact.value = currentContact.value;
+        date.value = currentDate.value;
+        info.value = currentInfo.value;
+        card.remove();
+      }
+    });
+  });
+};
 var addShipperPointInit = function addShipperPointInit() {
   var btnAddPoint = document.querySelectorAll('.js-add-point');
   btnAddPoint && btnAddPoint.forEach(function (item) {
@@ -3411,6 +3458,10 @@ var addShipperPointInit = function addShipperPointInit() {
         var date = form.querySelector('.js-shipper-date');
         var info = form.querySelector('.js-shipper-info');
         var addressSearch = form.querySelector('.js-search-shipper');
+        if (!address) {
+          (0,_info_messages__WEBPACK_IMPORTED_MODULE_2__.printMessage)("The address must be selected from the drop-down list", 'danger', 5000);
+          return false;
+        }
         var addressValueID = address.value;
         var addressValueFullAddrres = address.getAttribute('data-current-address');
         var stopTypeValue = stopType.value;
@@ -3441,7 +3492,7 @@ var addShipperPointInit = function addShipperPointInit() {
         if (stopTypeValue === 'pick_up_location') {
           typeDelivery = 'Pick Up';
         }
-        var template = "\n                <div class=\"row js-current-shipper\">\n                    <div class=\"d-none\">\n                        <input type=\"hidden\" name=\"".concat(stopTypeValue, "_address_id[]\" value=\"").concat(addressValueID, "\" >\n                        <input type=\"hidden\" name=\"").concat(stopTypeValue, "_address[]\" value=\"").concat(addressValueFullAddrres, "\" >\n                        <input type=\"hidden\" name=\"").concat(stopTypeValue, "_contact[]\" value=\"").concat(contactValue, "\" >\n                        <input type=\"hidden\" name=\"").concat(stopTypeValue, "_date[]\" value=\"").concat(dateValue, "\" >\n                        <input type=\"hidden\" name=\"").concat(stopTypeValue, "_info[]\" value=\"").concat(infoValue, "\" >\n                        <input type=\"hidden\" name=\"").concat(stopTypeValue, "_type[]\" value=\"").concat(stopTypeValue, "\" >\n                    </div>\n                    <div class=\"col-12 col-md-1\">").concat(typeDelivery, "</div>\n                    <div class=\"col-12 col-md-2\">").concat(dateValue, "</div>\n                    <div class=\"col-12 col-md-3\">").concat(addressValueFullAddrres, "</div>\n                    <div class=\"col-12 col-md-2\">").concat(contactValue, "</div>\n                    <div class=\"col-12 col-md-3\">").concat(infoValue, "</div>\n                    <div class=\"col-12 col-md-1 p-0\">\n                        <button class=\"additional-card__edit js-edit-ship\">\n                            <svg width=\"668\" height=\"668\" viewBox=\"0 0 668 668\" fill=\"none\" xmlns=\"http://www.w3.org/2000/svg\">\n                                <path d=\"M640.46 27.5413C676.29 63.3746 676.29 121.472 640.46 157.305L623.94 173.823C619.13 172.782 613.073 171.196 606.17 168.801C587.693 162.391 563.41 150.276 540.567 127.433C517.723 104.591 505.61 80.3076 499.2 61.8299C496.803 54.9269 495.22 48.8696 494.177 44.0596L510.697 27.5413C546.53 -8.29175 604.627 -8.29175 640.46 27.5413Z\" fill=\"#1C274C\"/>\n                                <path d=\"M420.003 377.76C406.537 391.227 399.803 397.96 392.377 403.753C383.62 410.583 374.143 416.44 364.117 421.22C355.617 425.27 346.583 428.28 328.513 434.303L233.236 466.063C224.345 469.027 214.542 466.713 207.915 460.087C201.287 453.457 198.973 443.657 201.937 434.763L233.696 339.487C239.719 321.417 242.73 312.383 246.781 303.883C251.56 293.857 257.416 284.38 264.248 275.623C270.04 268.197 276.773 261.465 290.24 247.998L454.11 84.1284C462.9 107.268 478.31 135.888 505.21 162.789C532.113 189.69 560.733 205.099 583.873 213.891L420.003 377.76Z\" fill=\"#1C274C\"/>\n                                <path d=\"M618.517 618.516C667.333 569.703 667.333 491.133 667.333 334C667.333 282.39 667.333 239.258 665.603 202.87L453.533 414.943C441.823 426.656 433.027 435.456 423.127 443.176C411.507 452.243 398.933 460.013 385.627 466.353C374.293 471.756 362.487 475.686 346.777 480.92L249.048 513.496C222.189 522.45 192.578 515.46 172.559 495.44C152.54 475.423 145.55 445.81 154.503 418.953L187.078 321.223C192.312 305.513 196.244 293.706 201.645 282.373C207.986 269.066 215.757 256.493 224.822 244.871C232.543 234.972 241.344 226.176 253.058 214.468L465.13 2.39583C428.743 0.6665 385.61 0.666504 334 0.666504C176.865 0.666504 98.2977 0.6665 49.4824 49.4822C0.666744 98.2975 0.666748 176.865 0.666748 334C0.666748 491.133 0.666744 569.703 49.4824 618.516C98.2977 667.333 176.865 667.333 334 667.333C491.133 667.333 569.703 667.333 618.517 618.516Z\" fill=\"#1C274C\"/>\n                            </svg>\n                        </button>\n                        <button class=\"additional-card__remove js-remove-ship\">\n                            <svg width=\"668\" height=\"668\" viewBox=\"0 0 668 668\" fill=\"none\" xmlns=\"http://www.w3.org/2000/svg\">\n                                <path fill-rule=\"evenodd\" clip-rule=\"evenodd\" d=\"M334 667.333C176.865 667.333 98.2976 667.333 49.4823 618.516C0.666622 569.703 0.666626 491.133 0.666626 334C0.666626 176.865 0.666622 98.2975 49.4823 49.4822C98.2976 0.6665 176.865 0.666504 334 0.666504C491.133 0.666504 569.703 0.6665 618.517 49.4822C667.333 98.2975 667.333 176.865 667.333 334C667.333 491.133 667.333 569.703 618.517 618.516C569.703 667.333 491.133 667.333 334 667.333ZM232.988 232.989C242.751 223.226 258.581 223.226 268.343 232.989L334 298.646L399.653 232.99C409.417 223.227 425.247 223.227 435.01 232.99C444.773 242.753 444.773 258.582 435.01 268.343L369.353 334L435.01 399.656C444.773 409.416 444.773 425.246 435.01 435.01C425.247 444.773 409.417 444.773 399.653 435.01L334 369.357L268.343 435.01C258.581 444.773 242.752 444.773 232.989 435.01C223.226 425.246 223.226 409.42 232.989 399.656L298.643 334L232.988 268.343C223.225 258.581 223.225 242.752 232.988 232.989Z\" fill=\"#1C274C\"/>\n                            </svg>\n                        </button>\n                    </div>\n                </div>\n                ");
+        var template = "\n                <div class=\"row js-current-shipper card-shipper\">\n                    <div class=\"d-none\">\n                        <input type=\"hidden\" class=\"js-current-shipper_address_id\" name=\"".concat(stopTypeValue, "_address_id[]\" value=\"").concat(addressValueID, "\" >\n                        <input type=\"hidden\" class=\"js-current-shipper_address\" name=\"").concat(stopTypeValue, "_address[]\" value=\"").concat(addressValueFullAddrres, "\" >\n                        <input type=\"hidden\" class=\"js-current-shipper_contact\" name=\"").concat(stopTypeValue, "_contact[]\" value=\"").concat(contactValue, "\" >\n                        <input type=\"hidden\" class=\"js-current-shipper_date\" name=\"").concat(stopTypeValue, "_date[]\" value=\"").concat(dateValue, "\" >\n                        <input type=\"hidden\" class=\"js-current-shipper_info\" name=\"").concat(stopTypeValue, "_info[]\" value=\"").concat(infoValue, "\" >\n                        <input type=\"hidden\" class=\"js-current-shipper_type\" name=\"").concat(stopTypeValue, "_type[]\" value=\"").concat(stopTypeValue, "\" >\n                    </div>\n                    <div class=\"col-12 col-md-1\">").concat(typeDelivery, "</div>\n                    <div class=\"col-12 col-md-2\">").concat(dateValue, "</div>\n                    <div class=\"col-12 col-md-3\">").concat(addressValueFullAddrres, "</div>\n                    <div class=\"col-12 col-md-2\">").concat(contactValue, "</div>\n                    <div class=\"col-12 col-md-3\">").concat(infoValue, "</div>\n                    <div class=\"col-12 col-md-1 p-0 card-shipper__btns\">\n                        <button class=\"additional-card__edit js-edit-ship\">\n                            <svg width=\"668\" height=\"668\" viewBox=\"0 0 668 668\" fill=\"none\" xmlns=\"http://www.w3.org/2000/svg\">\n                                <path d=\"M640.46 27.5413C676.29 63.3746 676.29 121.472 640.46 157.305L623.94 173.823C619.13 172.782 613.073 171.196 606.17 168.801C587.693 162.391 563.41 150.276 540.567 127.433C517.723 104.591 505.61 80.3076 499.2 61.8299C496.803 54.9269 495.22 48.8696 494.177 44.0596L510.697 27.5413C546.53 -8.29175 604.627 -8.29175 640.46 27.5413Z\" fill=\"#1C274C\"/>\n                                <path d=\"M420.003 377.76C406.537 391.227 399.803 397.96 392.377 403.753C383.62 410.583 374.143 416.44 364.117 421.22C355.617 425.27 346.583 428.28 328.513 434.303L233.236 466.063C224.345 469.027 214.542 466.713 207.915 460.087C201.287 453.457 198.973 443.657 201.937 434.763L233.696 339.487C239.719 321.417 242.73 312.383 246.781 303.883C251.56 293.857 257.416 284.38 264.248 275.623C270.04 268.197 276.773 261.465 290.24 247.998L454.11 84.1284C462.9 107.268 478.31 135.888 505.21 162.789C532.113 189.69 560.733 205.099 583.873 213.891L420.003 377.76Z\" fill=\"#1C274C\"/>\n                                <path d=\"M618.517 618.516C667.333 569.703 667.333 491.133 667.333 334C667.333 282.39 667.333 239.258 665.603 202.87L453.533 414.943C441.823 426.656 433.027 435.456 423.127 443.176C411.507 452.243 398.933 460.013 385.627 466.353C374.293 471.756 362.487 475.686 346.777 480.92L249.048 513.496C222.189 522.45 192.578 515.46 172.559 495.44C152.54 475.423 145.55 445.81 154.503 418.953L187.078 321.223C192.312 305.513 196.244 293.706 201.645 282.373C207.986 269.066 215.757 256.493 224.822 244.871C232.543 234.972 241.344 226.176 253.058 214.468L465.13 2.39583C428.743 0.6665 385.61 0.666504 334 0.666504C176.865 0.666504 98.2977 0.6665 49.4824 49.4822C0.666744 98.2975 0.666748 176.865 0.666748 334C0.666748 491.133 0.666744 569.703 49.4824 618.516C98.2977 667.333 176.865 667.333 334 667.333C491.133 667.333 569.703 667.333 618.517 618.516Z\" fill=\"#1C274C\"/>\n                            </svg>\n                        </button>\n                        <button class=\"additional-card__remove js-remove-ship\">\n                            <svg width=\"668\" height=\"668\" viewBox=\"0 0 668 668\" fill=\"none\" xmlns=\"http://www.w3.org/2000/svg\">\n                                <path fill-rule=\"evenodd\" clip-rule=\"evenodd\" d=\"M334 667.333C176.865 667.333 98.2976 667.333 49.4823 618.516C0.666622 569.703 0.666626 491.133 0.666626 334C0.666626 176.865 0.666622 98.2975 49.4823 49.4822C98.2976 0.6665 176.865 0.666504 334 0.666504C491.133 0.666504 569.703 0.6665 618.517 49.4822C667.333 98.2975 667.333 176.865 667.333 334C667.333 491.133 667.333 569.703 618.517 618.516C569.703 667.333 491.133 667.333 334 667.333ZM232.988 232.989C242.751 223.226 258.581 223.226 268.343 232.989L334 298.646L399.653 232.99C409.417 223.227 425.247 223.227 435.01 232.99C444.773 242.753 444.773 258.582 435.01 268.343L369.353 334L435.01 399.656C444.773 409.416 444.773 425.246 435.01 435.01C425.247 444.773 409.417 444.773 399.653 435.01L334 369.357L268.343 435.01C258.581 444.773 242.752 444.773 232.989 435.01C223.226 425.246 223.226 409.42 232.989 399.656L298.643 334L232.988 268.343C223.225 258.581 223.225 242.752 232.988 232.989Z\" fill=\"#1C274C\"/>\n                            </svg>\n                        </button>\n                    </div>\n                </div>\n                ");
         if (stopTypeValue === 'pick_up_location') {
           shipperContacts.innerHTML = template + shipperContacts.innerHTML;
         } else {
@@ -3452,8 +3503,81 @@ var addShipperPointInit = function addShipperPointInit() {
         date.value = '';
         info.value = '';
         addressSearch.value = '';
+        var btnAdd = document.querySelector('.js-add-ship');
+        var btnEdit = document.querySelector('.js-end-edit-ship');
         addActionsDeleteUniversalCard('.js-remove-ship', '.js-current-shipper');
+        editShipperStopInit();
+        if (btnAdd && btnEdit && target.classList.contains('js-end-edit-ship')) {
+          btnAdd.classList.remove('d-none');
+          btnEdit.classList.add('d-none');
+          console.log(btnAdd, btnEdit, target.classList.contains('js-end-edit-ship'));
+        }
       }
+    });
+  });
+  addActionsDeleteUniversalCard('.js-remove-ship', '.js-current-shipper');
+  editShipperStopInit();
+};
+var sendShipperFormInit = function sendShipperFormInit(ajaxUrl) {
+  var shipperForm = document.querySelector('.js-shipper');
+  shipperForm && shipperForm.addEventListener('submit', function (event) {
+    event.preventDefault();
+    var target = event.target;
+    var nextTargetTab = 'pills-documents-tab';
+    var tab = new bootstrap__WEBPACK_IMPORTED_MODULE_0__.Tab(document.getElementById(nextTargetTab));
+    var formData = new FormData(target);
+    var action = 'update_shipper_info';
+    formData.append('action', action);
+    var options = {
+      method: 'POST',
+      body: formData
+    };
+    fetch(ajaxUrl, options).then(function (res) {
+      return res.json();
+    }).then(function (requestStatus) {
+      if (requestStatus.success) {
+        (0,_info_messages__WEBPACK_IMPORTED_MODULE_2__.printMessage)(requestStatus.data.message, 'success', 8000);
+        tab.show();
+      } else {
+        (0,_info_messages__WEBPACK_IMPORTED_MODULE_2__.printMessage)("Error adding shipper info:".concat(requestStatus.data.message), 'danger', 8000);
+      }
+    }).catch(function (error) {
+      (0,_info_messages__WEBPACK_IMPORTED_MODULE_2__.printMessage)("Request failed: ".concat(error), 'danger', 8000);
+      console.error('Request failed:', error);
+    });
+  });
+};
+var updateStatusPost = function updateStatusPost(ajaxUrl) {
+  var btns = document.querySelectorAll('.js-update-post-status');
+  btns && btns.forEach(function (btn) {
+    btn.addEventListener('click', function (event) {
+      event.preventDefault();
+      var target = event.target;
+      var formData = new FormData();
+      var action = 'update_post_status';
+      var postId = document.querySelector('.js-post-id');
+      if (!postId) {
+        (0,_info_messages__WEBPACK_IMPORTED_MODULE_2__.printMessage)('Post id not found', 'danger', 8000);
+        return;
+      }
+      formData.append('action', action);
+      formData.append('post_id', postId.value);
+      var options = {
+        method: 'POST',
+        body: formData
+      };
+      fetch(ajaxUrl, options).then(function (res) {
+        return res.json();
+      }).then(function (requestStatus) {
+        if (requestStatus.success) {
+          (0,_info_messages__WEBPACK_IMPORTED_MODULE_2__.printMessage)(requestStatus.data.message, 'success', 8000);
+        } else {
+          (0,_info_messages__WEBPACK_IMPORTED_MODULE_2__.printMessage)(requestStatus.data.message, 'danger', 8000);
+        }
+      }).catch(function (error) {
+        (0,_info_messages__WEBPACK_IMPORTED_MODULE_2__.printMessage)("Request failed: ".concat(error), 'danger', 8000);
+        console.error('Request failed:', error);
+      });
     });
   });
 };
@@ -20101,7 +20225,9 @@ function ready() {
   (0,_components_create_report__WEBPACK_IMPORTED_MODULE_4__.updateFilesReportInit)(urlAjax);
   (0,_components_create_company__WEBPACK_IMPORTED_MODULE_5__.actionCreateCompanyInit)(urlAjax);
   (0,_components_create_shipper__WEBPACK_IMPORTED_MODULE_6__.actionCreateShipperInit)(urlAjax);
+  (0,_components_create_report__WEBPACK_IMPORTED_MODULE_4__.sendShipperFormInit)(urlAjax);
   (0,_components_search_action__WEBPACK_IMPORTED_MODULE_8__.addSearchAction)(urlAjax);
+  (0,_components_create_report__WEBPACK_IMPORTED_MODULE_4__.updateStatusPost)(urlAjax);
   (0,_components_create_report__WEBPACK_IMPORTED_MODULE_4__.removeOneFileInitial)(urlAjax);
   (0,_components_create_report__WEBPACK_IMPORTED_MODULE_4__.additionalContactsInit)();
   (0,_components_toggle_blocks_init__WEBPACK_IMPORTED_MODULE_9__.toggleBlocksInit)();

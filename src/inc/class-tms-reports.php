@@ -17,8 +17,6 @@ class TMSReports extends TMSReportsHelper {
 				"contact_phone"   => FILTER_SANITIZE_STRING,
 				"contact_email"   => FILTER_SANITIZE_STRING,
 				"post_id"         => FILTER_SANITIZE_STRING,
-				"set_up"          => FILTER_SANITIZE_STRING,
-				"set_up_platform" => FILTER_SANITIZE_STRING,
 			] );
 			
 			$additional_contacts = [];
@@ -39,14 +37,6 @@ class TMSReports extends TMSReportsHelper {
 			
 			// Convert the additional contacts array to JSON format
 			$MY_INPUT[ 'additional_contacts' ] = json_encode( $additional_contacts );
-			
-			// Check if 'set_up' is 'completed' and set the timestamp
-			$set_up_timestamp = null;
-			if ( isset( $MY_INPUT[ 'set_up' ] ) && $MY_INPUT[ 'set_up' ] === 'completed' ) {
-				$set_up_timestamp = current_time( 'mysql' ); // or you can use date('Y-m-d H:i:s') if needed
-			}
-			
-			$MY_INPUT[ 'completed' ] = $set_up_timestamp;
 			
 			// Insert the company report
 			$result = $this->update_report_draft_in_db( $MY_INPUT );
@@ -86,10 +76,7 @@ class TMSReports extends TMSReportsHelper {
 			'contact_email'        => $data[ 'contact_email' ],
 			'user_id_updated'      => $user_id,
 			'date_updated'         => current_time( 'mysql' ),
-			'set_up'               => $data[ 'set_up' ],
-			'set_up_platform'      => $data[ 'set_up_platform' ],
 			'additional_contacts'  => $data[ 'additional_contacts' ],
-			'date_set_up_compleat' => $data[ 'completed' ],
 		);
 		
 		// Specify the condition (WHERE clause)
@@ -103,10 +90,7 @@ class TMSReports extends TMSReportsHelper {
 			'%s',  // contact_email
 			'%d',  // user_id_updated
 			'%s',  // date_updated
-			'%s',  // set_up
-			'%s',  // set_up_platform
 			'%s',  // additional_contacts
-			'%s',  // date_set_up_compleat
 		), array( '%d' ) );
 		
 		// Check if the update was successful
@@ -268,19 +252,19 @@ class TMSReports extends TMSReportsHelper {
 		$sql = "CREATE TABLE $table_name (
 	        id mediumint(9) NOT NULL AUTO_INCREMENT,
 	        customer_id mediumint(9) NOT NULL,
-	        contact_name varchar(255) NOT NULL,
-	        contact_phone varchar(255) NOT NULL,
-	        contact_email varchar(255) NOT NULL,
+	        contact_name varchar(150) NOT NULL,
+	        contact_phone varchar(150) NOT NULL,
+	        contact_email varchar(150) NOT NULL,
 	        user_id_added mediumint(9) NOT NULL,
 	        date_created datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
 	        user_id_updated mediumint(9) NULL NULL,
 	        date_updated datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
-	        status_post varchar(255) NULL DEFAULT NULL,
+	        status_post varchar(50) NULL DEFAULT NULL,
 	        date_booked date NOT NULL,
-	        dispatcher_initials varchar(10) NOT NULL,
-	        reference_number varchar(20) NOT NULL,
-	        pick_up_location varchar(255) NOT NULL,
-	        delivery_location varchar(255) NOT NULL,
+	        dispatcher_initials varchar(255) NOT NULL,
+	        reference_number varchar(255) NOT NULL,
+	        pick_up_location TEXT NOT NULL,
+	        delivery_location TEXT NOT NULL,
 	        unit_number_name varchar(255) NOT NULL,
 	        booked_rate decimal(10, 2) NOT NULL,
 	        driver_rate decimal(10, 2) NOT NULL,
@@ -288,15 +272,12 @@ class TMSReports extends TMSReportsHelper {
 	        pick_up_date date NOT NULL,
 	        load_status varchar(50) NOT NULL,
 	        load_type varchar(50) NOT NULL,
-	        instructions varchar(255),
+	        instructions TEXT,
 	        commodity varchar(255),
 	        weight decimal(10, 2),
-	        notes varchar(255),
-	        source varchar(50),
-	        additional_contacts varchar(255),
-	        set_up varchar(50),
-	        set_up_platform varchar(50),
-	        date_set_up_compleat datetime,
+	        notes TEXT,
+	        source varchar(100),
+	        additional_contacts TEXT,
 	        attached_file_required longtext,
 	        attached_files longtext,
 	        PRIMARY KEY  (id)
@@ -425,6 +406,105 @@ class TMSReports extends TMSReportsHelper {
 			wp_send_json_error( [ 'message' => 'Files not update, error add in database' ] );
 		} else {
 			wp_send_json_error( [ 'message' => 'Invalid request' ] );
+		}
+	}
+	
+	public function update_shipper_info () {
+		// check if it's ajax request (simple defence)
+		if ( defined( 'DOING_AJAX' ) && DOING_AJAX ) {
+			$data = $_POST;
+			
+			if (!isset($data['pick_up_location_address_id'])) {
+				wp_send_json_error( [ 'message' => 'Pick up not fill' ] );
+			}
+			
+			if (!isset($data['delivery_location_address_id'])) {
+				wp_send_json_error( [ 'message' => 'Delivery not fill' ] );
+			}
+			
+			$pick_up_location = [];
+			$delivery_location = [];
+
+			for ($i = 0; $i < count($data['pick_up_location_address_id']); $i++) {
+				$pick_up_location[] = [
+					'address_id' => $data['pick_up_location_address_id'][$i],
+					'address' => $data['pick_up_location_address'][$i],
+					'contact' => $data['pick_up_location_contact'][$i],
+					'date' => $data['pick_up_location_date'][$i],
+					'info' => $data['pick_up_location_info'][$i],
+					'type' => $data['pick_up_location_type'][$i]
+				];
+			}
+
+			for ($i = 0; $i < count($data['delivery_location_address_id']); $i++) {
+				$delivery_location[] = [
+					'address_id' => $data['delivery_location_address_id'][$i],
+					'address' => $data['delivery_location_address'][$i],
+					'contact' => $data['delivery_location_contact'][$i],
+					'date' => $data['delivery_location_date'][$i],
+					'info' => $data['delivery_location_info'][$i],
+					'type' => $data['delivery_location_type'][$i]
+				];
+			}
+			
+			$pick_up_location_json = json_encode($pick_up_location, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+			$delivery_location_json = json_encode($delivery_location, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+			
+			$data['pick_up_location_json'] = $pick_up_location_json;
+			$data['delivery_location_json'] = $delivery_location_json;
+			$result = $this->add_new_shipper_info( $data );
+			
+			if ( $result ) {
+				wp_send_json_success( [ 'message' => 'Shipper info successfully update', 'data' => $data ] );
+			}
+			
+			wp_send_json_error( [ 'message' => 'Shipper not update, error add in database' ] );
+		} else {
+			wp_send_json_error( [ 'message' => 'Invalid request' ] );
+		}
+	}
+	
+	public function add_new_shipper_info($data) {
+		global $wpdb;
+		
+		$post_id = +$data[ 'post_id' ]; // ID of the post to update
+		
+		$table_name = $wpdb->prefix . $this->table_main;
+		$user_id    = get_current_user_id();
+		
+		// Prepare the data to update
+		$update_params = array(
+			'user_id_updated'      => $user_id,
+			'date_updated'         => current_time( 'mysql' ),
+			'pick_up_location'   => $data['pick_up_location_json'],
+			'delivery_location'   => $data['delivery_location_json'],
+		);
+		
+		// Specify the condition (WHERE clause)
+		$where = array( 'id' => $post_id );
+		
+		// Update the record in the database
+		$result = $wpdb->update( $table_name, $update_params, $where, array(
+			'%d',  // customer_id
+			'%s',  // date_updated
+			'%s',  // pick_up_location
+			'%s',  // delivery_location
+		), array( '%d' ) );
+		
+		if ( false === $result ) {
+			var_dump("Update failed: " . $wpdb->last_error);
+			var_dump("Last query: " . $wpdb->last_query);
+		}
+		
+		// Check if the update was successful
+		if ( $result !== false ) {
+			return true; // Update was successful
+		} else {
+			// Get the last SQL error
+			$error = $wpdb->last_error;
+			
+			// Return a generic database error if no specific match is found
+			return new WP_Error( 'db_error', 'Error updating the shipper report in the database: ' . $error );
 		}
 	}
 	
@@ -633,6 +713,55 @@ class TMSReports extends TMSReportsHelper {
 		}
 	}
 	
+	public function update_post_status() {
+		if ( defined( 'DOING_AJAX' ) && DOING_AJAX ) {
+			// Фильтруем входные данные
+			$MY_INPUT = filter_var_array( $_POST, [
+				"post_id"      => FILTER_SANITIZE_STRING,
+			] );
+			
+			$MY_INPUT['post_status'] = 'publish';
+			
+			$result = $this->update_post_status_in_db( $MY_INPUT );
+			
+			if ( $result ) {
+				wp_send_json_success( [ 'message' => 'Load successfully loaded', 'data' => $MY_INPUT ] );
+			}
+			
+			wp_send_json_error( [ 'message' => 'Error update status in database' ] );
+		} else {
+			wp_send_json_error( [ 'message' => 'Invalid request' ] );
+		}
+	}
+	public function update_post_status_in_db ($data) {
+		global $wpdb;
+		
+		$table_name = $wpdb->prefix . $this->table_main;
+		$user_id    = get_current_user_id();
+		
+		$update_params = array(
+			'user_id_updated'     => $user_id,
+			'date_updated'        => current_time( 'mysql' ),
+			'status_post'         => $data[ 'post_status' ],
+		);
+		
+		// Specify the condition (WHERE clause) - assuming post_id is passed in the data array
+		$where = array( 'id' => $data[ 'post_id' ] );
+		// Perform the update
+		$result = $wpdb->update( $table_name, $update_params, $where, array(
+			'%d',  // user_id_updated
+			'%s',  // date_updated
+			'%s',  // post_status
+		), array( '%d' ) // The data type of the where clause (id is an integer)
+		);
+		
+		// Check if the update was successful
+		if ( $result !== false ) {
+			return true; // Update was successful
+		} else {
+			return false; // Error occurred during the update
+		}
+	}
 	public function remove_one_image_in_db( $data ) {
 		
 		global $wpdb;
@@ -687,12 +816,90 @@ class TMSReports extends TMSReportsHelper {
 		
 	}
 	
+	public function check_empty_fields($record_id) {
+		global $wpdb;
+		
+		$table_name = $wpdb->prefix . $this->table_main;
+		
+		// SQL-запрос для проверки на заполненность полей
+		$result = $wpdb->get_row(
+			$wpdb->prepare("
+            SELECT
+                customer_id,
+                contact_name,
+                contact_phone,
+                contact_email,
+                date_booked,
+                dispatcher_initials,
+                reference_number,
+                pick_up_location,
+                delivery_location,
+                unit_number_name,
+                booked_rate,
+                driver_rate,
+                profit,
+                pick_up_date,
+                load_status,
+                load_type,
+                additional_contacts,
+                set_up,
+                set_up_platform,
+                attached_file_required
+            FROM $table_name
+            WHERE id = %d
+        ", $record_id), ARRAY_A
+		);
+		
+		// Список обязательных полей для проверки
+		$required_fields = [
+			'customer_id'           => 'Customer ID',
+			'contact_name'          => 'Contact Name',
+			'contact_phone'         => 'Contact Phone',
+			'contact_email'         => 'Contact Email',
+			'date_booked'           => 'Date Booked',
+			'dispatcher_initials'   => 'Dispatcher Initials',
+			'reference_number'      => 'Reference Number',
+			'pick_up_location'      => 'Pick-up Location',
+			'delivery_location'     => 'Delivery Location',
+			'unit_number_name'      => 'Unit Number',
+			'booked_rate'           => 'Booked Rate',
+			'driver_rate'           => 'Driver Rate',
+			'profit'                => 'Profit',
+			'pick_up_date'          => 'Pick-up Date',
+			'load_status'           => 'Load Status',
+			'load_type'             => 'Load Type',
+			'additional_contacts'   => 'Additional Contacts',
+			'set_up'                => 'Set-up',
+			'set_up_platform'       => 'Set-up Platform',
+			'attached_file_required'=> 'Attached File Required'
+		];
+		
+		$empty_fields = [];
+		
+		// Проверяем каждое обязательное поле
+		foreach ($required_fields as $field => $label) {
+			if (empty($result[$field])) {
+				$empty_fields[] = '<strong>' . $label . '</strong>';
+			}
+		}
+		
+		// Возвращаем сообщение о незаполненных полях
+		if (!empty($empty_fields)) {
+			return array('message' => "The following fields are empty: " . implode(', ', $empty_fields) , 'status' => false) ;
+		} else {
+			return array('message' => "All required fields are filled." , 'status' => true);;
+		}
+	}
+	
+	
 	public function ajax_actions() {
 		add_action( 'wp_ajax_add_new_report', array( $this, 'add_new_report' ) );
 		add_action( 'wp_ajax_add_new_draft_report', array( $this, 'add_new_report_draft' ) );
 		add_action( 'wp_ajax_update_new_draft_report', array( $this, 'update_new_draft_report' ) );
 		add_action( 'wp_ajax_update_files_report', array( $this, 'update_files_report' ) );
 		add_action( 'wp_ajax_delete_open_image', array( $this, 'delete_open_image' ) );
+		add_action( 'wp_ajax_update_shipper_info', array( $this, 'update_shipper_info' ) );
+		add_action( 'wp_ajax_update_post_status', array( $this, 'update_post_status' ) );
 	}
 	
 	public function init() {

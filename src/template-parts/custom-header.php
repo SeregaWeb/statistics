@@ -12,17 +12,17 @@ global $global_options;
     <div class="container-fluid">
         <div class="row justify-content-between align-items-center pt-2 pb-2">
             <div class="col main-menu js-main-menu order-2 d-flex gap-2 justify-content-end align-items-center">
-                <?php
-                wp_nav_menu(
-                    array(
-                        'theme_location' => 'primary_menu',
-                        'menu_class' => 'main-menu__list list-reset d-flex gap-2 justify-content-end align-items-center js-menu-wrapper',
-                        'container' => 'nav',
-                        'container_class' => 'main-menu__container',
-                    )
-                );
-                ?>
-                <button class="btn btn-outline-primary js-open-popup-activator" data-href="#popup_add_company">Add company</button>
+<!--                --><?php
+//                wp_nav_menu(
+//                    array(
+//                        'theme_location' => 'primary_menu',
+//                        'menu_class' => 'main-menu__list list-reset d-flex gap-2 justify-content-end align-items-center js-menu-wrapper',
+//                        'container' => 'nav',
+//                        'container_class' => 'main-menu__container',
+//                    )
+//                );
+//                ?>
+                <button class="btn btn-outline-primary js-open-popup-activator" data-href="#popup_add_company">Add broker</button>
                 <button class="btn btn-outline-primary js-open-popup-activator" data-href="#popup_add_shipper">Add shipper</button>
             </div>
             <div class="col-auto order-1">

@@ -158,21 +158,30 @@ class TMSReportsCompany extends TMSReportsHelper {
 		if ( defined( 'DOING_AJAX' ) && DOING_AJAX ) {
 			// Sanitize input data
 			$MY_INPUT = filter_var_array( $_POST, [
-				"company_name" => FILTER_SANITIZE_STRING,
-				"country"      => FILTER_SANITIZE_STRING,
-				"Addr1"        => FILTER_SANITIZE_STRING,
-				"Addr2"        => FILTER_SANITIZE_STRING,
-				"City"         => FILTER_SANITIZE_STRING,
-				"State"        => FILTER_SANITIZE_STRING,
-				"ZipCode"      => FILTER_SANITIZE_STRING,
-				"FirstName"    => FILTER_SANITIZE_STRING,
-				"LastName"     => FILTER_SANITIZE_STRING,
-				"Phone"        => FILTER_SANITIZE_STRING,
-				"Email"        => FILTER_SANITIZE_EMAIL,
-				"MotorCarrNo"  => FILTER_SANITIZE_STRING,
-				"DotNo"        => FILTER_SANITIZE_STRING,
+				"company_name"    => FILTER_SANITIZE_STRING,
+				"country"         => FILTER_SANITIZE_STRING,
+				"Addr1"           => FILTER_SANITIZE_STRING,
+				"Addr2"           => FILTER_SANITIZE_STRING,
+				"City"            => FILTER_SANITIZE_STRING,
+				"State"           => FILTER_SANITIZE_STRING,
+				"ZipCode"         => FILTER_SANITIZE_STRING,
+				"FirstName"       => FILTER_SANITIZE_STRING,
+				"LastName"        => FILTER_SANITIZE_STRING,
+				"Phone"           => FILTER_SANITIZE_STRING,
+				"Email"           => FILTER_SANITIZE_EMAIL,
+				"MotorCarrNo"     => FILTER_SANITIZE_STRING,
+				"DotNo"           => FILTER_SANITIZE_STRING,
+				"set_up"          => FILTER_SANITIZE_STRING,
+				"set_up_platform" => FILTER_SANITIZE_STRING,
 			] );
 			
+			// Check if 'set_up' is 'completed' and set the timestamp
+			$set_up_timestamp = null;
+			if ( isset( $MY_INPUT[ 'set_up' ] ) && $MY_INPUT[ 'set_up' ] === 'completed' ) {
+				$set_up_timestamp = current_time( 'mysql' ); // or you can use date('Y-m-d H:i:s') if needed
+			}
+			
+			$MY_INPUT[ 'completed' ] = $set_up_timestamp;
 			
 			// Insert the company report
 			$result = $this->add_company( $MY_INPUT );
@@ -199,23 +208,26 @@ class TMSReportsCompany extends TMSReportsHelper {
 		$user_id    = get_current_user_id();
 		
 		$insert_params = array(
-			'company_name'       => $data[ 'company_name' ],
-			'country'            => $data[ 'country' ],
-			'address1'           => $data[ 'Addr1' ],
-			'address2'           => $data[ 'Addr2' ],
-			'city'               => $data[ 'City' ],
-			'state'              => $data[ 'State' ],
-			'zip_code'           => $data[ 'ZipCode' ],
-			'contact_first_name' => $data[ 'FirstName' ],
-			'contact_last_name'  => $data[ 'LastName' ],
-			'phone_number'       => $data[ 'Phone' ],
-			'email'              => $data[ 'Email' ],
-			'mc_number'          => $data[ 'MotorCarrNo' ],
-			'dot_number'         => $data[ 'DotNo' ],
-			'user_id_added'      => $user_id,
-			'date_created'       => current_time( 'mysql' ),
-			'user_id_updated'    => $user_id,
-			'date_updated'       => current_time( 'mysql' ),
+			'company_name'         => $data[ 'company_name' ],
+			'country'              => $data[ 'country' ],
+			'address1'             => $data[ 'Addr1' ],
+			'address2'             => $data[ 'Addr2' ],
+			'city'                 => $data[ 'City' ],
+			'state'                => $data[ 'State' ],
+			'zip_code'             => $data[ 'ZipCode' ],
+			'contact_first_name'   => $data[ 'FirstName' ],
+			'contact_last_name'    => $data[ 'LastName' ],
+			'phone_number'         => $data[ 'Phone' ],
+			'email'                => $data[ 'Email' ],
+			'mc_number'            => $data[ 'MotorCarrNo' ],
+			'dot_number'           => $data[ 'DotNo' ],
+			'user_id_added'        => $user_id,
+			'date_created'         => current_time( 'mysql' ),
+			'user_id_updated'      => $user_id,
+			'date_updated'         => current_time( 'mysql' ),
+			'set_up'               => $data[ 'set_up' ],
+			'set_up_platform'      => $data[ 'set_up_platform' ],
+			'date_set_up_compleat' => $data[ 'completed' ],
 		);
 		
 		$result = $wpdb->insert( $table_name, $insert_params, array(
@@ -236,6 +248,9 @@ class TMSReportsCompany extends TMSReportsHelper {
 			'%s',  // date_created
 			'%d',  // user_id_updated
 			'%s',  // date_updated
+			'%s',  // set_up
+			'%s',  // set_up_platform
+			'%s',  // date_set_up_compleat
 		) );
 		
 		// Check if the insert was successful
@@ -278,7 +293,7 @@ class TMSReportsCompany extends TMSReportsHelper {
         zip_code varchar(20) NOT NULL,
         contact_first_name varchar(100) NOT NULL,
         contact_last_name varchar(100),
-        phone_number varchar(20) NOT NULL,
+        phone_number varchar(100) NOT NULL,
         email varchar(255) NOT NULL,
         mc_number varchar(50),
         dot_number varchar(50),
@@ -286,6 +301,9 @@ class TMSReportsCompany extends TMSReportsHelper {
         date_created datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
         user_id_updated mediumint(9) NULL,
         date_updated datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        set_up TEXT,
+	    set_up_platform varchar(100),
+	    date_set_up_compleat datetime,
         PRIMARY KEY (id),
         UNIQUE KEY company_name (company_name),
         UNIQUE KEY mc_number (mc_number)

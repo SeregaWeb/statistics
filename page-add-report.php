@@ -15,6 +15,8 @@ $states = $helper->get_states();
 $disabled_tabs = 'disabled';
 
 $report_object = '';
+$status_publish = 'draft';
+$print_status = false;
 
 $post_id = isset( $_GET[ 'post_id' ] ) ? $_GET[ 'post_id' ] : false;
 
@@ -22,11 +24,18 @@ if ( $post_id && is_numeric( $post_id ) ) {
 	$report_object = $reports->get_report_by_id( $_GET[ 'post_id' ] );
 	if ( is_array( $report_object ) && sizeof( $report_object ) > 0 ) {
 		$disabled_tabs = '';
+        $status_publish = $report_object[0]->status_post;
 	} else {
 		wp_redirect( remove_query_arg( array_keys( $_GET ) ) );
 		exit;
 	}
+	
+	$message_arr = $reports->check_empty_fields($post_id);
+	$print_status = true;
+    $status_type = $message_arr['status'];
+    $status_message = $message_arr['message'];
 }
+
 
 get_header();
 
@@ -35,6 +44,23 @@ get_header();
         <div class="row">
             <div class="container js-section-tab">
                 <div class="row">
+                    
+                    <div class="col-12 js-update-status mt-3">
+
+                        <?php
+                        if (isset($status_publish) && $status_publish === 'draft') {
+                            if ($print_status) {
+                                if ($status_type) {
+                                    echo $helper->message_top('success', $status_message, 'js-update-post-status', 'Publish');
+                                } else {
+                                    echo $helper->message_top('danger', $status_message);
+                                }
+                            }
+                        }
+                        ?>
+                    
+                    </div>
+                    
                     <div class="col-12">
 
                         <ul class="nav nav-pills gap-2 mb-3" id="pills-tab" role="tablist">

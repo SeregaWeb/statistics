@@ -13,8 +13,6 @@ $template_select_company = '';
 $set_up_platform_val     = '';
 $set_up_val              = '';
 
-$set_up_platform = $helper->get_set_up_platform();
-$set_up          = $helper->get_set_up();
 
 $report_object = ! empty( $args[ 'report_object' ] ) ? $args[ 'report_object' ] : null;
 $post_id       = ! empty( $args[ 'post_id' ] ) ? $args[ 'post_id' ] : null;
@@ -31,8 +29,6 @@ if ( $report_object ) {
 		$value_contact_name    = $values[ 0 ]->contact_name;
 		$value_contact_phone   = $values[ 0 ]->contact_phone;
 		$value_contact_email   = $values[ 0 ]->contact_email;
-		$set_up_val            = $values[ 0 ]->set_up;
-		$set_up_platform_val   = $values[ 0 ]->set_up_platform;
 		$additional_contacts_json = $values[ 0 ]->additional_contacts;
   
 		if ( $current_company ) {
@@ -91,40 +87,7 @@ if ( $report_object ) {
                 <div class="result-search js-result-search">
 					<?php echo $template_select_company; ?>
                 </div>
-
-                <div class="row">
-                    <div class="col-12 col-md-6 mt-3">
-                        <label for="set_up" class="form-label">Set up<span
-                                    class="required-star text-danger">*</span></label>
-                        <select name="set_up" class="form-control form-select" required>
-                            <option value="">Select set up</option>
-							<?php if ( is_array( $set_up ) ): ?>
-								<?php foreach ( $set_up as $key => $val ): ?>
-                                    <option <?php echo $set_up_val === $key ? 'selected' : ''; ?>
-                                            value="<?php echo $key; ?>">
-										<?php echo $val; ?>
-                                    </option>
-								<?php endforeach; ?>
-							<?php endif ?>
-                        </select>
-                    </div>
-
-                    <div class="col-12 col-md-6 mt-3">
-                        <label for="set_up_platform" class="form-label">Set up platform<span
-                                    class="required-star text-danger">*</span></label>
-                        <select name="set_up_platform" class="form-control form-select" required>
-                            <option value="">Select platform</option>
-							<?php if ( is_array( $set_up_platform ) ): ?>
-								<?php foreach ( $set_up_platform as $key => $val ): ?>
-                                    <option <?php echo $set_up_platform_val === $key ? 'selected' : ''; ?>
-                                            value="<?php echo $key; ?>">
-										<?php echo $val; ?>
-                                    </option>
-								<?php endforeach; ?>
-							<?php endif ?>
-                        </select>
-                    </div>
-                </div>
+                
             </div>
             <div class="col-12 col-md-4 p-0 pl-md-5 mt-3 mt-md-0">
                 <h4>Contact</h4>
@@ -242,6 +205,6 @@ if ( $report_object ) {
         </div>
     </div>
 	<?php if ( isset( $post_id ) && is_numeric( $post_id ) ): ?>
-        <input type="hidden" name="post_id" value="<?php echo $post_id; ?>">
+        <input type="hidden" name="post_id" class="js-post-id" value="<?php echo $post_id; ?>">
 	<?php endif; ?>
 </form>

@@ -2,12 +2,17 @@
 $helper = new TMSReportsHelper();
 $states = $helper->get_states();
 
+$set_up_platform = $helper->get_set_up_platform();
+$set_up          = $helper->get_set_up();
+
+
+
 ?>
 <form class="ng-pristine ng-invalid ng-touched js-add-new-company">
 	<div>
 		<h4 class="text">Add new company</h4>
 	</div>
-	<div class="modal-body mb-3 row">
+	<div class="modal-body mb-5 row">
 		<div class="form-group mt-3">
 			<label for="input-name" class="form-label">
 				Company Name <span class="required-star text-danger">*</span>
@@ -96,10 +101,42 @@ $states = $helper->get_states();
 			<label for="input-dotnumber" class="form-label">DOT Number</label>
 			<input id="input-dotnumber" type="text" name="DotNo" placeholder="DOT Number" class="form-control">
 		</div>
+
+        <div class="form-group mt-3 col-6">
+            <label for="set_up" class="form-label">Set up<span
+                        class="required-star text-danger">*</span></label>
+            <select name="set_up" class="form-control form-select" required>
+                <option value="">Select set up</option>
+		        <?php if ( is_array( $set_up ) ): ?>
+			        <?php foreach ( $set_up as $key => $val ): ?>
+                        <option value="<?php echo $key; ?>">
+					        <?php echo $val; ?>
+                        </option>
+			        <?php endforeach; ?>
+		        <?php endif ?>
+            </select>
+        </div>
+
+        <div class="form-group mt-3 col-6">
+            <label for="set_up_platform" class="form-label">Set up platform<span
+                        class="required-star text-danger">*</span></label>
+            <select name="set_up_platform" class="form-control form-select" required>
+                <option value="">Select platform</option>
+		        <?php if ( is_array( $set_up_platform ) ): ?>
+			        <?php foreach ( $set_up_platform as $key => $val ): ?>
+                        <option value="<?php echo $key; ?>">
+					        <?php echo $val; ?>
+                        </option>
+			        <?php endforeach; ?>
+		        <?php endif ?>
+            </select>
+        </div>
+        
 	</div>
-	
+ 
 	<div class="modal-footer justify-content-start gap-2">
 		<button type="button" class="btn btn-dark">Cancel</button>
 		<button type="submit" class="btn btn-outline-primary">Submit <span class="spinner-border spinner-border-sm ms-2" style="display: none;"></span></button>
 	</div>
+
 </form>

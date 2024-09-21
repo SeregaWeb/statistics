@@ -17,7 +17,9 @@ import {
     createDraftPosts,
     previewFileUpload,
     removeOneFileInitial,
+    sendShipperFormInit,
     updateFilesReportInit,
+    updateStatusPost,
 } from './components/create-report';
 import { actionCreateCompanyInit } from './components/create-company';
 import { actionCreateShipperInit } from './components/create-shipper';
@@ -37,7 +39,9 @@ function ready() {
     updateFilesReportInit(urlAjax);
     actionCreateCompanyInit(urlAjax);
     actionCreateShipperInit(urlAjax);
+    sendShipperFormInit(urlAjax);
     addSearchAction(urlAjax);
+    updateStatusPost(urlAjax);
     removeOneFileInitial(urlAjax);
     additionalContactsInit();
     toggleBlocksInit();

@@ -5,12 +5,16 @@ $states = $helper->get_states();
 $set_up_platform = $helper->get_set_up_platform();
 $set_up          = $helper->get_set_up();
 
+$user_id = get_current_user_id();
+$curent_tables = get_field('current_select', 'user_'.$user_id);
 
 
 ?>
 <form class="ng-pristine ng-invalid ng-touched js-add-new-company">
+    <input type="hidden" name="select_project" value="<?php echo $curent_tables; ?>">
 	<div>
-		<h4 class="text">Add new company</h4>
+		<h4 class="text">Add new broker</h4>
+        <p class="form-text">Current project <strong class="text-primary"><?php echo $curent_tables; ?></strong></p>
 	</div>
 	<div class="modal-body mb-5 row">
 		<div class="form-group mt-3">

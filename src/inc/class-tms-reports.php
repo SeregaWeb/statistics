@@ -1,11 +1,17 @@
 <?php
 require_once( ABSPATH . 'wp-admin/includes/upgrade.php' );
-
 class TMSReports extends TMSReportsHelper {
 	
 	public $table_main = 'reports';
 	
-	public function __construct() { }
+	public function __construct() {
+		$user_id = get_current_user_id();
+		$curent_tables = get_field('current_select', 'user_'.$user_id);
+		if ($curent_tables) {
+			$this->table_main = 'reports_'. strtolower($curent_tables);
+		}
+		
+	}
 	
 	public function update_new_draft_report() {
 		// Check if it's an AJAX request (simple defense)
@@ -121,10 +127,7 @@ class TMSReports extends TMSReportsHelper {
 			'user_id_updated'      => $user_id,
 			'date_updated'         => current_time( 'mysql' ),
 			'status_post'          => $data[ 'status_post' ],
-			'set_up'               => $data[ 'set_up' ],
-			'set_up_platform'      => $data[ 'set_up_platform' ],
 			'additional_contacts'  => $data[ 'additional_contacts' ],
-			'date_set_up_compleat' => $data[ 'completed' ],
 		);
 		
 		$result = $wpdb->insert( $table_name, $insert_params, array(
@@ -246,50 +249,54 @@ class TMSReports extends TMSReportsHelper {
 	public function create_table() {
 		global $wpdb;
 		
-		$table_name      = $wpdb->prefix . $this->table_main;
-		$charset_collate = $wpdb->get_charset_collate();
+		$tables = $this->tms_tables;
 		
-		$sql = "CREATE TABLE $table_name (
-	        id mediumint(9) NOT NULL AUTO_INCREMENT,
-	        customer_id mediumint(9) NOT NULL,
-	        contact_name varchar(150) NOT NULL,
-	        contact_phone varchar(150) NOT NULL,
-	        contact_email varchar(150) NOT NULL,
-	        user_id_added mediumint(9) NOT NULL,
-	        date_created datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
-	        user_id_updated mediumint(9) NULL NULL,
-	        date_updated datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
-	        status_post varchar(50) NULL DEFAULT NULL,
-	        date_booked date NOT NULL,
-	        dispatcher_initials varchar(255) NOT NULL,
-	        reference_number varchar(255) NOT NULL,
-	        pick_up_location TEXT NOT NULL,
-	        delivery_location TEXT NOT NULL,
-	        unit_number_name varchar(255) NOT NULL,
-	        booked_rate decimal(10, 2) NOT NULL,
-	        driver_rate decimal(10, 2) NOT NULL,
-	        profit decimal(10, 2) NOT NULL,
-	        pick_up_date date NOT NULL,
-	        load_status varchar(50) NOT NULL,
-	        load_type varchar(50) NOT NULL,
-	        instructions TEXT,
-	        commodity varchar(255),
-	        weight decimal(10, 2),
-	        notes TEXT,
-	        source varchar(100),
-	        additional_contacts TEXT,
-	        attached_file_required longtext,
-	        attached_files longtext,
-	        PRIMARY KEY  (id)
-    	) $charset_collate;";
-		
-		dbDelta( $sql );
+		foreach ($tables as $val) {
+			$table_name      = $wpdb->prefix .'reports_' . strtolower($val);
+			$charset_collate = $wpdb->get_charset_collate();
+			
+			$sql = "CREATE TABLE $table_name (
+		        id mediumint(9) NOT NULL AUTO_INCREMENT,
+		        customer_id mediumint(9) NOT NULL,
+		        contact_name varchar(150) NOT NULL,
+		        contact_phone varchar(150) NOT NULL,
+		        contact_email varchar(150) NOT NULL,
+		        user_id_added mediumint(9) NOT NULL,
+		        date_created datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+		        user_id_updated mediumint(9) NULL NULL,
+		        date_updated datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+		        status_post varchar(50) NULL DEFAULT NULL,
+		        date_booked date NOT NULL,
+		        dispatcher_initials varchar(255) NOT NULL,
+		        reference_number varchar(255) NOT NULL,
+		        pick_up_location TEXT NOT NULL,
+		        delivery_location TEXT NOT NULL,
+		        unit_number_name varchar(255) NOT NULL,
+		        booked_rate decimal(10, 2) NOT NULL,
+		        driver_rate decimal(10, 2) NOT NULL,
+		        profit decimal(10, 2) NOT NULL,
+		        pick_up_date date NOT NULL,
+		        load_status varchar(50) NOT NULL,
+		        load_type varchar(50) NOT NULL,
+		        instructions TEXT,
+		        commodity varchar(255),
+		        weight decimal(10, 2),
+		        notes TEXT,
+		        source varchar(100),
+		        additional_contacts TEXT,
+		        attached_file_required longtext,
+		        attached_files longtext,
+		        PRIMARY KEY  (id)
+    		) $charset_collate;";
+			
+			dbDelta( $sql );
+		}
 	}
 	
 	public function update_files_report() {
 		// check if it's ajax request (simple defence)
 		if ( defined( 'DOING_AJAX' ) && DOING_AJAX ) {
-			// Фильтруем входные данные
+			
 			$MY_INPUT = filter_var_array( $_POST, [
 				"post_id" => FILTER_SANITIZE_STRING
 			] );
@@ -511,7 +518,7 @@ class TMSReports extends TMSReportsHelper {
 	public function add_new_report() {
 		// check if it's ajax request (simple defence)
 		if ( defined( 'DOING_AJAX' ) && DOING_AJAX ) {
-			// Фильтруем входные данные
+			
 			$MY_INPUT = filter_var_array( $_POST, [
 				"date_booked"         => FILTER_SANITIZE_STRING,
 				"dispatcher_initials" => FILTER_SANITIZE_STRING,
@@ -694,7 +701,7 @@ class TMSReports extends TMSReportsHelper {
 	public function delete_open_image() {
 		// check if it's ajax request (simple defence)
 		if ( defined( 'DOING_AJAX' ) && DOING_AJAX ) {
-			// Фильтруем входные данные
+			
 			$MY_INPUT = filter_var_array( $_POST, [
 				"image-id"     => FILTER_SANITIZE_STRING,
 				"image-fields" => FILTER_SANITIZE_STRING,
@@ -715,7 +722,7 @@ class TMSReports extends TMSReportsHelper {
 	
 	public function update_post_status() {
 		if ( defined( 'DOING_AJAX' ) && DOING_AJAX ) {
-			// Фильтруем входные данные
+			
 			$MY_INPUT = filter_var_array( $_POST, [
 				"post_id"      => FILTER_SANITIZE_STRING,
 			] );
@@ -842,14 +849,12 @@ class TMSReports extends TMSReportsHelper {
                 load_status,
                 load_type,
                 additional_contacts,
-                set_up,
-                set_up_platform,
                 attached_file_required
             FROM $table_name
             WHERE id = %d
         ", $record_id), ARRAY_A
 		);
-		
+	
 		// Список обязательных полей для проверки
 		$required_fields = [
 			'customer_id'           => 'Customer ID',
@@ -869,8 +874,6 @@ class TMSReports extends TMSReportsHelper {
 			'load_status'           => 'Load Status',
 			'load_type'             => 'Load Type',
 			'additional_contacts'   => 'Additional Contacts',
-			'set_up'                => 'Set-up',
-			'set_up_platform'       => 'Set-up Platform',
 			'attached_file_required'=> 'Attached File Required'
 		];
 		
@@ -878,7 +881,7 @@ class TMSReports extends TMSReportsHelper {
 		
 		// Проверяем каждое обязательное поле
 		foreach ($required_fields as $field => $label) {
-			if (empty($result[$field])) {
+			if (empty($result[$field]) || $result[$field] === '0000-00-00' || $result[$field] === '0.00') {
 				$empty_fields[] = '<strong>' . $label . '</strong>';
 			}
 		}
@@ -887,7 +890,38 @@ class TMSReports extends TMSReportsHelper {
 		if (!empty($empty_fields)) {
 			return array('message' => "The following fields are empty: " . implode(', ', $empty_fields) , 'status' => false) ;
 		} else {
-			return array('message' => "All required fields are filled." , 'status' => true);;
+			return array('message' => "All required fields are filled." , 'status' => true);
+		}
+	}
+	
+	public function rechange_status_load () {
+		if ( defined( 'DOING_AJAX' ) && DOING_AJAX ) {
+			
+			$MY_INPUT = filter_var_array( $_POST, [
+				"post_id"      => FILTER_SANITIZE_STRING,
+			] );
+			
+			$post_id = $MY_INPUT["post_id"];
+			
+			$message_arr = $this->check_empty_fields($post_id);
+			
+			$status_type = $message_arr['status'];
+			$status_message = $message_arr['message'];
+			$template = '';
+			
+			if ($status_type) {
+				$template = $this->message_top('success', $status_message, 'js-update-post-status', 'Publish');
+			} else {
+				$template = $this->message_top('danger', $status_message);
+			}
+			
+			if ( $template ) {
+				wp_send_json_success( [ 'template' => $template ] );
+			}
+			
+			wp_send_json_error( [ 'message' => 'Error update status' ] );
+		} else {
+			wp_send_json_error( [ 'message' => 'Invalid request' ] );
 		}
 	}
 	
@@ -900,6 +934,7 @@ class TMSReports extends TMSReportsHelper {
 		add_action( 'wp_ajax_delete_open_image', array( $this, 'delete_open_image' ) );
 		add_action( 'wp_ajax_update_shipper_info', array( $this, 'update_shipper_info' ) );
 		add_action( 'wp_ajax_update_post_status', array( $this, 'update_post_status' ) );
+		add_action( 'wp_ajax_rechange_status_load', array( $this, 'rechange_status_load' ) );
 	}
 	
 	public function init() {

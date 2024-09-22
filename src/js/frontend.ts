@@ -2,8 +2,6 @@
  * SASS
  */
 import '../scss/frontend.scss';
-import { createPopper } from '@popperjs/core';
-import 'bootstrap/dist/js/bootstrap.bundle';
 /**
  * JavaScript
  */
@@ -26,10 +24,25 @@ import { actionCreateShipperInit } from './components/create-shipper';
 import { nextTabTrigger } from './components/tab-helper';
 import { addSearchAction } from './components/search-action';
 import { toggleBlocksInit } from './components/toggle-blocks-init';
+import { changeTableInit } from './components/change-table';
+import { initGetInfoDriver } from './components/driver-Info';
 
 function ready() {
     // @ts-ignore
     const urlAjax = var_from_php.ajax_url;
+    // @ts-ignore
+    const linkOdysseia = var_from_php.link_web_service_odysseia;
+    // @ts-ignore
+    const linkEndurance = var_from_php.link_web_service_endurance;
+    // @ts-ignore
+    const linkMartlet = var_from_php.link_web_service_martlet;
+
+    const useServices = {
+        Odysseia: linkOdysseia,
+        Endurance: linkEndurance,
+        Martlet: linkMartlet,
+    };
+
     const popupInstance = new Popup();
     popupInstance.init();
 
@@ -43,6 +56,11 @@ function ready() {
     addSearchAction(urlAjax);
     updateStatusPost(urlAjax);
     removeOneFileInitial(urlAjax);
+    changeTableInit(urlAjax);
+
+    // API request
+    initGetInfoDriver(useServices);
+
     additionalContactsInit();
     toggleBlocksInit();
     addShipperPointInit();

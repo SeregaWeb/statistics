@@ -64,6 +64,10 @@ a {
     font-family: $font-secondary;
 }
 
-.bg-white {
-    background-color: $--greys-white;
+.hide-long-text-60 {
+    max-width: 60px;
+    overflow: hidden;
+    padding: 0;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }

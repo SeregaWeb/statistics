@@ -19,6 +19,7 @@ require THEME_DIR . '/src/inc/class-wp-rock.php';
 require THEME_DIR . '/src/inc/class-tms-reports-icons.php';
 require THEME_DIR . '/src/inc/class-tms-reports-helper.php';
 require THEME_DIR . '/src/inc/class-tms-reports.php';
+require THEME_DIR . '/src/inc/class-tms-users.php';
 require THEME_DIR . '/src/inc/class-tms-reports-company.php';
 require THEME_DIR . '/src/inc/class-tms-reports-shipper.php';
 

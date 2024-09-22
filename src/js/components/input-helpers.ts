@@ -28,38 +28,42 @@ export function initMoneyMask() {
     const driverValueInput = document.querySelector('.js-driver-value') as HTMLInputElement;
     const moneyTotalInput = document.querySelector('.js-money-total') as HTMLInputElement;
 
-    const moneyTotalMask = IMask(moneyTotalInput, maskOptions);
-    function formatNumber(value) {
-        const [integer, fractional] = value.split('.');
-        const integerPart = integer.replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+    if (moneyTotalInput) {
+        const moneyTotalMask = IMask(moneyTotalInput, maskOptions);
+        // eslint-disable-next-line no-inner-declarations
+        function formatNumber(value) {
+            const [integer, fractional] = value.split('.');
+            const integerPart = integer.replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
 
-        console.log('integerPart', integerPart);
-        if (!fractional || parseFloat(fractional) === 0) {
-            return `${integerPart}`;
+            console.log('integerPart', integerPart);
+            if (!fractional || parseFloat(fractional) === 0) {
+                return `${integerPart}`;
+            }
+
+            const formattedFractional = fractional.replace(/0+$/, '');
+
+            return formattedFractional ? `${integerPart}.${formattedFractional}` : `${integerPart}`;
         }
 
-        const formattedFractional = fractional.replace(/0+$/, '');
+        // eslint-disable-next-line no-inner-declarations
+        function calculateRemaining() {
+            function parseNumber(value) {
+                const normalized = value.replace(/\s+/g, '').replaceAll(',', '');
+                console.log('normalized', normalized);
+                return parseFloat(normalized) || 0;
+            }
 
-        return formattedFractional ? `${integerPart}.${formattedFractional}` : `${integerPart}`;
-    }
+            const allValue = parseNumber(allValueInput.value);
+            const driverValue = parseNumber(driverValueInput.value);
 
-    function calculateRemaining() {
-        function parseNumber(value) {
-            const normalized = value.replace(/\s+/g, '').replaceAll(',', '');
-            console.log('normalized', normalized);
-            return parseFloat(normalized) || 0;
+            const remaining = allValue - driverValue;
+            // @ts-ignore
+            moneyTotalMask.value = remaining.toString();
         }
 
-        const allValue = parseNumber(allValueInput.value);
-        const driverValue = parseNumber(driverValueInput.value);
-
-        const remaining = allValue - driverValue;
-        // @ts-ignore
-        moneyTotalMask.value = remaining.toString();
-    }
-
-    if (allValueInput && driverValueInput) {
-        allValueInput.addEventListener('input', calculateRemaining);
-        driverValueInput.addEventListener('input', calculateRemaining);
+        if (allValueInput && driverValueInput) {
+            allValueInput.addEventListener('input', calculateRemaining);
+            driverValueInput.addEventListener('input', calculateRemaining);
+        }
     }
 }

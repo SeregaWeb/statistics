@@ -29,11 +29,15 @@ add_action( 'after_setup_theme', array( $wp_rock, 'px_site_setup' ) );
 $reports = new TMSReports();
 $reports->init();
 
+$users = new TMSUsers();
+$users->init();
+
 $reportsCompany = new TMSReportsCompany();
 $reportsCompany->init();
 
 $reportsShipper = new TMSReportsShipper();
 $reportsShipper->init();
+
 /**
  * Sanitize uploaded file name
  */

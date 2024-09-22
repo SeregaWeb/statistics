@@ -31,9 +31,19 @@ if ( $post_id && is_numeric( $post_id ) ) {
 	}
 	
 	$message_arr = $reports->check_empty_fields($post_id);
+ 
+ 
 	$print_status = true;
     $status_type = $message_arr['status'];
     $status_message = $message_arr['message'];
+	
+    if (!$status_type && $status_publish === "publish") {
+        $res = $reports->update_post_status_in_db(array('post_status' => 'draft', 'post_id' => $post_id));
+        if ($res) {
+	        $status_publish = 'draft';
+        }
+    }
+ 
 }
 
 

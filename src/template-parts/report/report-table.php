@@ -1,4 +1,8 @@
 <?php
+global $global_options;
+
+$add_new_load = get_field_value($global_options, 'add_new_load');
+
 $results       = $args[ 'results' ];
 $total_pages   = $args[ 'total_pages' ];
 $current_pages = $args[ 'current_pages' ];
@@ -11,7 +15,7 @@ if ( ! empty( $results ) ) : ?>
         <tr>
             <th scope="col">Date booked</th>
             <th scope="col">Dispatcher</th>
-            <th scope="col">Reference number</th>
+            <th scope="col">Reference №</th>
             <th scope="col">Pick up location</th>
             <th scope="col">Delivery location</th>
             <th scope="col">Unit & name</th>
@@ -30,21 +34,38 @@ if ( ! empty( $results ) ) : ?>
 			$array_id_files = ! is_null( $row[ "attached_files" ] ) ? explode( ',', $row[ "attached_files" ] ) : false;
 			$files_count = is_array( $array_id_files ) ? '(' . sizeof( $array_id_files ) . ')' : '';
 			$files_state = $files_count === '' ? 'disabled' : '';
+            
+            $delivery = json_decode($row[ 'delivery_location' ], ARRAY_A);
+            $pick_up = json_decode($row['pick_up_location'], ARRAY_A);
 			
 			?>
             <tr>
                 <td><?php echo esc_html( date( 'm/d/Y', strtotime( $row[ 'date_booked' ] ) ) ); ?></td>
                 <td><?php echo esc_html( $row[ 'dispatcher_initials' ] ); ?></td>
                 <td><?php echo esc_html( $row[ 'reference_number' ] ); ?></td>
-                <td><?php echo esc_html( $row[ 'pick_up_location' ] ); ?></td>
-                <td><?php echo esc_html( $row[ 'delivery_location' ] ); ?></td>
+                <td> <?php if (is_array($pick_up)):
+		                foreach ($pick_up as $val):
+			                echo '<span class="hide-long-text-60" data-bs-toggle="tooltip" data-bs-placement="top" title="'.$val['address'].'">'.$val['address'].'</span>';
+			                echo '<br>';
+		                endforeach;
+	                endif; ?></td>
+                <td>
+                    <?php if (is_array($delivery)):
+                        foreach ($delivery as $val):
+	                        echo '<span class="hide-long-text-60" data-bs-toggle="tooltip" data-bs-placement="top" title="'.$val['address'].'">'.$val['address'].'</span>';
+                            echo '<br>';
+                        endforeach;
+                    endif; ?>
+                </td>
                 <td><?php echo esc_html( $row[ 'unit_number_name' ] ); ?></td>
                 <td><?php echo esc_html( '$' . str_replace( '.00', '', $row[ 'booked_rate' ] ) ); ?></td>
                 <td><?php echo esc_html( '$' . str_replace( '.00', '', $row[ 'driver_rate' ] ) ); ?></td>
                 <td><?php echo esc_html( '$' . str_replace( '.00', '', $row[ 'profit' ] ) ); ?></td>
                 <td><?php echo esc_html( date( 'm/d/Y', strtotime( $row[ 'pick_up_date' ] ) ) ); ?></td>
                 <td><?php echo esc_html( $helper->get_label_by_key( $row[ 'load_status' ], 'statuses' ) ); ?></td>
-                <td class="table-list-icons"><?php echo $helper->get_label_by_key( $row[ 'instructions' ], 'instructions' ); ?></td>
+                <td>
+                    <div class="table-list-icons"><?php echo $helper->get_label_by_key( $row[ 'instructions' ], 'instructions' ); ?></div>
+                </td>
                 <td><?php echo esc_html( $helper->get_label_by_key( $row[ 'source' ], 'sources' ) ); ?></td>
                 <td>
                     <div class="dropdown">
@@ -86,7 +107,7 @@ if ( ! empty( $results ) ) : ?>
                         </button>
                         <ul class="dropdown-menu" aria-labelledby="dropdownMenu2">
                             <li>
-                                <button class="dropdown-item" type="button">Edit</button>
+                                <a href="<?php echo $add_new_load . '?post_id=' . $row['id']; ?>" class="dropdown-item" type="button">Edit</a>
                             </li>
                             <li>
                                 <button class="dropdown-item <?php echo $files_state; ?>" type="button">

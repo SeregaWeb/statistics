@@ -1,6 +1,6 @@
-<nav class="navbar mb-5 navbar-expand-lg navbar-light p-2" style="background-color: #f2deff;">
+<nav class="navbar mb-5 mt-3 navbar-expand-lg navbar-light p-2" style="background-color: #f2deff;">
 	<div class="container-fluid">
-		<a class="navbar-brand" href="#">Filter</a>
+		<a class="navbar-brand" href="#">Loads</a>
 		<button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNavDarkDropdown" aria-controls="navbarNavDarkDropdown" aria-expanded="false" aria-label="Toggle navigation">
 			<span class="navbar-toggler-icon"></span>
 		</button>

@@ -158,6 +158,7 @@ class TMSReportsCompany extends TMSReportsHelper {
 		if ( defined( 'DOING_AJAX' ) && DOING_AJAX ) {
 			// Sanitize input data
 			$MY_INPUT = filter_var_array( $_POST, [
+				"select_project"  => FILTER_SANITIZE_STRING,
 				"company_name"    => FILTER_SANITIZE_STRING,
 				"country"         => FILTER_SANITIZE_STRING,
 				"Addr1"           => FILTER_SANITIZE_STRING,
@@ -181,7 +182,23 @@ class TMSReportsCompany extends TMSReportsHelper {
 				$set_up_timestamp = current_time( 'mysql' ); // or you can use date('Y-m-d H:i:s') if needed
 			}
 			
-			$MY_INPUT[ 'completed' ] = $set_up_timestamp;
+			$set_up_array = array(
+				"Odysseia" => null,
+				"Martlet" => null,
+				"Endurance" => null,
+			);
+			
+			$set_up_completed_array = array(
+				"Odysseia" => null,
+				"Martlet" => null,
+				"Endurance" => null,
+			);
+			
+			$set_up_array[$MY_INPUT['select_project']] = $MY_INPUT['set_up'];
+			$set_up_completed_array[$MY_INPUT['select_project']] = $set_up_timestamp;
+			
+			$MY_INPUT[ 'set_up' ] = json_encode($set_up_array);
+			$MY_INPUT[ 'completed' ] = json_encode($set_up_completed_array);
 			
 			// Insert the company report
 			$result = $this->add_company( $MY_INPUT );
@@ -303,7 +320,7 @@ class TMSReportsCompany extends TMSReportsHelper {
         date_updated datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
         set_up TEXT,
 	    set_up_platform varchar(100),
-	    date_set_up_compleat datetime,
+	    date_set_up_compleat TEXT,
         PRIMARY KEY (id),
         UNIQUE KEY company_name (company_name),
         UNIQUE KEY mc_number (mc_number)

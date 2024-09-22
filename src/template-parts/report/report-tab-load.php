@@ -5,6 +5,7 @@ $statuses      = $helper->get_statuses();
 $sources       = $helper->get_sources();
 $instructions  = $helper->get_instructions();
 $types         = $helper->get_load_types();
+$dispatchers   = $helper->get_dispatchers();
 $post_id       = ! empty( $args[ 'post_id' ] ) ? $args[ 'post_id' ] : null;
 $report_object = ! empty( $args[ 'report_object' ] ) ? $args[ 'report_object' ] : null;
 
@@ -113,11 +114,14 @@ if ( $report_object ) {
             <label for="dispatcher_initials" class="form-label">Dispatcher Initials</label>
             <select name="dispatcher_initials" class="form-control form-select" required>
                 <option value="">Select dispatcher</option>
-                <option value="24" <?php echo $dispatcher_initials === '24' ? 'selected' : ''; ?> >Alex morgan</option>
-                <option value="25" <?php echo $dispatcher_initials === '25' ? 'selected' : ''; ?> >Sergey Milchenko
-                </option>
-                <option value="26" <?php echo $dispatcher_initials === '26' ? 'selected' : ''; ?> >Anna Abramova
-                </option>
+                
+                <?php if (is_array($dispatchers)): ?>
+                    <?php foreach ($dispatchers as $dispatcher): ?>
+                            <option value="<?php echo $dispatcher['id']; ?>" <?php echo strval($dispatcher_initials) === strval($dispatcher['id']) ? 'selected' : ''; ?> >
+                                <?php echo $dispatcher['fullname']; ?>
+                            </option>
+                    <?php endforeach; ?>
+                <?php endif; ?>
             </select>
         </div>
 
@@ -148,7 +152,10 @@ if ( $report_object ) {
 
         <div class="mb-2 col-12 col-md-6 col-xl-4">
             <label for="unit_number_name" class="form-label">Unit Number & Name</label>
+            <div class="d-flex gap-1 js-container-number">
             <input type="text" name="unit_number_name" value="<?php echo $unit_number_name; ?>" class="form-control" required>
+            <button class="btn btn-primary js-fill-driver">Fill</button>
+            </div>
         </div>
 
         <div class="mb-2 col-12 col-md-6 col-xl-4">

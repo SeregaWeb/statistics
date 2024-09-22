@@ -71,8 +71,8 @@
 }
 
 .table-list-icons {
-    max-width: 200px;
-    min-width: 200px;
+    max-width: 100px;
+    min-width: 100px;
     display: flex;
     flex-wrap: wrap;
     gap: 4px;
@@ -87,7 +87,7 @@
 #main-wrapper {
     .table>:not(caption)>*>* {
         padding: 4px;
-        font-size: 14px;
+        font-size: 12px;
     }
 
     .container {
@@ -98,6 +98,11 @@
         outline: none;
         padding: 4px;
         display: flex;
+
+        svg {
+            pointer-events: none;
+        }
+
         &:hover, &:focus, &:active {
             outline: none;
         }

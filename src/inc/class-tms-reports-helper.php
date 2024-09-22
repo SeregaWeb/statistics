@@ -157,12 +157,18 @@ class TMSReportsHelper extends TMSReportsIcons {
 		'truck_load' => 'Truck Load',
 	);
 	
+    public $tms_tables = array(
+           'Odysseia',
+           'Martlet',
+           'Endurance'
+    );
+    
 	public $set_up = array (
 		'completed' => 'Completed',
 		'not_completed' => 'Not completed',
 		'error' => 'Error',
 	);
-	
+ 
 	public $set_up_platform = array (
 		'rmis' => 'RMIS',
 		'dat' => 'DAT',
@@ -172,6 +178,35 @@ class TMSReportsHelper extends TMSReportsIcons {
 		'other' => 'Other',
 	);
 	
+    function get_dispatchers () {
+	    // Аргументы для получения пользователей с ролью 'dispatcher'
+	    $args = array(
+		    'role'    => 'dispatcher',
+		    'orderby' => 'display_name',
+		    'order'   => 'ASC',
+	    );
+	    
+	    // Получаем пользователей с заданной ролью
+	    $users = get_users( $args );
+	    
+	    // Массив для хранения информации о пользователях
+	    $dispatchers = array();
+	    
+	    // Перебираем каждого пользователя
+	    foreach ( $users as $user ) {
+		    // Получаем имя и фамилию пользователя
+		    $first_name = get_user_meta( $user->ID, 'first_name', true );
+		    $last_name  = get_user_meta( $user->ID, 'last_name', true );
+		    
+		    // Собираем массив с ID и полным именем
+		    $dispatchers[] = array(
+			    'id'       => $user->ID,
+			    'fullname' => trim( $first_name . ' ' . $last_name )
+		    );
+	    }
+	    
+	    return $dispatchers;
+    }
 	function get_set_up_platform() {
 		return $this->set_up_platform;
 	}

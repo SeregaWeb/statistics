@@ -3,6 +3,43 @@ import { Tab } from 'bootstrap';
 import Popup from '../parts/popup-window';
 import { printMessage } from './info-messages';
 
+const updateStatusRechange = (ajaxUrl) => {
+    const container = document.querySelector('.js-update-status');
+    if (!container) return;
+
+    const formData = new FormData();
+    const action = 'rechange_status_load';
+
+    const postId = document.querySelector('.js-post-id');
+
+    if (!postId) {
+        printMessage('Post id not found', 'danger', 8000);
+        return;
+    }
+
+    formData.append('action', action);
+    // @ts-ignore
+    formData.append('post_id', postId.value);
+
+    const options = {
+        method: 'POST',
+        body: formData,
+    };
+
+    fetch(ajaxUrl, options)
+        .then((res) => res.json())
+        .then((requestStatus) => {
+            if (requestStatus.success) {
+                container.innerHTML = requestStatus.data.template;
+                updateStatusPost(ajaxUrl);
+            }
+        })
+        .catch((error) => {
+            printMessage(`Request failed: ${error}`, 'danger', 8000);
+            console.error('Request failed:', error);
+        });
+};
+
 /**
  * function use in load tab
  * update isset post
@@ -41,6 +78,7 @@ export const actionCreateReportInit = (ajaxUrl) => {
 
                             // @ts-ignore
                             tab.show();
+                            updateStatusRechange(ajaxUrl);
                             printMessage(requestStatus.data.message, 'success', 8000);
                         } else {
                             // eslint-disable-next-line no-alert
@@ -126,6 +164,7 @@ export const createDraftPosts = (ajaxUrl) => {
                                 window.history.pushState({}, '', url);
                             }
                             printMessage(requestStatus.data.message, 'success', 8000);
+                            // updateStatusRechange(ajaxUrl);
                             tab.show();
                         } else {
                             // eslint-disable-next-line no-alert
@@ -184,6 +223,7 @@ export const updateFilesReportInit = (ajaxUrl) => {
                         if (requestStatus.success) {
                             console.log('upload files successfully:', requestStatus.data);
                             printMessage(requestStatus.data.message, 'success', 8000);
+                            updateStatusRechange(ajaxUrl);
                         } else {
                             // eslint-disable-next-line no-alert
                             printMessage(`Error upload files:${requestStatus.data.message}`, 'danger', 8000);
@@ -790,6 +830,7 @@ export const sendShipperFormInit = (ajaxUrl) => {
                         printMessage(requestStatus.data.message, 'success', 8000);
                         // @ts-ignore
                         tab.show();
+                        updateStatusRechange(ajaxUrl);
                     } else {
                         printMessage(`Error adding shipper info:${requestStatus.data.message}`, 'danger', 8000);
                     }
@@ -830,11 +871,16 @@ export const updateStatusPost = (ajaxUrl) => {
                     body: formData,
                 };
 
+                // @ts-ignore
                 fetch(ajaxUrl, options)
                     .then((res) => res.json())
                     .then((requestStatus) => {
                         if (requestStatus.success) {
                             printMessage(requestStatus.data.message, 'success', 8000);
+                            const container = document.querySelector('.js-update-status');
+                            
+                            if (!container) return;
+                            container.innerHTML = '';
                         } else {
                             printMessage(requestStatus.data.message, 'danger', 8000);
                         }

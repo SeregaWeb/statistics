@@ -12,6 +12,8 @@
  * @return void
  */
 function px_site_scripts() {
+	
+	global $global_options;
 
     $general_style_ver = gmdate('ymd-Gis', filemtime(STYLE_DIR . '/style.css'));
     $custom_style_ver  = gmdate('ymd-Gis', filemtime(STYLE_DIR . '/assets/public/css/frontend.css'));
@@ -37,11 +39,18 @@ function px_site_scripts() {
     }
 	
     wp_enqueue_script( 'frontend_js', ASSETS_JS . 'frontend.js', array( 'jquery' ), $custom_js_ver, true );
-
+	
+	$link_web_service_odysseia = get_field_value($global_options, 'link_web_service_odysseia');
+	$link_web_service_endurance = get_field_value($global_options, 'link_web_service_endurance');
+	$link_web_service_martlet = get_field_value($global_options, 'link_web_service_martlet');
+	
     $vars = array(
         'ajax_url'   => admin_url( 'admin-ajax.php' ),
         'theme_path' => get_stylesheet_directory_uri(),
         'site_url'   => get_site_url(),
+        'link_web_service_odysseia' => $link_web_service_odysseia,
+        'link_web_service_endurance' => $link_web_service_endurance,
+        'link_web_service_martlet' => $link_web_service_martlet,
     );
 
     wp_localize_script( 'frontend_js', 'var_from_php', $vars );

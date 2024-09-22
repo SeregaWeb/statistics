@@ -1,6 +1,6 @@
 @import 'parts/normalize.css';
-@import "bootstrap";
 @import 'bootstrap/bootstrap';
+@import 'bootstrap';
 @import 'parts/mixin';
 @import 'parts/variables';
 @import 'parts/fonts';
@@ -10,5 +10,4 @@
 @import 'parts/footer';
 @import 'parts/modal_window';
 @import 'parts/cookies';
-@import 'parts/components';
-
+@import 'parts/small_components';

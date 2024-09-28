@@ -59,7 +59,7 @@ export const initGetInfoDriver = (ProjectsLinks) => {
 
                 // Проверить результат
                 if (driver && driver.driver) {
-                    input.value = `${value} && ${driver.driver}`;
+                    input.value = `(${value}) ${driver.driver}`;
                     console.log('driver', `${value && driver.driver}`);
                 } else {
                     console.log('Driver not found or error occurred.');

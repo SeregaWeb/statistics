@@ -3843,7 +3843,7 @@ var initGetInfoDriver = function initGetInfoDriver(ProjectsLinks) {
               case 17:
                 driver = _context2.sent;
                 if (driver && driver.driver) {
-                  input.value = "".concat(value, " && ").concat(driver.driver);
+                  input.value = "(".concat(value, ") ").concat(driver.driver);
                   console.log('driver', "".concat(value && driver.driver));
                 } else {
                   console.log('Driver not found or error occurred.');
@@ -4084,6 +4084,33 @@ var addSearchAction = function addSearchAction(ajaxUrl) {
 
 /***/ }),
 
+/***/ "./src/js/components/sidebar-init.ts":
+/*!*******************************************!*\
+  !*** ./src/js/components/sidebar-init.ts ***!
+  \*******************************************/
+/***/ (function(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   toggleSidebarInit: function() { return /* binding */ toggleSidebarInit; }
+/* harmony export */ });
+var toggleSidebarInit = function toggleSidebarInit() {
+  var toggleElements = document.querySelectorAll('.js-toggle-sidebar');
+  toggleElements && toggleElements.forEach(function (item) {
+    item.addEventListener('click', function (event) {
+      event.preventDefault();
+      var target = event.target;
+      var toggleContainer = target.closest('.js-sidebar');
+      if (!target || !toggleContainer) return;
+      target.classList.toggle('small');
+      toggleContainer.classList.toggle('small');
+    });
+  });
+};
+
+/***/ }),
+
 /***/ "./src/js/components/tab-helper.ts":
 /*!*****************************************!*\
   !*** ./src/js/components/tab-helper.ts ***!
@@ -4141,6 +4168,30 @@ var toggleBlocksInit = function toggleBlocksInit() {
       toggleContainer.classList.toggle('d-none');
     });
   });
+};
+
+/***/ }),
+
+/***/ "./src/js/components/tooltip-start.ts":
+/*!********************************************!*\
+  !*** ./src/js/components/tooltip-start.ts ***!
+  \********************************************/
+/***/ (function(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   updateTooltip: function() { return /* binding */ updateTooltip; }
+/* harmony export */ });
+/* harmony import */ var bootstrap__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! bootstrap */ "./node_modules/bootstrap/dist/js/bootstrap.esm.js");
+
+var updateTooltip = function updateTooltip() {
+  var tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]');
+  if (tooltipTriggerList.length) {
+    tooltipTriggerList.forEach(function (tooltipTriggerEl) {
+      new bootstrap__WEBPACK_IMPORTED_MODULE_0__.Tooltip(tooltipTriggerEl);
+    });
+  }
 };
 
 /***/ }),
@@ -14114,6 +14165,10 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _components_toggle_blocks_init__WEBPACK_IMPORTED_MODULE_8__ = __webpack_require__(/*! ./components/toggle-blocks-init */ "./src/js/components/toggle-blocks-init.ts");
 /* harmony import */ var _components_change_table__WEBPACK_IMPORTED_MODULE_9__ = __webpack_require__(/*! ./components/change-table */ "./src/js/components/change-table.ts");
 /* harmony import */ var _components_driver_Info__WEBPACK_IMPORTED_MODULE_10__ = __webpack_require__(/*! ./components/driver-Info */ "./src/js/components/driver-Info.ts");
+/* harmony import */ var _components_tooltip_start__WEBPACK_IMPORTED_MODULE_11__ = __webpack_require__(/*! ./components/tooltip-start */ "./src/js/components/tooltip-start.ts");
+/* harmony import */ var _components_sidebar_init__WEBPACK_IMPORTED_MODULE_12__ = __webpack_require__(/*! ./components/sidebar-init */ "./src/js/components/sidebar-init.ts");
+
+
 
 
 
@@ -14154,6 +14209,8 @@ function ready() {
   (0,_components_input_helpers__WEBPACK_IMPORTED_MODULE_2__.initMoneyMask)();
   (0,_components_create_report__WEBPACK_IMPORTED_MODULE_3__.previewFileUpload)();
   (0,_components_tab_helper__WEBPACK_IMPORTED_MODULE_6__.nextTabTrigger)();
+  (0,_components_tooltip_start__WEBPACK_IMPORTED_MODULE_11__.updateTooltip)();
+  (0,_components_sidebar_init__WEBPACK_IMPORTED_MODULE_12__.toggleSidebarInit)();
 }
 window.document.addEventListener('DOMContentLoaded', ready);
 }();

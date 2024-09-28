@@ -149,10 +149,10 @@ class TMSReportsHelper extends TMSReportsIcons {
 	);
 	
 	public $types = array (
-		'container' => 'Container',
+		'ltl' => 'LTL',
+        'container' => 'Container',
 		'drop_and_hook' => 'Drop and Hook',
 		'last_mile' => 'Last Mile',
-		'ltl' => 'LTL',
 		'other' => 'Other',
 		'truck_load' => 'Truck Load',
 	);
@@ -394,4 +394,23 @@ class TMSReportsHelper extends TMSReportsIcons {
 		
 		return ob_get_clean();
 	}
+	
+	function get_user_full_name_by_id( $user_id ) {
+		$user = get_user_by( 'id', $user_id );
+		
+		if ( $user ) {
+			$first_name = $user->first_name;
+			$last_name  = $user->last_name;
+   
+			$full_name = $first_name . ' ' . $last_name;
+			$initials = mb_strtoupper( mb_substr( $first_name, 0, 1 ) . mb_substr( $last_name, 0, 1 ) );
+			return array(
+				'full_name' => $full_name,
+				'initials'  => $initials,
+			);
+		}
+		
+		return false;
+	}
 }
+

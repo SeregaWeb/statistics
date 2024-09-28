@@ -38,22 +38,28 @@ if ( ! empty( $results ) ) : ?>
             $delivery = json_decode($row[ 'delivery_location' ], ARRAY_A);
             $pick_up = json_decode($row['pick_up_location'], ARRAY_A);
 			
+            $dispatcher = $helper->get_user_full_name_by_id($row[ 'dispatcher_initials' ] );
+			$color_initials = '#030303';
+            if (!$dispatcher) {
+                $dispatcher = array('full_name' => 'User not found', 'initials' => 'NF');
+            } else {
+	            $color_initials = get_field('initials_color', 'user_'.$row[ 'dispatcher_initials' ]);
+            }
+            
 			?>
             <tr>
                 <td><?php echo esc_html( date( 'm/d/Y', strtotime( $row[ 'date_booked' ] ) ) ); ?></td>
-                <td><?php echo esc_html( $row[ 'dispatcher_initials' ] ); ?></td>
+                <td><span data-bs-toggle="tooltip" data-bs-placement="top" title="<?php echo $dispatcher['full_name']; ?>"  class="initials-circle" style="background-color: <?php echo $color_initials; ?>"><?php echo esc_html( $dispatcher['initials'] ); ?></span></td>
                 <td><?php echo esc_html( $row[ 'reference_number' ] ); ?></td>
                 <td> <?php if (is_array($pick_up)):
 		                foreach ($pick_up as $val):
-			                echo '<span class="hide-long-text-60" data-bs-toggle="tooltip" data-bs-placement="top" title="'.$val['address'].'">'.$val['address'].'</span>';
-			                echo '<br>';
+			                echo '<span class="hide-long-text-100" data-bs-toggle="tooltip" data-bs-placement="top" title="'.$val['address'].'">'.$val['address'].'</span>';
 		                endforeach;
 	                endif; ?></td>
                 <td>
                     <?php if (is_array($delivery)):
                         foreach ($delivery as $val):
-	                        echo '<span class="hide-long-text-60" data-bs-toggle="tooltip" data-bs-placement="top" title="'.$val['address'].'">'.$val['address'].'</span>';
-                            echo '<br>';
+	                        echo '<span class="hide-long-text-100" data-bs-toggle="tooltip" data-bs-placement="top" title="'.$val['address'].'">'.$val['address'].'</span>';
                         endforeach;
                     endif; ?>
                 </td>
@@ -108,11 +114,6 @@ if ( ! empty( $results ) ) : ?>
                         <ul class="dropdown-menu" aria-labelledby="dropdownMenu2">
                             <li>
                                 <a href="<?php echo $add_new_load . '?post_id=' . $row['id']; ?>" class="dropdown-item" type="button">Edit</a>
-                            </li>
-                            <li>
-                                <button class="dropdown-item <?php echo $files_state; ?>" type="button">
-                                    Show files <?php echo $files_count; ?>
-                                </button>
                             </li>
                             <li>
                                 <button class="dropdown-item text-danger" type="button">Delete</button>

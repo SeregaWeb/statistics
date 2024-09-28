@@ -86,7 +86,7 @@ if ( $report_object ) {
         <div class="col-12"></div>
 
         <div class="col-12 mt-3 mb-5 justify-content-start gap-2">
-            <button class="btn btn-outline-primary js-add-point js-add-ship">Add point</button>
+            <button class="btn btn-outline-primary js-add-point js-add-ship">Add stop</button>
             <button class="btn btn-primary d-none js-add-point js-end-edit-ship">End edit</button>
         </div>
 

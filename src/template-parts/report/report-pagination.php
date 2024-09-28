@@ -8,6 +8,7 @@
 <!--	</ul>-->
 <!--</nav>-->
 
+<div class="pagination">
 <?php
 // Выводим ссылки на страницы
 $pagination_args = array(
@@ -15,9 +16,10 @@ $pagination_args = array(
 	'format'  => '',
 	'total'   => $args['total_pages'],
 	'current' => $args['current_page'],
-	'prev_text' => __('« Prev'),
-	'next_text' => __('Next »'),
+	'prev_text' => __('Prev'),
+	'next_text' => __('Next'),
 );
 
 echo paginate_links( $pagination_args );
 ?>
+</div>

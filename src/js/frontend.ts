@@ -26,6 +26,8 @@ import { addSearchAction } from './components/search-action';
 import { toggleBlocksInit } from './components/toggle-blocks-init';
 import { changeTableInit } from './components/change-table';
 import { initGetInfoDriver } from './components/driver-Info';
+import { updateTooltip } from "./components/tooltip-start";
+import { toggleSidebarInit } from "./components/sidebar-init";
 
 function ready() {
     // @ts-ignore
@@ -68,6 +70,8 @@ function ready() {
     initMoneyMask(); // Money helper
     previewFileUpload(); // File preview
     nextTabTrigger(); // Buttons trigger next bootstrap tab
+    updateTooltip();
+    toggleSidebarInit();
 }
 
 window.document.addEventListener('DOMContentLoaded', ready);

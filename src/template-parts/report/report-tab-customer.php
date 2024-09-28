@@ -62,7 +62,7 @@ if ( $report_object ) {
 <form class="js-create-not-publish-report">
     <div class="container">
         <div class="row">
-            <div class="col-12 col-md-8 p-0 js-result-search-wrap">
+            <div class="col-12 col-md-8 pl-0 pr-0 pr-md-3 js-result-search-wrap">
                 <figure>
                     <blockquote class="blockquote">
                         <p>Enter your customer's Motor Carrier # or name<span

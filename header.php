@@ -36,6 +36,29 @@ if ( function_exists( 'get_field' ) ) {
 }
 ?>
 
+<pre>
+Dispatcher - loads view/edit personal loads - read only in table / delete - only draft
+Admin - all
+Dispatcher team leader - loads view/edit personal loads - read only others loads (team) / delete - only draft
+(Disparcher - group monitoring)
+
+Add new field (Updated rate confirmation) not required
+если меняется стоимость - отправить сообщение (тим лиду и админу и billing)
+статус - canceled tonu delivered - оповестить (тим лиду и админу)
+если меняет стопы - оповесстить (tracking)
+Pick Up Date - если меняется то надо уведомить (tracking)
+(Updated rate confirmation) - если меняется то надо уведомить (tracking, team-lead-group, admin, billing)
+tracking - group
+billing - полный доступ без редактирования - скачивание файлов
+recruiter - онли список
+
+update for zip code state city country (brocker / shipper)
+change locations - city state
+Dispatcher Initials - если роль диспетчер / тимлид диспетчер не давать выбирать других
+Если статус груза Cancelled, то нужно чтобы все rates (суммы) пропадали или сводились к $0.
+
+</pre>
+
 <body <?php body_class( $page_class ); ?>>
 
     <?php do_action( 'wp_rock_after_open_body_tag' ); ?>
@@ -51,7 +74,7 @@ if ( function_exists( 'get_field' ) ) {
         <div id="main-wrapper">
 
         <?php if (is_array($sidebar)): ?>
-        <div class="left-sidebar">
+        <div class="left-sidebar js-sidebar">
             <?php foreach ($sidebar as $key => $block): ?>
                 <?php if (is_array($block['menu'])):?>
 
@@ -84,5 +107,12 @@ if ( function_exists( 'get_field' ) ) {
                     <?php endif; ?>
                 </div>
             <?php endforeach; ?>
+            <button class="toggle-sidebar js-toggle-sidebar">
+                <svg class="left-sidebar__icon" width="800px" height="800px" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M21.97 15V9C21.97 4 19.97 2 14.97 2H8.96997C3.96997 2 1.96997 4 1.96997 9V15C1.96997 20 3.96997 22 8.96997 22H14.97C19.97 22 21.97 20 21.97 15Z" stroke="#292D32" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M7.96997 2V22" stroke="#292D32" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M14.97 9.43994L12.41 11.9999L14.97 14.5599" stroke="#292D32" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+            </button>
         </div>
         <?php endif; ?>

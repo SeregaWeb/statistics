@@ -8,6 +8,7 @@
     &__absolute {
         position: absolute;
     }
+
     &__sticky {
         position: sticky;
     }
@@ -16,10 +17,14 @@
 .left-sidebar {
     max-width: 250px;
     width: 100%;
-    padding: 16px;
+    padding: 16px 16px 74px 16px;
     background: #f7f7f7;
     border-radius: 12px;
-    &__block{
+    position: relative;
+
+    transition: all 0.5s linear;
+
+    &__block {
         border-radius: 12px;
         margin-bottom: 20px;
         background-color: #ffffff;
@@ -29,6 +34,7 @@
         flex-direction: column;
         gap: 16px;
     }
+
     &__btn {
         display: flex;
         align-items: center;
@@ -46,6 +52,7 @@
 
         &.small {
             display: none;
+
             &:before {
                 display: none;
             }
@@ -54,6 +61,7 @@
         * {
             pointer-events: none;
         }
+
         &:before {
             content: '';
             display: block;
@@ -74,10 +82,12 @@
             }
         }
     }
+
     &__icon {
         width: 25px;
         height: auto;
     }
+
     &__menu {
         list-style: none;
         margin: 0;
@@ -86,9 +96,11 @@
         flex-direction: column;
         gap: 4px;
     }
+
     &__item {
         padding-left: 37px;
     }
+
     &__link {
         color: #000000;
         position: relative;
@@ -113,5 +125,62 @@
             top: 50%;
             background-color: $--primary-color;
         }
+    }
+
+
+
+    &.small {
+        max-width: max-content;
+
+        .left-sidebar__block {
+            margin-bottom: 8px;
+
+            .full {
+                display: none;
+            }
+
+            .small {
+                display: flex;
+                padding: 0;
+            }
+        }
+
+        .left-sidebar__menu {
+            display: none;
+        }
+    }
+}
+
+.toggle-sidebar {
+    background-color: #fff;
+    border-radius: 12px;
+    -ms-flex-direction: column;
+    flex-direction: column;
+    gap: 16px;
+    padding: 8px;
+    border: 0;
+    margin: 0;
+    position: absolute;
+    bottom: 16px;
+    right: 16px;
+    transition: all 0.2s linear;
+    * {
+        transition: all 0.2s linear;
+    }
+
+    &:hover,
+    &.small {
+        background-color: $--primary-color;
+        path {
+            stroke: #ffffff;
+        }
+    }
+
+    &.small {
+        transform: rotateZ(180deg);
+    }
+
+    *{
+        pointer-events: none;
     }
 }

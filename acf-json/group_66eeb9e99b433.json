@@ -54,6 +54,24 @@
             "other_choice": 0,
             "layout": "vertical",
             "save_other_choice": 0
+        },
+        {
+            "key": "field_66f0760eb4d64",
+            "label": "Initials color",
+            "name": "initials_color",
+            "aria-label": "",
+            "type": "color_picker",
+            "instructions": "",
+            "required": 0,
+            "conditional_logic": 0,
+            "wrapper": {
+                "width": "",
+                "class": "",
+                "id": ""
+            },
+            "default_value": "#0d6efd",
+            "enable_opacity": 0,
+            "return_format": "string"
         }
     ],
     "location": [
@@ -74,5 +92,5 @@
     "active": true,
     "description": "",
     "show_in_rest": 0,
-    "modified": 1726921370
+    "modified": 1727034957
 }

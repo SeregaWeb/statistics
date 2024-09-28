@@ -16,6 +16,31 @@ class  TMSUsers {
 			'edit_posts'   => true,
 			'upload_files' => true,
 		] );
+		
+		add_role( 'dispatcher-tl', 'Dispatcher Team Leader', [
+			'read'         => true,
+			'edit_posts'   => true,
+			'upload_files' => true,
+		] );
+		
+		add_role( 'tracking', 'Tracking', [
+			'read'         => true,
+			'edit_posts'   => true,
+			'upload_files' => true,
+		] );
+		
+		add_role( 'billing', 'Billing', [
+			'read'         => true,
+			'edit_posts'   => true,
+			'upload_files' => true,
+		] );
+		
+		add_role( 'recruiter', 'Recruiter', [
+			'read'         => true,
+			'edit_posts'   => true,
+			'upload_files' => true,
+		] );
+		
 	}
 	public function select_project () {
 		if ( defined( 'DOING_AJAX' ) && DOING_AJAX ){

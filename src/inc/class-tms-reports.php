@@ -670,30 +670,71 @@ class TMSReports extends TMSReportsHelper {
 		}
 	}
 	
-	public function get_table_items() {
+	public function get_table_items($args = array()) {
 		global $wpdb;
 		
-		$table_name = $wpdb->prefix . $this->table_main;// Замените на имя вашей таблицы
-		$per_page   = 10;                               // Количество записей на страницу
+		$table_name = $wpdb->prefix . $this->table_main; // Замените на имя вашей таблицы
+		$per_page   = 20; // Количество записей на страницу
 		
 		// Получаем текущую страницу из параметров URL, если она есть, по умолчанию это страница 1
-		$current_page = isset( $_GET[ 'paged' ] ) ? absint( $_GET[ 'paged' ] ) : 1;
+		$current_page = isset($_GET['paged']) ? absint($_GET['paged']) : 1;
 		
-		// Подсчитываем общее количество записей в таблице
-		$total_records = $wpdb->get_var( "SELECT COUNT(*) FROM $table_name" );
+		// Базовый SQL-запрос
+		$sql = "SELECT * FROM $table_name WHERE 1=1";
+		
+		// Массив для хранения условий WHERE
+		$where_conditions = array();
+		$where_values = array();
+		
+		// Если задан статус, добавляем его в условие
+		if (!empty($args['status_post'])) {
+			$where_conditions[] = "status_post = %s";
+			$where_values[] = $args['status_post'];
+		}
+		
+		// Если задан user_id, добавляем его в условие
+		if (!empty($args['user_id'])) {
+			$where_conditions[] = "user_id_added = %d";
+			$where_values[] = $args['user_id'];
+		}
+		
+		// Если добавлены другие условия, например, по дате
+		if (!empty($args['date_created'])) {
+			$where_conditions[] = "date_created >= %s";
+			$where_values[] = $args['date_created'];
+		}
+		
+		// Если есть условия, добавляем их в запрос
+		if (!empty($where_conditions)) {
+			$sql .= ' AND ' . implode(' AND ', $where_conditions);
+		}
+		
+		// Подсчитываем общее количество записей с учетом фильтров
+		$total_records_sql = "SELECT COUNT(*) FROM $table_name WHERE 1=1";
+		if (!empty($where_conditions)) {
+			$total_records_sql .= ' AND ' . implode(' AND ', $where_conditions);
+		}
+		
+		$total_records = $wpdb->get_var($wpdb->prepare($total_records_sql, ...$where_values));
 		
 		// Вычисляем количество страниц
-		$total_pages = ceil( $total_records / $per_page );
+		$total_pages = ceil($total_records / $per_page);
 		
 		// Вычисляем смещение для текущей страницы
-		$offset = ( $current_page - 1 ) * $per_page;
+		$offset = ($current_page - 1) * $per_page;
 		
-		// Запрашиваем записи с учетом разбивки по страницам
-		$results = $wpdb->get_results( "SELECT * FROM $table_name ORDER BY id DESC LIMIT $offset, $per_page", ARRAY_A );
+		// Добавляем сортировку и ограничение для текущей страницы
+		$sql .= " ORDER BY id DESC LIMIT %d, %d";
+		$where_values[] = $offset;
+		$where_values[] = $per_page;
+		
+		// Выполняем запрос к базе данных
+		$results = $wpdb->get_results($wpdb->prepare($sql, ...$where_values), ARRAY_A);
 		
 		return array(
 			'results'       => $results,
 			'total_pages'   => $total_pages,
+			'total_posts' => $total_records,
 			'current_pages' => $current_page,
 		);
 	}

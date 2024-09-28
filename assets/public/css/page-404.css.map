@@ -1,0 +1,1 @@
+{"version":3,"file":"css/page-404.css","mappings":"AACI,sBACI,eAAR","sources":["webpack://wp-webpack-workflow/./src/scss/alone-blocks/page-404.scss"],"sourcesContent":[".section-404 {\n    &__content {\n        background: #000;\n    }\n\n    &__heading {\n\n    }\n\n    &__btn {\n\n    }\n\n}\n"],"names":[],"sourceRoot":""}

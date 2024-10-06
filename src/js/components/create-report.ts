@@ -698,6 +698,7 @@ export const addShipperPointInit = () => {
 
                     const addressValueID = address.value;
                     const addressValueFullAddrres = address.getAttribute('data-current-address');
+                    const addressValueShortAddrres = address.getAttribute('data-short-address');
                     const stopTypeValue = stopType.value;
                     const contactValue = contact.value;
                     const dateValue = date.value;
@@ -744,6 +745,7 @@ export const addShipperPointInit = () => {
                     <div class="d-none">
                         <input type="hidden" class="js-current-shipper_address_id" name="${stopTypeValue}_address_id[]" value="${addressValueID}" >
                         <input type="hidden" class="js-current-shipper_address" name="${stopTypeValue}_address[]" value="${addressValueFullAddrres}" >
+                        <input type="hidden" class="js-current-shipper_short_address" name="${stopTypeValue}_short_address[]" value="${addressValueShortAddrres}" >
                         <input type="hidden" class="js-current-shipper_contact" name="${stopTypeValue}_contact[]" value="${contactValue}" >
                         <input type="hidden" class="js-current-shipper_date" name="${stopTypeValue}_date[]" value="${dateValue}" >
                         <input type="hidden" class="js-current-shipper_info" name="${stopTypeValue}_info[]" value="${infoValue}" >

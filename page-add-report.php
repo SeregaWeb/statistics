@@ -9,6 +9,7 @@
 $reports = new TMSReports();
 $company = new TMSReportsCompany();
 $helper = new TMSReportsHelper();
+$TMSUsers = new TMSUsers();
 
 $states = $helper->get_states();
 
@@ -54,6 +55,9 @@ get_header();
         <div class="row">
             <div class="container js-section-tab">
                 <div class="row">
+
+                    <?php if ($TMSUsers->check_user_role_access(array('recruiter'))): ?>
+                    
                     
                     <div class="col-12 js-update-status mt-3">
 
@@ -147,6 +151,14 @@ get_header();
                             </div>
                         </div>
                     </div>
+
+                    <?php else: ?>
+                        <div class="col-12 mt-3">
+                        <?php
+                            echo $helper->message_top('danger', $helper->messages_prepare('not-access'));
+                        ?>
+                        </div>
+                    <?php endif; ?>
                 </div>
             </div>
         </div>

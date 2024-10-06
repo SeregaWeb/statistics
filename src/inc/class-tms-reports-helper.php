@@ -70,38 +70,42 @@ class TMSReportsHelper extends TMSReportsIcons {
 		"SK"        => "Saskatchewan, SK",
 		"YT"        => "Yukon, YT",
 		"MX_LABEL"  => array( "--- Mexico (MX)---" ),
-		"DIF"       => "Distrito Federal, DIF",
-		"AGU"       => "Aguascalientes, AGU",
-		"BCN"       => "Baja California, BCN",
-		"BCS"       => "Baja California Sur, BCS",
-		"CAM"       => "Campeche, CAM",
-		"CHP"       => "Chiapas, CHP",
-		"CHH"       => "Chihuahua, CHH",
-		"COA"       => "Coahuila, COA",
-		"COL"       => "Colima, COL",
-		"DUR"       => "Durango, DUR",
-		"GUA"       => "Guanajuato, GUA",
-		"GRO"       => "Guerrero, GRO",
-		"HID"       => "Hidalgo, HID",
-		"JAL"       => "Jalisco, JAL",
-		"MIC"       => "Michoacán, MIC",
-		"MOR"       => "Morelos, MOR",
-		"MEX"       => "México, MEX",
-		"NAY"       => "Nayarit, NAY",
-		"NLE"       => "Nuevo León, NLE",
-		"OAX"       => "Oaxaca, OAX",
-		"PUE"       => "Puebla, PUE",
-		"QUE"       => "Querétaro, QUE",
-		"ROO"       => "Quintana Roo, ROO",
-		"SLP"       => "San Luis Potosí, SLP",
-		"SIN"       => "Sinaloa, SIN",
-		"SON"       => "Sonora, SON",
-		"TAB"       => "Tabasco, TAB",
-		"TAM"       => "Tamaulipas, TAM",
-		"TLA"       => "Tlaxcala, TLA",
-		"VER"       => "Veracruz, VER",
-		"YUC"       => "Yucatán, YUC",
-		"ZAC"       => "Zacatecas, ZAC"
+		"DIF"  => "Distrito Federal, DIF",
+		"CDMX" => "Distrito Federal, CDMX",
+		"AGU"  => "Aguascalientes, AGU",
+		"BCN"  => "Baja California, BCN",
+		"BCS"  => "Baja California Sur, BCS",
+		"CAM"  => "Campeche, CAM",
+		"CHP"  => "Chiapas, CHP",
+		"CHIS" => "Chiapas, CHIS",
+		"CHH"  => "Chihuahua, CHH",
+		"COA"  => "Coahuila, COA",
+		"COL"  => "Colima, COL",
+		"DUR"  => "Durango, DUR",
+		"GUA"  => "Guanajuato, GUA",
+		"GRO"  => "Guerrero, GRO",
+		"HID"  => "Hidalgo, HID",
+		"JAL"  => "Jalisco, JAL",
+		"MIC"  => "Michoacán, MIC",
+		"MOR"  => "Morelos, MOR",
+		"MEX"  => "México, MEX",
+		"NAY"  => "Nayarit, NAY",
+		"NLE"  => "Nuevo León, NLE",
+		"OAX"  => "Oaxaca, OAX",
+		"PUE"  => "Puebla, PUE",
+		"QUE"  => "Querétaro, QUE",
+		"QRO"  => "Querétaro, QRO",
+		"NAQ"  => "Querétaro, NAQ",
+		"ROO"  => "Quintana Roo, ROO",
+		"SLP"  => "San Luis Potosí, SLP",
+		"SIN"  => "Sinaloa, SIN",
+		"SON"  => "Sonora, SON",
+		"TAB"  => "Tabasco, TAB",
+		"TAM"  => "Tamaulipas, TAM",
+		"TLA"  => "Tlaxcala, TLA",
+		"VER"  => "Veracruz, VER",
+		"YUC"  => "Yucatán, YUC",
+		"ZAC"  => "Zacatecas, ZAC",
 	);
 	
 	public $statuses = array(
@@ -412,5 +416,21 @@ class TMSReportsHelper extends TMSReportsIcons {
 		
 		return false;
 	}
+    
+    function messages_prepare($type) {
+        
+        $message = '';
+        
+	    switch ($type) {
+            case 'not-access':
+	            $message = 'You do not have access to edit or view these materials';
+                break;
+            case 'user-not-found':
+                $message = 'User with this ID not found';
+                break;
+	    }
+        
+        return $message;
+    }
 }
 

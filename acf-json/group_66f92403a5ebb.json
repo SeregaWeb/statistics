@@ -1,14 +1,14 @@
 {
-    "key": "group_64745a5bea4af",
-    "title": "Additional page settings",
+    "key": "group_66f92403a5ebb",
+    "title": "Team",
     "fields": [
         {
-            "key": "field_64745a5c3c457",
-            "label": "Body class",
-            "name": "body_class",
+            "key": "field_66f9240398a70",
+            "label": "My team",
+            "name": "my_team",
             "aria-label": "",
-            "type": "text",
-            "instructions": "Use this field for specify some \"body tag\" class for future styling",
+            "type": "user",
+            "instructions": "",
             "required": 0,
             "conditional_logic": 0,
             "wrapper": {
@@ -16,26 +16,25 @@
                 "class": "",
                 "id": ""
             },
-            "default_value": "",
-            "maxlength": "",
-            "placeholder": "",
-            "prepend": "",
-            "append": ""
+            "role": "",
+            "return_format": "id",
+            "multiple": 1,
+            "allow_null": 0
         }
     ],
     "location": [
         [
             {
-                "param": "post_type",
+                "param": "user_role",
                 "operator": "==",
-                "value": "post"
+                "value": "dispatcher-tl"
             }
         ],
         [
             {
-                "param": "post_type",
+                "param": "user_role",
                 "operator": "==",
-                "value": "page"
+                "value": "billing"
             }
         ]
     ],
@@ -45,8 +44,8 @@
     "label_placement": "top",
     "instruction_placement": "label",
     "hide_on_screen": "",
-    "active": false,
+    "active": true,
     "description": "",
     "show_in_rest": 0,
-    "modified": 1727603701
+    "modified": 1727603786
 }

@@ -3,6 +3,8 @@ global $global_options;
 
 $add_new_load = get_field_value($global_options, 'add_new_load');
 
+$TMSUsers = new TMSUsers();
+
 $results       = $args[ 'results' ];
 $total_pages   = $args[ 'total_pages' ];
 $current_pages = $args[ 'current_pages' ];
@@ -26,7 +28,9 @@ if ( ! empty( $results ) ) : ?>
             <th scope="col">Load status</th>
             <th scope="col">Instructions</th>
             <th scope="col">Source</th>
+            <?php if ($TMSUsers->check_user_role_access(array('recruiter'))): ?>
             <th scope="col"></th>
+            <?php endif; ?>
         </tr>
         </thead>
         <tbody>
@@ -53,13 +57,17 @@ if ( ! empty( $results ) ) : ?>
                 <td><?php echo esc_html( $row[ 'reference_number' ] ); ?></td>
                 <td> <?php if (is_array($pick_up)):
 		                foreach ($pick_up as $val):
-			                echo '<span class="hide-long-text-100" data-bs-toggle="tooltip" data-bs-placement="top" title="'.$val['address'].'">'.$val['address'].'</span>';
+                            if(isset($val['short_address'])) {
+			                    echo '<span class="hide-long-text-100" data-bs-toggle="tooltip" data-bs-placement="top" title="'.$val['address'].'">'.$val['short_address'].'</span>';
+                            }
 		                endforeach;
 	                endif; ?></td>
                 <td>
                     <?php if (is_array($delivery)):
                         foreach ($delivery as $val):
-	                        echo '<span class="hide-long-text-100" data-bs-toggle="tooltip" data-bs-placement="top" title="'.$val['address'].'">'.$val['address'].'</span>';
+                            if(isset($val['short_address'])) {
+	                            echo '<span class="hide-long-text-100" data-bs-toggle="tooltip" data-bs-placement="top" title="' . $val[ 'address' ] . '">' . $val[ 'short_address' ] . '</span>';
+                            }
                         endforeach;
                     endif; ?>
                 </td>
@@ -73,6 +81,7 @@ if ( ! empty( $results ) ) : ?>
                     <div class="table-list-icons"><?php echo $helper->get_label_by_key( $row[ 'instructions' ], 'instructions' ); ?></div>
                 </td>
                 <td><?php echo esc_html( $helper->get_label_by_key( $row[ 'source' ], 'sources' ) ); ?></td>
+            	<?php if ($TMSUsers->check_user_role_access(array('recruiter'))): ?>
                 <td>
                     <div class="dropdown">
                         <button class="btn button-action" type="button" id="dropdownMenu2"
@@ -121,6 +130,7 @@ if ( ! empty( $results ) ) : ?>
                         </ul>
                     </div>
                 </td>
+		        <?php endif ?>
             </tr>
 		<?php endforeach; ?>
         </tbody>

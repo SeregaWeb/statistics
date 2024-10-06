@@ -19,7 +19,7 @@ $profit              = '';
 $pick_up_date        = '';
 $load_status         = '';
 $instructions_val    = array();
-$source              = '';
+$source_val          = '';
 $load_type           = '';
 $commodity           = '';
 $weight              = '';
@@ -112,17 +112,37 @@ if ( $report_object ) {
 
         <div class="mb-2 col-12 col-md-6 col-xl-4">
             <label for="dispatcher_initials" class="form-label">Dispatcher Initials</label>
-            <select name="dispatcher_initials" class="form-control form-select" required>
-                <option value="">Select dispatcher</option>
-                
-                <?php if (is_array($dispatchers)): ?>
-                    <?php foreach ($dispatchers as $dispatcher): ?>
-                            <option value="<?php echo $dispatcher['id']; ?>" <?php echo strval($dispatcher_initials) === strval($dispatcher['id']) ? 'selected' : ''; ?> >
-                                <?php echo $dispatcher['fullname']; ?>
-                            </option>
-                    <?php endforeach; ?>
-                <?php endif; ?>
-            </select>
+            
+            <?php
+            
+            if ( current_user_can('dispatcher') || current_user_can('dispatcher-tl') ) {
+	            if (!$dispatcher_initials) {
+                    $dispatcher_initials = get_current_user_id();
+		            $user_name = $helper->get_user_full_name_by_id($dispatcher_initials);
+		            
+                    ?>
+                    <input type="hidden" name="dispatcher_initials" value="<?php echo $dispatcher_initials; ?>" required>
+                    <p class="text-primary"><?php echo $user_name['full_name']; ?></p>
+                    <?php
+                } else {
+		            $user_name = $helper->get_user_full_name_by_id($dispatcher_initials);
+                    ?>
+                    <input type="hidden" name="dispatcher_initials" value="<?php echo $dispatcher_initials; ?>" required>
+                    <p class="text-primary"><?php echo $user_name['full_name']; ?></p>
+                    <?php
+	            }
+            } else {  ?>
+                <select name="dispatcher_initials" class="form-control form-select" required>
+                    <option value="">Select dispatcher</option>
+                    <?php if (is_array($dispatchers)): ?>
+                        <?php foreach ($dispatchers as $dispatcher):  ?>
+                                <option value="<?php echo $dispatcher['id']; ?>" <?php echo strval($dispatcher_initials) === strval($dispatcher['id']) ? 'selected' : ''; ?> >
+                                    <?php echo $dispatcher['fullname']; ?>
+                                </option>
+                        <?php endforeach; ?>
+                    <?php endif; ?>
+                </select>
+            <?php } ?>
         </div>
 
         <div class="mb-2 col-12 col-md-6 col-xl-4">

@@ -15,10 +15,8 @@ if(!is_user_logged_in()) {
 $helper = new TMSReportsHelper();
 $array_tables = $helper->tms_tables;
 $user_id = get_current_user_id();
-$user = get_currentuserinfo();
+$user_name = $helper->get_user_full_name_by_id($user_id);
 
-$fname = $user->user_firstname;
-$lname = $user->user_lastname;
 
 $view_tables = get_field('permission_view', 'user_'.$user_id);
 $curent_tables = get_field('current_select', 'user_'.$user_id);
@@ -44,7 +42,7 @@ $curent_tables = get_field('current_select', 'user_'.$user_id);
                     </select>
                 </div>
                 <div>
-                    <p class="m-0"><?php echo $fname . ' ' . $lname; ?></p>
+                    <p class="m-0"><?php echo $user_name['full_name']; ?></p>
                 </div>
             </div>
             <div class="col-auto order-1">

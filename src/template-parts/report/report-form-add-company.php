@@ -28,15 +28,15 @@ $curent_tables = get_field('current_select', 'user_'.$user_id);
 			<div class="d-flex justify-content-between select-country">
 				<label class="form-label">Select Country</label>
 				<div>
-					<input type="radio" checked name="country" value="USA" id="country-us" class="form-check-input">
+					<input type="radio" checked name="country" value="USA" id="country-us" class="form-check-input js-country">
 					<label for="country-us" class="form-check-label">USA</label>
 				</div>
 				<div>
-					<input type="radio" name="country" value="Canada" id="country-ca" class="form-check-input">
+					<input type="radio" name="country" value="Canada" id="country-ca" class="form-check-input js-country">
 					<label for="country-ca" class="form-check-label">Canada</label>
 				</div>
                 <div>
-                    <input type="radio" name="country" value="Mexico" id="country-mx" class="form-check-input">
+                    <input type="radio" name="country" value="Mexico" id="country-mx" class="form-check-input js-country">
                     <label for="country-mx" class="form-check-label">Mexico</label>
                 </div>
 			</div>
@@ -54,12 +54,12 @@ $curent_tables = get_field('current_select', 'user_'.$user_id);
 		
 		<div class="form-group mt-3">
 			<label for="input-city" class="form-label">City <span class="required-star text-danger">*</span></label>
-			<input id="input-city" type="text" name="City" required placeholder="City" class="form-control">
+			<input id="input-city" type="text" name="City" required placeholder="City" class="form-control js-city">
 		</div>
 		
 		<div class="form-group mt-3 col-6 custom-select">
 			<label class="form-label">State <span class="required-star text-danger">*</span></label>
-			<select name="State" required class="form-control form-select">
+			<select name="State" required class="form-control form-select js-state">
 				<option value="" disabled selected>Select State</option>
 				<?php if (is_array($states)): ?>
 					<?php foreach ($states as $key => $state): ?>
@@ -71,9 +71,14 @@ $curent_tables = get_field('current_select', 'user_'.$user_id);
 			</select>
 		</div>
 		
-		<div class="form-group mt-3 col-6">
+		<div class="form-group mt-3 col-6 js-zip">
 			<label for="input-zip" class="form-label">Zip Code <span class="required-star text-danger">*</span></label>
-			<input id="input-zip" type="text" required name="ZipCode" placeholder="Zip Code" class="form-control">
+            <div class="d-flex gap-1">
+                <input id="input-zip" type="text" required name="ZipCode" placeholder="Zip Code" class="form-control">
+                <button class="btn btn-primary js-fill-auto">
+                    Fill
+                </button>
+            </div>
 		</div>
 		
 		<div class="form-group mt-3 col-6">

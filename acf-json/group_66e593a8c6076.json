@@ -33,7 +33,7 @@
                 "class": "",
                 "id": ""
             },
-            "layout": "table",
+            "layout": "block",
             "pagination": 0,
             "min": 0,
             "max": 0,
@@ -102,8 +102,7 @@
                         "class": "",
                         "id": ""
                     },
-                    "layout": "row",
-                    "pagination": 0,
+                    "layout": "block",
                     "min": 0,
                     "max": 0,
                     "collapsed": "",
@@ -125,6 +124,57 @@
                                 "id": ""
                             },
                             "return_format": "array",
+                            "parent_repeater": "field_66e59448bdfaa"
+                        },
+                        {
+                            "key": "field_66f93c7d9bb2e",
+                            "label": "Exclude role",
+                            "name": "exclude_role",
+                            "aria-label": "",
+                            "type": "checkbox",
+                            "instructions": "",
+                            "required": 0,
+                            "conditional_logic": 0,
+                            "wrapper": {
+                                "width": "50",
+                                "class": "",
+                                "id": ""
+                            },
+                            "choices": {
+                                "dispatcher": "Dispatcher",
+                                "dispatcher-tl": "Dispatcher Team Leader",
+                                "tracking": "Tracking",
+                                "billing": "Billing",
+                                "recruiter": "Recruiter"
+                            },
+                            "default_value": [],
+                            "return_format": "value",
+                            "allow_custom": 0,
+                            "layout": "vertical",
+                            "toggle": 0,
+                            "save_custom": 0,
+                            "custom_choice_button_text": "Add new choice",
+                            "parent_repeater": "field_66e59448bdfaa"
+                        },
+                        {
+                            "key": "field_66fbc1206946d",
+                            "label": "logout",
+                            "name": "logout",
+                            "aria-label": "",
+                            "type": "true_false",
+                            "instructions": "",
+                            "required": 0,
+                            "conditional_logic": 0,
+                            "wrapper": {
+                                "width": "50",
+                                "class": "",
+                                "id": ""
+                            },
+                            "message": "",
+                            "default_value": 0,
+                            "ui_on_text": "",
+                            "ui_off_text": "",
+                            "ui": 1,
                             "parent_repeater": "field_66e59448bdfaa"
                         }
                     ],
@@ -224,6 +274,75 @@
             "placeholder": "",
             "prepend": "",
             "append": ""
+        },
+        {
+            "key": "field_66f8556997855",
+            "label": "Api key here map",
+            "name": "api_key_here_map",
+            "aria-label": "",
+            "type": "text",
+            "instructions": "",
+            "required": 0,
+            "conditional_logic": 0,
+            "wrapper": {
+                "width": "",
+                "class": "",
+                "id": ""
+            },
+            "default_value": "",
+            "maxlength": "",
+            "placeholder": "",
+            "prepend": "",
+            "append": ""
+        },
+        {
+            "key": "field_66f9533f38610",
+            "label": "Links helpers",
+            "name": "",
+            "aria-label": "",
+            "type": "tab",
+            "instructions": "",
+            "required": 0,
+            "conditional_logic": 0,
+            "wrapper": {
+                "width": "",
+                "class": "",
+                "id": ""
+            },
+            "placement": "top",
+            "endpoint": 0
+        },
+        {
+            "key": "field_66f9535738611",
+            "label": "Link to account",
+            "name": "link_to_account",
+            "aria-label": "",
+            "type": "link",
+            "instructions": "",
+            "required": 0,
+            "conditional_logic": 0,
+            "wrapper": {
+                "width": "",
+                "class": "",
+                "id": ""
+            },
+            "return_format": "url"
+        },
+        {
+            "key": "field_66fbc437835d0",
+            "label": "Link to login",
+            "name": "link_to_login",
+            "aria-label": "",
+            "type": "link",
+            "instructions": "",
+            "required": 0,
+            "conditional_logic": 0,
+            "wrapper": {
+                "width": "",
+                "class": "",
+                "id": ""
+            },
+            "return_format": "url"
         }
     ],
     "location": [
@@ -244,5 +363,5 @@
     "active": true,
     "description": "",
     "show_in_rest": 0,
-    "modified": 1727010673
+    "modified": 1727775822
 }

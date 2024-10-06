@@ -43,6 +43,7 @@ function px_site_scripts() {
 	$link_web_service_odysseia = get_field_value($global_options, 'link_web_service_odysseia');
 	$link_web_service_endurance = get_field_value($global_options, 'link_web_service_endurance');
 	$link_web_service_martlet = get_field_value($global_options, 'link_web_service_martlet');
+	$api_key_here_map = get_field_value($global_options, 'api_key_here_map');
 	
     $vars = array(
         'ajax_url'   => admin_url( 'admin-ajax.php' ),
@@ -51,6 +52,7 @@ function px_site_scripts() {
         'link_web_service_odysseia' => $link_web_service_odysseia,
         'link_web_service_endurance' => $link_web_service_endurance,
         'link_web_service_martlet' => $link_web_service_martlet,
+        'here_api_key' => $api_key_here_map,
     );
 
     wp_localize_script( 'frontend_js', 'var_from_php', $vars );

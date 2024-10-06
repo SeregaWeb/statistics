@@ -28,6 +28,7 @@ import { changeTableInit } from './components/change-table';
 import { initGetInfoDriver } from './components/driver-Info';
 import { updateTooltip } from "./components/tooltip-start";
 import { toggleSidebarInit } from "./components/sidebar-init";
+import { autoFillAddress } from "./components/auto-fill-address";
 
 function ready() {
     // @ts-ignore
@@ -38,6 +39,8 @@ function ready() {
     const linkEndurance = var_from_php.link_web_service_endurance;
     // @ts-ignore
     const linkMartlet = var_from_php.link_web_service_martlet;
+    // @ts-ignore
+    const hereApi = var_from_php.here_api_key;
 
     const useServices = {
         Odysseia: linkOdysseia,
@@ -72,6 +75,7 @@ function ready() {
     nextTabTrigger(); // Buttons trigger next bootstrap tab
     updateTooltip();
     toggleSidebarInit();
+    autoFillAddress(hereApi);
 }
 
 window.document.addEventListener('DOMContentLoaded', ready);

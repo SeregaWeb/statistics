@@ -286,6 +286,7 @@ class TMSReports extends TMSReportsHelper {
 		        additional_contacts TEXT,
 		        attached_file_required longtext,
 		        attached_files longtext,
+		        updated_rate_confirmation longtext,
 		        PRIMARY KEY  (id)
     		) $charset_collate;";
 			
@@ -436,6 +437,7 @@ class TMSReports extends TMSReportsHelper {
 				$pick_up_location[] = [
 					'address_id' => $data['pick_up_location_address_id'][$i],
 					'address' => $data['pick_up_location_address'][$i],
+					'short_address' => $data['pick_up_location_short_address'][$i],
 					'contact' => $data['pick_up_location_contact'][$i],
 					'date' => $data['pick_up_location_date'][$i],
 					'info' => $data['pick_up_location_info'][$i],
@@ -447,6 +449,7 @@ class TMSReports extends TMSReportsHelper {
 				$delivery_location[] = [
 					'address_id' => $data['delivery_location_address_id'][$i],
 					'address' => $data['delivery_location_address'][$i],
+					'short_address' => $data['delivery_location_short_address'][$i],
 					'contact' => $data['delivery_location_contact'][$i],
 					'date' => $data['delivery_location_date'][$i],
 					'info' => $data['delivery_location_info'][$i],
@@ -539,9 +542,17 @@ class TMSReports extends TMSReportsHelper {
 			] );
 			
 			
-			$MY_INPUT[ "booked_rate" ] = $this->convert_to_number( $MY_INPUT[ "booked_rate" ] );
-			$MY_INPUT[ "driver_rate" ] = $this->convert_to_number( $MY_INPUT[ "driver_rate" ] );
-			$MY_INPUT[ "profit" ]      = $this->convert_to_number( $MY_INPUT[ "profit" ] );
+			if ($MY_INPUT['load_status'] === 'cancelled') {
+				$MY_INPUT[ "booked_rate" ] = 0;
+				$MY_INPUT[ "driver_rate" ] = 0;
+				$MY_INPUT[ "profit" ]      = 0;
+			} else {
+				$MY_INPUT[ "booked_rate" ] = $this->convert_to_number( $MY_INPUT[ "booked_rate" ] );
+				$MY_INPUT[ "driver_rate" ] = $this->convert_to_number( $MY_INPUT[ "driver_rate" ] );
+				$MY_INPUT[ "profit" ]      = $this->convert_to_number( $MY_INPUT[ "profit" ] );
+			}
+			
+
 			
 			$result = $this->add_load( $MY_INPUT );
 			
@@ -781,6 +792,39 @@ class TMSReports extends TMSReportsHelper {
 			wp_send_json_error( [ 'message' => 'Invalid request' ] );
 		}
 	}
+	
+	public function get_load_counts_by_user_id($user_id, $project_needs) {
+		global $wpdb;
+
+		$table_odysseia = $wpdb->prefix . 'reports_odysseia';
+		$table_martlet = $wpdb->prefix . 'reports_martlet';
+		$table_endurance = $wpdb->prefix . 'reports_endurance';
+		
+		$result = array();
+		
+		if (is_numeric(array_search('Odysseia', $project_needs))) {
+		      
+	        $odysseia_count = $wpdb->get_var( $wpdb->prepare(
+				"SELECT COUNT(id) FROM ".$table_odysseia." WHERE user_id_added = %d AND status_post = 'publish'",
+				$user_id
+			));
+			
+			$result['Odysseia'] = $odysseia_count;
+		}
+		
+		if (is_numeric(array_search('Martlet', $project_needs))) {
+			$martlet_count = $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(id) FROM " . $table_martlet . " WHERE user_id_added = %d AND status_post = 'publish'", $user_id ) );
+			$result['Martlet'] = $martlet_count;
+		}
+		
+		if (is_numeric(array_search('Endurance', $project_needs))) {
+			$endurance_count = $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(id) FROM " . $table_endurance . " WHERE user_id_added = %d AND status_post = 'publish'", $user_id ) );
+			$result['Endurance'] = $endurance_count;
+		}
+		
+		return $result;
+	}
+	
 	public function update_post_status_in_db ($data) {
 		global $wpdb;
 		
@@ -922,7 +966,7 @@ class TMSReports extends TMSReportsHelper {
 		
 		// Проверяем каждое обязательное поле
 		foreach ($required_fields as $field => $label) {
-			if (empty($result[$field]) || $result[$field] === '0000-00-00' || $result[$field] === '0.00') {
+			if (empty($result[$field]) || $result[$field] === '0000-00-00' || ($result[$field] === '0.00' && $result['load_status'] !== 'cancelled' )) {
 				$empty_fields[] = '<strong>' . $label . '</strong>';
 			}
 		}

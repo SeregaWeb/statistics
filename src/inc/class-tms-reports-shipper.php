@@ -189,6 +189,7 @@ class TMSReportsShipper extends TMSReportsHelper {
 				
 				foreach ( $response as $value ) {
 					$address = $value->full_address;
+					$short_address = $value->city . ' ' . $value->state;
 					
 					$tmp .= '
 						<li class="my-dropdown-search__item">
@@ -198,7 +199,7 @@ class TMSReportsShipper extends TMSReportsHelper {
 	                            </span>
 	                            <div class="d-none">
 		                            <div class="js-content-company my-dropdown-search__hidden">
-		                                ' . $this->print_list_shipper( $address, $value->id ) . '
+		                                ' . $this->print_list_shipper( $address, $value->id , $short_address ) . '
 									</div>
 								</div>
 	                        </a>
@@ -211,13 +212,13 @@ class TMSReportsShipper extends TMSReportsHelper {
 		}
 	}
 	
-	public function print_list_shipper( $address = '', $id ) {
+	public function print_list_shipper( $address = '', $id, $short_address ) {
 		
 		if ( ! $id ) {
 			return false;
 		}
 		
-		$template = '<input type="hidden" class="js-full-address" data-current-address="'. $address .'" name="shipper_id" value="' . $id . '">';
+		$template = '<input type="hidden" class="js-full-address" data-short-address="'.$short_address.'" data-current-address="'. $address .'" name="shipper_id" value="' . $id . '">';
 		
 		return $template;
 	}

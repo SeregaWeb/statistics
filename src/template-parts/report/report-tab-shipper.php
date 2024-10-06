@@ -151,6 +151,8 @@ if ( $report_object ) {
                                    name="delivery_location_address_id[]" value="<?php echo $val[ 'address_id' ] ?>">
                             <input type="hidden" class="js-current-shipper_address" name="delivery_location_address[]"
                                    value="<?php echo $val[ 'address' ] ?>">
+                            <input type="hidden" class="js-current-shipper_short_address" name="delivery_location_short_address[]"
+                                   value="<?php echo $val[ 'short_address' ] ?>">
                             <input type="hidden" class="js-current-shipper_contact" name="delivery_location_contact[]"
                                    value="<?php echo $val[ 'contact' ] ?>">
                             <input type="hidden" class="js-current-shipper_date" name="delivery_location_date[]"

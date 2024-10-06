@@ -28,6 +28,16 @@ global $global_options;
 $page_class = '';
 $page_id    = get_queried_object_id();
 
+ 
+$user = get_userdata( get_current_user_id() );
+
+$role = '';
+if ( ! empty( $user->roles ) ) {
+    $role = $user->roles[ 0 ];
+}
+
+
+
 $sidebar = get_field_value($global_options, 'sidebar_blocks');
 
 
@@ -38,7 +48,6 @@ if ( function_exists( 'get_field' ) ) {
 
 <pre>
 Dispatcher - loads view/edit personal loads - read only in table / delete - only draft
-Admin - all
 Dispatcher team leader - loads view/edit personal loads - read only others loads (team) / delete - only draft
 (Disparcher - group monitoring)
 
@@ -50,12 +59,11 @@ Pick Up Date - если меняется то надо уведомить (track
 (Updated rate confirmation) - если меняется то надо уведомить (tracking, team-lead-group, admin, billing)
 tracking - group
 billing - полный доступ без редактирования - скачивание файлов
-recruiter - онли список
-
-update for zip code state city country (brocker / shipper)
-change locations - city state
-Dispatcher Initials - если роль диспетчер / тимлид диспетчер не давать выбирать других
-Если статус груза Cancelled, то нужно чтобы все rates (суммы) пропадали или сводились к $0.
+<del>recruiter - онли список</del>
+<del>update for zip code state city country (brocker / shipper)</del>
+<del>change locations - city state</del>
+<del>Dispatcher Initials - если роль диспетчер / тимлид диспетчер не давать выбирать других</del>
+<del>Если статус груза Cancelled, то нужно чтобы все rates (суммы) пропадали или сводились к $0.</del>
 
 </pre>
 
@@ -75,16 +83,12 @@ Dispatcher Initials - если роль диспетчер / тимлид дис
 
         <?php if (is_array($sidebar)): ?>
         <div class="left-sidebar js-sidebar">
-            <?php foreach ($sidebar as $key => $block): ?>
+            <?php foreach ($sidebar as $key => $block):
+                $first_link = false;
+                ?>
                 <?php if (is_array($block['menu'])):?>
 
                 <div class="left-sidebar__block">
-                    
-                    <a class="left-sidebar__btn small" href="<?php echo $block['menu'][0]['link']['url']; ?>">
-                        <?php if (!empty($block['icon'])): ?>
-                        <img class="left-sidebar__icon" src="<?php echo $block['icon'] ?>" alt="icon">
-                        <?php endif; ?>
-                    </a>
                     
                     <a class="left-sidebar__btn full js-toggle active" data-block-toggle="js-menu-block_<?php echo $key; ?>" href="<?php echo $block['menu'][0]['link']['url']; ?>">
                         <?php if (!empty($block['icon'])): ?>
@@ -96,14 +100,34 @@ Dispatcher Initials - если роль диспетчер / тимлид дис
                     <?php
                      foreach ($block['menu'] as $menu):
                      $current_page = get_the_permalink() === $menu['link']['url'] ? 'current-page' : '';
-                     ?>
-                        <li class="left-sidebar__item">
-                            <a class="left-sidebar__link <?php echo $current_page; ?>" href="<?php echo $menu['link']['url']; ?>">
-                            <?php echo $menu['link']['title']; ?>
-                            </a>
-                        </li>
+                        $exclude = array_search($role, $menu['exclude_role']);
+                         if (!is_numeric($exclude)) :
+                         
+                         if ($first_link === false) {
+                             $first_link = $menu['link']['url'];
+                         }
+                         
+                         $link_url = $menu['link']['url'];
+                         $link_title = $menu['link']['title'];
+                         
+                         if ($menu['logout']) {
+                             $link_url = wp_logout_url( home_url() );
+                         }
+                         
+                         ?>
+                            <li class="left-sidebar__item">
+                                <a class="left-sidebar__link <?php echo $current_page; ?>" href="<?php echo $link_url; ?>">
+                                <?php echo $link_title; ?>
+                                </a>
+                            </li>
+                        <?php endif; ?>
                     <?php endforeach; ?>
                     </ul>
+                     <a class="left-sidebar__btn small" href="<?php echo $first_link; ?>">
+                        <?php if (!empty($block['icon'])): ?>
+                        <img class="left-sidebar__icon" src="<?php echo $block['icon'] ?>" alt="icon">
+                        <?php endif; ?>
+                    </a>
                     <?php endif; ?>
                 </div>
             <?php endforeach; ?>

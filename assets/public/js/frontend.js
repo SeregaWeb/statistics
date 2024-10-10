@@ -2988,6 +2988,89 @@ function withinMaxClamp(min, value, max) {
 
 /***/ }),
 
+/***/ "./src/js/components/auth-users.ts":
+/*!*****************************************!*\
+  !*** ./src/js/components/auth-users.ts ***!
+  \*****************************************/
+/***/ (function(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   AuthUsersInit: function() { return /* binding */ AuthUsersInit; }
+/* harmony export */ });
+/* harmony import */ var _info_messages__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./info-messages */ "./src/js/components/info-messages.ts");
+
+var AuthUsersInit = function AuthUsersInit(ajaxUrl) {
+  var loginForm = document.querySelector('.js-login-form');
+  if (loginForm) {
+    var hideBtnLogin = document.querySelector('.js-login-btn');
+    var hideCodeEl = document.querySelector('.js-hide-field');
+    var sendCodeBtn = document.querySelector('.js-send-code');
+    sendCodeBtn && sendCodeBtn.addEventListener('click', function (evt) {
+      evt.preventDefault();
+      var target = evt.target;
+      if (target instanceof HTMLElement) {
+        var form = target.closest('form');
+        if (form) {
+          var formData = new FormData(form);
+          formData.append('action', 'send_code');
+          var options = {
+            method: 'POST',
+            body: formData
+          };
+          fetch(ajaxUrl, options).then(function (res) {
+            return res.json();
+          }).then(function (requestStatus) {
+            if (requestStatus.success) {
+              console.log('success send code', requestStatus.data);
+              (0,_info_messages__WEBPACK_IMPORTED_MODULE_0__.printMessage)(requestStatus.data.message, 'success', 16000);
+              hideBtnLogin.classList.remove('d-none');
+              hideCodeEl.classList.remove('d-none');
+              sendCodeBtn.innerText = 'Send the code again';
+            } else {
+              (0,_info_messages__WEBPACK_IMPORTED_MODULE_0__.printMessage)("Error send code: ".concat(requestStatus.data.message), 'danger', 8000);
+            }
+          }).catch(function (error) {
+            (0,_info_messages__WEBPACK_IMPORTED_MODULE_0__.printMessage)("Request failed: ".concat(error), 'danger', 8000);
+            console.error('Request failed:', error);
+          });
+        } else {
+          console.error('Форма не найдена');
+        }
+      }
+    });
+    loginForm && loginForm.addEventListener('submit', function (evt) {
+      evt.preventDefault();
+      var target = evt.target;
+      if (target instanceof HTMLFormElement) {
+        var formData = new FormData(target);
+        formData.append('action', 'verify_code');
+        var options = {
+          method: 'POST',
+          body: formData
+        };
+        fetch(ajaxUrl, options).then(function (res) {
+          return res.json();
+        }).then(function (requestStatus) {
+          if (requestStatus.success) {
+            console.log('success login', requestStatus.data);
+            (0,_info_messages__WEBPACK_IMPORTED_MODULE_0__.printMessage)(requestStatus.data.message, 'success', 16000);
+            window.location.href = requestStatus.data.redirect;
+          } else {
+            (0,_info_messages__WEBPACK_IMPORTED_MODULE_0__.printMessage)("Error login: ".concat(requestStatus.data.message), 'danger', 8000);
+          }
+        }).catch(function (error) {
+          (0,_info_messages__WEBPACK_IMPORTED_MODULE_0__.printMessage)("Request failed: ".concat(error), 'danger', 8000);
+          console.error('Request failed:', error);
+        });
+      }
+    });
+  }
+};
+
+/***/ }),
+
 /***/ "./src/js/components/auto-fill-address.ts":
 /*!************************************************!*\
   !*** ./src/js/components/auto-fill-address.ts ***!
@@ -3389,15 +3472,19 @@ var createDraftPosts = function createDraftPosts(ajaxUrl) {
       fetch(ajaxUrl, options).then(function (res) {
         return res.json();
       }).then(function (requestStatus) {
+        var _a;
         if (requestStatus.success) {
           console.log('Report added successfully:', requestStatus.data);
           if (!hasReportIdInUrl()) {
+            (0,_info_messages__WEBPACK_IMPORTED_MODULE_2__.printMessage)((_a = requestStatus.data) === null || _a === void 0 ? void 0 : _a.message, 'success', 8000);
             var url = new URL(window.location.href);
             url.searchParams.set('post_id', requestStatus.data.id_created_post);
             window.history.pushState({}, '', url);
+            console.log('url', url);
+            window.location.href = url === null || url === void 0 ? void 0 : url.href;
+          } else {
+            tab.show();
           }
-          (0,_info_messages__WEBPACK_IMPORTED_MODULE_2__.printMessage)(requestStatus.data.message, 'success', 8000);
-          tab.show();
         } else {
           (0,_info_messages__WEBPACK_IMPORTED_MODULE_2__.printMessage)("Error adding report:".concat(requestStatus.data.message), 'danger', 8000);
         }
@@ -3463,6 +3550,19 @@ var removeOneFileInitial = function removeOneFileInitial(ajaxUrl) {
         return res.json();
       }).then(function (requestStatus) {
         if (requestStatus.success) {
+          var container = document.querySelector('.js-uploads-files');
+          if (requestStatus.data.data['image-fields'] === 'attached_file_required') {
+            var addTemplateUpload = " <div class=\"js-add-new-report order-1\">\n                                    <div class=\"p-0 mb-2 col-12\">\n                                    <p class=\"h5\">Required file <span\n                                    class=\"required-star text-danger\">*</span></p>\n                                    <label for=\"attached_file_required\" class=\"form-label\">Rate\n                                    Confirmation</label>\n                                    <input type=\"file\" required name=\"attached_file_required\"\n                                           class=\"form-control js-control-uploads\">\n                                    </div>\n                                    \n                                    <div class=\"p-0 col-12 mb-3 mt-3 preview-photo js-preview-photo-upload\">\n                                    \n                                    </div>\n                                </div>\n                                ";
+            container.insertAdjacentHTML('afterbegin', addTemplateUpload);
+          }
+          if (requestStatus.data.data['image-fields'] === 'updated_rate_confirmation') {
+            var _addTemplateUpload = "\n                                <div class=\"js-add-new-report order-3\">\n                                    <div class=\"p-0 mb-2 col-12\">\n                                        <p class=\"h5\">Updated rate confirmation</p>\n                                        <label for=\"update_rate_confirmation\" class=\"form-label\">Optional file</label>\n                                        <input type=\"file\" name=\"update_rate_confirmation\"\n                                               class=\"form-control js-control-uploads\">\n                                    </div>\n                            \n                                    <div class=\"p-0 col-12 mb-3 mt-3 preview-photo js-preview-photo-upload\">\n                            \n                                    </div>\n                                </div>\n                                ";
+            container.insertAdjacentHTML('beforeend', _addTemplateUpload);
+          }
+          if (requestStatus.data.data['image-fields'] === 'screen_picture') {
+            var _addTemplateUpload2 = "\n                                <div class=\"js-add-new-report order-4\">\n                                    <div class=\"p-0 mb-2 col-12\">\n                                        <p class=\"h5\">Screen picture <span\n                                                    class=\"required-star text-danger\">*</span></p>\n                                        <label for=\"screen_picture\" class=\"form-label\">screen picture</label>\n                                        <input type=\"file\" required\n                                               name=\"screen_picture\"\n                                               class=\"form-control js-control-uploads\">\n                                    </div>\n                        \n                                    <div class=\"p-0 col-12 mb-3 mt-3 preview-photo js-preview-photo-upload\">\n                        \n                                    </div>\n                                </div>\n                                ";
+            container.insertAdjacentHTML('beforeend', _addTemplateUpload2);
+          }
           (0,_info_messages__WEBPACK_IMPORTED_MODULE_2__.printMessage)(requestStatus.data.message, 'success', 8000);
           target.remove();
         } else {
@@ -3762,6 +3862,7 @@ var addShipperPointInit = function addShipperPointInit() {
           shipperContacts.innerHTML += template;
         }
         address.remove();
+        resultSearch.innerHTML = '';
         contact.value = '';
         date.value = '';
         info.value = '';
@@ -3838,6 +3939,7 @@ var updateStatusPost = function updateStatusPost(ajaxUrl) {
           var container = document.querySelector('.js-update-status');
           if (!container) return;
           container.innerHTML = '';
+          window.location.reload();
         } else {
           (0,_info_messages__WEBPACK_IMPORTED_MODULE_2__.printMessage)(requestStatus.data.message, 'danger', 8000);
         }
@@ -14353,6 +14455,8 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _components_tooltip_start__WEBPACK_IMPORTED_MODULE_11__ = __webpack_require__(/*! ./components/tooltip-start */ "./src/js/components/tooltip-start.ts");
 /* harmony import */ var _components_sidebar_init__WEBPACK_IMPORTED_MODULE_12__ = __webpack_require__(/*! ./components/sidebar-init */ "./src/js/components/sidebar-init.ts");
 /* harmony import */ var _components_auto_fill_address__WEBPACK_IMPORTED_MODULE_13__ = __webpack_require__(/*! ./components/auto-fill-address */ "./src/js/components/auto-fill-address.ts");
+/* harmony import */ var _components_auth_users__WEBPACK_IMPORTED_MODULE_14__ = __webpack_require__(/*! ./components/auth-users */ "./src/js/components/auth-users.ts");
+
 
 
 
@@ -14390,6 +14494,7 @@ function ready() {
   (0,_components_create_report__WEBPACK_IMPORTED_MODULE_3__.updateStatusPost)(urlAjax);
   (0,_components_create_report__WEBPACK_IMPORTED_MODULE_3__.removeOneFileInitial)(urlAjax);
   (0,_components_change_table__WEBPACK_IMPORTED_MODULE_9__.changeTableInit)(urlAjax);
+  (0,_components_auth_users__WEBPACK_IMPORTED_MODULE_14__.AuthUsersInit)(urlAjax);
   (0,_components_driver_Info__WEBPACK_IMPORTED_MODULE_10__.initGetInfoDriver)(useServices);
   (0,_components_create_report__WEBPACK_IMPORTED_MODULE_3__.additionalContactsInit)();
   (0,_components_toggle_blocks_init__WEBPACK_IMPORTED_MODULE_8__.toggleBlocksInit)();

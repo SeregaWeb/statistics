@@ -218,7 +218,12 @@ class TMSReportsShipper extends TMSReportsHelper {
 			return false;
 		}
 		
-		$template = '<input type="hidden" class="js-full-address" data-short-address="'.$short_address.'" data-current-address="'. $address .'" name="shipper_id" value="' . $id . '">';
+		$template = '
+		<ul class="result-search-el">
+			<li><h4>Selected shipper</h4></li>
+            <li class="address">' . $address . '</li>
+		</ul>
+		<input type="hidden" class="js-full-address" data-short-address="'.$short_address.'" data-current-address="'. $address .'" name="shipper_id" value="' . $id . '">';
 		
 		return $template;
 	}

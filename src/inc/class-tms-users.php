@@ -44,6 +44,35 @@ class  TMSUsers extends TMSReportsHelper {
 			'upload_files' => true,
 		] );
 		
+		add_role( 'accounting', 'Accounting', [
+			'read'         => true,
+			'edit_posts'   => true,
+			'upload_files' => true,
+		] );
+		
+	}
+	
+	public function get_region($key) {
+		$array_labels = array(
+			'ua' => 'Ukraine',
+			'pl' => 'Poland',
+			'rm' => 'Remote',
+		);
+		
+		return $array_labels[$key];
+	}
+	public function get_role_label ($key) {
+		$array_labels = array(
+			'dispatcher' => 'Dispatcher',
+			'dispatcher-tl' => 'Dispatcher Team Leader',
+			'tracking' => 'Tracking',
+			'billing' => 'Billing',
+			'recruiter' => 'Recruiter',
+			'administrator' => 'Administrator',
+			'accounting' => 'Accounting',
+		);
+		
+		return $array_labels[$key];
 	}
 	
 	public function select_project() {
@@ -72,9 +101,15 @@ class  TMSUsers extends TMSReportsHelper {
 			
 			$color_initials = get_field( 'initials_color', 'user_' . $user_id );
 			
+			$work_location = get_field( 'work_location', 'user_' . $user_id );
+			if (!$work_location) {
+				$work_location = 'rm';
+			}
+			$work_location = $this->get_region($work_location);
+			
 			$role = '';
 			if ( ! empty( $user->roles ) ) {
-				$role = $user->roles[ 0 ];
+				$role = $this->get_role_label($user->roles[ 0 ]);
 			}
 			
 			$my_team = get_field('my_team', 'user_' . $user_id );
@@ -86,6 +121,7 @@ class  TMSUsers extends TMSReportsHelper {
 				'initials'           => $names[ 'initials' ],
 				'email'              => $email,
 				'role'               => $role,
+				'region'             => $work_location,
 				'color'              => $color_initials,
 				'permission_project' => $view_tables,
 				'my_team'            => $my_team,

@@ -72,6 +72,32 @@
             "default_value": "#0d6efd",
             "enable_opacity": 0,
             "return_format": "string"
+        },
+        {
+            "key": "field_670828a1b54fc",
+            "label": "Work location",
+            "name": "work_location",
+            "aria-label": "",
+            "type": "radio",
+            "instructions": "",
+            "required": 0,
+            "conditional_logic": 0,
+            "wrapper": {
+                "width": "",
+                "class": "",
+                "id": ""
+            },
+            "choices": {
+                "ua": "Ukraine",
+                "pl": "Poland",
+                "rm": "Remote"
+            },
+            "default_value": "ua",
+            "return_format": "value",
+            "allow_null": 0,
+            "other_choice": 0,
+            "layout": "vertical",
+            "save_other_choice": 0
         }
     ],
     "location": [
@@ -92,5 +118,5 @@
     "active": true,
     "description": "",
     "show_in_rest": 0,
-    "modified": 1727034957
+    "modified": 1728588062
 }

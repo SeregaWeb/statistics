@@ -37,6 +37,7 @@ $USER_OBJECT = $TMSUser->get_account_info($user_id);
                                 <div>
                                     <h2 class="account-name"><?php echo $USER_OBJECT['name']; ?> <span class="account-role"><?php echo $USER_OBJECT['role']; ?></span></h2>
                                     <p class="account-email"><?php echo $USER_OBJECT['email']; ?></p>
+                                    <p class="account-region"><?php echo $USER_OBJECT['region']; ?></p>
                                 </div>
                             </div>
 

@@ -11,10 +11,15 @@ $delivery_location_isset = false;
 
 if ( $report_object ) {
 	$values = $report_object;
-	if ( is_array( $values ) && sizeof( $values ) > 0 ) {
-		if ( ! empty( $values[ 0 ]->pick_up_location ) && ! empty( $values[ 0 ]->delivery_location ) ) {
-			$pick_up_location_isset  = json_decode( $values[ 0 ]->pick_up_location, ARRAY_A );
-			$delivery_location_isset = json_decode( $values[ 0 ]->delivery_location, ARRAY_A );
+    $meta = get_field_value($values, 'meta');
+	if ( is_array( $meta ) && sizeof( $meta ) > 0 ) {
+        
+        $pick_up_location = get_field_value($meta, 'pick_up_location');
+        $delivery_location = get_field_value($meta, 'delivery_location');
+        
+		if ( ! empty( $pick_up_location ) && ! empty( $delivery_location ) ) {
+			$pick_up_location_isset  = json_decode( $pick_up_location, ARRAY_A );
+			$delivery_location_isset = json_decode( $delivery_location, ARRAY_A );
 		}
 	}
 }
@@ -46,6 +51,7 @@ if ( $report_object ) {
             <div class="form-group position-relative js-container-search">
                 <input id="input-name" type="text" name="address"
                        placeholder=""
+                       autocomplete="off"
                        class="form-control js-search-shipper">
                 <ul class="my-dropdown-search js-container-search-list">
 
@@ -56,7 +62,9 @@ if ( $report_object ) {
 
         </div>
 
-        <div class="col-12"></div>
+        <div class="col-12">
+        
+        </div>
 
         <div class="mb-2 col-12 col-xl-4">
             <label for="stop_type" class="form-label">Stop Type</label>

@@ -57,7 +57,6 @@ function searchHelperActions(seachInputsSelector, action, ajaxUrl) {
     if (!seachInputs) return;
     // this action close dropdown list searched values
     document.addEventListener('click', (event) => {
-        
         const { target } = event;
         if (!target) return;
         const container = document.querySelector('.js-container-search');

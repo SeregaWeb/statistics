@@ -157,15 +157,19 @@ export const createDraftPosts = (ajaxUrl) => {
                         if (requestStatus.success) {
                             console.log('Report added successfully:', requestStatus.data);
                             if (!hasReportIdInUrl()) {
+                                printMessage(requestStatus.data?.message, 'success', 8000);
                                 const url = new URL(window.location.href);
                                 // Set the 'post_id' parameter
                                 url.searchParams.set('post_id', requestStatus.data.id_created_post);
                                 // Update the URL without reloading the page
                                 window.history.pushState({}, '', url);
+                                console.log('url', url);
+                                // @ts-ignore
+                                window.location.href = <string>url?.href;
+                            } else {
+                                // updateStatusRechange(ajaxUrl);
+                                tab.show();
                             }
-                            printMessage(requestStatus.data.message, 'success', 8000);
-                            // updateStatusRechange(ajaxUrl);
-                            tab.show();
                         } else {
                             // eslint-disable-next-line no-alert
                             printMessage(`Error adding report:${requestStatus.data.message}`, 'danger', 8000);
@@ -266,6 +270,67 @@ export const removeOneFileInitial = (ajaxUrl) => {
                     .then((res) => res.json())
                     .then((requestStatus) => {
                         if (requestStatus.success) {
+                            const container = document.querySelector('.js-uploads-files') as HTMLElement;
+
+                            if (requestStatus.data.data['image-fields'] === 'attached_file_required') {
+                                const addTemplateUpload = ` <div class="js-add-new-report order-1">
+                                    <div class="p-0 mb-2 col-12">
+                                    <p class="h5">Required file <span
+                                    class="required-star text-danger">*</span></p>
+                                    <label for="attached_file_required" class="form-label">Rate
+                                    Confirmation</label>
+                                    <input type="file" required name="attached_file_required"
+                                           class="form-control js-control-uploads">
+                                    </div>
+                                    
+                                    <div class="p-0 col-12 mb-3 mt-3 preview-photo js-preview-photo-upload">
+                                    
+                                    </div>
+                                </div>
+                                `;
+                                container.insertAdjacentHTML('afterbegin', addTemplateUpload);
+                            }
+
+                            if (requestStatus.data.data['image-fields'] === 'updated_rate_confirmation') {
+                                const addTemplateUpload = `
+                                <div class="js-add-new-report order-3">
+                                    <div class="p-0 mb-2 col-12">
+                                        <p class="h5">Updated rate confirmation</p>
+                                        <label for="update_rate_confirmation" class="form-label">Optional file</label>
+                                        <input type="file" name="update_rate_confirmation"
+                                               class="form-control js-control-uploads">
+                                    </div>
+                            
+                                    <div class="p-0 col-12 mb-3 mt-3 preview-photo js-preview-photo-upload">
+                            
+                                    </div>
+                                </div>
+                                `;
+
+                                container.insertAdjacentHTML('beforeend', addTemplateUpload);
+                            }
+
+                            if (requestStatus.data.data['image-fields'] === 'screen_picture') {
+                                const addTemplateUpload = `
+                                <div class="js-add-new-report order-4">
+                                    <div class="p-0 mb-2 col-12">
+                                        <p class="h5">Screen picture <span
+                                                    class="required-star text-danger">*</span></p>
+                                        <label for="screen_picture" class="form-label">screen picture</label>
+                                        <input type="file" required
+                                               name="screen_picture"
+                                               class="form-control js-control-uploads">
+                                    </div>
+                        
+                                    <div class="p-0 col-12 mb-3 mt-3 preview-photo js-preview-photo-upload">
+                        
+                                    </div>
+                                </div>
+                                `;
+
+                                container.insertAdjacentHTML('beforeend', addTemplateUpload);
+                            }
+
                             printMessage(requestStatus.data.message, 'success', 8000);
                             // @ts-ignore
                             target.remove();
@@ -779,6 +844,7 @@ export const addShipperPointInit = () => {
                     }
 
                     address.remove();
+                    resultSearch.innerHTML = '';
                     contact.value = '';
                     date.value = '';
                     info.value = '';
@@ -880,9 +946,11 @@ export const updateStatusPost = (ajaxUrl) => {
                         if (requestStatus.success) {
                             printMessage(requestStatus.data.message, 'success', 8000);
                             const container = document.querySelector('.js-update-status');
-                            
+
                             if (!container) return;
                             container.innerHTML = '';
+
+                            window.location.reload();
                         } else {
                             printMessage(requestStatus.data.message, 'danger', 8000);
                         }

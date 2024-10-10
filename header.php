@@ -6,6 +6,38 @@
  * @since 4.4.0
  */
 
+global $global_options;
+$login_link = get_field_value($global_options, 'link_to_login');
+
+if(!is_user_logged_in()) {
+	$current_url = home_url(add_query_arg(null, null));
+	if (isset($login_link) && $login_link !== $current_url) {
+		wp_redirect($login_link);
+		exit;
+	}
+    die;
+}
+
+$page_class = '';
+$page_id    = get_queried_object_id();
+
+
+$user = get_userdata( get_current_user_id() );
+
+$role = '';
+if ( ! empty( $user->roles ) ) {
+    $role = $user->roles[ 0 ];
+}
+
+
+
+$sidebar = get_field_value($global_options, 'sidebar_blocks');
+
+
+if ( function_exists( 'get_field' ) ) {
+    $page_class = ( get_field( 'body_class', $page_id ) ) ?: '';
+}
+
 ?>
 <!DOCTYPE html>
 <html <?php language_attributes(); ?> class="no-js">
@@ -24,26 +56,7 @@
 </head>
 
 <?php
-global $global_options;
-$page_class = '';
-$page_id    = get_queried_object_id();
 
- 
-$user = get_userdata( get_current_user_id() );
-
-$role = '';
-if ( ! empty( $user->roles ) ) {
-    $role = $user->roles[ 0 ];
-}
-
-
-
-$sidebar = get_field_value($global_options, 'sidebar_blocks');
-
-
-if ( function_exists( 'get_field' ) ) {
-    $page_class = ( get_field( 'body_class', $page_id ) ) ?: '';
-}
 ?>
 
 <pre>
@@ -51,7 +64,6 @@ Dispatcher - loads view/edit personal loads - read only in table / delete - only
 Dispatcher team leader - loads view/edit personal loads - read only others loads (team) / delete - only draft
 (Disparcher - group monitoring)
 
-Add new field (Updated rate confirmation) not required
 если меняется стоимость - отправить сообщение (тим лиду и админу и billing)
 статус - canceled tonu delivered - оповестить (тим лиду и админу)
 если меняет стопы - оповесстить (tracking)
@@ -59,11 +71,36 @@ Pick Up Date - если меняется то надо уведомить (track
 (Updated rate confirmation) - если меняется то надо уведомить (tracking, team-lead-group, admin, billing)
 tracking - group
 billing - полный доступ без редактирования - скачивание файлов
-<del>recruiter - онли список</del>
-<del>update for zip code state city country (brocker / shipper)</del>
-<del>change locations - city state</del>
-<del>Dispatcher Initials - если роль диспетчер / тимлид диспетчер не давать выбирать других</del>
-<del>Если статус груза Cancelled, то нужно чтобы все rates (суммы) пропадали или сводились к $0.</del>
+
+букрейт
+драйвер рейт
+юнит
+статус
+пик ап дейт
+инструкции - Additional information алл
+
+при замене водилы уведомить (тимлид админ трекинг)
+
+<del>новое поле для аккаунтинг/админ/биллинг - true rate
+booked-rait - 2% - driver-rait - формула расчета тру рейт</del>
+<del>new field - 2% save in db
+new field dispetch message - (screen picture) required</del>
+
+для аккаунтинг / биллинг добавить 5 вкладку
+Date booked	Dispatcher	Reference №	Pick up location
+Delivery location	Unit & name	Booked rate	Driver rate	(Profit true)
+Pick Up Date	Load status invoice (dropdown - - Invoiced
+
+- Not invoiced
+- Invoiced directly
+ ) factoring status (dropdown - - Unsubmitted
+- In Processing
+- Requires Attention
+- In Dispute
+- Processed
+- Charge Back
+- Short Pay )
+разделить на 3 офиса (юа / ремоут / польша)
 
 </pre>
 
@@ -75,7 +112,7 @@ billing - полный доступ без редактирования - ска
 
         <?php do_action( 'wp_rock_before_site_header' ); ?>
 
-        <?php echo esc_html( get_template_part( 'src/template-parts/custom', 'header' ) ); ?>
+        <?php echo esc_html( get_template_part( 'src/template-parts/custom', 'header' )); ?>
 
         <?php do_action( 'wp_rock_after_site_header' ); ?>
 
@@ -111,7 +148,7 @@ billing - полный доступ без редактирования - ска
                          $link_title = $menu['link']['title'];
                          
                          if ($menu['logout']) {
-                             $link_url = wp_logout_url( home_url() );
+                             $link_url = wp_logout_url( !empty($login_link) ? $login_link : home_url() );
                          }
                          
                          ?>

@@ -8,14 +8,13 @@
 
 get_header('noauth');
 
-
 ?>
     <div class="container">
         <div class="row h-100 align-items-center">
             <div class="container">
                 <div class="row">
                     <div class="col-12 col-md-4 offset-md-4 ">
-                        <form class="js-login">
+                        <form class="js-login-form">
                             <h2 class="mb-2">Login</h2>
                             <div class="mb-3">
                                 <label for="exampleFormControlInput1" class="form-label">Email address</label>
@@ -26,13 +25,14 @@ get_header('noauth');
                                 <input type="password" name="password" class="form-control" id="exampleFormControlInput1" placeholder="name@example.com">
                             </div>
 
-                            <div class="mb-3">
+                            <div class="mb-3 d-none js-hide-field">
                                 <label for="exampleFormControlInput1" class="form-label">Code</label>
                                 <input type="text" name="code" class="form-control" id="exampleFormControlInput1" placeholder="12345">
                             </div>
                             
-                            <div class="mb-3">
-                                <button class="btn btn-primary">Send code</button>
+                            <div class="mb-3 d-flex gap-1">
+                                <button class="btn btn-success js-send-code">Send code</button>
+                                <button type="submit" class="btn btn-primary js-login-btn d-none">Login</button>
                             </div>
                         </form>
                     </div>

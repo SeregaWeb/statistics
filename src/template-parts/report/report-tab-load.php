@@ -27,24 +27,25 @@ $notes               = '';
 
 if ( $report_object ) {
 	$values = $report_object;
+    $meta = get_field_value($values, 'meta');
 	
-	if ( is_array( $values ) && sizeof( $values ) > 0 ) {
-		$date_booked         = $values[ 0 ]->date_booked;
-		$dispatcher_initials = $values[ 0 ]->dispatcher_initials;
-		$reference_number    = $values[ 0 ]->reference_number;
-		$unit_number_name    = $values[ 0 ]->unit_number_name;
-		$booked_rate         = $values[ 0 ]->booked_rate;
-		$driver_rate         = $values[ 0 ]->driver_rate;
-		$profit              = $values[ 0 ]->profit;
-		$pick_up_date        = $values[ 0 ]->pick_up_date;
-		$load_status         = $values[ 0 ]->load_status;
-        $instructions_str    = str_replace(' ', '',$values[ 0 ]->instructions);
+	if ( is_array( $meta ) && sizeof( $meta ) > 0 ) {
+		$date_booked         = get_field_value($meta, 'date_booked');;
+		$dispatcher_initials = get_field_value($meta, 'dispatcher_initials');
+		$reference_number    = get_field_value($meta, 'reference_number');
+		$unit_number_name    = get_field_value($meta, 'unit_number_name');
+		$booked_rate         = get_field_value($meta, 'booked_rate');
+		$driver_rate         = get_field_value($meta, 'driver_rate');
+		$profit              = get_field_value($meta, 'profit');
+		$pick_up_date        = get_field_value($meta, 'pick_up_date');
+		$load_status         = get_field_value($meta, 'load_status');
+        $instructions_str    = str_replace(' ', '',get_field_value($meta, 'instructions'));
         $instructions_val    = explode(',', $instructions_str);
-		$source_val          = $values[ 0 ]->source;
-		$load_type           = $values[ 0 ]->load_type;
-		$commodity           = $values[ 0 ]->commodity;
-		$weight              = $values[ 0 ]->weight;
-		$notes               = $values[ 0 ]->notes;
+		$source_val          = get_field_value($meta, 'source');
+		$load_type           = get_field_value($meta, 'load_type');
+		$commodity           = get_field_value($meta, 'commodity');
+		$weight              = get_field_value($meta, 'weight');
+		$notes               = get_field_value($meta, 'notes');
 	}
 }
 

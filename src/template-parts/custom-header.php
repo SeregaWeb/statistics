@@ -7,11 +7,6 @@
 
 global $global_options;
 
-if(!is_user_logged_in()) {
-    echo '<h1>Need auth</h1>';
-    die;
-}
-
 $helper = new TMSReportsHelper();
 $array_tables = $helper->tms_tables;
 $user_id = get_current_user_id();

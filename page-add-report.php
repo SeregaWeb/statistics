@@ -23,9 +23,11 @@ $post_id = isset( $_GET[ 'post_id' ] ) ? $_GET[ 'post_id' ] : false;
 
 if ( $post_id && is_numeric( $post_id ) ) {
 	$report_object = $reports->get_report_by_id( $_GET[ 'post_id' ] );
+    $main = get_field_value($report_object, 'main');
+    
 	if ( is_array( $report_object ) && sizeof( $report_object ) > 0 ) {
 		$disabled_tabs = '';
-        $status_publish = $report_object[0]->status_post;
+        $status_publish = get_field_value($main, 'status_post');
 	} else {
 		wp_redirect( remove_query_arg( array_keys( $_GET ) ) );
 		exit;
@@ -47,6 +49,22 @@ if ( $post_id && is_numeric( $post_id ) ) {
  
 }
 
+$access = $TMSUsers->check_user_role_access(array('recruiter'));
+
+if ($TMSUsers->check_user_role_access(array('dispatcher'), true)) {
+	$user_id_added = get_field_value($main, 'user_id_added');
+    if (is_array($report_object) && intval($user_id_added) !== get_current_user_id()) {
+	    $access = false;
+    }
+}
+
+if ($TMSUsers->check_user_role_access(array('dispatcher-tl'), true)) {
+	$user_id_added = get_field_value($main, 'user_id_added');
+	if (is_array($report_object) && intval($user_id_added) !== get_current_user_id()) {
+		$access = false;
+	}
+}
+
 
 get_header();
 
@@ -56,8 +74,7 @@ get_header();
             <div class="container js-section-tab">
                 <div class="row">
 
-                    <?php if ($TMSUsers->check_user_role_access(array('recruiter'))): ?>
-                    
+                    <?php if ($access): ?>
                     
                     <div class="col-12 js-update-status mt-3">
 

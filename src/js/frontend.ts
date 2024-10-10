@@ -26,9 +26,10 @@ import { addSearchAction } from './components/search-action';
 import { toggleBlocksInit } from './components/toggle-blocks-init';
 import { changeTableInit } from './components/change-table';
 import { initGetInfoDriver } from './components/driver-Info';
-import { updateTooltip } from "./components/tooltip-start";
-import { toggleSidebarInit } from "./components/sidebar-init";
-import { autoFillAddress } from "./components/auto-fill-address";
+import { updateTooltip } from './components/tooltip-start';
+import { toggleSidebarInit } from './components/sidebar-init';
+import { autoFillAddress } from './components/auto-fill-address';
+import { AuthUsersInit } from './components/auth-users';
 
 function ready() {
     // @ts-ignore
@@ -62,6 +63,7 @@ function ready() {
     updateStatusPost(urlAjax);
     removeOneFileInitial(urlAjax);
     changeTableInit(urlAjax);
+    AuthUsersInit(urlAjax);
 
     // API request
     initGetInfoDriver(useServices);

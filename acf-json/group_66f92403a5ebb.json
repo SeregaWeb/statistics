@@ -36,6 +36,13 @@
                 "operator": "==",
                 "value": "billing"
             }
+        ],
+        [
+            {
+                "param": "user_role",
+                "operator": "==",
+                "value": "tracking"
+            }
         ]
     ],
     "menu_order": 0,
@@ -47,5 +54,5 @@
     "active": true,
     "description": "",
     "show_in_rest": 0,
-    "modified": 1727603786
+    "modified": 1728475923
 }

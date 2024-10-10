@@ -32,6 +32,9 @@ $reports->init();
 $users = new TMSUsers();
 $users->init();
 
+$usersAuth = new TMSAuth();
+$usersAuth->init();
+
 $reportsCompany = new TMSReportsCompany();
 $reportsCompany->init();
 

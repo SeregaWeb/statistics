@@ -65,6 +65,7 @@ if ($TMSUsers->check_user_role_access(array('dispatcher-tl'), true)) {
 	}
 }
 
+$billing_info = $TMSUsers->check_user_role_access(array('administrator', 'billing', 'accounting'),true);
 
 get_header();
 
@@ -122,6 +123,16 @@ get_header();
                                         aria-controls="pills-documents" aria-selected="false">Documents
                                 </button>
                             </li>
+
+                            <?php if ($billing_info): ?>
+                            <li class="nav-item flex-grow-1" role="presentation">
+                                <button class="nav-link w-100 <?php echo $disabled_tabs; ?> " id="pills-billing-tab"
+                                        data-bs-toggle="pill"
+                                        data-bs-target="#pills-billing" type="button" role="tab"
+                                        aria-controls="pills-billing" aria-selected="false">Billing
+                                </button>
+                            </li>
+                            <?php endif; ?>
                         </ul>
                        
                         <div class="tab-content" id="pills-tabContent">
@@ -144,8 +155,7 @@ get_header();
 								) ) );
 								?>
                             </div>
-
-
+                            
                             <div class="tab-pane fade" id="pills-trip" role="tabpanel" aria-labelledby="pills-trip-tab">
 	                            <?php
 	                            echo esc_html( get_template_part( 'src/template-parts/report/report', 'tab-shipper', array(
@@ -154,8 +164,7 @@ get_header();
 	                            ) ) );
 	                            ?>
                             </div>
-
-
+                            
                             <div class="tab-pane fade" id="pills-documents" role="tabpanel"
                                  aria-labelledby="pills-documents-tab">
 								
@@ -166,6 +175,21 @@ get_header();
 								) ) );
 								?>
                             </div>
+	
+	                        <?php if ($billing_info): ?>
+                            
+                            <div class="tab-pane fade" id="pills-billing" role="tabpanel"
+                                 aria-labelledby="pills-billing-tab">
+		                        
+		                        <?php
+		                        echo esc_html( get_template_part( 'src/template-parts/report/report', 'tab-billing', array(
+			                        'report_object' => $report_object,
+			                        'post_id'       => $post_id
+		                        ) ) );
+		                        ?>
+                            </div>
+                            
+                            <?php endif; ?>
                         </div>
                     </div>
 

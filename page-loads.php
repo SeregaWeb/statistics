@@ -14,6 +14,37 @@ $args = array(
 	'status_post' => 'publish',
 );
 
+$dispatcher_filter = get_field_value($_GET, 'dispatcher');
+$my_search = get_field_value($_GET, 'my_search');
+$year = get_field_value($_GET, 'fyear');
+$month = get_field_value($_GET, 'fmonth');
+$load_status = get_field_value($_GET, 'load_status');
+$source = get_field_value($_GET, 'source');
+
+if ($dispatcher_filter) {
+    $args['dispatcher'] = $dispatcher_filter;
+}
+
+if ($my_search) {
+	$args['my_search'] = $my_search;
+}
+
+if ($year) {
+	$args['year'] = $year;
+}
+
+if ($month) {
+	$args['month'] = $month;
+}
+
+if ($source) {
+	$args['source'] = $source;
+}
+
+if ($load_status) {
+	$args['load_status'] = $load_status;
+}
+
 
 $items = $reports->get_table_items($args);
 

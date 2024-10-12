@@ -170,7 +170,7 @@ if ( $report_object ) {
         
         <?php if ( isset( $screen_picture_arr ) && $screen_picture ): ?>
             <form class="js-remove-one card-upload screen-picture">
-                <span class="required-label">Screen picture</span>
+                <span class="required-label">Dispatch message</span>
                 <figure class="card-upload__figure">
 	                
 	                <?php
@@ -276,7 +276,7 @@ if ( $report_object ) {
 	<?php if (!$screen_picture): ?>
         <div class="js-add-new-report order-4">
             <div class="p-0 mb-2 col-12">
-                <p class="h5">Screen picture <span
+                <p class="h5">Dispatch message <span
                             class="required-star text-danger">*</span></p>
                 <label for="screen_picture" class="form-label">screen picture</label>
                 <input type="file" required

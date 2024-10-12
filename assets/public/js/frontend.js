@@ -3367,6 +3367,7 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */   previewFileUpload: function() { return /* binding */ previewFileUpload; },
 /* harmony export */   removeOneFileInitial: function() { return /* binding */ removeOneFileInitial; },
 /* harmony export */   sendShipperFormInit: function() { return /* binding */ sendShipperFormInit; },
+/* harmony export */   updateBillingReportInit: function() { return /* binding */ updateBillingReportInit; },
 /* harmony export */   updateFilesReportInit: function() { return /* binding */ updateFilesReportInit; },
 /* harmony export */   updateStatusPost: function() { return /* binding */ updateStatusPost; }
 /* harmony export */ });
@@ -3525,6 +3526,35 @@ var updateFilesReportInit = function updateFilesReportInit(ajaxUrl) {
           updateStatusRechange(ajaxUrl);
         } else {
           (0,_info_messages__WEBPACK_IMPORTED_MODULE_2__.printMessage)("Error upload files:".concat(requestStatus.data.message), 'danger', 8000);
+        }
+      }).catch(function (error) {
+        (0,_info_messages__WEBPACK_IMPORTED_MODULE_2__.printMessage)("Request failed: ".concat(error), 'danger', 8000);
+        console.error('Request failed:', error);
+      });
+    });
+  });
+};
+var updateBillingReportInit = function updateBillingReportInit(ajaxUrl) {
+  var forms = document.querySelectorAll('.js-uploads-billing');
+  forms && forms.forEach(function (item) {
+    item.addEventListener('submit', function (event) {
+      event.preventDefault();
+      var target = event.target;
+      var formData = new FormData(target);
+      formData.append('action', 'update_billing_report');
+      var options = {
+        method: 'POST',
+        body: formData
+      };
+      fetch(ajaxUrl, options).then(function (res) {
+        return res.json();
+      }).then(function (requestStatus) {
+        if (requestStatus.success) {
+          console.log('update successfully:', requestStatus.data);
+          (0,_info_messages__WEBPACK_IMPORTED_MODULE_2__.printMessage)(requestStatus.data.message, 'success', 8000);
+          updateStatusRechange(ajaxUrl);
+        } else {
+          (0,_info_messages__WEBPACK_IMPORTED_MODULE_2__.printMessage)("Error update:".concat(requestStatus.data.message), 'danger', 8000);
         }
       }).catch(function (error) {
         (0,_info_messages__WEBPACK_IMPORTED_MODULE_2__.printMessage)("Request failed: ".concat(error), 'danger', 8000);
@@ -4144,6 +4174,40 @@ var initGetInfoDriver = function initGetInfoDriver(ProjectsLinks) {
       });
     });
   }
+};
+
+/***/ }),
+
+/***/ "./src/js/components/filter-clean.ts":
+/*!*******************************************!*\
+  !*** ./src/js/components/filter-clean.ts ***!
+  \*******************************************/
+/***/ (function(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   cleanUrlByFilter: function() { return /* binding */ cleanUrlByFilter; }
+/* harmony export */ });
+var cleanUrlByFilter = function cleanUrlByFilter() {
+  var form = document.getElementById('navbarNavDarkDropdown');
+  form && form.addEventListener('submit', function (event) {
+    event.preventDefault();
+    var params = new URLSearchParams();
+    var fmonth = this.elements.fmonth.value;
+    var fyear = this.elements.fyear.value;
+    var dispatcher = this.elements.dispatcher.value;
+    var mySearch = this.elements.my_search.value;
+    var loadStatus = this.elements.load_status.value;
+    var source = this.elements.source.value;
+    if (fmonth) params.append('fmonth', fmonth);
+    if (fyear) params.append('fyear', fyear);
+    if (dispatcher) params.append('dispatcher', dispatcher);
+    if (mySearch) params.append('my_search', mySearch);
+    if (loadStatus) params.append('load_status', loadStatus);
+    if (source) params.append('source', source);
+    window.location.href = "?".concat(params.toString());
+  });
 };
 
 /***/ }),
@@ -14456,6 +14520,8 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _components_sidebar_init__WEBPACK_IMPORTED_MODULE_12__ = __webpack_require__(/*! ./components/sidebar-init */ "./src/js/components/sidebar-init.ts");
 /* harmony import */ var _components_auto_fill_address__WEBPACK_IMPORTED_MODULE_13__ = __webpack_require__(/*! ./components/auto-fill-address */ "./src/js/components/auto-fill-address.ts");
 /* harmony import */ var _components_auth_users__WEBPACK_IMPORTED_MODULE_14__ = __webpack_require__(/*! ./components/auth-users */ "./src/js/components/auth-users.ts");
+/* harmony import */ var _components_filter_clean__WEBPACK_IMPORTED_MODULE_15__ = __webpack_require__(/*! ./components/filter-clean */ "./src/js/components/filter-clean.ts");
+
 
 
 
@@ -14495,6 +14561,7 @@ function ready() {
   (0,_components_create_report__WEBPACK_IMPORTED_MODULE_3__.removeOneFileInitial)(urlAjax);
   (0,_components_change_table__WEBPACK_IMPORTED_MODULE_9__.changeTableInit)(urlAjax);
   (0,_components_auth_users__WEBPACK_IMPORTED_MODULE_14__.AuthUsersInit)(urlAjax);
+  (0,_components_create_report__WEBPACK_IMPORTED_MODULE_3__.updateBillingReportInit)(urlAjax);
   (0,_components_driver_Info__WEBPACK_IMPORTED_MODULE_10__.initGetInfoDriver)(useServices);
   (0,_components_create_report__WEBPACK_IMPORTED_MODULE_3__.additionalContactsInit)();
   (0,_components_toggle_blocks_init__WEBPACK_IMPORTED_MODULE_8__.toggleBlocksInit)();
@@ -14505,6 +14572,7 @@ function ready() {
   (0,_components_tooltip_start__WEBPACK_IMPORTED_MODULE_11__.updateTooltip)();
   (0,_components_sidebar_init__WEBPACK_IMPORTED_MODULE_12__.toggleSidebarInit)();
   (0,_components_auto_fill_address__WEBPACK_IMPORTED_MODULE_13__.autoFillAddress)(hereApi);
+  (0,_components_filter_clean__WEBPACK_IMPORTED_MODULE_15__.cleanUrlByFilter)();
 }
 window.document.addEventListener('DOMContentLoaded', ready);
 }();

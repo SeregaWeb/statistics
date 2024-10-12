@@ -3,8 +3,8 @@ require_once( ABSPATH . 'wp-admin/includes/upgrade.php' );
 
 class TMSReports extends TMSReportsHelper {
 	
-	public $table_main = '';
-	public $table_meta = '';
+	public $table_main     = '';
+	public $table_meta     = '';
 	public $per_page_loads = 20;
 	
 	public function __construct() {
@@ -16,6 +16,345 @@ class TMSReports extends TMSReportsHelper {
 		}
 	}
 	
+	// GET ITEMS
+	
+	/**
+	 * @param $args
+	 * Get table items and filter
+	 *
+	 * @return array
+	 */
+	public function get_table_items( $args = array() ) {
+		global $wpdb;
+		
+		$table_main   = $wpdb->prefix . $this->table_main;
+		$table_meta   = $wpdb->prefix . $this->table_meta;
+		$per_page     = $this->per_page_loads;
+		$current_page = isset( $_GET[ 'paged' ] ) ? absint( $_GET[ 'paged' ] ) : 1;
+		$sort_by      = ! empty( $args[ 'sort_by' ] ) ? $args[ 'sort_by' ] : 'date_booked';
+		$sort_order   = ! empty( $args[ 'sort_order' ] ) && strtolower( $args[ 'sort_order' ] ) == 'asc' ? 'ASC'
+			: 'DESC';
+		
+		
+		$join_builder = "
+			FROM $table_main AS main
+			LEFT JOIN $table_meta AS dispatcher
+				ON main.id = dispatcher.post_id
+				AND dispatcher.meta_key = 'dispatcher_initials'
+			LEFT JOIN $table_meta AS reference
+				ON main.id = reference.post_id
+				AND reference.meta_key = 'reference_number'
+			LEFT JOIN $table_meta AS unit_number
+				ON main.id = unit_number.post_id
+				AND unit_number.meta_key = 'unit_number_name'
+			LEFT JOIN $table_meta AS load_status
+				ON main.id = load_status.post_id
+				AND load_status.meta_key = 'load_status'
+			LEFT JOIN $table_meta AS source
+				ON main.id = source.post_id
+				AND source.meta_key = 'source'
+			WHERE 1=1
+		";
+		
+		// Основной запрос
+		$sql = "SELECT main.*,
+			dispatcher.meta_value AS dispatcher_initials_value,
+			reference.meta_value AS reference_number_value,
+			unit_number.meta_value AS unit_number_value
+	" . $join_builder;
+		
+		$where_conditions = array();
+		$where_values     = array();
+		
+		// Фильтрация по статусу
+		if ( ! empty( $args[ 'status_post' ] ) ) {
+			$where_conditions[] = "main.status_post = %s";
+			$where_values[]     = $args[ 'status_post' ];
+		}
+		
+		// Фильтрация по dispatcher_initials
+		if ( ! empty( $args[ 'dispatcher' ] ) ) {
+			$where_conditions[] = "dispatcher.meta_value = %s";
+			$where_values[]     = $args[ 'dispatcher' ];
+		}
+		
+		if ( ! empty( $args[ 'load_status' ] ) ) {
+			$where_conditions[] = "load_status.meta_value = %s";
+			$where_values[]     = $args[ 'load_status' ];
+		}
+		
+		if ( ! empty( $args[ 'source' ] ) ) {
+			$where_conditions[] = "source.meta_value = %s";
+			$where_values[]     = $args[ 'source' ];
+		}
+		
+		// Фильтрация по reference_number
+		if ( ! empty( $args[ 'my_search' ] ) ) {
+			$where_conditions[] = "(reference.meta_value LIKE %s OR unit_number.meta_value LIKE %s)";
+			$search_value       = '%' . $wpdb->esc_like( $args[ 'my_search' ] ) . '%';
+			$where_values[]     = $search_value;
+			$where_values[]     = $search_value;
+		}
+		
+		if ( ! empty( $args[ 'month' ] ) && ! empty( $args[ 'year' ] ) ) {
+			$where_conditions[] = "date_booked IS NOT NULL
+        AND YEAR(date_booked) = %d
+        AND MONTH(date_booked) = %d";
+			$where_values[]     = $args[ 'year' ];
+			$where_values[]     = $args[ 'month' ];
+		}
+		
+		// Фильтрация по только году
+		if ( ! empty( $args[ 'year' ] ) && empty( $args[ 'month' ] ) ) {
+			$where_conditions[] = "date_booked IS NOT NULL
+        AND YEAR(date_booked) = %d";
+			$where_values[]     = $args[ 'year' ];
+		}
+		
+		// Фильтрация по только месяцу
+		if ( ! empty( $args[ 'month' ] ) && empty( $args[ 'year' ] ) ) {
+			$where_conditions[] = "date_booked IS NOT NULL
+        AND MONTH(date_booked) = %d";
+			$where_values[]     = $args[ 'month' ];
+		}
+		
+		// Применяем фильтры к запросу
+		if ( ! empty( $where_conditions ) ) {
+			$sql .= ' AND ' . implode( ' AND ', $where_conditions );
+		}
+		
+		// Подсчёт общего количества записей с учётом фильтров
+		$total_records_sql = "SELECT COUNT(*)" . $join_builder;
+		if ( ! empty( $where_conditions ) ) {
+			$total_records_sql .= ' AND ' . implode( ' AND ', $where_conditions );
+		}
+		
+		$total_records = $wpdb->get_var( $wpdb->prepare( $total_records_sql, ...$where_values ) );
+		
+		// Вычисляем количество страниц
+		$total_pages = ceil( $total_records / $per_page );
+		
+		// Смещение для текущей страницы
+		$offset = ( $current_page - 1 ) * $per_page;
+		
+		// Добавляем сортировку и лимит для текущей страницы
+		$sql            .= " ORDER BY main.$sort_by $sort_order LIMIT %d, %d";
+		$where_values[] = $offset;
+		$where_values[] = $per_page;
+		
+		// Выполняем запрос
+		$main_results = $wpdb->get_results( $wpdb->prepare( $sql, ...$where_values ), ARRAY_A );
+		
+		// Собираем все ID записей для получения дополнительных метаданных
+		$post_ids = wp_list_pluck( $main_results, 'id' );
+		
+		// Если есть записи, получаем метаданные
+		$meta_data = array();
+		if ( ! empty( $post_ids ) ) {
+			$meta_sql     = "SELECT post_id, meta_key, meta_value
+					 FROM $table_meta
+					 WHERE post_id IN (" . implode( ',', array_map( 'absint', $post_ids ) ) . ")";
+			$meta_results = $wpdb->get_results( $meta_sql, ARRAY_A );
+			
+			// Преобразуем метаданные в ассоциативный массив по post_id
+			foreach ( $meta_results as $meta_row ) {
+				$post_id = $meta_row[ 'post_id' ];
+				if ( ! isset( $meta_data[ $post_id ] ) ) {
+					$meta_data[ $post_id ] = array();
+				}
+				$meta_data[ $post_id ][ $meta_row[ 'meta_key' ] ] = $meta_row[ 'meta_value' ];
+			}
+		}
+		
+		if ( is_array( $main_results ) && ! empty( $main_results ) ) {
+			// Объединяем основную таблицу с метаданными
+			foreach ( $main_results as &$result ) {
+				$post_id               = $result[ 'id' ];
+				$result[ 'meta_data' ] = isset( $meta_data[ $post_id ] ) ? $meta_data[ $post_id ] : array();
+			}
+		}
+		
+		return array(
+			'results'       => $main_results,
+			'total_pages'   => $total_pages,
+			'total_posts'   => $total_records,
+			'current_pages' => $current_page,
+		);
+	}
+	
+	/**
+	 * @param $ID
+	 * Get report by id
+	 *
+	 * @return array|array[]|null
+	 */
+	public function get_report_by_id( $ID ) {
+		global $wpdb;
+		
+		$table_main = "{$wpdb->prefix}{$this->table_main}";
+		$table_meta = "{$wpdb->prefix}{$this->table_meta}"; // Убедись, что ты правильно указал имя таблицы мета-данных
+		
+		// SQL запрос для получения данных из основной таблицы и мета-данных
+		$query = $wpdb->prepare( "
+        SELECT main.*, meta.meta_key, meta.meta_value
+        FROM $table_main AS main
+        LEFT JOIN $table_meta AS meta ON main.id = meta.post_id
+        WHERE main.id = %d
+    ", $ID );
+		
+		// Выполняем запрос
+		$results = $wpdb->get_results( $query );
+		
+		// Преобразуем результаты, чтобы сгруппировать мета-данные
+		if ( ! empty( $results ) ) {
+			$report = array(
+				'main' => array(),
+				'meta' => array()
+			);
+			
+			foreach ( $results as $row ) {
+				// Заполняем основную информацию только один раз
+				if ( empty( $report[ 'main' ] ) ) {
+					$report[ 'main' ] = (array) $row;
+					unset( $report[ 'main' ][ 'meta_key' ], $report[ 'main' ][ 'meta_value' ] );
+				}
+				
+				// Добавляем мета-данные в массив
+				if ( $row->meta_key && $row->meta_value ) {
+					$report[ 'meta' ][ $row->meta_key ] = $row->meta_value;
+				}
+			}
+			
+			return $report;
+		}
+		
+		return null; // Если нет результатов
+	}
+	
+	/**
+	 * @param $user_id
+	 * @param $project_needs
+	 * Get all loads count by user
+	 *
+	 * @return array
+	 */
+	public function get_load_counts_by_user_id( $user_id, $project_needs ) {
+		global $wpdb;
+		
+		$table_odysseia       = $wpdb->prefix . 'reports_odysseia';
+		$table_martlet        = $wpdb->prefix . 'reports_martlet';
+		$table_endurance      = $wpdb->prefix . 'reports_endurance';
+		$table_meta_odysseia  = $wpdb->prefix . 'reportsmeta_odysseia';
+		$table_meta_martlet   = $wpdb->prefix . 'reportsmeta_martlet';
+		$table_meta_endurance = $wpdb->prefix . 'reportsmeta_endurance';
+		$result               = array();
+		
+		if ( is_numeric( array_search( 'Odysseia', $project_needs ) ) ) {
+			$odysseia_count = $wpdb->get_var( $wpdb->prepare( "
+            SELECT COUNT(o.id)
+            FROM {$table_odysseia} o
+            INNER JOIN {$table_meta_odysseia} m ON o.id = m.post_id
+            WHERE m.meta_key = 'dispatcher_initials'
+            AND m.meta_value = %s
+            AND o.status_post = 'publish'", strval( $user_id ) ) );
+			
+			$result[ 'Odysseia' ] = $odysseia_count;
+		}
+		
+		if ( is_numeric( array_search( 'Martlet', $project_needs ) ) ) {
+			$martlet_count = $wpdb->get_var( $wpdb->prepare( "
+            SELECT COUNT(m.id)
+            FROM {$table_martlet} m
+            INNER JOIN {$table_meta_martlet} meta ON m.id = meta.post_id
+            WHERE meta.meta_key = 'dispatcher_initials'
+            AND meta.meta_value = %s
+            AND m.status_post = 'publish'", strval( $user_id ) ) );
+			
+			$result[ 'Martlet' ] = $martlet_count;
+		}
+		
+		if ( is_numeric( array_search( 'Endurance', $project_needs ) ) ) {
+			$endurance_count       = $wpdb->get_var( $wpdb->prepare( "
+            SELECT COUNT(e.id)
+            FROM {$table_endurance} e
+            INNER JOIN {$table_meta_endurance} meta ON e.id = meta.post_id
+            WHERE meta.meta_key = 'dispatcher_initials'
+            AND meta.meta_value = %s
+            AND e.status_post = 'publish'", strval( $user_id ) ) );
+			$result[ 'Endurance' ] = $endurance_count;
+		}
+		
+		return $result;
+	}
+	
+	/**
+	 * @param $record_id
+	 * function check required fields for load before publication
+	 *
+	 * @return array
+	 */
+	public function check_empty_fields( $record_id ) {
+		global $wpdb;
+		
+		// Таблица мета-данных
+		$table_meta_name = $wpdb->prefix . $this->table_meta;
+		
+		// Список обязательных полей для проверки
+		$required_fields = [
+			'customer_id'            => 'Customer ID',
+			'contact_name'           => 'Contact Name',
+			'contact_phone'          => 'Contact Phone',
+			'contact_email'          => 'Contact Email',
+			'dispatcher_initials'    => 'Dispatcher Initials',
+			'reference_number'       => 'Reference Number',
+			'pick_up_location'       => 'Pick-up Location',
+			'delivery_location'      => 'Delivery Location',
+			'unit_number_name'       => 'Unit Number',
+			'booked_rate'            => 'Booked Rate',
+			'driver_rate'            => 'Driver Rate',
+			'profit'                 => 'Profit',
+			'load_status'            => 'Load Status',
+			'load_type'              => 'Load Type',
+			'additional_contacts'    => 'Additional Contacts',
+			'attached_file_required' => 'Attached File Required'
+		];
+		
+		$empty_fields = [];
+		
+		// Проходим по каждому обязательному полю
+		foreach ( $required_fields as $meta_key => $label ) {
+			// Получаем значение для текущего поля из таблицы мета-данных
+			$meta_value = $wpdb->get_var( $wpdb->prepare( "
+			SELECT meta_value
+			FROM $table_meta_name
+			WHERE post_id = %d AND meta_key = %s
+		", $record_id, $meta_key ) );
+			
+			// Проверяем пустые значения или некорректные даты/числа
+			if ( empty( $meta_value ) || $meta_value === '0000-00-00' || ( $meta_value === '0.00' && $meta_key !== 'load_status' ) ) {
+				$empty_fields[] = '<strong>' . $label . '</strong>';
+			}
+		}
+		
+		// Возвращаем сообщение о незаполненных полях
+		if ( ! empty( $empty_fields ) ) {
+			return array(
+				'message' => "The following fields are empty: " . implode( ', ', $empty_fields ),
+				'status'  => false
+			);
+		} else {
+			return array( 'message' => "All required fields are filled.", 'status' => true );
+		}
+	}
+	
+	// GET ITEMS END
+	
+	// AJAX ACTIONS
+	
+	/**
+	 * function update draft report (tab 1)
+	 * @return void
+	 */
 	public function update_new_draft_report() {
 		// Check if it's an AJAX request (simple defense)
 		if ( defined( 'DOING_AJAX' ) && DOING_AJAX ) {
@@ -29,7 +368,7 @@ class TMSReports extends TMSReportsHelper {
 				"read_only"     => FILTER_SANITIZE_STRING,
 			] );
 			
-			if (isset($MY_INPUT['read_only'])) {
+			if ( isset( $MY_INPUT[ 'read_only' ] ) ) {
 				wp_send_json_success();
 			}
 			
@@ -74,114 +413,55 @@ class TMSReports extends TMSReportsHelper {
 		}
 	}
 	
-	public function update_report_draft_in_db( $data ) {
-		global $wpdb;
-		
-		$post_id = $data[ 'post_id' ]; // ID of the post to update
-		
-		$table_name = $wpdb->prefix . $this->table_main;
-		$user_id    = get_current_user_id();
-		
-		// Prepare the data to update
-		$update_params = array(
-			'user_id_updated'     => $user_id,
-			'date_updated'        => current_time( 'mysql' ),
-		);
-		
-		$post_meta = array(
-			'customer_id'         => $data[ 'customer_id' ],
-			'contact_name'        => $data[ 'contact_name' ],
-			'contact_phone'       => $data[ 'contact_phone' ],
-			'contact_email'       => $data[ 'contact_email' ],
-			'additional_contacts' => $data[ 'additional_contacts' ],
-		);
-		
-		// Specify the condition (WHERE clause)
-		$where = array( 'id' => $post_id );
-		
-		// Update the record in the database
-		$result = $wpdb->update( $table_name, $update_params, $where, array(
-			'%d',  // user_id_updated
-			'%s',  // date_updated
-		), array( '%d' ) );
-		
-		// Check if the update was successful
-		if ( $result !== false ) {
-			return $this->update_post_meta_data($post_id, $post_meta); // Update was successful
-		} else {
-			// Get the last SQL error
-			$error = $wpdb->last_error;
+	/**
+	 * function update draft report (tab 5)
+	 * @return void
+	 */
+	public function update_billing_report() {
+		// Check if it's an AJAX request (simple defense)
+		if ( defined( 'DOING_AJAX' ) && DOING_AJAX ) {
+			// Sanitize input data
+			$MY_INPUT = filter_var_array( $_POST, [
+				"post_id"          => FILTER_SANITIZE_STRING,
+				"factoring_status" => FILTER_SANITIZE_STRING,
+				"invoice"          => FILTER_SANITIZE_STRING,
+				"load_problem"     => FILTER_SANITIZE_STRING,
+			] );
 			
-			// Return a generic database error if no specific match is found
-			return new WP_Error( 'db_error', 'Error updating the company report in the database: ' . $error );
-		}
-	}
-	
-	public function add_report_draft_in_db( $data ) {
-		global $wpdb;
-		
-		$table_name = $wpdb->prefix . $this->table_main;
-		$user_id    = get_current_user_id();
-		
-		$insert_params = array(
-			'user_id_added'       => $user_id,
-			'date_created'        => current_time( 'mysql' ),
-			'user_id_updated'     => $user_id,
-			'date_updated'        => current_time( 'mysql' ),
-			'status_post'         => $data[ 'status_post' ],
-		);
-		
-		$post_meta = array(
-			'customer_id'         => $data[ 'customer_id' ],
-			'contact_name'        => $data[ 'contact_name' ],
-			'contact_phone'       => $data[ 'contact_phone' ],
-			'contact_email'       => $data[ 'contact_email' ],
-			'additional_contacts' => $data[ 'additional_contacts' ],
-		);
-		
-		$result = $wpdb->insert( $table_name, $insert_params, array(
-			'%d',  // user_id_added
-			'%s',  // date_created
-			'%d',  // user_id_updated
-			'%s',  // date_updated
-			'%s',  // status_post
-		) );
-		
-		// Check if the insert was successful
-		
-		if ( $result ) {
-			$id_new_post = $wpdb->insert_id;
-			$result = $this->update_post_meta_data($id_new_post, $post_meta);
-			return $id_new_post; // Return the ID of the added record
-		} else {
-			// Get the last SQL error
-			$error = $wpdb->last_error;
+			// Insert the company report
+			$result = $this->update_report_billing_in_db( $MY_INPUT );
 			
-			// Check for specific unique constraint violations
-			if ( strpos( $error, 'Duplicate entry' ) !== false ) {
-				if ( strpos( $error, 'company_name' ) !== false ) {
-					return new WP_Error( 'db_error', 'A company with this name already exists.' );
-				} elseif ( strpos( $error, 'mc_number' ) !== false ) {
-					return new WP_Error( 'db_error', 'A company with this MC number already exists.' );
-				} elseif ( strpos( $error, 'dot_number' ) !== false ) {
-					return new WP_Error( 'db_error', 'A company with this DOT number already exists.' );
+			if ( $result ) {
+				wp_send_json_success( [
+					'message' => 'Billing info successfully update',
+					'data'    => $MY_INPUT
+				] );
+			} else {
+				// Handle specific errors
+				if ( is_wp_error( $result ) ) {
+					wp_send_json_error( [ 'message' => $result->get_error_message() ] );
+				} else {
+					wp_send_json_error( [ 'message' => 'Company not update, error updating to database' ] );
 				}
 			}
-			
-			// Return a generic database error if no specific match is found
-			return new WP_Error( 'db_error', 'Error adding the company report to the database: ' . $error );
+		} else {
+			wp_send_json_error( [ 'message' => 'Invalid request' ] );
 		}
 	}
 	
+	/**
+	 * function add new report (tab 1)
+	 * @return void
+	 */
 	public function add_new_report_draft() {
 		// Check if it's an AJAX request (simple defense)
 		if ( defined( 'DOING_AJAX' ) && DOING_AJAX ) {
 			// Sanitize input data
 			$MY_INPUT = filter_var_array( $_POST, [
-				"customer_id"     => FILTER_SANITIZE_STRING,
-				"contact_name"    => FILTER_SANITIZE_STRING,
-				"contact_phone"   => FILTER_SANITIZE_STRING,
-				"contact_email"   => FILTER_SANITIZE_STRING,
+				"customer_id"   => FILTER_SANITIZE_STRING,
+				"contact_name"  => FILTER_SANITIZE_STRING,
+				"contact_phone" => FILTER_SANITIZE_STRING,
+				"contact_email" => FILTER_SANITIZE_STRING,
 			] );
 			
 			$additional_contacts = [];
@@ -235,83 +515,10 @@ class TMSReports extends TMSReportsHelper {
 		}
 	}
 	
-	public function get_report_by_id( $ID ) {
-		global $wpdb;
-		
-		$table_main = "{$wpdb->prefix}{$this->table_main}";
-		$table_meta = "{$wpdb->prefix}{$this->table_meta}"; // Убедись, что ты правильно указал имя таблицы мета-данных
-		
-		// SQL запрос для получения данных из основной таблицы и мета-данных
-		$query = $wpdb->prepare( "
-        SELECT main.*, meta.meta_key, meta.meta_value
-        FROM $table_main AS main
-        LEFT JOIN $table_meta AS meta ON main.id = meta.post_id
-        WHERE main.id = %d
-    ", $ID );
-		
-		// Выполняем запрос
-		$results = $wpdb->get_results( $query );
-		
-		// Преобразуем результаты, чтобы сгруппировать мета-данные
-		if ( ! empty( $results ) ) {
-			$report = array(
-				'main' => array(),
-				'meta' => array()
-			);
-			
-			foreach ( $results as $row ) {
-				// Заполняем основную информацию только один раз
-				if ( empty( $report['main'] ) ) {
-					$report['main'] = (array) $row;
-					unset( $report['main']['meta_key'], $report['main']['meta_value'] );
-				}
-				
-				// Добавляем мета-данные в массив
-				if ( $row->meta_key && $row->meta_value ) {
-					$report['meta'][$row->meta_key] = $row->meta_value;
-				}
-			}
-			
-			return $report;
-		}
-		
-		return null; // Если нет результатов
-	}
-	
-	public function create_table() {
-		global $wpdb;
-		
-		$tables = $this->tms_tables;
-		
-		foreach ( $tables as $val ) {
-			$table_name      = $wpdb->prefix . 'reports_' . strtolower( $val );
-			$table_meta_name = $wpdb->prefix . 'reportsmeta_' . strtolower( $val );
-			$charset_collate = $wpdb->get_charset_collate();
-			
-			$sql = "CREATE TABLE $table_name (
-		        id mediumint(9) NOT NULL AUTO_INCREMENT,
-		        user_id_added mediumint(9) NOT NULL,
-		        date_created datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
-		        user_id_updated mediumint(9) NULL NULL,
-		        date_updated datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
-		        status_post varchar(50) NULL DEFAULT NULL,
-		        PRIMARY KEY  (id)
-    		) $charset_collate;";
-			
-			dbDelta( $sql );
-			
-			$sql = "CREATE TABLE $table_meta_name (
-		        id mediumint(9) NOT NULL AUTO_INCREMENT,
-		        post_id mediumint(9) NOT NULL,
-		        meta_key longtext,
-		        meta_value longtext,
-		        PRIMARY KEY  (id)
-    		) $charset_collate;";
-			
-			dbDelta( $sql );
-		}
-	}
-	
+	/**
+	 * function update draft report files (tab 4)
+	 * @return void
+	 */
 	public function update_files_report() {
 		// check if it's ajax request (simple defence)
 		if ( defined( 'DOING_AJAX' ) && DOING_AJAX ) {
@@ -321,8 +528,8 @@ class TMSReports extends TMSReportsHelper {
 			] );
 			
 			if ( ! empty( $_FILES[ 'screen_picture' ] ) ) {
-				$files          = $_FILES[ 'screen_picture' ];
-				if ($files['size'] > 0) {
+				$files = $_FILES[ 'screen_picture' ];
+				if ( $files[ 'size' ] > 0 ) {
 					
 					$uploaded_files = [];
 					
@@ -373,8 +580,8 @@ class TMSReports extends TMSReportsHelper {
 			}
 			
 			if ( ! empty( $_FILES[ 'update_rate_confirmation' ] ) ) {
-				$files          = $_FILES[ 'update_rate_confirmation' ];
-					if ($files['size'] > 0) {
+				$files = $_FILES[ 'update_rate_confirmation' ];
+				if ( $files[ 'size' ] > 0 ) {
 					
 					$uploaded_files = [];
 					
@@ -538,6 +745,10 @@ class TMSReports extends TMSReportsHelper {
 		}
 	}
 	
+	/**
+	 * function update draft report (tab 3)
+	 * @return void
+	 */
 	public function update_shipper_info() {
 		// check if it's ajax request (simple defence)
 		if ( defined( 'DOING_AJAX' ) && DOING_AJAX ) {
@@ -595,53 +806,10 @@ class TMSReports extends TMSReportsHelper {
 		}
 	}
 	
-	public function add_new_shipper_info( $data ) {
-		global $wpdb;
-		
-		$post_id = + $data[ 'post_id' ]; // ID of the post to update
-		
-		$table_name = $wpdb->prefix . $this->table_main;
-		$user_id    = get_current_user_id();
-		
-		// Prepare the data to update
-		$update_params = array(
-			'user_id_updated'   => $user_id,
-			'date_updated'      => current_time( 'mysql' ),
-		);
-		
-		$post_meta = array(
-			'pick_up_location'  => $data[ 'pick_up_location_json' ],
-			'delivery_location' => $data[ 'delivery_location_json' ],
-		);
-		
-		// Specify the condition (WHERE clause)
-		$where = array( 'id' => $post_id );
-		
-		// Update the record in the database
-		$result = $wpdb->update( $table_name, $update_params, $where, array(
-			'%d',  // customer_id
-			'%s',  // date_updated
-			'%s',  // pick_up_location
-			'%s',  // delivery_location
-		), array( '%d' ) );
-		
-		if ( false === $result ) {
-			var_dump( "Update failed: " . $wpdb->last_error );
-			var_dump( "Last query: " . $wpdb->last_query );
-		}
-		
-		// Check if the update was successful
-		if ( $result !== false ) {
-			return $this->update_post_meta_data($post_id, $post_meta);
-		} else {
-			// Get the last SQL error
-			$error = $wpdb->last_error;
-			
-			// Return a generic database error if no specific match is found
-			return new WP_Error( 'db_error', 'Error updating the shipper report in the database: ' . $error );
-		}
-	}
-	
+	/**
+	 * function update draft report (tab 2)
+	 * @return void
+	 */
 	public function add_new_report() {
 		// check if it's ajax request (simple defence)
 		if ( defined( 'DOING_AJAX' ) && DOING_AJAX ) {
@@ -675,8 +843,8 @@ class TMSReports extends TMSReportsHelper {
 				$MY_INPUT[ "driver_rate" ] = $this->convert_to_number( $MY_INPUT[ "driver_rate" ] );
 				$MY_INPUT[ "profit" ]      = $this->convert_to_number( $MY_INPUT[ "profit" ] );
 				
-				$MY_INPUT['percent_booked_rate'] = $MY_INPUT[ "booked_rate" ] * 0.02;
-				$MY_INPUT['true_profit'] = $MY_INPUT[ "booked_rate" ] - ($MY_INPUT['percent_booked_rate'] + $MY_INPUT[ "driver_rate" ]);
+				$MY_INPUT[ 'percent_booked_rate' ] = $MY_INPUT[ "booked_rate" ] * 0.02;
+				$MY_INPUT[ 'true_profit' ]         = $MY_INPUT[ "booked_rate" ] - ( $MY_INPUT[ 'percent_booked_rate' ] + $MY_INPUT[ "driver_rate" ] );
 				
 			}
 			
@@ -693,282 +861,10 @@ class TMSReports extends TMSReportsHelper {
 		}
 	}
 	
-	public function add_report_files( $data ) {
-		global $wpdb;
-		
-		$table_name = $wpdb->prefix . $this->table_main;
-		$table_meta_name = $wpdb->prefix . $this->table_meta;
-		$user_id    = get_current_user_id();
-		$post_id    = $data[ 'post_id' ];
-		
-	// Получаем текущие данные по мета-ключам для поста
-	$meta_data = $wpdb->get_results(
-		$wpdb->prepare(
-			"SELECT meta_key, meta_value FROM {$table_meta_name} WHERE post_id = %d",
-			$post_id
-		),
-		ARRAY_A
-	);
-		
-		// Преобразуем мета-данные в удобный массив
-		$current_data = array_column( $meta_data, 'meta_value', 'meta_key' );
-
-		
-		// Подготавливаем новые прикрепленные файлы (добавляем к существующим)
-		$new_attached_files = ! empty( $data['uploaded_files'] ) ? implode( ', ', $data['uploaded_files'] ) : '';
-		if ($new_attached_files && ! empty($current_data['attached_files'])) {
-			$new_attached_files = $current_data['attached_files'] . ', ' . $new_attached_files;
-		} elseif (empty($new_attached_files)) {
-			$new_attached_files = $current_data['attached_files'];
-		}
-		
-		// Используем переданные данные для `attached_file_required`, если они есть, иначе оставляем существующие
-		$attached_files_required = ! empty( $data['uploaded_file_required'] )
-			? implode( ', ', $data['uploaded_file_required'] )
-			: $current_data['attached_file_required'];
-		
-		// Обновляем подтверждение ставки, если оно изменилось
-		$updated_rate_confirmation = ! empty( $data['updated_rate_confirmation'] )
-			? implode( ', ', $data['updated_rate_confirmation'] )
-			: $current_data['updated_rate_confirmation'];
-		
-		$updated_screen_picture = ! empty( $data['screen_picture'] )
-			? implode( ', ', $data['screen_picture'] )
-			: $current_data['screen_picture'];
-		
-		
-		if (! empty($data['updated_rate_confirmation'])) {
-			if (implode(', ', $data['updated_rate_confirmation']) !== $current_data['updated_rate_confirmation']) {
-				var_dump('NEED SEND MESSAGE USER');
-			}
-		}
-		
-		
-		// Prepare the data to update
-		$update_params = array(
-			'user_id_updated'           => $user_id,
-			'date_updated'              => current_time( 'mysql' ),
-		);
-		
-		$post_meta = array(
-			'attached_files'            => $new_attached_files,
-			'attached_file_required'    => $attached_files_required,
-			'updated_rate_confirmation' => $updated_rate_confirmation,
-			'screen_picture'            => $updated_screen_picture,
-		);
-		
-		// Specify the condition (WHERE clause)
-		$where = array( 'id' => $post_id );
-		
-		// Update the record in the database
-		$result = $wpdb->update( $table_name, $update_params, $where, array(
-			'%d',  // user_id_updated
-			'%s',  // date_updated
-		), array( '%d' ) );
-		
-		// Check if the update was successful
-		if ( $result !== false ) {
-			return $this->update_post_meta_data($post_id, $post_meta);
-		} else {
-			// Get the last SQL error
-			$error = $wpdb->last_error;
-			
-			// Return a generic database error if no specific match is found
-			return new WP_Error( 'db_error', 'Error updating the company report in the database: ' . $error );
-		}
-	}
-	
-	function update_post_meta_data($post_id, $meta_data) {
-		global $wpdb;
-		$table_meta_name = $wpdb->prefix . $this->table_meta;
-		
-		foreach ($meta_data as $meta_key => $meta_value) {
-			$existing = $wpdb->get_var($wpdb->prepare("
-            SELECT id FROM $table_meta_name
-            WHERE post_id = %d AND meta_key = %s
-        ", $post_id, $meta_key));
-			
-			if ($existing) {
-				// Обновляем существующую запись
-				$wpdb->update(
-					$table_meta_name,
-					array('meta_value' => $meta_value),
-					array('id' => $existing),
-					array('%s'),
-					array('%d')
-				);
-			} else {
-				// Вставляем новую запись
-				$wpdb->insert(
-					$table_meta_name,
-					array(
-						'post_id' => $post_id,
-						'meta_key' => $meta_key,
-						'meta_value' => $meta_value
-					),
-					array('%d', '%s', '%s')
-				);
-			}
-		}
-		
-		// Проверка на ошибки
-		if ($wpdb->last_error) {
-			return new WP_Error('db_error', 'Ошибка при обновлении метаданных: ' . $wpdb->last_error);
-		}
-		
-		return true;
-	}
-	
-	
-	public function add_load( $data ) {
-		global $wpdb;
-		
-		$table_name = $wpdb->prefix . $this->table_main;
-		$user_id    = get_current_user_id();
-		
-		// Prepare the instructions field
-		$instructions = ! empty( $data[ 'instructions' ] ) ? implode( ', ', $data[ 'instructions' ] ) : null;
-		
-		// Prepare the data to update
-		$update_params = array(
-			'user_id_updated'     => $user_id,
-			'date_updated'        => current_time( 'mysql' ),
-		);
-		
-		$post_meta = array(
-			'pick_up_date'        => $data[ 'pick_up_date' ],
-			'load_status'         => $data[ 'load_status' ],
-			'instructions'        => $instructions,
-			'source'              => $data[ 'source' ],
-			'load_type'           => $data[ 'load_type' ],
-			'commodity'           => $data[ 'commodity' ],
-			'weight'              => $data[ 'weight' ],
-			'notes'               => $data[ 'notes' ],
-			'date_booked'         => $data[ 'date_booked' ],
-			'dispatcher_initials' => $data[ 'dispatcher_initials' ],
-			'reference_number'    => $data[ 'reference_number' ],
-			'unit_number_name'    => $data[ 'unit_number_name' ],
-			'booked_rate'         => $data[ 'booked_rate' ],
-			'driver_rate'         => $data[ 'driver_rate' ],
-			'profit'              => $data[ 'profit' ],
-			'percent_booked_rate' => $data[ 'percent_booked_rate' ],
-			'true_profit'         => $data[ 'true_profit' ],
-		);
-		
-		$post_id = $data[ 'post_id' ];
-		// Specify the condition (WHERE clause) - assuming post_id is passed in the data array
-		$where = array( 'id' => $data[ 'post_id' ] );
-		// Perform the update
-		$result = $wpdb->update( $table_name, $update_params, $where, array(
-			'%d',  // user_id_updated
-			'%s',  // date_updated
-		), array( '%d' ) // The data type of the where clause (id is an integer)
-		);
-		
-		// Check if the update was successful
-		if ( $result !== false ) {
-			return $this->update_post_meta_data($post_id, $post_meta);
-		} else {
-			return false; // Error occurred during the update
-		}
-	}
-	
-	public function get_table_items( $args = array() ) {
-		global $wpdb;
-		
-		$table_main = $wpdb->prefix . $this->table_main;
-		$table_meta = $wpdb->prefix . $this->table_meta;
-		$per_page   = $this->per_page_loads;
-		$current_page = isset( $_GET['paged'] ) ? absint( $_GET['paged'] ) : 1;
-		$sort_by = !empty( $args['sort_by'] ) ? $args['sort_by'] : 'id';
-		$sort_order = !empty( $args['sort_order'] ) && strtolower( $args['sort_order'] ) == 'asc' ? 'ASC' : 'DESC';
-		
-		// Основной запрос для основной таблицы
-		$sql = "SELECT main.*
-			FROM $table_main AS main
-			WHERE 1=1";
-		
-		$where_conditions = array();
-		$where_values     = array();
-		
-		// Добавляем условия фильтрации
-		if ( ! empty( $args['status_post'] ) ) {
-			$where_conditions[] = "main.status_post = %s";
-			$where_values[]     = $args['status_post'];
-		}
-		
-		if ( ! empty( $args['user_id'] ) ) {
-			$where_conditions[] = "main.user_id_added = %d";
-			$where_values[]     = $args['user_id'];
-		}
-		
-		if ( ! empty( $args['date_created'] ) ) {
-			$where_conditions[] = "main.date_created >= %s";
-			$where_values[]     = $args['date_created'];
-		}
-		
-		// Применяем фильтры к запросу
-		if ( ! empty( $where_conditions ) ) {
-			$sql .= ' AND ' . implode( ' AND ', $where_conditions );
-		}
-		
-		// Подсчитываем общее количество записей с учетом фильтров
-		$total_records_sql = "SELECT COUNT(*) FROM $table_main AS main WHERE 1=1";
-		if ( ! empty( $where_conditions ) ) {
-			$total_records_sql .= ' AND ' . implode( ' AND ', $where_conditions );
-		}
-		
-		$total_records = $wpdb->get_var( $wpdb->prepare( $total_records_sql, ...$where_values ) );
-		
-		// Вычисляем количество страниц
-		$total_pages = ceil( $total_records / $per_page );
-		
-		// Вычисляем смещение для текущей страницы
-		$offset = ( $current_page - 1 ) * $per_page;
-		
-		// Добавляем сортировку и ограничение для текущей страницы
-		$sql .= " ORDER BY main.$sort_by $sort_order LIMIT %d, %d";
-		$where_values[] = $offset;
-		$where_values[] = $per_page;
-		
-		// Выполняем запрос к базе данных для получения основной таблицы
-		$main_results = $wpdb->get_results( $wpdb->prepare( $sql, ...$where_values ), ARRAY_A );
-		
-		// Собираем все ID записей для запроса метаданных
-		$post_ids = wp_list_pluck( $main_results, 'id' );
-		
-		// Если у нас есть записи, то собираем метаданные
-		$meta_data = array();
-		if ( ! empty( $post_ids ) ) {
-			$meta_sql = "SELECT post_id, meta_key, meta_value
-					 FROM $table_meta
-					 WHERE post_id IN (" . implode( ',', array_map( 'absint', $post_ids ) ) . ")";
-			$meta_results = $wpdb->get_results( $meta_sql, ARRAY_A );
-			
-			// Преобразуем метаданные в ассоциативный массив по post_id
-			foreach ( $meta_results as $meta_row ) {
-				$post_id = $meta_row['post_id'];
-				if ( ! isset( $meta_data[ $post_id ] ) ) {
-					$meta_data[ $post_id ] = array();
-				}
-				$meta_data[ $post_id ][ $meta_row['meta_key'] ] = $meta_row['meta_value'];
-			}
-		}
-		
-		// Объединяем основную таблицу и метаданные
-		foreach ( $main_results as &$result ) {
-			$post_id = $result['id'];
-			$result['meta_data'] = isset( $meta_data[ $post_id ] ) ? $meta_data[ $post_id ] : array();
-		}
-		
-		return array(
-			'results'       => $main_results,
-			'total_pages'   => $total_pages,
-			'total_posts'   => $total_records,
-			'current_pages' => $current_page,
-		);
-	}
-	
+	/**
+	 * function delete one file (tab 1)
+	 * @return void
+	 */
 	public function delete_open_image() {
 		// check if it's ajax request (simple defence)
 		if ( defined( 'DOING_AJAX' ) && DOING_AJAX ) {
@@ -991,6 +887,10 @@ class TMSReports extends TMSReportsHelper {
 		}
 	}
 	
+	/**
+	 * function update post status
+	 * @return void
+	 */
 	public function update_post_status() {
 		if ( defined( 'DOING_AJAX' ) && DOING_AJAX ) {
 			
@@ -1012,193 +912,10 @@ class TMSReports extends TMSReportsHelper {
 		}
 	}
 	
-	public function get_load_counts_by_user_id( $user_id, $project_needs ) {
-		global $wpdb;
-		
-		$table_odysseia  = $wpdb->prefix . 'reports_odysseia';
-		$table_martlet   = $wpdb->prefix . 'reports_martlet';
-		$table_endurance = $wpdb->prefix . 'reports_endurance';
-		
-		$result = array();
-		
-		if ( is_numeric( array_search( 'Odysseia', $project_needs ) ) ) {
-			
-			$odysseia_count = $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(id) FROM " . $table_odysseia . " WHERE user_id_added = %d AND status_post = 'publish'", $user_id ) );
-			
-			$result[ 'Odysseia' ] = $odysseia_count;
-		}
-		
-		if ( is_numeric( array_search( 'Martlet', $project_needs ) ) ) {
-			$martlet_count       = $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(id) FROM " . $table_martlet . " WHERE user_id_added = %d AND status_post = 'publish'", $user_id ) );
-			$result[ 'Martlet' ] = $martlet_count;
-		}
-		
-		if ( is_numeric( array_search( 'Endurance', $project_needs ) ) ) {
-			$endurance_count       = $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(id) FROM " . $table_endurance . " WHERE user_id_added = %d AND status_post = 'publish'", $user_id ) );
-			$result[ 'Endurance' ] = $endurance_count;
-		}
-		
-		return $result;
-	}
-	
-	public function update_post_status_in_db( $data ) {
-		global $wpdb;
-		
-		$table_name = $wpdb->prefix . $this->table_main;
-		$user_id    = get_current_user_id();
-		
-		$update_params = array(
-			'user_id_updated' => $user_id,
-			'date_updated'    => current_time( 'mysql' ),
-			'status_post'     => $data[ 'post_status' ],
-		);
-		
-		// Specify the condition (WHERE clause) - assuming post_id is passed in the data array
-		$where = array( 'id' => $data[ 'post_id' ] );
-		// Perform the update
-		$result = $wpdb->update( $table_name, $update_params, $where, array(
-			'%d',  // user_id_updated
-			'%s',  // date_updated
-			'%s',  // post_status
-		), array( '%d' ) // The data type of the where clause (id is an integer)
-		);
-		
-		// Check if the update was successful
-		if ( $result !== false ) {
-			return true; // Update was successful
-		} else {
-			return false; // Error occurred during the update
-		}
-	}
-	
-	public function remove_one_image_in_db( $data ) {
-		global $wpdb;
-		$table_meta_name = $wpdb->prefix . $this->table_meta; // Имя таблицы мета данных
-		
-		// Извлекаем ID изображения и имя мета-ключа
-		$image_id    = intval( $data['image-id'] );
-		$image_field = sanitize_text_field( $data['image-fields'] );
-		$post_id     = intval( $data['post_id'] );
-		
-		// Проверяем корректность входных данных
-		if ( ! $image_id || ! $image_field || ! $post_id ) {
-			return new WP_Error( 'invalid_input', 'Invalid image ID, field name or post ID.' );
-		}
-		
-		// Извлекаем текущее значение поля meta_key для поста
-		$current_value = $wpdb->get_var( $wpdb->prepare( "
-		SELECT meta_value
-		FROM $table_meta_name
-		WHERE post_id = %d AND meta_key = %s",
-			$post_id, $image_field
-		) );
-		
-		if ( $current_value ) {
-			$new_value = '';
-			
-			// Для поля attached_files, где значения хранятся через запятую
-			if ( $image_field === 'attached_files' ) {
-				$ids = explode( ',', $current_value );
-				$ids = array_map( 'intval', $ids );
-				
-				// Удаляем указанный ID
-				$new_ids   = array_diff( $ids, array( $image_id ) );
-				$new_value = implode( ',', $new_ids );
-			} elseif ( $image_field === 'attached_file_required' || $image_field === 'updated_rate_confirmation' || $image_field === 'screen_picture' ) {
-				// Для полей attached_file_required и updated_rate_confirmation
-				if ( $current_value == $image_id ) {
-					$new_value = ''; // Удаляем значение, если оно совпадает
-				} else {
-					return new WP_Error( 'id_not_found', 'The specified ID was not found in the field.' );
-				}
-			} else {
-				return new WP_Error( 'invalid_field', 'Invalid field name.' );
-			}
-			
-			// Обновляем запись в таблице мета-данных
-			$result = $wpdb->update(
-				$table_meta_name,
-				array( 'meta_value' => $new_value ),
-				array( 'post_id' => $post_id, 'meta_key' => $image_field ),
-				array( '%s' ), // Формат для meta_value
-				array( '%d', '%s' ) // Форматы для post_id и meta_key
-			);
-			
-			// Удаляем вложение из медиа библиотеки
-			$deleted = wp_delete_attachment( $image_id, true );
-			
-			if ( ! $deleted ) {
-				return new WP_Error( 'delete_failed', 'Failed to delete the attachment.' );
-			}
-			
-			// Проверяем результат обновления в базе данных
-			if ( $result !== false ) {
-				return true; // Успешное обновление
-			} else {
-				return new WP_Error( 'db_update_failed', 'Failed to update the database.' );
-			}
-		} else {
-			return new WP_Error( 'no_value_found', 'No value found for the specified field.' );
-		}
-	}
-	
-	public function check_empty_fields( $record_id ) {
-		global $wpdb;
-		
-		// Таблица мета-данных
-		$table_meta_name = $wpdb->prefix . $this->table_meta;
-		
-		// Список обязательных полей для проверки
-		$required_fields = [
-			'customer_id'            => 'Customer ID',
-			'contact_name'           => 'Contact Name',
-			'contact_phone'          => 'Contact Phone',
-			'contact_email'          => 'Contact Email',
-			'date_booked'            => 'Date Booked',
-			'dispatcher_initials'    => 'Dispatcher Initials',
-			'reference_number'       => 'Reference Number',
-			'pick_up_location'       => 'Pick-up Location',
-			'delivery_location'      => 'Delivery Location',
-			'unit_number_name'       => 'Unit Number',
-			'booked_rate'            => 'Booked Rate',
-			'driver_rate'            => 'Driver Rate',
-			'profit'                 => 'Profit',
-			'pick_up_date'           => 'Pick-up Date',
-			'load_status'            => 'Load Status',
-			'load_type'              => 'Load Type',
-			'additional_contacts'    => 'Additional Contacts',
-			'attached_file_required' => 'Attached File Required'
-		];
-		
-		$empty_fields = [];
-		
-		// Проходим по каждому обязательному полю
-		foreach ( $required_fields as $meta_key => $label ) {
-			// Получаем значение для текущего поля из таблицы мета-данных
-			$meta_value = $wpdb->get_var( $wpdb->prepare( "
-			SELECT meta_value
-			FROM $table_meta_name
-			WHERE post_id = %d AND meta_key = %s
-		", $record_id, $meta_key ) );
-			
-			// Проверяем пустые значения или некорректные даты/числа
-			if ( empty( $meta_value ) || $meta_value === '0000-00-00' || ( $meta_value === '0.00' && $meta_key !== 'load_status' ) ) {
-				$empty_fields[] = '<strong>' . $label . '</strong>';
-			}
-		}
-		
-		// Возвращаем сообщение о незаполненных полях
-		if ( ! empty( $empty_fields ) ) {
-			return array(
-				'message' => "The following fields are empty: " . implode( ', ', $empty_fields ),
-				'status'  => false
-			);
-		} else {
-			return array( 'message' => "All required fields are filled.", 'status' => true );
-		}
-	}
-	
-	
+	/**
+	 * function change status post
+	 * @return void
+	 */
 	public function rechange_status_load() {
 		if ( defined( 'DOING_AJAX' ) && DOING_AJAX ) {
 			
@@ -1230,11 +947,606 @@ class TMSReports extends TMSReportsHelper {
 		}
 	}
 	
+	// AJAX ACTIONS END
 	
+	
+	// UPDATE IN DATABASE
+	
+	/**
+	 * @param $data
+	 * function update in db (tab 5)
+	 *
+	 * @return true|WP_Error
+	 */
+	public function update_report_billing_in_db( $data ) {
+		global $wpdb;
+		
+		$post_id = $data[ 'post_id' ]; // ID of the post to update
+		
+		$table_name = $wpdb->prefix . $this->table_main;
+		$user_id    = get_current_user_id();
+		
+		// Prepare the data to update
+		$update_params = array(
+			'user_id_updated' => $user_id,
+			'date_updated'    => current_time( 'mysql' ),
+			'load_problem'    => $data[ 'load_problem' ]
+		);
+		
+		$post_meta = array(
+			'invoice'          => $data[ 'invoice' ],
+			'factoring_status' => $data[ 'factoring_status' ],
+		);
+		
+		// Specify the condition (WHERE clause)
+		$where = array( 'id' => $post_id );
+		
+		// Update the record in the database
+		$result = $wpdb->update( $table_name, $update_params, $where, array(
+			'%d',  // user_id_updated
+			'%s',  // date_updated
+			'%s',  // load_problem
+		), array( '%d' ) );
+		
+		// Check if the update was successful
+		if ( $result !== false ) {
+			return $this->update_post_meta_data( $post_id, $post_meta ); // Update was successful
+		} else {
+			// Get the last SQL error
+			$error = $wpdb->last_error;
+			
+			// Return a generic database error if no specific match is found
+			return new WP_Error( 'db_error', 'Error updating the company report in the database: ' . $error );
+		}
+	}
+	
+	/**
+	 * @param $data
+	 * function update in db (tab 1)
+	 *
+	 * @return true|WP_Error
+	 */
+	public function update_report_draft_in_db( $data ) {
+		global $wpdb;
+		
+		$post_id = $data[ 'post_id' ]; // ID of the post to update
+		
+		$table_name = $wpdb->prefix . $this->table_main;
+		$user_id    = get_current_user_id();
+		
+		// Prepare the data to update
+		$update_params = array(
+			'user_id_updated' => $user_id,
+			'date_updated'    => current_time( 'mysql' ),
+		);
+		
+		$post_meta = array(
+			'customer_id'         => $data[ 'customer_id' ],
+			'contact_name'        => $data[ 'contact_name' ],
+			'contact_phone'       => $data[ 'contact_phone' ],
+			'contact_email'       => $data[ 'contact_email' ],
+			'additional_contacts' => $data[ 'additional_contacts' ],
+		);
+		
+		// Specify the condition (WHERE clause)
+		$where = array( 'id' => $post_id );
+		
+		// Update the record in the database
+		$result = $wpdb->update( $table_name, $update_params, $where, array(
+			'%d',  // user_id_updated
+			'%s',  // date_updated
+		), array( '%d' ) );
+		
+		// Check if the update was successful
+		if ( $result !== false ) {
+			return $this->update_post_meta_data( $post_id, $post_meta ); // Update was successful
+		} else {
+			// Get the last SQL error
+			$error = $wpdb->last_error;
+			
+			// Return a generic database error if no specific match is found
+			return new WP_Error( 'db_error', 'Error updating the company report in the database: ' . $error );
+		}
+	}
+	
+	/**
+	 * @param $data
+	 * function create in db (tab 1)
+	 *
+	 * @return int|WP_Error
+	 */
+	public function add_report_draft_in_db( $data ) {
+		global $wpdb;
+		
+		$table_name = $wpdb->prefix . $this->table_main;
+		$user_id    = get_current_user_id();
+		
+		$insert_params = array(
+			'user_id_added'   => $user_id,
+			'date_created'    => current_time( 'mysql' ),
+			'user_id_updated' => $user_id,
+			'date_updated'    => current_time( 'mysql' ),
+			'status_post'     => $data[ 'status_post' ],
+		);
+		
+		$post_meta = array(
+			'customer_id'         => $data[ 'customer_id' ],
+			'contact_name'        => $data[ 'contact_name' ],
+			'contact_phone'       => $data[ 'contact_phone' ],
+			'contact_email'       => $data[ 'contact_email' ],
+			'additional_contacts' => $data[ 'additional_contacts' ],
+		);
+		
+		$result = $wpdb->insert( $table_name, $insert_params, array(
+			'%d',  // user_id_added
+			'%s',  // date_created
+			'%d',  // user_id_updated
+			'%s',  // date_updated
+			'%s',  // status_post
+		) );
+		
+		// Check if the insert was successful
+		
+		if ( $result ) {
+			$id_new_post = $wpdb->insert_id;
+			$result      = $this->update_post_meta_data( $id_new_post, $post_meta );
+			
+			return $id_new_post; // Return the ID of the added record
+		} else {
+			// Get the last SQL error
+			$error = $wpdb->last_error;
+			
+			// Check for specific unique constraint violations
+			if ( strpos( $error, 'Duplicate entry' ) !== false ) {
+				if ( strpos( $error, 'company_name' ) !== false ) {
+					return new WP_Error( 'db_error', 'A company with this name already exists.' );
+				} elseif ( strpos( $error, 'mc_number' ) !== false ) {
+					return new WP_Error( 'db_error', 'A company with this MC number already exists.' );
+				} elseif ( strpos( $error, 'dot_number' ) !== false ) {
+					return new WP_Error( 'db_error', 'A company with this DOT number already exists.' );
+				}
+			}
+			
+			// Return a generic database error if no specific match is found
+			return new WP_Error( 'db_error', 'Error adding the company report to the database: ' . $error );
+		}
+	}
+	
+	/**
+	 * @param $data
+	 * function update in db (tab 3)
+	 *
+	 * @return true|WP_Error
+	 */
+	public function add_new_shipper_info( $data ) {
+		global $wpdb;
+		
+		$post_id = + $data[ 'post_id' ]; // ID of the post to update
+		
+		$table_name = $wpdb->prefix . $this->table_main;
+		$user_id    = get_current_user_id();
+		
+		// Prepare the data to update
+		$update_params = array(
+			'user_id_updated' => $user_id,
+			'date_updated'    => current_time( 'mysql' ),
+		);
+		
+		$post_meta = array(
+			'pick_up_location'  => $data[ 'pick_up_location_json' ],
+			'delivery_location' => $data[ 'delivery_location_json' ],
+		);
+		
+		// Specify the condition (WHERE clause)
+		$where = array( 'id' => $post_id );
+		
+		// Update the record in the database
+		$result = $wpdb->update( $table_name, $update_params, $where, array(
+			'%d',  // customer_id
+			'%s',  // date_updated
+			'%s',  // pick_up_location
+			'%s',  // delivery_location
+		), array( '%d' ) );
+		
+		if ( false === $result ) {
+			var_dump( "Update failed: " . $wpdb->last_error );
+			var_dump( "Last query: " . $wpdb->last_query );
+		}
+		
+		// Check if the update was successful
+		if ( $result !== false ) {
+			return $this->update_post_meta_data( $post_id, $post_meta );
+		} else {
+			// Get the last SQL error
+			$error = $wpdb->last_error;
+			
+			// Return a generic database error if no specific match is found
+			return new WP_Error( 'db_error', 'Error updating the shipper report in the database: ' . $error );
+		}
+	}
+	
+	/**
+	 * @param $data
+	 * function update in db (tab 4)
+	 *
+	 * @return true|WP_Error
+	 */
+	public function add_report_files( $data ) {
+		global $wpdb;
+		
+		$table_name      = $wpdb->prefix . $this->table_main;
+		$table_meta_name = $wpdb->prefix . $this->table_meta;
+		$user_id         = get_current_user_id();
+		$post_id         = $data[ 'post_id' ];
+		
+		// Получаем текущие данные по мета-ключам для поста
+		$meta_data = $wpdb->get_results( $wpdb->prepare( "SELECT meta_key, meta_value FROM {$table_meta_name} WHERE post_id = %d", $post_id ), ARRAY_A );
+		
+		// Преобразуем мета-данные в удобный массив
+		$current_data = array_column( $meta_data, 'meta_value', 'meta_key' );
+		
+		
+		// Подготавливаем новые прикрепленные файлы (добавляем к существующим)
+		$new_attached_files = ! empty( $data[ 'uploaded_files' ] ) ? implode( ', ', $data[ 'uploaded_files' ] ) : '';
+		if ( $new_attached_files && ! empty( $current_data[ 'attached_files' ] ) ) {
+			$new_attached_files = $current_data[ 'attached_files' ] . ', ' . $new_attached_files;
+		} elseif ( empty( $new_attached_files ) ) {
+			$new_attached_files = $current_data[ 'attached_files' ];
+		}
+		
+		// Используем переданные данные для `attached_file_required`, если они есть, иначе оставляем существующие
+		$attached_files_required = ! empty( $data[ 'uploaded_file_required' ] )
+			? implode( ', ', $data[ 'uploaded_file_required' ] ) : $current_data[ 'attached_file_required' ];
+		
+		// Обновляем подтверждение ставки, если оно изменилось
+		$updated_rate_confirmation = ! empty( $data[ 'updated_rate_confirmation' ] )
+			? implode( ', ', $data[ 'updated_rate_confirmation' ] ) : $current_data[ 'updated_rate_confirmation' ];
+		
+		$updated_screen_picture = ! empty( $data[ 'screen_picture' ] ) ? implode( ', ', $data[ 'screen_picture' ] )
+			: $current_data[ 'screen_picture' ];
+		
+		
+		if ( ! empty( $data[ 'updated_rate_confirmation' ] ) ) {
+			if ( implode( ', ', $data[ 'updated_rate_confirmation' ] ) !== $current_data[ 'updated_rate_confirmation' ] ) {
+				var_dump( 'NEED SEND MESSAGE USER' );
+			}
+		}
+		
+		
+		// Prepare the data to update
+		$update_params = array(
+			'user_id_updated' => $user_id,
+			'date_updated'    => current_time( 'mysql' ),
+		);
+		
+		$post_meta = array(
+			'attached_files'            => $new_attached_files,
+			'attached_file_required'    => $attached_files_required,
+			'updated_rate_confirmation' => $updated_rate_confirmation,
+			'screen_picture'            => $updated_screen_picture,
+		);
+		
+		// Specify the condition (WHERE clause)
+		$where = array( 'id' => $post_id );
+		
+		// Update the record in the database
+		$result = $wpdb->update( $table_name, $update_params, $where, array(
+			'%d',  // user_id_updated
+			'%s',  // date_updated
+		), array( '%d' ) );
+		
+		// Check if the update was successful
+		if ( $result !== false ) {
+			return $this->update_post_meta_data( $post_id, $post_meta );
+		} else {
+			// Get the last SQL error
+			$error = $wpdb->last_error;
+			
+			// Return a generic database error if no specific match is found
+			return new WP_Error( 'db_error', 'Error updating the company report in the database: ' . $error );
+		}
+	}
+	
+	/**
+	 * @param $data
+	 * function update in db (tab 2)
+	 *
+	 * @return bool|WP_Error
+	 */
+	public function add_load( $data ) {
+		global $wpdb;
+		
+		$table_name = $wpdb->prefix . $this->table_main;
+		$user_id    = get_current_user_id();
+		
+		// Prepare the instructions field
+		$instructions = ! empty( $data[ 'instructions' ] ) ? implode( ', ', $data[ 'instructions' ] ) : null;
+		
+		// Prepare the data to update
+		$update_params = array(
+			'user_id_updated' => $user_id,
+			'date_updated'    => current_time( 'mysql' ),
+			'pick_up_date'    => $data[ 'pick_up_date' ],
+			'date_booked'     => $data[ 'date_booked' ],
+		);
+		
+		$post_meta = array(
+			'load_status'         => $data[ 'load_status' ],
+			'instructions'        => $instructions,
+			'source'              => $data[ 'source' ],
+			'load_type'           => $data[ 'load_type' ],
+			'commodity'           => $data[ 'commodity' ],
+			'weight'              => $data[ 'weight' ],
+			'notes'               => $data[ 'notes' ],
+			'dispatcher_initials' => $data[ 'dispatcher_initials' ],
+			'reference_number'    => $data[ 'reference_number' ],
+			'unit_number_name'    => $data[ 'unit_number_name' ],
+			'booked_rate'         => $data[ 'booked_rate' ],
+			'driver_rate'         => $data[ 'driver_rate' ],
+			'profit'              => $data[ 'profit' ],
+			'percent_booked_rate' => $data[ 'percent_booked_rate' ],
+			'true_profit'         => $data[ 'true_profit' ],
+		);
+		
+		$post_id = $data[ 'post_id' ];
+		// Specify the condition (WHERE clause) - assuming post_id is passed in the data array
+		$where = array( 'id' => $data[ 'post_id' ] );
+		// Perform the update
+		$result = $wpdb->update( $table_name, $update_params, $where, array(
+			'%d',  // user_id_updated
+			'%s',  // date_updated
+			'%s',  // pick_up_date
+			'%s',  // date_booked
+		), array( '%d' ) // The data type of the where clause (id is an integer)
+		);
+		
+		// Check if the update was successful
+		if ( $result !== false ) {
+			return $this->update_post_meta_data( $post_id, $post_meta );
+		} else {
+			return false; // Error occurred during the update
+		}
+	}
+	
+	/**
+	 * @param $data
+	 * update load status
+	 *
+	 * @return bool
+	 */
+	public function update_post_status_in_db( $data ) {
+		global $wpdb;
+		
+		$table_name = $wpdb->prefix . $this->table_main;
+		$user_id    = get_current_user_id();
+		
+		$update_params = array(
+			'user_id_updated' => $user_id,
+			'date_updated'    => current_time( 'mysql' ),
+			'status_post'     => $data[ 'post_status' ],
+		);
+		
+		// Specify the condition (WHERE clause) - assuming post_id is passed in the data array
+		$where = array( 'id' => $data[ 'post_id' ] );
+		// Perform the update
+		$result = $wpdb->update( $table_name, $update_params, $where, array(
+			'%d',  // user_id_updated
+			'%s',  // date_updated
+			'%s',  // post_status
+		), array( '%d' ) // The data type of the where clause (id is an integer)
+		);
+		
+		// Check if the update was successful
+		if ( $result !== false ) {
+			return true; // Update was successful
+		} else {
+			return false; // Error occurred during the update
+		}
+	}
+	
+	/**
+	 * @param $data
+	 * remove image in db
+	 *
+	 * @return true|WP_Error
+	 */
+	public function remove_one_image_in_db( $data ) {
+		global $wpdb;
+		$table_meta_name = $wpdb->prefix . $this->table_meta; // Имя таблицы мета данных
+		
+		// Извлекаем ID изображения и имя мета-ключа
+		$image_id    = intval( $data[ 'image-id' ] );
+		$image_field = sanitize_text_field( $data[ 'image-fields' ] );
+		$post_id     = intval( $data[ 'post_id' ] );
+		
+		// Проверяем корректность входных данных
+		if ( ! $image_id || ! $image_field || ! $post_id ) {
+			return new WP_Error( 'invalid_input', 'Invalid image ID, field name or post ID.' );
+		}
+		
+		// Извлекаем текущее значение поля meta_key для поста
+		$current_value = $wpdb->get_var( $wpdb->prepare( "
+		SELECT meta_value
+		FROM $table_meta_name
+		WHERE post_id = %d AND meta_key = %s", $post_id, $image_field ) );
+		
+		if ( $current_value ) {
+			$new_value = '';
+			
+			// Для поля attached_files, где значения хранятся через запятую
+			if ( $image_field === 'attached_files' ) {
+				$ids = explode( ',', $current_value );
+				$ids = array_map( 'intval', $ids );
+				
+				// Удаляем указанный ID
+				$new_ids   = array_diff( $ids, array( $image_id ) );
+				$new_value = implode( ',', $new_ids );
+			} elseif ( $image_field === 'attached_file_required' || $image_field === 'updated_rate_confirmation' || $image_field === 'screen_picture' ) {
+				// Для полей attached_file_required и updated_rate_confirmation
+				if ( $current_value == $image_id ) {
+					$new_value = ''; // Удаляем значение, если оно совпадает
+				} else {
+					return new WP_Error( 'id_not_found', 'The specified ID was not found in the field.' );
+				}
+			} else {
+				return new WP_Error( 'invalid_field', 'Invalid field name.' );
+			}
+			
+			// Обновляем запись в таблице мета-данных
+			$result = $wpdb->update( $table_meta_name, array( 'meta_value' => $new_value ), array(
+				'post_id'  => $post_id,
+				'meta_key' => $image_field
+			), array( '%s' ),       // Формат для meta_value
+				array( '%d', '%s' ) // Форматы для post_id и meta_key
+			);
+			
+			// Удаляем вложение из медиа библиотеки
+			$deleted = wp_delete_attachment( $image_id, true );
+			
+			if ( ! $deleted ) {
+				return new WP_Error( 'delete_failed', 'Failed to delete the attachment.' );
+			}
+			
+			// Проверяем результат обновления в базе данных
+			if ( $result !== false ) {
+				return true; // Успешное обновление
+			} else {
+				return new WP_Error( 'db_update_failed', 'Failed to update the database.' );
+			}
+		} else {
+			return new WP_Error( 'no_value_found', 'No value found for the specified field.' );
+		}
+	}
+	
+	/**
+	 * @param $post_id
+	 * @param $meta_data
+	 * update post meta fields in db
+	 *
+	 * @return true|WP_Error
+	 */
+	function update_post_meta_data( $post_id, $meta_data ) {
+		global $wpdb;
+		$table_meta_name = $wpdb->prefix . $this->table_meta;
+		
+		foreach ( $meta_data as $meta_key => $meta_value ) {
+			$existing = $wpdb->get_var( $wpdb->prepare( "
+            SELECT id FROM $table_meta_name
+            WHERE post_id = %d AND meta_key = %s
+        ", $post_id, $meta_key ) );
+			
+			if ( $existing ) {
+				// Обновляем существующую запись
+				$wpdb->update( $table_meta_name, array( 'meta_value' => $meta_value ), array( 'id' => $existing ), array( '%s' ), array( '%d' ) );
+			} else {
+				// Вставляем новую запись
+				$wpdb->insert( $table_meta_name, array(
+					'post_id'    => $post_id,
+					'meta_key'   => $meta_key,
+					'meta_value' => $meta_value
+				), array( '%d', '%s', '%s' ) );
+			}
+		}
+		
+		// Проверка на ошибки
+		if ( $wpdb->last_error ) {
+			return new WP_Error( 'db_error', 'Ошибка при обновлении метаданных: ' . $wpdb->last_error );
+		}
+		
+		return true;
+	}
+	
+	// UPDATE IN DATABASE END
+	
+	// CREATE TABLE AND UPDATE SQL
+	
+	/**
+	 * create table
+	 * @return void
+	 */
+	public function create_table() {
+		global $wpdb;
+		
+		$tables = $this->tms_tables;
+		
+		foreach ( $tables as $val ) {
+			$table_name      = $wpdb->prefix . 'reports_' . strtolower( $val );
+			$table_meta_name = $wpdb->prefix . 'reportsmeta_' . strtolower( $val );
+			$charset_collate = $wpdb->get_charset_collate();
+			
+			$sql = "CREATE TABLE $table_name (
+		        id mediumint(9) NOT NULL AUTO_INCREMENT,
+		        user_id_added mediumint(9) NOT NULL,
+		        date_created datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+		        user_id_updated mediumint(9) NULL NULL,
+		        date_updated datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+		        pick_up_date datetime NOT NULL,
+		        delivery_date datetime NOT NULL,
+		        date_booked datetime NOT NULL,
+		        load_problem datetime NULL DEFAULT NULL,
+		        status_post varchar(50) NULL DEFAULT NULL,
+		        PRIMARY KEY  (id)
+    		) $charset_collate;";
+			
+			dbDelta( $sql );
+			
+			$sql = "CREATE TABLE $table_meta_name (
+		        id mediumint(9) NOT NULL AUTO_INCREMENT,
+		        post_id mediumint(9) NOT NULL,
+		        meta_key longtext,
+		        meta_value longtext,
+		        PRIMARY KEY  (id)
+    		) $charset_collate;";
+			
+			dbDelta( $sql );
+		}
+	}
+	
+	/**
+	 * update table add new fields and indexes isset fields
+	 * @return void
+	 */
+	public function update_tables_with_delivery_and_indexes() {
+		global $wpdb;
+		
+		$tables = $this->tms_tables;
+		
+		foreach ( $tables as $val ) {
+			$table_name      = $wpdb->prefix . 'reports_' . strtolower( $val );
+			$table_meta_name = $wpdb->prefix . 'reportsmeta_' . strtolower( $val );
+			
+			// Добавляем новое поле delivery_date и индексы на все даты
+			$wpdb->query( "
+            ALTER TABLE $table_name
+            ADD COLUMN delivery_date datetime NOT NULL AFTER pick_up_date,
+            ADD INDEX idx_date_created (date_created),
+            ADD INDEX idx_pick_up_date (pick_up_date),
+            ADD INDEX idx_delivery_date (delivery_date),
+            ADD INDEX idx_date_booked (date_booked),
+            ADD INDEX idx_load_problem (load_problem);
+        " );
+			
+			// Добавляем индексы в мета таблицу
+			$wpdb->query( "
+            ALTER TABLE $table_meta_name
+            ADD INDEX idx_post_id (post_id),
+            ADD INDEX idx_meta_key (meta_key(191)),
+            ADD INDEX idx_meta_key_value (meta_key(191), meta_value(191));
+        " );
+		}
+	}
+	
+	// INIT Actions
+	
+	/**
+	 * init all ajax actions for fork
+	 * @return void
+	 */
 	public function ajax_actions() {
 		add_action( 'wp_ajax_add_new_report', array( $this, 'add_new_report' ) );
 		add_action( 'wp_ajax_add_new_draft_report', array( $this, 'add_new_report_draft' ) );
 		add_action( 'wp_ajax_update_new_draft_report', array( $this, 'update_new_draft_report' ) );
+		add_action( 'wp_ajax_update_billing_report', array( $this, 'update_billing_report' ) );
 		add_action( 'wp_ajax_update_files_report', array( $this, 'update_files_report' ) );
 		add_action( 'wp_ajax_delete_open_image', array( $this, 'delete_open_image' ) );
 		add_action( 'wp_ajax_update_shipper_info', array( $this, 'update_shipper_info' ) );
@@ -1242,8 +1554,19 @@ class TMSReports extends TMSReportsHelper {
 		add_action( 'wp_ajax_rechange_status_load', array( $this, 'rechange_status_load' ) );
 	}
 	
+	/**
+	 * init functions need for start work all functions loads
+	 * @return void
+	 */
 	public function init() {
 		add_action( 'after_setup_theme', array( $this, 'create_table' ) );
+		
+		//TODO UPDATE DATABASE AFTER CREATE , up speed search in database (NOT delete)
+		//add_action( 'after_setup_theme', array( $this, 'update_tables_with_delivery_and_indexes' ) );
+		
 		$this->ajax_actions();
 	}
+	
+	// CREATE TABLE AND UPDATE SQL END
+	
 }

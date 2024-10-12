@@ -241,6 +241,42 @@ export const updateFilesReportInit = (ajaxUrl) => {
         });
 };
 
+export const updateBillingReportInit = (ajaxUrl) => {
+    const forms = document.querySelectorAll('.js-uploads-billing');
+    forms &&
+        forms.forEach((item) => {
+            item.addEventListener('submit', (event) => {
+                event.preventDefault();
+                const { target } = event;
+                // @ts-ignore
+                const formData = new FormData(target);
+                formData.append('action', 'update_billing_report');
+
+                const options = {
+                    method: 'POST',
+                    body: formData,
+                };
+
+                fetch(ajaxUrl, options)
+                    .then((res) => res.json())
+                    .then((requestStatus) => {
+                        if (requestStatus.success) {
+                            console.log('update successfully:', requestStatus.data);
+                            printMessage(requestStatus.data.message, 'success', 8000);
+                            updateStatusRechange(ajaxUrl);
+                        } else {
+                            // eslint-disable-next-line no-alert
+                            printMessage(`Error update:${requestStatus.data.message}`, 'danger', 8000);
+                        }
+                    })
+                    .catch((error) => {
+                        printMessage(`Request failed: ${error}`, 'danger', 8000);
+                        console.error('Request failed:', error);
+                    });
+            });
+        });
+};
+
 /**
  * remove one image in page documents
  *

@@ -15,7 +15,7 @@ import {
     createDraftPosts,
     previewFileUpload,
     removeOneFileInitial,
-    sendShipperFormInit,
+    sendShipperFormInit, updateBillingReportInit,
     updateFilesReportInit,
     updateStatusPost,
 } from './components/create-report';
@@ -30,6 +30,7 @@ import { updateTooltip } from './components/tooltip-start';
 import { toggleSidebarInit } from './components/sidebar-init';
 import { autoFillAddress } from './components/auto-fill-address';
 import { AuthUsersInit } from './components/auth-users';
+import { cleanUrlByFilter } from './components/filter-clean';
 
 function ready() {
     // @ts-ignore
@@ -64,6 +65,7 @@ function ready() {
     removeOneFileInitial(urlAjax);
     changeTableInit(urlAjax);
     AuthUsersInit(urlAjax);
+    updateBillingReportInit(urlAjax);
 
     // API request
     initGetInfoDriver(useServices);
@@ -78,6 +80,8 @@ function ready() {
     updateTooltip();
     toggleSidebarInit();
     autoFillAddress(hereApi);
+
+    cleanUrlByFilter();
 }
 
 window.document.addEventListener('DOMContentLoaded', ready);

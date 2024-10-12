@@ -14,7 +14,24 @@ class TMSReportsShipper extends TMSReportsHelper {
 	public function init() {
 		add_action( 'after_setup_theme', array( $this, 'create_table_shipper' ) );
 		
+//		add_action( 'after_setup_theme', array( $this, 'update_table_shipper_with_indexes' ) );
+		
 		$this->ajax_actions();
+	}
+	
+	public function update_table_shipper_with_indexes() {
+		global $wpdb;
+		
+		$table_name = $wpdb->prefix . $this->table_main;
+		
+		// Добавляем индексы для полей, по которым выполняются поиски
+		$wpdb->query("
+        ALTER TABLE $table_name
+        ADD INDEX idx_full_address (full_address),
+        ADD INDEX idx_shipper_name (shipper_name),
+        ADD INDEX idx_email (email),
+        ADD INDEX idx_phone_number (phone_number);
+    ");
 	}
 	
 	public function add_new_shipper() {

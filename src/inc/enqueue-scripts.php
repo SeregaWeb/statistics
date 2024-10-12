@@ -38,6 +38,7 @@ function px_site_scripts() {
         }
     }
 	
+    wp_enqueue_script( 'chart_js', LIBS_JS . 'gstatic.js', array( 'jquery' ), $custom_js_ver, true );
     wp_enqueue_script( 'frontend_js', ASSETS_JS . 'frontend.js', array( 'jquery' ), $custom_js_ver, true );
 	
 	$link_web_service_odysseia = get_field_value($global_options, 'link_web_service_odysseia');

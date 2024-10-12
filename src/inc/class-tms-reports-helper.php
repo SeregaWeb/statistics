@@ -107,6 +107,22 @@ class TMSReportsHelper extends TMSReportsIcons {
 		"YUC"  => "Yucatán, YUC",
 		"ZAC"  => "Zacatecas, ZAC",
 	);
+    
+    public $invoices = array(
+      'invoiced' => 'Invoiced',
+      'not-invoiced' => 'Not invoiced',
+      'invoiced-directly' => 'Invoiced directly',
+    );
+    
+    public $factoring_status = array (
+       'unsubmitted' => 'Unsubmitted',
+       'in-processing' => 'In Processing',
+       'requires-attention' => 'Requires Attention',
+       'in-dispute' => 'In Dispute',
+       'processed' => 'Processed',
+       'charge-back' => 'Charge Back',
+       'short-pay' => 'Short Pay',
+    );
 	
 	public $statuses = array(
 		'waiting-on-pu-date' => 'Waiting on PU Date',
@@ -230,6 +246,12 @@ class TMSReportsHelper extends TMSReportsIcons {
 	function get_statuses() {
 		return $this->statuses;
 	}
+	function get_invoices() {
+		return $this->invoices;
+	}
+	function get_factoring_status() {
+		return $this->factoring_status;
+	}
 	
 	function convert_to_number( $string ) {
 		// Убираем все запятые из строки
@@ -252,6 +274,14 @@ class TMSReportsHelper extends TMSReportsIcons {
 		
 		if (is_null($key) || is_null($search_list)) return false;
 		
+		if ( $search_list === 'invoices' ) {
+			return isset( $this->invoices[ $key ] ) ? $this->invoices[ $key ] : $key;
+		}
+  
+		if ( $search_list === 'factoring_status' ) {
+			return isset( $this->factoring_status[ $key ] ) ? $this->factoring_status[ $key ] : $key;
+		}
+  
 		if ( $search_list === 'statuses' ) {
 			return isset( $this->statuses[ $key ] ) ? $this->statuses[ $key ] : $key;
 		}

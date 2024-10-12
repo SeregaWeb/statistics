@@ -12,7 +12,25 @@ class TMSReportsCompany extends TMSReportsHelper {
 	
 	public function init() {
 		add_action( 'after_setup_theme', array( $this, 'create_table_company' ) );
+		
+		//TODO update after create / set index db up speed
+//		add_action( 'after_setup_theme', array( $this, 'update_table_company_with_indexes' ) );
 		$this->ajax_actions();
+	}
+	
+	public function update_table_company_with_indexes() {
+		global $wpdb;
+		
+		$table_name = $wpdb->prefix . $this->table_main;
+		
+		// Добавляем индексы для полей, по которым выполняются поиски
+		$wpdb->query("
+        ALTER TABLE $table_name
+        ADD INDEX idx_company_name (company_name),
+        ADD INDEX idx_mc_number (mc_number),
+        ADD INDEX idx_dot_number (dot_number),
+        ADD INDEX idx_email (email);
+    ");
 	}
 	
 	public function search_company() {

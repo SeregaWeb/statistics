@@ -28,16 +28,20 @@ $notes               = '';
 if ( $report_object ) {
 	$values = $report_object;
     $meta = get_field_value($values, 'meta');
-	
+    $main = get_field_value($values, 'main');
 	if ( is_array( $meta ) && sizeof( $meta ) > 0 ) {
-		$date_booked         = get_field_value($meta, 'date_booked');;
+		$date_booked         = get_field_value($main, 'date_booked');
+		$date_booked_formatted = date('Y-m-d', strtotime($date_booked));
+		$pick_up_date        = get_field_value($main, 'pick_up_date');
+		$pick_up_date_formatted = date('Y-m-d', strtotime($pick_up_date));
+  
+  
 		$dispatcher_initials = get_field_value($meta, 'dispatcher_initials');
 		$reference_number    = get_field_value($meta, 'reference_number');
 		$unit_number_name    = get_field_value($meta, 'unit_number_name');
 		$booked_rate         = get_field_value($meta, 'booked_rate');
 		$driver_rate         = get_field_value($meta, 'driver_rate');
 		$profit              = get_field_value($meta, 'profit');
-		$pick_up_date        = get_field_value($meta, 'pick_up_date');
 		$load_status         = get_field_value($meta, 'load_status');
         $instructions_str    = str_replace(' ', '',get_field_value($meta, 'instructions'));
         $instructions_val    = explode(',', $instructions_str);
@@ -148,7 +152,7 @@ if ( $report_object ) {
 
         <div class="mb-2 col-12 col-md-6 col-xl-4">
             <label for="date_booked" class="form-label">Date Booked</label>
-            <input type="date" name="date_booked" value="<?php echo $date_booked; ?>" class="form-control" required>
+            <input type="date" name="date_booked" value="<?php echo $date_booked_formatted; ?>" class="form-control" required>
         </div>
 
         <div class="col-12"></div>
@@ -192,7 +196,7 @@ if ( $report_object ) {
 
         <div class="mb-2 col-12 col-md-6 col-xl-4">
             <label for="pick_up_date" class="form-label">Pick Up Date</label>
-            <input type="date" name="pick_up_date" value="<?php echo $pick_up_date; ?>" class="form-control" required>
+            <input type="date" name="pick_up_date" value="<?php echo $pick_up_date_formatted; ?>" class="form-control" required>
         </div>
 
         <div class="col-12 col-md-6 col-xl-4">

@@ -59,7 +59,7 @@ if ( function_exists( 'get_field' ) ) {
 
 ?>
 
-<pre>
+<pre class="d-none">
 Dispatcher - loads view/edit personal loads - read only in table / delete - only draft
 Dispatcher team leader - loads view/edit personal loads - read only others loads (team) / delete - only draft
 (Disparcher - group monitoring)
@@ -86,8 +86,8 @@ booked-rait - 2% - driver-rait - формула расчета тру рейт</
 <del>new field - 2% save in db
 new field dispetch message - (screen picture) required</del>
 
-для аккаунтинг / биллинг добавить 5 вкладку
-Date booked	Dispatcher	Reference №	Pick up location
+<del>для аккаунтинг / биллинг добавить 5 вкладку</del>
+<del>Date booked	Dispatcher	Reference №	Pick up location
 Delivery location	Unit & name	Booked rate	Driver rate	(Profit true)
 Pick Up Date	Load status invoice (dropdown - - Invoiced
 
@@ -101,6 +101,9 @@ Pick Up Date	Load status invoice (dropdown - - Invoiced
 - Charge Back
 - Short Pay )
 разделить на 3 офиса (юа / ремоут / польша)
+</del>
+
+Delivery date
 
 </pre>
 

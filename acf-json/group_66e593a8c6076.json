@@ -51,7 +51,7 @@
                     "required": 0,
                     "conditional_logic": 0,
                     "wrapper": {
-                        "width": "10",
+                        "width": "25",
                         "class": "",
                         "id": ""
                     },
@@ -65,6 +65,37 @@
                     "max_size": "",
                     "mime_types": "",
                     "preview_size": "medium",
+                    "parent_repeater": "field_66e593d9bdfa7"
+                },
+                {
+                    "key": "field_670830816bde5",
+                    "label": "Exclude role all list",
+                    "name": "exclude_role_all_list",
+                    "aria-label": "",
+                    "type": "checkbox",
+                    "instructions": "",
+                    "required": 0,
+                    "conditional_logic": 0,
+                    "wrapper": {
+                        "width": "50",
+                        "class": "",
+                        "id": ""
+                    },
+                    "choices": {
+                        "dispatcher": "Dispatcher",
+                        "dispatcher-tl": "Dispatcher Team Leader",
+                        "tracking": "Tracking",
+                        "billing": "Billing",
+                        "recruiter": "Recruiter",
+                        "accounting": "Accounting"
+                    },
+                    "default_value": [],
+                    "return_format": "value",
+                    "allow_custom": 0,
+                    "layout": "vertical",
+                    "toggle": 0,
+                    "save_custom": 0,
+                    "custom_choice_button_text": "Add new choice",
                     "parent_repeater": "field_66e593d9bdfa7"
                 },
                 {
@@ -145,7 +176,8 @@
                                 "dispatcher-tl": "Dispatcher Team Leader",
                                 "tracking": "Tracking",
                                 "billing": "Billing",
-                                "recruiter": "Recruiter"
+                                "recruiter": "Recruiter",
+                                "accounting": "Accounting"
                             },
                             "default_value": [],
                             "return_format": "value",
@@ -363,5 +395,5 @@
     "active": true,
     "description": "",
     "show_in_rest": 0,
-    "modified": 1727775822
+    "modified": 1728590148
 }

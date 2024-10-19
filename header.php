@@ -112,7 +112,13 @@ Delivery date
     <?php do_action( 'wp_rock_after_open_body_tag' ); ?>
 
     <div id="wrapper" class="wrapper">
-
+        
+        <div class="preloader js-preloader">
+            <div class="spinner-border text-primary" role="status">
+              <span class="visually-hidden">Loading...</span>
+            </div>
+        </div>
+        
         <?php do_action( 'wp_rock_before_site_header' ); ?>
 
         <?php echo esc_html( get_template_part( 'src/template-parts/custom', 'header' )); ?>
@@ -125,8 +131,10 @@ Delivery date
         <div class="left-sidebar js-sidebar">
             <?php foreach ($sidebar as $key => $block):
                 $first_link = false;
+            
+                $exclude = array_search($role, $block['exclude_role_all_list']);
                 ?>
-                <?php if (is_array($block['menu'])):?>
+                <?php if (is_array($block['menu']) && !is_numeric($exclude)):?>
 
                 <div class="left-sidebar__block">
                     
@@ -168,8 +176,9 @@ Delivery date
                         <img class="left-sidebar__icon" src="<?php echo $block['icon'] ?>" alt="icon">
                         <?php endif; ?>
                     </a>
-                    <?php endif; ?>
                 </div>
+                <?php endif; ?>
+                
             <?php endforeach; ?>
             <button class="toggle-sidebar js-toggle-sidebar">
                 <svg class="left-sidebar__icon" width="800px" height="800px" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">

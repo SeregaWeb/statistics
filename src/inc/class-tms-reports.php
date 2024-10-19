@@ -5,7 +5,7 @@ class TMSReports extends TMSReportsHelper {
 	
 	public $table_main     = '';
 	public $table_meta     = '';
-	public $per_page_loads = 20;
+	public $per_page_loads = 100;
 	
 	public function __construct() {
 		$user_id       = get_current_user_id();
@@ -53,6 +53,12 @@ class TMSReports extends TMSReportsHelper {
 			LEFT JOIN $table_meta AS source
 				ON main.id = source.post_id
 				AND source.meta_key = 'source'
+			LEFT JOIN $table_meta AS invoice
+				ON main.id = invoice.post_id
+				AND invoice.meta_key = 'invoice'
+			LEFT JOIN $table_meta AS factoring_status
+				ON main.id = factoring_status.post_id
+				AND factoring_status.meta_key = 'factoring_status'
 			WHERE 1=1
 		";
 		
@@ -81,6 +87,16 @@ class TMSReports extends TMSReportsHelper {
 		if ( ! empty( $args[ 'load_status' ] ) ) {
 			$where_conditions[] = "load_status.meta_value = %s";
 			$where_values[]     = $args[ 'load_status' ];
+		}
+		
+		if ( ! empty( $args[ 'invoice' ] ) ) {
+			$where_conditions[] = "invoice.meta_value = %s";
+			$where_values[]     = $args[ 'invoice' ];
+		}
+		
+		if ( ! empty( $args[ 'factoring' ] ) ) {
+			$where_conditions[] = "factoring_status.meta_value = %s";
+			$where_values[]     = $args[ 'factoring' ];
 		}
 		
 		if ( ! empty( $args[ 'source' ] ) ) {
@@ -1475,18 +1491,23 @@ class TMSReports extends TMSReportsHelper {
 			$charset_collate = $wpdb->get_charset_collate();
 			
 			$sql = "CREATE TABLE $table_name (
-		        id mediumint(9) NOT NULL AUTO_INCREMENT,
-		        user_id_added mediumint(9) NOT NULL,
-		        date_created datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
-		        user_id_updated mediumint(9) NULL NULL,
-		        date_updated datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
-		        pick_up_date datetime NOT NULL,
-		        delivery_date datetime NOT NULL,
-		        date_booked datetime NOT NULL,
-		        load_problem datetime NULL DEFAULT NULL,
-		        status_post varchar(50) NULL DEFAULT NULL,
-		        PRIMARY KEY  (id)
-    		) $charset_collate;";
+			    id mediumint(9) NOT NULL AUTO_INCREMENT,
+			    user_id_added mediumint(9) NOT NULL,
+			    date_created datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+			    user_id_updated mediumint(9) NULL,
+			    date_updated datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+			    pick_up_date datetime NOT NULL,
+			    delivery_date datetime NOT NULL,
+			    date_booked datetime NOT NULL,
+			    load_problem datetime NULL DEFAULT NULL,
+			    status_post varchar(50) NULL DEFAULT NULL,
+			    PRIMARY KEY (id),
+			    INDEX idx_date_created (date_created),
+			    INDEX idx_pick_up_date (pick_up_date),
+			    INDEX idx_delivery_date (delivery_date),
+			    INDEX idx_date_booked (date_booked),
+			    INDEX idx_load_problem (load_problem)
+			) $charset_collate;";
 			
 			dbDelta( $sql );
 			
@@ -1495,7 +1516,10 @@ class TMSReports extends TMSReportsHelper {
 		        post_id mediumint(9) NOT NULL,
 		        meta_key longtext,
 		        meta_value longtext,
-		        PRIMARY KEY  (id)
+		        PRIMARY KEY  (id),
+                INDEX idx_post_id (post_id),
+         		INDEX idx_meta_key (meta_key(191)),
+         		INDEX idx_meta_key_value (meta_key(191), meta_value(191));
     		) $charset_collate;";
 			
 			dbDelta( $sql );

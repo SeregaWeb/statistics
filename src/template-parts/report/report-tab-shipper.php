@@ -118,27 +118,38 @@ if ( $report_object ) {
         <div class="col-12 d-flex flex-column gap-2 js-table-shipper mb-5">
 			<?php if ( is_array( $pick_up_location_isset ) ):
 				foreach ( $pick_up_location_isset as $val ):
+                    
+                    $address_id = get_field_value($val, 'address_id');
+                    $address = get_field_value($val, 'address');
+                    $contact = get_field_value($val, 'contact');
+                    $date = get_field_value($val, 'date');
+                    $info = get_field_value($val, 'info');
+                    $type = get_field_value($val, 'type');
+                    $short_address = get_field_value($val, 'short_address');
+                    
 					?>
                     <div class="row js-current-shipper card-shipper">
                         <div class="d-none">
                             <input type="hidden" class="js-current-shipper_address_id"
-                                   name="pick_up_location_address_id[]" value="<?php echo $val[ 'address_id' ] ?>">
+                                   name="pick_up_location_address_id[]" value="<?php echo $address_id ?>">
                             <input type="hidden" class="js-current-shipper_address" name="pick_up_location_address[]"
-                                   value="<?php echo $val[ 'address' ] ?>">
+                                   value="<?php echo $address ?>">
                             <input type="hidden" class="js-current-shipper_contact" name="pick_up_location_contact[]"
-                                   value="<?php echo $val[ 'contact' ] ?>">
+                                   value="<?php echo $contact ?>">
+                            <input type="hidden" class="js-current-shipper_short_address" name="pick_up_location_short_address[]"
+                                   value="<?php echo $short_address ?>">
                             <input type="hidden" class="js-current-shipper_date" name="pick_up_location_date[]"
-                                   value="<?php echo $val[ 'date' ] ?>">
+                                   value="<?php echo $date ?>">
                             <input type="hidden" class="js-current-shipper_info" name="pick_up_location_info[]"
-                                   value="<?php echo $val[ 'info' ] ?>">
+                                   value="<?php echo $info ?>">
                             <input type="hidden" class="js-current-shipper_type" name="pick_up_location_type[]"
-                                   value="<?php echo $val[ 'type' ] ?>">
+                                   value="<?php echo $type ?>">
                         </div>
                         <div class="col-12 col-md-1">Pick Up</div>
-                        <div class="col-12 col-md-2"><?php echo $val[ 'date' ] ?></div>
-                        <div class="col-12 col-md-3"><?php echo $val[ 'address' ] ?></div>
-                        <div class="col-12 col-md-2"><?php echo $val[ 'contact' ] ?></div>
-                        <div class="col-12 col-md-3"><?php echo $val[ 'info' ] ?></div>
+                        <div class="col-12 col-md-2"><?php echo $date ?></div>
+                        <div class="col-12 col-md-3"><?php echo $address ?></div>
+                        <div class="col-12 col-md-2"><?php echo $contact ?></div>
+                        <div class="col-12 col-md-3"><?php echo $info ?></div>
                         <div class="col-12 col-md-1 p-0 card-shipper__btns">
                             <button class="additional-card__edit js-edit-ship">
 								<?php echo $reports->get_icon_edit(); ?>
@@ -152,29 +163,38 @@ if ( $report_object ) {
 	        
 	        <?php if ( is_array( $delivery_location_isset ) ):
 		        foreach ( $delivery_location_isset as $val ):
+			        
+			        $address_id = get_field_value($val, 'address_id');
+			        $address = get_field_value($val, 'address');
+			        $contact = get_field_value($val, 'contact');
+			        $date = get_field_value($val, 'date');
+			        $info = get_field_value($val, 'info');
+			        $type = get_field_value($val, 'type');
+			        $short_address = get_field_value($val, 'short_address');
+           
 			        ?>
                     <div class="row js-current-shipper card-shipper">
                         <div class="d-none">
                             <input type="hidden" class="js-current-shipper_address_id"
-                                   name="delivery_location_address_id[]" value="<?php echo $val[ 'address_id' ] ?>">
+                                   name="delivery_location_address_id[]" value="<?php echo $address_id ?>">
                             <input type="hidden" class="js-current-shipper_address" name="delivery_location_address[]"
-                                   value="<?php echo $val[ 'address' ] ?>">
+                                   value="<?php echo $address ?>">
                             <input type="hidden" class="js-current-shipper_short_address" name="delivery_location_short_address[]"
-                                   value="<?php echo $val[ 'short_address' ] ?>">
+                                   value="<?php echo $short_address ?>">
                             <input type="hidden" class="js-current-shipper_contact" name="delivery_location_contact[]"
-                                   value="<?php echo $val[ 'contact' ] ?>">
+                                   value="<?php echo $contact ?>">
                             <input type="hidden" class="js-current-shipper_date" name="delivery_location_date[]"
-                                   value="<?php echo $val[ 'date' ] ?>">
+                                   value="<?php echo $date ?>">
                             <input type="hidden" class="js-current-shipper_info" name="delivery_location_info[]"
-                                   value="<?php echo $val[ 'info' ] ?>">
+                                   value="<?php echo $info ?>">
                             <input type="hidden" class="js-current-shipper_type" name="delivery_location_type[]"
-                                   value="<?php echo $val[ 'type' ] ?>">
+                                   value="<?php echo $type ?>">
                         </div>
                         <div class="col-12 col-md-1">Delivery</div>
-                        <div class="col-12 col-md-2"><?php echo $val[ 'date' ] ?></div>
-                        <div class="col-12 col-md-3"><?php echo $val[ 'address' ] ?></div>
-                        <div class="col-12 col-md-2"><?php echo $val[ 'contact' ] ?></div>
-                        <div class="col-12 col-md-3"><?php echo $val[ 'info' ] ?></div>
+                        <div class="col-12 col-md-2"><?php echo $date ?></div>
+                        <div class="col-12 col-md-3"><?php echo $address ?></div>
+                        <div class="col-12 col-md-2"><?php echo $contact ?></div>
+                        <div class="col-12 col-md-3"><?php echo $info ?></div>
                         <div class="col-12 col-md-1 p-0 card-shipper__btns">
                             <button class="additional-card__edit js-edit-ship">
 						        <?php echo $reports->get_icon_edit(); ?>

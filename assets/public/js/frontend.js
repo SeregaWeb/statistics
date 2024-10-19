@@ -4191,23 +4191,29 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */ });
 var cleanUrlByFilter = function cleanUrlByFilter() {
   var form = document.getElementById('navbarNavDarkDropdown');
-  form && form.addEventListener('submit', function (event) {
-    event.preventDefault();
-    var params = new URLSearchParams();
-    var fmonth = this.elements.fmonth.value;
-    var fyear = this.elements.fyear.value;
-    var dispatcher = this.elements.dispatcher.value;
-    var mySearch = this.elements.my_search.value;
-    var loadStatus = this.elements.load_status.value;
-    var source = this.elements.source.value;
-    if (fmonth) params.append('fmonth', fmonth);
-    if (fyear) params.append('fyear', fyear);
-    if (dispatcher) params.append('dispatcher', dispatcher);
-    if (mySearch) params.append('my_search', mySearch);
-    if (loadStatus) params.append('load_status', loadStatus);
-    if (source) params.append('source', source);
-    window.location.href = "?".concat(params.toString());
-  });
+  if (form) {
+    form.addEventListener('submit', function (event) {
+      event.preventDefault();
+      var params = new URLSearchParams();
+      var fmonth = form.elements.namedItem('fmonth');
+      var fyear = form.elements.namedItem('fyear');
+      var dispatcher = form.elements.namedItem('dispatcher');
+      var mySearch = form.elements.namedItem('my_search');
+      var loadStatus = form.elements.namedItem('load_status');
+      var source = form.elements.namedItem('source');
+      var factoring = form.elements.namedItem('factoring');
+      var invoice = form.elements.namedItem('invoice');
+      if (fmonth === null || fmonth === void 0 ? void 0 : fmonth.value) params.append('fmonth', fmonth.value);
+      if (fyear === null || fyear === void 0 ? void 0 : fyear.value) params.append('fyear', fyear.value);
+      if (dispatcher === null || dispatcher === void 0 ? void 0 : dispatcher.value) params.append('dispatcher', dispatcher.value);
+      if (mySearch === null || mySearch === void 0 ? void 0 : mySearch.value) params.append('my_search', mySearch.value);
+      if (loadStatus === null || loadStatus === void 0 ? void 0 : loadStatus.value) params.append('load_status', loadStatus.value);
+      if (source === null || source === void 0 ? void 0 : source.value) params.append('source', source.value);
+      if (factoring === null || factoring === void 0 ? void 0 : factoring.value) params.append('factoring', factoring.value);
+      if (invoice === null || invoice === void 0 ? void 0 : invoice.value) params.append('invoice', invoice.value);
+      window.location.href = "?".concat(params.toString());
+    });
+  }
 };
 
 /***/ }),
@@ -4429,6 +4435,7 @@ function searchHelperActions(seachInputsSelector, action, ajaxUrl) {
   });
 }
 var addSearchAction = function addSearchAction(ajaxUrl) {
+  console.log('ajaxUrl', ajaxUrl);
   searchHelperActions('.js-search-company', 'search_company', ajaxUrl);
   searchHelperActions('.js-search-shipper', 'search_shipper', ajaxUrl);
 };
@@ -14538,6 +14545,7 @@ __webpack_require__.r(__webpack_exports__);
 
 
 function ready() {
+  console.log('ready');
   var urlAjax = var_from_php.ajax_url;
   var linkOdysseia = var_from_php.link_web_service_odysseia;
   var linkEndurance = var_from_php.link_web_service_endurance;
@@ -14573,6 +14581,10 @@ function ready() {
   (0,_components_sidebar_init__WEBPACK_IMPORTED_MODULE_12__.toggleSidebarInit)();
   (0,_components_auto_fill_address__WEBPACK_IMPORTED_MODULE_13__.autoFillAddress)(hereApi);
   (0,_components_filter_clean__WEBPACK_IMPORTED_MODULE_15__.cleanUrlByFilter)();
+  var preloaders = document.querySelectorAll('.js-preloader');
+  preloaders && preloaders.forEach(function (item) {
+    item.remove();
+  });
 }
 window.document.addEventListener('DOMContentLoaded', ready);
 }();

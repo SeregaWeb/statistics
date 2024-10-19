@@ -149,4 +149,68 @@ class  TMSStatistics extends TMSReportsHelper {
 		// Return the monthly statistics
 		return $monthly_stats;
 	}
+	
+	public function get_dispatcher_statistics_current_month($user_id = null) {
+		global $wpdb;
+		
+		$table_reports = $wpdb->prefix . $this->table_main;
+		$table_meta    = $wpdb->prefix . $this->table_meta;
+		
+		// Получаем текущий год и месяц
+		$current_year = date('Y');
+		$current_month = date('m');
+		
+		// Основная часть запроса
+		$query = "
+        SELECT
+            dispatcher_meta.meta_value AS dispatcher_initials,
+            COUNT(reports.id) AS post_count,
+            SUM(CAST(profit_meta.meta_value AS DECIMAL(10,2))) AS total_profit,
+            AVG(CAST(profit_meta.meta_value AS DECIMAL(10,2))) AS average_profit
+        FROM {$table_reports} reports
+        INNER JOIN {$table_meta} dispatcher_meta
+            ON reports.id = dispatcher_meta.post_id
+        INNER JOIN {$table_meta} profit_meta
+            ON reports.id = profit_meta.post_id
+        WHERE dispatcher_meta.meta_key = 'dispatcher_initials'
+        AND profit_meta.meta_key = 'profit'
+        AND reports.status_post = 'publish'
+        AND YEAR(reports.date_booked) = %d
+        AND MONTH(reports.date_booked) = %d
+    ";
+		
+		// Если указан user_id, добавляем условие фильтрации
+		if ($user_id) {
+			$query .= " AND dispatcher_meta.meta_value = %s";
+			$query = $wpdb->prepare($query, $current_year, $current_month, $user_id);
+		} else {
+			$query = $wpdb->prepare($query, $current_year, $current_month);
+		}
+		
+		// Группировка по диспетчерам
+		$query .= " GROUP BY dispatcher_meta.meta_value";
+		
+		// Выполняем запрос и получаем результаты
+		$dispatcher_stats = $wpdb->get_results($query, ARRAY_A);
+		
+		if (is_array($dispatcher_stats)) {
+			foreach ($dispatcher_stats as $key => $disp) {
+				$names = $this->get_user_full_name_by_id($disp['dispatcher_initials']);
+				$goal = get_field('monthly_goal', 'user_'.$disp['dispatcher_initials']);
+				
+				if ($names) {
+					$dispatcher_stats[$key]['dispatcher_initials'] = $names['full_name'];
+				}
+				
+				if (!$goal) {
+					$goal = 0;
+				}
+				
+				$dispatcher_stats[$key]['goal'] = $goal;
+			}
+		}
+		
+		return $dispatcher_stats;
+	}
+	
 }

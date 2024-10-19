@@ -201,7 +201,7 @@ class TMSReportsHelper extends TMSReportsIcons {
     function get_dispatchers () {
 	    // Аргументы для получения пользователей с ролью 'dispatcher'
 	    $args = array(
-		    'role'    => 'dispatcher',
+		    'role__in' => array( 'dispatcher', 'dispatcher-tl' ),
 		    'orderby' => 'display_name',
 		    'order'   => 'ASC',
 	    );
@@ -221,7 +221,7 @@ class TMSReportsHelper extends TMSReportsIcons {
 		    // Собираем массив с ID и полным именем
 		    $dispatchers[] = array(
 			    'id'       => $user->ID,
-			    'fullname' => trim( $first_name . ' ' . $last_name )
+			    'fullname' => trim( $first_name . ' ' . $last_name ),
 		    );
 	    }
 	    
@@ -461,6 +461,51 @@ class TMSReportsHelper extends TMSReportsIcons {
 	    }
         
         return $message;
+    }
+    
+    function set_filter_params ($args) {
+	    $dispatcher_filter = get_field_value($_GET, 'dispatcher');
+	    $my_search = get_field_value($_GET, 'my_search');
+	    $year = get_field_value($_GET, 'fyear');
+	    $month = get_field_value($_GET, 'fmonth');
+	    $load_status = get_field_value($_GET, 'load_status');
+	    $source = get_field_value($_GET, 'source');
+	    $factoring = get_field_value($_GET, 'factoring');
+	    $invoice = get_field_value($_GET, 'invoice');
+	    
+	    if ($dispatcher_filter) {
+		    $args['dispatcher'] = $dispatcher_filter;
+	    }
+	    
+	    if ($my_search) {
+		    $args['my_search'] = $my_search;
+	    }
+	    
+	    if ($factoring) {
+		    $args['factoring'] = $factoring;
+	    }
+	    
+	    if ($invoice) {
+		    $args['invoice'] = $invoice;
+	    }
+	    
+	    if ($year) {
+		    $args['year'] = $year;
+	    }
+	    
+	    if ($month) {
+		    $args['month'] = $month;
+	    }
+	    
+	    if ($source) {
+		    $args['source'] = $source;
+	    }
+	    
+	    if ($load_status) {
+		    $args['load_status'] = $load_status;
+	    }
+        
+        return $args;
     }
 }
 

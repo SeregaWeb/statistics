@@ -74,7 +74,7 @@ if ( false ) {
 			'cancelled',
 			'waiting-on-rc'
 		);
-		$dispatcher_ids = [ 2, 3, 8 ];
+		$dispatcher_ids = [ 2, 3, 8, 9, 10, 11, 12 ];
 		$random_dispatcher = $dispatcher_ids[ array_rand( $dispatcher_ids ) ];
 		$random_source_key = array_rand( $sources );
 		$random_status_key = array_rand( $statuses );
@@ -109,15 +109,15 @@ if ( false ) {
 	}
 	
 	// Заполнение таблицы wp_reports_odysseia
-	for ( $i = 0; $i < 250; $i ++ ) {
+	for ( $i = 0; $i < 1000; $i ++ ) {
 		$data = [
 			'user_id_added'   => rand( 1, 10 ),
 			'date_created'    => current_time( 'mysql' ),
 			'user_id_updated' => rand( 1, 10 ),
 			'date_updated'    => current_time( 'mysql' ),
-			'pick_up_date'    => date( 'Y-m-d H:i:s', strtotime( '+' . rand( 1, 30 ) . ' days' ) ),
-			'date_booked'     => date( 'Y-m-d H:i:s', strtotime( '+' . rand( 1, 30 ) . ' days' ) ),
-			'load_problem'    => 'Problem ' . rand( 1, 5 ),
+			'pick_up_date'    => date( 'Y-m-d H:i:s', strtotime( '-' . rand( 1, 180 ) . ' days' ) ),
+			'date_booked'     => date( 'Y-m-d H:i:s', strtotime( '-' . rand( 1, 180 ) . ' days' ) ),
+			'load_problem'    => date( 'Y-m-d H:i:s', strtotime( '-' . rand( 1, 180 ) . ' days' ) ),
 			'status_post'     => 'publish',
 		];
 		$wpdb->insert( $table_reports, $data );
@@ -167,7 +167,7 @@ function update_custom_post_meta_with_random_values() {
 	);
 	
 	// Список ID диспетчеров
-	$dispatcher_ids = [ 2, 3, 8 ];
+	$dispatcher_ids = [ 2, 3, 8, 9, 10, 11, 12 ];
 	
 	// Получаем все уникальные post_id из вашей кастомной таблицы метаданных
 	$posts = $wpdb->get_results( "SELECT DISTINCT post_id FROM {$table_meta}" );

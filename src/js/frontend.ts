@@ -5,7 +5,6 @@ import '../scss/frontend.scss';
 /**
  * JavaScript
  */
-import Sliders from './components/swiper-init';
 import Popup from './parts/popup-window';
 import { initMoneyMask } from './components/input-helpers';
 import {
@@ -15,7 +14,8 @@ import {
     createDraftPosts,
     previewFileUpload,
     removeOneFileInitial,
-    sendShipperFormInit, updateBillingReportInit,
+    sendShipperFormInit,
+    updateBillingReportInit,
     updateFilesReportInit,
     updateStatusPost,
 } from './components/create-report';
@@ -33,6 +33,7 @@ import { AuthUsersInit } from './components/auth-users';
 import { cleanUrlByFilter } from './components/filter-clean';
 
 function ready() {
+    console.log('ready');
     // @ts-ignore
     const urlAjax = var_from_php.ajax_url;
     // @ts-ignore
@@ -82,6 +83,11 @@ function ready() {
     autoFillAddress(hereApi);
 
     cleanUrlByFilter();
+    
+    const preloaders = document.querySelectorAll('.js-preloader');
+    preloaders && preloaders.forEach(item => {
+        item.remove();
+    })
 }
 
 window.document.addEventListener('DOMContentLoaded', ready);

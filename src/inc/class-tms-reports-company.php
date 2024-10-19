@@ -341,7 +341,11 @@ class TMSReportsCompany extends TMSReportsHelper {
 	    date_set_up_compleat TEXT,
         PRIMARY KEY (id),
         UNIQUE KEY company_name (company_name),
-        UNIQUE KEY mc_number (mc_number)
+        UNIQUE KEY mc_number (mc_number),
+        INDEX idx_company_name (company_name),
+        INDEX idx_mc_number (mc_number),
+        INDEX idx_dot_number (dot_number),
+        INDEX idx_email (email)
     ) $charset_collate;";
 		dbDelta( $sql );
 	}

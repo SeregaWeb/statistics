@@ -3,12 +3,20 @@ $helper        = new TMSReportsHelper();
 $dispatchers   = $helper->get_dispatchers();
 $statuses = $helper->get_statuses();
 $sources = $helper->get_sources();
+$invoices = $helper->get_invoices();
+$factoring_statuses = $helper->get_factoring_status();
+
 $dispatcher_initials = get_field_value($_GET, 'dispatcher');
 $search = get_field_value($_GET, 'my_search');
 $month = get_field_value($_GET, 'fmonth');
 $year_param = get_field_value($_GET, 'fyear');
 $load_status = get_field_value($_GET, 'load_status');
 $source = get_field_value($_GET, 'source');
+$factoring = get_field_value($_GET, 'factoring');
+$invoice = get_field_value($_GET, 'invoice');
+
+$post_tp = get_field_value($args, 'post_type');
+
 ?>
 
 <nav class="navbar mb-5 mt-3 navbar-expand-lg navbar-light" >
@@ -85,6 +93,7 @@ $source = get_field_value($_GET, 'source');
 					<?php endif; ?>
                 </select>
 
+                <?php if ($post_tp === 'dispatcher'): ?>
                 <select class="form-select w-auto" name="source" aria-label=".form-select-sm example">
                     <option value="">Source</option>
 						<?php if (is_array($sources)): ?>
@@ -95,6 +104,31 @@ $source = get_field_value($_GET, 'source');
 							<?php endforeach; ?>
 					    <?php endif; ?>
                 </select>
+                <?php endif; ?>
+	            <?php if ($post_tp === 'accounting'): ?>
+                    <select class="form-select w-auto" name="invoice" aria-label=".form-select-sm example">
+                        <option value="">invoices</option>
+			            <?php if (is_array($invoices)): ?>
+				            <?php foreach ($invoices as $key => $val):  ?>
+                                <option value="<?php echo $key; ?>"  <?php echo $invoice === $key ? 'selected' : '' ?> >
+						            <?php echo $val; ?>
+                                </option>
+				            <?php endforeach; ?>
+			            <?php endif; ?>
+                    </select>
+	            <?php endif; ?>
+	            <?php if ($post_tp === 'accounting'): ?>
+                    <select class="form-select w-auto" name="factoring" aria-label=".form-select-sm example">
+                        <option value="">Factoring status</option>
+			            <?php if (is_array($factoring_statuses)): ?>
+				            <?php foreach ($factoring_statuses as $key => $val):  ?>
+                                <option value="<?php echo $key; ?>"  <?php echo $factoring === $key ? 'selected' : '' ?> >
+						            <?php echo $val; ?>
+                                </option>
+				            <?php endforeach; ?>
+			            <?php endif; ?>
+                    </select>
+	            <?php endif; ?>
             </div>
 		</form>
 	</div>

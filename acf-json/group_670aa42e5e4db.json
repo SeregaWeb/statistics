@@ -1,0 +1,54 @@
+{
+    "key": "group_670aa42e5e4db",
+    "title": "dispatcher - fields",
+    "fields": [
+        {
+            "key": "field_670aa42eee41c",
+            "label": "Monthly goal",
+            "name": "monthly_goal",
+            "aria-label": "",
+            "type": "number",
+            "instructions": "",
+            "required": 0,
+            "conditional_logic": 0,
+            "wrapper": {
+                "width": "",
+                "class": "",
+                "id": ""
+            },
+            "default_value": "",
+            "min": "",
+            "max": "",
+            "placeholder": "",
+            "step": "",
+            "prepend": "",
+            "append": ""
+        }
+    ],
+    "location": [
+        [
+            {
+                "param": "user_role",
+                "operator": "==",
+                "value": "dispatcher"
+            }
+        ],
+        [
+            {
+                "param": "user_role",
+                "operator": "==",
+                "value": "dispatcher-tl"
+            }
+        ]
+    ],
+    "menu_order": 0,
+    "position": "normal",
+    "style": "default",
+    "label_placement": "top",
+    "instruction_placement": "label",
+    "hide_on_screen": "",
+    "active": true,
+    "description": "",
+    "show_in_rest": 0,
+    "modified": 1728750743
+}

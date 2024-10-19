@@ -70,6 +70,7 @@ if ( $report_object ) {
         $read_only = true;
     }
 }
+
 ?>
 
 <h3 class="display-6 mb-4">Customer</h3>

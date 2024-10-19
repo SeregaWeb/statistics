@@ -166,7 +166,11 @@ class TMSReportsShipper extends TMSReportsHelper {
         user_id_updated mediumint(9) NULL,
         date_updated datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
         PRIMARY KEY (id),
-        UNIQUE KEY shipper_name (shipper_name)
+        UNIQUE KEY shipper_name (shipper_name),
+        INDEX idx_full_address (full_address),
+        INDEX idx_shipper_name (shipper_name),
+        INDEX idx_email (email),
+        INDEX idx_phone_number (phone_number)
     ) $charset_collate;";
 		
 		dbDelta( $sql );

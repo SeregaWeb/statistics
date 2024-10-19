@@ -5,9 +5,12 @@ $add_new_load = get_field_value( $global_options, 'add_new_load' );
 
 $TMSUsers = new TMSUsers();
 
-$results       = $args[ 'results' ];
-$total_pages   = $args[ 'total_pages' ];
-$current_pages = $args[ 'current_pages' ];
+
+$results       = get_field_value($args, 'results');
+$total_pages   = get_field_value($args, 'total_pages');
+$current_pages = get_field_value($args, 'current_pages');
+
+$page_type =  get_field_value($args, 'page_type');
 
 $billing_info = $TMSUsers->check_user_role_access(array('administrator', 'billing', 'accounting'),true);
 $hide_billing_and_shipping = $TMSUsers->check_user_role_access(array('billing', 'accounting'),true);
@@ -26,23 +29,27 @@ if ( ! empty( $results ) ) : ?>
             <th scope="col">Unit & name</th>
             <th scope="col">Booked rate</th>
             <th scope="col">Driver rate</th>
-            <?php if (!$hide_billing_and_shipping): ?>
+            <?php if ($page_type === 'dispatcher'): ?>
                 <th scope="col">Profit</th>
             <?php endif; ?>
     
-	    	<?php if ($billing_info): ?>
+	    	<?php if ($page_type === 'accounting'): ?>
                 <th scope="col">True Profit</th>
             <?php endif; ?>
             <th scope="col">Pick Up Date</th>
+	        <?php if ($page_type === 'accounting'): ?>
+                <th scope="col">Delivery date</th>
+            <?php endif; ?>
+            
             <th scope="col">Load status</th>
-	        <?php if (!$hide_billing_and_shipping): ?>
+	        <?php if ($page_type === 'dispatcher'): ?>
             <th scope="col">Instructions</th>
             <th scope="col">Source</th>
             <?php endif; ?>
 	
-	        <?php if ($billing_info): ?>
-            <th scope="col">invoice</th>
-            <th scope="col">factoring status</th>
+	        <?php if ($page_type === 'accounting'): ?>
+            <th scope="col">Invoice</th>
+            <th scope="col">Factoring status</th>
 	        <?php endif; ?>
 			
             <?php if ( $TMSUsers->check_user_role_access( array( 'recruiter' ) ) ): ?>
@@ -52,23 +59,19 @@ if ( ! empty( $results ) ) : ?>
         </thead>
         <tbody>
 		<?php foreach ( $results as $row ) :
-			// Получение значений из $row
 			$meta = get_field_value( $row, 'meta_data' );
 
-            // Обработка вложенных файлов
 			$attached_files = get_field_value( $meta, 'attached_files' );
 			$array_id_files = $attached_files ? explode( ',', $attached_files ) : false;
 			$files_count    = is_array( $array_id_files ) ? '(' . sizeof( $array_id_files ) . ')' : '';
 			$files_state    = empty( $files_count ) ? 'disabled' : '';
 
-            // Обработка адресов доставки и забора
 			$delivery_raw = get_field_value( $meta, 'delivery_location' );
 			$delivery     = $delivery_raw ? json_decode( $delivery_raw, ARRAY_A ) : [];
 			
 			$pick_up_raw = get_field_value( $meta, 'pick_up_location' );
 			$pick_up     = $pick_up_raw ? json_decode( $pick_up_raw, ARRAY_A ) : [];
 
-            // Получение данных диспетчера
 			$dispatcher_initials = get_field_value( $meta, 'dispatcher_initials' );
 			$dispatcher          = $helper->get_user_full_name_by_id( $dispatcher_initials );
 			$color_initials      = $dispatcher ? get_field( 'initials_color', 'user_' . $dispatcher_initials )
@@ -77,12 +80,10 @@ if ( ! empty( $results ) ) : ?>
 				$dispatcher = array( 'full_name' => 'User not found', 'initials' => 'NF' );
 			}
 
-            // Обработка статуса
 			$load_status  = get_field_value( $meta, 'load_status' );
 			$status_label = $helper->get_label_by_key( $load_status, 'statuses' );
 			$status       = esc_html( $status_label );
 			
-			// Получение и форматирование остальных значений
 			$date_booked_raw = get_field_value( $row, 'date_booked' );
 			$date_booked     = esc_html( date( 'm/d/Y', strtotime( $date_booked_raw ) ) );
 			
@@ -101,6 +102,9 @@ if ( ! empty( $results ) ) : ?>
 			$true_profit     = esc_html( '$' . str_replace( '.00', '', $true_profit_raw ) );
 			$pick_up_date_raw = get_field_value( $row, 'pick_up_date' );
 			$pick_up_date     = esc_html( date( 'm/d/Y', strtotime( $pick_up_date_raw ) ) );
+            
+            $delivery_date_raw = get_field_value( $row, 'delivery_date' );
+			$delivery_date     = esc_html( date( 'm/d/Y', strtotime( $delivery_date_raw ) ) );
 			
 			$instructions_raw = get_field_value( $meta, 'instructions' );
 			$instructions     = $helper->get_label_by_key( $instructions_raw, 'instructions' );
@@ -153,25 +157,28 @@ if ( ! empty( $results ) ) : ?>
                 <td><?php echo $booked_rate; ?></td>
                 <td><?php echo $driver_rate; ?></td>
 
-	            <?php if (!$hide_billing_and_shipping): ?>
+	            <?php if ($page_type === 'dispatcher'): ?>
                     <td><?php echo $profit; ?></td>
 	            <?php endif; ?>
 	            
-	            <?php if ($billing_info): ?>
+	            <?php if ($page_type === 'accounting'): ?>
                     <td><?php echo $true_profit; ?></td>
 	            <?php endif; ?>
                 
                 <td><?php echo $pick_up_date; ?></td>
+                <?php if ($page_type === 'accounting'): ?>
+                    <td><?php echo $delivery_date; ?></td>
+                <?php endif; ?>
                 <td class="<?php echo strtolower( $status ); ?>"><?php echo $status; ?></td>
 	            
-	            <?php if (!$hide_billing_and_shipping): ?>
+	            <?php if ($page_type === 'dispatcher'): ?>
                     <td>
                         <div class="table-list-icons"><?php echo $instructions; ?></div>
                     </td>
                     <td><?php echo $source; ?></td>
 	            <?php endif; ?>
 	            
-	            <?php if ($billing_info): ?>
+	            <?php if ($page_type === 'accounting'): ?>
                     <td><?php echo $invoice; ?></td>
                     <td><?php echo $factoring_status; ?></td>
 	            <?php endif; ?>

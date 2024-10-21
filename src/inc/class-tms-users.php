@@ -158,4 +158,51 @@ class  TMSUsers extends TMSReportsHelper {
 		
 		return $invert_logic ? false : true; // Доступ в зависимости от логики
 	}
+	
+	public function check_group_access () {
+		$check_group = $this->check_user_role_access(array('dispatcher-tl', 'tracking'), true);
+		$my_team = null;
+		if ($check_group) {
+			$current_user_id = get_current_user_id();
+			$my_team = get_field( 'my_team', 'user_'.$current_user_id);
+		}
+		
+		return $my_team;
+	}
+	
+	public function check_user_in_my_group ($my_team, $id_user) {
+		
+		if ($my_team === null) return false;
+		
+		$in_team = array_search($id_user, $my_team);
+		return is_numeric($in_team);
+	}
+	
+	public function show_control_loads ($my_team, $current_user_id, $id_user, $is_draft) {
+		
+		$allowed_role = $this->check_user_role_access( array( 'administrator', 'billing', 'accounting' ), true);
+		
+		if ($allowed_role || intval($current_user_id) === intval($id_user) || $is_draft) return true;
+
+		if (is_null($my_team)) return false;
+		
+		return $this->check_user_in_my_group($my_team, $id_user);
+	}
+	
+	public function check_read_only($post_status) {
+		
+		if ($post_status === 'draft') return false;
+		
+		$read_only = false;
+		
+		if ( $this->check_user_role_access( array( 'billing' ), true ) ) {
+			$read_only = true;
+		}
+	
+		if ( $this->check_user_role_access( array( 'dispatcher', 'dispatcher-tl' ), true ) && $post_status === 'publish' ) {
+			$read_only = true;
+		}
+		
+		return $read_only;
+	}
 }

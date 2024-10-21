@@ -48,11 +48,6 @@ if ( false ) {
 	$table_reports = $wpdb->prefix . 'reports_odysseia';
 	$table_meta    = $wpdb->prefix . 'reportsmeta_odysseia';
 	
-	// Список ID диспетчеров
-	
-	
-	
-	// Функция для генерации случайных данных
 	function generateRandomData() {
 		$sources = array(
 			'contact',
@@ -74,37 +69,89 @@ if ( false ) {
 			'cancelled',
 			'waiting-on-rc'
 		);
-		$dispatcher_ids = [ 2, 3, 8, 9, 10, 11, 12 ];
+		 $invoices = array(
+			'invoiced' => 'Invoiced',
+			'not-invoiced' => 'Not invoiced',
+			'invoiced-directly' => 'Invoiced directly',
+		);
+		 $factoring_status = array (
+			'unsubmitted' => 'Unsubmitted',
+			'in-processing' => 'In Processing',
+			'requires-attention' => 'Requires Attention',
+			'in-dispute' => 'In Dispute',
+			'processed' => 'Processed',
+			'charge-back' => 'Charge Back',
+			'short-pay' => 'Short Pay',
+		);
+		 $features = array(
+			'hazmat'              => 'Hazmat',
+			'tanker-end'          => 'Tanker End.',
+			'driver-assist'       => 'Driver assist',
+			'liftgate'            => 'Liftgate',
+			'pallet-jack'         => 'Pallet Jack',
+			'dock-high'           => 'Dock High',
+			'true-team'           => 'True team',
+			'fake-team'           => 'Fake team',
+			'tsa'                 => 'TSA',
+			'twic'                => 'TWIC',
+			'airport'             => 'Airport',
+			'round-trip'          => 'Round trip',
+			'alcohol'             => 'Alcohol',
+			'temperature-control' => 'Temperature control',
+			'ace'                 => 'ACE',
+			'aci'                 => 'ACI',
+			'mexico'              => 'Mexico',
+			'military-base'       => 'Military base',
+			'blind-shipment'      => 'Blind shipment',
+			'partial'             => 'Partial'
+		);
+		 $types = array (
+			'ltl' => 'LTL',
+			'container' => 'Container',
+			'drop_and_hook' => 'Drop and Hook',
+			'last_mile' => 'Last Mile',
+			'other' => 'Other',
+			'truck_load' => 'Truck Load',
+		);
+
+		
+		$dispatcher_ids = [ 2, 3, 5, 8, 9, 10, 11, 12 ];
 		$random_dispatcher = $dispatcher_ids[ array_rand( $dispatcher_ids ) ];
 		$random_source_key = array_rand( $sources );
 		$random_status_key = array_rand( $statuses );
+		$random_factoring_status_key = array_rand($factoring_status);
+		$random_invoices_key = array_rand( $invoices );
+		$random_load_type_key = array_rand($types);
+		$random_features_key = array_rand($features);
 		return [
 			'customer_id'               => rand( 1, 10 ),
 			'contact_name'              => 'Test Name ' . rand( 1, 100 ),
 			'contact_phone'             => '+1-234-567-' . str_pad( rand( 0, 9999 ), 4, '0', STR_PAD_LEFT ),
 			'contact_email'             => 'test' . rand( 1, 100 ) . '@example.com',
-			'additional_contacts'       => json_encode( [ 'Contact1', 'Contact2' ] ),
+			'additional_contacts'       => json_encode( [ ['name' => 'name 1', 'phone' => '0994244532', 'email' => 'test' . rand( 1, 100 ) . '@example.com' ] ] ),
 			'load_status'               => $statuses[ $random_status_key ],
-			'instructions'              => 'Instruction ' . rand( 1, 10 ),
+			'instructions'              => $features[$random_features_key],
 			'source'                    => $sources[ $random_source_key ],
-			'load_type'                 => 'Type ' . rand( 1, 3 ),
+			'load_type'                 => $types[$random_load_type_key],
 			'commodity'                 => 'Commodity ' . rand( 1, 20 ),
 			'weight'                    => rand( 10, 1000 ),
 			'notes'                     => 'Notes for record ' . rand( 1, 100 ),
 			'dispatcher_initials'       => $random_dispatcher,
-			'reference_number'          => rand( 1000000000, 9999999999 ),
-			'unit_number_name'          => '(Unit ' . rand( 1, 100 ) . ') Name ' . rand( 1, 100 ),
+			'reference_number'          => rand( 100000, 999999 ),
+			'unit_number_name'          => '(' . rand( 1, 100 ) . ') Name ' . rand( 1, 100 ),
 			'booked_rate'               => rand( 1000, 5000 ) . '.' . rand( 0, 99 ),
 			'driver_rate'               => rand( 100, 300 ) . '.' . rand( 0, 99 ),
 			'profit'                    => rand( 500, 2000 ) . '.' . rand( 0, 99 ),
 			'percent_booked_rate'       => rand( 20, 100 ) . '.' . rand( 0, 99 ),
 			'true_profit'               => rand( 300, 1500 ) . '.' . rand( 0, 99 ),
-			'pick_up_location'          => json_encode( [ 'address' => 'Location ' . rand( 1, 100 ) ] ),
-			'delivery_location'         => json_encode( [ 'address' => 'Delivery ' . rand( 1, 100 ) ] ),
-			'attached_files'            => json_encode( [] ),
-			'attached_file_required'    => rand( 1, 300 ),
+			'pick_up_location'          => '[{"address_id":"1","address":"My street 24, Nikolaev, AL 54051Canada","short_address":"Nikolaev AL","contact":"Sklad 24","date":"2024-10-18T13:01","info":"2222222","type":"pick_up_location"}]',
+			'delivery_location'         => '[{"address_id":"1","address":"My street 24, Nikolaev, AL 54051Canada","short_address":"Nikolaev AL","contact":"Sklad 24","date":"2024-10-18T13:01","info":"2222222","type":"pick_up_location"}]',
+			'invoice'                   => $invoices[ $random_invoices_key ],
+			'factoring_status'          => $factoring_status[ $random_factoring_status_key ],
+			'attached_files'            => null,
+			'attached_file_required'    => null,
 			'updated_rate_confirmation' => null,
-			'screen_picture'            => rand( 1, 500 )
+			'screen_picture'            => null
 		];
 	}
 	
@@ -115,9 +162,10 @@ if ( false ) {
 			'date_created'    => current_time( 'mysql' ),
 			'user_id_updated' => rand( 1, 10 ),
 			'date_updated'    => current_time( 'mysql' ),
-			'pick_up_date'    => date( 'Y-m-d H:i:s', strtotime( '-' . rand( 1, 180 ) . ' days' ) ),
-			'date_booked'     => date( 'Y-m-d H:i:s', strtotime( '-' . rand( 1, 180 ) . ' days' ) ),
-			'load_problem'    => date( 'Y-m-d H:i:s', strtotime( '-' . rand( 1, 180 ) . ' days' ) ),
+			'pick_up_date'    => date( 'Y-m-d H:i:s', strtotime( '-' . rand( 1, 360 ) . ' days' ) ),
+			'date_booked'     => date( 'Y-m-d H:i:s', strtotime( '-' . rand( 1, 360 ) . ' days' ) ),
+			'load_problem'    => date( 'Y-m-d H:i:s', strtotime( '-' . rand( 1, 360 ) . ' days' ) ),
+			'delivery_date'   => date( 'Y-m-d H:i:s', strtotime( '-' . rand( 1, 360 ) . ' days' ) ),
 			'status_post'     => 'publish',
 		];
 		$wpdb->insert( $table_reports, $data );

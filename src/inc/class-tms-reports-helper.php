@@ -107,13 +107,11 @@ class TMSReportsHelper extends TMSReportsIcons {
 		"YUC"  => "Yucatán, YUC",
 		"ZAC"  => "Zacatecas, ZAC",
 	);
-    
     public $invoices = array(
       'invoiced' => 'Invoiced',
       'not-invoiced' => 'Not invoiced',
       'invoiced-directly' => 'Invoiced directly',
     );
-    
     public $factoring_status = array (
        'unsubmitted' => 'Unsubmitted',
        'in-processing' => 'In Processing',

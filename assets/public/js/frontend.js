@@ -3364,6 +3364,7 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */   addShipperPointInit: function() { return /* binding */ addShipperPointInit; },
 /* harmony export */   additionalContactsInit: function() { return /* binding */ additionalContactsInit; },
 /* harmony export */   createDraftPosts: function() { return /* binding */ createDraftPosts; },
+/* harmony export */   fullRemovePost: function() { return /* binding */ fullRemovePost; },
 /* harmony export */   previewFileUpload: function() { return /* binding */ previewFileUpload; },
 /* harmony export */   removeOneFileInitial: function() { return /* binding */ removeOneFileInitial; },
 /* harmony export */   sendShipperFormInit: function() { return /* binding */ sendShipperFormInit; },
@@ -3383,6 +3384,11 @@ var updateStatusRechange = function updateStatusRechange(ajaxUrl) {
   var formData = new FormData();
   var action = 'rechange_status_load';
   var postId = document.querySelector('.js-post-id');
+  var postStatus = document.querySelector('.js-post-status');
+  if (postStatus && postStatus.value === 'publish') {
+    console.log('postStatus.value', postStatus.value);
+    return;
+  }
   if (!postId) {
     (0,_info_messages__WEBPACK_IMPORTED_MODULE_2__.printMessage)('Post id not found', 'danger', 8000);
     return;
@@ -3405,6 +3411,48 @@ var updateStatusRechange = function updateStatusRechange(ajaxUrl) {
     console.error('Request failed:', error);
   });
 };
+var fullRemovePost = function fullRemovePost(ajaxUrl) {
+  var btnsRemove = document.querySelectorAll('.js-remove-load');
+  btnsRemove && btnsRemove.forEach(function (item) {
+    item.addEventListener('click', function (event) {
+      event.preventDefault();
+      var target = event.target;
+      var question = confirm('Are you sure you want to delete this load? \nIf you agree it will be deleted permanently');
+      if (target instanceof HTMLElement && question) {
+        var idLoad = target.getAttribute('data-id');
+        if (!idLoad) {
+          (0,_info_messages__WEBPACK_IMPORTED_MODULE_2__.printMessage)("Error remove Load: reload this page and try again", 'danger', 8000);
+          return;
+        }
+        var action = 'remove_one_load';
+        var formData = new FormData();
+        formData.append('action', action);
+        formData.append('id_load', idLoad);
+        var options = {
+          method: 'POST',
+          body: formData
+        };
+        fetch(ajaxUrl, options).then(function (res) {
+          return res.json();
+        }).then(function (requestStatus) {
+          if (requestStatus.success) {
+            console.log('Load remove successfully:', requestStatus.data);
+            var contain = target.closest('tr');
+            if (contain) {
+              contain.remove();
+            }
+            (0,_info_messages__WEBPACK_IMPORTED_MODULE_2__.printMessage)(requestStatus.data.message, 'success', 8000);
+          } else {
+            (0,_info_messages__WEBPACK_IMPORTED_MODULE_2__.printMessage)("Error remove Load:".concat(requestStatus.data.message), 'danger', 8000);
+          }
+        }).catch(function (error) {
+          (0,_info_messages__WEBPACK_IMPORTED_MODULE_2__.printMessage)("Request failed: ".concat(error), 'danger', 8000);
+          console.error('Request failed:', error);
+        });
+      }
+    });
+  });
+};
 var actionCreateReportInit = function actionCreateReportInit(ajaxUrl) {
   var forms = document.querySelectorAll('.js-add-new-report');
   var popupInstance = new _parts_popup_window__WEBPACK_IMPORTED_MODULE_1__["default"]();
@@ -3423,11 +3471,15 @@ var actionCreateReportInit = function actionCreateReportInit(ajaxUrl) {
       fetch(ajaxUrl, options).then(function (res) {
         return res.json();
       }).then(function (requestStatus) {
+        var _a, _b;
         if (requestStatus.success) {
           console.log('Load added successfully:', requestStatus.data);
           popupInstance.forceCloseAllPopup();
           tab.show();
-          updateStatusRechange(ajaxUrl);
+          console.log('requestStatus.data?.read_only', (_a = requestStatus.data) === null || _a === void 0 ? void 0 : _a.read_only);
+          if (((_b = requestStatus.data.data) === null || _b === void 0 ? void 0 : _b.read_only) !== 'true') {
+            updateStatusRechange(ajaxUrl);
+          }
           (0,_info_messages__WEBPACK_IMPORTED_MODULE_2__.printMessage)(requestStatus.data.message, 'success', 8000);
         } else {
           (0,_info_messages__WEBPACK_IMPORTED_MODULE_2__.printMessage)("Error adding Load:".concat(requestStatus.data.message), 'danger', 8000);
@@ -3445,6 +3497,7 @@ function hasReportIdInUrl() {
 }
 var createDraftPosts = function createDraftPosts(ajaxUrl) {
   var forms = document.querySelectorAll('.js-create-not-publish-report');
+  console.log('forms', forms);
   forms && forms.forEach(function (item) {
     item.addEventListener('submit', function (event) {
       event.preventDefault();
@@ -3473,10 +3526,11 @@ var createDraftPosts = function createDraftPosts(ajaxUrl) {
       fetch(ajaxUrl, options).then(function (res) {
         return res.json();
       }).then(function (requestStatus) {
-        var _a;
+        var _a, _b, _c;
         if (requestStatus.success) {
           console.log('Report added successfully:', requestStatus.data);
           if (!hasReportIdInUrl()) {
+            console.log('1');
             (0,_info_messages__WEBPACK_IMPORTED_MODULE_2__.printMessage)((_a = requestStatus.data) === null || _a === void 0 ? void 0 : _a.message, 'success', 8000);
             var url = new URL(window.location.href);
             url.searchParams.set('post_id', requestStatus.data.id_created_post);
@@ -3484,7 +3538,12 @@ var createDraftPosts = function createDraftPosts(ajaxUrl) {
             console.log('url', url);
             window.location.href = url === null || url === void 0 ? void 0 : url.href;
           } else {
+            console.log('2');
+            if (((_b = requestStatus.data.data) === null || _b === void 0 ? void 0 : _b.read_only) !== 'true') {
+              updateStatusRechange(ajaxUrl);
+            }
             tab.show();
+            (0,_info_messages__WEBPACK_IMPORTED_MODULE_2__.printMessage)((_c = requestStatus.data) === null || _c === void 0 ? void 0 : _c.message, 'success', 8000);
           }
         } else {
           (0,_info_messages__WEBPACK_IMPORTED_MODULE_2__.printMessage)("Error adding report:".concat(requestStatus.data.message), 'danger', 8000);
@@ -3520,10 +3579,13 @@ var updateFilesReportInit = function updateFilesReportInit(ajaxUrl) {
       fetch(ajaxUrl, options).then(function (res) {
         return res.json();
       }).then(function (requestStatus) {
+        var _a;
         if (requestStatus.success) {
           console.log('upload files successfully:', requestStatus.data);
           (0,_info_messages__WEBPACK_IMPORTED_MODULE_2__.printMessage)(requestStatus.data.message, 'success', 8000);
-          updateStatusRechange(ajaxUrl);
+          if (((_a = requestStatus.data.data) === null || _a === void 0 ? void 0 : _a.read_only) !== 'true') {
+            updateStatusRechange(ajaxUrl);
+          }
         } else {
           (0,_info_messages__WEBPACK_IMPORTED_MODULE_2__.printMessage)("Error upload files:".concat(requestStatus.data.message), 'danger', 8000);
         }
@@ -3549,10 +3611,13 @@ var updateBillingReportInit = function updateBillingReportInit(ajaxUrl) {
       fetch(ajaxUrl, options).then(function (res) {
         return res.json();
       }).then(function (requestStatus) {
+        var _a;
         if (requestStatus.success) {
           console.log('update successfully:', requestStatus.data);
           (0,_info_messages__WEBPACK_IMPORTED_MODULE_2__.printMessage)(requestStatus.data.message, 'success', 8000);
-          updateStatusRechange(ajaxUrl);
+          if (((_a = requestStatus.data.data) === null || _a === void 0 ? void 0 : _a.read_only) !== 'true') {
+            updateStatusRechange(ajaxUrl);
+          }
         } else {
           (0,_info_messages__WEBPACK_IMPORTED_MODULE_2__.printMessage)("Error update:".concat(requestStatus.data.message), 'danger', 8000);
         }
@@ -3929,10 +3994,13 @@ var sendShipperFormInit = function sendShipperFormInit(ajaxUrl) {
     fetch(ajaxUrl, options).then(function (res) {
       return res.json();
     }).then(function (requestStatus) {
+      var _a;
       if (requestStatus.success) {
         (0,_info_messages__WEBPACK_IMPORTED_MODULE_2__.printMessage)(requestStatus.data.message, 'success', 8000);
         tab.show();
-        updateStatusRechange(ajaxUrl);
+        if (((_a = requestStatus.data.data) === null || _a === void 0 ? void 0 : _a.read_only) !== 'true') {
+          updateStatusRechange(ajaxUrl);
+        }
       } else {
         (0,_info_messages__WEBPACK_IMPORTED_MODULE_2__.printMessage)("Error adding shipper info:".concat(requestStatus.data.message), 'danger', 8000);
       }
@@ -14570,6 +14638,7 @@ function ready() {
   (0,_components_change_table__WEBPACK_IMPORTED_MODULE_9__.changeTableInit)(urlAjax);
   (0,_components_auth_users__WEBPACK_IMPORTED_MODULE_14__.AuthUsersInit)(urlAjax);
   (0,_components_create_report__WEBPACK_IMPORTED_MODULE_3__.updateBillingReportInit)(urlAjax);
+  (0,_components_create_report__WEBPACK_IMPORTED_MODULE_3__.fullRemovePost)(urlAjax);
   (0,_components_driver_Info__WEBPACK_IMPORTED_MODULE_10__.initGetInfoDriver)(useServices);
   (0,_components_create_report__WEBPACK_IMPORTED_MODULE_3__.additionalContactsInit)();
   (0,_components_toggle_blocks_init__WEBPACK_IMPORTED_MODULE_8__.toggleBlocksInit)();

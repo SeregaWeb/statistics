@@ -12,6 +12,7 @@ import {
     additionalContactsInit,
     addShipperPointInit,
     createDraftPosts,
+    fullRemovePost,
     previewFileUpload,
     removeOneFileInitial,
     sendShipperFormInit,
@@ -67,6 +68,7 @@ function ready() {
     changeTableInit(urlAjax);
     AuthUsersInit(urlAjax);
     updateBillingReportInit(urlAjax);
+    fullRemovePost(urlAjax);
 
     // API request
     initGetInfoDriver(useServices);
@@ -83,11 +85,12 @@ function ready() {
     autoFillAddress(hereApi);
 
     cleanUrlByFilter();
-    
+
     const preloaders = document.querySelectorAll('.js-preloader');
-    preloaders && preloaders.forEach(item => {
-        item.remove();
-    })
+    preloaders &&
+        preloaders.forEach((item) => {
+            item.remove();
+        });
 }
 
 window.document.addEventListener('DOMContentLoaded', ready);

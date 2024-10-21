@@ -53,7 +53,7 @@ function searchResultActions() {
 
 function searchHelperActions(seachInputsSelector, action, ajaxUrl) {
     const seachInputs = document.querySelectorAll(seachInputsSelector);
-    
+
     if (!seachInputs) return;
     // this action close dropdown list searched values
     document.addEventListener('click', (event) => {
@@ -154,7 +154,7 @@ function searchHelperActions(seachInputsSelector, action, ajaxUrl) {
 // eslint-disable-next-line import/prefer-default-export
 export const addSearchAction = (ajaxUrl) => {
     console.log('ajaxUrl', ajaxUrl);
-    
+
     searchHelperActions('.js-search-company', 'search_company', ajaxUrl);
     searchHelperActions('.js-search-shipper', 'search_shipper', ajaxUrl);
 };

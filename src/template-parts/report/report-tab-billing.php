@@ -34,8 +34,7 @@ if ( $report_object ) {
     <div class="row">
     <div class="mb-2 col-12 col-md-6 col-xl-4">
         <label for="load_problem" class="form-label">Date start problem</label>
-        <input type="date" name="load_problem" value="<?php echo $load_problem_formatted; ?>" class="form-control"
-               required>
+        <input type="date" name="load_problem" value="<?php echo $load_problem_formatted; ?>" class="form-control">
     </div>
         <div class="col-12"></div>
 

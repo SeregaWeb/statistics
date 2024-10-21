@@ -34,13 +34,6 @@
             {
                 "param": "user_role",
                 "operator": "==",
-                "value": "billing"
-            }
-        ],
-        [
-            {
-                "param": "user_role",
-                "operator": "==",
                 "value": "tracking"
             }
         ]
@@ -54,5 +47,5 @@
     "active": true,
     "description": "",
     "show_in_rest": 0,
-    "modified": 1728475923
+    "modified": 1729333095
 }

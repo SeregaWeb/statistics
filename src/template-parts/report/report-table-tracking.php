@@ -9,8 +9,7 @@ $results       = get_field_value($args, 'results');
 $total_pages   = get_field_value($args, 'total_pages');
 $current_pages = get_field_value($args, 'current_pages');
 $is_draft      = get_field_value($args, 'is_draft');
-
-$page_type =  get_field_value($args, 'page_type');
+$page_type     =  get_field_value($args, 'page_type');
 
 $current_user_id = get_current_user_id();
 
@@ -25,40 +24,14 @@ if ( ! empty( $results ) ) : ?>
     <table class="table mb-5 w-100">
         <thead>
         <tr>
-            <th scope="col">Date booked</th>
-            <th scope="col">Dispatcher</th>
-            <th scope="col">Reference №</th>
+            <th scope="col">
+                Dispatcher<br>
+            </th>
             <th scope="col">Pick up location</th>
             <th scope="col">Delivery location</th>
             <th scope="col">Unit & name</th>
-            <th scope="col">Booked rate</th>
-            <th scope="col">Driver rate</th>
-            <?php if ($page_type === 'dispatcher'): ?>
-                <th scope="col">Profit</th>
-            <?php endif; ?>
-    
-	    	<?php if ($page_type === 'accounting'): ?>
-                <th scope="col">True Profit</th>
-            <?php endif; ?>
-            <th scope="col">Pick Up Date</th>
-	        <?php if ($page_type === 'accounting'): ?>
-                <th scope="col">Delivery date</th>
-            <?php endif; ?>
-            
-            <th scope="col">Load status</th>
-	        <?php if ($page_type === 'dispatcher'): ?>
-            <th scope="col">Instructions</th>
-            <th scope="col">Source</th>
-            <?php endif; ?>
-	
-	        <?php if ($page_type === 'accounting'): ?>
-            <th scope="col">Invoice</th>
-            <th scope="col">Factoring status</th>
-	        <?php endif; ?>
-			
-            <?php if ( $TMSUsers->check_user_role_access( array( 'recruiter' ) ) ): ?>
-                <th scope="col"></th>
-			<?php endif; ?>
+            <th scope="col">Client</th>
+            <th scope="col"></th>
         </tr>
         </thead>
         <tbody>
@@ -76,7 +49,8 @@ if ( ! empty( $results ) ) : ?>
 			
 			$pick_up_raw = get_field_value( $meta, 'pick_up_location' );
 			$pick_up     = $pick_up_raw ? json_decode( $pick_up_raw, ARRAY_A ) : [];
-
+   
+            
 			$dispatcher_initials = get_field_value( $meta, 'dispatcher_initials' );
 
 			$dispatcher          = $helper->get_user_full_name_by_id( $dispatcher_initials );
@@ -95,101 +69,86 @@ if ( ! empty( $results ) ) : ?>
 			
 			$reference_number = esc_html( get_field_value( $meta, 'reference_number' ) );
 			$unit_number_name = esc_html( get_field_value( $meta, 'unit_number_name' ) );
-			
-			$booked_rate_raw = get_field_value( $meta, 'booked_rate' );
-			$booked_rate     = esc_html( '$' . str_replace( '.00', '', $booked_rate_raw ) );
-			
-			$driver_rate_raw = get_field_value( $meta, 'driver_rate' );
-			$driver_rate     = esc_html( '$' . str_replace( '.00', '', $driver_rate_raw ) );
-			
-			$profit_raw = get_field_value( $meta, 'profit' );
-			$profit     = esc_html( '$' . str_replace( '.00', '', $profit_raw ) );
-			$true_profit_raw = get_field_value( $meta, 'true_profit' );
-			$true_profit     = esc_html( '$' . str_replace( '.00', '', $true_profit_raw ) );
+	
 			$pick_up_date_raw = get_field_value( $row, 'pick_up_date' );
 			$pick_up_date     = esc_html( date( 'm/d/Y', strtotime( $pick_up_date_raw ) ) );
             
             $delivery_date_raw = get_field_value( $row, 'delivery_date' );
 			$delivery_date     = esc_html( date( 'm/d/Y', strtotime( $delivery_date_raw ) ) );
 			
-			$instructions_raw = get_field_value( $meta, 'instructions' );
-			$instructions     = $helper->get_label_by_key( $instructions_raw, 'instructions' );
-			
-			$source_raw = get_field_value( $meta, 'source' );
-			$source     = esc_html( $helper->get_label_by_key( $source_raw, 'sources' ) );
-   
-			$factoring_status_row = get_field_value( $meta, 'factoring_status' );
-			$factoring_status     = esc_html( $helper->get_label_by_key( $factoring_status_row, 'factoring_status' ) );
-			
-            $invoice_raw = get_field_value( $meta, 'invoice' );
-			$invoice     = esc_html( $helper->get_label_by_key( $invoice_raw, 'invoices' ) );
             
             $show_control = $TMSUsers->show_control_loads($my_team, $current_user_id, $dispatcher_initials, $is_draft);
 			?>
 
             <tr>
-                <td><?php echo $date_booked; ?></td>
+
                 <td>
-            <span data-bs-toggle="tooltip" data-bs-placement="top" title="<?php echo $dispatcher[ 'full_name' ]; ?>"
-                  class="initials-circle" style="background-color: <?php echo $color_initials; ?>">
-                  <?php echo esc_html( $dispatcher[ 'initials' ] ); ?>
-            </span>
+                    <div class="d-flex gap-1 align-items-center">
+                        <span data-bs-toggle="tooltip" data-bs-placement="top" title="<?php echo $dispatcher[ 'full_name' ]; ?>"
+                              class="initials-circle" style="background-color: <?php echo $color_initials; ?>">
+                              <?php echo esc_html( $dispatcher[ 'initials' ] ); ?>
+                        </span>
+                        <span>PL</span>
+                    </div>
+                    <span class="mt-1" style="font-size: 8px;">
+                        <?php echo $reference_number; ?>
+                    </span>
                 </td>
-                <td><?php echo $reference_number; ?></td>
+                
                 <td>
 					<?php if ( is_array( $pick_up ) ): ?>
-						<?php foreach ( $pick_up as $val ): ?>
+						<?php foreach ( $pick_up as $val ):
+							if (isset($val['date'])) {
+								$date = esc_html( date( 'm/d/Y', strtotime( $val['date'] ) ) );
+							} else {
+								$date = '';
+							}
+                            ?>
 							<?php if ( isset( $val[ 'short_address' ] ) ): ?>
-                                <span class="hide-long-text-100" data-bs-toggle="tooltip" data-bs-placement="top"
-                                      title="<?php echo $val[ 'address' ]; ?>">
-                              <?php echo $val[ 'short_address' ]; ?>
-                        </span>
+                            <div class="w-100 d-flex flex-column align-items-start">
+                                <p class="m-0" >
+		                            <?php echo $val[ 'address' ]; ?>
+                                </p>
+                                <span style="font-size: 8px;">
+                                    <?php echo $date; ?> 2:00 AM - 6:30 AM
+                                </span>
+                            </div>
+                            
 							<?php endif; ?>
 						<?php endforeach; ?>
 					<?php endif; ?>
                 </td>
                 <td>
 					<?php if ( is_array( $delivery ) ): ?>
-						<?php foreach ( $delivery as $val ): ?>
+						<?php foreach ( $delivery as $val ):
+							if (isset($val['date'])) {
+								$date = esc_html( date( 'm/d/Y', strtotime( $val['date'] ) ) );
+							} else {
+								$date = '';
+							}
+							?>
 							<?php if ( isset( $val[ 'short_address' ] ) ): ?>
-                                <span class="hide-long-text-100" data-bs-toggle="tooltip" data-bs-placement="top"
-                                      title="<?php echo $val[ 'address' ]; ?>">
-                              <?php echo $val[ 'short_address' ]; ?>
-                        </span>
-							<?php endif; ?>
+                            <div class="w-100 d-flex flex-column align-items-start">
+                                <p class="m-0" >
+		                            <?php echo $val[ 'address' ]; ?>
+                                </p>
+                                <span style="font-size: 8px;">
+                                    <?php echo $date; ?> 2:00 AM - 6:30 AM
+                                </span>
+                            </div>
+						<?php endif; ?>
 						<?php endforeach; ?>
 					<?php endif; ?>
                 </td>
                 <td><?php echo $unit_number_name; ?></td>
-                <td><?php echo $booked_rate; ?></td>
-                <td><?php echo $driver_rate; ?></td>
-
-	            <?php if ($page_type === 'dispatcher'): ?>
-                    <td><?php echo $profit; ?></td>
-	            <?php endif; ?>
-	            
-	            <?php if ($page_type === 'accounting'): ?>
-                    <td><?php echo $true_profit; ?></td>
-	            <?php endif; ?>
-                
-                <td><?php echo $pick_up_date; ?></td>
-                <?php if ($page_type === 'accounting'): ?>
-                    <td><?php echo $delivery_date; ?></td>
-                <?php endif; ?>
-                <td class="<?php echo strtolower( $status ); ?>"><?php echo $status; ?></td>
-	            
-	            <?php if ($page_type === 'dispatcher'): ?>
-                    <td>
-                        <div class="table-list-icons"><?php echo $instructions; ?></div>
-                    </td>
-                    <td><?php echo $source; ?></td>
-	            <?php endif; ?>
-	            
-	            <?php if ($page_type === 'accounting'): ?>
-                    <td><?php echo $invoice; ?></td>
-                    <td><?php echo $factoring_status; ?></td>
-	            <?php endif; ?>
-             
+                <td>
+                    <p class="m-0">
+                        <?php echo 'Company name' ?>
+                    </p>
+                    <span style="font-size: 8px;">
+                        <?php echo 'MC: 0432423' ?>
+                    </span>
+                </td>
              
 				<?php if ( $TMSUsers->check_user_role_access( array( 'recruiter' ) ) ): ?>
                     <td>

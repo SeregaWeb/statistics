@@ -75,7 +75,7 @@
         },
         {
             "key": "field_670828a1b54fc",
-            "label": "Work location",
+            "label": "Office location",
             "name": "work_location",
             "aria-label": "",
             "type": "radio",
@@ -88,8 +88,8 @@
                 "id": ""
             },
             "choices": {
-                "ua": "Ukraine",
-                "pl": "Poland",
+                "ua": "Ukraine (Odessa)",
+                "pl": "Poland (Warsaw)",
                 "rm": "Remote"
             },
             "default_value": "ua",
@@ -118,5 +118,5 @@
     "active": true,
     "description": "",
     "show_in_rest": 0,
-    "modified": 1728588062
+    "modified": 1729368820
 }

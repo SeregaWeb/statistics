@@ -24,6 +24,7 @@ $post_id = isset( $_GET[ 'post_id' ] ) ? $_GET[ 'post_id' ] : false;
 if ( $post_id && is_numeric( $post_id ) ) {
 	$report_object = $reports->get_report_by_id( $_GET[ 'post_id' ] );
     $main = get_field_value($report_object, 'main');
+    $meta = get_field_value($report_object, 'meta');
     
 	if ( is_array( $report_object ) && sizeof( $report_object ) > 0 ) {
 		$disabled_tabs = '';
@@ -51,18 +52,24 @@ if ( $post_id && is_numeric( $post_id ) ) {
 
 $access = $TMSUsers->check_user_role_access(array('recruiter'));
 
-if ($TMSUsers->check_user_role_access(array('dispatcher'), true)) {
-	$user_id_added = get_field_value($main, 'user_id_added');
+$full_only_view = false;
+
+if ($TMSUsers->check_user_role_access(array('dispatcher'), true) && isset($meta)) {
+	$user_id_added = get_field_value($meta, 'dispatcher_initials');
+
     if (is_array($report_object) && intval($user_id_added) !== get_current_user_id()) {
 	    $access = false;
     }
 }
 
-if ($TMSUsers->check_user_role_access(array('dispatcher-tl'), true)) {
-	$user_id_added = get_field_value($main, 'user_id_added');
-	if (is_array($report_object) && intval($user_id_added) !== get_current_user_id()) {
-		$access = false;
-	}
+if ($TMSUsers->check_user_role_access(array('dispatcher-tl','tracking'), true) && isset($meta)) {
+	$user_id_added = get_field_value($meta, 'dispatcher_initials');
+	$my_team = $TMSUsers->check_group_access();
+	$access = $TMSUsers->check_user_in_my_group($my_team, $user_id_added);
+}
+
+if ($access) {
+	$full_only_view = $TMSUsers->check_user_role_access(array('billing', 'dispatcher-tl'), true);
 }
 
 $billing_info = $TMSUsers->check_user_role_access(array('administrator', 'billing', 'accounting'),true);
@@ -141,6 +148,7 @@ get_header();
                                  aria-labelledby="pills-customer-tab">
 	                            <?php
 	                            echo esc_html( get_template_part( 'src/template-parts/report/report', 'tab-customer', array(
+                                    'full_view_only' => $full_only_view,
 		                            'report_object' => $report_object,
 		                            'post_id'       => $post_id
 	                            ) ) );
@@ -150,7 +158,8 @@ get_header();
                             <div class="tab-pane fade" id="pills-load" role="tabpanel" aria-labelledby="pills-load-tab">
 								<?php
 								echo esc_html( get_template_part( 'src/template-parts/report/report', 'tab-load', array(
-									'report_object' => $report_object,
+									'full_view_only' => $full_only_view,
+                                    'report_object' => $report_object,
 									'post_id'       => $post_id
 								) ) );
 								?>
@@ -159,6 +168,7 @@ get_header();
                             <div class="tab-pane fade" id="pills-trip" role="tabpanel" aria-labelledby="pills-trip-tab">
 	                            <?php
 	                            echo esc_html( get_template_part( 'src/template-parts/report/report', 'tab-shipper', array(
+		                            'full_view_only' => $full_only_view,
 		                            'report_object' => $report_object,
 		                            'post_id'       => $post_id
 	                            ) ) );
@@ -170,6 +180,7 @@ get_header();
 								
 								<?php
 								echo esc_html( get_template_part( 'src/template-parts/report/report', 'tab-documents', array(
+									'full_view_only' => $full_only_view,
 									'report_object' => $report_object,
 									'post_id'       => $post_id
 								) ) );
@@ -183,6 +194,7 @@ get_header();
 		                        
 		                        <?php
 		                        echo esc_html( get_template_part( 'src/template-parts/report/report', 'tab-billing', array(
+			                        'full_view_only' => $full_only_view,
 			                        'report_object' => $report_object,
 			                        'post_id'       => $post_id
 		                        ) ) );

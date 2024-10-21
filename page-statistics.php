@@ -26,11 +26,11 @@ if (!$active_item) {
                     <div class="col-12 pt-4 pb-4">
                         <ul class="nav nav-pills nav-fill gap-2 justify-content-center">
                             <li class="nav-item">
-                                <a class="nav-link <?php echo $active_item === 'finance' ? 'active' : '' ?>" href="<?php echo get_the_permalink() . '?active_state=finance' ?>">Finance</a>
+                                <a class="nav-link <?php echo $active_item === 'finance' ? 'active' : '' ?>" href="<?php echo get_the_permalink() . '?active_state=finance' ?>">Total</a>
                             </li>
                            
                             <li class="nav-item">
-                                <a class="nav-link <?php echo $active_item === 'yearly' ? 'active' : '' ?>" href="<?php echo get_the_permalink() . '?active_state=yearly' ?>">Yearly</a>
+                                <a class="nav-link <?php echo $active_item === 'yearly' ? 'active' : '' ?>" href="<?php echo get_the_permalink() . '?active_state=yearly' ?>">Statistics</a>
                             </li>
 
                             <li class="nav-item">
@@ -105,7 +105,6 @@ if (!$active_item) {
                                     pieSliceText: 'value',
                                     legend: { position: 'center' },
                                     // pieHole: 0.2,  // Optional: make it a donut chart
-                                    is3D: true
                                   };
                                   
                                   const chart = new google.visualization.PieChart(document.getElementById('mainChart'));
@@ -132,7 +131,6 @@ if (!$active_item) {
                                     title: 'Dispatcher Prices',
                                     pieSliceText: 'value',
                                     legend: { position: 'center' },
-                                    is3D: true
                                   };
                                   
                                   const chart = new google.visualization.PieChart(document.getElementById('mainChartPrise'));
@@ -193,7 +191,6 @@ if (!$active_item) {
                             ?>
                             <form class="monthly w-100 ">
                             <input type="hidden" name="active_state" value="yearly">
-                            <h2 class="top-title">Stats for year</h2>
                             
                             <div class="d-flex gap-1">
                                 <select class="form-select w-auto" required name="fyear" aria-label=".form-select-sm example">
@@ -220,18 +217,22 @@ if (!$active_item) {
                             </div>
                             <?php
                             echo '<table class="table-stat">';
-                            echo '<thead><tr><th>Month</th><th>Post Count</th><th>Total Profit</th><th>Average Profit</th></tr></thead>';
+                            echo '<thead><tr><th>Month</th><th>Loads</th><th>Profit</th><th>Average per load</th><th>Average daily per month</th></tr></thead>';
                             echo '<tbody>';
                             
                             foreach ($mountly as $month_data) {
                                 
                                 $hide_column = $month_data['post_count'] === 0 ? 'd-none' : '';
                                 
+                                // TODO check real work day
+                                $work_day = 20;
+                                
 	                            echo '<tr class="'.$hide_column.'">';
 	                            echo '<td>' . $month_data['month'] . '</td>';
 	                            echo '<td>' . $month_data['post_count'] . '</td>';
 	                            echo '<td>$' . number_format($month_data['total_profit'], 2) . '</td>';
 	                            echo '<td>$' . number_format($month_data['average_profit'], 2) . '</td>';
+	                            echo '<td>$' . number_format($month_data['total_profit'] / $work_day, 2) . '</td>';
 	                            echo '</tr>';
                             }
                             
@@ -252,13 +253,14 @@ if (!$active_item) {
 
                             // HTML код для отображения таблицы
 	                        echo '<table class="table-stat" border="1" cellpadding="5" cellspacing="0">';
-	                        echo '<tr>';
-	                        echo '<th>Dispatcher</th>';
-	                        echo '<th>Post Count</th>';
-	                        echo '<th>completion percentage</th>';
+	                        echo '<tr class="text-center">';
+	                        echo '<th class="text-left">Dispatcher</th>';
+	                        echo '<th>Loads</th>';
+	                        echo '<th>Profit</th>';
 	                        echo '<th>Goal</th>';
-	                        echo '<th>Total Profit</th>';
+	                        echo '<th>Left</th>';
 	                        echo '<th>Average Profit</th>';
+	                        echo '<th>Completed</th>';
 	                        echo '</tr>';
 
                             // Проходим по массиву диспетчеров, чтобы гарантировать вывод всех диспетчеров
@@ -272,8 +274,34 @@ if (!$active_item) {
 			                        $total_profit = number_format($stat['total_profit'], 2);
 			                        $average_profit = number_format($stat['average_profit'], 2);
 			                        $goal = $stat['goal'];
+			                        
+			                        $left = $stat['goal'] - $stat['total_profit'];
+                                    
+                                    $compleat_color = '';
+                                    $text_color = '#000000';
+                                    
+                                    if ($left < 0) {
+                                        $left = 0;
+                                    }
+                                    
 			                        if (is_numeric($goal) && $goal > 0 ) {
-				                        $goal_completion = number_format(($stat['total_profit'] / +$goal) * 100, 2);
+                                        $value_pr = ($stat['total_profit'] / +$goal) * 100;
+                                        
+				                        $goal_completion = number_format($value_pr, 2);
+                                        
+                                        if ($value_pr > 0 && $value_pr <= 80) {
+	                                        $compleat_color = '#ff0000';
+	                                        $text_color = '#ffffff';
+                                        } else if ($value_pr > 80 && $value_pr <= 90)  {
+	                                        $compleat_color = '#ff5858 ';
+	                                        $text_color = '#ffffff';
+                                        } else if ($value_pr > 90 && $value_pr <= 99.99) {
+	                                        $compleat_color = '#ff8989';
+	                                        $text_color = '#ffffff';
+                                        } else {
+	                                        $compleat_color = '#b2d963';
+                                        }
+                            
 			                        } else {
 				                        $goal_completion = 'N/A'; // Если цель равна 0
 			                        }
@@ -283,18 +311,20 @@ if (!$active_item) {
 			                        $total_profit = number_format(0, 2);
 			                        $average_profit = number_format(0, 2);
 			                        $goal = 0;
+			                        $left = 0;
 			                        $goal = get_field('monthly_goal', 'user_'.$dispatcher['id']);
 			                        $goal_completion = 0;
 		                        }
 		                        
 		                        // Вывод строки таблицы для текущего диспетчера
-		                        echo '<tr>';
-		                        echo '<td>' . $fullname . '</td>';
+		                        echo '<tr class="text-center">';
+		                        echo '<td class="text-left">' . $fullname . '</td>';
 		                        echo '<td>' . $post_count . '</td>';
-		                        echo '<td>' . $goal_completion . '%</td>';
-		                        echo '<td>$' . $goal . '</td>';
 		                        echo '<td>$' . $total_profit . '</td>';
+		                        echo '<td>$' . $goal . '</td>';
+		                        echo '<td style="background-color:'.$compleat_color.'; color: '.$text_color.';">$' . $left . '</td>';
 		                        echo '<td>$' . $average_profit . '</td>';
+		                        echo '<td>' . $goal_completion . '%</td>';
 		                        echo '</tr>';
 	                        }
 	                        

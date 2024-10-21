@@ -839,6 +839,7 @@ class TMSReports extends TMSReportsHelper {
 				"driver_rate"         => FILTER_SANITIZE_STRING,
 				"profit"              => FILTER_SANITIZE_STRING,
 				"pick_up_date"        => FILTER_SANITIZE_STRING,
+				"delivery_date"       => FILTER_SANITIZE_STRING,
 				"load_status"         => FILTER_SANITIZE_STRING,
 				"instructions"        => [ 'filter' => FILTER_SANITIZE_STRING, 'flags' => FILTER_REQUIRE_ARRAY ],
 				"source"              => FILTER_SANITIZE_STRING,
@@ -847,6 +848,7 @@ class TMSReports extends TMSReportsHelper {
 				"weight"              => FILTER_SANITIZE_STRING,
 				"notes"               => FILTER_SANITIZE_STRING,
 				"post_id"             => FILTER_SANITIZE_STRING,
+				"read_only"           => FILTER_SANITIZE_STRING,
 			] );
 			
 			
@@ -960,6 +962,58 @@ class TMSReports extends TMSReportsHelper {
 			wp_send_json_error( [ 'message' => 'Error update status' ] );
 		} else {
 			wp_send_json_error( [ 'message' => 'Invalid request' ] );
+		}
+	}
+	
+	/**
+	 * function remove one load by id
+	 * @return void
+	 */
+	public function remove_one_load() {
+		if (defined('DOING_AJAX') && DOING_AJAX) {
+			global $wpdb;
+			
+			// Получаем данные запроса
+			$MY_INPUT = filter_var_array($_POST, [
+				"id_load" => FILTER_SANITIZE_STRING,
+			]);
+			
+			$id_load = $MY_INPUT["id_load"];
+			$table_name = $wpdb->prefix . $this->table_main;
+			$table_meta = $wpdb->prefix . $this->table_meta;
+			
+			// Получаем метаданные
+			$meta_data = $wpdb->get_results(
+				$wpdb->prepare(
+					"SELECT meta_key, meta_value FROM {$table_meta} WHERE post_id = %d",
+					$id_load
+				),
+				ARRAY_A
+			);
+			
+			// Удаляем файлы из метаданных
+			foreach ($meta_data as $meta) {
+				if (in_array($meta['meta_key'], ['screen_picture', 'attached_file_required', 'update_rate_confirmation', 'attached_files'])) {
+					// Если это множественные файлы (attached_files), разбиваем на массив
+					$files = explode(',', $meta['meta_value']);
+					foreach ($files as $file_id) {
+						if (!empty($file_id)) {
+							// Удаляем вложение по его ID
+							wp_delete_attachment($file_id, true);
+						}
+					}
+				}
+			}
+			
+			// Удаляем метаданные
+			$wpdb->delete($table_meta, ['post_id' => $id_load]);
+			
+			// Удаляем запись из основной таблицы
+			$wpdb->delete($table_name, ['id' => $id_load]);
+			
+			wp_send_json_success(['message' => 'Load and associated files removed successfully']);
+		} else {
+			wp_send_json_error(['message' => 'Invalid request']);
 		}
 	}
 	
@@ -1283,6 +1337,7 @@ class TMSReports extends TMSReportsHelper {
 			'user_id_updated' => $user_id,
 			'date_updated'    => current_time( 'mysql' ),
 			'pick_up_date'    => $data[ 'pick_up_date' ],
+			'delivery_date'   => $data[ 'delivery_date' ],
 			'date_booked'     => $data[ 'date_booked' ],
 		);
 		
@@ -1304,6 +1359,18 @@ class TMSReports extends TMSReportsHelper {
 			'true_profit'         => $data[ 'true_profit' ],
 		);
 		
+		if (isset($data['read_only'])) {
+			
+			$exclude = array('reference_number', 'load_type', 'source');
+			
+			foreach ($post_meta as $key => $value) {
+				$search = array_search($key, $exclude);
+				if (is_numeric($search)) {
+					unset($post_meta[$key]);
+				}
+			}
+		}
+		
 		$post_id = $data[ 'post_id' ];
 		// Specify the condition (WHERE clause) - assuming post_id is passed in the data array
 		$where = array( 'id' => $data[ 'post_id' ] );
@@ -1312,6 +1379,7 @@ class TMSReports extends TMSReportsHelper {
 			'%d',  // user_id_updated
 			'%s',  // date_updated
 			'%s',  // pick_up_date
+			'%s',  // delivery_date
 			'%s',  // date_booked
 		), array( '%d' ) // The data type of the where clause (id is an integer)
 		);
@@ -1519,7 +1587,7 @@ class TMSReports extends TMSReportsHelper {
 		        PRIMARY KEY  (id),
                 INDEX idx_post_id (post_id),
          		INDEX idx_meta_key (meta_key(191)),
-         		INDEX idx_meta_key_value (meta_key(191), meta_value(191));
+         		INDEX idx_meta_key_value (meta_key(191), meta_value(191))
     		) $charset_collate;";
 			
 			dbDelta( $sql );
@@ -1576,6 +1644,7 @@ class TMSReports extends TMSReportsHelper {
 		add_action( 'wp_ajax_update_shipper_info', array( $this, 'update_shipper_info' ) );
 		add_action( 'wp_ajax_update_post_status', array( $this, 'update_post_status' ) );
 		add_action( 'wp_ajax_rechange_status_load', array( $this, 'rechange_status_load' ) );
+		add_action( 'wp_ajax_remove_one_load', array( $this, 'remove_one_load' ) );
 	}
 	
 	/**

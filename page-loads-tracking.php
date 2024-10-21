@@ -1,6 +1,6 @@
 <?php
 /**
- * Template Name: Page loads draft
+ * Template Name: Page loads tracking
  *
  * @package WP-rock
  * @since 4.4.0
@@ -9,16 +9,17 @@
 get_header();
 
 $reports = new TMSReports();
+
 $args = array(
-	'status_post' => 'draft',
+	'status_post' => 'publish',
     'user_id' => get_current_user_id(),
 );
 
 $args = $reports->set_filter_params($args);
 $items = $reports->get_table_items($args);
-$post_tp = 'dispatcher';
+
+$post_tp = 'tracking';
 $items['page_type'] = $post_tp;
-$items['is_draft'] = true;
 
 ?>
     <div class="container-fluid">
@@ -33,7 +34,7 @@ $items['is_draft'] = true;
                     <div class="col-12">
 
 						<?php
-						echo esc_html( get_template_part( 'src/template-parts/report/report', 'table', $items ) );
+						echo esc_html( get_template_part( 'src/template-parts/report/report', 'table-tracking', $items ) );
 						?>
 
                     </div>

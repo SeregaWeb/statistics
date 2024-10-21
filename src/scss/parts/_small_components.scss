@@ -377,7 +377,9 @@ ul.result-search-el {
 .card-shipper {
     padding: 8px 0;
     position: relative;
-    padding-right: 50px;
+    @media screen and (max-width: 991px) {
+        padding-right: 50px;
+    }
     * {
         font-size: 14px;
     }
@@ -452,5 +454,11 @@ ul.result-search-el {
         width: 150px;
         height: 150px;
         border-width: 12px;
+    }
+}
+
+.read-only {
+    .card-upload__btn--download {
+        top: 5px;
     }
 }

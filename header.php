@@ -69,42 +69,25 @@ Dispatcher team leader - loads view/edit personal loads - read only others loads
 если меняет стопы - оповесстить (tracking)
 Pick Up Date - если меняется то надо уведомить (tracking)
 (Updated rate confirmation) - если меняется то надо уведомить (tracking, team-lead-group, admin, billing)
-tracking - group
-billing - полный доступ без редактирования - скачивание файлов
-
-букрейт
-драйвер рейт
-юнит
-статус
-пик ап дейт
-инструкции - Additional information алл
-
 при замене водилы уведомить (тимлид админ трекинг)
 
-<del>новое поле для аккаунтинг/админ/биллинг - true rate
-booked-rait - 2% - driver-rait - формула расчета тру рейт</del>
-<del>new field - 2% save in db
-new field dispetch message - (screen picture) required</del>
+billing - полный доступ без редактирования - скачивание файлов
 
-<del>для аккаунтинг / биллинг добавить 5 вкладку</del>
-<del>Date booked	Dispatcher	Reference №	Pick up location
-Delivery location	Unit & name	Booked rate	Driver rate	(Profit true)
-Pick Up Date	Load status invoice (dropdown - - Invoiced
+- добавить реальные рабочие дни в статистику
+- разбить по группам (тимлидов) статистику по месяцам
+- добавить в статистику тотал ( всей команды ) лоадс - профит - гоалс - лефт - среднее - проценты
+- топ 3 вывести
+- пироги - по соурс (количесво лоадов и профит)
+- выбор диспетчера и количество его посто canceled
 
-- Not invoiced
-- Invoiced directly
- ) factoring status (dropdown - - Unsubmitted
-- In Processing
-- Requires Attention
-- In Dispute
-- Processed
-- Charge Back
-- Short Pay )
-разделить на 3 офиса (юа / ремоут / польша)
-</del>
+- в лоад добавить промежуток времени и поле стрикт апоинтмент (строго 1 время)
 
-Delivery date
+- страницу шипера и брокера
+- страница список (шипера и брокера)
 
+-брокеру - заметки и галочки (работает с нами или нет)
+
+-название брокера - ссылка на его страницу
 </pre>
 
 <body <?php body_class( $page_class ); ?>>
@@ -133,50 +116,62 @@ Delivery date
                 $first_link = false;
             
                 $exclude = array_search($role, $block['exclude_role_all_list']);
-                ?>
-                <?php if (is_array($block['menu']) && !is_numeric($exclude)):?>
-
-                <div class="left-sidebar__block">
-                    
-                    <a class="left-sidebar__btn full js-toggle active" data-block-toggle="js-menu-block_<?php echo $key; ?>" href="<?php echo $block['menu'][0]['link']['url']; ?>">
-                        <?php if (!empty($block['icon'])): ?>
-                        <img class="left-sidebar__icon" src="<?php echo $block['icon'] ?>" alt="icon">
-                        <?php endif; ?>
-                        <?php echo $block['label_block']; ?>
-                    </a>
-                    <ul class="left-sidebar__menu js-menu-block_<?php echo $key; ?>">
-                    <?php
-                     foreach ($block['menu'] as $menu):
-                     $current_page = get_the_permalink() === $menu['link']['url'] ? 'current-page' : '';
-                        $exclude = array_search($role, $menu['exclude_role']);
-                         if (!is_numeric($exclude)) :
-                         
-                         if ($first_link === false) {
-                             $first_link = $menu['link']['url'];
-                         }
-                         
-                         $link_url = $menu['link']['url'];
-                         $link_title = $menu['link']['title'];
-                         
-                         if ($menu['logout']) {
-                             $link_url = wp_logout_url( !empty($login_link) ? $login_link : home_url() );
-                         }
-                         
-                         ?>
-                            <li class="left-sidebar__item">
-                                <a class="left-sidebar__link <?php echo $current_page; ?>" href="<?php echo $link_url; ?>">
-                                <?php echo $link_title; ?>
-                                </a>
-                            </li>
-                        <?php endif; ?>
-                    <?php endforeach; ?>
-                    </ul>
-                     <a class="left-sidebar__btn small" href="<?php echo $first_link; ?>">
-                        <?php if (!empty($block['icon'])): ?>
-                        <img class="left-sidebar__icon" src="<?php echo $block['icon'] ?>" alt="icon">
-                        <?php endif; ?>
-                    </a>
-                </div>
+               
+                if (is_array($block['menu']) && !is_numeric($exclude)):
+                    if (isset($block['menu'][0]['link']) && is_array($block['menu'][0]['link'])): ?>
+                    <div class="left-sidebar__block">
+                        
+                        <a class="left-sidebar__btn full js-toggle active" data-block-toggle="js-menu-block_<?php echo $key; ?>" href="<?php echo $block['menu'][0]['link']['url']; ?>">
+                            <?php if (!empty($block['icon'])): ?>
+                            <img class="left-sidebar__icon" src="<?php echo $block['icon'] ?>" alt="icon">
+                            <?php endif; ?>
+                            <?php echo $block['label_block']; ?>
+                        </a>
+                        <ul class="left-sidebar__menu js-menu-block_<?php echo $key; ?>">
+                        <?php
+                         foreach ($block['menu'] as $menu):
+                         $current_page = get_the_permalink() === $menu['link']['url'] ? 'current-page' : '';
+                            $exclude = array_search($role, $menu['exclude_role']);
+                             if (!is_numeric($exclude)) :
+                             
+                             $popup_use = $menu['popup_use'];
+                
+                            $popup_class = '';
+                            
+                             
+                             if ($first_link === false) {
+                                 $first_link = $menu['link']['url'];
+                             }
+                             
+                             $link_url = $menu['link']['url'];
+                             $link_title = $menu['link']['title'];
+                             
+                             
+                             if (!empty($popup_use)) {
+                                $popup_class = 'js-open-popup-activator';
+                                $link_url = $popup_use;
+                            }
+                             
+                             if ($menu['logout']) {
+                                 $link_url = wp_logout_url( !empty($login_link) ? $login_link : home_url() );
+                             }
+                             
+                             ?>
+                                <li class="left-sidebar__item">
+                                    <a class="left-sidebar__link <?php echo $current_page; ?> <?php echo $popup_class; ?>" href="<?php echo $link_url; ?>">
+                                    <?php echo $link_title; ?>
+                                    </a>
+                                </li>
+                            <?php endif; ?>
+                        <?php endforeach; ?>
+                        </ul>
+                         <a class="left-sidebar__btn small" href="<?php echo $first_link; ?>">
+                            <?php if (!empty($block['icon'])): ?>
+                            <img class="left-sidebar__icon" src="<?php echo $block['icon'] ?>" alt="icon">
+                            <?php endif; ?>
+                        </a>
+                    </div>
+                    <?php endif; ?>
                 <?php endif; ?>
                 
             <?php endforeach; ?>

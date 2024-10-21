@@ -10,7 +10,17 @@ const updateStatusRechange = (ajaxUrl) => {
     const formData = new FormData();
     const action = 'rechange_status_load';
 
+    // @ts-ignore
+    // eslint-disable-next-line @wordpress/no-unused-vars-before-return
     const postId = document.querySelector('.js-post-id');
+    const postStatus = document.querySelector('.js-post-status');
+
+    // @ts-ignore
+    if (postStatus && postStatus.value === 'publish') {
+        // @ts-ignore
+        console.log('postStatus.value', postStatus.value);
+        return;
+    }
 
     if (!postId) {
         printMessage('Post id not found', 'danger', 8000);
@@ -37,6 +47,65 @@ const updateStatusRechange = (ajaxUrl) => {
         .catch((error) => {
             printMessage(`Request failed: ${error}`, 'danger', 8000);
             console.error('Request failed:', error);
+        });
+};
+
+export const fullRemovePost = (ajaxUrl) => {
+    const btnsRemove = document.querySelectorAll('.js-remove-load');
+
+    btnsRemove &&
+        btnsRemove.forEach((item) => {
+            item.addEventListener('click', (event) => {
+                event.preventDefault();
+
+                const { target } = event;
+
+                const question = confirm(
+                    'Are you sure you want to delete this load? \nIf you agree it will be deleted permanently'
+                );
+
+                if (target instanceof HTMLElement && question) {
+                    const idLoad = target.getAttribute('data-id');
+
+                    if (!idLoad) {
+                        printMessage(`Error remove Load: reload this page and try again`, 'danger', 8000);
+                        return;
+                    }
+
+                    const action = 'remove_one_load';
+
+                    const formData = new FormData();
+
+                    formData.append('action', action);
+                    formData.append('id_load', idLoad);
+
+                    const options = {
+                        method: 'POST',
+                        body: formData,
+                    };
+
+                    fetch(ajaxUrl, options)
+                        .then((res) => res.json())
+                        .then((requestStatus) => {
+                            if (requestStatus.success) {
+                                console.log('Load remove successfully:', requestStatus.data);
+                                const contain = target.closest('tr');
+
+                                if (contain) {
+                                    contain.remove();
+                                }
+                                printMessage(requestStatus.data.message, 'success', 8000);
+                            } else {
+                                // eslint-disable-next-line no-alert
+                                printMessage(`Error remove Load:${requestStatus.data.message}`, 'danger', 8000);
+                            }
+                        })
+                        .catch((error) => {
+                            printMessage(`Request failed: ${error}`, 'danger', 8000);
+                            console.error('Request failed:', error);
+                        });
+                }
+            });
         });
 };
 
@@ -78,7 +147,12 @@ export const actionCreateReportInit = (ajaxUrl) => {
 
                             // @ts-ignore
                             tab.show();
-                            updateStatusRechange(ajaxUrl);
+
+                            console.log('requestStatus.data?.read_only', requestStatus.data?.read_only);
+
+                            if (requestStatus.data.data?.read_only !== 'true') {
+                                updateStatusRechange(ajaxUrl);
+                            }
                             printMessage(requestStatus.data.message, 'success', 8000);
                         } else {
                             // eslint-disable-next-line no-alert
@@ -112,7 +186,7 @@ function hasReportIdInUrl() {
 
 export const createDraftPosts = (ajaxUrl) => {
     const forms = document.querySelectorAll('.js-create-not-publish-report');
-
+    console.log('forms', forms);
     forms &&
         forms.forEach((item) => {
             // eslint-disable-next-line consistent-return
@@ -157,6 +231,7 @@ export const createDraftPosts = (ajaxUrl) => {
                         if (requestStatus.success) {
                             console.log('Report added successfully:', requestStatus.data);
                             if (!hasReportIdInUrl()) {
+                                console.log('1');
                                 printMessage(requestStatus.data?.message, 'success', 8000);
                                 const url = new URL(window.location.href);
                                 // Set the 'post_id' parameter
@@ -167,8 +242,12 @@ export const createDraftPosts = (ajaxUrl) => {
                                 // @ts-ignore
                                 window.location.href = <string>url?.href;
                             } else {
-                                // updateStatusRechange(ajaxUrl);
+                                console.log('2');
+                                if (requestStatus.data.data?.read_only !== 'true') {
+                                    updateStatusRechange(ajaxUrl);
+                                }
                                 tab.show();
+                                printMessage(requestStatus.data?.message, 'success', 8000);
                             }
                         } else {
                             // eslint-disable-next-line no-alert
@@ -227,7 +306,9 @@ export const updateFilesReportInit = (ajaxUrl) => {
                         if (requestStatus.success) {
                             console.log('upload files successfully:', requestStatus.data);
                             printMessage(requestStatus.data.message, 'success', 8000);
-                            updateStatusRechange(ajaxUrl);
+                            if (requestStatus.data.data?.read_only !== 'true') {
+                                updateStatusRechange(ajaxUrl);
+                            }
                         } else {
                             // eslint-disable-next-line no-alert
                             printMessage(`Error upload files:${requestStatus.data.message}`, 'danger', 8000);
@@ -263,7 +344,9 @@ export const updateBillingReportInit = (ajaxUrl) => {
                         if (requestStatus.success) {
                             console.log('update successfully:', requestStatus.data);
                             printMessage(requestStatus.data.message, 'success', 8000);
-                            updateStatusRechange(ajaxUrl);
+                            if (requestStatus.data.data?.read_only !== 'true') {
+                                updateStatusRechange(ajaxUrl);
+                            }
                         } else {
                             // eslint-disable-next-line no-alert
                             printMessage(`Error update:${requestStatus.data.message}`, 'danger', 8000);
@@ -934,7 +1017,9 @@ export const sendShipperFormInit = (ajaxUrl) => {
                         printMessage(requestStatus.data.message, 'success', 8000);
                         // @ts-ignore
                         tab.show();
-                        updateStatusRechange(ajaxUrl);
+                        if (requestStatus.data.data?.read_only !== 'true') {
+                            updateStatusRechange(ajaxUrl);
+                        }
                     } else {
                         printMessage(`Error adding shipper info:${requestStatus.data.message}`, 'danger', 8000);
                     }

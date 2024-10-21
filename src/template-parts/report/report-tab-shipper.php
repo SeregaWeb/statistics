@@ -6,6 +6,8 @@ $reports       = new TMSReports();
 $helper        = new TMSReportsHelper();
 $states        = $helper->get_states();
 
+$full_view_only = get_field_value($args, 'full_view_only');
+
 $pick_up_location_isset  = false;
 $delivery_location_isset = false;
 
@@ -29,6 +31,9 @@ if ( $report_object ) {
     <h3 class="p-0 display-6 mb-4">Shipper info</h3>
 
     <div class="row">
+        
+        <?php if (!$full_view_only): ?>
+        
 		<?php if ( isset( $post_id ) && is_numeric( $post_id ) ): ?>
             <input type="hidden" name="post_id" value="<?php echo $post_id; ?>">
 		<?php endif; ?>
@@ -97,6 +102,8 @@ if ( $report_object ) {
             <button class="btn btn-outline-primary js-add-point js-add-ship">Add stop</button>
             <button class="btn btn-primary d-none js-add-point js-end-edit-ship">End edit</button>
         </div>
+        
+        <?php endif; ?>
 
         <div class="col-12 mt-3 mb-3">
             <h6>Trip Summary</h6>
@@ -111,7 +118,11 @@ if ( $report_object ) {
                 <div class="col-12 col-md-3">Address</div>
                 <div class="col-12 col-md-2">Contact</div>
                 <div class="col-12 col-md-3">Notes</div>
-                <div class="col-12 col-md-1 p-0">Actions</div>
+	            <?php if (!$full_view_only): ?>
+                    <div class="col-12 col-md-1 p-0">Actions</div>
+                <?php else:?>
+                    <div class="col-12 col-md-1 p-0"></div>
+                <?php endif; ?>
             </div>
         </div>
 
@@ -150,6 +161,9 @@ if ( $report_object ) {
                         <div class="col-12 col-md-3"><?php echo $address ?></div>
                         <div class="col-12 col-md-2"><?php echo $contact ?></div>
                         <div class="col-12 col-md-3"><?php echo $info ?></div>
+	                    
+	                    <?php if (!$full_view_only): ?>
+                        
                         <div class="col-12 col-md-1 p-0 card-shipper__btns">
                             <button class="additional-card__edit js-edit-ship">
 								<?php echo $reports->get_icon_edit(); ?>
@@ -158,6 +172,8 @@ if ( $report_object ) {
 								<?php echo $reports->get_close_icon(); ?>
                             </button>
                         </div>
+                        
+                        <?php endif; ?>
                     </div>
 				<?php endforeach; endif; ?>
 	        
@@ -195,6 +211,9 @@ if ( $report_object ) {
                         <div class="col-12 col-md-3"><?php echo $address ?></div>
                         <div class="col-12 col-md-2"><?php echo $contact ?></div>
                         <div class="col-12 col-md-3"><?php echo $info ?></div>
+	                    
+	                    <?php if (!$full_view_only): ?>
+                        
                         <div class="col-12 col-md-1 p-0 card-shipper__btns">
                             <button class="additional-card__edit js-edit-ship">
 						        <?php echo $reports->get_icon_edit(); ?>
@@ -203,6 +222,8 @@ if ( $report_object ) {
 						        <?php echo $reports->get_close_icon(); ?>
                             </button>
                         </div>
+                        
+                        <?php endif; ?>
                     </div>
 		        <?php endforeach; endif; ?>
         </div>
@@ -214,9 +235,18 @@ if ( $report_object ) {
             <button type="button" data-tab-id="pills-load-tab"
                     class="btn btn-dark js-next-tab">Previous
             </button>
-            <button type="submit" class="btn btn-primary js-submit-and-next-tab"
-                    data-tab-id="pills-documents-tab">Next
-            </button>
+	        
+	        <?php if (!$full_view_only): ?>
+                <button type="submit" class="btn btn-primary js-submit-and-next-tab"
+                        data-tab-id="pills-documents-tab">Next
+                </button>
+	        <?php else:?>
+                <button type="button" data-tab-id="pills-documents-tab"
+                        class="btn btn-primary js-next-tab">Next
+                </button>
+	        <?php endif; ?>
+         
+         
         </div>
     </div>
 </form>

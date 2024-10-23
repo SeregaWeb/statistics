@@ -27,6 +27,7 @@ async function getDriverById(useProject, driverId, ProjectsLinks) {
     }
 }
 
+// eslint-disable-next-line import/prefer-default-export
 export const initGetInfoDriver = (ProjectsLinks) => {
     const btns = document.querySelectorAll('.js-fill-driver');
 
@@ -59,6 +60,13 @@ export const initGetInfoDriver = (ProjectsLinks) => {
 
                 // Проверить результат
                 if (driver && driver.driver) {
+                    const driverPhone = document.querySelector('.js-phone-driver');
+
+                    if (driverPhone) {
+                        // @ts-ignore
+                        driverPhone.value = driver.phone;
+                    }
+
                     input.value = `(${value}) ${driver.driver}`;
                     console.log('driver', `${value && driver.driver}`);
                 } else {

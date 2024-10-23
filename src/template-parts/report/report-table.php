@@ -4,6 +4,7 @@ global $global_options;
 $add_new_load = get_field_value( $global_options, 'add_new_load' );
 
 $TMSUsers = new TMSUsers();
+$TMSShipper = new TMSReportsShipper();
 
 $results       = get_field_value($args, 'results');
 $total_pages   = get_field_value($args, 'total_pages');
@@ -26,7 +27,7 @@ if ( ! empty( $results ) ) : ?>
         <thead>
         <tr>
             <th scope="col">Date booked</th>
-            <th scope="col">Dispatcher</th>
+            <th scope="col" title="dispatcher">Disp.</th>
             <th scope="col">Reference №</th>
             <th scope="col">Pick up location</th>
             <th scope="col">Delivery location</th>
@@ -95,6 +96,7 @@ if ( ! empty( $results ) ) : ?>
 			
 			$reference_number = esc_html( get_field_value( $meta, 'reference_number' ) );
 			$unit_number_name = esc_html( get_field_value( $meta, 'unit_number_name' ) );
+			$driver_phone = esc_html( get_field_value( $meta, 'driver_phone' ) );
 			
 			$booked_rate_raw = get_field_value( $meta, 'booked_rate' );
 			$booked_rate     = esc_html( '$' . str_replace( '.00', '', $booked_rate_raw ) );
@@ -125,6 +127,10 @@ if ( ! empty( $results ) ) : ?>
 			$invoice     = esc_html( $helper->get_label_by_key( $invoice_raw, 'invoices' ) );
             
             $show_control = $TMSUsers->show_control_loads($my_team, $current_user_id, $dispatcher_initials, $is_draft);
+            
+			$status_class = $load_status;
+            $factoring_class = strtolower($factoring_status_row);
+            $factoring_class = str_replace(' ', '-', $factoring_class);
 			?>
 
             <tr>
@@ -140,9 +146,20 @@ if ( ! empty( $results ) ) : ?>
 					<?php if ( is_array( $pick_up ) ): ?>
 						<?php foreach ( $pick_up as $val ): ?>
 							<?php if ( isset( $val[ 'short_address' ] ) ): ?>
-                                <span class="hide-long-text-100" data-bs-toggle="tooltip" data-bs-placement="top"
+                                <span class="" data-bs-toggle="tooltip" data-bs-placement="top"
                                       title="<?php echo $val[ 'address' ]; ?>">
-                              <?php echo $val[ 'short_address' ]; ?>
+                              <?php echo $val[ 'short_address' ];
+                              
+                              if ( $page_type === 'accounting') {
+	                              $detailed_address = $TMSShipper->get_shipper_by_id($val['address_id']);
+                                  if (is_array($detailed_address)) {
+                                    echo ' '.$detailed_address[0]->zip_code;
+                                  }
+                              }
+                              
+                              ?>
+                              
+                              
                         </span>
 							<?php endif; ?>
 						<?php endforeach; ?>
@@ -152,15 +169,32 @@ if ( ! empty( $results ) ) : ?>
 					<?php if ( is_array( $delivery ) ): ?>
 						<?php foreach ( $delivery as $val ): ?>
 							<?php if ( isset( $val[ 'short_address' ] ) ): ?>
-                                <span class="hide-long-text-100" data-bs-toggle="tooltip" data-bs-placement="top"
+                                <span class="" data-bs-toggle="tooltip" data-bs-placement="top"
                                       title="<?php echo $val[ 'address' ]; ?>">
-                              <?php echo $val[ 'short_address' ]; ?>
+                                  <?php echo $val[ 'short_address' ];
+                                    if ( $page_type === 'accounting') {
+                                        $detailed_address = $TMSShipper->get_shipper_by_id($val['address_id']);
+                                        if ( is_array( $detailed_address ) ) {
+                                            echo ' ' . $detailed_address[ 0 ]->zip_code;
+                                        }
+                                    }
+                              ?>
+                              
+                              
                         </span>
 							<?php endif; ?>
 						<?php endforeach; ?>
 					<?php endif; ?>
                 </td>
-                <td><?php echo $unit_number_name; ?></td>
+                <td>
+                    <div class="d-flex flex-column">
+                        <p class="m-0"><?php echo $unit_number_name; ?></p>
+                        <?php if ( $page_type === 'accounting') { ?>
+                        <span class="text-small">
+                            <?php echo $driver_phone; ?>
+                        </span>
+                        <?php } ?>
+                    </div></td>
                 <td><?php echo $booked_rate; ?></td>
                 <td><?php echo $driver_rate; ?></td>
 
@@ -176,7 +210,9 @@ if ( ! empty( $results ) ) : ?>
                 <?php if ($page_type === 'accounting'): ?>
                     <td><?php echo $delivery_date; ?></td>
                 <?php endif; ?>
-                <td class="<?php echo strtolower( $status ); ?>"><?php echo $status; ?></td>
+                
+                
+                <td class="<?php echo $status_class; ?>"><?php echo $status; ?></td>
 	            
 	            <?php if ($page_type === 'dispatcher'): ?>
                     <td>
@@ -187,7 +223,7 @@ if ( ! empty( $results ) ) : ?>
 	            
 	            <?php if ($page_type === 'accounting'): ?>
                     <td><?php echo $invoice; ?></td>
-                    <td><?php echo $factoring_status; ?></td>
+                    <td class="<?php echo $factoring_class; ?>"><?php echo $factoring_status; ?></td>
 	            <?php endif; ?>
              
              

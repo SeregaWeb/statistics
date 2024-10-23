@@ -129,6 +129,10 @@ $post_tp = get_field_value($args, 'post_type');
 			            <?php endif; ?>
                     </select>
 	            <?php endif; ?>
+                
+                <?php if (!empty($_GET)): ?>
+                <a class="btn btn-outline-danger" href="<?php echo get_the_permalink(); ?>">Reset</a>
+                <?php endif; ?>
             </div>
 		</form>
 	</div>

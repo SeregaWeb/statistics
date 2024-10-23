@@ -326,9 +326,6 @@ class TMSReports extends TMSReportsHelper {
 			'pick_up_location'       => 'Pick-up Location',
 			'delivery_location'      => 'Delivery Location',
 			'unit_number_name'       => 'Unit Number',
-			'booked_rate'            => 'Booked Rate',
-			'driver_rate'            => 'Driver Rate',
-			'profit'                 => 'Profit',
 			'load_status'            => 'Load Status',
 			'load_type'              => 'Load Type',
 			'additional_contacts'    => 'Additional Contacts',
@@ -347,8 +344,10 @@ class TMSReports extends TMSReportsHelper {
 		", $record_id, $meta_key ) );
 			
 			// Проверяем пустые значения или некорректные даты/числа
-			if ( empty( $meta_value ) || $meta_value === '0000-00-00' || ( $meta_value === '0.00' && $meta_key !== 'load_status' ) ) {
-				$empty_fields[] = '<strong>' . $label . '</strong>';
+			if ( empty( $meta_value ) ||
+			     $meta_value === '0000-00-00' ||
+			     ( $meta_value === '0.00' && $meta_key !== 'load_status' ) ) {
+					$empty_fields[] = '<strong>' . $label . '</strong>';
 			}
 		}
 		
@@ -837,6 +836,7 @@ class TMSReports extends TMSReportsHelper {
 				"unit_number_name"    => FILTER_SANITIZE_STRING,
 				"booked_rate"         => FILTER_SANITIZE_STRING,
 				"driver_rate"         => FILTER_SANITIZE_STRING,
+				"driver_phone"        => FILTER_SANITIZE_STRING,
 				"profit"              => FILTER_SANITIZE_STRING,
 				"pick_up_date"        => FILTER_SANITIZE_STRING,
 				"delivery_date"       => FILTER_SANITIZE_STRING,
@@ -853,9 +853,9 @@ class TMSReports extends TMSReportsHelper {
 			
 			
 			if ( $MY_INPUT[ 'load_status' ] === 'cancelled' ) {
-				$MY_INPUT[ "booked_rate" ] = 0;
-				$MY_INPUT[ "driver_rate" ] = 0;
-				$MY_INPUT[ "profit" ]      = 0;
+				$MY_INPUT[ "booked_rate" ] = '0.00';
+				$MY_INPUT[ "driver_rate" ] = '0.00';
+				$MY_INPUT[ "profit" ]      = '0.00';
 			} else {
 				$MY_INPUT[ "booked_rate" ] = $this->convert_to_number( $MY_INPUT[ "booked_rate" ] );
 				$MY_INPUT[ "driver_rate" ] = $this->convert_to_number( $MY_INPUT[ "driver_rate" ] );
@@ -1354,6 +1354,7 @@ class TMSReports extends TMSReportsHelper {
 			'unit_number_name'    => $data[ 'unit_number_name' ],
 			'booked_rate'         => $data[ 'booked_rate' ],
 			'driver_rate'         => $data[ 'driver_rate' ],
+			'driver_phone'         => $data[ 'driver_phone' ],
 			'profit'              => $data[ 'profit' ],
 			'percent_booked_rate' => $data[ 'percent_booked_rate' ],
 			'true_profit'         => $data[ 'true_profit' ],

@@ -129,7 +129,6 @@ if ( $report_object ) {
         <div class="col-12 d-flex flex-column gap-2 js-table-shipper mb-5">
 			<?php if ( is_array( $pick_up_location_isset ) ):
 				foreach ( $pick_up_location_isset as $val ):
-                    
                     $address_id = get_field_value($val, 'address_id');
                     $address = get_field_value($val, 'address');
                     $contact = get_field_value($val, 'contact');

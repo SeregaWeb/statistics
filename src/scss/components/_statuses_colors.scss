@@ -1,0 +1,54 @@
+$color_status_canceled: #EE5843;
+$color_status_loaded: #effee9;
+$color_status_dell: #d9facb;
+$color_status_delivery: #b7e1cd;
+$color_status_waiting: #ffff00;
+
+$color_accounting_processed: #b7e1cd;
+$color_accounting_unsubmitted: #ffff00;
+$color_accounting_others: #ff0000;
+
+
+
+
+.tonu,
+.cancelled {
+    background-color:$color_status_canceled !important;
+    color: #ffffff !important;
+}
+
+.waiting-on-rc {
+    background-color:$color_status_waiting !important;
+
+}
+
+.at-del {
+    background-color: $color_status_dell !important;
+}
+
+.loaded-enroute {
+    background-color:$color_status_loaded !important;
+}
+
+.delivered {
+    background-color: $color_status_delivery !important;
+}
+
+
+.unsubmitted,
+.in-processing {
+    background-color: $color_accounting_unsubmitted !important;
+}
+
+.processed {
+    background-color: $color_accounting_processed !important;
+}
+
+.charge-back,
+.in-dispute,
+.requires-attention,
+.short-pay {
+    background-color: $color_accounting_others !important;
+    color: #ffffff !important;
+
+}

@@ -4188,7 +4188,7 @@ var initGetInfoDriver = function initGetInfoDriver(ProjectsLinks) {
     btns.forEach(function (item) {
       item.addEventListener('click', function (event) {
         return __awaiter(void 0, void 0, void 0, /*#__PURE__*/_regeneratorRuntime().mark(function _callee2() {
-          var target, container, input, value, useProject, valueProject, driver;
+          var target, container, input, value, useProject, valueProject, driver, driverPhone;
           return _regeneratorRuntime().wrap(function _callee2$(_context2) {
             while (1) switch (_context2.prev = _context2.next) {
               case 0:
@@ -4228,6 +4228,10 @@ var initGetInfoDriver = function initGetInfoDriver(ProjectsLinks) {
               case 17:
                 driver = _context2.sent;
                 if (driver && driver.driver) {
+                  driverPhone = document.querySelector('.js-phone-driver');
+                  if (driverPhone) {
+                    driverPhone.value = driver.phone;
+                  }
                   input.value = "(".concat(value, ") ").concat(driver.driver);
                   console.log('driver', "".concat(value && driver.driver));
                 } else {

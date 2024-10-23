@@ -90,7 +90,7 @@ if ( ! empty( $results ) ) : ?>
                         </span>
                         <span>PL</span>
                     </div>
-                    <span class="mt-1" style="font-size: 8px;">
+                    <span class="mt-1" class="text-small">
                         <?php echo $reference_number; ?>
                     </span>
                 </td>
@@ -109,7 +109,7 @@ if ( ! empty( $results ) ) : ?>
                                 <p class="m-0" >
 		                            <?php echo $val[ 'address' ]; ?>
                                 </p>
-                                <span style="font-size: 8px;">
+                                <span class="text-small">
                                     <?php echo $date; ?> 2:00 AM - 6:30 AM
                                 </span>
                             </div>
@@ -132,7 +132,7 @@ if ( ! empty( $results ) ) : ?>
                                 <p class="m-0" >
 		                            <?php echo $val[ 'address' ]; ?>
                                 </p>
-                                <span style="font-size: 8px;">
+                                <span class="text-small">
                                     <?php echo $date; ?> 2:00 AM - 6:30 AM
                                 </span>
                             </div>
@@ -140,14 +140,23 @@ if ( ! empty( $results ) ) : ?>
 						<?php endforeach; ?>
 					<?php endif; ?>
                 </td>
-                <td><?php echo $unit_number_name; ?></td>
                 <td>
-                    <p class="m-0">
-                        <?php echo 'Company name' ?>
-                    </p>
-                    <span style="font-size: 8px;">
-                        <?php echo 'MC: 0432423' ?>
-                    </span>
+                    <div class="w-100 d-flex flex-column align-items-start">
+                        <p class="m-0">
+                            <?php echo $unit_number_name; ?>
+                        </p>
+                        <span class="text-small"><?php echo '+1800242342323' ?></span>
+                    </div>
+                </td>
+                <td>
+                    <div class="w-100 d-flex flex-column align-items-start">
+                        <p class="m-0">
+                            <?php echo 'Company name' ?>
+                        </p>
+                        <span class="text-small">
+                            <?php echo 'MC: 0432423' ?>
+                        </span>
+                    </div>
                 </td>
              
 				<?php if ( $TMSUsers->check_user_role_access( array( 'recruiter' ) ) ): ?>

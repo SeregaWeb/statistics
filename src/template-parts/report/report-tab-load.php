@@ -21,6 +21,7 @@ $reference_number    = '';
 $unit_number_name    = '';
 $booked_rate         = '';
 $driver_rate         = '';
+$driver_phone        = '';
 $profit              = '';
 $pick_up_date        = '';
 $load_status         = '';
@@ -48,8 +49,10 @@ if ( $report_object ) {
         $dispatcher_initials = get_field_value($meta, 'dispatcher_initials');
 		$reference_number    = get_field_value($meta, 'reference_number');
 		$unit_number_name    = get_field_value($meta, 'unit_number_name');
+        
 		$booked_rate         = get_field_value($meta, 'booked_rate');
 		$driver_rate         = get_field_value($meta, 'driver_rate');
+		$driver_phone        = get_field_value($meta, 'driver_phone');
 		$profit              = get_field_value($meta, 'profit');
 		$load_status         = get_field_value($meta, 'load_status');
         $instructions_str    = str_replace(' ', '',get_field_value($meta, 'instructions'));
@@ -244,11 +247,12 @@ $read_only = $TMSUsers->check_read_only($post_status);
             </div>
 
             <div class="col-12"></div>
-
+        
             <div class="mb-2 col-12 col-md-6 col-xl-4">
-                <label for="pick_up_date" class="form-label">Pick Up Date</label>
-                <p class="m-0"><strong><?php echo $pick_up_date_formatted; ?></strong></p>
+                <label for="driver_phone" class="form-label">Driver phone</label>
+                <p class="m-0"><strong><?php echo $driver_phone; ?></strong></p>
             </div>
+          
 
             <div class="col-12 col-md-6 col-xl-4">
                 <label for="profit" class="form-label">Profit</label>
@@ -256,6 +260,12 @@ $read_only = $TMSUsers->check_read_only($post_status);
             </div>
 
             <div class="col-12"></div>
+
+            <div class="mb-2 col-12 col-md-6 col-xl-4">
+                <label for="pick_up_date" class="form-label">Pick Up Date</label>
+                <p class="m-0"><strong><?php echo $pick_up_date_formatted; ?></strong></p>
+            </div>
+        
             <div class="mb-2 col-12 col-md-6 col-xl-4">
                 <label for="pick_up_date" class="form-label">Delivery Date</label>
                 <p class="m-0"><strong><?php echo $delivery_date_formatted; ?></strong></p>
@@ -282,8 +292,8 @@ $read_only = $TMSUsers->check_read_only($post_status);
         <div class="col-12"></div>
 
         <div class="mb-2 col-12 col-md-6 col-xl-4">
-            <label for="pick_up_date" class="form-label">Pick Up Date</label>
-            <input type="date" name="pick_up_date" value="<?php echo $pick_up_date_formatted; ?>" class="form-control" required>
+            <label for="driver_phone" class="form-label ">Driver phone</label>
+            <input type="text" name="driver_phone" value="<?php echo $driver_phone; ?>" class="form-control js-phone-driver" required>
         </div>
 
         <div class="col-12 col-md-6 col-xl-4">
@@ -296,6 +306,13 @@ $read_only = $TMSUsers->check_read_only($post_status);
         </div>
 
         <div class="col-12"></div>
+
+
+        <div class="mb-2 col-12 col-md-6 col-xl-4">
+            <label for="pick_up_date" class="form-label">Pick Up Date</label>
+            <input type="date" name="pick_up_date" value="<?php echo $pick_up_date_formatted; ?>" class="form-control" required>
+        </div>
+        
         <div class="mb-2 col-12 col-md-6 col-xl-4">
             <label for="pick_up_date" class="form-label">Delivery Date</label>
             <input type="date" name="delivery_date" value="<?php echo $delivery_date_formatted; ?>" class="form-control" required>

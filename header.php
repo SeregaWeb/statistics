@@ -88,6 +88,10 @@ billing - полный доступ без редактирования - ска
 -брокеру - заметки и галочки (работает с нами или нет)
 
 -название брокера - ссылка на его страницу
+
+accounting -
+Unsubmitted - In Processing - 	Processed
+
 </pre>
 
 <body <?php body_class( $page_class ); ?>>

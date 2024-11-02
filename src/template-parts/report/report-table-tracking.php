@@ -52,6 +52,7 @@ if ( ! empty( $results ) ) : ?>
    
             
 			$dispatcher_initials = get_field_value( $meta, 'dispatcher_initials' );
+			$driver_phone = get_field_value( $meta, 'driver_phone' );
 
 			$dispatcher          = $helper->get_user_full_name_by_id( $dispatcher_initials );
 			$color_initials      = $dispatcher ? get_field( 'initials_color', 'user_' . $dispatcher_initials )
@@ -110,7 +111,20 @@ if ( ! empty( $results ) ) : ?>
 		                            <?php echo $val[ 'address' ]; ?>
                                 </p>
                                 <span class="text-small">
-                                    <?php echo $date; ?> 2:00 AM - 6:30 AM
+                                    <?php echo $date; ?>
+                                    
+                                    <?php
+                                    if (isset($val['time_start'])):
+	                                    $time_start = get_field_value($val, 'time_start');
+	                                    $time_end = get_field_value($val, 'time_end');
+	                                    $strict_time = get_field_value($val, 'strict_time');
+	                                    
+	                                    if ( $strict_time === "false" ) :
+		                                    echo $time_start . ' - ' . $time_end;
+	                                    else:
+		                                    echo $time_start . ' - strict';
+	                                    endif;
+                                    endif; ?>
                                 </span>
                             </div>
                             
@@ -132,8 +146,21 @@ if ( ! empty( $results ) ) : ?>
                                 <p class="m-0" >
 		                            <?php echo $val[ 'address' ]; ?>
                                 </p>
+                                
                                 <span class="text-small">
-                                    <?php echo $date; ?> 2:00 AM - 6:30 AM
+                                    <?php echo $date; ?>
+	                                <?php if (isset($val['time_start'])):
+	                                    $time_start = get_field_value($val, 'time_start');
+	                                    $time_end = get_field_value($val, 'time_end');
+	                                    $strict_time = get_field_value($val, 'strict_time');
+                                     
+	                                    if ( $strict_time === "false" ) :
+		                                    echo $time_start . ' - ' . $time_end;
+	                                    else:
+		                                    echo $time_start . ' - strict';
+	                                    endif;
+                                    endif; ?>
+            
                                 </span>
                             </div>
 						<?php endif; ?>
@@ -145,7 +172,9 @@ if ( ! empty( $results ) ) : ?>
                         <p class="m-0">
                             <?php echo $unit_number_name; ?>
                         </p>
-                        <span class="text-small"><?php echo '+1800242342323' ?></span>
+                        <?php if ($driver_phone): ?>
+                            <span class="text-small"><?php echo $driver_phone; ?></span>
+                        <?php endif; ?>
                     </div>
                 </td>
                 <td>

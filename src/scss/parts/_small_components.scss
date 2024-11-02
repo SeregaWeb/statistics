@@ -462,3 +462,22 @@ ul.result-search-el {
 .text-small {
     font-size: 12px;
 }
+
+.edit-now {
+    .additional-card__edit,
+    .additional-card__remove {
+        display: none;
+    }
+}
+
+.cursor-pointer {
+    cursor: pointer;
+}
+
+.checkbox-big {
+    width: 18px;
+    height: 18px;
+    cursor: pointer;
+    position: relative;
+    top: 3px;
+}

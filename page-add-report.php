@@ -139,6 +139,13 @@ get_header();
                                         aria-controls="pills-billing" aria-selected="false">Billing
                                 </button>
                             </li>
+                            <li class="nav-item flex-grow-1" role="presentation">
+                                <button class="nav-link w-100 <?php echo $disabled_tabs; ?> " id="pills-accounting-tab"
+                                        data-bs-toggle="pill"
+                                        data-bs-target="#pills-accounting" type="button" role="tab"
+                                        aria-controls="pills-accounting" aria-selected="false">Accounting
+                                </button>
+                            </li>
                             <?php endif; ?>
                         </ul>
                        
@@ -201,7 +208,19 @@ get_header();
 		                        ?>
                             </div>
                             
-                            <?php endif; ?>
+                            <div class="tab-pane fade" id="pills-accounting" role="tabpanel"
+                                 aria-labelledby="pills-accounting-tab">
+                                
+                                <?php
+                                echo esc_html( get_template_part( 'src/template-parts/report/report', 'tab-accounting', array(
+                                    'full_view_only' => $full_only_view,
+                                    'report_object' => $report_object,
+                                    'post_id'       => $post_id
+                                ) ) );
+                                ?>
+                            </div>
+	                        
+	                        <?php endif; ?>
                         </div>
                     </div>
 

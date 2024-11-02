@@ -53,9 +53,9 @@ class TMSReports extends TMSReportsHelper {
 			LEFT JOIN $table_meta AS source
 				ON main.id = source.post_id
 				AND source.meta_key = 'source'
-			LEFT JOIN $table_meta AS invoice
-				ON main.id = invoice.post_id
-				AND invoice.meta_key = 'invoice'
+			LEFT JOIN $table_meta AS invoiced_proof
+				ON main.id = invoiced_proof.post_id
+				AND invoiced_proof.meta_key = 'invoiced_proof'
 			LEFT JOIN $table_meta AS factoring_status
 				ON main.id = factoring_status.post_id
 				AND factoring_status.meta_key = 'factoring_status'
@@ -90,8 +90,13 @@ class TMSReports extends TMSReportsHelper {
 		}
 		
 		if ( ! empty( $args[ 'invoice' ] ) ) {
-			$where_conditions[] = "invoice.meta_value = %s";
-			$where_values[]     = $args[ 'invoice' ];
+			if ( $args['invoice'] === 'invoiced' ) {
+				$where_conditions[] = "invoiced_proof.meta_value = %s";
+				$where_values[]     = '1';
+			} else {
+				$where_conditions[] = "(invoiced_proof.meta_value = %s OR invoiced_proof.meta_value IS NULL)";
+				$where_values[]     = '0';
+			}
 		}
 		
 		if ( ! empty( $args[ 'factoring' ] ) ) {
@@ -344,10 +349,8 @@ class TMSReports extends TMSReportsHelper {
 		", $record_id, $meta_key ) );
 			
 			// Проверяем пустые значения или некорректные даты/числа
-			if ( empty( $meta_value ) ||
-			     $meta_value === '0000-00-00' ||
-			     ( $meta_value === '0.00' && $meta_key !== 'load_status' ) ) {
-					$empty_fields[] = '<strong>' . $label . '</strong>';
+			if ( empty( $meta_value ) || $meta_value === '0000-00-00' || ( $meta_value === '0.00' && $meta_key !== 'load_status' ) ) {
+				$empty_fields[] = '<strong>' . $label . '</strong>';
 			}
 		}
 		
@@ -437,14 +440,63 @@ class TMSReports extends TMSReportsHelper {
 		if ( defined( 'DOING_AJAX' ) && DOING_AJAX ) {
 			// Sanitize input data
 			$MY_INPUT = filter_var_array( $_POST, [
-				"post_id"          => FILTER_SANITIZE_STRING,
-				"factoring_status" => FILTER_SANITIZE_STRING,
-				"invoice"          => FILTER_SANITIZE_STRING,
-				"load_problem"     => FILTER_SANITIZE_STRING,
+				"post_id"           => FILTER_SANITIZE_STRING,
+				"factoring_status"  => FILTER_SANITIZE_STRING,
+				"load_problem"      => FILTER_SANITIZE_STRING,
+				"processing"        => FILTER_SANITIZE_STRING,
+				"short_pay"         => FILTER_SANITIZE_STRING,
+				"rc_proof"          => FILTER_VALIDATE_BOOLEAN,
+				"pod_proof"         => FILTER_VALIDATE_BOOLEAN,
+				"invoiced_proof"    => FILTER_VALIDATE_BOOLEAN,
+				"processing_fees"   => FILTER_SANITIZE_STRING,
+				"type_pay"          => FILTER_SANITIZE_STRING,
+				"percent_quick_pay" => FILTER_SANITIZE_STRING,
+				"booked_rate"       => FILTER_SANITIZE_STRING,
+				"driver_rate"       => FILTER_SANITIZE_STRING,
+				"profit"            => FILTER_SANITIZE_STRING,
+				"tbd"               => FILTER_VALIDATE_BOOLEAN,
 			] );
+			
+			
+			$MY_INPUT = $this->count_all_sum( $MY_INPUT );
 			
 			// Insert the company report
 			$result = $this->update_report_billing_in_db( $MY_INPUT );
+			
+			if ( $result ) {
+				wp_send_json_success( [
+					'message' => 'Billing info successfully update',
+					'data'    => $MY_INPUT
+				] );
+			} else {
+				// Handle specific errors
+				if ( is_wp_error( $result ) ) {
+					wp_send_json_error( [ 'message' => $result->get_error_message() ] );
+				} else {
+					wp_send_json_error( [ 'message' => 'Company not update, error updating to database' ] );
+				}
+			}
+		} else {
+			wp_send_json_error( [ 'message' => 'Invalid request' ] );
+		}
+	}
+	
+	/**
+	 * function update draft report (tab 6)
+	 * @return void
+	 */
+	public function update_accounting_report() {
+		// Check if it's an AJAX request (simple defense)
+		if ( defined( 'DOING_AJAX' ) && DOING_AJAX ) {
+			// Sanitize input data
+			$MY_INPUT = filter_var_array( $_POST, [
+				"post_id"             => FILTER_SANITIZE_STRING,
+				"bank_payment_status" => FILTER_SANITIZE_STRING,
+				"driver_pay_statuses" => FILTER_SANITIZE_STRING,
+			] );
+			
+			// Insert the company report
+			$result = $this->update_report_accounting_in_db( $MY_INPUT );
 			
 			if ( $result ) {
 				wp_send_json_success( [
@@ -788,7 +840,10 @@ class TMSReports extends TMSReportsHelper {
 					'contact'       => $data[ 'pick_up_location_contact' ][ $i ],
 					'date'          => $data[ 'pick_up_location_date' ][ $i ],
 					'info'          => $data[ 'pick_up_location_info' ][ $i ],
-					'type'          => $data[ 'pick_up_location_type' ][ $i ]
+					'type'          => $data[ 'pick_up_location_type' ][ $i ],
+					'time_start'    => $data[ 'pick_up_location_start' ][ $i ],
+					'time_end'      => $data[ 'pick_up_location_end' ][ $i ],
+					'strict_time'   => $data[ 'pick_up_location_strict' ][ $i ]
 				];
 			}
 			
@@ -800,9 +855,13 @@ class TMSReports extends TMSReportsHelper {
 					'contact'       => $data[ 'delivery_location_contact' ][ $i ],
 					'date'          => $data[ 'delivery_location_date' ][ $i ],
 					'info'          => $data[ 'delivery_location_info' ][ $i ],
-					'type'          => $data[ 'delivery_location_type' ][ $i ]
+					'type'          => $data[ 'delivery_location_type' ][ $i ],
+					'time_start'    => $data[ 'delivery_location_start' ][ $i ],
+					'time_end'      => $data[ 'delivery_location_end' ][ $i ],
+					'strict_time'   => $data[ 'delivery_location_strict' ][ $i ]
 				];
 			}
+			
 			
 			$pick_up_location_json  = json_encode( $pick_up_location, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES );
 			$delivery_location_json = json_encode( $delivery_location, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES );
@@ -835,6 +894,10 @@ class TMSReports extends TMSReportsHelper {
 				"reference_number"    => FILTER_SANITIZE_STRING,
 				"unit_number_name"    => FILTER_SANITIZE_STRING,
 				"booked_rate"         => FILTER_SANITIZE_STRING,
+				"processing_fees"     => FILTER_SANITIZE_STRING,
+				"type_pay"            => FILTER_SANITIZE_STRING,
+				"percent_quick_pay"   => FILTER_SANITIZE_STRING,
+				"processing"          => FILTER_SANITIZE_STRING,
 				"driver_rate"         => FILTER_SANITIZE_STRING,
 				"driver_phone"        => FILTER_SANITIZE_STRING,
 				"profit"              => FILTER_SANITIZE_STRING,
@@ -849,6 +912,7 @@ class TMSReports extends TMSReportsHelper {
 				"notes"               => FILTER_SANITIZE_STRING,
 				"post_id"             => FILTER_SANITIZE_STRING,
 				"read_only"           => FILTER_SANITIZE_STRING,
+				"tbd"                 => FILTER_VALIDATE_BOOLEAN,
 			] );
 			
 			
@@ -857,13 +921,7 @@ class TMSReports extends TMSReportsHelper {
 				$MY_INPUT[ "driver_rate" ] = '0.00';
 				$MY_INPUT[ "profit" ]      = '0.00';
 			} else {
-				$MY_INPUT[ "booked_rate" ] = $this->convert_to_number( $MY_INPUT[ "booked_rate" ] );
-				$MY_INPUT[ "driver_rate" ] = $this->convert_to_number( $MY_INPUT[ "driver_rate" ] );
-				$MY_INPUT[ "profit" ]      = $this->convert_to_number( $MY_INPUT[ "profit" ] );
-				
-				$MY_INPUT[ 'percent_booked_rate' ] = $MY_INPUT[ "booked_rate" ] * 0.02;
-				$MY_INPUT[ 'true_profit' ]         = $MY_INPUT[ "booked_rate" ] - ( $MY_INPUT[ 'percent_booked_rate' ] + $MY_INPUT[ "driver_rate" ] );
-				
+				$MY_INPUT = $this->count_all_sum( $MY_INPUT );
 			}
 			
 			
@@ -874,6 +932,88 @@ class TMSReports extends TMSReportsHelper {
 			}
 			
 			wp_send_json_error( [ 'message' => 'Report not create, error add in database' ] );
+		} else {
+			wp_send_json_error( [ 'message' => 'Invalid request' ] );
+		}
+	}
+	
+	public function count_all_sum( $MY_INPUT ) {
+		
+		
+		$MY_INPUT[ "booked_rate" ] = $this->convert_to_number( $MY_INPUT[ "booked_rate" ] );
+		$MY_INPUT[ "driver_rate" ] = $this->convert_to_number( $MY_INPUT[ "driver_rate" ] );
+		$MY_INPUT[ "profit" ]      = $this->convert_to_number( $MY_INPUT[ "profit" ] );
+		
+		$booked_rait         = $MY_INPUT[ "booked_rate" ];
+		$processing_fees_val = $booked_rait;
+		$percent_value       = 0;
+		$processing          = $MY_INPUT[ "processing" ];
+		if ( $processing === 'direct' ) {
+			$processing_fees = $this->convert_to_number( $MY_INPUT[ 'processing_fees' ] );
+			
+			if ( ! is_numeric( $processing_fees ) ) {
+				$processing_fees = 0;
+			}
+			
+			if ( is_numeric( $processing_fees ) ) {
+				$processing_fees_val = $booked_rait - $processing_fees;
+			}
+			
+			if ( $MY_INPUT[ 'type_pay' ] === 'quick-pay' ) {
+				$percent_quick_pay = $this->convert_to_number( $MY_INPUT[ 'percent_quick_pay' ] );
+				
+				if ( is_numeric( $percent_quick_pay ) && $percent_quick_pay !== 0 ) {
+					$percent_value = $booked_rait * ( $percent_quick_pay / 100 );
+				}
+			}
+		}
+		
+		
+		$MY_INPUT[ "booked_rate_modify" ] = $processing_fees_val - $percent_value;;
+		$MY_INPUT[ 'percent_quick_pay_value' ] = $percent_value;
+		
+		$MY_INPUT[ 'percent_booked_rate' ] = $MY_INPUT[ "booked_rate_modify" ] * 0.02;
+		$MY_INPUT[ 'profit' ]              = $MY_INPUT[ "booked_rate_modify" ] - $MY_INPUT[ "driver_rate" ];
+		$MY_INPUT[ 'true_profit' ]         = $MY_INPUT[ "booked_rate_modify" ] - ( $MY_INPUT[ 'percent_booked_rate' ] + $MY_INPUT[ "driver_rate" ] );
+		
+		if ( $MY_INPUT[ 'tbd' ] ) {
+			$MY_INPUT[ 'profit' ]      = 0;
+			$MY_INPUT[ 'true_profit' ] = 0;
+			$MY_INPUT[ "driver_rate" ] = 0;
+			
+		}
+		
+		return $MY_INPUT;
+	}
+	
+	public function quick_update_post() {
+		if ( defined( 'DOING_AJAX' ) && DOING_AJAX ) {
+			
+			$MY_INPUT = filter_var_array( $_POST, [
+				"factoring_status"    => FILTER_SANITIZE_STRING,
+				"bank_payment_status" => FILTER_SANITIZE_STRING,
+				"driver_pay_statuses" => FILTER_SANITIZE_STRING,
+				"post_ids"            => FILTER_SANITIZE_STRING,
+				"invoiced_proof"      => FILTER_VALIDATE_BOOLEAN,
+			] );
+			
+			
+			if (!$MY_INPUT['factoring_status'] && !$MY_INPUT['bank_payment_status'] && !$MY_INPUT['driver_pay_statuses'] && !$MY_INPUT['invoiced_proof'] ) {
+				wp_send_json_error(array( 'message' => 'You do not select any option'));
+			}
+			
+			
+			
+			$filled_fields = array_filter($MY_INPUT, function($value) {
+				return !empty($value) || $value === false;
+			});
+
+			$result = $this->update_quick_data_in_db($filled_fields);
+			if ( $result ) {
+				wp_send_json_success( [ 'message' => 'Loads successfully updated', 'data' => $MY_INPUT ] );
+			}
+			
+			wp_send_json_error( [ 'message' => 'Loads not update, error add in database' ] );
 		} else {
 			wp_send_json_error( [ 'message' => 'Invalid request' ] );
 		}
@@ -970,50 +1110,49 @@ class TMSReports extends TMSReportsHelper {
 	 * @return void
 	 */
 	public function remove_one_load() {
-		if (defined('DOING_AJAX') && DOING_AJAX) {
+		if ( defined( 'DOING_AJAX' ) && DOING_AJAX ) {
 			global $wpdb;
 			
 			// Получаем данные запроса
-			$MY_INPUT = filter_var_array($_POST, [
+			$MY_INPUT = filter_var_array( $_POST, [
 				"id_load" => FILTER_SANITIZE_STRING,
-			]);
+			] );
 			
-			$id_load = $MY_INPUT["id_load"];
+			$id_load    = $MY_INPUT[ "id_load" ];
 			$table_name = $wpdb->prefix . $this->table_main;
 			$table_meta = $wpdb->prefix . $this->table_meta;
 			
 			// Получаем метаданные
-			$meta_data = $wpdb->get_results(
-				$wpdb->prepare(
-					"SELECT meta_key, meta_value FROM {$table_meta} WHERE post_id = %d",
-					$id_load
-				),
-				ARRAY_A
-			);
+			$meta_data = $wpdb->get_results( $wpdb->prepare( "SELECT meta_key, meta_value FROM {$table_meta} WHERE post_id = %d", $id_load ), ARRAY_A );
 			
 			// Удаляем файлы из метаданных
-			foreach ($meta_data as $meta) {
-				if (in_array($meta['meta_key'], ['screen_picture', 'attached_file_required', 'update_rate_confirmation', 'attached_files'])) {
+			foreach ( $meta_data as $meta ) {
+				if ( in_array( $meta[ 'meta_key' ], [
+					'screen_picture',
+					'attached_file_required',
+					'update_rate_confirmation',
+					'attached_files'
+				] ) ) {
 					// Если это множественные файлы (attached_files), разбиваем на массив
-					$files = explode(',', $meta['meta_value']);
-					foreach ($files as $file_id) {
-						if (!empty($file_id)) {
+					$files = explode( ',', $meta[ 'meta_value' ] );
+					foreach ( $files as $file_id ) {
+						if ( ! empty( $file_id ) ) {
 							// Удаляем вложение по его ID
-							wp_delete_attachment($file_id, true);
+							wp_delete_attachment( $file_id, true );
 						}
 					}
 				}
 			}
 			
 			// Удаляем метаданные
-			$wpdb->delete($table_meta, ['post_id' => $id_load]);
+			$wpdb->delete( $table_meta, [ 'post_id' => $id_load ] );
 			
 			// Удаляем запись из основной таблицы
-			$wpdb->delete($table_name, ['id' => $id_load]);
+			$wpdb->delete( $table_name, [ 'id' => $id_load ] );
 			
-			wp_send_json_success(['message' => 'Load and associated files removed successfully']);
+			wp_send_json_success( [ 'message' => 'Load and associated files removed successfully' ] );
 		} else {
-			wp_send_json_error(['message' => 'Invalid request']);
+			wp_send_json_error( [ 'message' => 'Invalid request' ] );
 		}
 	}
 	
@@ -1044,8 +1183,20 @@ class TMSReports extends TMSReportsHelper {
 		);
 		
 		$post_meta = array(
-			'invoice'          => $data[ 'invoice' ],
-			'factoring_status' => $data[ 'factoring_status' ],
+			'factoring_status'        => $data[ 'factoring_status' ],
+			"processing"              => $data[ 'processing' ],
+			"short_pay"               => $data[ 'short_pay' ],
+			"rc_proof"                => $data[ 'rc_proof' ],
+			"pod_proof"               => $data[ 'pod_proof' ],
+			"invoiced_proof"          => $data[ 'invoiced_proof' ],
+			"processing_fees"         => $data[ 'processing_fees' ],
+			"type_pay"                => $data[ 'type_pay' ],
+			"percent_quick_pay"       => $data[ 'percent_quick_pay' ],
+			'profit'                  => $data[ 'profit' ],
+			'percent_booked_rate'     => $data[ 'percent_booked_rate' ],
+			'true_profit'             => $data[ 'true_profit' ],
+			'percent_quick_pay_value' => $data[ 'percent_quick_pay_value' ],
+			'booked_rate_modify'      => $data[ 'booked_rate_modify' ],
 		);
 		
 		// Specify the condition (WHERE clause)
@@ -1069,6 +1220,107 @@ class TMSReports extends TMSReportsHelper {
 			return new WP_Error( 'db_error', 'Error updating the company report in the database: ' . $error );
 		}
 	}
+	
+	/**
+	 * @param $data
+	 * function update in db (tab 6)
+	 *
+	 * @return true|WP_Error
+	 */
+	public function update_report_accounting_in_db( $data ) {
+		global $wpdb;
+		
+		$post_id = $data[ 'post_id' ]; // ID of the post to update
+		
+		$table_name = $wpdb->prefix . $this->table_main;
+		$user_id    = get_current_user_id();
+		
+		// Prepare the data to update
+		$update_params = array(
+			'user_id_updated' => $user_id,
+			'date_updated'    => current_time( 'mysql' )
+		);
+		
+		$post_meta = array(
+			"bank_payment_status" => $data[ 'bank_payment_status' ],
+			"driver_pay_statuses" => $data[ 'driver_pay_statuses' ],
+		);
+		
+		// Specify the condition (WHERE clause)
+		$where = array( 'id' => $post_id );
+		
+		// Update the record in the database
+		$result = $wpdb->update( $table_name, $update_params, $where, array(
+			'%d',  // user_id_updated
+			'%s',  // date_updated
+			'%s',  // load_problem
+		), array( '%d' ) );
+		
+		// Check if the update was successful
+		if ( $result !== false ) {
+			return $this->update_post_meta_data( $post_id, $post_meta ); // Update was successful
+		} else {
+			// Get the last SQL error
+			$error = $wpdb->last_error;
+			
+			// Return a generic database error if no specific match is found
+			return new WP_Error( 'db_error', 'Error updating the company report in the database: ' . $error );
+		}
+	}
+	
+	public function update_quick_data_in_db( $data ) {
+		global $wpdb;
+		
+		// Получаем и форматируем ID постов
+		$post_ids = explode(',', $data['post_ids']);
+		unset($data['post_ids']); // Удаляем post_ids из массива данных, т.к. он не нужен для обновлений
+		
+		$table_name = $wpdb->prefix . $this->table_main;
+		$user_id = get_current_user_id();
+		
+		// Определяем общие данные для обновления
+		$update_params = array(
+			'user_id_updated' => $user_id,
+			'date_updated'    => current_time( 'mysql' )
+		);
+		
+		// Проходим по каждому post_id и обновляем данные
+		foreach ($post_ids as $post_id) {
+			$where = array('id' => $post_id);
+			
+			// Обновляем общие данные в основной таблице
+			$result = $wpdb->update($table_name, $update_params, $where, array(
+				'%d', // user_id_updated
+				'%s'  // date_updated
+			), array('%d'));
+			
+			if ($result === false) {
+				// Если обновление неудачно, возвращаем ошибку
+				return new WP_Error('db_error', 'Ошибка при обновлении отчета компании в базе данных: ' . $wpdb->last_error);
+			}
+			
+			// Отфильтруем мета-данные, если они существуют, и обновим их
+			$post_meta = array_filter(array(
+				"factoring_status"    => $data['factoring_status'] ?? null,
+				"bank_payment_status" => $data['bank_payment_status'] ?? null,
+				"driver_pay_statuses" => $data['driver_pay_statuses'] ?? null,
+				"invoiced_proof"      => isset($data['invoiced_proof']) ? (bool) $data['invoiced_proof'] : null
+			), function($value) {
+				return !is_null($value); // Исключаем отсутствующие значения
+			});
+			
+			// Обновляем мета-данные, если они заданы
+			if (!empty($post_meta)) {
+				$meta_update_result = $this->update_post_meta_data($post_id, $post_meta);
+				if (is_wp_error($meta_update_result)) {
+					return $meta_update_result;
+				}
+			}
+		}
+		
+		return true;
+	}
+	
 	
 	/**
 	 * @param $data
@@ -1342,32 +1594,36 @@ class TMSReports extends TMSReportsHelper {
 		);
 		
 		$post_meta = array(
-			'load_status'         => $data[ 'load_status' ],
-			'instructions'        => $instructions,
-			'source'              => $data[ 'source' ],
-			'load_type'           => $data[ 'load_type' ],
-			'commodity'           => $data[ 'commodity' ],
-			'weight'              => $data[ 'weight' ],
-			'notes'               => $data[ 'notes' ],
-			'dispatcher_initials' => $data[ 'dispatcher_initials' ],
-			'reference_number'    => $data[ 'reference_number' ],
-			'unit_number_name'    => $data[ 'unit_number_name' ],
-			'booked_rate'         => $data[ 'booked_rate' ],
-			'driver_rate'         => $data[ 'driver_rate' ],
-			'driver_phone'         => $data[ 'driver_phone' ],
-			'profit'              => $data[ 'profit' ],
-			'percent_booked_rate' => $data[ 'percent_booked_rate' ],
-			'true_profit'         => $data[ 'true_profit' ],
+			'load_status'             => $data[ 'load_status' ],
+			'instructions'            => $instructions,
+			'source'                  => $data[ 'source' ],
+			'load_type'               => $data[ 'load_type' ],
+			'commodity'               => $data[ 'commodity' ],
+			'weight'                  => $data[ 'weight' ],
+			'notes'                   => $data[ 'notes' ],
+			'dispatcher_initials'     => $data[ 'dispatcher_initials' ],
+			'reference_number'        => $data[ 'reference_number' ],
+			'unit_number_name'        => $data[ 'unit_number_name' ],
+			'booked_rate'             => $data[ 'booked_rate' ],
+			'driver_rate'             => $data[ 'driver_rate' ],
+			'driver_phone'            => $data[ 'driver_phone' ],
+			'profit'                  => $data[ 'profit' ],
+			'percent_booked_rate'     => $data[ 'percent_booked_rate' ],
+			'true_profit'             => $data[ 'true_profit' ],
+			'percent_quick_pay_value' => $data[ 'percent_quick_pay_value' ],
+			'booked_rate_modify'      => $data[ 'booked_rate_modify' ],
+			'tbd'                     => $data[ 'tbd' ],
+		
 		);
 		
-		if (isset($data['read_only'])) {
+		if ( isset( $data[ 'read_only' ] ) ) {
 			
-			$exclude = array('reference_number', 'load_type', 'source');
+			$exclude = array( 'reference_number', 'load_type', 'source' );
 			
-			foreach ($post_meta as $key => $value) {
-				$search = array_search($key, $exclude);
-				if (is_numeric($search)) {
-					unset($post_meta[$key]);
+			foreach ( $post_meta as $key => $value ) {
+				$search = array_search( $key, $exclude );
+				if ( is_numeric( $search ) ) {
+					unset( $post_meta[ $key ] );
 				}
 			}
 		}
@@ -1646,6 +1902,8 @@ class TMSReports extends TMSReportsHelper {
 		add_action( 'wp_ajax_update_post_status', array( $this, 'update_post_status' ) );
 		add_action( 'wp_ajax_rechange_status_load', array( $this, 'rechange_status_load' ) );
 		add_action( 'wp_ajax_remove_one_load', array( $this, 'remove_one_load' ) );
+		add_action( 'wp_ajax_update_accounting_report', array( $this, 'update_accounting_report' ) );
+		add_action( 'wp_ajax_quick_update_post', array( $this, 'quick_update_post' ) );
 	}
 	
 	/**

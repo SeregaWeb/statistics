@@ -94,7 +94,7 @@ $states = $helper->get_states();
 	</div>
 	
 	<div class="modal-footer justify-content-start gap-2">
-		<button type="button" class="btn btn-dark">Cancel</button>
+		<button type="button" class="btn btn-dark js-popup-close">Cancel</button>
 		<button type="submit" class="btn btn-outline-primary">Submit <span class="spinner-border spinner-border-sm ms-2" style="display: none;"></span></button>
 	</div>
 </form>

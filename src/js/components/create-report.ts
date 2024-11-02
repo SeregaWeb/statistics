@@ -360,6 +360,41 @@ export const updateBillingReportInit = (ajaxUrl) => {
         });
 };
 
+export const updateAccountingReportInit = (ajaxUrl) => {
+    const forms = document.querySelectorAll('.js-uploads-accounting');
+    forms &&
+        forms.forEach((item) => {
+            item.addEventListener('submit', (event) => {
+                event.preventDefault();
+                const { target } = event;
+                // @ts-ignore
+                const formData = new FormData(target);
+                formData.append('action', 'update_accounting_report');
+
+                const options = {
+                    method: 'POST',
+                    body: formData,
+                };
+
+                fetch(ajaxUrl, options)
+                    .then((res) => res.json())
+                    .then((requestStatus) => {
+                        if (requestStatus.success) {
+                            console.log('update successfully:', requestStatus.data);
+                            printMessage(requestStatus.data.message, 'success', 8000);
+                        } else {
+                            // eslint-disable-next-line no-alert
+                            printMessage(`Error update:${requestStatus.data.message}`, 'danger', 8000);
+                        }
+                    })
+                    .catch((error) => {
+                        printMessage(`Request failed: ${error}`, 'danger', 8000);
+                        console.error('Request failed:', error);
+                    });
+            });
+        });
+};
+
 /**
  * remove one image in page documents
  *
@@ -676,6 +711,9 @@ const addActionsEditAdditionalCard = () => {
             btnEndEdit.classList.add('d-none');
             // @ts-ignore
             btnAdd.classList.remove('d-none');
+
+            containerMain.classList.remove('edit-now');
+
             activeItem.classList.remove('edit');
         }
 
@@ -804,7 +842,11 @@ const editShipperStopInit = () => {
                 const btnEdit = document.querySelector('.js-end-edit-ship');
 
                 // @ts-ignore
+                const containerMain = target.closest('.js-shipper');
+
+                // @ts-ignore
                 if (btnAdd && btnEdit) {
+                    containerMain.classList.add('edit-now');
                     btnAdd.classList.add('d-none');
                     btnEdit.classList.remove('d-none');
                 }
@@ -824,15 +866,23 @@ const editShipperStopInit = () => {
                     const info = form.querySelector('.js-shipper-info');
                     const addressSearch = form.querySelector('.js-search-shipper');
 
+                    const dateStart = form.querySelector('.js-shipper-time-start');
+                    const dateEnd = form.querySelector('.js-shipper-time-end');
+                    const strict = form.querySelector('.js-shipper-time-strict');
+
                     const currentID = card.querySelector('.js-current-shipper_address_id');
                     const currentAddress = card.querySelector('.js-current-shipper_address');
                     const currentContact = card.querySelector('.js-current-shipper_contact');
                     const currentDate = card.querySelector('.js-current-shipper_date');
                     const currentInfo = card.querySelector('.js-current-shipper_info');
                     const currentType = card.querySelector('.js-current-shipper_type');
+                    const currentStart = card.querySelector('.js-current-shipper_start');
+                    const currentEnd = card.querySelector('.js-current-shipper_end');
+                    const currentStrict = card.querySelector('.js-current-shipper_strict');
+                    const currentShortAddress = card.querySelector('.js-current-shipper_short_address');
 
                     const templateInputEdit = `
-                        <input type="hidden" class="js-full-address" data-current-address="${currentAddress.value}" name="shipper_id" value="${currentID.value}">
+                        <input type="hidden" class="js-full-address" data-current-address="${currentAddress.value}" data-short-address="${currentShortAddress.value}" name="shipper_id" value="${currentID.value}">
                     `;
 
                     if (!resultSearch) return;
@@ -843,6 +893,9 @@ const editShipperStopInit = () => {
                     contact.value = currentContact.value;
                     date.value = currentDate.value;
                     info.value = currentInfo.value;
+                    dateStart.value = currentStart.value;
+                    dateEnd.value = currentEnd.value;
+                    strict.checked = currentStrict.value === 'true';
 
                     card.remove();
                 }
@@ -873,6 +926,9 @@ export const addShipperPointInit = () => {
                     const date = form.querySelector('.js-shipper-date');
                     const info = form.querySelector('.js-shipper-info');
                     const addressSearch = form.querySelector('.js-search-shipper');
+                    const dateStart = form.querySelector('.js-shipper-time-start');
+                    const dateEnd = form.querySelector('.js-shipper-time-end');
+                    const dateStrict = form.querySelector('.js-shipper-time-strict');
 
                     if (!address) {
                         printMessage(`The address must be selected from the drop-down list`, 'danger', 5000);
@@ -886,12 +942,21 @@ export const addShipperPointInit = () => {
                     const stopTypeValue = stopType.value;
                     const contactValue = contact.value;
                     const dateValue = date.value;
+                    const start = dateStart.value;
+                    const end = dateEnd.value;
+                    const strict = dateStrict.checked;
                     let infoValue = info.value;
 
                     const shipperContacts = form.querySelector('.js-table-shipper');
 
                     if (!addressValueID || addressValueFullAddrres === '') {
                         printMessage(`Address empty`, 'danger', 5000);
+                        // eslint-disable-next-line consistent-return
+                        return false;
+                    }
+
+                    if (!start) {
+                        printMessage(`Need fill time start`, 'danger', 5000);
                         // eslint-disable-next-line consistent-return
                         return false;
                     }
@@ -924,6 +989,13 @@ export const addShipperPointInit = () => {
                         typeDelivery = 'Pick Up';
                     }
 
+                    let time = '';
+                    if (strict === 'false' || !strict) {
+                        time = `${start} - ${end}`;
+                    } else {
+                        time = `${start} - strict`;
+                    }
+
                     const template = `
                 <div class="row js-current-shipper card-shipper">
                     <div class="d-none">
@@ -934,9 +1006,19 @@ export const addShipperPointInit = () => {
                         <input type="hidden" class="js-current-shipper_date" name="${stopTypeValue}_date[]" value="${dateValue}" >
                         <input type="hidden" class="js-current-shipper_info" name="${stopTypeValue}_info[]" value="${infoValue}" >
                         <input type="hidden" class="js-current-shipper_type" name="${stopTypeValue}_type[]" value="${stopTypeValue}" >
+                        <input type="hidden" class="js-current-shipper_start" name="${stopTypeValue}_start[]" value="${start}">
+                        <input type="hidden" class="js-current-shipper_end" name="${stopTypeValue}_end[]" value="${end}">
+                        <input type="hidden" class="js-current-shipper_strict" name="${stopTypeValue}_strict[]" value="${strict}">
                     </div>
                     <div class="col-12 col-md-1">${typeDelivery}</div>
-                    <div class="col-12 col-md-2">${dateValue}</div>
+                    <div class="col-12 col-md-2">
+                         <div class="d-flex flex-column">
+                                <p class="m-0">${dateValue}</p>
+                                <span class="small-text">
+                                    ${time}
+                                </span>
+                            </div>
+                    </div>
                     <div class="col-12 col-md-3">${addressValueFullAddrres}</div>
                     <div class="col-12 col-md-2">${contactValue}</div>
                     <div class="col-12 col-md-3">${infoValue}</div>
@@ -968,6 +1050,9 @@ export const addShipperPointInit = () => {
                     date.value = '';
                     info.value = '';
                     addressSearch.value = '';
+                    dateStart.value = '';
+                    dateEnd.value = '';
+                    dateStrict.checked = false;
 
                     const btnAdd = document.querySelector('.js-add-ship');
                     const btnEdit = document.querySelector('.js-end-edit-ship');
@@ -976,6 +1061,7 @@ export const addShipperPointInit = () => {
                     editShipperStopInit();
                     // @ts-ignore
                     if (btnAdd && btnEdit && target.classList.contains('js-end-edit-ship')) {
+                        form.classList.remove('edit-now');
                         btnAdd.classList.remove('d-none');
                         btnEdit.classList.add('d-none');
                         // @ts-ignore
@@ -1081,5 +1167,59 @@ export const updateStatusPost = (ajaxUrl) => {
                         console.error('Request failed:', error);
                     });
             });
+        });
+};
+
+export const quickEditInit = (ajaxUrl) => {
+    const form = document.querySelector('.js-quick-edit');
+
+    form &&
+        form.addEventListener('submit', (event) => {
+            event.preventDefault();
+
+            const selectLoads = document.querySelectorAll('.js-select-load');
+            const selectedValues = Array.from(selectLoads)
+                // @ts-ignore
+                .filter((checkbox) => checkbox.checked)
+                // @ts-ignore
+                .map((checkbox) => checkbox.value)
+                .join(',');
+
+            console.log('Selected values:', selectedValues);
+            
+            // @ts-ignore
+            const formData = new FormData(event.target);
+            const action = 'quick_update_post';
+
+            if (!selectedValues) {
+                printMessage('Posts id not select', 'danger', 8000);
+                return;
+            }
+
+            formData.append('action', action);
+            // @ts-ignore
+            formData.append('post_ids', selectedValues);
+
+            const options = {
+                method: 'POST',
+                body: formData,
+            };
+
+            // @ts-ignore
+            fetch(ajaxUrl, options)
+                .then((res) => res.json())
+                .then((requestStatus) => {
+                    if (requestStatus.success) {
+                        printMessage(requestStatus.data.message, 'success', 8000);
+                        const container = document.querySelector('.js-update-status');
+                        window.location.reload();
+                    } else {
+                        printMessage(requestStatus.data.message, 'danger', 8000);
+                    }
+                })
+                .catch((error) => {
+                    printMessage(`Request failed: ${error}`, 'danger', 8000);
+                    console.error('Request failed:', error);
+                });
         });
 };

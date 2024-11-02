@@ -6,7 +6,7 @@ import '../scss/frontend.scss';
  * JavaScript
  */
 import Popup from './parts/popup-window';
-import { initMoneyMask } from './components/input-helpers';
+import { checboxesHelperInit, initMoneyMask } from './components/input-helpers';
 import {
     actionCreateReportInit,
     additionalContactsInit,
@@ -14,8 +14,10 @@ import {
     createDraftPosts,
     fullRemovePost,
     previewFileUpload,
+    quickEditInit,
     removeOneFileInitial,
     sendShipperFormInit,
+    updateAccountingReportInit,
     updateBillingReportInit,
     updateFilesReportInit,
     updateStatusPost,
@@ -32,6 +34,7 @@ import { toggleSidebarInit } from './components/sidebar-init';
 import { autoFillAddress } from './components/auto-fill-address';
 import { AuthUsersInit } from './components/auth-users';
 import { cleanUrlByFilter } from './components/filter-clean';
+import { showHiddenValueInit } from './components/chow-hidden-value';
 
 function ready() {
     console.log('ready');
@@ -68,7 +71,9 @@ function ready() {
     changeTableInit(urlAjax);
     AuthUsersInit(urlAjax);
     updateBillingReportInit(urlAjax);
+    updateAccountingReportInit(urlAjax);
     fullRemovePost(urlAjax);
+    quickEditInit(urlAjax);
 
     // API request
     initGetInfoDriver(useServices);
@@ -85,6 +90,10 @@ function ready() {
     autoFillAddress(hereApi);
 
     cleanUrlByFilter();
+
+    showHiddenValueInit();
+
+    checboxesHelperInit();
 
     const preloaders = document.querySelectorAll('.js-preloader');
     preloaders &&

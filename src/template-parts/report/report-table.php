@@ -23,16 +23,33 @@ $my_team = $TMSUsers->check_group_access();
 $helper = new TMSReportsHelper();
 
 if ( ! empty( $results ) ) : ?>
+	
+	<?php if ($page_type === 'accounting'): ?>
+	    <div class="w-100 mb-3">
+            <button class="btn btn-outline-primary js-open-popup-activator" data-href="#popup_quick_edit">Quick edit</button>
+        </div>
+	<?php endif; ?>
+
     <table class="table mb-5 w-100">
         <thead>
         <tr>
+            <?php if ($page_type === 'accounting'): ?>
+                <th><input class="checkbox-big js-select-load-all" type="checkbox" name="select-all"></th>
+            <?php endif; ?>
+            
             <th scope="col">Date booked</th>
             <th scope="col" title="dispatcher">Disp.</th>
-            <th scope="col">Reference №</th>
             <th scope="col">Pick up location</th>
             <th scope="col">Delivery location</th>
             <th scope="col">Unit & name</th>
-            <th scope="col">Booked rate</th>
+            <th scope="col">
+	            <?php if ($page_type === 'accounting'): ?>
+                    Gross
+	            <?php else: ?>
+                    Booked rate
+                <?php endif; ?>
+        
+            </th>
             <th scope="col">Driver rate</th>
             <?php if ($page_type === 'dispatcher'): ?>
                 <th scope="col">Profit</th>
@@ -55,6 +72,8 @@ if ( ! empty( $results ) ) : ?>
 	        <?php if ($page_type === 'accounting'): ?>
             <th scope="col">Invoice</th>
             <th scope="col">Factoring status</th>
+            <th scope="col">Bank st.</th>
+            <th scope="col">Payment st.</th>
 	        <?php endif; ?>
 			
             <?php if ( $TMSUsers->check_user_role_access( array( 'recruiter' ) ) ): ?>
@@ -123,44 +142,54 @@ if ( ! empty( $results ) ) : ?>
 			$factoring_status_row = get_field_value( $meta, 'factoring_status' );
 			$factoring_status     = esc_html( $helper->get_label_by_key( $factoring_status_row, 'factoring_status' ) );
 			
-            $invoice_raw = get_field_value( $meta, 'invoice' );
-			$invoice     = esc_html( $helper->get_label_by_key( $invoice_raw, 'invoices' ) );
+            $invoice_raw = get_field_value( $meta, 'invoiced_proof' );
+//			$invoice     = esc_html( $helper->get_label_by_key( $invoice_raw, 'invoices' ) );
             
             $show_control = $TMSUsers->show_control_loads($my_team, $current_user_id, $dispatcher_initials, $is_draft);
             
 			$status_class = $load_status;
             $factoring_class = strtolower($factoring_status_row);
             $factoring_class = str_replace(' ', '-', $factoring_class);
+			
+			$bank_status = 'Approved';
+			$driver_pay_status = 'Processing';
 			?>
 
             <tr>
-                <td><?php echo $date_booked; ?></td>
+	            <?php if ($page_type === 'accounting'): ?>
+                    <td><input type="checkbox" id="load-<?php echo $row['id']; ?>" class="checkbox-big js-select-load" value="<?php echo $row[ 'id' ]; ?>" name="select-load"></td>
+	            <?php endif; ?>
+                
+                <td><label class="h-100 cursor-pointer" for="load-<?php echo $row['id']; ?>"><?php echo $date_booked; ?></label></td>
                 <td>
-            <span data-bs-toggle="tooltip" data-bs-placement="top" title="<?php echo $dispatcher[ 'full_name' ]; ?>"
-                  class="initials-circle" style="background-color: <?php echo $color_initials; ?>">
-                  <?php echo esc_html( $dispatcher[ 'initials' ] ); ?>
-            </span>
+                    <div class="d-flex gap-1 flex-column">
+                        <p class="m-0">
+                              <span data-bs-toggle="tooltip" data-bs-placement="top" title="<?php echo $dispatcher[ 'full_name' ]; ?>"
+                                    class="initials-circle" style="background-color: <?php echo $color_initials; ?>">
+                                  <?php echo esc_html( $dispatcher[ 'initials' ] ); ?>
+                              </span>
+                        </p>
+                        <span class="text-small"><?php echo $reference_number; ?></span>
+                    </div>
                 </td>
-                <td><?php echo $reference_number; ?></td>
+              
                 <td>
 					<?php if ( is_array( $pick_up ) ): ?>
-						<?php foreach ( $pick_up as $val ): ?>
+						<?php foreach ( $pick_up as $val ):  ?>
 							<?php if ( isset( $val[ 'short_address' ] ) ): ?>
-                                <span class="" data-bs-toggle="tooltip" data-bs-placement="top"
+                                <p class="m-0" data-bs-toggle="tooltip" data-bs-placement="top"
                                       title="<?php echo $val[ 'address' ]; ?>">
                               <?php echo $val[ 'short_address' ];
                               
-                              if ( $page_type === 'accounting') {
 	                              $detailed_address = $TMSShipper->get_shipper_by_id($val['address_id']);
                                   if (is_array($detailed_address)) {
                                     echo ' '.$detailed_address[0]->zip_code;
                                   }
-                              }
                               
                               ?>
                               
                               
-                        </span>
+                        </p>
 							<?php endif; ?>
 						<?php endforeach; ?>
 					<?php endif; ?>
@@ -169,19 +198,17 @@ if ( ! empty( $results ) ) : ?>
 					<?php if ( is_array( $delivery ) ): ?>
 						<?php foreach ( $delivery as $val ): ?>
 							<?php if ( isset( $val[ 'short_address' ] ) ): ?>
-                                <span class="" data-bs-toggle="tooltip" data-bs-placement="top"
+                                <p class="m-0" data-bs-toggle="tooltip" data-bs-placement="top"
                                       title="<?php echo $val[ 'address' ]; ?>">
                                   <?php echo $val[ 'short_address' ];
-                                    if ( $page_type === 'accounting') {
                                         $detailed_address = $TMSShipper->get_shipper_by_id($val['address_id']);
                                         if ( is_array( $detailed_address ) ) {
                                             echo ' ' . $detailed_address[ 0 ]->zip_code;
                                         }
-                                    }
                               ?>
                               
                               
-                        </span>
+                        </p>
 							<?php endif; ?>
 						<?php endforeach; ?>
 					<?php endif; ?>
@@ -222,8 +249,14 @@ if ( ! empty( $results ) ) : ?>
 	            <?php endif; ?>
 	            
 	            <?php if ($page_type === 'accounting'): ?>
-                    <td><?php echo $invoice; ?></td>
+                    <td><?php echo $invoice_raw ? 'Invoiced' : 'Not invoiced'; ?></td>
                     <td class="<?php echo $factoring_class; ?>"><?php echo $factoring_status; ?></td>
+                    <td>
+                        <?php echo $bank_status; ?>
+                    </td>
+                    <td>
+	                    <?php echo $driver_pay_status; ?>
+                    </td>
 	            <?php endif; ?>
              
              

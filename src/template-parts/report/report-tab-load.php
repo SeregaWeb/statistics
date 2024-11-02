@@ -31,6 +31,13 @@ $load_type           = '';
 $commodity           = '';
 $weight              = '';
 $notes               = '';
+$modifi_price = '';
+$tbd = false;
+
+$processing_fees = 0;
+$type_pay_method = '';
+$percent_quick_pay = 0;
+
 
 if ( $report_object ) {
 	$values = $report_object;
@@ -62,7 +69,14 @@ if ( $report_object ) {
 		$commodity           = get_field_value($meta, 'commodity');
 		$weight              = get_field_value($meta, 'weight');
 		$notes               = get_field_value($meta, 'notes');
+        $modifi_price        = get_field_value($meta, 'booked_rate_modify');
 		
+		$processing_fees = get_field_value($meta, 'processing_fees');
+		$type_pay_method = get_field_value($meta, 'type_pay');
+		$percent_quick_pay = get_field_value($meta, 'percent_quick_pay');
+		$processing = get_field_value($meta, 'processing');
+		$tbd = get_field_value($meta, 'tbd');
+  
 		$post_status         = get_field_value( $main, 'status_post' );
 	}
 }
@@ -99,14 +113,43 @@ $read_only = $TMSUsers->check_read_only($post_status);
 
         <div class="mb-2 col-12 col-md-6 col-xl-4">
             <label for="booked_rate" class="form-label">Booked Rate</label>
-            <?php if ($full_view_only): ?>
-                <p class="m-0"><strong>$<?php echo $booked_rate ?></strong></p>
+          
+            <?php if ($full_view_only):
+                ?>
+                <p class="m-0"><strong>$<?php echo $modifi_price ?></strong></p>
             <?php else: ?>
             <div class="input-group">
                 <span class="input-group-text">$</span>
                 <input type="text" value="<?php echo $booked_rate; ?>" name="booked_rate"
                        class="form-control js-money js-all-value" required>
+                
+                <?php if ($type_pay_method === 'quick-pay' && $processing === 'direct'):
+                    echo $helper->get_warning_icon();
+                endif; ?>
             </div>
+            
+                <?php
+                if ($modifi_price && ($percent_quick_pay > 0 || $processing_fees > 0)):
+                        if (!$percent_quick_pay || !is_numeric($percent_quick_pay)) {
+	                        $percent_quick_pay = 0;
+                        }
+	                
+                        if (!$processing_fees || !is_numeric($processing_fees)) {
+	                        $processing_fees = 0;
+                        }
+                        
+                        ?>
+                        <?php if ($processing === 'direct'):
+                            echo '<strong class="mt-1 d-block js-update-mod-price">$'.$modifi_price.' <span class="text-small"> price including quick pay  '.$percent_quick_pay.'% and processing fees $'.$processing_fees.'</span></strong>';
+                        endif; ?>
+                <?php endif;?>
+
+                <input type="hidden" class="js-old_value_booked_rate" name="old_value_booked_rate" value="<?php echo $booked_rate; ?>">
+                <input type="hidden" class="js-processing_fees"  name="processing_fees" value="<?php echo $processing_fees; ?>">
+                <input type="hidden" class="js-type_pay"  name="type_pay" value="<?php echo $type_pay_method; ?>">
+                <input type="hidden" class="js-percent_quick_pay" name="percent_quick_pay" value="<?php echo $percent_quick_pay; ?>">
+                <input type="hidden" class="js-processing" name="processing" value="<?php echo $processing; ?>">
+            
             <?php endif; ?>
         </div>
 
@@ -160,7 +203,6 @@ $read_only = $TMSUsers->check_read_only($post_status);
 
         <div class="mb-2 col-12 col-md-6 col-xl-4">
             <label for="dispatcher_initials" class="form-label">Dispatcher Initials</label>
-	        
 	        
 	        <?php if ($full_view_only):
 		        $user_name = $helper->get_user_full_name_by_id($dispatcher_initials);
@@ -234,6 +276,15 @@ $read_only = $TMSUsers->check_read_only($post_status);
         <div class="col-12 mt-5">
             <p class="h5">Driver</p>
         </div>
+
+        <div class="mb-2 col-12 col-md-6 col-xl-4">
+            <div class="form-check form-switch">
+                <input class="form-check-input js-tbd" <?php echo $tbd ? 'checked' : ''; ?> type="checkbox" name="tbd" id="tbd">
+                <label class="form-check-label" for="tbd">TBD</label>
+            </div>
+        </div>
+
+        <div class="col-12"></div>
 	    
 	    <?php if ($full_view_only): ?>
             <div class="mb-2 col-12 col-md-6 col-xl-4">
@@ -275,7 +326,7 @@ $read_only = $TMSUsers->check_read_only($post_status);
         <div class="mb-2 col-12 col-md-6 col-xl-4">
             <label for="unit_number_name" class="form-label">Unit Number & Name</label>
             <div class="d-flex gap-1 js-container-number">
-            <input type="text" name="unit_number_name" value="<?php echo $unit_number_name; ?>" class="form-control" required>
+            <input type="text" name="unit_number_name" <?php echo $tbd ? 'readonly' : ''; ?> data-value="<?php echo $unit_number_name; ?>" value="<?php echo $unit_number_name; ?>" class="form-control" required>
             <button class="btn btn-primary js-fill-driver">Fill</button>
             </div>
         </div>
@@ -284,7 +335,7 @@ $read_only = $TMSUsers->check_read_only($post_status);
             <label for="driver_rate" class="form-label">Driver Rate</label>
             <div class="input-group">
                 <span class="input-group-text">$</span>
-                <input type="text" name="driver_rate" value="<?php echo $driver_rate; ?>"
+                <input type="text" name="driver_rate" <?php echo $tbd ? 'readonly' : ''; ?> data-value="<?php echo $driver_rate; ?>" value="<?php echo $tbd ? 0 : $driver_rate; ?>"
                        class="form-control js-money js-driver-value" required>
             </div>
         </div>
@@ -293,14 +344,14 @@ $read_only = $TMSUsers->check_read_only($post_status);
 
         <div class="mb-2 col-12 col-md-6 col-xl-4">
             <label for="driver_phone" class="form-label ">Driver phone</label>
-            <input type="text" name="driver_phone" value="<?php echo $driver_phone; ?>" class="form-control js-phone-driver" required>
+            <input type="text" data-value="<?php echo $driver_phone; ?>" <?php echo $tbd ? 'readonly' : ''; ?> name="driver_phone" value="<?php echo $driver_phone; ?>" class="form-control js-phone-driver" required>
         </div>
 
         <div class="col-12 col-md-6 col-xl-4">
             <label for="profit" class="form-label">Profit</label>
             <div class="input-group">
                 <span class="input-group-text">$</span>
-                <input type="text" name="profit" value="<?php echo $profit; ?>" readonly
+                <input type="text" name="profit" data-value="<?php echo $profit; ?>" value="<?php echo $tbd ? 0 : $profit; ?>" readonly
                        class="form-control js-money js-money-total" required>
             </div>
         </div>

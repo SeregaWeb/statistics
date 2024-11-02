@@ -88,7 +88,7 @@ if ( $report_object ) {
 
         <div class="mb-2 col-12 col-md-6 col-xl-4">
             <label for="pick_up_date" class="form-label">Local Date and time</label>
-            <input type="datetime-local" name="pick_up_date" class="form-control  js-shipper-date">
+            <input type="date" name="pick_up_date" class="form-control  js-shipper-date">
         </div>
 
         <div class="mb-2 col-12 col-xl-4">
@@ -96,6 +96,26 @@ if ( $report_object ) {
             <input type="text" name="info" class="form-control  js-shipper-info">
         </div>
 
+        <div class="col-12"></div>
+
+        <div class="mb-2 col-12 col-md-6 col-xl-4">
+            <label for="pick_up_date_time_start" class="form-label">Time start</label>
+            <input type="time" name="pick_up_date_time_start" class="form-control  js-shipper-time-start">
+        </div>
+        <div class="mb-2 col-12 col-md-6 col-xl-4">
+            <label for="pick_up_date_time_end" class="form-label">Time end</label>
+            <input type="time" name="pick_up_date_time_end" class="form-control  js-shipper-time-end">
+        </div>
+        
+        <div class="col-12"></div>
+        
+        <div class="mb-2 col-12 col-md-6 col-xl-4">
+            <div class="form-check form-switch">
+                <input class="form-check-input js-shipper-time-strict" name="pick_up_date_time_strict" type="checkbox" id="flexSwitchCheckDefault">
+                <label class="form-check-label" for="flexSwitchCheckDefault">Strict time</label>
+            </div>
+        </div>
+        
         <div class="col-12"></div>
 
         <div class="col-12 mt-3 mb-5 justify-content-start gap-2">
@@ -133,9 +153,13 @@ if ( $report_object ) {
                     $address = get_field_value($val, 'address');
                     $contact = get_field_value($val, 'contact');
                     $date = get_field_value($val, 'date');
+					$date_format = esc_html( date( 'm/d/Y', strtotime( $date ) ) );
                     $info = get_field_value($val, 'info');
                     $type = get_field_value($val, 'type');
                     $short_address = get_field_value($val, 'short_address');
+                    $time_start = get_field_value($val, 'time_start');
+                    $time_end = get_field_value($val, 'time_end');
+                    $strict_time = get_field_value($val, 'strict_time');
                     
 					?>
                     <div class="row js-current-shipper card-shipper">
@@ -154,9 +178,28 @@ if ( $report_object ) {
                                    value="<?php echo $info ?>">
                             <input type="hidden" class="js-current-shipper_type" name="pick_up_location_type[]"
                                    value="<?php echo $type ?>">
+                            <input type="hidden" class="js-current-shipper_start" name="pick_up_location_start[]"
+                                   value="<?php echo $time_start ?>">
+                            <input type="hidden" class="js-current-shipper_end" name="pick_up_location_end[]"
+                                   value="<?php echo $time_end ?>">
+                            <input type="hidden" class="js-current-shipper_strict" name="pick_up_location_strict[]"
+                                   value="<?php echo $strict_time ?>">
                         </div>
                         <div class="col-12 col-md-1">Pick Up</div>
-                        <div class="col-12 col-md-2"><?php echo $date ?></div>
+                        <div class="col-12 col-md-2">
+                            <div class="d-flex flex-column">
+                                <p class="m-0"><?php echo $date_format ?></p>
+                                <?php if ($time_start): ?>
+                                <span class="small-text">
+                                    <?php if (!$strict_time === "" || $strict_time === "false") :
+	                                    echo $time_start . ' - ' . $time_end;
+                                    else:
+	                                    echo $time_start . ' - strict';
+                                    endif; ?>
+                                </span>
+                                <?php endif; ?>
+                            </div>
+                        </div>
                         <div class="col-12 col-md-3"><?php echo $address ?></div>
                         <div class="col-12 col-md-2"><?php echo $contact ?></div>
                         <div class="col-12 col-md-3"><?php echo $info ?></div>
@@ -183,10 +226,13 @@ if ( $report_object ) {
 			        $address = get_field_value($val, 'address');
 			        $contact = get_field_value($val, 'contact');
 			        $date = get_field_value($val, 'date');
+			        $date_format = esc_html( date( 'm/d/Y', strtotime( $date ) ) );
 			        $info = get_field_value($val, 'info');
 			        $type = get_field_value($val, 'type');
 			        $short_address = get_field_value($val, 'short_address');
-           
+			        $time_start = get_field_value($val, 'time_start');
+			        $time_end = get_field_value($val, 'time_end');
+			        $strict_time = get_field_value($val, 'strict_time');
 			        ?>
                     <div class="row js-current-shipper card-shipper">
                         <div class="d-none">
@@ -204,9 +250,27 @@ if ( $report_object ) {
                                    value="<?php echo $info ?>">
                             <input type="hidden" class="js-current-shipper_type" name="delivery_location_type[]"
                                    value="<?php echo $type ?>">
+                            <input type="hidden" class="js-current-shipper_start" name="delivery_location_start[]"
+                                   value="<?php echo $time_start ?>">
+                            <input type="hidden" class="js-current-shipper_end" name="delivery_location_end[]"
+                                   value="<?php echo $time_end ?>">
+                            <input type="hidden" class="js-current-shipper_strict" name="delivery_location_strict[]"
+                                   value="<?php echo $strict_time ?>">
                         </div>
                         <div class="col-12 col-md-1">Delivery</div>
-                        <div class="col-12 col-md-2"><?php echo $date ?></div>
+                        <div class="col-12 col-md-2">
+                            <div class="d-flex flex-column">
+                                <p class="m-0"><?php echo $date_format ?></p>
+                                <span class="small-text">
+                                    <?php
+                                    if (!$strict_time === "" || $strict_time === "false") :
+                                        echo $time_start . ' - ' . $time_end;
+                                    else:
+                                        echo $time_start . ' - strict';
+                                    endif; ?>
+                                </span>
+                            </div>
+                        </div>
                         <div class="col-12 col-md-3"><?php echo $address ?></div>
                         <div class="col-12 col-md-2"><?php echo $contact ?></div>
                         <div class="col-12 col-md-3"><?php echo $info ?></div>

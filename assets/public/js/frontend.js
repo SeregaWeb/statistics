@@ -3303,6 +3303,57 @@ var changeTableInit = function changeTableInit(ajaxUrl) {
 
 /***/ }),
 
+/***/ "./src/js/components/chow-hidden-value.ts":
+/*!************************************************!*\
+  !*** ./src/js/components/chow-hidden-value.ts ***!
+  \************************************************/
+/***/ (function(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   showHiddenValueInit: function() { return /* binding */ showHiddenValueInit; }
+/* harmony export */ });
+var showHiddenValueInit = function showHiddenValueInit() {
+  var selects = document.querySelectorAll('.js-show-hidden-values');
+  selects && selects.forEach(function (item) {
+    item.addEventListener('change', function (event) {
+      var _a, _b;
+      event.preventDefault();
+      var target = event.target;
+      if (!target || !(target instanceof HTMLSelectElement)) return;
+      var valuesNeeded = ((_a = target.getAttribute('data-value')) === null || _a === void 0 ? void 0 : _a.split('|')) || [];
+      var selectorsNeeded = ((_b = target.getAttribute('data-selector')) === null || _b === void 0 ? void 0 : _b.split('|')) || [];
+      var dataRequired = target.getAttribute('data-required');
+      var currentValue = target.value;
+      if (!dataRequired) {
+        dataRequired = 'false';
+      }
+      if (!valuesNeeded.length || !selectorsNeeded.length) return;
+      selectorsNeeded.forEach(function (selectorString) {
+        var selector = document.querySelector(selectorString);
+        if (!selector) return;
+        var shouldShow = valuesNeeded.includes(currentValue);
+        var input = selector.querySelector('input');
+        if (shouldShow) {
+          if (dataRequired === 'true' && input && input instanceof HTMLInputElement) {
+            input.setAttribute('required', 'required');
+          }
+          selector.classList.remove('d-none');
+        } else {
+          if (dataRequired === 'true' && input && input instanceof HTMLInputElement) {
+            input.removeAttribute('required');
+            input.value = '';
+          }
+          selector.classList.add('d-none');
+        }
+      });
+    });
+  });
+};
+
+/***/ }),
+
 /***/ "./src/js/components/create-company.ts":
 /*!*********************************************!*\
   !*** ./src/js/components/create-company.ts ***!
@@ -3366,8 +3417,10 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */   createDraftPosts: function() { return /* binding */ createDraftPosts; },
 /* harmony export */   fullRemovePost: function() { return /* binding */ fullRemovePost; },
 /* harmony export */   previewFileUpload: function() { return /* binding */ previewFileUpload; },
+/* harmony export */   quickEditInit: function() { return /* binding */ quickEditInit; },
 /* harmony export */   removeOneFileInitial: function() { return /* binding */ removeOneFileInitial; },
 /* harmony export */   sendShipperFormInit: function() { return /* binding */ sendShipperFormInit; },
+/* harmony export */   updateAccountingReportInit: function() { return /* binding */ updateAccountingReportInit; },
 /* harmony export */   updateBillingReportInit: function() { return /* binding */ updateBillingReportInit; },
 /* harmony export */   updateFilesReportInit: function() { return /* binding */ updateFilesReportInit; },
 /* harmony export */   updateStatusPost: function() { return /* binding */ updateStatusPost; }
@@ -3628,6 +3681,34 @@ var updateBillingReportInit = function updateBillingReportInit(ajaxUrl) {
     });
   });
 };
+var updateAccountingReportInit = function updateAccountingReportInit(ajaxUrl) {
+  var forms = document.querySelectorAll('.js-uploads-accounting');
+  forms && forms.forEach(function (item) {
+    item.addEventListener('submit', function (event) {
+      event.preventDefault();
+      var target = event.target;
+      var formData = new FormData(target);
+      formData.append('action', 'update_accounting_report');
+      var options = {
+        method: 'POST',
+        body: formData
+      };
+      fetch(ajaxUrl, options).then(function (res) {
+        return res.json();
+      }).then(function (requestStatus) {
+        if (requestStatus.success) {
+          console.log('update successfully:', requestStatus.data);
+          (0,_info_messages__WEBPACK_IMPORTED_MODULE_2__.printMessage)(requestStatus.data.message, 'success', 8000);
+        } else {
+          (0,_info_messages__WEBPACK_IMPORTED_MODULE_2__.printMessage)("Error update:".concat(requestStatus.data.message), 'danger', 8000);
+        }
+      }).catch(function (error) {
+        (0,_info_messages__WEBPACK_IMPORTED_MODULE_2__.printMessage)("Request failed: ".concat(error), 'danger', 8000);
+        console.error('Request failed:', error);
+      });
+    });
+  });
+};
 var removeOneFileInitial = function removeOneFileInitial(ajaxUrl) {
   var deleteForms = document.querySelectorAll('.js-remove-one');
   deleteForms && deleteForms.forEach(function (item) {
@@ -3797,6 +3878,7 @@ var addActionsEditAdditionalCard = function addActionsEditAdditionalCard() {
     if (activeItem) {
       btnEndEdit.classList.add('d-none');
       btnAdd.classList.remove('d-none');
+      containerMain.classList.remove('edit-now');
       activeItem.classList.remove('edit');
     }
     if (contactName && additionalName) {
@@ -3866,7 +3948,9 @@ var editShipperStopInit = function editShipperStopInit() {
       if (!target) return;
       var btnAdd = document.querySelector('.js-add-ship');
       var btnEdit = document.querySelector('.js-end-edit-ship');
+      var containerMain = target.closest('.js-shipper');
       if (btnAdd && btnEdit) {
+        containerMain.classList.add('edit-now');
         btnAdd.classList.add('d-none');
         btnEdit.classList.remove('d-none');
       }
@@ -3880,13 +3964,20 @@ var editShipperStopInit = function editShipperStopInit() {
         var date = form.querySelector('.js-shipper-date');
         var info = form.querySelector('.js-shipper-info');
         var addressSearch = form.querySelector('.js-search-shipper');
+        var dateStart = form.querySelector('.js-shipper-time-start');
+        var dateEnd = form.querySelector('.js-shipper-time-end');
+        var strict = form.querySelector('.js-shipper-time-strict');
         var currentID = card.querySelector('.js-current-shipper_address_id');
         var currentAddress = card.querySelector('.js-current-shipper_address');
         var currentContact = card.querySelector('.js-current-shipper_contact');
         var currentDate = card.querySelector('.js-current-shipper_date');
         var currentInfo = card.querySelector('.js-current-shipper_info');
         var currentType = card.querySelector('.js-current-shipper_type');
-        var templateInputEdit = "\n                        <input type=\"hidden\" class=\"js-full-address\" data-current-address=\"".concat(currentAddress.value, "\" name=\"shipper_id\" value=\"").concat(currentID.value, "\">\n                    ");
+        var currentStart = card.querySelector('.js-current-shipper_start');
+        var currentEnd = card.querySelector('.js-current-shipper_end');
+        var currentStrict = card.querySelector('.js-current-shipper_strict');
+        var currentShortAddress = card.querySelector('.js-current-shipper_short_address');
+        var templateInputEdit = "\n                        <input type=\"hidden\" class=\"js-full-address\" data-current-address=\"".concat(currentAddress.value, "\" data-short-address=\"").concat(currentShortAddress.value, "\" name=\"shipper_id\" value=\"").concat(currentID.value, "\">\n                    ");
         if (!resultSearch) return;
         resultSearch.innerHTML = templateInputEdit;
         stopType.value = currentType.value;
@@ -3894,6 +3985,9 @@ var editShipperStopInit = function editShipperStopInit() {
         contact.value = currentContact.value;
         date.value = currentDate.value;
         info.value = currentInfo.value;
+        dateStart.value = currentStart.value;
+        dateEnd.value = currentEnd.value;
+        strict.checked = currentStrict.value === 'true';
         card.remove();
       }
     });
@@ -3915,6 +4009,9 @@ var addShipperPointInit = function addShipperPointInit() {
         var date = form.querySelector('.js-shipper-date');
         var info = form.querySelector('.js-shipper-info');
         var addressSearch = form.querySelector('.js-search-shipper');
+        var dateStart = form.querySelector('.js-shipper-time-start');
+        var dateEnd = form.querySelector('.js-shipper-time-end');
+        var dateStrict = form.querySelector('.js-shipper-time-strict');
         if (!address) {
           (0,_info_messages__WEBPACK_IMPORTED_MODULE_2__.printMessage)("The address must be selected from the drop-down list", 'danger', 5000);
           return false;
@@ -3925,10 +4022,17 @@ var addShipperPointInit = function addShipperPointInit() {
         var stopTypeValue = stopType.value;
         var contactValue = contact.value;
         var dateValue = date.value;
+        var start = dateStart.value;
+        var end = dateEnd.value;
+        var strict = dateStrict.checked;
         var infoValue = info.value;
         var shipperContacts = form.querySelector('.js-table-shipper');
         if (!addressValueID || addressValueFullAddrres === '') {
           (0,_info_messages__WEBPACK_IMPORTED_MODULE_2__.printMessage)("Address empty", 'danger', 5000);
+          return false;
+        }
+        if (!start) {
+          (0,_info_messages__WEBPACK_IMPORTED_MODULE_2__.printMessage)("Need fill time start", 'danger', 5000);
           return false;
         }
         if (stopTypeValue === '') {
@@ -3950,7 +4054,13 @@ var addShipperPointInit = function addShipperPointInit() {
         if (stopTypeValue === 'pick_up_location') {
           typeDelivery = 'Pick Up';
         }
-        var template = "\n                <div class=\"row js-current-shipper card-shipper\">\n                    <div class=\"d-none\">\n                        <input type=\"hidden\" class=\"js-current-shipper_address_id\" name=\"".concat(stopTypeValue, "_address_id[]\" value=\"").concat(addressValueID, "\" >\n                        <input type=\"hidden\" class=\"js-current-shipper_address\" name=\"").concat(stopTypeValue, "_address[]\" value=\"").concat(addressValueFullAddrres, "\" >\n                        <input type=\"hidden\" class=\"js-current-shipper_short_address\" name=\"").concat(stopTypeValue, "_short_address[]\" value=\"").concat(addressValueShortAddrres, "\" >\n                        <input type=\"hidden\" class=\"js-current-shipper_contact\" name=\"").concat(stopTypeValue, "_contact[]\" value=\"").concat(contactValue, "\" >\n                        <input type=\"hidden\" class=\"js-current-shipper_date\" name=\"").concat(stopTypeValue, "_date[]\" value=\"").concat(dateValue, "\" >\n                        <input type=\"hidden\" class=\"js-current-shipper_info\" name=\"").concat(stopTypeValue, "_info[]\" value=\"").concat(infoValue, "\" >\n                        <input type=\"hidden\" class=\"js-current-shipper_type\" name=\"").concat(stopTypeValue, "_type[]\" value=\"").concat(stopTypeValue, "\" >\n                    </div>\n                    <div class=\"col-12 col-md-1\">").concat(typeDelivery, "</div>\n                    <div class=\"col-12 col-md-2\">").concat(dateValue, "</div>\n                    <div class=\"col-12 col-md-3\">").concat(addressValueFullAddrres, "</div>\n                    <div class=\"col-12 col-md-2\">").concat(contactValue, "</div>\n                    <div class=\"col-12 col-md-3\">").concat(infoValue, "</div>\n                    <div class=\"col-12 col-md-1 p-0 card-shipper__btns\">\n                        <button class=\"additional-card__edit js-edit-ship\">\n                            <svg width=\"668\" height=\"668\" viewBox=\"0 0 668 668\" fill=\"none\" xmlns=\"http://www.w3.org/2000/svg\">\n                                <path d=\"M640.46 27.5413C676.29 63.3746 676.29 121.472 640.46 157.305L623.94 173.823C619.13 172.782 613.073 171.196 606.17 168.801C587.693 162.391 563.41 150.276 540.567 127.433C517.723 104.591 505.61 80.3076 499.2 61.8299C496.803 54.9269 495.22 48.8696 494.177 44.0596L510.697 27.5413C546.53 -8.29175 604.627 -8.29175 640.46 27.5413Z\" fill=\"#1C274C\"/>\n                                <path d=\"M420.003 377.76C406.537 391.227 399.803 397.96 392.377 403.753C383.62 410.583 374.143 416.44 364.117 421.22C355.617 425.27 346.583 428.28 328.513 434.303L233.236 466.063C224.345 469.027 214.542 466.713 207.915 460.087C201.287 453.457 198.973 443.657 201.937 434.763L233.696 339.487C239.719 321.417 242.73 312.383 246.781 303.883C251.56 293.857 257.416 284.38 264.248 275.623C270.04 268.197 276.773 261.465 290.24 247.998L454.11 84.1284C462.9 107.268 478.31 135.888 505.21 162.789C532.113 189.69 560.733 205.099 583.873 213.891L420.003 377.76Z\" fill=\"#1C274C\"/>\n                                <path d=\"M618.517 618.516C667.333 569.703 667.333 491.133 667.333 334C667.333 282.39 667.333 239.258 665.603 202.87L453.533 414.943C441.823 426.656 433.027 435.456 423.127 443.176C411.507 452.243 398.933 460.013 385.627 466.353C374.293 471.756 362.487 475.686 346.777 480.92L249.048 513.496C222.189 522.45 192.578 515.46 172.559 495.44C152.54 475.423 145.55 445.81 154.503 418.953L187.078 321.223C192.312 305.513 196.244 293.706 201.645 282.373C207.986 269.066 215.757 256.493 224.822 244.871C232.543 234.972 241.344 226.176 253.058 214.468L465.13 2.39583C428.743 0.6665 385.61 0.666504 334 0.666504C176.865 0.666504 98.2977 0.6665 49.4824 49.4822C0.666744 98.2975 0.666748 176.865 0.666748 334C0.666748 491.133 0.666744 569.703 49.4824 618.516C98.2977 667.333 176.865 667.333 334 667.333C491.133 667.333 569.703 667.333 618.517 618.516Z\" fill=\"#1C274C\"/>\n                            </svg>\n                        </button>\n                        <button class=\"additional-card__remove js-remove-ship\">\n                            <svg width=\"668\" height=\"668\" viewBox=\"0 0 668 668\" fill=\"none\" xmlns=\"http://www.w3.org/2000/svg\">\n                                <path fill-rule=\"evenodd\" clip-rule=\"evenodd\" d=\"M334 667.333C176.865 667.333 98.2976 667.333 49.4823 618.516C0.666622 569.703 0.666626 491.133 0.666626 334C0.666626 176.865 0.666622 98.2975 49.4823 49.4822C98.2976 0.6665 176.865 0.666504 334 0.666504C491.133 0.666504 569.703 0.6665 618.517 49.4822C667.333 98.2975 667.333 176.865 667.333 334C667.333 491.133 667.333 569.703 618.517 618.516C569.703 667.333 491.133 667.333 334 667.333ZM232.988 232.989C242.751 223.226 258.581 223.226 268.343 232.989L334 298.646L399.653 232.99C409.417 223.227 425.247 223.227 435.01 232.99C444.773 242.753 444.773 258.582 435.01 268.343L369.353 334L435.01 399.656C444.773 409.416 444.773 425.246 435.01 435.01C425.247 444.773 409.417 444.773 399.653 435.01L334 369.357L268.343 435.01C258.581 444.773 242.752 444.773 232.989 435.01C223.226 425.246 223.226 409.42 232.989 399.656L298.643 334L232.988 268.343C223.225 258.581 223.225 242.752 232.988 232.989Z\" fill=\"#1C274C\"/>\n                            </svg>\n                        </button>\n                    </div>\n                </div>\n                ");
+        var time = '';
+        if (strict === 'false' || !strict) {
+          time = "".concat(start, " - ").concat(end);
+        } else {
+          time = "".concat(start, " - strict");
+        }
+        var template = "\n                <div class=\"row js-current-shipper card-shipper\">\n                    <div class=\"d-none\">\n                        <input type=\"hidden\" class=\"js-current-shipper_address_id\" name=\"".concat(stopTypeValue, "_address_id[]\" value=\"").concat(addressValueID, "\" >\n                        <input type=\"hidden\" class=\"js-current-shipper_address\" name=\"").concat(stopTypeValue, "_address[]\" value=\"").concat(addressValueFullAddrres, "\" >\n                        <input type=\"hidden\" class=\"js-current-shipper_short_address\" name=\"").concat(stopTypeValue, "_short_address[]\" value=\"").concat(addressValueShortAddrres, "\" >\n                        <input type=\"hidden\" class=\"js-current-shipper_contact\" name=\"").concat(stopTypeValue, "_contact[]\" value=\"").concat(contactValue, "\" >\n                        <input type=\"hidden\" class=\"js-current-shipper_date\" name=\"").concat(stopTypeValue, "_date[]\" value=\"").concat(dateValue, "\" >\n                        <input type=\"hidden\" class=\"js-current-shipper_info\" name=\"").concat(stopTypeValue, "_info[]\" value=\"").concat(infoValue, "\" >\n                        <input type=\"hidden\" class=\"js-current-shipper_type\" name=\"").concat(stopTypeValue, "_type[]\" value=\"").concat(stopTypeValue, "\" >\n                        <input type=\"hidden\" class=\"js-current-shipper_start\" name=\"").concat(stopTypeValue, "_start[]\" value=\"").concat(start, "\">\n                        <input type=\"hidden\" class=\"js-current-shipper_end\" name=\"").concat(stopTypeValue, "_end[]\" value=\"").concat(end, "\">\n                        <input type=\"hidden\" class=\"js-current-shipper_strict\" name=\"").concat(stopTypeValue, "_strict[]\" value=\"").concat(strict, "\">\n                    </div>\n                    <div class=\"col-12 col-md-1\">").concat(typeDelivery, "</div>\n                    <div class=\"col-12 col-md-2\">\n                         <div class=\"d-flex flex-column\">\n                                <p class=\"m-0\">").concat(dateValue, "</p>\n                                <span class=\"small-text\">\n                                    ").concat(time, "\n                                </span>\n                            </div>\n                    </div>\n                    <div class=\"col-12 col-md-3\">").concat(addressValueFullAddrres, "</div>\n                    <div class=\"col-12 col-md-2\">").concat(contactValue, "</div>\n                    <div class=\"col-12 col-md-3\">").concat(infoValue, "</div>\n                    <div class=\"col-12 col-md-1 p-0 card-shipper__btns\">\n                        <button class=\"additional-card__edit js-edit-ship\">\n                            <svg width=\"668\" height=\"668\" viewBox=\"0 0 668 668\" fill=\"none\" xmlns=\"http://www.w3.org/2000/svg\">\n                                <path d=\"M640.46 27.5413C676.29 63.3746 676.29 121.472 640.46 157.305L623.94 173.823C619.13 172.782 613.073 171.196 606.17 168.801C587.693 162.391 563.41 150.276 540.567 127.433C517.723 104.591 505.61 80.3076 499.2 61.8299C496.803 54.9269 495.22 48.8696 494.177 44.0596L510.697 27.5413C546.53 -8.29175 604.627 -8.29175 640.46 27.5413Z\" fill=\"#1C274C\"/>\n                                <path d=\"M420.003 377.76C406.537 391.227 399.803 397.96 392.377 403.753C383.62 410.583 374.143 416.44 364.117 421.22C355.617 425.27 346.583 428.28 328.513 434.303L233.236 466.063C224.345 469.027 214.542 466.713 207.915 460.087C201.287 453.457 198.973 443.657 201.937 434.763L233.696 339.487C239.719 321.417 242.73 312.383 246.781 303.883C251.56 293.857 257.416 284.38 264.248 275.623C270.04 268.197 276.773 261.465 290.24 247.998L454.11 84.1284C462.9 107.268 478.31 135.888 505.21 162.789C532.113 189.69 560.733 205.099 583.873 213.891L420.003 377.76Z\" fill=\"#1C274C\"/>\n                                <path d=\"M618.517 618.516C667.333 569.703 667.333 491.133 667.333 334C667.333 282.39 667.333 239.258 665.603 202.87L453.533 414.943C441.823 426.656 433.027 435.456 423.127 443.176C411.507 452.243 398.933 460.013 385.627 466.353C374.293 471.756 362.487 475.686 346.777 480.92L249.048 513.496C222.189 522.45 192.578 515.46 172.559 495.44C152.54 475.423 145.55 445.81 154.503 418.953L187.078 321.223C192.312 305.513 196.244 293.706 201.645 282.373C207.986 269.066 215.757 256.493 224.822 244.871C232.543 234.972 241.344 226.176 253.058 214.468L465.13 2.39583C428.743 0.6665 385.61 0.666504 334 0.666504C176.865 0.666504 98.2977 0.6665 49.4824 49.4822C0.666744 98.2975 0.666748 176.865 0.666748 334C0.666748 491.133 0.666744 569.703 49.4824 618.516C98.2977 667.333 176.865 667.333 334 667.333C491.133 667.333 569.703 667.333 618.517 618.516Z\" fill=\"#1C274C\"/>\n                            </svg>\n                        </button>\n                        <button class=\"additional-card__remove js-remove-ship\">\n                            <svg width=\"668\" height=\"668\" viewBox=\"0 0 668 668\" fill=\"none\" xmlns=\"http://www.w3.org/2000/svg\">\n                                <path fill-rule=\"evenodd\" clip-rule=\"evenodd\" d=\"M334 667.333C176.865 667.333 98.2976 667.333 49.4823 618.516C0.666622 569.703 0.666626 491.133 0.666626 334C0.666626 176.865 0.666622 98.2975 49.4823 49.4822C98.2976 0.6665 176.865 0.666504 334 0.666504C491.133 0.666504 569.703 0.6665 618.517 49.4822C667.333 98.2975 667.333 176.865 667.333 334C667.333 491.133 667.333 569.703 618.517 618.516C569.703 667.333 491.133 667.333 334 667.333ZM232.988 232.989C242.751 223.226 258.581 223.226 268.343 232.989L334 298.646L399.653 232.99C409.417 223.227 425.247 223.227 435.01 232.99C444.773 242.753 444.773 258.582 435.01 268.343L369.353 334L435.01 399.656C444.773 409.416 444.773 425.246 435.01 435.01C425.247 444.773 409.417 444.773 399.653 435.01L334 369.357L268.343 435.01C258.581 444.773 242.752 444.773 232.989 435.01C223.226 425.246 223.226 409.42 232.989 399.656L298.643 334L232.988 268.343C223.225 258.581 223.225 242.752 232.988 232.989Z\" fill=\"#1C274C\"/>\n                            </svg>\n                        </button>\n                    </div>\n                </div>\n                ");
         if (stopTypeValue === 'pick_up_location') {
           shipperContacts.innerHTML = template + shipperContacts.innerHTML;
         } else {
@@ -3962,11 +4072,15 @@ var addShipperPointInit = function addShipperPointInit() {
         date.value = '';
         info.value = '';
         addressSearch.value = '';
+        dateStart.value = '';
+        dateEnd.value = '';
+        dateStrict.checked = false;
         var btnAdd = document.querySelector('.js-add-ship');
         var btnEdit = document.querySelector('.js-end-edit-ship');
         addActionsDeleteUniversalCard('.js-remove-ship', '.js-current-shipper');
         editShipperStopInit();
         if (btnAdd && btnEdit && target.classList.contains('js-end-edit-ship')) {
+          form.classList.remove('edit-now');
           btnAdd.classList.remove('d-none');
           btnEdit.classList.add('d-none');
           console.log(btnAdd, btnEdit, target.classList.contains('js-end-edit-ship'));
@@ -4045,6 +4159,45 @@ var updateStatusPost = function updateStatusPost(ajaxUrl) {
         (0,_info_messages__WEBPACK_IMPORTED_MODULE_2__.printMessage)("Request failed: ".concat(error), 'danger', 8000);
         console.error('Request failed:', error);
       });
+    });
+  });
+};
+var quickEditInit = function quickEditInit(ajaxUrl) {
+  var form = document.querySelector('.js-quick-edit');
+  form && form.addEventListener('submit', function (event) {
+    event.preventDefault();
+    var selectLoads = document.querySelectorAll('.js-select-load');
+    var selectedValues = Array.from(selectLoads).filter(function (checkbox) {
+      return checkbox.checked;
+    }).map(function (checkbox) {
+      return checkbox.value;
+    }).join(',');
+    console.log('Selected values:', selectedValues);
+    var formData = new FormData(event.target);
+    var action = 'quick_update_post';
+    if (!selectedValues) {
+      (0,_info_messages__WEBPACK_IMPORTED_MODULE_2__.printMessage)('Posts id not select', 'danger', 8000);
+      return;
+    }
+    formData.append('action', action);
+    formData.append('post_ids', selectedValues);
+    var options = {
+      method: 'POST',
+      body: formData
+    };
+    fetch(ajaxUrl, options).then(function (res) {
+      return res.json();
+    }).then(function (requestStatus) {
+      if (requestStatus.success) {
+        (0,_info_messages__WEBPACK_IMPORTED_MODULE_2__.printMessage)(requestStatus.data.message, 'success', 8000);
+        var container = document.querySelector('.js-update-status');
+        window.location.reload();
+      } else {
+        (0,_info_messages__WEBPACK_IMPORTED_MODULE_2__.printMessage)(requestStatus.data.message, 'danger', 8000);
+      }
+    }).catch(function (error) {
+      (0,_info_messages__WEBPACK_IMPORTED_MODULE_2__.printMessage)("Request failed: ".concat(error), 'danger', 8000);
+      console.error('Request failed:', error);
     });
   });
 };
@@ -4331,6 +4484,7 @@ function printMessage() {
 "use strict";
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   checboxesHelperInit: function() { return /* binding */ checboxesHelperInit; },
 /* harmony export */   initMoneyMask: function() { return /* binding */ initMoneyMask; }
 /* harmony export */ });
 /* harmony import */ var imask__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! imask */ "../../../node_modules/imask/esm/index.js");
@@ -4361,6 +4515,12 @@ function initMoneyMask() {
   var allValueInput = document.querySelector('.js-all-value');
   var driverValueInput = document.querySelector('.js-driver-value');
   var moneyTotalInput = document.querySelector('.js-money-total');
+  var processingFeesInput = document.querySelector('.js-processing_fees');
+  var typePayInput = document.querySelector('.js-type_pay');
+  var percentQuickPayInput = document.querySelector('.js-percent_quick_pay');
+  var processingInput = document.querySelector('.js-processing');
+  var tbd = document.querySelector('.js-tbd');
+  var modifiPrice = document.querySelector('.js-update-mod-price');
   if (moneyTotalInput) {
     var moneyTotalMask = (0,imask__WEBPACK_IMPORTED_MODULE_0__["default"])(moneyTotalInput, maskOptions);
     function formatNumber(value) {
@@ -4384,14 +4544,75 @@ function initMoneyMask() {
       }
       var allValue = parseNumber(allValueInput.value);
       var driverValue = parseNumber(driverValueInput.value);
-      var remaining = allValue - driverValue;
-      moneyTotalMask.value = remaining.toString();
+      var processingFees = parseFloat(processingFeesInput.value) || 0;
+      var typePay = typePayInput.value;
+      var percentQuickPay = parseFloat(percentQuickPayInput.value) || 0;
+      var processing = processingInput.value;
+      console.log('values', processingFees, typePay, percentQuickPay, processing);
+      if (processing === 'direct') {
+        if (typePay === 'quick-pay' && percentQuickPay > 0) {
+          var quickPayDiscount = allValue * (percentQuickPay / 100);
+          console.log('% quickPayDiscount', quickPayDiscount);
+          allValue -= quickPayDiscount;
+        }
+        allValue -= processingFees;
+        if (modifiPrice) {
+          modifiPrice.innerHTML = "$".concat(allValue, " <span class=\"text-small\"> price including quick pay  ").concat(percentQuickPay, "% and processing fees $").concat(processingFees, "</span>");
+        }
+      }
+      if (tbd.checked) {
+        moneyTotalMask.value = '0';
+      } else {
+        var remaining = allValue - driverValue;
+        moneyTotalMask.value = remaining.toString();
+      }
     }
     if (allValueInput && driverValueInput) {
       allValueInput.addEventListener('input', calculateRemaining);
       driverValueInput.addEventListener('input', calculateRemaining);
+      tbd && tbd.addEventListener('change', function (event) {
+        event.preventDefault();
+        var target = event.target;
+        var inputDriver = document.querySelector('.js-container-number input');
+        var inputDriverPhone = document.querySelector('.js-phone-driver');
+        var inputDriverValue = document.querySelector('.js-driver-value');
+        var inputTotal = document.querySelector('.js-money-total');
+        if (!inputDriver || !inputDriverPhone || !inputDriverValue) return;
+        if (target) {
+          if (target.checked) {
+            inputDriver.value = 'TBD';
+            inputDriverPhone.value = 'TBD';
+            inputDriverValue.value = '0';
+            inputTotal.value = '0';
+            inputDriver.setAttribute('readonly', 'readonly');
+            inputDriverPhone.setAttribute('readonly', 'readonly');
+            inputDriverValue.setAttribute('readonly', 'readonly');
+            inputTotal.setAttribute('readonly', 'readonly');
+          } else {
+            var driverVal = inputDriver.getAttribute('data-value');
+            var driverPhoneVal = inputDriverPhone.getAttribute('data-value');
+            inputDriver.value = driverVal === 'TBD' ? '' : driverVal;
+            inputDriverPhone.value = driverPhoneVal === 'TBD' ? '' : driverPhoneVal;
+            inputDriverValue.value = inputDriverValue.getAttribute('data-value');
+            inputTotal.value = inputTotal.getAttribute('data-value');
+            inputDriver.removeAttribute('readonly');
+            inputDriverPhone.removeAttribute('readonly');
+            inputDriverValue.removeAttribute('readonly');
+            calculateRemaining();
+          }
+        }
+      });
     }
   }
+}
+function checboxesHelperInit() {
+  var allInputsSelect = document.querySelector('.js-select-load-all');
+  var allInputs = document.querySelectorAll('.js-select-load');
+  allInputsSelect && allInputsSelect.addEventListener('change', function (event) {
+    allInputs && allInputs.forEach(function (item) {
+      item.checked = allInputsSelect.checked;
+    });
+  });
 }
 
 /***/ }),
@@ -14600,6 +14821,8 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _components_auto_fill_address__WEBPACK_IMPORTED_MODULE_13__ = __webpack_require__(/*! ./components/auto-fill-address */ "./src/js/components/auto-fill-address.ts");
 /* harmony import */ var _components_auth_users__WEBPACK_IMPORTED_MODULE_14__ = __webpack_require__(/*! ./components/auth-users */ "./src/js/components/auth-users.ts");
 /* harmony import */ var _components_filter_clean__WEBPACK_IMPORTED_MODULE_15__ = __webpack_require__(/*! ./components/filter-clean */ "./src/js/components/filter-clean.ts");
+/* harmony import */ var _components_chow_hidden_value__WEBPACK_IMPORTED_MODULE_16__ = __webpack_require__(/*! ./components/chow-hidden-value */ "./src/js/components/chow-hidden-value.ts");
+
 
 
 
@@ -14642,7 +14865,9 @@ function ready() {
   (0,_components_change_table__WEBPACK_IMPORTED_MODULE_9__.changeTableInit)(urlAjax);
   (0,_components_auth_users__WEBPACK_IMPORTED_MODULE_14__.AuthUsersInit)(urlAjax);
   (0,_components_create_report__WEBPACK_IMPORTED_MODULE_3__.updateBillingReportInit)(urlAjax);
+  (0,_components_create_report__WEBPACK_IMPORTED_MODULE_3__.updateAccountingReportInit)(urlAjax);
   (0,_components_create_report__WEBPACK_IMPORTED_MODULE_3__.fullRemovePost)(urlAjax);
+  (0,_components_create_report__WEBPACK_IMPORTED_MODULE_3__.quickEditInit)(urlAjax);
   (0,_components_driver_Info__WEBPACK_IMPORTED_MODULE_10__.initGetInfoDriver)(useServices);
   (0,_components_create_report__WEBPACK_IMPORTED_MODULE_3__.additionalContactsInit)();
   (0,_components_toggle_blocks_init__WEBPACK_IMPORTED_MODULE_8__.toggleBlocksInit)();
@@ -14654,6 +14879,8 @@ function ready() {
   (0,_components_sidebar_init__WEBPACK_IMPORTED_MODULE_12__.toggleSidebarInit)();
   (0,_components_auto_fill_address__WEBPACK_IMPORTED_MODULE_13__.autoFillAddress)(hereApi);
   (0,_components_filter_clean__WEBPACK_IMPORTED_MODULE_15__.cleanUrlByFilter)();
+  (0,_components_chow_hidden_value__WEBPACK_IMPORTED_MODULE_16__.showHiddenValueInit)();
+  (0,_components_input_helpers__WEBPACK_IMPORTED_MODULE_2__.checboxesHelperInit)();
   var preloaders = document.querySelectorAll('.js-preloader');
   preloaders && preloaders.forEach(function (item) {
     item.remove();

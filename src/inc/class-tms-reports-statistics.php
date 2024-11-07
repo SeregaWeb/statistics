@@ -192,8 +192,7 @@ class  TMSStatistics extends TMSReportsHelper {
 		
 		// Выполняем запрос и получаем результаты
 		$dispatcher_stats = $wpdb->get_results($query, ARRAY_A);
-		
-		if (is_array($dispatcher_stats)) {
+		if (is_array($dispatcher_stats) && !empty($dispatcher_stats)) {
 			foreach ($dispatcher_stats as $key => $disp) {
 				$names = $this->get_user_full_name_by_id($disp['dispatcher_initials']);
 				$goal = get_field('monthly_goal', 'user_'.$disp['dispatcher_initials']);
@@ -208,9 +207,80 @@ class  TMSStatistics extends TMSReportsHelper {
 				
 				$dispatcher_stats[$key]['goal'] = $goal;
 			}
+		} else {
+			if ($user_id) {
+				$names = $this->get_user_full_name_by_id($user_id);
+				$goal = get_field('monthly_goal', 'user_'.$user_id);
+				
+				if ($names) {
+					$dispatcher_stats[0]['dispatcher_initials'] = $names['full_name'];
+				}
+				
+				if (!$goal) {
+					$goal = 0;
+				}
+				
+				$dispatcher_stats[0]['goal'] = $goal;
+				$dispatcher_stats[0]['post_count'] = 0;
+				$dispatcher_stats[0]['total_profit'] = 0;
+				$dispatcher_stats[0]['average_profit'] = 0;
+			}
 		}
 		
 		return $dispatcher_stats;
+	}
+	
+	
+	public function get_monthly_fuctoring_stats( $year, $month ) {
+		global $wpdb;
+		$table_reports = $wpdb->prefix . $this->table_main;
+		$table_meta    = $wpdb->prefix . $this->table_meta;
+		
+		// Prepare query with necessary joins for each meta field
+		$query = $wpdb->prepare( "
+        SELECT
+            COUNT(DISTINCT reports.id) AS post_count,
+            SUM(CAST(booked_rate.meta_value AS DECIMAL(10,2))) AS total_booked_rate,
+            SUM(CAST(profit.meta_value AS DECIMAL(10,2))) AS total_profit,
+            SUM(CAST(driver_rate.meta_value AS DECIMAL(10,2))) AS total_driver_rate,
+            SUM(CAST(true_profit.meta_value AS DECIMAL(10,2))) AS total_true_profit,
+            AVG(CAST(profit.meta_value AS DECIMAL(10,2))) AS average_profit
+        FROM $table_reports reports
+        INNER JOIN $table_meta profit ON reports.id = profit.post_id AND profit.meta_key = 'profit'
+        INNER JOIN $table_meta booked_rate ON reports.id = booked_rate.post_id AND booked_rate.meta_key = 'booked_rate'
+        INNER JOIN $table_meta driver_rate ON reports.id = driver_rate.post_id AND driver_rate.meta_key = 'driver_rate'
+        INNER JOIN $table_meta true_profit ON reports.id = true_profit.post_id AND true_profit.meta_key = 'true_profit'
+        WHERE YEAR(reports.date_booked) = %d
+          AND MONTH(reports.date_booked) = %d
+          AND reports.status_post = 'publish'
+    ", $year, $month );
+		
+		// Execute the query
+		$results = $wpdb->get_results( $query, ARRAY_A );
+		
+		// Initialize the result array
+		$monthly_stats = [
+			'month'          => $month,
+			'post_count'     => 0,
+			'total_booked_rate' => 0.00,
+			'total_profit'   => 0.00,
+			'total_driver_rate' => 0.00,
+			'total_true_profit' => 0.00,
+			'average_profit' => 0.00
+		];
+		
+		// Populate the result with actual data if available
+		if (!empty($results) && isset($results[0])) {
+			$monthly_stats['post_count'] = $results[0]['post_count'] ?? 0;
+			$monthly_stats['total_booked_rate'] = $results[0]['total_booked_rate'] ?? 0.00;
+			$monthly_stats['total_profit'] = $results[0]['total_profit'] ?? 0.00;
+			$monthly_stats['total_driver_rate'] = $results[0]['total_driver_rate'] ?? 0.00;
+			$monthly_stats['total_true_profit'] = $results[0]['total_true_profit'] ?? 0.00;
+			$monthly_stats['average_profit'] = $results[0]['average_profit'] ?? 0.00;
+		}
+		
+		// Return the monthly statistics
+		return $monthly_stats;
 	}
 	
 }

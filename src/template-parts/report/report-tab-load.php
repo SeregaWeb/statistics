@@ -93,6 +93,10 @@ $read_only = $TMSUsers->check_read_only($post_status);
         <input type="hidden" name="post_id" value="<?php echo $post_id; ?>">
 	<?php endif; ?>
     
+    <?php if ($post_status): ?>
+        <input type="hidden" name="post_status" value="<?php echo $post_status; ?>">
+    <?php endif; ?>
+    
     <div class="row">
         <h3 class="display-6 mb-4">Load info</h3>
 
@@ -145,6 +149,7 @@ $read_only = $TMSUsers->check_read_only($post_status);
                 <?php endif;?>
 
                 <input type="hidden" class="js-old_value_booked_rate" name="old_value_booked_rate" value="<?php echo $booked_rate; ?>">
+            
                 <input type="hidden" class="js-processing_fees"  name="processing_fees" value="<?php echo $processing_fees; ?>">
                 <input type="hidden" class="js-type_pay"  name="type_pay" value="<?php echo $type_pay_method; ?>">
                 <input type="hidden" class="js-percent_quick_pay" name="percent_quick_pay" value="<?php echo $percent_quick_pay; ?>">
@@ -176,6 +181,8 @@ $read_only = $TMSUsers->check_read_only($post_status);
 				<?php endif ?>
             </select>
             <?php endif; ?>
+
+            <input type="hidden" name="old_load_status" value="<?php echo $load_status; ?>">
         </div>
 
         <div class="mb-2 col-12 col-md-6 col-xl-4">
@@ -329,6 +336,7 @@ $read_only = $TMSUsers->check_read_only($post_status);
             <input type="text" name="unit_number_name" <?php echo $tbd ? 'readonly' : ''; ?> data-value="<?php echo $unit_number_name; ?>" value="<?php echo $unit_number_name; ?>" class="form-control" required>
             <button class="btn btn-primary js-fill-driver">Fill</button>
             </div>
+            <input type="hidden" name="old_unit_number_name" value="<?php echo $unit_number_name; ?>" >
         </div>
 
         <div class="mb-2 col-12 col-md-6 col-xl-4">
@@ -362,6 +370,7 @@ $read_only = $TMSUsers->check_read_only($post_status);
         <div class="mb-2 col-12 col-md-6 col-xl-4">
             <label for="pick_up_date" class="form-label">Pick Up Date</label>
             <input type="date" name="pick_up_date" value="<?php echo $pick_up_date_formatted; ?>" class="form-control" required>
+            <input type="hidden" name="old_pick_up_date" value="<?php echo $pick_up_date_formatted; ?>">
         </div>
         
         <div class="mb-2 col-12 col-md-6 col-xl-4">

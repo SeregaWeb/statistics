@@ -14,16 +14,21 @@ $billing_info = $TMSUsers->check_user_role_access(array('administrator', 'billin
 if ( $report_object ) {
 	$values = $report_object;
 	$meta   = get_field_value( $values, 'meta' );
+	$main   = get_field_value( $values, 'main' );
 	
 	$full_view_only = get_field_value( $args, 'full_view_only' );
 	
 	if ( is_array( $values ) && sizeof( $values ) > 0 ) {
 		
+		$post_status         = get_field_value( $main, 'status_post' );
+  
 		// tab documents start
 		$required_file    = get_field_value( $meta, 'attached_file_required' );
 		$others_files     = get_field_value( $meta, 'attached_files' );
 		$update_rate_conf = get_field_value( $meta, 'updated_rate_confirmation' );
 		$screen_picture   = get_field_value( $meta, 'screen_picture' );
+		$reference_number    = get_field_value($meta, 'reference_number');
+  
 		
 		$required_file_arr    = false;
 		$others_files_arr     = false;
@@ -132,9 +137,11 @@ if ( $report_object ) {
 					<?php endif; ?>
 
                 </figure>
+                <input type="hidden" name="status_post" value="<?php echo $post_status ?>">
                 <input type="hidden" name="image-id" value="<?php echo $required_file_arr[ 'id' ]; ?>">
                 <input type="hidden" name="image-fields" value="attached_file_required">
                 <input type="hidden" name="post_id" value="<?php echo $post_id; ?>">
+                <input type="hidden" name="reference_number" value="<?php echo $reference_number; ?>">
 				
 				<?php if ( ! $full_view_only ): ?>
                     <button class="card-upload__btn card-upload__btn--remove" type="submit">

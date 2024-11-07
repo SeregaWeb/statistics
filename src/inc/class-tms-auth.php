@@ -46,6 +46,8 @@ class  TMSAuth {
 			wp_send_json_error( [ 'message' => 'Email and password are required' ] );
 		}
 		
+		$emails_helper = new TMSEmails();
+		
 		$email = sanitize_email( $_POST['email'] );
 		$password = sanitize_text_field( $_POST['password'] );
 		
@@ -61,9 +63,13 @@ class  TMSAuth {
 		// Сохранение кода в транзиент на 15 минут
 		set_transient( 'auth_code_' . $user->ID, $code, 15 * MINUTE_IN_SECONDS );
 		
-		// Отправка email с кодом
-		wp_mail( $email, 'Your Verification Code', 'Your verification code is: ' . $code );
-		wp_send_json_success( [ 'message' => 'Verification code sent to your email', 'code' => $code ] );
+		$emails_helper->send_custom_email($email, array(
+			'subject' => 'Verification code',
+			'project_name' => '',
+			'subtitle' => '',
+			'message' => 'you varification code: ' . $code,
+		));
+		wp_send_json_success( [ 'message' => 'Verification code sent to your email' ] );
 	}
 	
 }

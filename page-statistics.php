@@ -289,6 +289,7 @@ if (!$active_item) {
                                         
 				                        $goal_completion = number_format($value_pr, 2);
                                         
+                                        
                                         if ($value_pr > 0 && $value_pr <= 80) {
 	                                        $compleat_color = '#ff0000';
 	                                        $text_color = '#ffffff';
@@ -308,6 +309,8 @@ if (!$active_item) {
 		                        } else {
 			                        // Если данных по диспетчеру нет, выставляем 0 для всех полей
 			                        $post_count = 0;
+			                        $compleat_color = '#ff0000';
+			                        $text_color = '#ffffff';
 			                        $total_profit = number_format(0, 2);
 			                        $average_profit = number_format(0, 2);
 			                        $goal = 0;

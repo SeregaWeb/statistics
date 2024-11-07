@@ -5,6 +5,8 @@ $add_new_load = get_field_value( $global_options, 'add_new_load' );
 
 $TMSUsers   = new TMSUsers();
 $TMSShipper = new TMSReportsShipper();
+$TMSBroker = new TMSReportsCompany();
+$helper = new TMSReportsHelper();
 
 $results       = get_field_value( $args, 'results' );
 $total_pages   = get_field_value( $args, 'total_pages' );
@@ -25,29 +27,27 @@ $hide_billing_and_shipping = $TMSUsers->check_user_role_access( array( 'billing'
 
 $my_team = $TMSUsers->check_group_access();
 
-$helper = new TMSReportsHelper();
+
 
 if ( ! empty( $results ) ) : ?>
 
+    <div class="w-100 mb-3">
+        <button class="btn btn-outline-primary js-open-popup-activator" data-href="#popup_quick_edit_arr">Quick edit
+        </button>
+    </div>
     <table class="table mb-5 w-100">
         <thead>
         <tr>
-            <th scope="col">Date booked</th>
+            <th><input class="checkbox-big js-select-load-all" type="checkbox" name="select-all"></th>
             <th scope="col" title="dispatcher">Disp.</th>
             <th scope="col">Pick up location</th>
             <th scope="col">Delivery location</th>
-            <th scope="col">Unit & name</th>
-            <th scope="col">Booked rate</th>
-            <th scope="col">Driver rate</th>
-            <th scope="col">Profit</th>
+            <th scope="col">Gross</th>
+            <th scope="col">Broker</th>
             <th scope="col">Pick Up Date</th>
-            <th scope="col">Load status</th>
-            <th scope="col">Instructions</th>
-            <th scope="col">Source</th>
-			
-			<?php if ( $TMSUsers->check_user_role_access( array( 'recruiter' ) ) ): ?>
-                <th scope="col"></th>
-			<?php endif; ?>
+            <th scope="col">Delivery date</th>
+            <th>A/R aging</th>
+            <th scope="col"></th>
         </tr>
         </thead>
         <tbody>
@@ -69,25 +69,10 @@ if ( ! empty( $results ) ) : ?>
 				$dispatcher = array( 'full_name' => 'User not found', 'initials' => 'NF' );
 			}
 			
-			$load_status  = get_field_value( $meta, 'load_status' );
-			$status_label = $helper->get_label_by_key( $load_status, 'statuses' );
-			$status       = esc_html( $status_label );
-			
-			$date_booked_raw = get_field_value( $row, 'date_booked' );
-			$date_booked     = esc_html( date( 'm/d/Y', strtotime( $date_booked_raw ) ) );
-			
 			$reference_number = esc_html( get_field_value( $meta, 'reference_number' ) );
-			$unit_number_name = esc_html( get_field_value( $meta, 'unit_number_name' ) );
-			$driver_phone     = esc_html( get_field_value( $meta, 'driver_phone' ) );
 			
 			$booked_rate_raw = get_field_value( $meta, 'booked_rate' );
 			$booked_rate     = esc_html( '$' . str_replace( '.00', '', $booked_rate_raw ) );
-			
-			$driver_rate_raw = get_field_value( $meta, 'driver_rate' );
-			$driver_rate     = esc_html( '$' . str_replace( '.00', '', $driver_rate_raw ) );
-			
-			$profit_raw       = get_field_value( $meta, 'profit' );
-			$profit           = esc_html( '$' . str_replace( '.00', '', $profit_raw ) );
 			
 			$pick_up_date_raw = get_field_value( $row, 'pick_up_date' );
 			$pick_up_date     = esc_html( date( 'm/d/Y', strtotime( $pick_up_date_raw ) ) );
@@ -95,12 +80,16 @@ if ( ! empty( $results ) ) : ?>
 			$delivery_date_raw = get_field_value( $row, 'delivery_date' );
 			$delivery_date     = esc_html( date( 'm/d/Y', strtotime( $delivery_date_raw ) ) );
 			
-			$instructions_raw = get_field_value( $meta, 'instructions' );
-			$instructions     = $helper->get_label_by_key( $instructions_raw, 'instructions' );
-			$source_raw = get_field_value( $meta, 'source' );
-			$source     = esc_html( $helper->get_label_by_key( $source_raw, 'sources' ) );
+			$load_problem_raw = get_field_value( $row, 'load_problem' );
+			$date_problem     = new DateTime( $load_problem_raw );
+			$current_date     = new DateTime();
+			$interval         = $date_problem->diff( $current_date );
+			$days_passed      = $interval->days;
+			
+			$load_problem = esc_html( date( 'm/d/Y', strtotime( $load_problem_raw ) ) );
+			
 			$show_control = $TMSUsers->show_control_loads( $my_team, $current_user_id, $dispatcher_initials, $is_draft );
-			$status_class    = $load_status;
+			
 			
 			$modify_booked_price       = get_field_value( $meta, 'modify_price' );
 			$modify_booked_price_class = '';
@@ -109,13 +98,32 @@ if ( ! empty( $results ) ) : ?>
 				$modify_booked_price_class = 'modified-price';
 			}
 			
-			$bank_status       = 'Approved';
-			$driver_pay_status = 'Processing';
+			
+			$id_customer              = get_field_value( $meta, 'customer_id' );
+            $broker_info             = $TMSBroker->get_company_by_id($id_customer);
+			
+			$broker_name = '';
+			$broker_mc = '';
+            
+            if (isset($broker_info[0])) {
+	            $broker_name = $broker_info[0]->company_name;
+	            $broker_mc = $broker_info[0]->mc_number;
+            }
+            
+            
+            if ( ! $broker_mc ) {
+	            $broker_mc = "N/A";
+            }
+            
+            if (!$broker_name) {
+			    $broker_name = "N/A";
+            }
 			?>
 
             <tr class="">
-                    <td><label class="h-100 cursor-pointer"
-                               for="load-<?php echo $row[ 'id' ]; ?>"><?php echo $date_booked; ?></label></td>
+                <td><input type="checkbox" id="load-<?php echo $row[ 'id' ]; ?>" class="checkbox-big js-select-load"
+                           value="<?php echo $row[ 'id' ]; ?>" name="select-load">
+                </td>
                 <td>
                     <div class="d-flex gap-1 flex-column">
                         <p class="m-0">
@@ -169,68 +177,50 @@ if ( ! empty( $results ) ) : ?>
 						<?php endforeach; ?>
 					<?php endif; ?>
                 </td>
-		
+
+                <td><span class="<?php echo $modify_booked_price_class; ?>"><?php echo $booked_rate; ?></span></td>
                 
                 <td>
-                    <div class="d-flex flex-column">
-                        <p class="m-0"><?php echo $unit_number_name; ?></p>
-                        <?php if ( $page_type === 'accounting' ) { ?>
-                            <span class="text-small">
-                            <?php echo $driver_phone; ?>
-                        </span>
-                        <?php } ?>
+                    <div>
+                        <p class="m-0"><?php echo $broker_name; ?></p>
+                        <span class="text-small"><?php echo $broker_mc; ?></span>
                     </div>
                 </td>
-                
-                <td><span class="<?php echo $modify_booked_price_class; ?>"><?php echo $booked_rate; ?></span></td>
-        
-                <td><?php echo $driver_rate; ?></td>
-                    
-                <td><?php echo $profit; ?></td>
 
                 <td><?php echo $pick_up_date; ?></td>
-            
-                <td class="<?php echo $status_class; ?>"><span><?php echo $status; ?></span></td>
-                
+                <td><?php echo $delivery_date; ?></td>
+                <td><?php echo $days_passed; ?> days</td>
                 <td>
-                    <div class="table-list-icons"><?php echo $instructions; ?></div>
-                </td>
-                
-                <td><?php echo $source; ?></td>
-				
-				<?php if ( $TMSUsers->check_user_role_access( array( 'recruiter' ) ) ): ?>
-                    <td>
-						
-						<?php if ( $show_control ): ?>
+					
+					<?php if ( $show_control ): ?>
 
-                            <div class="dropdown">
-                                <button class="btn button-action" type="button" id="dropdownMenu2"
-                                        data-bs-toggle="dropdown"
-                                        aria-expanded="false">
-	                                <?php echo $helper->get_dropdown_load_icon(); ?>
-                                </button>
-                                <ul class="dropdown-menu" aria-labelledby="dropdownMenu2">
-									<?php if ( $TMSUsers->check_user_role_access( array( 'billing' ), true ) ) : ?>
-                                        <li><a href="<?php echo $add_new_load . '?post_id=' . $row[ 'id' ]; ?>"
-                                               class="dropdown-item">View</a></li>
-									<?php else: ?>
-                                        <li><a href="<?php echo $add_new_load . '?post_id=' . $row[ 'id' ]; ?>"
-                                               class="dropdown-item">Edit</a></li>
-									<?php endif; ?>
-									
-									<?php if ( $TMSUsers->check_user_role_access( array( 'administrator' ), true ) || $is_draft ): ?>
-                                        <li>
-                                            <button class="dropdown-item text-danger js-remove-load"
-                                                    data-id="<?php echo $row[ 'id' ]; ?>" type="button">Delete
-                                            </button>
-                                        </li>
-									<?php endif; ?>
-                                </ul>
-                            </div>
-						
-						<?php endif; ?>
-                    </td>
-				<?php endif; ?>
+                        <div class="dropdown">
+                            <button class="btn button-action" type="button" id="dropdownMenu2"
+                                    data-bs-toggle="dropdown"
+                                    aria-expanded="false">
+                                <?php echo $helper->get_dropdown_load_icon(); ?>
+                            </button>
+                            <ul class="dropdown-menu" aria-labelledby="dropdownMenu2">
+								<?php if ( $TMSUsers->check_user_role_access( array( 'billing' ), true ) ) : ?>
+                                    <li><a href="<?php echo $add_new_load . '?post_id=' . $row[ 'id' ]; ?>"
+                                           class="dropdown-item">View</a></li>
+								<?php else: ?>
+                                    <li><a href="<?php echo $add_new_load . '?post_id=' . $row[ 'id' ]; ?>"
+                                           class="dropdown-item">Edit</a></li>
+								<?php endif; ?>
+								
+								<?php if ( $TMSUsers->check_user_role_access( array( 'administrator' ), true ) || $is_draft ): ?>
+                                    <li>
+                                        <button class="dropdown-item text-danger js-remove-load"
+                                                data-id="<?php echo $row[ 'id' ]; ?>" type="button">Delete
+                                        </button>
+                                    </li>
+								<?php endif; ?>
+                            </ul>
+                        </div>
+					
+					<?php endif; ?>
+                </td>
             </tr>
 		
 		<?php endforeach; ?>

@@ -6,6 +6,7 @@ $reports = new TMSReports();
 
 $invoices = $reports->get_invoices();
 $factoring_statuses = $reports->get_factoring_status();
+$ar_statuses = $reports->get_ar_statuses();
 
 $report_object = ! empty( $args[ 'report_object' ] ) ? $args[ 'report_object' ] : null;
 $post_id       = ! empty( $args[ 'post_id' ] ) ? $args[ 'post_id' ] : null;
@@ -27,7 +28,7 @@ if ( $report_object ) {
 	if ( is_array( $values ) && sizeof( $values ) > 0 ) {
 		
 		$load_problem           = get_field_value( $main, 'load_problem' );
-		$load_problem_formatted = date( 'Y-m-d', strtotime( $load_problem ) );
+		$load_problem_formatted = (!is_null($load_problem)) ? date( 'Y-m-d', strtotime( $load_problem ) ) : null;
         
         $factoring_status = get_field_value($meta, 'factoring_status');
         
@@ -45,6 +46,8 @@ if ( $report_object ) {
 		$driver_rate = get_field_value($meta, 'driver_rate');
 		$profit = get_field_value($meta, 'profit');
 		$tbd = get_field_value($meta, 'tbd');
+        
+        $ar_status = get_field_value($meta, 'ar_status');
         
         if (!$type_pay) {
 	        $type_pay = 'delayed-advance';
@@ -178,8 +181,34 @@ if ( $report_object ) {
         <div class="col-12"></div>
 
         <div class="mb-2 col-12 col-md-6 col-xl-4">
-            <label for="load_problem" class="form-label">A/R aging</label>
-            <input type="date" name="load_problem" value="<?php echo $load_problem_formatted; ?>" class="form-control">
+        <div class="form-check form-switch">
+            <input class="form-check-input" name="ar-action" type="checkbox" id="flexSwitchCheckChecked" checked>
+            <label class="form-check-label" for="flexSwitchCheckChecked">A/R actions</label>
+        </div>
+        </div>
+        
+        <div class="col-12">
+            <div class="row">
+                <div class="mb-2 col-12 col-md-6 col-xl-4">
+                    <label for="load_problem" class="form-label">Select invoice date</label>
+                    <input type="date" name="load_problem" value="<?php echo $load_problem_formatted; ?>" class="form-control">
+                </div>
+
+                <div class="mb-2 col-12 col-md-6 col-xl-4">
+                    <label for="factoring_status" class="form-label">Select status</label>
+                    <select name="factoring_status" class="form-control form-select js-show-hidden-values" data-required="true" data-value="short-pay" data-selector=".js-short-pay">
+			            <?php if ( is_array( $ar_statuses ) ): ?>
+				            <?php foreach ( $ar_statuses as $key => $status ): ?>
+                                <option <?php echo $ar_status === $key ? 'selected' : ''; ?> value="<?php echo $key; ?>">
+						            <?php echo $status; ?>
+                                </option>
+				            <?php endforeach; ?>
+			            <?php endif ?>
+                    </select>
+                </div>
+
+
+            </div>
         </div>
 
     <div class="col-12 mt-4 order-5" role="presentation">

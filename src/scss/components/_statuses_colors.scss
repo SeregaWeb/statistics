@@ -9,46 +9,69 @@ $color_accounting_unsubmitted: #ffff00;
 $color_accounting_others: #ff0000;
 
 
-
-
 .tonu,
 .cancelled {
-    background-color:$color_status_canceled !important;
-    color: #ffffff !important;
+    span {
+        padding: 5px;
+        background-color: $color_status_canceled !important;
+        color: #ffffff !important;
+    }
 }
 
 .waiting-on-rc {
-    background-color:$color_status_waiting !important;
-
+    span {
+        padding: 5px;
+        background-color: $color_status_waiting !important;
+    }
 }
 
 .at-del {
-    background-color: $color_status_dell !important;
+    span {
+        padding: 5px;
+        background-color: $color_status_dell !important;
+    }
 }
 
 .loaded-enroute {
-    background-color:$color_status_loaded !important;
+    span {
+        padding: 5px;
+        background-color: $color_status_loaded !important;
+    }
 }
 
 .delivered {
-    background-color: $color_status_delivery !important;
+    span {
+        padding: 5px;
+        background-color: $color_status_delivery !important;
+
+    }
 }
 
 
 .unsubmitted,
 .in-processing {
-    background-color: $color_accounting_unsubmitted !important;
+    span {
+        padding: 5px;
+        background-color: $color_accounting_unsubmitted !important;
+    }
 }
 
 .processed {
-    background-color: $color_accounting_processed !important;
+    span {
+        padding: 5px;
+
+        background-color: $color_accounting_processed !important;
+    }
 }
 
 .charge-back,
 .in-dispute,
 .requires-attention,
 .short-pay {
-    background-color: $color_accounting_others !important;
-    color: #ffffff !important;
+    span {
+        padding: 5px;
 
+        background-color: $color_accounting_others !important;
+        color: #ffffff !important;
+    }
 }

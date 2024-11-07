@@ -25,6 +25,7 @@ require THEME_DIR . '/src/inc/class-tms-users.php';
 require THEME_DIR . '/src/inc/class-tms-reports-statistics.php';
 require THEME_DIR . '/src/inc/class-tms-reports-company.php';
 require THEME_DIR . '/src/inc/class-tms-reports-shipper.php';
+require THEME_DIR . '/src/inc/class-tms-emails.php';
 
 require THEME_DIR . '/src/inc/initial-setup.php';
 require THEME_DIR . '/src/inc/enqueue-scripts.php';
@@ -164,7 +165,7 @@ if ( false ) {
 			'date_updated'    => current_time( 'mysql' ),
 			'pick_up_date'    => date( 'Y-m-d H:i:s', strtotime( '-' . rand( 1, 360 ) . ' days' ) ),
 			'date_booked'     => date( 'Y-m-d H:i:s', strtotime( '-' . rand( 1, 360 ) . ' days' ) ),
-			'load_problem'    => date( 'Y-m-d H:i:s', strtotime( '-' . rand( 1, 360 ) . ' days' ) ),
+			'load_problem'    => null,
 			'delivery_date'   => date( 'Y-m-d H:i:s', strtotime( '-' . rand( 1, 360 ) . ' days' ) ),
 			'status_post'     => 'publish',
 		];
@@ -251,6 +252,10 @@ function update_custom_post_meta_with_random_values() {
 	
 	echo "Мета-данные успешно обновлены для всех постов в кастомной таблице!";
 }
+//
+//global $wpdb;
+//$table_reports = $wpdb->prefix . 'reports_odysseia';
+//$wpdb->query("UPDATE $table_reports SET load_problem = NULL");
 
 // Вызов функции
 //update_custom_post_meta_with_random_values();

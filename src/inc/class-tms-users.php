@@ -52,27 +52,28 @@ class  TMSUsers extends TMSReportsHelper {
 		
 	}
 	
-	public function get_region($key) {
+	public function get_region( $key ) {
 		$array_labels = array(
 			'ua' => 'Ukraine',
 			'pl' => 'Poland',
 			'rm' => 'Remote',
 		);
 		
-		return $array_labels[$key];
+		return $array_labels[ $key ];
 	}
-	public function get_role_label ($key) {
+	
+	public function get_role_label( $key ) {
 		$array_labels = array(
-			'dispatcher' => 'Dispatcher',
+			'dispatcher'    => 'Dispatcher',
 			'dispatcher-tl' => 'Dispatcher Team Leader',
-			'tracking' => 'Tracking',
-			'billing' => 'Billing',
-			'recruiter' => 'Recruiter',
+			'tracking'      => 'Tracking',
+			'billing'       => 'Billing',
+			'recruiter'     => 'Recruiter',
 			'administrator' => 'Administrator',
-			'accounting' => 'Accounting',
+			'accounting'    => 'Accounting',
 		);
 		
-		return $array_labels[$key];
+		return $array_labels[ $key ];
 	}
 	
 	public function select_project() {
@@ -102,17 +103,17 @@ class  TMSUsers extends TMSReportsHelper {
 			$color_initials = get_field( 'initials_color', 'user_' . $user_id );
 			
 			$work_location = get_field( 'work_location', 'user_' . $user_id );
-			if (!$work_location) {
+			if ( ! $work_location ) {
 				$work_location = 'rm';
 			}
-			$work_location = $this->get_region($work_location);
+			$work_location = $this->get_region( $work_location );
 			
 			$role = '';
 			if ( ! empty( $user->roles ) ) {
-				$role = $this->get_role_label($user->roles[ 0 ]);
+				$role = $this->get_role_label( $user->roles[ 0 ] );
 			}
 			
-			$my_team = get_field('my_team', 'user_' . $user_id );
+			$my_team = get_field( 'my_team', 'user_' . $user_id );
 			
 			$view_tables = get_field( 'permission_view', 'user_' . $user_id );
 			
@@ -134,12 +135,12 @@ class  TMSUsers extends TMSReportsHelper {
 		
 	}
 	
-	public function check_user_role_access($roles = array(), $invert_logic = false) {
+	public function check_user_role_access( $roles = array(), $invert_logic = false ) {
 		// Получение текущего пользователя
 		$current_user = wp_get_current_user();
 		
 		// Проверка, есть ли роли у пользователя
-		if ( !empty( $current_user->roles ) ) {
+		if ( ! empty( $current_user->roles ) ) {
 			// Проходим по каждой роли пользователя
 			foreach ( $current_user->roles as $user_role ) {
 				if ( $invert_logic ) {
@@ -159,47 +160,59 @@ class  TMSUsers extends TMSReportsHelper {
 		return $invert_logic ? false : true; // Доступ в зависимости от логики
 	}
 	
-	public function check_group_access () {
-		$check_group = $this->check_user_role_access(array('dispatcher-tl', 'tracking'), true);
-		$my_team = null;
-		if ($check_group) {
+	public function check_group_access() {
+		$check_group = $this->check_user_role_access( array( 'dispatcher-tl', 'tracking' ), true );
+		$my_team     = null;
+		if ( $check_group ) {
 			$current_user_id = get_current_user_id();
-			$my_team = get_field( 'my_team', 'user_'.$current_user_id);
+			$my_team         = get_field( 'my_team', 'user_' . $current_user_id );
 		}
 		
 		return $my_team;
 	}
 	
-	public function check_user_in_my_group ($my_team, $id_user) {
+	public function check_user_in_my_group( $my_team, $id_user ) {
 		
-		if ($my_team === null) return false;
+		if ( $my_team === null ) {
+			return false;
+		}
 		
-		$in_team = array_search($id_user, $my_team);
-		return is_numeric($in_team);
+		$in_team = array_search( $id_user, $my_team );
+		
+		return is_numeric( $in_team );
 	}
 	
-	public function show_control_loads ($my_team, $current_user_id, $id_user, $is_draft) {
+	public function show_control_loads( $my_team, $current_user_id, $id_user, $is_draft ) {
 		
-		$allowed_role = $this->check_user_role_access( array( 'administrator', 'billing', 'accounting' ), true);
+		$allowed_role = $this->check_user_role_access( array( 'administrator', 'billing', 'accounting' ), true );
 		
-		if ($allowed_role || intval($current_user_id) === intval($id_user) || $is_draft) return true;
-
-		if (is_null($my_team)) return false;
+		if ( $allowed_role || intval( $current_user_id ) === intval( $id_user ) || $is_draft ) {
+			return true;
+		}
 		
-		return $this->check_user_in_my_group($my_team, $id_user);
+		if ( is_null( $my_team ) ) {
+			return false;
+		}
+		
+		return $this->check_user_in_my_group( $my_team, $id_user );
 	}
 	
-	public function check_read_only($post_status) {
+	public function check_read_only( $post_status ) {
 		
-		if ($post_status === 'draft') return false;
+		if ( $post_status === 'draft' ) {
+			return false;
+		}
 		
 		$read_only = false;
 		
 		if ( $this->check_user_role_access( array( 'billing' ), true ) ) {
 			$read_only = true;
 		}
-	
-		if ( $this->check_user_role_access( array( 'dispatcher', 'dispatcher-tl' ), true ) && $post_status === 'publish' ) {
+		
+		if ( $this->check_user_role_access( array(
+				'dispatcher',
+				'dispatcher-tl'
+			), true ) && $post_status === 'publish' ) {
 			$read_only = true;
 		}
 		

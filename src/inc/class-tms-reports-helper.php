@@ -2,7 +2,7 @@
 
 class TMSReportsHelper extends TMSReportsIcons {
 	
-	public $select           = array(
+	public $select = array(
 		"USA_LABEL" => array( "---United states (US)---" ),
 		"AL"        => "Alabama, AL",
 		"AK"        => "Alaska, AK",
@@ -107,10 +107,12 @@ class TMSReportsHelper extends TMSReportsIcons {
 		"YUC"       => "Yucatán, YUC",
 		"ZAC"       => "Zacatecas, ZAC",
 	);
-	public $invoices         = array(
-		'invoiced'          => 'Invoiced',
-		'not-invoiced'      => 'Not invoiced',
+	
+	public $invoices = array(
+		'invoiced'     => 'Invoiced',
+		'not-invoiced' => 'Not invoiced',
 	);
+	
 	public $factoring_status = array(
 		'unsubmitted'        => 'Unsubmitted',
 		'in-processing'      => 'In Processing',
@@ -193,6 +195,10 @@ class TMSReportsHelper extends TMSReportsIcons {
 		'Endurance'
 	);
 	
+	public $statuses_ar = array(
+		'not-solved'     => 'Not solved',
+		'solved'     => 'Solved',
+	);
 	public $set_up = array(
 		'completed'     => 'Completed',
 		'not_completed' => 'Not completed',
@@ -238,17 +244,45 @@ class TMSReportsHelper extends TMSReportsIcons {
 		return $dispatchers;
 	}
 	
+	function formatJsonForEmail($jsonString) {
+		$decodedArray = json_decode($jsonString, true);
+		
+		if ($decodedArray === null) {
+			return "JSON decoding error: " . json_last_error_msg();
+		}
+		
+		$output = "";
+		foreach ($decodedArray as $location) {
+			$output .= "Address: " . $location['address'] . "<br>";
+			$output .= "Contact: " . $location['contact'] . "<br>";
+			$output .= "Date: " . $location['date'] . "<br>";
+			$output .= "Information: " . $location['info'] . "<br>";
+			$output .= "Type: " . $location['type'] . "<br>";
+			$output .= "Start Time: " . ($location['time_start'] ?: 'not specified') . "<br>";
+			$output .= "End Time: " . ($location['time_end'] ?: 'not specified') . "<br>";
+			$output .= "Strict Time: " . ($location['strict_time'] ?: 'no') . "<br>";
+			$output .= "--------------------------<br>";
+		}
+		
+		return $output;
+	}
+    
+    
+    function get_ar_statuses () {
+        return $this->statuses_ar;
+    }
+	
 	function get_set_up_platform() {
 		return $this->set_up_platform;
 	}
-    
-    function get_bank_statuses() {
-	    return $this->bank_statuses;
-    }
-    
-    function get_driver_payment_statuses() {
-	    return $this->driver_payment_statuses;
-    }
+	
+	function get_bank_statuses() {
+		return $this->bank_statuses;
+	}
+	
+	function get_driver_payment_statuses() {
+		return $this->driver_payment_statuses;
+	}
 	
 	function get_set_up() {
 		return $this->set_up;

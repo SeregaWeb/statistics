@@ -1,6 +1,6 @@
 <?php
 /**
- * Template Name: Page loads accounting
+ * Template Name: Page loads accounting ar problem
  *
  * @package WP-rock
  * @since 4.4.0
@@ -12,27 +12,28 @@ $reports = new TMSReports();
 
 $args = array(
 	'status_post' => 'publish',
+    'ar_problem' => true,
+    'sort_by' => 'load_problem',
+    'sort_order' => 'asc',
 );
 
-$args = $reports->set_filter_params($args);
 $items = $reports->get_table_items($args);
 
 $post_tp = 'accounting';
 $items['page_type'] = $post_tp;
+$items['ar_problem'] = true;
 ?>
     <div class="container-fluid">
         <div class="row">
             <div class="container">
                 <div class="row">
+                    <div class="col-12 mb-3 mt-3">
+                        <h2>A/R aging</h2>
+                    </div>
                     <div class="col-12">
-
-                        <?php
-						echo esc_html( get_template_part( 'src/template-parts/report/report', 'filter', array('post_type' => $post_tp) ) );
-						?>
-						
 						
 						<?php
-						echo esc_html( get_template_part( 'src/template-parts/report/report', 'table-accounting', $items ) );
+						echo esc_html( get_template_part( 'src/template-parts/report/report', 'table-ar', $items ) );
 						?>
 
                     </div>

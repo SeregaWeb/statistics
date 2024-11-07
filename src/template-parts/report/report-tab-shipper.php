@@ -14,11 +14,16 @@ $delivery_location_isset = false;
 if ( $report_object ) {
 	$values = $report_object;
     $meta = get_field_value($values, 'meta');
+	$main = get_field_value($values, 'main');
 	if ( is_array( $meta ) && sizeof( $meta ) > 0 ) {
         
         $pick_up_location = get_field_value($meta, 'pick_up_location');
         $delivery_location = get_field_value($meta, 'delivery_location');
-        
+		$reference_number    = get_field_value($meta, 'reference_number');
+		
+		$post_status         = get_field_value( $main, 'status_post' );
+  
+    
 		if ( ! empty( $pick_up_location ) && ! empty( $delivery_location ) ) {
 			$pick_up_location_isset  = json_decode( $pick_up_location, ARRAY_A );
 			$delivery_location_isset = json_decode( $delivery_location, ARRAY_A );
@@ -28,6 +33,8 @@ if ( $report_object ) {
 ?>
 
 <form class="js-shipper">
+    
+    
     <h3 class="p-0 display-6 mb-4">Shipper info</h3>
 
     <div class="row">
@@ -36,8 +43,15 @@ if ( $report_object ) {
         
 		<?php if ( isset( $post_id ) && is_numeric( $post_id ) ): ?>
             <input type="hidden" name="post_id" value="<?php echo $post_id; ?>">
+            <input type="hidden" name="old_pick_up_location" value='<?php echo $pick_up_location; ?>'>
+            <input type="hidden" name="old_delivery_location" value='<?php echo $delivery_location; ?>'>
+            <input type="hidden" name="reference_number" value="<?php echo $reference_number; ?>">
 		<?php endif; ?>
-
+	       
+        <?php if ($post_status): ?>
+            <input type="hidden" name="post_status" value="<?php echo $post_status; ?>">
+        <?php endif; ?>
+        
         <figure>
             <blockquote class="blockquote">
                 <p>Enter your Shipper address<span

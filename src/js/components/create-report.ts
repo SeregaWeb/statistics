@@ -1170,26 +1170,28 @@ export const updateStatusPost = (ajaxUrl) => {
         });
 };
 
-export const quickEditInit = (ajaxUrl) => {
-    const form = document.querySelector('.js-quick-edit');
+const selectCheckedLoads = () => {
+    const selectLoads = document.querySelectorAll('.js-select-load');
+    const selectedValues = Array.from(selectLoads)
+        // @ts-ignore
+        .filter((checkbox) => checkbox.checked)
+        // @ts-ignore
+        .map((checkbox) => checkbox.value)
+        .join(',');
+
+    return selectedValues;
+};
+
+export const quickEditInit = (ajaxUrl, selector, action) => {
+    const form = document.querySelector(selector);
 
     form &&
         form.addEventListener('submit', (event) => {
             event.preventDefault();
-
-            const selectLoads = document.querySelectorAll('.js-select-load');
-            const selectedValues = Array.from(selectLoads)
-                // @ts-ignore
-                .filter((checkbox) => checkbox.checked)
-                // @ts-ignore
-                .map((checkbox) => checkbox.value)
-                .join(',');
-
+            const selectedValues = selectCheckedLoads();
             console.log('Selected values:', selectedValues);
-            
             // @ts-ignore
             const formData = new FormData(event.target);
-            const action = 'quick_update_post';
 
             if (!selectedValues) {
                 printMessage('Posts id not select', 'danger', 8000);

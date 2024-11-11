@@ -6,7 +6,7 @@ import '../scss/frontend.scss';
  * JavaScript
  */
 import Popup from './parts/popup-window';
-import { checboxesHelperInit, initMoneyMask } from './components/input-helpers';
+import { checboxesHelperInit, initMoneyMask, quick_pay_method } from './components/input-helpers';
 import {
     actionCreateReportInit,
     additionalContactsInit,
@@ -26,7 +26,7 @@ import { actionCreateCompanyInit } from './components/create-company';
 import { actionCreateShipperInit } from './components/create-shipper';
 import { nextTabTrigger } from './components/tab-helper';
 import { addSearchAction } from './components/search-action';
-import { toggleBlocksInit } from './components/toggle-blocks-init';
+import { toggleBlocksInit, toggleCheckboxInit } from './components/toggle-blocks-init';
 import { changeTableInit } from './components/change-table';
 import { initGetInfoDriver } from './components/driver-Info';
 import { updateTooltip } from './components/tooltip-start';
@@ -34,7 +34,7 @@ import { toggleSidebarInit } from './components/sidebar-init';
 import { autoFillAddress } from './components/auto-fill-address';
 import { AuthUsersInit } from './components/auth-users';
 import { cleanUrlByFilter } from './components/filter-clean';
-import { showHiddenValueInit } from './components/chow-hidden-value';
+import { disabledValuesInSelectInit, showHiddenValueInit } from './components/chow-hidden-value';
 
 function ready() {
     console.log('ready');
@@ -73,13 +73,13 @@ function ready() {
     updateBillingReportInit(urlAjax);
     updateAccountingReportInit(urlAjax);
     fullRemovePost(urlAjax);
-    quickEditInit(urlAjax);
+    quickEditInit(urlAjax, '.js-quick-edit', 'quick_update_post');
+    quickEditInit(urlAjax, '.js-quick-edit-ar', 'quick_update_post_ar');
 
     // API request
     initGetInfoDriver(useServices);
 
     additionalContactsInit();
-    toggleBlocksInit();
     addShipperPointInit();
     // Helpers
     initMoneyMask(); // Money helper
@@ -88,12 +88,13 @@ function ready() {
     updateTooltip();
     toggleSidebarInit();
     autoFillAddress(hereApi);
-
     cleanUrlByFilter();
-
     showHiddenValueInit();
-
     checboxesHelperInit();
+    toggleBlocksInit();
+    toggleCheckboxInit();
+    disabledValuesInSelectInit();
+    quick_pay_method();
 
     const preloaders = document.querySelectorAll('.js-preloader');
     preloaders &&

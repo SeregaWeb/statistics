@@ -12,6 +12,7 @@ $copyright = get_field_value( $global_options, 'copyright' );
 echo esc_html( get_template_part( 'src/template-parts/report/report', 'popup-add-company' ) );
 echo esc_html( get_template_part( 'src/template-parts/report/report', 'popup-add-shipper' ) );
 echo esc_html( get_template_part( 'src/template-parts/report/report', 'popup-quick-edit' ) );
+echo esc_html( get_template_part( 'src/template-parts/report/report', 'popup-quick-edit-ar' ) );
 
 ?>
 

@@ -3312,6 +3312,7 @@ var changeTableInit = function changeTableInit(ajaxUrl) {
 "use strict";
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   disabledValuesInSelectInit: function() { return /* binding */ disabledValuesInSelectInit; },
 /* harmony export */   showHiddenValueInit: function() { return /* binding */ showHiddenValueInit; }
 /* harmony export */ });
 var showHiddenValueInit = function showHiddenValueInit() {
@@ -3350,6 +3351,31 @@ var showHiddenValueInit = function showHiddenValueInit() {
       });
     });
   });
+};
+var disabledValuesInSelectInit = function disabledValuesInSelectInit() {
+  var selectElement = document.querySelector('.js-blocked-value');
+  if (selectElement) {
+    var blockedValues = selectElement.dataset.blocked.split('|');
+    var blockedCurrentValues = selectElement.dataset.blockedCurrent.split('|');
+    var targetSelector = selectElement.dataset.blockedSelector;
+    var targetSelect = document.querySelector(".".concat(targetSelector));
+    function updateDisabledOptions() {
+      if (!selectElement) return;
+      var selectedValue = selectElement.value;
+      if (!targetSelect) return;
+      if (blockedCurrentValues.includes(selectedValue)) {
+        Array.from(targetSelect.options).forEach(function (option) {
+          option.disabled = blockedValues.includes(option.value);
+        });
+      } else {
+        Array.from(targetSelect.options).forEach(function (option) {
+          option.disabled = false;
+        });
+      }
+    }
+    selectElement.addEventListener('change', updateDisabledOptions);
+    updateDisabledOptions();
+  }
 };
 
 /***/ }),
@@ -4162,19 +4188,22 @@ var updateStatusPost = function updateStatusPost(ajaxUrl) {
     });
   });
 };
-var quickEditInit = function quickEditInit(ajaxUrl) {
-  var form = document.querySelector('.js-quick-edit');
+var selectCheckedLoads = function selectCheckedLoads() {
+  var selectLoads = document.querySelectorAll('.js-select-load');
+  var selectedValues = Array.from(selectLoads).filter(function (checkbox) {
+    return checkbox.checked;
+  }).map(function (checkbox) {
+    return checkbox.value;
+  }).join(',');
+  return selectedValues;
+};
+var quickEditInit = function quickEditInit(ajaxUrl, selector, action) {
+  var form = document.querySelector(selector);
   form && form.addEventListener('submit', function (event) {
     event.preventDefault();
-    var selectLoads = document.querySelectorAll('.js-select-load');
-    var selectedValues = Array.from(selectLoads).filter(function (checkbox) {
-      return checkbox.checked;
-    }).map(function (checkbox) {
-      return checkbox.value;
-    }).join(',');
+    var selectedValues = selectCheckedLoads();
     console.log('Selected values:', selectedValues);
     var formData = new FormData(event.target);
-    var action = 'quick_update_post';
     if (!selectedValues) {
       (0,_info_messages__WEBPACK_IMPORTED_MODULE_2__.printMessage)('Posts id not select', 'danger', 8000);
       return;
@@ -4485,7 +4514,8 @@ function printMessage() {
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   checboxesHelperInit: function() { return /* binding */ checboxesHelperInit; },
-/* harmony export */   initMoneyMask: function() { return /* binding */ initMoneyMask; }
+/* harmony export */   initMoneyMask: function() { return /* binding */ initMoneyMask; },
+/* harmony export */   quick_pay_method: function() { return /* binding */ quick_pay_method; }
 /* harmony export */ });
 /* harmony import */ var imask__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! imask */ "../../../node_modules/imask/esm/index.js");
 function _slicedToArray(r, e) { return _arrayWithHoles(r) || _iterableToArrayLimit(r, e) || _unsupportedIterableToArray(r, e) || _nonIterableRest(); }
@@ -4612,6 +4642,34 @@ function checboxesHelperInit() {
     allInputs && allInputs.forEach(function (item) {
       item.checked = allInputsSelect.checked;
     });
+  });
+}
+function quick_pay_method() {
+  var selectMethod = document.querySelector('.js-quick-pay-method');
+  selectMethod && selectMethod.addEventListener('change', function (event) {
+    var target = event.target;
+    if (target) {
+      var value = target.value;
+      console.log('value', value);
+      var quickPayInput = document.querySelector('.js-quick-pay-driver');
+      var afterCount = document.querySelector('.js-sum-after-count');
+      if (value) {
+        var selectPercent = document.querySelector(".js-select-quick-".concat(value));
+        if (!selectPercent) return;
+        var selectPercentValue = selectPercent.value;
+        var driverReit = selectPercent.getAttribute('data-reit');
+        var commission = selectPercent.getAttribute('data-commission');
+        if (!driverReit || !commission) return;
+        var persent = +driverReit * (+selectPercentValue / 100);
+        var persentTotal = persent + parseFloat(commission);
+        if (!quickPayInput) return;
+        quickPayInput.value = persentTotal.toFixed(2);
+        if (!afterCount) return;
+        afterCount.innerHTML = "Sum to pay $".concat((parseFloat(driverReit) - persentTotal).toFixed(2));
+      } else {
+        quickPayInput.value = '';
+      }
+    }
   });
 }
 
@@ -4804,7 +4862,8 @@ var nextTabTrigger = function nextTabTrigger() {
 "use strict";
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
-/* harmony export */   toggleBlocksInit: function() { return /* binding */ toggleBlocksInit; }
+/* harmony export */   toggleBlocksInit: function() { return /* binding */ toggleBlocksInit; },
+/* harmony export */   toggleCheckboxInit: function() { return /* binding */ toggleCheckboxInit; }
 /* harmony export */ });
 var toggleBlocksInit = function toggleBlocksInit() {
   var toggleElements = document.querySelectorAll('.js-toggle');
@@ -4816,6 +4875,19 @@ var toggleBlocksInit = function toggleBlocksInit() {
       var toggleContainer = document.querySelector(".".concat(toggleContainerSelector));
       if (!target || !toggleContainer) return;
       target.classList.toggle('active');
+      toggleContainer.classList.toggle('d-none');
+    });
+  });
+};
+var toggleCheckboxInit = function toggleCheckboxInit() {
+  var toggleElements = document.querySelectorAll('.js-switch-toggle');
+  toggleElements && toggleElements.forEach(function (item) {
+    item.addEventListener('change', function (event) {
+      event.preventDefault();
+      var target = event.target;
+      var toggleContainerSelector = target.getAttribute('data-toggle');
+      var toggleContainer = document.querySelector(".".concat(toggleContainerSelector));
+      if (!target || !toggleContainer) return;
       toggleContainer.classList.toggle('d-none');
     });
   });
@@ -14867,10 +14939,10 @@ function ready() {
   (0,_components_create_report__WEBPACK_IMPORTED_MODULE_3__.updateBillingReportInit)(urlAjax);
   (0,_components_create_report__WEBPACK_IMPORTED_MODULE_3__.updateAccountingReportInit)(urlAjax);
   (0,_components_create_report__WEBPACK_IMPORTED_MODULE_3__.fullRemovePost)(urlAjax);
-  (0,_components_create_report__WEBPACK_IMPORTED_MODULE_3__.quickEditInit)(urlAjax);
+  (0,_components_create_report__WEBPACK_IMPORTED_MODULE_3__.quickEditInit)(urlAjax, '.js-quick-edit', 'quick_update_post');
+  (0,_components_create_report__WEBPACK_IMPORTED_MODULE_3__.quickEditInit)(urlAjax, '.js-quick-edit-ar', 'quick_update_post_ar');
   (0,_components_driver_Info__WEBPACK_IMPORTED_MODULE_10__.initGetInfoDriver)(useServices);
   (0,_components_create_report__WEBPACK_IMPORTED_MODULE_3__.additionalContactsInit)();
-  (0,_components_toggle_blocks_init__WEBPACK_IMPORTED_MODULE_8__.toggleBlocksInit)();
   (0,_components_create_report__WEBPACK_IMPORTED_MODULE_3__.addShipperPointInit)();
   (0,_components_input_helpers__WEBPACK_IMPORTED_MODULE_2__.initMoneyMask)();
   (0,_components_create_report__WEBPACK_IMPORTED_MODULE_3__.previewFileUpload)();
@@ -14881,6 +14953,10 @@ function ready() {
   (0,_components_filter_clean__WEBPACK_IMPORTED_MODULE_15__.cleanUrlByFilter)();
   (0,_components_chow_hidden_value__WEBPACK_IMPORTED_MODULE_16__.showHiddenValueInit)();
   (0,_components_input_helpers__WEBPACK_IMPORTED_MODULE_2__.checboxesHelperInit)();
+  (0,_components_toggle_blocks_init__WEBPACK_IMPORTED_MODULE_8__.toggleBlocksInit)();
+  (0,_components_toggle_blocks_init__WEBPACK_IMPORTED_MODULE_8__.toggleCheckboxInit)();
+  (0,_components_chow_hidden_value__WEBPACK_IMPORTED_MODULE_16__.disabledValuesInSelectInit)();
+  (0,_components_input_helpers__WEBPACK_IMPORTED_MODULE_2__.quick_pay_method)();
   var preloaders = document.querySelectorAll('.js-preloader');
   preloaders && preloaders.forEach(function (item) {
     item.remove();

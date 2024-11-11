@@ -165,3 +165,42 @@ export function checboxesHelperInit() {
                 });
         });
 }
+
+export function quick_pay_method() {
+    const selectMethod = document.querySelector('.js-quick-pay-method');
+
+    selectMethod &&
+        selectMethod.addEventListener('change', (event) => {
+            const { target } = event;
+
+            if (target) {
+                // @ts-ignore
+                const { value } = target;
+
+                console.log('value', value);
+                const quickPayInput = document.querySelector('.js-quick-pay-driver');
+                const afterCount = document.querySelector('.js-sum-after-count');
+                if (value) {
+                    const selectPercent = document.querySelector(`.js-select-quick-${value}`);
+                    if (!selectPercent) return;
+                    // @ts-ignore
+                    const selectPercentValue = selectPercent.value;
+                    const driverReit = selectPercent.getAttribute('data-reit');
+                    const commission = selectPercent.getAttribute('data-commission');
+                    if (!driverReit || !commission) return;
+                    const persent = +driverReit * (+selectPercentValue / 100);
+                    const persentTotal = persent + parseFloat(commission);
+                    if (!quickPayInput) return;
+                    // @ts-ignore
+                    quickPayInput.value = persentTotal.toFixed(2);
+
+                    if (!afterCount) return;
+                    // @ts-ignore
+                    afterCount.innerHTML = `Sum to pay $${(parseFloat(driverReit) - persentTotal).toFixed(2)}`;
+                } else {
+                    // @ts-ignore
+                    quickPayInput.value = '';
+                }
+            }
+        });
+}

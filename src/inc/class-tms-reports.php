@@ -7,13 +7,13 @@ class TMSReports extends TMSReportsHelper {
 	public $table_meta     = '';
 	public $per_page_loads = 100;
 	
-	public $user_emails = array();
+	public $user_emails  = array();
 	public $email_helper = false;
 	
 	public $project = '';
 	
 	public function __construct() {
-		$user_id       = get_current_user_id();
+		$user_id = get_current_user_id();
 		
 		$this->email_helper = new TMSEmails();
 		$this->email_helper->init();
@@ -21,7 +21,7 @@ class TMSReports extends TMSReportsHelper {
 		
 		$curent_tables = get_field( 'current_select', 'user_' . $user_id );
 		if ( $curent_tables ) {
-			$this->project = $curent_tables;
+			$this->project    = $curent_tables;
 			$this->table_main = 'reports_' . strtolower( $curent_tables );
 			$this->table_meta = 'reportsmeta_' . strtolower( $curent_tables );
 		}
@@ -89,7 +89,7 @@ class TMSReports extends TMSReportsHelper {
 			$where_values[]     = $args[ 'status_post' ];
 		}
 		
-		if (isset($args['ar_problem']) && $args['ar_problem']) {
+		if ( isset( $args[ 'ar_problem' ] ) && $args[ 'ar_problem' ] ) {
 			$where_conditions[] = "main.load_problem IS NOT NULL";
 			$where_conditions[] = "DATEDIFF(NOW(), main.load_problem) > 50";
 		}
@@ -471,8 +471,18 @@ class TMSReports extends TMSReportsHelper {
 				"driver_rate"       => FILTER_SANITIZE_STRING,
 				"profit"            => FILTER_SANITIZE_STRING,
 				"tbd"               => FILTER_VALIDATE_BOOLEAN,
+				"ar-action"         => FILTER_VALIDATE_BOOLEAN,
+				"ar_status"         => FILTER_SANITIZE_STRING,
 			] );
 			
+			if ( ! $MY_INPUT[ 'ar-action' ] ) {
+				$MY_INPUT[ 'load_problem' ] = null;
+				$MY_INPUT[ 'ar_status' ]    = 'not-solved';
+			}
+			
+			if ( $MY_INPUT[ 'factoring_status' ] === 'charge-back' ) {
+				$MY_INPUT[ 'booked_rate' ] = 0;
+			}
 			
 			$MY_INPUT = $this->count_all_sum( $MY_INPUT );
 			
@@ -506,9 +516,12 @@ class TMSReports extends TMSReportsHelper {
 		if ( defined( 'DOING_AJAX' ) && DOING_AJAX ) {
 			// Sanitize input data
 			$MY_INPUT = filter_var_array( $_POST, [
-				"post_id"             => FILTER_SANITIZE_STRING,
-				"bank_payment_status" => FILTER_SANITIZE_STRING,
-				"driver_pay_statuses" => FILTER_SANITIZE_STRING,
+				"post_id"                 => FILTER_SANITIZE_STRING,
+				"bank_payment_status"     => FILTER_SANITIZE_STRING,
+				"driver_pay_statuses"     => FILTER_SANITIZE_STRING,
+				"quick_pay_accounting"    => FILTER_VALIDATE_BOOLEAN,
+				"quick_pay_method"        => FILTER_SANITIZE_STRING,
+				"quick_pay_driver_amount" => FILTER_SANITIZE_STRING,
 			] );
 			
 			// Insert the company report
@@ -885,7 +898,7 @@ class TMSReports extends TMSReportsHelper {
 			$data[ 'pick_up_location_json' ]  = $pick_up_location_json;
 			$data[ 'delivery_location_json' ] = $delivery_location_json;
 			
-			$result                           = $this->add_new_shipper_info( $data );
+			$result = $this->add_new_shipper_info( $data );
 			
 			if ( $result ) {
 				wp_send_json_success( [ 'message' => 'Shipper info successfully update', 'data' => $data ] );
@@ -1039,6 +1052,34 @@ class TMSReports extends TMSReportsHelper {
 		}
 	}
 	
+	public function quick_update_post_ar() {
+		if ( defined( 'DOING_AJAX' ) && DOING_AJAX ) {
+			
+			$MY_INPUT = filter_var_array( $_POST, [
+				"ar_status" => FILTER_SANITIZE_STRING,
+				"post_ids"  => FILTER_SANITIZE_STRING,
+			] );
+			
+			
+			if ( ! $MY_INPUT[ 'ar_status' ] ) {
+				wp_send_json_error( array( 'message' => 'You do not select any option' ) );
+			}
+			
+			$filled_fields = array_filter( $MY_INPUT, function( $value ) {
+				return ! empty( $value ) || $value === false;
+			} );
+			
+			$result = $this->update_quick_data_ar_in_db( $filled_fields );
+			if ( $result ) {
+				wp_send_json_success( [ 'message' => 'Loads successfully updated', 'data' => $MY_INPUT ] );
+			}
+			
+			wp_send_json_error( [ 'message' => 'Loads not update, error add in database' ] );
+		} else {
+			wp_send_json_error( [ 'message' => 'Invalid request' ] );
+		}
+	}
+	
 	/**
 	 * function delete one file (tab 1)
 	 * @return void
@@ -1048,9 +1089,9 @@ class TMSReports extends TMSReportsHelper {
 		if ( defined( 'DOING_AJAX' ) && DOING_AJAX ) {
 			
 			$MY_INPUT = filter_var_array( $_POST, [
-				"image-id"     => FILTER_SANITIZE_STRING,
-				"image-fields" => FILTER_SANITIZE_STRING,
-				"post_id"      => FILTER_SANITIZE_STRING,
+				"image-id"         => FILTER_SANITIZE_STRING,
+				"image-fields"     => FILTER_SANITIZE_STRING,
+				"post_id"          => FILTER_SANITIZE_STRING,
 				"reference_number" => FILTER_SANITIZE_STRING,
 			] );
 			
@@ -1218,7 +1259,13 @@ class TMSReports extends TMSReportsHelper {
 			'true_profit'             => $data[ 'true_profit' ],
 			'percent_quick_pay_value' => $data[ 'percent_quick_pay_value' ],
 			'booked_rate_modify'      => $data[ 'booked_rate_modify' ],
+			'ar_status'               => $data[ 'ar_status' ],
+			'ar-action'               => $data[ 'ar-action' ],
 		);
+		
+		if ( $post_meta[ 'factoring_status' ] === 'charge-back' ) {
+			$post_meta[ 'booked_rate' ] = 0;
+		}
 		
 		// Specify the condition (WHERE clause)
 		$where = array( 'id' => $post_id );
@@ -1262,10 +1309,19 @@ class TMSReports extends TMSReportsHelper {
 			'date_updated'    => current_time( 'mysql' )
 		);
 		
+		if (!$data[ 'quick_pay_accounting' ]) {
+			$data[ 'quick_pay_method' ] = null;
+			$data[ 'quick_pay_driver_amount' ] = null;
+		}
+		
 		$post_meta = array(
-			"bank_payment_status" => $data[ 'bank_payment_status' ],
-			"driver_pay_statuses" => $data[ 'driver_pay_statuses' ],
+			"bank_payment_status"     => $data[ 'bank_payment_status' ],
+			"driver_pay_statuses"     => $data[ 'driver_pay_statuses' ],
+			"quick_pay_accounting"    => $data[ 'quick_pay_accounting' ],
+			"quick_pay_method"        => $data[ 'quick_pay_method' ],
+			"quick_pay_driver_amount" => $data[ 'quick_pay_driver_amount' ],
 		);
+		
 		
 		// Specify the condition (WHERE clause)
 		$where = array( 'id' => $post_id );
@@ -1326,6 +1382,56 @@ class TMSReports extends TMSReportsHelper {
 				"bank_payment_status" => $data[ 'bank_payment_status' ] ?? null,
 				"driver_pay_statuses" => $data[ 'driver_pay_statuses' ] ?? null,
 				"invoiced_proof"      => isset( $data[ 'invoiced_proof' ] ) ? (bool) $data[ 'invoiced_proof' ] : null
+			), function( $value ) {
+				return ! is_null( $value ); // Исключаем отсутствующие значения
+			} );
+			
+			// Обновляем мета-данные, если они заданы
+			if ( ! empty( $post_meta ) ) {
+				$meta_update_result = $this->update_post_meta_data( $post_id, $post_meta );
+				if ( is_wp_error( $meta_update_result ) ) {
+					return $meta_update_result;
+				}
+			}
+		}
+		
+		return true;
+	}
+	
+	public function update_quick_data_ar_in_db( $data ) {
+		global $wpdb;
+		
+		// Получаем и форматируем ID постов
+		$post_ids = explode( ',', $data[ 'post_ids' ] );
+		unset( $data[ 'post_ids' ] ); // Удаляем post_ids из массива данных, т.к. он не нужен для обновлений
+		
+		$table_name = $wpdb->prefix . $this->table_main;
+		$user_id    = get_current_user_id();
+		
+		// Определяем общие данные для обновления
+		$update_params = array(
+			'user_id_updated' => $user_id,
+			'date_updated'    => current_time( 'mysql' )
+		);
+		
+		// Проходим по каждому post_id и обновляем данные
+		foreach ( $post_ids as $post_id ) {
+			$where = array( 'id' => $post_id );
+			
+			// Обновляем общие данные в основной таблице
+			$result = $wpdb->update( $table_name, $update_params, $where, array(
+				'%d', // user_id_updated
+				'%s'  // date_updated
+			), array( '%d' ) );
+			
+			if ( $result === false ) {
+				// Если обновление неудачно, возвращаем ошибку
+				return new WP_Error( 'db_error', 'Ошибка при обновлении отчета компании в базе данных: ' . $wpdb->last_error );
+			}
+			
+			// Отфильтруем мета-данные, если они существуют, и обновим их
+			$post_meta = array_filter( array(
+				"ar_status" => $data[ 'ar_status' ] ?? null,
 			), function( $value ) {
 				return ! is_null( $value ); // Исключаем отсутствующие значения
 			} );
@@ -1469,12 +1575,12 @@ class TMSReports extends TMSReportsHelper {
 		$table_name = $wpdb->prefix . $this->table_main;
 		$user_id    = get_current_user_id();
 		
-		$user_name = $this->get_user_full_name_by_id($user_id);
+		$user_name = $this->get_user_full_name_by_id( $user_id );
 		global $global_options;
 		$add_new_load = get_field_value( $global_options, 'add_new_load' );
-		$link = '';
-		if ($add_new_load) {
-			$link = '<a href="'.$add_new_load.'?post_id='.$data[ 'post_id' ].'">Load</a>';
+		$link         = '';
+		if ( $add_new_load ) {
+			$link = '<a href="' . $add_new_load . '?post_id=' . $data[ 'post_id' ] . '">Load</a>';
 		}
 		
 		// Prepare the data to update
@@ -1483,37 +1589,37 @@ class TMSReports extends TMSReportsHelper {
 			'date_updated'    => current_time( 'mysql' ),
 		);
 		
-		if ($data['post_status'] === 'publish') {
-			if (!empty($data['old_pick_up_location']) && $data['old_delivery_location']) {
-				$cleanedpick = stripslashes($data['old_pick_up_location']);
-				$cleaneddeliv = stripslashes($data['old_delivery_location']);
+		if ( $data[ 'post_status' ] === 'publish' ) {
+			if ( ! empty( $data[ 'old_pick_up_location' ] ) && $data[ 'old_delivery_location' ] ) {
+				$cleanedpick  = stripslashes( $data[ 'old_pick_up_location' ] );
+				$cleaneddeliv = stripslashes( $data[ 'old_delivery_location' ] );
 				
-				if ($cleanedpick !==  $data[ 'pick_up_location_json' ] || $cleaneddeliv !==  $data[ 'delivery_location_json'] ) {
+				if ( $cleanedpick !== $data[ 'pick_up_location_json' ] || $cleaneddeliv !== $data[ 'delivery_location_json' ] ) {
 					$values = '------- OLD VALUES PICK UP -------' . "<br><br>";
 					
 					$values .= $this->formatJsonForEmail( $cleanedpick );
 					
-					$values .= "<br>" .  '------- OLD VALUES DELIVERED -------' . "<br><br>";
+					$values .= "<br>" . '------- OLD VALUES DELIVERED -------' . "<br><br>";
 					
 					$values .= $this->formatJsonForEmail( $cleaneddeliv );
 					
-					$values .= "<br>" .  '------- NEW VALUES PICK UP-------' . "<br><br>";
+					$values .= "<br>" . '------- NEW VALUES PICK UP-------' . "<br><br>";
 					
 					$values .= $this->formatJsonForEmail( $data[ 'pick_up_location_json' ] );
 					
-					$values .= "<br>" .  '------- NEW VALUES DELIVERED-------' . "<br><br>";
+					$values .= "<br>" . '------- NEW VALUES DELIVERED-------' . "<br><br>";
 					
 					$values .= $this->formatJsonForEmail( $data[ 'delivery_location_json' ] );
 					
 					
-					$select_emails = $this->email_helper->get_selected_emails($this->user_emails, array('tracking_email'));
+					$select_emails = $this->email_helper->get_selected_emails( $this->user_emails, array( 'tracking_email' ) );
 					
-					$this->email_helper->send_custom_email($select_emails, array(
-						'subject' => 'Changed locations',
+					$this->email_helper->send_custom_email( $select_emails, array(
+						'subject'      => 'Changed locations',
 						'project_name' => 'Project: ' . $this->project,
-						'subtitle' => 'User changed: '. $user_name['full_name'],
-						'message' => $values . "\n" .' load № '.$data['reference_number'].' Link to: ' . $link,
-					));
+						'subtitle'     => 'User changed: ' . $user_name[ 'full_name' ],
+						'message'      => $values . "\n" . ' load № ' . $data[ 'reference_number' ] . ' Link to: ' . $link,
+					) );
 				}
 				
 			}
@@ -1645,82 +1751,93 @@ class TMSReports extends TMSReportsHelper {
 		
 		$table_name = $wpdb->prefix . $this->table_main;
 		$user_id    = get_current_user_id();
-		$user_name = $this->get_user_full_name_by_id($user_id);
+		$user_name  = $this->get_user_full_name_by_id( $user_id );
 		
 		// Prepare the instructions field
 		$instructions = ! empty( $data[ 'instructions' ] ) ? implode( ', ', $data[ 'instructions' ] ) : null;
 		
 		global $global_options;
 		$add_new_load = get_field_value( $global_options, 'add_new_load' );
-		$link = '';
-		if ($add_new_load) {
-			$link = '<a href="'.$add_new_load.'?post_id='.$data[ 'post_id' ].'">Load</a>';
+		$link         = '';
+		if ( $add_new_load ) {
+			$link = '<a href="' . $add_new_load . '?post_id=' . $data[ 'post_id' ] . '">Load</a>';
 		}
 		
 		
-		if ($data['post_status'] === 'publish') {
-		
-			if ($data['old_unit_number_name'] && !empty($data['old_unit_number_name']) ) {
-				if ($data['old_unit_number_name'] !== $data['unit_number_name']) {
-					$select_emails = $this->email_helper->get_selected_emails($this->user_emails, array('tracking_email', 'admin_email', 'team_leader_email'));
+		if ( $data[ 'post_status' ] === 'publish' ) {
+			
+			if ( $data[ 'old_unit_number_name' ] && ! empty( $data[ 'old_unit_number_name' ] ) ) {
+				if ( $data[ 'old_unit_number_name' ] !== $data[ 'unit_number_name' ] ) {
+					$select_emails = $this->email_helper->get_selected_emails( $this->user_emails, array(
+						'tracking_email',
+						'admin_email',
+						'team_leader_email'
+					) );
 					
-					$this->email_helper->send_custom_email($select_emails, array(
-						'subject' => 'Changed driver',
+					$this->email_helper->send_custom_email( $select_emails, array(
+						'subject'      => 'Changed driver',
 						'project_name' => 'Project: ' . $this->project,
-						'subtitle' => 'User changed: '. $user_name['full_name'],
-						'message' => 'New value: ' . $data['unit_number_name'] . ' Old value: '. $data['old_unit_number_name'] . 'Load № '.$data[ 'reference_number' ].' Link to: ' . $link,
-					));
+						'subtitle'     => 'User changed: ' . $user_name[ 'full_name' ],
+						'message'      => 'New value: ' . $data[ 'unit_number_name' ] . ' Old value: ' . $data[ 'old_unit_number_name' ] . 'Load № ' . $data[ 'reference_number' ] . ' Link to: ' . $link,
+					) );
 				}
 			}
 			
-			if ($data['old_pick_up_date'] && !empty($data['old_pick_up_date'])) {
-				if ($data['pick_up_date'] !== $data['old_pick_up_date'] ) {
-					$select_emails = $this->email_helper->get_selected_emails($this->user_emails, array('tracking_email'));
+			if ( $data[ 'old_pick_up_date' ] && ! empty( $data[ 'old_pick_up_date' ] ) ) {
+				if ( $data[ 'pick_up_date' ] !== $data[ 'old_pick_up_date' ] ) {
+					$select_emails = $this->email_helper->get_selected_emails( $this->user_emails, array( 'tracking_email' ) );
 					
-					$this->email_helper->send_custom_email($select_emails, array(
-						'subject' => 'Changed pick up date',
+					$this->email_helper->send_custom_email( $select_emails, array(
+						'subject'      => 'Changed pick up date',
 						'project_name' => 'Project: ' . $this->project,
-						'subtitle' => 'User changed: '. $user_name['full_name'],
-						'message' => 'New value: ' . $data['pick_up_date'] . ' Old value: '. $data['old_pick_up_date'] . 'Load № '.$data[ 'reference_number' ].' Link to: ' . $link,
-					));
+						'subtitle'     => 'User changed: ' . $user_name[ 'full_name' ],
+						'message'      => 'New value: ' . $data[ 'pick_up_date' ] . ' Old value: ' . $data[ 'old_pick_up_date' ] . 'Load № ' . $data[ 'reference_number' ] . ' Link to: ' . $link,
+					) );
 				}
 			}
 			
 			
-			if ( $data['old_load_status'] && !empty($data['old_load_status'])) {
-				$array_chacked = array('delivered', 'tonu' , 'cancelled');
-				if (in_array($data['load_status'], $array_chacked) && $data['load_status'] !== $data['old_load_status']) {
-					$select_emails = $this->email_helper->get_selected_emails($this->user_emails, array('admin_email', 'team_leader_email'));
+			if ( $data[ 'old_load_status' ] && ! empty( $data[ 'old_load_status' ] ) ) {
+				$array_chacked = array( 'delivered', 'tonu', 'cancelled' );
+				if ( in_array( $data[ 'load_status' ], $array_chacked ) && $data[ 'load_status' ] !== $data[ 'old_load_status' ] ) {
+					$select_emails = $this->email_helper->get_selected_emails( $this->user_emails, array(
+						'admin_email',
+						'team_leader_email'
+					) );
 					
-					$new_status_label = $this->get_label_by_key( $data['load_status'], 'statuses' );
-					$old_status_label = $this->get_label_by_key( $data['old_load_status'], 'statuses' );
+					$new_status_label = $this->get_label_by_key( $data[ 'load_status' ], 'statuses' );
+					$old_status_label = $this->get_label_by_key( $data[ 'old_load_status' ], 'statuses' );
 					
-					$this->email_helper->send_custom_email($select_emails, array(
-						'subject' => 'Changed load status',
+					$this->email_helper->send_custom_email( $select_emails, array(
+						'subject'      => 'Changed load status',
 						'project_name' => 'Project: ' . $this->project,
-						'subtitle' => 'User changed: '. $user_name['full_name'],
-						'message' => 'New value: ' . $new_status_label . ' Old value: '. $old_status_label . 'Load № '.$data[ 'reference_number' ].' Link to: ' . $link,
-					));
+						'subtitle'     => 'User changed: ' . $user_name[ 'full_name' ],
+						'message'      => 'New value: ' . $new_status_label . ' Old value: ' . $old_status_label . 'Load № ' . $data[ 'reference_number' ] . ' Link to: ' . $link,
+					) );
 				}
 			}
 			
-			if (is_numeric($data['old_value_booked_rate'])) {
-			if ($data['booked_rate'] !== floatval($data['old_value_booked_rate'])) {
-				
-				$data['modify_price'] = '1';
-				
-				$select_emails = $this->email_helper->get_selected_emails($this->user_emails, array('admin_email', 'billing_email', 'team_leader_email'));
-				
-				
-				$this->email_helper->send_custom_email($select_emails, array(
-					'subject' => 'Changed Booked rate',
-					'project_name' => 'Project: ' . $this->project,
-					'subtitle' => 'User changed: '. $user_name['full_name'],
-					'message' => 'New value: $' . $data['booked_rate'] . ' Old value: $'. $data['old_value_booked_rate'] . 'Load № '.$data[ 'reference_number' ].' Link to: ' . $link,
-				));
+			if ( is_numeric( $data[ 'old_value_booked_rate' ] ) ) {
+				if ( $data[ 'booked_rate' ] !== floatval( $data[ 'old_value_booked_rate' ] ) ) {
+					
+					$data[ 'modify_price' ] = '1';
+					
+					$select_emails = $this->email_helper->get_selected_emails( $this->user_emails, array(
+						'admin_email',
+						'billing_email',
+						'team_leader_email'
+					) );
+					
+					
+					$this->email_helper->send_custom_email( $select_emails, array(
+						'subject'      => 'Changed Booked rate',
+						'project_name' => 'Project: ' . $this->project,
+						'subtitle'     => 'User changed: ' . $user_name[ 'full_name' ],
+						'message'      => 'New value: $' . $data[ 'booked_rate' ] . ' Old value: $' . $data[ 'old_value_booked_rate' ] . 'Load № ' . $data[ 'reference_number' ] . ' Link to: ' . $link,
+					) );
+				}
 			}
-		}
-		
+			
 		}
 		
 		// Prepare the data to update
@@ -1754,8 +1871,8 @@ class TMSReports extends TMSReportsHelper {
 			'tbd'                     => $data[ 'tbd' ],
 		);
 		
-		if (isset($data['modify_price'])){
-			$post_meta['modify_price'] = $data['modify_price'];
+		if ( isset( $data[ 'modify_price' ] ) ) {
+			$post_meta[ 'modify_price' ] = $data[ 'modify_price' ];
 		}
 		
 		if ( isset( $data[ 'read_only' ] ) ) {
@@ -1843,12 +1960,12 @@ class TMSReports extends TMSReportsHelper {
 		$image_field = sanitize_text_field( $data[ 'image-fields' ] );
 		$post_id     = intval( $data[ 'post_id' ] );
 		
-		$user_id    = get_current_user_id();
-		$user_name = $this->get_user_full_name_by_id($user_id);
+		$user_id      = get_current_user_id();
+		$user_name    = $this->get_user_full_name_by_id( $user_id );
 		$add_new_load = get_field_value( $global_options, 'add_new_load' );
-		$link = '';
-		if ($add_new_load) {
-			$link = '<a href="'.$add_new_load.'?post_id='.$data[ 'post_id' ].'">Load</a>';
+		$link         = '';
+		if ( $add_new_load ) {
+			$link = '<a href="' . $add_new_load . '?post_id=' . $data[ 'post_id' ] . '">Load</a>';
 		}
 		
 		// Проверяем корректность входных данных
@@ -1875,15 +1992,20 @@ class TMSReports extends TMSReportsHelper {
 				$new_value = implode( ',', $new_ids );
 			} elseif ( $image_field === 'attached_file_required' || $image_field === 'updated_rate_confirmation' || $image_field === 'screen_picture' ) {
 				
-				if ($image_field === 'attached_file_required') {
-					$select_emails = $this->email_helper->get_selected_emails($this->user_emails, array('tracking_email', 'billing_email', 'admin_email', 'team_leader_email'));
+				if ( $image_field === 'attached_file_required' ) {
+					$select_emails = $this->email_helper->get_selected_emails( $this->user_emails, array(
+						'tracking_email',
+						'billing_email',
+						'admin_email',
+						'team_leader_email'
+					) );
 					
-					$this->email_helper->send_custom_email($select_emails, array(
-						'subject' => 'Changed rate confirmation',
+					$this->email_helper->send_custom_email( $select_emails, array(
+						'subject'      => 'Changed rate confirmation',
 						'project_name' => 'Project: ' . $this->project,
-						'subtitle' => 'User changed: '. $user_name['full_name'],
-						'message' => 'Need check this load - load № '.$data['reference_number'].' Link to: ' . $link,
-					));
+						'subtitle'     => 'User changed: ' . $user_name[ 'full_name' ],
+						'message'      => 'Need check this load - load № ' . $data[ 'reference_number' ] . ' Link to: ' . $link,
+					) );
 				}
 				
 				// Для полей attached_file_required и updated_rate_confirmation
@@ -2067,6 +2189,7 @@ class TMSReports extends TMSReportsHelper {
 		add_action( 'wp_ajax_remove_one_load', array( $this, 'remove_one_load' ) );
 		add_action( 'wp_ajax_update_accounting_report', array( $this, 'update_accounting_report' ) );
 		add_action( 'wp_ajax_quick_update_post', array( $this, 'quick_update_post' ) );
+		add_action( 'wp_ajax_quick_update_post_ar', array( $this, 'quick_update_post_ar' ) );
 	}
 	
 	/**

@@ -47,6 +47,7 @@ if ( ! empty( $results ) ) : ?>
             <th scope="col">Pick Up Date</th>
             <th scope="col">Delivery date</th>
             <th>A/R aging</th>
+            <th>A/R status</th>
             <th scope="col"></th>
         </tr>
         </thead>
@@ -90,7 +91,7 @@ if ( ! empty( $results ) ) : ?>
 			
 			$show_control = $TMSUsers->show_control_loads( $my_team, $current_user_id, $dispatcher_initials, $is_draft );
 			
-			
+			$ar_status = get_field_value($meta, 'ar_status');
 			$modify_booked_price       = get_field_value( $meta, 'modify_price' );
 			$modify_booked_price_class = '';
 			
@@ -190,6 +191,7 @@ if ( ! empty( $results ) ) : ?>
                 <td><?php echo $pick_up_date; ?></td>
                 <td><?php echo $delivery_date; ?></td>
                 <td><?php echo $days_passed; ?> days</td>
+                <td><?php echo $ar_status === 'solved' ? 'Solved' : 'Not solved'; ?></td>
                 <td>
 					
 					<?php if ( $show_control ): ?>

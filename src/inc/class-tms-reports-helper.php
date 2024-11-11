@@ -157,6 +157,16 @@ class TMSReportsHelper extends TMSReportsIcons {
 		'other'     => 'Other'
 	);
 	
+    public $quick_pay_methods = array(
+	    'zelle' => array('label' => 'Zelle', 'value' => '3' , 'commission' => '0'),
+	    'cashapp' => array('label' => 'CashApp', 'value' => '3.5' , 'commission' => '0'),
+	    'ach-individual' => array('label' => 'ACH (individual)', 'value' => '2.5' , 'commission' => '0.5'),
+	    'ach-business' => array('label' => 'ACH (business)', 'value' => '2.5' , 'commission' => '3'),
+	    'wire-transfer' => array('label' => 'Wire transfer', 'value' => '2.5', 'commission' => '25'),
+	    'cash' => array('label' => 'Cash', 'value' => '0', 'commission' => '0'),
+	    'check' => array('label' => 'Check', 'value' => '0', 'commission' => '0'),
+    );
+    
 	public $features = array(
 		'hazmat'              => 'Hazmat',
 		'tanker-end'          => 'Tanker End.',
@@ -268,6 +278,10 @@ class TMSReportsHelper extends TMSReportsIcons {
 	}
     
     
+    function get_quick_pay_methods () {
+        return $this->quick_pay_methods;
+    }
+    
     function get_ar_statuses () {
         return $this->statuses_ar;
     }
@@ -330,6 +344,14 @@ class TMSReportsHelper extends TMSReportsIcons {
 		if ( is_null( $key ) || is_null( $search_list ) ) {
 			return false;
 		}
+        
+        if ($search_list === 'bank_statuses') {
+	        return isset( $this->bank_statuses[ $key ] ) ? $this->bank_statuses[ $key ] : $key;
+        }
+        if ($search_list === 'driver_payment_statuses') {
+	        return isset( $this->driver_payment_statuses[ $key ] ) ? $this->driver_payment_statuses[ $key ] : $key;
+        }
+        
 		
 		if ( $search_list === 'invoices' ) {
 			return isset( $this->invoices[ $key ] ) ? $this->invoices[ $key ] : $key;

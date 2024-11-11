@@ -101,9 +101,16 @@ if ( ! empty( $results ) ) : ?>
 			$booked_rate     = esc_html( '$' . str_replace( '.00', '', $booked_rate_raw ) );
 			
 			$driver_rate_raw = get_field_value( $meta, 'driver_rate' );
+			$quick_pay_driver_amount = get_field_value( $meta, 'quick_pay_driver_amount' );
+		
+			if (!is_null($quick_pay_driver_amount)) {
+				$driver_rate_raw = floatval($driver_rate_raw) - floatval($quick_pay_driver_amount);
+			}
+   
 			$driver_rate     = esc_html( '$' . str_replace( '.00', '', $driver_rate_raw ) );
 			
 			$true_profit_raw  = get_field_value( $meta, 'true_profit' );
+			$profit_class     = $true_profit_raw < 0 ? 'modified-price' : '';
 			$true_profit      = esc_html( '$' . str_replace( '.00', '', $true_profit_raw ) );
    
 			$pick_up_date_raw = get_field_value( $row, 'pick_up_date' );
@@ -130,8 +137,14 @@ if ( ! empty( $results ) ) : ?>
 				$modify_booked_price_class = 'modified-price';
 			}
 			
-			$bank_status       = 'Approved';
-			$driver_pay_status = 'Processing';
+			$bank_status       = get_field_value( $meta, 'bank_payment_status' );
+			$driver_pay_status = get_field_value( $meta, 'driver_pay_statuses' );
+            
+			
+			
+			$bank_status = $helper->get_label_by_key( $bank_status ,'bank_statuses');
+			$driver_pay_status = $helper->get_label_by_key( $driver_pay_status ,'driver_payment_statuses');
+   
 			?>
 
             <tr class="">
@@ -209,9 +222,10 @@ if ( ! empty( $results ) ) : ?>
                 <td><span class="<?php echo $modify_booked_price_class; ?>"><?php echo $booked_rate; ?></span></td>
 				
 
-                <td><?php echo $driver_rate; ?></td>
+                <td><?php echo $driver_rate; ?>
+                </td>
                 
-                <td><?php echo $true_profit; ?></td>
+                <td><span class="<?php echo $profit_class; ?>"><?php echo $true_profit; ?></span></td>
 
                 <td><?php echo $pick_up_date; ?></td>
 				

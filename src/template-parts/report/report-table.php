@@ -87,6 +87,7 @@ if ( ! empty( $results ) ) : ?>
 			$driver_rate     = esc_html( '$' . str_replace( '.00', '', $driver_rate_raw ) );
 			
 			$profit_raw       = get_field_value( $meta, 'profit' );
+			$profit_class     = $profit_raw < 0 ? 'modified-price' : '';
 			$profit           = esc_html( '$' . str_replace( '.00', '', $profit_raw ) );
 			
 			$pick_up_date_raw = get_field_value( $row, 'pick_up_date' );
@@ -186,7 +187,7 @@ if ( ! empty( $results ) ) : ?>
         
                 <td><?php echo $driver_rate; ?></td>
                     
-                <td><?php echo $profit; ?></td>
+                <td><span class="<?php echo $profit_class; ?>"><?php echo $profit; ?></span></td>
 
                 <td><?php echo $pick_up_date; ?></td>
             

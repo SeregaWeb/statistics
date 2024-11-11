@@ -78,10 +78,52 @@ if (!$mount_param) {
                                 <button class="btn btn-primary" type="submit">Select</button>
                             </div>
                             
-                            <div class="d-flex gap-1">
+                            <div class="d-flex flex-column gap-1">
                                 <?php
-                                var_dump($statistics->get_monthly_fuctoring_stats($year_param, $mount_param ));
+                                $data = $statistics->get_monthly_fuctoring_stats($year_param, $mount_param );
+                                $general_profit = floatval($data['total_profit']) - floatval($data['total_driver_rate']);
+                                $general_true_profit = floatval($data['total_true_profit']);
+                                
+                                $paid_to_factoring = $general_profit - $general_true_profit;
+                                $after_factoring = floatval($data['total_booked_rate']) - $paid_to_factoring;
                                 ?>
+                                
+                                <div class="table-values">
+                                    <div class="table-values-col">
+                                        <p>Gross</p>
+                                        $<?php echo $data['total_booked_rate']; ?>
+                                    </div>
+
+                                    <div class="table-values-col">
+                                        <p>Driver rate</p>
+		                                $<?php echo $data['total_driver_rate']; ?>
+                                    </div>
+
+                                    <div class="table-values-col">
+                                        <p>After Factoring</p>
+		                                $<?php echo $after_factoring; ?>
+                                    </div>
+
+
+                                    <div class="table-values-col">
+                                        <p>General profit</p>
+	                                    $<?php echo $general_profit; ?>
+                                    </div>
+                                    
+                                    <div class="table-values-col">
+                                        <p>True profit</p>
+	                                    $<?php echo $general_true_profit; ?>
+                                    </div>
+                                    
+                                    <div></div>
+                                    <div></div>
+                                    <div class="table-values-col">
+                                        <p>Paid to Factoring</p>
+                                        $<?php echo $paid_to_factoring; ?>
+                                    </div>
+                                  
+                                </div>
+                                
                             </div>
                         </form>
 

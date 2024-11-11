@@ -238,23 +238,29 @@ class  TMSStatistics extends TMSReportsHelper {
 		
 		// Prepare query with necessary joins for each meta field
 		$query = $wpdb->prepare( "
-        SELECT
-            COUNT(DISTINCT reports.id) AS post_count,
-            SUM(CAST(booked_rate.meta_value AS DECIMAL(10,2))) AS total_booked_rate,
-            SUM(CAST(profit.meta_value AS DECIMAL(10,2))) AS total_profit,
-            SUM(CAST(driver_rate.meta_value AS DECIMAL(10,2))) AS total_driver_rate,
-            SUM(CAST(true_profit.meta_value AS DECIMAL(10,2))) AS total_true_profit,
-            AVG(CAST(profit.meta_value AS DECIMAL(10,2))) AS average_profit
-        FROM $table_reports reports
-        INNER JOIN $table_meta profit ON reports.id = profit.post_id AND profit.meta_key = 'profit'
-        INNER JOIN $table_meta booked_rate ON reports.id = booked_rate.post_id AND booked_rate.meta_key = 'booked_rate'
-        INNER JOIN $table_meta driver_rate ON reports.id = driver_rate.post_id AND driver_rate.meta_key = 'driver_rate'
-        INNER JOIN $table_meta true_profit ON reports.id = true_profit.post_id AND true_profit.meta_key = 'true_profit'
-        WHERE YEAR(reports.date_booked) = %d
-          AND MONTH(reports.date_booked) = %d
-          AND reports.status_post = 'publish'
-    ", $year, $month );
-		
+		    SELECT
+		        COUNT(DISTINCT reports.id) AS post_count,
+		        SUM(CAST(IFNULL(booked_rate.meta_value, 0) AS DECIMAL(10,2))) AS total_booked_rate,
+		        SUM(CAST(IFNULL(profit.meta_value, 0) AS DECIMAL(10,2))) AS total_profit,
+		        SUM(CAST(IFNULL(driver_rate.meta_value, 0) AS DECIMAL(10,2))) AS total_driver_rate,
+		        SUM(CAST(IFNULL(true_profit.meta_value, 0) AS DECIMAL(10,2))) AS total_true_profit,
+		        SUM(CAST(IFNULL(processing_fees.meta_value, 0) AS DECIMAL(10,2))) AS total_processing_fees,
+		        SUM(CAST(IFNULL(percent_quick_pay_value.meta_value, 0) AS DECIMAL(10,2))) AS total_percent_quick_pay_value,
+		        SUM(CAST(IFNULL(quick_pay_driver_amount.meta_value, 0) AS DECIMAL(10,2))) AS total_quick_pay_driver_amount,
+		        SUM(CAST(IFNULL(booked_rate_modify.meta_value, 0) AS DECIMAL(10,2))) AS total_booked_rate_modify
+		    FROM $table_reports reports
+		    LEFT JOIN $table_meta profit ON reports.id = profit.post_id AND profit.meta_key = 'profit'
+		    LEFT JOIN $table_meta booked_rate ON reports.id = booked_rate.post_id AND booked_rate.meta_key = 'booked_rate'
+		    LEFT JOIN $table_meta driver_rate ON reports.id = driver_rate.post_id AND driver_rate.meta_key = 'driver_rate'
+		    LEFT JOIN $table_meta quick_pay_driver_amount ON reports.id = quick_pay_driver_amount.post_id AND quick_pay_driver_amount.meta_key = 'quick_pay_driver_amount'
+		    LEFT JOIN $table_meta percent_quick_pay_value ON reports.id = percent_quick_pay_value.post_id AND percent_quick_pay_value.meta_key = 'percent_quick_pay_value'
+		    LEFT JOIN $table_meta processing_fees ON reports.id = processing_fees.post_id AND processing_fees.meta_key = 'processing_fees'
+		    LEFT JOIN $table_meta true_profit ON reports.id = true_profit.post_id AND true_profit.meta_key = 'true_profit'
+		    LEFT JOIN $table_meta booked_rate_modify ON reports.id = booked_rate_modify.post_id AND booked_rate_modify.meta_key = 'booked_rate_modify'
+		    WHERE YEAR(reports.date_booked) = %d
+		      AND MONTH(reports.date_booked) = %d
+		      AND reports.status_post = 'publish'
+		", $year, $month );
 		// Execute the query
 		$results = $wpdb->get_results( $query, ARRAY_A );
 		
@@ -266,7 +272,10 @@ class  TMSStatistics extends TMSReportsHelper {
 			'total_profit'   => 0.00,
 			'total_driver_rate' => 0.00,
 			'total_true_profit' => 0.00,
-			'average_profit' => 0.00
+			'total_booked_rate_modify' => 0.00,
+			'total_processing_fees' => 0.00,
+			'percent_quick_pay_value' => 0.00,
+			'total_quick_pay_driver_amount' => 0.00,
 		];
 		
 		// Populate the result with actual data if available
@@ -276,7 +285,10 @@ class  TMSStatistics extends TMSReportsHelper {
 			$monthly_stats['total_profit'] = $results[0]['total_profit'] ?? 0.00;
 			$monthly_stats['total_driver_rate'] = $results[0]['total_driver_rate'] ?? 0.00;
 			$monthly_stats['total_true_profit'] = $results[0]['total_true_profit'] ?? 0.00;
-			$monthly_stats['average_profit'] = $results[0]['average_profit'] ?? 0.00;
+			$monthly_stats['total_booked_rate_modify'] = $results[0]['total_booked_rate_modify'] ?? 0.00;
+			$monthly_stats['total_processing_fees'] = $results[0]['total_processing_fees'] ?? 0.00;
+			$monthly_stats['percent_quick_pay_value'] = $results[0]['percent_quick_pay_value'] ?? 0.00;
+			$monthly_stats['total_quick_pay_driver_amount'] = $results[0]['total_quick_pay_driver_amount'] ?? 0.00;
 		}
 		
 		// Return the monthly statistics

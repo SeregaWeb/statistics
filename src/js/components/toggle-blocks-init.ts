@@ -19,3 +19,23 @@ export const toggleBlocksInit = () => {
             });
         });
 };
+
+export const toggleCheckboxInit = () => {
+    const toggleElements = document.querySelectorAll('.js-switch-toggle');
+
+    toggleElements &&
+        toggleElements.forEach((item) => {
+            item.addEventListener('change', (event) => {
+                event.preventDefault();
+                const { target } = event;
+                // @ts-ignore
+                const toggleContainerSelector = target.getAttribute('data-toggle');
+                const toggleContainer = document.querySelector(`.${toggleContainerSelector}`);
+
+                if (!target || !toggleContainer) return;
+
+                // @ts-ignore
+                toggleContainer.classList.toggle('d-none');
+            });
+        });
+};

@@ -32,6 +32,7 @@ $commodity           = '';
 $weight              = '';
 $notes               = '';
 $modifi_price = '';
+$factoring_status = '';
 $tbd = false;
 
 $processing_fees = 0;
@@ -56,7 +57,6 @@ if ( $report_object ) {
         $dispatcher_initials = get_field_value($meta, 'dispatcher_initials');
 		$reference_number    = get_field_value($meta, 'reference_number');
 		$unit_number_name    = get_field_value($meta, 'unit_number_name');
-        
 		$booked_rate         = get_field_value($meta, 'booked_rate');
 		$driver_rate         = get_field_value($meta, 'driver_rate');
 		$driver_phone        = get_field_value($meta, 'driver_phone');
@@ -78,6 +78,16 @@ if ( $report_object ) {
 		$tbd = get_field_value($meta, 'tbd');
   
 		$post_status         = get_field_value( $main, 'status_post' );
+		
+		$factoring_status = get_field_value($meta, 'factoring_status');
+        
+        if ($driver_rate && $profit && !$booked_rate) {
+            $booked_rate = '0.00';
+            
+            if (!$modifi_price) {
+                $modifi_price = '0.00';
+            }
+        }
 	}
 }
 
@@ -118,10 +128,11 @@ $read_only = $TMSUsers->check_read_only($post_status);
         <div class="mb-2 col-12 col-md-6 col-xl-4">
             <label for="booked_rate" class="form-label">Booked Rate</label>
           
-            <?php if ($full_view_only):
+            <?php if ($full_view_only || $factoring_status === 'charge-back'):
                 ?>
                 <p class="m-0"><strong>$<?php echo $modifi_price ?></strong></p>
             <?php else: ?>
+            
             <div class="input-group">
                 <span class="input-group-text">$</span>
                 <input type="text" value="<?php echo $booked_rate; ?>" name="booked_rate"

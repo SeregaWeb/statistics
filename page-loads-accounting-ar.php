@@ -17,7 +17,8 @@ $args = array(
     'sort_order' => 'asc',
 );
 
-$items = $reports->get_table_items($args);
+$args = $reports->set_filter_params_arr($args);
+$items = $reports->get_table_items_ar($args);
 
 $post_tp = 'accounting';
 $items['page_type'] = $post_tp;
@@ -31,8 +32,11 @@ $items['ar_problem'] = true;
                         <h2>A/R aging</h2>
                     </div>
                     <div class="col-12">
-						
-						<?php
+	                    <?php
+	                    echo esc_html( get_template_part( 'src/template-parts/report/report', 'filter-ar' ) );
+	                    ?>
+	                    
+	                    <?php
 						echo esc_html( get_template_part( 'src/template-parts/report/report', 'table-ar', $items ) );
 						?>
 

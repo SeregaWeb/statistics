@@ -105,6 +105,10 @@ class TMSReports extends TMSReportsHelper {
 			$where_values[]     = $args[ 'load_status' ];
 		}
 		
+		if (isset($args['exclude_status']) && !empty($args['exclude_status'])) {
+			$where_conditions[] = "load_status.meta_value != '".$args['exclude_status'] ."'";
+		}
+		
 		if ( ! empty( $args[ 'invoice' ] ) ) {
 			if ( $args[ 'invoice' ] === 'invoiced' ) {
 				$where_conditions[] = "invoiced_proof.meta_value = %s";
@@ -208,6 +212,143 @@ class TMSReports extends TMSReportsHelper {
 			foreach ( $main_results as &$result ) {
 				$post_id               = $result[ 'id' ];
 				$result[ 'meta_data' ] = isset( $meta_data[ $post_id ] ) ? $meta_data[ $post_id ] : array();
+			}
+		}
+		
+		return array(
+			'results'       => $main_results,
+			'total_pages'   => $total_pages,
+			'total_posts'   => $total_records,
+			'current_pages' => $current_page,
+		);
+	}
+	
+	/**
+	 * @param $args
+	 * Get table items and filter
+	 *
+	 * @return array
+	 */
+	public function get_table_items_ar( $args = array() ) {
+		global $wpdb;
+		
+		$table_main   = $wpdb->prefix . $this->table_main;
+		$table_meta   = $wpdb->prefix . $this->table_meta;
+		$table_company = $wpdb->prefix . 'reports_company'; // Таблица с mc_number и company_name
+		$per_page     = $this->per_page_loads;
+		$current_page = isset($_GET['paged']) ? absint($_GET['paged']) : 1;
+		$sort_by      = !empty($args['sort_by']) ? $args['sort_by'] : 'date_booked';
+		$sort_order   = !empty($args['sort_order']) && strtolower($args['sort_order']) === 'asc' ? 'ASC' : 'DESC';
+		
+		
+		$join_builder = "
+		    FROM $table_main AS main
+		    LEFT JOIN $table_meta AS reference
+		        ON main.id = reference.post_id
+		        AND reference.meta_key = 'reference_number'
+	        LEFT JOIN $table_meta AS ar_status
+				ON main.id = ar_status.post_id
+				AND ar_status.meta_key = 'ar_status'
+		    LEFT JOIN $table_meta AS customer_meta
+		        ON main.id = customer_meta.post_id
+		        AND customer_meta.meta_key = 'customer_id'
+		    LEFT JOIN $table_company AS company
+		        ON customer_meta.meta_value = company.id
+		    WHERE 1=1
+		";
+		
+		// Основной запрос с добавлением полей из таблицы company
+		$sql = "SELECT
+		    main.*,
+		    reference.meta_value AS reference_number_value,
+		    company.company_name,
+		    company.mc_number
+		" . $join_builder;
+		
+		$where_conditions = array();
+		$where_values     = array();
+		
+		// Фильтрация по статусу
+		if (!empty($args['status_post'])) {
+			$where_conditions[] = "main.status_post = %s";
+			$where_values[]     = $args['status_post'];
+		}
+		
+		// Фильтрация по проблемам
+		if (isset($args['ar_problem']) && $args['ar_problem']) {
+			$where_conditions[] = "main.load_problem IS NOT NULL";
+			$where_conditions[] = "DATEDIFF(NOW(), main.load_problem) > 50";
+		}
+
+		if ( ! empty( $args[ 'status' ] ) && $args[ 'status' ] !== 'all' ) {
+			$where_conditions[] = "ar_status.meta_value = %s";
+			$where_values[]     = $args[ 'status' ];
+		}
+		
+		
+		if ( ! empty( $args['my_search'] ) ) {
+			$where_conditions[] = "(
+        reference.meta_value LIKE %s OR
+        company.mc_number LIKE %s OR
+        company.company_name LIKE %s
+    )";
+			$search_value = '%' . $wpdb->esc_like( $args['my_search'] ) . '%';
+			$where_values[] = $search_value;
+			$where_values[] = $search_value;
+			$where_values[] = $search_value;
+		}
+		
+		// Применяем фильтры к запросу
+		if (!empty($where_conditions)) {
+			$sql .= ' AND ' . implode(' AND ', $where_conditions);
+		}
+		
+		$total_records_sql = "SELECT COUNT(*)" . $join_builder;
+		if (!empty($where_conditions)) {
+			$total_records_sql .= ' AND ' . implode(' AND ', $where_conditions);
+		}
+		
+		$total_records = $wpdb->get_var($wpdb->prepare($total_records_sql, ...$where_values));
+		
+		// Вычисляем количество страниц
+		$total_pages = ceil($total_records / $per_page);
+		
+		// Смещение для текущей страницы
+		$offset = ($current_page - 1) * $per_page;
+		
+		// Добавляем сортировку и лимит для текущей страницы
+		$sql            .= " ORDER BY main.$sort_by $sort_order LIMIT %d, %d";
+		$where_values[] = $offset;
+		$where_values[] = $per_page;
+		
+		// Выполняем запрос
+		$main_results = $wpdb->get_results($wpdb->prepare($sql, ...$where_values), ARRAY_A);
+		// Собираем все ID записей для получения дополнительных метаданных
+		$post_ids = wp_list_pluck($main_results, 'id');
+		
+		// Если есть записи, получаем метаданные
+		$meta_data = array();
+		if (!empty($post_ids)) {
+			$meta_sql     = "SELECT post_id, meta_key, meta_value
+                     FROM $table_meta
+                     WHERE post_id IN (" . implode(',', array_map('absint', $post_ids)) . ")";
+			$meta_results = $wpdb->get_results($meta_sql, ARRAY_A);
+			
+			// Преобразуем метаданные в ассоциативный массив по post_id
+			foreach ($meta_results as $meta_row) {
+				$post_id = $meta_row['post_id'];
+				if (!isset($meta_data[$post_id])) {
+					$meta_data[$post_id] = array();
+				}
+				$meta_data[$post_id][$meta_row['meta_key']] = $meta_row['meta_value'];
+			}
+		}
+		
+		if (is_array($main_results) && !empty($main_results)) {
+			// Объединяем основную таблицу с метаданными
+			foreach ($main_results as &$result) {
+				$post_id               = $result['id'];
+				$result['meta_data'] = isset($meta_data[$post_id]) ? $meta_data[$post_id] : array();
 			}
 		}
 		

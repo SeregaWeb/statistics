@@ -236,8 +236,7 @@ class  TMSStatistics extends TMSReportsHelper {
 		$table_reports = $wpdb->prefix . $this->table_main;
 		$table_meta    = $wpdb->prefix . $this->table_meta;
 		
-		// Prepare query with necessary joins for each meta field
-		$query = $wpdb->prepare( "
+		$sql = "
 		    SELECT
 		        COUNT(DISTINCT reports.id) AS post_count,
 		        SUM(CAST(IFNULL(booked_rate.meta_value, 0) AS DECIMAL(10,2))) AS total_booked_rate,
@@ -257,10 +256,17 @@ class  TMSStatistics extends TMSReportsHelper {
 		    LEFT JOIN $table_meta processing_fees ON reports.id = processing_fees.post_id AND processing_fees.meta_key = 'processing_fees'
 		    LEFT JOIN $table_meta true_profit ON reports.id = true_profit.post_id AND true_profit.meta_key = 'true_profit'
 		    LEFT JOIN $table_meta booked_rate_modify ON reports.id = booked_rate_modify.post_id AND booked_rate_modify.meta_key = 'booked_rate_modify'
-		    WHERE YEAR(reports.date_booked) = %d
+		";
+		
+		if ($year === 'all' || $month === 'all') {
+			$sql .= "WHERE reports.status_post = 'publish'";
+		} else {
+			$sql .= "WHERE YEAR(reports.date_booked) = %d
 		      AND MONTH(reports.date_booked) = %d
-		      AND reports.status_post = 'publish'
-		", $year, $month );
+		      AND reports.status_post = 'publish'";
+		}
+		// Prepare query with necessary joins for each meta field
+		$query = $wpdb->prepare( $sql, $year, $month );
 		// Execute the query
 		$results = $wpdb->get_results( $query, ARRAY_A );
 		

@@ -75,3 +75,18 @@ $color_accounting_others: #ff0000;
         color: #ffffff !important;
     }
 }
+
+.invoiced {
+    span {
+        padding: 5px;
+        background: #b7e1cd !important;
+    }
+}
+
+.not-invoiced {
+    span {
+        padding: 5px;
+        color: #ffffff !important;
+        background: #ff0000 !important;
+    }
+}

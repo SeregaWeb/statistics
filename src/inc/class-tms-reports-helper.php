@@ -2,7 +2,7 @@
 
 class TMSReportsHelper extends TMSReportsIcons {
 	
-	public $select = array(
+	public $select                  = array(
 		"USA_LABEL" => array( "---United states (US)---" ),
 		"AL"        => "Alabama, AL",
 		"AK"        => "Alaska, AK",
@@ -107,13 +107,11 @@ class TMSReportsHelper extends TMSReportsIcons {
 		"YUC"       => "Yucatán, YUC",
 		"ZAC"       => "Zacatecas, ZAC",
 	);
-	
-	public $invoices = array(
+	public $invoices                = array(
 		'invoiced'     => 'Invoiced',
 		'not-invoiced' => 'Not invoiced',
 	);
-	
-	public $factoring_status = array(
+	public $factoring_status        = array(
 		'unsubmitted'        => 'Unsubmitted',
 		'in-processing'      => 'In Processing',
 		'requires-attention' => 'Requires Attention',
@@ -122,21 +120,18 @@ class TMSReportsHelper extends TMSReportsIcons {
 		'charge-back'        => 'Charge Back',
 		'short-pay'          => 'Short Pay',
 	);
-	
-	public $bank_statuses = array(
+	public $bank_statuses           = array(
 		'approved'         => 'Approved',
 		'not-in-payees'    => 'Not in payees',
 		'adding-to-payees' => 'Adding to payees',
 		'missing-vc'       => 'Missing VC',
 	);
-	
 	public $driver_payment_statuses = array(
 		'not-paid'   => 'Not paid',
 		'processing' => 'Processing',
 		'paid'       => 'Paid'
 	);
-	
-	public $statuses = array(
+	public $statuses                = array(
 		'waiting-on-pu-date' => 'Waiting on PU Date',
 		'at-pu'              => '@PU',
 		'loaded-enroute'     => 'Loaded & Enroute',
@@ -146,8 +141,7 @@ class TMSReportsHelper extends TMSReportsIcons {
 		'cancelled'          => 'Cancelled',
 		'waiting-on-rc'      => 'Waiting on RC'
 	);
-	
-	public $sources = array(
+	public $sources                 = array(
 		'contact'   => 'Contact',
 		'dat'       => 'DAT',
 		'truckstop' => 'Truckstop',
@@ -156,18 +150,16 @@ class TMSReportsHelper extends TMSReportsIcons {
 		'beon'      => 'Beon',
 		'other'     => 'Other'
 	);
-	
-    public $quick_pay_methods = array(
-	    'zelle' => array('label' => 'Zelle', 'value' => '3' , 'commission' => '0'),
-	    'cashapp' => array('label' => 'CashApp', 'value' => '3.5' , 'commission' => '0'),
-	    'ach-individual' => array('label' => 'ACH (individual)', 'value' => '2.5' , 'commission' => '0.5'),
-	    'ach-business' => array('label' => 'ACH (business)', 'value' => '2.5' , 'commission' => '3'),
-	    'wire-transfer' => array('label' => 'Wire transfer', 'value' => '2.5', 'commission' => '25'),
-	    'cash' => array('label' => 'Cash', 'value' => '0', 'commission' => '0'),
-	    'check' => array('label' => 'Check', 'value' => '0', 'commission' => '0'),
-    );
-    
-	public $features = array(
+	public $quick_pay_methods       = array(
+		'zelle'          => array( 'label' => 'Zelle', 'value' => '3', 'commission' => '0' ),
+		'cashapp'        => array( 'label' => 'CashApp', 'value' => '3.5', 'commission' => '0' ),
+		'ach-individual' => array( 'label' => 'ACH (individual)', 'value' => '2.5', 'commission' => '0.5' ),
+		'ach-business'   => array( 'label' => 'ACH (business)', 'value' => '2.5', 'commission' => '3' ),
+		'wire-transfer'  => array( 'label' => 'Wire transfer', 'value' => '2.5', 'commission' => '25' ),
+		'cash'           => array( 'label' => 'Cash', 'value' => '0', 'commission' => '0' ),
+		'check'          => array( 'label' => 'Check', 'value' => '0', 'commission' => '0' ),
+	);
+	public $features                = array(
 		'hazmat'              => 'Hazmat',
 		'tanker-end'          => 'Tanker End.',
 		'driver-assist'       => 'Driver assist',
@@ -189,8 +181,7 @@ class TMSReportsHelper extends TMSReportsIcons {
 		'blind-shipment'      => 'Blind shipment',
 		'partial'             => 'Partial'
 	);
-	
-	public $types = array(
+	public $types                   = array(
 		'ltl'           => 'LTL',
 		'container'     => 'Container',
 		'drop_and_hook' => 'Drop and Hook',
@@ -198,23 +189,21 @@ class TMSReportsHelper extends TMSReportsIcons {
 		'other'         => 'Other',
 		'truck_load'    => 'Truck Load',
 	);
-	
-	public $tms_tables = array(
+	public $tms_tables              = array(
 		'Odysseia',
 		'Martlet',
 		'Endurance'
 	);
-	
-	public $statuses_ar = array(
-		'not-solved'     => 'Not solved',
+	public $statuses_ar             = array(
+		'not-solved' => 'Not solved',
 		'solved'     => 'Solved',
 	);
-	public $set_up = array(
+	public $set_up                  = array(
 		'completed'     => 'Completed',
 		'not_completed' => 'Not completed',
 		'error'         => 'Error',
 	);
-	
+ 
 	public $set_up_platform = array(
 		'rmis'    => 'RMIS',
 		'dat'     => 'DAT',
@@ -254,37 +243,46 @@ class TMSReportsHelper extends TMSReportsIcons {
 		return $dispatchers;
 	}
 	
-	function formatJsonForEmail($jsonString) {
-		$decodedArray = json_decode($jsonString, true);
+	function formatJsonForEmail( $jsonString ) {
+		$decodedArray = json_decode( $jsonString, true );
 		
-		if ($decodedArray === null) {
+		if ( $decodedArray === null ) {
 			return "JSON decoding error: " . json_last_error_msg();
 		}
 		
 		$output = "";
-		foreach ($decodedArray as $location) {
-			$output .= "Address: " . $location['address'] . "<br>";
-			$output .= "Contact: " . $location['contact'] . "<br>";
-			$output .= "Date: " . $location['date'] . "<br>";
-			$output .= "Information: " . $location['info'] . "<br>";
-			$output .= "Type: " . $location['type'] . "<br>";
-			$output .= "Start Time: " . ($location['time_start'] ?: 'not specified') . "<br>";
-			$output .= "End Time: " . ($location['time_end'] ?: 'not specified') . "<br>";
-			$output .= "Strict Time: " . ($location['strict_time'] ?: 'no') . "<br>";
+		foreach ( $decodedArray as $location ) {
+			$output .= "Address: " . $location[ 'address' ] . "<br>";
+			$output .= "Contact: " . $location[ 'contact' ] . "<br>";
+			$output .= "Date: " . $location[ 'date' ] . "<br>";
+			$output .= "Information: " . $location[ 'info' ] . "<br>";
+			$output .= "Type: " . $location[ 'type' ] . "<br>";
+			$output .= "Start Time: " . ( $location[ 'time_start' ] ?: 'not specified' ) . "<br>";
+			$output .= "End Time: " . ( $location[ 'time_end' ] ?: 'not specified' ) . "<br>";
+			$output .= "Strict Time: " . ( $location[ 'strict_time' ] ?: 'no' ) . "<br>";
 			$output .= "--------------------------<br>";
 		}
 		
 		return $output;
 	}
+	
+	function get_quick_pay_methods() {
+		return $this->quick_pay_methods;
+	}
     
-    
-    function get_quick_pay_methods () {
-        return $this->quick_pay_methods;
+    function get_quick_pay_methods_for_accounting( $key ) {
+        $array_methods = $this->get_quick_pay_methods();
+        
+        if ( ! in_array( $key, $array_methods ) ) {
+            return $array_methods[$key]['label'];
+        }
+        
+        return false;
     }
-    
-    function get_ar_statuses () {
-        return $this->statuses_ar;
-    }
+	
+	function get_ar_statuses() {
+		return $this->statuses_ar;
+	}
 	
 	function get_set_up_platform() {
 		return $this->set_up_platform;
@@ -344,14 +342,14 @@ class TMSReportsHelper extends TMSReportsIcons {
 		if ( is_null( $key ) || is_null( $search_list ) ) {
 			return false;
 		}
-        
-        if ($search_list === 'bank_statuses') {
-	        return isset( $this->bank_statuses[ $key ] ) ? $this->bank_statuses[ $key ] : $key;
-        }
-        if ($search_list === 'driver_payment_statuses') {
-	        return isset( $this->driver_payment_statuses[ $key ] ) ? $this->driver_payment_statuses[ $key ] : $key;
-        }
-        
+		
+		if ( $search_list === 'bank_statuses' ) {
+			return isset( $this->bank_statuses[ $key ] ) ? $this->bank_statuses[ $key ] : $key;
+		}
+		if ( $search_list === 'driver_payment_statuses' ) {
+			return isset( $this->driver_payment_statuses[ $key ] ) ? $this->driver_payment_statuses[ $key ] : $key;
+		}
+		
 		
 		if ( $search_list === 'invoices' ) {
 			return isset( $this->invoices[ $key ] ) ? $this->invoices[ $key ] : $key;
@@ -590,6 +588,24 @@ class TMSReportsHelper extends TMSReportsIcons {
 			$args[ 'load_status' ] = $load_status;
 		}
 		
+		return $args;
+	}
+	
+	function set_filter_params_arr( $args ) {
+		$my_search         = get_field_value( $_GET, 'my_search' );
+		$status           = get_field_value( $_GET, 'status' );
+        
+        if (!$status) {
+	        $status = 'not-solved';
+        }
+		
+		if ( $status ) {
+			$args[ 'status' ] = $status;
+		}
+		
+		if ( $my_search ) {
+			$args[ 'my_search' ] = $my_search;
+		}
 		return $args;
 	}
 }

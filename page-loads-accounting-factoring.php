@@ -38,6 +38,7 @@ if (!$mount_param) {
                             <div class="d-flex gap-1">
                                 <select class="form-select w-auto" required name="year_param" aria-label=".form-select-sm example">
                                     <option value="">Year</option>
+                                    <option value="all" <?php echo $year_param === 'all' ? 'selected' : ''; ?>>All time</option>
 			                        <?php
 			                        
 			                        for ( $year = 2023; $year <= $current_year; $year++ ) {
@@ -65,6 +66,7 @@ if (!$mount_param) {
 	                            ?>
                                 <select class="form-select w-auto" name="mount_param" aria-label=".form-select-sm example">
                                     <option value="">Month</option>
+                                    <option value="all" <?php echo $mount_param === 'all' ? 'selected' : ''; ?>>All time</option>
 		                            <?php
 		                            foreach ( $months as $num => $name ) {
 			                            

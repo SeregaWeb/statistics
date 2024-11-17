@@ -13,6 +13,7 @@ $reports = new TMSReports();
 $args = array(
 	'status_post' => 'publish',
     'user_id' => get_current_user_id(),
+    'exclude_status' => 'delivered'
 );
 
 $args = $reports->set_filter_params($args);

@@ -166,6 +166,7 @@ export function checboxesHelperInit() {
         });
 }
 
+// eslint-disable-next-line camelcase
 export function quick_pay_method() {
     const selectMethod = document.querySelector('.js-quick-pay-method');
 

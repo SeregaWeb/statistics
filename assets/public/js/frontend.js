@@ -4441,7 +4441,8 @@ var initGetInfoDriver = function initGetInfoDriver(ProjectsLinks) {
 "use strict";
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
-/* harmony export */   cleanUrlByFilter: function() { return /* binding */ cleanUrlByFilter; }
+/* harmony export */   cleanUrlByFilter: function() { return /* binding */ cleanUrlByFilter; },
+/* harmony export */   cleanUrlByFilterAr: function() { return /* binding */ cleanUrlByFilterAr; }
 /* harmony export */ });
 var cleanUrlByFilter = function cleanUrlByFilter() {
   var form = document.getElementById('navbarNavDarkDropdown');
@@ -4465,6 +4466,20 @@ var cleanUrlByFilter = function cleanUrlByFilter() {
       if (source === null || source === void 0 ? void 0 : source.value) params.append('source', source.value);
       if (factoring === null || factoring === void 0 ? void 0 : factoring.value) params.append('factoring', factoring.value);
       if (invoice === null || invoice === void 0 ? void 0 : invoice.value) params.append('invoice', invoice.value);
+      window.location.href = "?".concat(params.toString());
+    });
+  }
+};
+var cleanUrlByFilterAr = function cleanUrlByFilterAr() {
+  var form = document.getElementById('navbarNavDarkDropdownAr');
+  if (form) {
+    form.addEventListener('submit', function (event) {
+      event.preventDefault();
+      var params = new URLSearchParams();
+      var mySearch = form.elements.namedItem('my_search');
+      var status = form.elements.namedItem('status');
+      if (mySearch === null || mySearch === void 0 ? void 0 : mySearch.value) params.append('my_search', mySearch.value);
+      if (status === null || status === void 0 ? void 0 : status.value) params.append('status', status.value);
       window.location.href = "?".concat(params.toString());
     });
   }
@@ -14951,6 +14966,7 @@ function ready() {
   (0,_components_sidebar_init__WEBPACK_IMPORTED_MODULE_12__.toggleSidebarInit)();
   (0,_components_auto_fill_address__WEBPACK_IMPORTED_MODULE_13__.autoFillAddress)(hereApi);
   (0,_components_filter_clean__WEBPACK_IMPORTED_MODULE_15__.cleanUrlByFilter)();
+  (0,_components_filter_clean__WEBPACK_IMPORTED_MODULE_15__.cleanUrlByFilterAr)();
   (0,_components_chow_hidden_value__WEBPACK_IMPORTED_MODULE_16__.showHiddenValueInit)();
   (0,_components_input_helpers__WEBPACK_IMPORTED_MODULE_2__.checboxesHelperInit)();
   (0,_components_toggle_blocks_init__WEBPACK_IMPORTED_MODULE_8__.toggleBlocksInit)();

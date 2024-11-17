@@ -33,3 +33,25 @@ export const cleanUrlByFilter = () => {
         });
     }
 };
+
+export const cleanUrlByFilterAr = () => {
+    const form = document.getElementById('navbarNavDarkDropdownAr') as HTMLFormElement | null;
+
+    if (form) {
+        form.addEventListener('submit', function (event) {
+            event.preventDefault();
+
+            const params = new URLSearchParams();
+
+            const mySearch = form.elements.namedItem('my_search') as HTMLInputElement | null;
+            const status = form.elements.namedItem('status') as HTMLInputElement | null;
+
+            // Проверяем и добавляем параметры только если элементы существуют и не пусты
+            if (mySearch?.value) params.append('my_search', mySearch.value);
+            if (status?.value) params.append('status', status.value);
+
+            // Перенаправляем на URL с параметрами
+            window.location.href = `?${params.toString()}`;
+        });
+    }
+};

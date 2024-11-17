@@ -6,6 +6,7 @@ import '../scss/frontend.scss';
  * JavaScript
  */
 import Popup from './parts/popup-window';
+// eslint-disable-next-line camelcase
 import { checboxesHelperInit, initMoneyMask, quick_pay_method } from './components/input-helpers';
 import {
     actionCreateReportInit,
@@ -33,7 +34,7 @@ import { updateTooltip } from './components/tooltip-start';
 import { toggleSidebarInit } from './components/sidebar-init';
 import { autoFillAddress } from './components/auto-fill-address';
 import { AuthUsersInit } from './components/auth-users';
-import { cleanUrlByFilter } from './components/filter-clean';
+import { cleanUrlByFilter, cleanUrlByFilterAr } from './components/filter-clean';
 import { disabledValuesInSelectInit, showHiddenValueInit } from './components/chow-hidden-value';
 
 function ready() {
@@ -89,6 +90,7 @@ function ready() {
     toggleSidebarInit();
     autoFillAddress(hereApi);
     cleanUrlByFilter();
+    cleanUrlByFilterAr();
     showHiddenValueInit();
     checboxesHelperInit();
     toggleBlocksInit();

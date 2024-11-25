@@ -34,7 +34,7 @@ import { updateTooltip } from './components/tooltip-start';
 import { toggleSidebarInit } from './components/sidebar-init';
 import { autoFillAddress } from './components/auto-fill-address';
 import { AuthUsersInit } from './components/auth-users';
-import { cleanUrlByFilter, cleanUrlByFilterAr } from './components/filter-clean';
+import { cleanUrlByFilter, cleanUrlByFilterAr, cleanUrlByFilterPlatform } from './components/filter-clean';
 import { disabledValuesInSelectInit, showHiddenValueInit } from './components/chow-hidden-value';
 
 function ready() {
@@ -91,6 +91,7 @@ function ready() {
     autoFillAddress(hereApi);
     cleanUrlByFilter();
     cleanUrlByFilterAr();
+    cleanUrlByFilterPlatform();
     showHiddenValueInit();
     checboxesHelperInit();
     toggleBlocksInit();

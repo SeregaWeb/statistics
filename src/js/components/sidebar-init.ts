@@ -15,6 +15,12 @@ export const toggleSidebarInit = () => {
                 // @ts-ignore
                 target.classList.toggle('small');
                 toggleContainer.classList.toggle('small');
+
+                let val = 0;
+                if (toggleContainer.classList.contains('small')) {
+                    val = 1;
+                }
+                document.cookie = `sidebar=${val}; path=/; max-age=86400`;
             });
         });
 };

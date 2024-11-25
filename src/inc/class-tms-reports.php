@@ -360,6 +360,34 @@ class TMSReports extends TMSReportsHelper {
 		);
 	}
 	
+	public function get_problem_statistics_with_sums() {
+		global $wpdb;
+		
+		$table_main = $wpdb->prefix . $this->table_main;
+		$table_meta = $wpdb->prefix . $this->table_meta;
+		
+		// Запрос для подсчета сумм booked_rate по диапазонам
+		$sql = "
+        SELECT
+            SUM(CASE WHEN DATEDIFF(NOW(), main.load_problem) BETWEEN 31 AND 61 THEN meta_booked_rate.meta_value END) AS sum_range_31_61,
+            SUM(CASE WHEN DATEDIFF(NOW(), main.load_problem) BETWEEN 62 AND 90 THEN meta_booked_rate.meta_value END) AS sum_range_62_90,
+            SUM(CASE WHEN DATEDIFF(NOW(), main.load_problem) BETWEEN 91 AND 121 THEN meta_booked_rate.meta_value END) AS sum_range_91_121,
+            SUM(CASE WHEN DATEDIFF(NOW(), main.load_problem) > 121 THEN meta_booked_rate.meta_value END) AS sum_range_121_plus
+	        FROM $table_main AS main
+	        LEFT JOIN $table_meta AS meta_booked_rate
+	            ON main.id = meta_booked_rate.post_id
+	            AND meta_booked_rate.meta_key = 'booked_rate'
+	        WHERE main.load_problem IS NOT NULL
+	          AND main.status_post = 'publish'
+	    ";
+		
+		// Выполнение запроса
+		$result = $wpdb->get_row($sql, ARRAY_A);
+		
+		return $result;
+	}
+
+	
 	/**
 	 * @param $ID
 	 * Get report by id

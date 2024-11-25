@@ -4,6 +4,7 @@ require_once( ABSPATH . 'wp-admin/includes/upgrade.php' );
 class TMSReportsShipper extends TMSReportsHelper {
 	
 	public $table_main = 'reports_shipper';
+	public $posts_per_page = 20;
 	
 	public function ajax_actions() {
 		add_action( 'wp_ajax_add_new_shipper', array( $this, 'add_new_shipper' ) );
@@ -33,6 +34,60 @@ class TMSReportsShipper extends TMSReportsHelper {
         ADD INDEX idx_phone_number (phone_number);
     ");
 	}
+	
+	public function get_table_records() {
+		global $wpdb;
+		$table_name = $wpdb->prefix . $this->table_main;
+		
+		$current_page = isset($_GET['paged']) ? (int) $_GET['paged'] : 1;
+		
+		$search = isset($_GET['my_search']) ? sanitize_text_field($_GET['my_search']) : '';
+		
+		$offset = ($current_page - 1) * $this->posts_per_page;
+		
+		$count_query = "SELECT COUNT(*) FROM $table_name WHERE 1=1";
+		
+		$main_query = "SELECT * FROM $table_name WHERE 1=1";
+		
+		if (!empty($search)) {
+			$search = '%' . $wpdb->esc_like($search) . '%';
+			$search_condition = " AND (
+            shipper_name LIKE %s OR
+            zip_code LIKE %s OR
+            phone_number LIKE %s OR
+            full_address LIKE %s OR
+            email LIKE %s
+        )";
+			$count_query .= $search_condition;
+			$main_query .= $search_condition;
+		}
+		
+		$main_query .= " LIMIT %d OFFSET %d";
+		
+		$params = [];
+		if (!empty($search)) {
+			$params = array_merge($params, [$search, $search, $search, $search, $search]);
+		}
+		if (!empty($platform)) {
+			$params[] = $platform;
+		}
+		
+		$total_records = (int) $wpdb->get_var($wpdb->prepare($count_query, ...$params));
+		$main_results = $wpdb->get_results(
+			$wpdb->prepare($main_query, array_merge($params, [$this->posts_per_page, $offset])),
+			ARRAY_A
+		);
+		
+		$total_pages = ceil($total_records / $this->posts_per_page);
+		
+		return array(
+			'results'       => $main_results,
+			'total_pages'   => $total_pages,
+			'total_posts'   => $total_records,
+			'current_page'  => $current_page,
+		);
+	}
+	
 	
 	public function add_new_shipper() {
 		// Check if it's an AJAX request (simple defense)
@@ -249,7 +304,7 @@ class TMSReportsShipper extends TMSReportsHelper {
 		return $template;
 	}
 	
-	public function get_shipper_by_id( $ID ) {
+	public function get_shipper_by_id( $ID, $type_return = OBJECT ) {
 		global $wpdb;
 		$query = $wpdb->prepare( "
         SELECT * FROM {$wpdb->prefix}{$this->table_main}
@@ -257,7 +312,7 @@ class TMSReportsShipper extends TMSReportsHelper {
     	", $ID );
 		
 		// Execute the query
-		$results = $wpdb->get_results( $query );
+		$results = $wpdb->get_results( $query, $type_return );
 		
 		return $results;
 	}

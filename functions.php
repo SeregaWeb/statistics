@@ -157,14 +157,14 @@ if ( false ) {
 	}
 	
 	// Заполнение таблицы wp_reports_odysseia
-	for ( $i = 0; $i < 1000; $i ++ ) {
+	for ( $i = 0; $i < 100; $i ++ ) {
 		$data = [
 			'user_id_added'   => rand( 1, 10 ),
 			'date_created'    => current_time( 'mysql' ),
 			'user_id_updated' => rand( 1, 10 ),
 			'date_updated'    => current_time( 'mysql' ),
 			'pick_up_date'    => date( 'Y-m-d H:i:s', strtotime( '-' . rand( 1, 360 ) . ' days' ) ),
-			'date_booked'     => date( 'Y-m-d H:i:s', strtotime( '-' . rand( 1, 360 ) . ' days' ) ),
+			'date_booked'     => current_time('mysql'),
 			'load_problem'    => null,
 			'delivery_date'   => date( 'Y-m-d H:i:s', strtotime( '-' . rand( 1, 360 ) . ' days' ) ),
 			'status_post'     => 'publish',

@@ -55,3 +55,25 @@ export const cleanUrlByFilterAr = () => {
         });
     }
 };
+
+export const cleanUrlByFilterPlatform = () => {
+    const form = document.getElementById('navbarNavDarkDropdownPlatform') as HTMLFormElement | null;
+
+    if (form) {
+        form.addEventListener('submit', function (event) {
+            event.preventDefault();
+
+            const params = new URLSearchParams();
+
+            const mySearch = form.elements.namedItem('my_search') as HTMLInputElement | null;
+            const status = form.elements.namedItem('platform') as HTMLInputElement | null;
+
+            // Проверяем и добавляем параметры только если элементы существуют и не пусты
+            if (mySearch?.value) params.append('my_search', mySearch.value);
+            if (status?.value) params.append('platform', status.value);
+
+            // Перенаправляем на URL с параметрами
+            window.location.href = `?${params.toString()}`;
+        });
+    }
+};

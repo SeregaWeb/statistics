@@ -2,6 +2,7 @@
 global $global_options;
 
 $add_new_load = get_field_value( $global_options, 'add_new_load' );
+$link_broker = get_field_value( $global_options, 'single_page_broker' );
 
 $TMSUsers = new TMSUsers();
 $TMSBroker = new TMSReportsCompany();
@@ -81,14 +82,14 @@ if ( ! empty( $results ) ) : ?>
             $show_control = $TMSUsers->show_control_loads($my_team, $current_user_id, $dispatcher_initials, $is_draft);
 			
 			$id_customer              = get_field_value( $meta, 'customer_id' );
-			$broker_info             = $TMSBroker->get_company_by_id($id_customer);
+			$broker_info             = $TMSBroker->get_company_by_id($id_customer, ARRAY_A);
 			
 			$broker_name = '';
 			$broker_mc = '';
-			
-			if (isset($broker_info[0])) {
-				$broker_name = $broker_info[0]->company_name;
-				$broker_mc = $broker_info[0]->mc_number;
+   
+			if (isset($broker_info[0]) && $broker_info[0]) {
+				$broker_name = $broker_info[0]['company_name'];
+				$broker_mc = $broker_info[0]['mc_number'];
 			}
 			
 			
@@ -198,8 +199,12 @@ if ( ! empty( $results ) ) : ?>
                     </div>
                 </td>
                 <td>
-                    <div>
-                        <p class="m-0"><?php echo $broker_name; ?></p>
+                    <div class="d-flex flex-column">
+                        <?php if ($broker_name != 'N/A'): ?>
+                            <a class="m-0" href="<?php echo $link_broker . '?broker_id='. $id_customer; ?>"><?php echo $broker_name; ?></a>
+                        <?php else: ?>
+                            <p class="m-0"><?php echo $broker_name; ?></p>
+                        <?php endif; ?>
                         <span class="text-small"><?php echo $broker_mc; ?></span>
                     </div>
                 </td>

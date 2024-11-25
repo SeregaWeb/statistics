@@ -2,6 +2,7 @@
 global $global_options;
 
 $add_new_load = get_field_value( $global_options, 'add_new_load' );
+$link_broker = get_field_value($global_options, 'single_page_broker');
 
 $TMSUsers   = new TMSUsers();
 $TMSShipper = new TMSReportsShipper();
@@ -171,8 +172,6 @@ if ( ! empty( $results ) ) : ?>
 										echo ' ' . $detailed_address[ 0 ]->zip_code;
 									}
 									?>
-
-
                                 </p>
 							<?php endif; ?>
 						<?php endforeach; ?>
@@ -182,8 +181,12 @@ if ( ! empty( $results ) ) : ?>
                 <td><span class="<?php echo $modify_booked_price_class; ?>"><?php echo $booked_rate; ?></span></td>
                 
                 <td>
-                    <div>
-                        <p class="m-0"><?php echo $broker_name; ?></p>
+                    <div class="d-flex flex-column">
+		                <?php if ($broker_name != 'N/A'): ?>
+                            <a class="m-0" href="<?php echo $link_broker . '?broker_id='. $id_customer; ?>"><?php echo $broker_name; ?></a>
+		                <?php else: ?>
+                            <p class="m-0"><?php echo $broker_name; ?></p>
+		                <?php endif; ?>
                         <span class="text-small"><?php echo $broker_mc; ?></span>
                     </div>
                 </td>

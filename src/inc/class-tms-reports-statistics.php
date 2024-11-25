@@ -13,6 +13,29 @@ class  TMSStatistics extends TMSReportsHelper {
 		}
 	}
 	
+	public function countWeekdays($monthName, $year) {
+		// Преобразуем название месяца в номер (January -> 1, February -> 2 и т.д.)
+		$month = date('n', strtotime($monthName));
+		
+		// Начало и конец месяца
+		$startDate = new DateTime("$year-$month-01");
+		$endDate = (clone $startDate)->modify('last day of this month');
+		
+		$weekdayCount = 0;
+		
+		// Пробегаемся по всем дням месяца
+		while ($startDate <= $endDate) {
+			// Проверяем, является ли день будним (1 - понедельник, 5 - пятница)
+			if ($startDate->format('N') >= 1 && $startDate->format('N') <= 5) {
+				$weekdayCount++;
+			}
+			// Переход к следующему дню
+			$startDate->modify('+1 day');
+		}
+		
+		return $weekdayCount;
+	}
+	
 	public function get_dispatcher_statistics() {
 		global $wpdb;
 		
@@ -90,9 +113,9 @@ class  TMSStatistics extends TMSReportsHelper {
 			    COUNT(reports.id) AS post_count,
 			    SUM(CAST(profit.meta_value AS DECIMAL(10,2))) AS total_profit,
 			    AVG(CAST(profit.meta_value AS DECIMAL(10,2))) AS average_profit
-			FROM wp_reports_odysseia reports
-			INNER JOIN wp_reportsmeta_odysseia meta ON reports.id = meta.post_id
-			INNER JOIN wp_reportsmeta_odysseia profit ON reports.id = profit.post_id
+			FROM $table_reports reports
+			INNER JOIN $table_meta meta ON reports.id = meta.post_id
+			INNER JOIN $table_meta profit ON reports.id = profit.post_id
 			WHERE meta.meta_key = 'dispatcher_initials'
 			  AND meta.meta_value = %d  -- Change as needed
 			  AND profit.meta_key = 'profit'
@@ -181,8 +204,18 @@ class  TMSStatistics extends TMSReportsHelper {
 		
 		// Если указан user_id, добавляем условие фильтрации
 		if ($user_id) {
-			$query .= " AND dispatcher_meta.meta_value = %s";
-			$query = $wpdb->prepare($query, $current_year, $current_month, $user_id);
+			if (is_array($user_id)) {
+				// Создаем плейсхолдеры для массива
+				$placeholders = implode(',', array_fill(0, count($user_id), '%s'));
+				// Добавляем условие IN с плейсхолдерами
+				$query .= " AND dispatcher_meta.meta_value IN ($placeholders)";
+				
+				// Объединяем массив значений для $user_id с другими параметрами
+				$query = $wpdb->prepare($query, array_merge([$current_year, $current_month], $user_id));
+			} else {
+				$query .= " AND dispatcher_meta.meta_value = %s";
+				$query = $wpdb->prepare( $query, $current_year, $current_month, $user_id );
+			}
 		} else {
 			$query = $wpdb->prepare($query, $current_year, $current_month);
 		}
@@ -207,27 +240,56 @@ class  TMSStatistics extends TMSReportsHelper {
 				
 				$dispatcher_stats[$key]['goal'] = $goal;
 			}
-		} else {
-			if ($user_id) {
-				$names = $this->get_user_full_name_by_id($user_id);
-				$goal = get_field('monthly_goal', 'user_'.$user_id);
-				
-				if ($names) {
-					$dispatcher_stats[0]['dispatcher_initials'] = $names['full_name'];
-				}
-				
-				if (!$goal) {
-					$goal = 0;
-				}
-				
-				$dispatcher_stats[0]['goal'] = $goal;
-				$dispatcher_stats[0]['post_count'] = 0;
-				$dispatcher_stats[0]['total_profit'] = 0;
-				$dispatcher_stats[0]['average_profit'] = 0;
-			}
 		}
 		
 		return $dispatcher_stats;
+	}
+	
+	public function get_dispatcher_statistics_with_status($user_id = null, $load_status = 'cancelled') {
+		global $wpdb;
+		
+		$table_reports = $wpdb->prefix . $this->table_main;
+		$table_meta    = $wpdb->prefix . $this->table_meta;
+		
+		// Основная часть запроса
+		$query = "
+        SELECT
+            dispatcher_meta.meta_value AS dispatcher_initials,
+            COUNT(DISTINCT reports.id) AS post_count
+        FROM {$table_reports} reports
+        INNER JOIN {$table_meta} dispatcher_meta
+            ON reports.id = dispatcher_meta.post_id
+        INNER JOIN {$table_meta} load_status_meta
+            ON reports.id = load_status_meta.post_id
+        WHERE dispatcher_meta.meta_key = 'dispatcher_initials'
+        AND load_status_meta.meta_key = 'load_status'
+        AND load_status_meta.meta_value = %s
+        AND reports.status_post = 'publish'
+    ";
+		
+		// Если указан user_id, добавляем условие фильтрации
+		if ($user_id) {
+			if (is_array($user_id)) {
+				// Создаем плейсхолдеры для массива
+				$placeholders = implode(',', array_fill(0, count($user_id), '%s'));
+				// Добавляем условие IN с плейсхолдерами
+				$query .= " AND dispatcher_meta.meta_value IN ($placeholders)";
+				
+				// Объединяем массив значений для $user_id с другими параметрами
+				$query = $wpdb->prepare($query, array_merge([$load_status], $user_id));
+			} else {
+				$query .= " AND dispatcher_meta.meta_value = %s";
+				$query = $wpdb->prepare($query, $load_status, $user_id);
+			}
+		} else {
+			$query = $wpdb->prepare($query, $load_status);
+		}
+		
+		// Группировка по диспетчерам
+		$query .= " GROUP BY dispatcher_meta.meta_value";
+		
+		// Выполняем запрос и возвращаем результаты
+		return $wpdb->get_results($query, ARRAY_A);
 	}
 	
 	

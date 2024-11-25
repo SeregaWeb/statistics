@@ -243,6 +243,36 @@ class TMSReportsHelper extends TMSReportsIcons {
 		return $dispatchers;
 	}
 	
+	function get_dispatchers_tl() {
+		// Аргументы для получения пользователей с ролью 'dispatcher'
+		$args = array(
+			'role__in' => array('dispatcher-tl' ),
+			'orderby'  => 'display_name',
+			'order'    => 'ASC',
+		);
+		
+		// Получаем пользователей с заданной ролью
+		$users = get_users( $args );
+		
+		// Массив для хранения информации о пользователях
+		$dispatchers = array();
+		
+		// Перебираем каждого пользователя
+		foreach ( $users as $user ) {
+			// Получаем имя и фамилию пользователя
+			$first_name = get_user_meta( $user->ID, 'first_name', true );
+			$last_name  = get_user_meta( $user->ID, 'last_name', true );
+			
+			// Собираем массив с ID и полным именем
+			$dispatchers[] = array(
+				'id'       => $user->ID,
+				'fullname' => trim( $first_name . ' ' . $last_name ),
+			);
+		}
+		
+		return $dispatchers;
+	}
+	
 	function formatJsonForEmail( $jsonString ) {
 		$decodedArray = json_decode( $jsonString, true );
 		
@@ -349,6 +379,10 @@ class TMSReportsHelper extends TMSReportsIcons {
 		if ( $search_list === 'driver_payment_statuses' ) {
 			return isset( $this->driver_payment_statuses[ $key ] ) ? $this->driver_payment_statuses[ $key ] : $key;
 		}
+        
+        if ($search_list === 'set_up_platform') {
+            return isset( $this->set_up_platform[ $key ] ) ? $this->set_up_platform[ $key ] : $key;
+        }
 		
 		
 		if ( $search_list === 'invoices' ) {

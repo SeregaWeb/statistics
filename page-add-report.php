@@ -100,7 +100,7 @@ get_header();
                     
                     </div>
                     
-                    <div class="col-12">
+                    <div class="col-12 col-lg-9">
 
                         <ul class="nav nav-pills gap-2 mb-3" id="pills-tab" role="tablist">
                             <li class="nav-item flex-grow-1" role="presentation">
@@ -224,8 +224,104 @@ get_header();
                         </div>
                     </div>
 
+                    <div class="col-12 col-lg-3">
+                        <h4 class="mb-2">Logs</h4>
+                        <div class="log">
+                            <div class="log-card administrator">
+                                <span class="log-card__role" >administrator</span>
+                                <div class="log-card__top">
+                                    <p class="log-card__name">Sergey Milchenko
+                                    
+                                    </p>
+                                    <p class="log-card__time">5/20/2024 20:00</p>
+                                </div>
+                                <div class="log-card__message">
+                                    Change <span>booked rate</span> old $200 new $225.50
+                                </div>
+                            </div>
+
+                            <div class="log-card accounting">
+                                <span class="log-card__role" >accounting</span>
+                                <div class="log-card__top">
+                                    <p class="log-card__name">Sergey Milchenko
+                                    
+                                    </p>
+                                    <p class="log-card__time">5/20/2024</p>
+                                </div>
+                                <div class="log-card__message">
+                                    Change <span>booked rate</span> old $200 new $225.50
+                                </div>
+                            </div>
+
+                            <div class="log-card recruiter">
+                                <span class="log-card__role" >recruiter</span>
+                                <div class="log-card__top">
+                                    <p class="log-card__name">Sergey Milchenko
+                                    
+                                    </p>
+                                    <p class="log-card__time">5/20/2024</p>
+                                </div>
+                                <div class="log-card__message">
+                                    Change <span>booked rate</span> old $200 new $225.50
+                                </div>
+                            </div>
+
+                            <div class="log-card billing">
+                                <span class="log-card__role" >billing</span>
+                                <div class="log-card__top">
+                                    <p class="log-card__name">Sergey Milchenko
+                                    
+                                    </p>
+                                    <p class="log-card__time">5/20/2024</p>
+                                </div>
+                                <div class="log-card__message">
+                                    Change <span>booked rate</span> old $200 new $225.50
+                                </div>
+                            </div>
+
+                            <div class="log-card tracking">
+                                <span class="log-card__role" >tracking</span>
+                                <div class="log-card__top">
+                                    <p class="log-card__name">Sergey Milchenko
+                                    
+                                    </p>
+                                    <p class="log-card__time">5/20/2024</p>
+                                </div>
+                                <div class="log-card__message">
+                                    Change <span>booked rate</span> old $200 new $225.50
+                                </div>
+                            </div>
+
+                            <div class="log-card dispatcher-tl">
+                                <span class="log-card__role" >dispatcher-tl</span>
+                                <div class="log-card__top">
+                                    <p class="log-card__name">Sergey Milchenko
+                                    
+                                    </p>
+                                    <p class="log-card__time">5/20/2024</p>
+                                </div>
+                                <div class="log-card__message">
+                                    Change <span>booked rate</span> old $200 new $225.50
+                                </div>
+                            </div>
+
+                            <div class="log-card dispatcher">
+                                <span class="log-card__role" >dispatcher</span>
+                                <div class="log-card__top">
+                                    <p class="log-card__name">Sergey Milchenko
+                                    
+                                    </p>
+                                    <p class="log-card__time">5/20/2024</p>
+                                </div>
+                                <div class="log-card__message">
+                                    Change <span>booked rate</span> old $200 new $225.50
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
                     <?php else: ?>
-                        <div class="col-12 mt-3">
+                        <div class="col-12 col-lg-9 mt-3">
                         <?php
                             echo $helper->message_top('danger', $helper->messages_prepare('not-access'));
                         ?>

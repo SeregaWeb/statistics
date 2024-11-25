@@ -4,6 +4,7 @@ require_once( ABSPATH . 'wp-admin/includes/upgrade.php' );
 class TMSReportsCompany extends TMSReportsHelper {
 	
 	public $table_main = 'reports_company';
+	public $posts_per_page = 2;
 	
 	public function ajax_actions() {
 		add_action( 'wp_ajax_add_new_company', array( $this, 'add_new_company' ) );
@@ -137,7 +138,7 @@ class TMSReportsCompany extends TMSReportsHelper {
 		return $template;
 	}
 	
-	public function get_company_by_id( $ID ) {
+	public function get_company_by_id( $ID, $return_type = OBJECT ) {
 		global $wpdb;
 		$query = $wpdb->prepare( "
         SELECT * FROM {$wpdb->prefix}{$this->table_main}
@@ -145,7 +146,7 @@ class TMSReportsCompany extends TMSReportsHelper {
     	", $ID );
 		
 		// Execute the query
-		$results = $wpdb->get_results( $query );
+		$results = $wpdb->get_results( $query, $return_type );
 		
 		return $results;
 	}
@@ -310,6 +311,67 @@ class TMSReportsCompany extends TMSReportsHelper {
 			return new WP_Error( 'db_error', 'Error adding the company report to the database: ' . $error );
 		}
 	}
+	
+	public function get_table_records() {
+		global $wpdb;
+		$table_name = $wpdb->prefix . $this->table_main;
+		
+		$current_page = isset($_GET['paged']) ? (int) $_GET['paged'] : 1;
+		
+		$search = isset($_GET['my_search']) ? sanitize_text_field($_GET['my_search']) : '';
+		$platform = isset($_GET['platform']) ? sanitize_text_field($_GET['platform']) : '';
+		
+		$offset = ($current_page - 1) * $this->posts_per_page;
+		
+		$count_query = "SELECT COUNT(*) FROM $table_name WHERE 1=1";
+		
+		$main_query = "SELECT * FROM $table_name WHERE 1=1";
+		
+		if (!empty($search)) {
+			$search = '%' . $wpdb->esc_like($search) . '%';
+			$search_condition = " AND (
+            company_name LIKE %s OR
+            zip_code LIKE %s OR
+            mc_number LIKE %s OR
+            phone_number LIKE %s OR
+            email LIKE %s
+        )";
+			$count_query .= $search_condition;
+			$main_query .= $search_condition;
+		}
+		
+		if (!empty($platform)) {
+			$platform_condition = " AND set_up_platform = %s";
+			$count_query .= $platform_condition;
+			$main_query .= $platform_condition;
+		}
+		
+		$main_query .= " LIMIT %d OFFSET %d";
+		
+		$params = [];
+		if (!empty($search)) {
+			$params = array_merge($params, [$search, $search, $search, $search, $search]);
+		}
+		if (!empty($platform)) {
+			$params[] = $platform;
+		}
+		
+		$total_records = (int) $wpdb->get_var($wpdb->prepare($count_query, ...$params));
+		$main_results = $wpdb->get_results(
+			$wpdb->prepare($main_query, array_merge($params, [$this->posts_per_page, $offset])),
+			ARRAY_A
+		);
+		
+		$total_pages = ceil($total_records / $this->posts_per_page);
+		
+		return array(
+			'results'       => $main_results,
+			'total_pages'   => $total_pages,
+			'total_posts'   => $total_records,
+			'current_page'  => $current_page,
+		);
+	}
+
 	
 	public function create_table_company() {
 		global $wpdb;

@@ -1,0 +1,17 @@
+.status-list {
+    list-style: none;
+    padding: 0;
+    &__item {
+        display: grid;
+        grid-template-columns: 200px 1fr;
+        gap: 20px;
+        border-bottom: 1px solid $--greys-light;
+        padding: 5px;
+    }
+    &__label {
+
+    }
+    &__value {
+
+    }
+}

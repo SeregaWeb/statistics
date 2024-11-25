@@ -60,24 +60,13 @@ if ( function_exists( 'get_field' ) ) {
 ?>
 
 <pre class="d-none">
-- добавить в АР
--- поиск по брокерам / номерам груза
--- фильтр по солвд / не солвд ( по умолчанию не совлд и возможность и те и те добавить)
--- добавить статистику скрин в таблице (gross)
 
-<!--- tracking грузы с статусом деливеред убираем вообще с списка-->
-<!--- добавить факторинг за все время (не только по месяцам/годам)-->
+<!--- добавить в статистику тотал ( всей команды ) лоадс - профит - гоалс - лефт - среднее - проценты-->
 
-<!--- драйвер рейт - квикпей с таба аккаунтинг-->
-
-- добавить реальные рабочие дни в статистику
-- разбить по группам (тимлидов) статистику по месяцам
-
-- добавить в статистику тотал ( всей команды ) лоадс - профит - гоалс - лефт - среднее - проценты
-- топ 3 вывести
+<!--- топ 3 вывести-->
 - пироги - по соурс (количесво лоадов и профит)
-- выбор диспетчера и количество его посто canceled
-
+<!--- выбор диспетчера и количество его посто canceled-->
+<!---->
 - страницу шипера и брокера
 - страница список (шипера и брокера)
 
@@ -87,6 +76,54 @@ if ( function_exists( 'get_field' ) ) {
 accounting -
 Unsubmitted - In Processing - 	Processed
 
+- в лоад добавить файл
+POD (Proof of delivery) required (billing/tracking/dispatcher) (без этого файла нельзя поставить статус delivered - load_status )
+
+- сделать букмарк
+
+брокер - добавить каутнеры
+delivered loads
+cancelled loads
+TONU - loads
+loads in process (все кроме тех что сверху)
+нули скрываем
+
+shippers - добавить каунтер
+loads (pick-up / delivered)
+
+logs - вывести в лоаде - справа (сделать возможность свернуть)
+
+logs - добавить для всех ролей (billing / accounting ) - эти видят и свое и трекинг/диспетчер
+tracking - dispatcher - recruiter - видят только свои сообщения в логе и (accounting)
+- в треккинг добавить последний лог
+
+что попадает в лог
+- дата-время создания лоада
+- меняется Load Status - пишем в лог
+- редактируется Driver Rate
+- редактируется Booked rate
+- delivery date
+- меняется вес
+- водила меняется
+- телефон водилы
+- добавляются инструкции после публикации
+- если убирают статус TBD
+
+- пикап - деливери локейшн меняется
+
+- если что то загружают в updated rate confirmation
+- если POD - файл загружают тоже в лог (ПОЛЕ ЕЩЕ НЕ СОЗДАНО)
+
+- billing
+- invoiced
+- change status
+- ar aging
+- ar-aging solved
+
+- accounting
+- любое действие
+
+- можно в лог добавить свое сообщение
 </pre>
 
 <body <?php body_class( $page_class ); ?>>
@@ -109,8 +146,12 @@ Unsubmitted - In Processing - 	Processed
 
         <div id="main-wrapper">
 
-        <?php if (is_array($sidebar)): ?>
-        <div class="left-sidebar js-sidebar">
+        <?php if (is_array($sidebar)):
+        
+        $small = isset($_COOKIE['sidebar']) && +$_COOKIE['sidebar'] !== 0 ? 'small' : '';
+        
+        ?>
+        <div class="left-sidebar js-sidebar <?php echo $small; ?>">
             <?php foreach ($sidebar as $key => $block):
                 $first_link = false;
             
@@ -120,9 +161,10 @@ Unsubmitted - In Processing - 	Processed
                     if (isset($block['menu'][0]['link']) && is_array($block['menu'][0]['link'])): ?>
                     <div class="left-sidebar__block">
                         
-                        <a class="left-sidebar__btn full js-toggle active" data-block-toggle="js-menu-block_<?php echo $key; ?>" href="<?php echo $block['menu'][0]['link']['url']; ?>">
+                        <a class="left-sidebar__btn full js-toggle active" data-block-toggle="js-menu-block_<?php echo $key; ?>" href="<?php echo $block['menu'][0]['link']['url'];
+                            ?>">
                             <?php if (!empty($block['icon'])): ?>
-                            <img class="left-sidebar__icon" src="<?php echo $block['icon'] ?>" alt="icon">
+                            <img class="left-sidebar__icon" src="<?php echo wp_get_attachment_image_url($block['icon']); ?>" alt="icon">
                             <?php endif; ?>
                             <?php echo $block['label_block']; ?>
                         </a>
@@ -174,7 +216,7 @@ Unsubmitted - In Processing - 	Processed
                 <?php endif; ?>
                 
             <?php endforeach; ?>
-            <button class="toggle-sidebar js-toggle-sidebar">
+            <button class="toggle-sidebar js-toggle-sidebar  <?php echo $small; ?>">
                 <svg class="left-sidebar__icon" width="800px" height="800px" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <path d="M21.97 15V9C21.97 4 19.97 2 14.97 2H8.96997C3.96997 2 1.96997 4 1.96997 9V15C1.96997 20 3.96997 22 8.96997 22H14.97C19.97 22 21.97 20 21.97 15Z" stroke="#292D32" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
                 <path d="M7.96997 2V22" stroke="#292D32" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>

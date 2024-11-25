@@ -55,7 +55,7 @@
                         "class": "",
                         "id": ""
                     },
-                    "return_format": "url",
+                    "return_format": "id",
                     "library": "all",
                     "min_width": "",
                     "min_height": "",
@@ -434,6 +434,38 @@
             "return_format": "url"
         },
         {
+            "key": "field_674084fc4d7b6",
+            "label": "Single page broker",
+            "name": "single_page_broker",
+            "aria-label": "",
+            "type": "link",
+            "instructions": "",
+            "required": 0,
+            "conditional_logic": 0,
+            "wrapper": {
+                "width": "",
+                "class": "",
+                "id": ""
+            },
+            "return_format": "url"
+        },
+        {
+            "key": "field_6741afe207a1f",
+            "label": "Single page shipper",
+            "name": "single_page_shipper",
+            "aria-label": "",
+            "type": "link",
+            "instructions": "",
+            "required": 0,
+            "conditional_logic": 0,
+            "wrapper": {
+                "width": "",
+                "class": "",
+                "id": ""
+            },
+            "return_format": "url"
+        },
+        {
             "key": "field_672602a6fc9f9",
             "label": "Emails",
             "name": "",
@@ -489,5 +521,5 @@
     "active": true,
     "description": "",
     "show_in_rest": 0,
-    "modified": 1730544357
+    "modified": 1732448133
 }

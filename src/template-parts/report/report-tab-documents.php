@@ -272,7 +272,7 @@ if ( $report_object ) {
 		<?php endif; ?>
         <div class="js-add-new-report order-2">
             <div class="p-0 mb-2 col-12">
-                <p class="h5">Others files</p>
+                <p class="h5">Other files</p>
                 <label for="attached_files" class="form-label">Attached Files</label>
                 <input type="file" name="attached_files[]"
                        class="form-control js-control-uploads" multiple>

@@ -224,6 +224,14 @@ ul.result-search-el {
         font-size: 10px;
     }
 
+    &.proof_of_delivery {
+        border-color: #07ffab;
+        .required-label {
+            background-color: #07ffab;
+            color: #0c0c0c;
+        }
+    }
+
     &.screen-picture  {
         border-color: $--warning-color;
         .required-label {

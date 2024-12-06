@@ -254,7 +254,10 @@ if ( ! empty( $results ) ) : ?>
 
                 <td>
 					<?php if ( $show_control ): ?>
-
+                    <div class="d-flex">
+                        <button class="btn-bookmark js-btn-bookmark <?php echo $TMSUsers->is_bookmarked($row['id']) ? 'active' : ''; ?>" data-id="<?php echo $row[ 'id' ]; ?>">
+			                <?php echo $helper->get_icon_bookmark(); ?>
+                        </button>
                         <div class="dropdown">
                             <button class="btn button-action" type="button" id="dropdownMenu2"
                                     data-bs-toggle="dropdown"
@@ -279,6 +282,7 @@ if ( ! empty( $results ) ) : ?>
 								<?php endif; ?>
                             </ul>
                         </div>
+                    </div>
 					<?php endif; ?>
                 </td>
             </tr>

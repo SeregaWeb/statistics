@@ -11,6 +11,8 @@ $post_id       = ! empty( $args[ 'post_id' ] ) ? $args[ 'post_id' ] : null;
 
 $billing_info = $TMSUsers->check_user_role_access(array('administrator', 'billing', 'accounting'),true);
 
+$required_file_for_user =  $TMSUsers->check_user_role_access(array('billing', 'tracking', 'dispatcher'),true);
+
 if ( $report_object ) {
 	$values = $report_object;
 	$meta   = get_field_value( $values, 'meta' );
@@ -27,6 +29,8 @@ if ( $report_object ) {
 		$others_files     = get_field_value( $meta, 'attached_files' );
 		$update_rate_conf = get_field_value( $meta, 'updated_rate_confirmation' );
 		$screen_picture   = get_field_value( $meta, 'screen_picture' );
+		$proof_of_delivery   = get_field_value( $meta, 'proof_of_delivery' );
+  
 		$reference_number    = get_field_value($meta, 'reference_number');
   
 		
@@ -65,6 +69,25 @@ if ( $report_object ) {
 				
 				$screen_picture_arr = array(
 					'id'        => $screen_picture,
+					'url'       => $attachment_url,
+					'file_name' => $file_name,
+				);
+			}
+		}
+  
+		if ( ! empty( $proof_of_delivery ) ) {
+			
+			$attachment_url = wp_get_attachment_url( $proof_of_delivery );
+			if ( wp_attachment_is_image( $proof_of_delivery ) ) {
+				$proof_of_delivery_arr = array(
+					'id'  => $proof_of_delivery,
+					'url' => $attachment_url,
+				);
+			} else {
+				$file_name = basename( $attachment_url );
+				
+				$proof_of_delivery_arr = array(
+					'id'        => $proof_of_delivery,
 					'url'       => $attachment_url,
 					'file_name' => $file_name,
 				);
@@ -122,7 +145,7 @@ if ( $report_object ) {
 
 <h3 class="p-0 display-6 mb-4">Upload files</h3>
 
-<?php if ( ( $others_files || $required_file ) && isset( $post_id ) ): ?>
+<?php if ( ( $others_files || $required_file || $screen_picture || $update_rate_conf || $proof_of_delivery ) && isset( $post_id ) ): ?>
     <div class="container-uploads <?php echo $full_view_only ? "read-only" : '' ?>">
 		<?php if ( isset( $required_file_arr ) && $required_file ): ?>
             <form class="js-remove-one card-upload required">
@@ -155,8 +178,9 @@ if ( $report_object ) {
             </form>
 		<?php endif; ?>
 		
-		
-		<?php if ( isset( $update_rate_conf_arr ) && $update_rate_conf ): ?>
+  
+		<?php
+        if ( isset( $update_rate_conf_arr ) && $update_rate_conf ): ?>
             <form class="js-remove-one card-upload updated">
                 <span class="required-label">Updated Rate Confirmation</span>
                 <figure class="card-upload__figure">
@@ -211,6 +235,36 @@ if ( $report_object ) {
 				<?php endif; ?>
                 <a class="card-upload__btn card-upload__btn--download" download
                    href="<?php echo $screen_picture_arr[ 'url' ]; ?>">
+					<?php echo $reports->get_download_icon(); ?>
+                </a>
+            </form>
+		<?php endif; ?>
+  
+		<?php if ( isset( $proof_of_delivery_arr ) && $proof_of_delivery ): ?>
+            <form class="js-remove-one card-upload proof_of_delivery">
+                <span class="required-label">Proof Of Delivery</span>
+                <figure class="card-upload__figure">
+					
+					<?php
+					if ( ! isset( $proof_of_delivery_arr[ 'file_name' ] ) ) : ?>
+                        <img class="card-upload__img" src="<?php echo $proof_of_delivery_arr[ 'url' ] ?>" alt="img">
+					<?php else: ?>
+						<?php echo $reports->get_file_icon(); ?>
+                        <p><?php echo $proof_of_delivery_arr[ 'file_name' ]; ?></p>
+					<?php endif; ?>
+
+                </figure>
+                <input type="hidden" name="image-id" value="<?php echo $proof_of_delivery_arr[ 'id' ]; ?>">
+                <input type="hidden" name="image-fields" value="proof_of_delivery">
+                <input type="hidden" name="post_id" value="<?php echo $post_id; ?>">
+				
+				<?php if ( ! $full_view_only ): ?>
+                    <button class="card-upload__btn card-upload__btn--remove" type="submit">
+						<?php echo $reports->get_close_icon(); ?>
+                    </button>
+				<?php endif; ?>
+                <a class="card-upload__btn card-upload__btn--download" download
+                   href="<?php echo $proof_of_delivery_arr[ 'url' ]; ?>">
 					<?php echo $reports->get_download_icon(); ?>
                 </a>
             </form>
@@ -306,6 +360,27 @@ if ( $report_object ) {
                     <label for="screen_picture" class="form-label">screen picture</label>
                     <input type="file" required
                            name="screen_picture"
+                           class="form-control js-control-uploads">
+                </div>
+
+                <div class="p-0 col-12 mb-3 mt-3 preview-photo js-preview-photo-upload">
+
+                </div>
+            </div>
+		<?php endif; ?>
+  
+		<?php if ( ! $proof_of_delivery ): ?>
+            <div class="js-add-new-report order-4">
+                <div class="p-0 mb-2 col-12">
+                    <p class="h5">
+                        Proof Of Delivery
+                        <?php if ($required_file_for_user): ?>
+                        <span class="required-star text-danger">*</span>
+                        <?php endif; ?>
+                    </p>
+                    <label for="proof_of_delivery" class="form-label">POD file</label>
+                    <input type="file" <?php echo $required_file_for_user ? 'required' : ''; ?>
+                           name="proof_of_delivery"
                            class="form-control js-control-uploads">
                 </div>
 

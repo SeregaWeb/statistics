@@ -10,20 +10,25 @@ get_header();
 
 
 $shipper   = new TMSReportsShipper();
-$id_broker = get_field_value( $_GET, 'shipper_id' );
-$shipper_fields    = $shipper->get_shipper_by_id( $id_broker, ARRAY_A );
+$load = new TMSReports();
+$id_shipper = get_field_value( $_GET, 'shipper_id' );
+$shipper_fields    = $shipper->get_shipper_by_id( $id_shipper, ARRAY_A );
+$counters = $load->get_counters_shipper($id_shipper);
 
-if ( isset( $shipper_fields[ 0 ] ) ) {
-	$shipper_fields = $shipper_fields[ 0 ];
+if (!empty($shipper_fields)) {
+
+    if ( isset( $shipper_fields[ 0 ] ) ) {
+        $shipper_fields = $shipper_fields[ 0 ];
+    }
+    
+    $full_address = $shipper_fields[ 'address1' ] . ' ' . $shipper_fields[ 'city' ] . ' ' . $shipper_fields[ 'state' ] . ' ' . $shipper_fields[ 'zip_code' ] . ' ' . $shipper_fields[ 'country' ];
 }
-
-$full_address = $shipper_fields[ 'address1' ] . ' ' . $shipper_fields[ 'city' ] . ' ' . $shipper_fields[ 'state' ] . ' ' . $shipper_fields[ 'zip_code' ] . ' ' . $shipper_fields[ 'country' ];
-
 ?>
     <div class="container-fluid">
         <div class="row">
             <div class="container">
                 <div class="row">
+	                <?php if ( ! empty( $shipper_fields ) ) { ?>
                     <div class="col-12 mt-3 mb-3">
 						<?php
 						$user_id          = $shipper_fields[ 'user_id_added' ];
@@ -71,6 +76,29 @@ $full_address = $shipper_fields[ 'address1' ] . ' ' . $shipper_fields[ 'city' ] 
                         </ul>
 
                     </div>
+
+                    <div class="col-12 mt-3 mb-3">
+                        <?php
+                        ?>
+                        <div class="counters-status d-flex gap-2">
+                            <?php if (is_array($counters)): ?>
+                                <?php foreach ($counters as $key => $count): ?>
+                                    <?php if (+$count !== 0): ?>
+                                        <div class="counters-status-card d-flex align-items-center justify-content-center flex-column">
+                                            <span><?php echo $key === 'Pickup' ? 'Pick-up' : 'Delivered'; ?></span>
+                                            <strong><?php echo $count; ?></strong>
+                                        </div>
+                                    <?php endif; ?>
+                                <?php endforeach; ?>
+                            <?php endif; ?>
+                        </div>
+                    </div>
+                    
+                    <?php } else { ?>
+                    <div class="col-12">
+                        <h2 class="mt-3 mb-2">Empty</h2>
+                    </div>
+	                <?php } ?>
                 </div>
             </div>
         </div>

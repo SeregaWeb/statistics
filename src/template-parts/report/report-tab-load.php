@@ -31,6 +31,7 @@ $load_type           = '';
 $commodity           = '';
 $weight              = '';
 $notes               = '';
+$proof_of_delivery   = '';
 $modifi_price = '';
 $factoring_status = '';
 $tbd = false;
@@ -46,7 +47,11 @@ if ( $report_object ) {
     $main = get_field_value($values, 'main');
 	if ( is_array( $meta ) && sizeof( $meta ) > 0 ) {
 		$date_booked         = get_field_value($main, 'date_booked');
-		$date_booked_formatted = date('Y-m-d', strtotime($date_booked));
+		if (empty($date_booked) || $date_booked = '0000-00-00 00:00:00') {
+			$date_booked_formatted = date('Y-m-d');
+		} else {
+			$date_booked_formatted = date('Y-m-d', strtotime($date_booked));
+		}
   
 		$pick_up_date        = get_field_value($main, 'pick_up_date');
 		$pick_up_date_formatted = date('Y-m-d', strtotime($pick_up_date));
@@ -70,6 +75,7 @@ if ( $report_object ) {
 		$weight              = get_field_value($meta, 'weight');
 		$notes               = get_field_value($meta, 'notes');
         $modifi_price        = get_field_value($meta, 'booked_rate_modify');
+		$proof_of_delivery   = get_field_value($meta, 'proof_of_delivery');
 		
 		$processing_fees = get_field_value($meta, 'processing_fees');
 		$type_pay_method = get_field_value($meta, 'type_pay');
@@ -89,6 +95,10 @@ if ( $report_object ) {
             }
         }
 	}
+}
+
+if (!is_numeric($proof_of_delivery)) {
+    $disable_status = 'disabled';
 }
 
 $read_only = $TMSUsers->check_read_only($post_status);
@@ -185,7 +195,7 @@ $read_only = $TMSUsers->check_read_only($post_status);
                 
 				<?php if ( is_array( $statuses ) ): ?>
 					<?php foreach ( $statuses as $key => $status ): ?>
-                        <option <?php echo $load_status === $key ? 'selected' : ''; ?> value="<?php echo $key; ?>">
+                        <option <?php echo $load_status === $key ? 'selected' : ''; echo isset($disable_status) && $key === 'delivered' ? 'disabled' : ''; ?> value="<?php echo $key; ?>">
 							<?php echo $status; ?>
                         </option>
 					<?php endforeach; ?>

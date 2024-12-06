@@ -25,7 +25,10 @@ $hide_billing_and_shipping = $TMSUsers->check_user_role_access( array( 'billing'
 
 $my_team = $TMSUsers->check_group_access();
 
-$helper = new TMSReportsHelper();
+$helper = $TMSUsers;
+
+
+
 
 if ( ! empty( $results ) ) : ?>
 
@@ -201,7 +204,10 @@ if ( ! empty( $results ) ) : ?>
 				
 				<?php if ( $TMSUsers->check_user_role_access( array( 'recruiter' ) ) ): ?>
                     <td>
-						
+                        <div class="d-flex">
+						    <button class="btn-bookmark js-btn-bookmark <?php echo $TMSUsers->is_bookmarked($row['id']) ? 'active' : ''; ?>" data-id="<?php echo $row[ 'id' ]; ?>">
+                                <?php echo $helper->get_icon_bookmark(); ?>
+                            </button>
 						<?php if ( $show_control ): ?>
 
                             <div class="dropdown">
@@ -230,6 +236,7 @@ if ( ! empty( $results ) ) : ?>
                             </div>
 						
 						<?php endif; ?>
+                        </div>
                     </td>
 				<?php endif; ?>
             </tr>
@@ -249,5 +256,5 @@ if ( ! empty( $results ) ) : ?>
 	?>
 
 <?php else : ?>
-    <p>No reports found.</p>
+    <p>No loads found.</p>
 <?php endif; ?>

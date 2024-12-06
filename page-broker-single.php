@@ -10,39 +10,53 @@ get_header();
 
 
 $brokers   = new TMSReportsCompany();
+$loads = new TMSReports();
+
+
 $id_broker = get_field_value( $_GET, 'broker_id' );
 $broker    = $brokers->get_company_by_id( $id_broker, ARRAY_A );
 
-if ( isset( $broker[ 0 ] ) ) {
-	$broker = $broker[ 0 ];
-}
 
-$full_address = $broker[ 'address1' ] . ' ' . $broker[ 'city' ] . ' ' . $broker[ 'state' ] . ' ' . $broker[ 'zip_code' ] . ' ' . $broker[ 'country' ];
-
-$platform = $brokers->get_label_by_key( $broker[ 'set_up_platform' ], 'set_up_platform' );
+if ( ! empty( $broker ) ) {
+	
+	$get_counters_broker = $loads->get_counters_broker($id_broker);
+	if ( isset( $broker[ 0 ] ) ) {
+		$broker = $broker[ 0 ];
+	}
+	
+	$full_address = $broker[ 'address1' ] . ' ' . $broker[ 'city' ] . ' ' . $broker[ 'state' ] . ' ' . $broker[ 'zip_code' ] . ' ' . $broker[ 'country' ];
+	
+	$platform = $brokers->get_label_by_key( $broker[ 'set_up_platform' ], 'set_up_platform' );
 
 // Декодируем JSON в ассоциативный массив
-$set_up_array = json_decode( $broker[ 'set_up' ], true );
-$set_up_array_complete = json_decode( $broker[ 'date_set_up_compleat' ], true );
+	$set_up_array          = json_decode( $broker[ 'set_up' ], true );
+	$set_up_array_complete = json_decode( $broker[ 'date_set_up_compleat' ], true );
+	
+	$completed_keys       = array();
+	$completed_dated_keys = array();
+	
+	if ( is_array( $set_up_array ) ) {
+		$completed_keys = array_keys( array_filter( $set_up_array, function( $value ) {
+			return $value === "completed";
+		} ) );
+		
+		$completed_dated_keys = array_keys( array_filter( $set_up_array, function( $value ) {
+			return ! is_null( $value );
+		} ) );
+	}
 
-// Фильтруем ключи с значением "completed"
-$completed_keys = array_keys( array_filter( $set_up_array, function( $value ) {
-	return $value === "completed";
-} ) );
-
-$completed_dated_keys = array_keys( array_filter( $set_up_array, function( $value ) {
-	return !is_null($value);
-} ) );
 
 // Преобразуем массив ключей в строку через запятую
-$completed_keys_string = implode( ', ', $completed_keys );
-
+	$completed_keys_string = implode( ', ', $completed_keys );
+}
 
 ?>
     <div class="container-fluid">
         <div class="row">
             <div class="container">
                 <div class="row">
+                    
+                    <?php if ( ! empty( $broker ) ) { ?>
                     <div class="col-12 mt-3 mb-3">
 						<?php
 						$user_id          = $broker[ 'user_id_added' ];
@@ -84,7 +98,7 @@ $completed_keys_string = implode( ', ', $completed_keys );
 
                             <li class="status-list__item">
                                 <span class="status-list__label">Set-up platform:</span>
-                                <span class="status-list__value"><?php echo $brokers->get_label_by_key($broker[ 'set_up_platform' ], 'set_up_platform') ; ?></span>
+                                <span class="status-list__value"><?php echo $brokers->get_label_by_key( $broker[ 'set_up_platform' ], 'set_up_platform' ); ?></span>
                             </li>
                             <li class="status-list__item">
                                 <span class="status-list__label">In set-up with:</span>
@@ -93,9 +107,9 @@ $completed_keys_string = implode( ', ', $completed_keys );
                             <li class="status-list__item">
                                 <span class="status-list__label">Completed date:</span>
                                 <span class="status-list__value d-flex flex-column">
-                                    <?php foreach ($completed_dated_keys as $key):
-	                                    $date_set = esc_html( date( 'm/d/Y', strtotime( $set_up_array_complete[$key] ) ) );
-                                        ?>
+                                    <?php foreach ( $completed_dated_keys as $key ):
+	                                    $date_set = esc_html( date( 'm/d/Y', strtotime( $set_up_array_complete[ $key ] ) ) );
+	                                    ?>
                                         <span><?php echo $key . ': ' . $date_set ?></span>
                                     <?php endforeach; ?>
                                 </span>
@@ -116,6 +130,28 @@ $completed_keys_string = implode( ', ', $completed_keys );
                         </ul>
 
                     </div>
+                    
+                    <div class="col-12 mt-3 mb-3">
+                        <?php
+                        ?>
+                        <div class="counters-status d-flex gap-2">
+                            <?php if (is_array($get_counters_broker)): ?>
+                                <?php foreach ($get_counters_broker as $key => $count): ?>
+                                    <?php if (+$count !== 0): ?>
+                                    <div class="counters-status-card d-flex align-items-center justify-content-center flex-column">
+                                        <span><?php echo $key === 'Others' ? 'In Process' : $key; ?></span>
+                                        <strong><?php echo $count; ?></strong>
+                                    </div>
+				                    <?php endif; ?>
+                                <?php endforeach; ?>
+                            <?php endif; ?>
+                        </div>
+                    </div>
+                    <?php } else { ?>
+                        <div class="col-12">
+                            <h2 class="mt-3 mb-2">Empty</h2>
+                        </div>
+                    <?php } ?>
                 </div>
             </div>
         </div>

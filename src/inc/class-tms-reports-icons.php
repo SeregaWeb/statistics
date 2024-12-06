@@ -13,6 +13,11 @@ class TMSReportsIcons {
 		';
 	}
 	
+	public function get_icon_logs () {
+		return '
+		<svg fill="#000000" width="24px" height="24px" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path d="M7 3H2v14h5V3zm2 0v14h9V3H9zM0 3c0-1.1.9-2 2-2h16a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V3zm3 1h3v2H3V4zm0 3h3v2H3V7zm0 3h3v2H3v-2z"/></svg>
+		';
+	}
 	public function get_icon_tanker_end( $tooltip_text = null ) {
 		$tooltip = $tooltip_text ? "<title>$tooltip_text</title>" : '';
 		
@@ -26,6 +31,11 @@ class TMSReportsIcons {
 		';
 	}
 	
+	public function get_icon_bookmark () {
+		return '<svg width="28px" height="28px" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+					<path d="M10 13.4673L6.24548 17.6665C5.63355 18.3509 4.5 17.9181 4.5 17V3C4.5 2.44772 4.94772 2 5.5 2H14.5C15.0523 2 15.5 2.44772 15.5 3V17C15.5 17.9181 14.3665 18.3509 13.7545 17.6665L10 13.4673Z" fill="#000000"/>
+				</svg>';
+	}
 	public function get_warning_icon() {
 		return '
 		<svg width="42px" height="38px" viewBox="0 0 512 512" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">

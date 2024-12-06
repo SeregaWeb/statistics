@@ -3,9 +3,61 @@
 class  TMSUsers extends TMSReportsHelper {
 	
 	private $curent_select_table_key = 'field_66eeba6448749';
+	private $project_for_bookmark = '';
+	
+	public function __construct() {
+		$this->project_for_bookmark = $this->get_select_project();
+	}
 	
 	public function ajax_actions() {
 		add_action( 'wp_ajax_select_project', array( $this, 'select_project' ) );
+		add_action( 'wp_ajax_toggle_bookmark', array( $this, 'toggle_bookmark' ) );
+	}
+	
+	function get_select_project () {
+		$user_id = get_current_user_id();
+		$curent_tables = get_field( 'current_select', 'user_' . $user_id );
+		if ( ! $curent_tables ) {
+			return false;
+		}
+		return strtolower($curent_tables);
+	}
+	
+	function is_bookmarked($id) {
+		$user_bookmarks = get_user_meta( get_current_user_id(), 'user_bookmarks_'.$this->project_for_bookmark, true ) ?: [];
+		$is_bookmarked  = in_array( $id, $user_bookmarks );
+		
+		return $is_bookmarked;
+	}
+	
+	function get_all_bookmarks () {
+		$user_bookmarks = get_user_meta(get_current_user_id(), 'user_bookmarks_'.$this->project_for_bookmark, true) ?: [];
+		return $user_bookmarks;
+	}
+	function toggle_bookmark() {
+		if (!is_user_logged_in()) {
+			wp_send_json_error(['message' => 'You must be logged in to bookmark posts.']);
+		}
+		
+		$post_id = isset($_POST['post_id']) ? intval($_POST['post_id']) : 0;
+		if (!$post_id || $post_id === 0) {
+			wp_send_json_error(['message' => 'Invalid post ID.']);
+		}
+		
+		$user_id = get_current_user_id();
+		$user_bookmarks = get_user_meta($user_id, 'user_bookmarks_'.$this->project_for_bookmark, true) ?: [];
+		
+		if (in_array($post_id, $user_bookmarks)) {
+			$user_bookmarks = array_diff($user_bookmarks, [$post_id]);
+			$is_bookmarked = false;
+		} else {
+			$user_bookmarks[] = $post_id;
+			$is_bookmarked = true;
+		}
+		
+		update_user_meta($user_id, 'user_bookmarks_'.$this->project_for_bookmark, $user_bookmarks);
+		
+		wp_send_json_success(['is_bookmarked' => $is_bookmarked]);
 	}
 	
 	public function init() {

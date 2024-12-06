@@ -105,8 +105,8 @@ class TMSReports extends TMSReportsHelper {
 			$where_values[]     = $args[ 'load_status' ];
 		}
 		
-		if (isset($args['exclude_status']) && !empty($args['exclude_status'])) {
-			$where_conditions[] = "load_status.meta_value != '".$args['exclude_status'] ."'";
+		if ( isset( $args[ 'exclude_status' ] ) && ! empty( $args[ 'exclude_status' ] ) ) {
+			$where_conditions[] = "load_status.meta_value != '" . $args[ 'exclude_status' ] . "'";
 		}
 		
 		if ( ! empty( $args[ 'invoice' ] ) ) {
@@ -223,6 +223,93 @@ class TMSReports extends TMSReportsHelper {
 		);
 	}
 	
+	public function get_favorites( $post_ids = array(), $args = array() ) {
+		global $wpdb;
+		
+		// Проверяем, переданы ли ID
+		if ( empty( $post_ids ) || ! is_array( $post_ids ) ) {
+			return array(
+				'results'       => array(),
+				'total_pages'   => 0,
+				'total_posts'   => 0,
+				'current_pages' => 1,
+			);
+		}
+		
+		$table_main   = $wpdb->prefix . $this->table_main;
+		$table_meta   = $wpdb->prefix . $this->table_meta;
+		$per_page     = $this->per_page_loads;
+		$current_page = isset( $_GET[ 'paged' ] ) ? absint( $_GET[ 'paged' ] ) : 1;
+		$sort_by      = ! empty( $args[ 'sort_by' ] ) ? $args[ 'sort_by' ] : 'date_booked';
+		$sort_order   = ! empty( $args[ 'sort_order' ] ) && strtolower( $args[ 'sort_order' ] ) === 'asc' ? 'ASC'
+			: 'DESC';
+		
+		// Подготовка ID для SQL
+		$placeholders = implode( ',', array_fill( 0, count( $post_ids ), '%d' ) );
+		
+		// Подсчёт записей
+		$total_records_sql = "
+    SELECT COUNT(DISTINCT main.id)
+    FROM $table_main AS main
+    WHERE main.id IN ($placeholders)
+    ";
+		$total_records     = $wpdb->get_var( $wpdb->prepare( $total_records_sql, ...$post_ids ) );
+		
+		// Пагинация
+		$total_pages = ceil( $total_records / $per_page );
+		$offset      = ( $current_page - 1 ) * $per_page;
+		
+		// Запрос для получения основных данных (без мета-данных)
+		$sql = "
+		    SELECT main.*
+		    FROM $table_main AS main
+		    WHERE main.id IN ($placeholders)
+		    ORDER BY main.$sort_by $sort_order
+		    LIMIT %d, %d
+		    ";
+		
+		// Выполнение запроса
+		$results = $wpdb->get_results( $wpdb->prepare( $sql, ...array_merge( $post_ids, array(
+			$offset,
+			$per_page
+		) ) ), ARRAY_A );
+		
+		// Запрос для получения мета-данных
+		$meta_sql = "
+	    SELECT meta.post_id, meta.meta_key, meta.meta_value
+	    FROM $table_meta AS meta
+	    WHERE meta.post_id IN ($placeholders)
+	    ";
+		
+		// Получаем мета-данные
+		$meta_results = $wpdb->get_results( $wpdb->prepare( $meta_sql, ...$post_ids ), ARRAY_A );
+		
+		// Группируем мета-данные по постам
+		$meta_data_grouped = array();
+		foreach ( $meta_results as $meta ) {
+			$meta_data_grouped[ $meta[ 'post_id' ] ][ $meta[ 'meta_key' ] ] = $meta[ 'meta_value' ];
+		}
+		
+		// Объединяем мета-данные с основными результатами
+		foreach ( $results as &$post ) {
+			$post_id = $post[ 'id' ];
+			if ( isset( $meta_data_grouped[ $post_id ] ) ) {
+				$post[ 'meta_data' ] = $meta_data_grouped[ $post_id ];
+			} else {
+				$post[ 'meta_data' ] = array();
+			}
+		}
+		
+		// Преобразуем к конечному формату
+		return array(
+			'results'       => $results, // Уже уникальные записи
+			'total_pages'   => $total_pages,
+			'total_posts'   => $total_records,
+			'current_pages' => $current_page,
+		);
+	}
+	
+	
 	/**
 	 * @param $args
 	 * Get table items and filter
@@ -232,13 +319,14 @@ class TMSReports extends TMSReportsHelper {
 	public function get_table_items_ar( $args = array() ) {
 		global $wpdb;
 		
-		$table_main   = $wpdb->prefix . $this->table_main;
-		$table_meta   = $wpdb->prefix . $this->table_meta;
+		$table_main    = $wpdb->prefix . $this->table_main;
+		$table_meta    = $wpdb->prefix . $this->table_meta;
 		$table_company = $wpdb->prefix . 'reports_company'; // Таблица с mc_number и company_name
-		$per_page     = $this->per_page_loads;
-		$current_page = isset($_GET['paged']) ? absint($_GET['paged']) : 1;
-		$sort_by      = !empty($args['sort_by']) ? $args['sort_by'] : 'date_booked';
-		$sort_order   = !empty($args['sort_order']) && strtolower($args['sort_order']) === 'asc' ? 'ASC' : 'DESC';
+		$per_page      = $this->per_page_loads;
+		$current_page  = isset( $_GET[ 'paged' ] ) ? absint( $_GET[ 'paged' ] ) : 1;
+		$sort_by       = ! empty( $args[ 'sort_by' ] ) ? $args[ 'sort_by' ] : 'date_booked';
+		$sort_order    = ! empty( $args[ 'sort_order' ] ) && strtolower( $args[ 'sort_order' ] ) === 'asc' ? 'ASC'
+			: 'DESC';
 		
 		
 		$join_builder = "
@@ -269,52 +357,52 @@ class TMSReports extends TMSReportsHelper {
 		$where_values     = array();
 		
 		// Фильтрация по статусу
-		if (!empty($args['status_post'])) {
+		if ( ! empty( $args[ 'status_post' ] ) ) {
 			$where_conditions[] = "main.status_post = %s";
-			$where_values[]     = $args['status_post'];
+			$where_values[]     = $args[ 'status_post' ];
 		}
 		
 		// Фильтрация по проблемам
-		if (isset($args['ar_problem']) && $args['ar_problem']) {
+		if ( isset( $args[ 'ar_problem' ] ) && $args[ 'ar_problem' ] ) {
 			$where_conditions[] = "main.load_problem IS NOT NULL";
 			$where_conditions[] = "DATEDIFF(NOW(), main.load_problem) > 50";
 		}
-
+		
 		if ( ! empty( $args[ 'status' ] ) && $args[ 'status' ] !== 'all' ) {
 			$where_conditions[] = "ar_status.meta_value = %s";
 			$where_values[]     = $args[ 'status' ];
 		}
 		
 		
-		if ( ! empty( $args['my_search'] ) ) {
+		if ( ! empty( $args[ 'my_search' ] ) ) {
 			$where_conditions[] = "(
         reference.meta_value LIKE %s OR
         company.mc_number LIKE %s OR
         company.company_name LIKE %s
     )";
-			$search_value = '%' . $wpdb->esc_like( $args['my_search'] ) . '%';
-			$where_values[] = $search_value;
-			$where_values[] = $search_value;
-			$where_values[] = $search_value;
+			$search_value       = '%' . $wpdb->esc_like( $args[ 'my_search' ] ) . '%';
+			$where_values[]     = $search_value;
+			$where_values[]     = $search_value;
+			$where_values[]     = $search_value;
 		}
 		
 		// Применяем фильтры к запросу
-		if (!empty($where_conditions)) {
-			$sql .= ' AND ' . implode(' AND ', $where_conditions);
+		if ( ! empty( $where_conditions ) ) {
+			$sql .= ' AND ' . implode( ' AND ', $where_conditions );
 		}
 		
 		$total_records_sql = "SELECT COUNT(*)" . $join_builder;
-		if (!empty($where_conditions)) {
-			$total_records_sql .= ' AND ' . implode(' AND ', $where_conditions);
+		if ( ! empty( $where_conditions ) ) {
+			$total_records_sql .= ' AND ' . implode( ' AND ', $where_conditions );
 		}
 		
-		$total_records = $wpdb->get_var($wpdb->prepare($total_records_sql, ...$where_values));
+		$total_records = $wpdb->get_var( $wpdb->prepare( $total_records_sql, ...$where_values ) );
 		
 		// Вычисляем количество страниц
-		$total_pages = ceil($total_records / $per_page);
+		$total_pages = ceil( $total_records / $per_page );
 		
 		// Смещение для текущей страницы
-		$offset = ($current_page - 1) * $per_page;
+		$offset = ( $current_page - 1 ) * $per_page;
 		
 		// Добавляем сортировку и лимит для текущей страницы
 		$sql            .= " ORDER BY main.$sort_by $sort_order LIMIT %d, %d";
@@ -322,33 +410,33 @@ class TMSReports extends TMSReportsHelper {
 		$where_values[] = $per_page;
 		
 		// Выполняем запрос
-		$main_results = $wpdb->get_results($wpdb->prepare($sql, ...$where_values), ARRAY_A);
+		$main_results = $wpdb->get_results( $wpdb->prepare( $sql, ...$where_values ), ARRAY_A );
 		// Собираем все ID записей для получения дополнительных метаданных
-		$post_ids = wp_list_pluck($main_results, 'id');
+		$post_ids = wp_list_pluck( $main_results, 'id' );
 		
 		// Если есть записи, получаем метаданные
 		$meta_data = array();
-		if (!empty($post_ids)) {
+		if ( ! empty( $post_ids ) ) {
 			$meta_sql     = "SELECT post_id, meta_key, meta_value
                      FROM $table_meta
-                     WHERE post_id IN (" . implode(',', array_map('absint', $post_ids)) . ")";
-			$meta_results = $wpdb->get_results($meta_sql, ARRAY_A);
+                     WHERE post_id IN (" . implode( ',', array_map( 'absint', $post_ids ) ) . ")";
+			$meta_results = $wpdb->get_results( $meta_sql, ARRAY_A );
 			
 			// Преобразуем метаданные в ассоциативный массив по post_id
-			foreach ($meta_results as $meta_row) {
-				$post_id = $meta_row['post_id'];
-				if (!isset($meta_data[$post_id])) {
-					$meta_data[$post_id] = array();
+			foreach ( $meta_results as $meta_row ) {
+				$post_id = $meta_row[ 'post_id' ];
+				if ( ! isset( $meta_data[ $post_id ] ) ) {
+					$meta_data[ $post_id ] = array();
 				}
-				$meta_data[$post_id][$meta_row['meta_key']] = $meta_row['meta_value'];
+				$meta_data[ $post_id ][ $meta_row[ 'meta_key' ] ] = $meta_row[ 'meta_value' ];
 			}
 		}
 		
-		if (is_array($main_results) && !empty($main_results)) {
+		if ( is_array( $main_results ) && ! empty( $main_results ) ) {
 			// Объединяем основную таблицу с метаданными
-			foreach ($main_results as &$result) {
-				$post_id               = $result['id'];
-				$result['meta_data'] = isset($meta_data[$post_id]) ? $meta_data[$post_id] : array();
+			foreach ( $main_results as &$result ) {
+				$post_id               = $result[ 'id' ];
+				$result[ 'meta_data' ] = isset( $meta_data[ $post_id ] ) ? $meta_data[ $post_id ] : array();
 			}
 		}
 		
@@ -382,11 +470,11 @@ class TMSReports extends TMSReportsHelper {
 	    ";
 		
 		// Выполнение запроса
-		$result = $wpdb->get_row($sql, ARRAY_A);
+		$result = $wpdb->get_row( $sql, ARRAY_A );
 		
 		return $result;
 	}
-
+	
 	
 	/**
 	 * @param $ID
@@ -398,7 +486,7 @@ class TMSReports extends TMSReportsHelper {
 		global $wpdb;
 		
 		$table_main = "{$wpdb->prefix}{$this->table_main}";
-		$table_meta = "{$wpdb->prefix}{$this->table_meta}"; // Убедись, что ты правильно указал имя таблицы мета-данных
+		$table_meta = "{$wpdb->prefix}{$this->table_meta}";
 		
 		// SQL запрос для получения данных из основной таблицы и мета-данных
 		$query = $wpdb->prepare( "
@@ -437,6 +525,52 @@ class TMSReports extends TMSReportsHelper {
 		return null; // Если нет результатов
 	}
 	
+	public function get_counters_broker ($broker_id) {
+		global $wpdb;
+		
+		if (!is_numeric($broker_id)) return false;
+		
+		$table_meta = "{$wpdb->prefix}{$this->table_meta}";
+		
+		// SQL-запрос для подсчёта статусов
+		$sql = "
+		SELECT
+		    COUNT(CASE WHEN meta_status.meta_value = 'delivered' THEN 1 END) AS Delivered,
+		    COUNT(CASE WHEN meta_status.meta_value = 'cancelled' THEN 1 END) AS Cancelled,
+		    COUNT(CASE WHEN meta_status.meta_value = 'tonu' THEN 1 END) AS TONU,
+		    COUNT(CASE WHEN meta_status.meta_value NOT IN ('delivered', 'cancelled', 'tonu') THEN 1 END) AS Others
+		FROM $table_meta AS meta_broker
+		INNER JOIN $table_meta AS meta_status
+		    ON meta_broker.post_id = meta_status.post_id
+		WHERE meta_broker.meta_key = 'customer_id'
+		  AND meta_broker.meta_value = %s
+		  AND meta_status.meta_key = 'load_status'
+		";
+		
+		$results = $wpdb->get_row( $wpdb->prepare( $sql, $broker_id ), ARRAY_A );
+		
+		return $results;
+	}
+	
+	public function get_counters_shipper($shipper_id) {
+		global $wpdb;
+		
+		if (!is_numeric($shipper_id)) return false;
+		$table_meta = "{$wpdb->prefix}{$this->table_meta}";
+
+		// SQL-запрос
+				$sql = "SELECT
+    COUNT(CASE WHEN meta_pickup.meta_value LIKE '%\"address_id\":\"$shipper_id\"%' THEN 1 END) AS Pickup,
+    COUNT(CASE WHEN meta_delivery.meta_value LIKE '%\"address_id\":\"$shipper_id\"%' THEN 1 END) AS Delivary
+FROM $table_meta AS meta_pickup
+LEFT JOIN $table_meta AS meta_delivery
+    ON meta_pickup.post_id = meta_delivery.post_id
+WHERE meta_pickup.meta_key = 'pick_up_location'
+  AND meta_delivery.meta_key = 'delivery_location'";
+		$results = $wpdb->get_row( $sql, ARRAY_A );
+		
+		return $results;
+	}
 	/**
 	 * @param $user_id
 	 * @param $project_needs
@@ -793,156 +927,19 @@ class TMSReports extends TMSReportsHelper {
 			] );
 			
 			if ( ! empty( $_FILES[ 'screen_picture' ] ) ) {
-				$files = $_FILES[ 'screen_picture' ];
-				if ( $files[ 'size' ] > 0 ) {
-					
-					$uploaded_files = [];
-					
-					$file = [
-						'name'     => $files[ 'name' ],
-						'type'     => $files[ 'type' ],
-						'tmp_name' => $files[ 'tmp_name' ],
-						'error'    => $files[ 'error' ],
-						'size'     => $files[ 'size' ]
-					];
-					
-					// Используем wp_handle_upload для обработки загрузки
-					$upload_result = wp_handle_upload( $file, [ 'test_form' => false ] );
-					
-					if ( ! isset( $upload_result[ 'error' ] ) ) {
-						// Данные о файле
-						$file_url  = $upload_result[ 'url' ];
-						$file_type = $upload_result[ 'type' ];
-						$file_path = $upload_result[ 'file' ];
-						
-						// Подготовка данных для записи в медиабиблиотеку
-						$attachment = array(
-							'guid'           => $file_url,
-							'post_mime_type' => $file_type,
-							'post_title'     => basename( $file_url ),
-							'post_content'   => '',
-							'post_status'    => 'inherit'
-						);
-						
-						// Вставляем запись в базу данных (в таблицу attachments)
-						$attachment_id = wp_insert_attachment( $attachment, $file_path );
-						
-						// Генерация метаданных для вложения и обновление базы данных
-						require_once( ABSPATH . 'wp-admin/includes/image.php' );
-						$attachment_data = wp_generate_attachment_metadata( $attachment_id, $file_path );
-						wp_update_attachment_metadata( $attachment_id, $attachment_data );
-						
-						// Теперь у вас есть ID загруженного файла
-						$uploaded_files[] = $attachment_id;
-					} else {
-						// Ошибка загрузки файла
-						wp_send_json_error( [ 'message' => $upload_result[ 'error' ] ] );
-					}
-					
-					// Теперь у нас есть массив $uploaded_files с загруженными файлами
-					$MY_INPUT[ 'screen_picture' ] = $uploaded_files;
-				}
+				$MY_INPUT[ 'screen_picture' ] = $this->upload_one_file($_FILES[ 'screen_picture' ]);
 			}
 			
 			if ( ! empty( $_FILES[ 'update_rate_confirmation' ] ) ) {
-				$files = $_FILES[ 'update_rate_confirmation' ];
-				if ( $files[ 'size' ] > 0 ) {
-					
-					$uploaded_files = [];
-					
-					$file = [
-						'name'     => $files[ 'name' ],
-						'type'     => $files[ 'type' ],
-						'tmp_name' => $files[ 'tmp_name' ],
-						'error'    => $files[ 'error' ],
-						'size'     => $files[ 'size' ]
-					];
-					
-					// Используем wp_handle_upload для обработки загрузки
-					$upload_result = wp_handle_upload( $file, [ 'test_form' => false ] );
-					
-					if ( ! isset( $upload_result[ 'error' ] ) ) {
-						// Данные о файле
-						$file_url  = $upload_result[ 'url' ];
-						$file_type = $upload_result[ 'type' ];
-						$file_path = $upload_result[ 'file' ];
-						
-						// Подготовка данных для записи в медиабиблиотеку
-						$attachment = array(
-							'guid'           => $file_url,
-							'post_mime_type' => $file_type,
-							'post_title'     => basename( $file_url ),
-							'post_content'   => '',
-							'post_status'    => 'inherit'
-						);
-						
-						// Вставляем запись в базу данных (в таблицу attachments)
-						$attachment_id = wp_insert_attachment( $attachment, $file_path );
-						
-						// Генерация метаданных для вложения и обновление базы данных
-						require_once( ABSPATH . 'wp-admin/includes/image.php' );
-						$attachment_data = wp_generate_attachment_metadata( $attachment_id, $file_path );
-						wp_update_attachment_metadata( $attachment_id, $attachment_data );
-						
-						// Теперь у вас есть ID загруженного файла
-						$uploaded_files[] = $attachment_id;
-					} else {
-						// Ошибка загрузки файла
-						wp_send_json_error( [ 'message' => $upload_result[ 'error' ] ] );
-					}
-					
-					// Теперь у нас есть массив $uploaded_files с загруженными файлами
-					$MY_INPUT[ 'updated_rate_confirmation' ] = $uploaded_files;
-				}
+				$MY_INPUT[ 'updated_rate_confirmation' ] = $this->upload_one_file($_FILES[ 'update_rate_confirmation' ]);
 			}
 			
 			if ( ! empty( $_FILES[ 'attached_file_required' ] ) ) {
-				$files          = $_FILES[ 'attached_file_required' ];
-				$uploaded_files = [];
-				
-				$file = [
-					'name'     => $files[ 'name' ],
-					'type'     => $files[ 'type' ],
-					'tmp_name' => $files[ 'tmp_name' ],
-					'error'    => $files[ 'error' ],
-					'size'     => $files[ 'size' ]
-				];
-				
-				// Используем wp_handle_upload для обработки загрузки
-				$upload_result = wp_handle_upload( $file, [ 'test_form' => false ] );
-				
-				if ( ! isset( $upload_result[ 'error' ] ) ) {
-					// Данные о файле
-					$file_url  = $upload_result[ 'url' ];
-					$file_type = $upload_result[ 'type' ];
-					$file_path = $upload_result[ 'file' ];
-					
-					// Подготовка данных для записи в медиабиблиотеку
-					$attachment = array(
-						'guid'           => $file_url,
-						'post_mime_type' => $file_type,
-						'post_title'     => basename( $file_url ),
-						'post_content'   => '',
-						'post_status'    => 'inherit'
-					);
-					
-					// Вставляем запись в базу данных (в таблицу attachments)
-					$attachment_id = wp_insert_attachment( $attachment, $file_path );
-					
-					// Генерация метаданных для вложения и обновление базы данных
-					require_once( ABSPATH . 'wp-admin/includes/image.php' );
-					$attachment_data = wp_generate_attachment_metadata( $attachment_id, $file_path );
-					wp_update_attachment_metadata( $attachment_id, $attachment_data );
-					
-					// Теперь у вас есть ID загруженного файла
-					$uploaded_files[] = $attachment_id;
-				} else {
-					// Ошибка загрузки файла
-					wp_send_json_error( [ 'message' => $upload_result[ 'error' ] ] );
-				}
-				
-				// Теперь у нас есть массив $uploaded_files с загруженными файлами
-				$MY_INPUT[ 'uploaded_file_required' ] = $uploaded_files;
+				$MY_INPUT[ 'uploaded_file_required' ] = $this->upload_one_file($_FILES[ 'attached_file_required' ]);;
+			}
+			
+			if ( ! empty( $_FILES[ 'proof_of_delivery' ] ) ) {
+				$MY_INPUT[ 'proof_of_delivery' ] = $this->upload_one_file($_FILES[ 'proof_of_delivery' ]);;
 			}
 			
 			if ( ! empty( $_FILES[ 'attached_files' ] ) ) {
@@ -1008,6 +1005,57 @@ class TMSReports extends TMSReportsHelper {
 		} else {
 			wp_send_json_error( [ 'message' => 'Invalid request' ] );
 		}
+	}
+	
+	function upload_one_file ($files) {
+		$uploaded_files = false;
+		if ( $files[ 'size' ] > 0 ) {
+			
+			$uploaded_files = [];
+			
+			$file = [
+				'name'     => $files[ 'name' ],
+				'type'     => $files[ 'type' ],
+				'tmp_name' => $files[ 'tmp_name' ],
+				'error'    => $files[ 'error' ],
+				'size'     => $files[ 'size' ]
+			];
+			
+			// Используем wp_handle_upload для обработки загрузки
+			$upload_result = wp_handle_upload( $file, [ 'test_form' => false ] );
+			
+			if ( ! isset( $upload_result[ 'error' ] ) ) {
+				// Данные о файле
+				$file_url  = $upload_result[ 'url' ];
+				$file_type = $upload_result[ 'type' ];
+				$file_path = $upload_result[ 'file' ];
+				
+				// Подготовка данных для записи в медиабиблиотеку
+				$attachment = array(
+					'guid'           => $file_url,
+					'post_mime_type' => $file_type,
+					'post_title'     => basename( $file_url ),
+					'post_content'   => '',
+					'post_status'    => 'inherit'
+				);
+				
+				// Вставляем запись в базу данных (в таблицу attachments)
+				$attachment_id = wp_insert_attachment( $attachment, $file_path );
+				
+				// Генерация метаданных для вложения и обновление базы данных
+				require_once( ABSPATH . 'wp-admin/includes/image.php' );
+				$attachment_data = wp_generate_attachment_metadata( $attachment_id, $file_path );
+				wp_update_attachment_metadata( $attachment_id, $attachment_data );
+				
+				// Теперь у вас есть ID загруженного файла
+				$uploaded_files[] = $attachment_id;
+			} else {
+				// Ошибка загрузки файла
+				wp_send_json_error( [ 'message' => $upload_result[ 'error' ] ] );
+			}
+		}
+		
+		return $uploaded_files;
 	}
 	
 	/**
@@ -1263,7 +1311,6 @@ class TMSReports extends TMSReportsHelper {
 				"post_id"          => FILTER_SANITIZE_STRING,
 				"reference_number" => FILTER_SANITIZE_STRING,
 			] );
-			
 			$result = $this->remove_one_image_in_db( $MY_INPUT );
 			
 			if ( $result === true ) {
@@ -1478,8 +1525,8 @@ class TMSReports extends TMSReportsHelper {
 			'date_updated'    => current_time( 'mysql' )
 		);
 		
-		if (!$data[ 'quick_pay_accounting' ]) {
-			$data[ 'quick_pay_method' ] = null;
+		if ( ! $data[ 'quick_pay_accounting' ] ) {
+			$data[ 'quick_pay_method' ]        = null;
 			$data[ 'quick_pay_driver_amount' ] = null;
 		}
 		
@@ -1867,6 +1914,9 @@ class TMSReports extends TMSReportsHelper {
 		$updated_screen_picture = ! empty( $data[ 'screen_picture' ] ) ? implode( ', ', $data[ 'screen_picture' ] )
 			: $current_data[ 'screen_picture' ];
 		
+		$proof_of_delivery_picture = ! empty( $data[ 'proof_of_delivery' ] ) ? implode( ', ', $data[ 'proof_of_delivery' ] )
+			: $current_data[ 'proof_of_delivery' ];
+		
 		
 		if ( ! empty( $data[ 'updated_rate_confirmation' ] ) ) {
 			if ( implode( ', ', $data[ 'updated_rate_confirmation' ] ) !== $current_data[ 'updated_rate_confirmation' ] ) {
@@ -1886,6 +1936,7 @@ class TMSReports extends TMSReportsHelper {
 			'attached_file_required'    => $attached_files_required,
 			'updated_rate_confirmation' => $updated_rate_confirmation,
 			'screen_picture'            => $updated_screen_picture,
+			'proof_of_delivery'         => $proof_of_delivery_picture,
 		);
 		
 		// Specify the condition (WHERE clause)
@@ -2159,7 +2210,7 @@ class TMSReports extends TMSReportsHelper {
 				// Удаляем указанный ID
 				$new_ids   = array_diff( $ids, array( $image_id ) );
 				$new_value = implode( ',', $new_ids );
-			} elseif ( $image_field === 'attached_file_required' || $image_field === 'updated_rate_confirmation' || $image_field === 'screen_picture' ) {
+			} elseif ( $image_field === 'attached_file_required' || $image_field === 'updated_rate_confirmation' || $image_field === 'screen_picture' || $image_field === 'proof_of_delivery') {
 				
 				if ( $image_field === 'attached_file_required' ) {
 					$select_emails = $this->email_helper->get_selected_emails( $this->user_emails, array(
@@ -2375,5 +2426,6 @@ class TMSReports extends TMSReportsHelper {
 	}
 	
 	// CREATE TABLE AND UPDATE SQL END
+
 	
 }

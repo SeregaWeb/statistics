@@ -36,6 +36,8 @@ import { autoFillAddress } from './components/auto-fill-address';
 import { AuthUsersInit } from './components/auth-users';
 import { cleanUrlByFilter, cleanUrlByFilterAr, cleanUrlByFilterPlatform } from './components/filter-clean';
 import { disabledValuesInSelectInit, showHiddenValueInit } from './components/chow-hidden-value';
+import { logsInit } from "./components/logs";
+import { bookmarkInit } from "./components/bookmark";
 
 function ready() {
     console.log('ready');
@@ -76,7 +78,7 @@ function ready() {
     fullRemovePost(urlAjax);
     quickEditInit(urlAjax, '.js-quick-edit', 'quick_update_post');
     quickEditInit(urlAjax, '.js-quick-edit-ar', 'quick_update_post_ar');
-
+    bookmarkInit(urlAjax);
     // API request
     initGetInfoDriver(useServices);
 
@@ -98,6 +100,7 @@ function ready() {
     toggleCheckboxInit();
     disabledValuesInSelectInit();
     quick_pay_method();
+    logsInit();
 
     const preloaders = document.querySelectorAll('.js-preloader');
     preloaders &&

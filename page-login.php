@@ -6,6 +6,11 @@
  * @since 4.4.0
  */
 
+if ( is_user_logged_in()) {
+    wp_redirect( home_url() );
+    die;
+}
+
 get_header('noauth');
 
 ?>

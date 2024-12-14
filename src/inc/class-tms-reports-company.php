@@ -3,8 +3,9 @@ require_once( ABSPATH . 'wp-admin/includes/upgrade.php' );
 
 class TMSReportsCompany extends TMSReportsHelper {
 	
-	public $table_main = 'reports_company';
-	public $posts_per_page = 2;
+	public $table_main     = 'reports_company';
+	public $table_meta     = 'reportsmeta_company';
+	public $posts_per_page = 20;
 	
 	public function ajax_actions() {
 		add_action( 'wp_ajax_add_new_company', array( $this, 'add_new_company' ) );
@@ -25,13 +26,13 @@ class TMSReportsCompany extends TMSReportsHelper {
 		$table_name = $wpdb->prefix . $this->table_main;
 		
 		// Добавляем индексы для полей, по которым выполняются поиски
-		$wpdb->query("
+		$wpdb->query( "
         ALTER TABLE $table_name
         ADD INDEX idx_company_name (company_name),
         ADD INDEX idx_mc_number (mc_number),
         ADD INDEX idx_dot_number (dot_number),
         ADD INDEX idx_email (email);
-    ");
+    " );
 	}
 	
 	public function search_company() {
@@ -177,23 +178,34 @@ class TMSReportsCompany extends TMSReportsHelper {
 		if ( defined( 'DOING_AJAX' ) && DOING_AJAX ) {
 			// Sanitize input data
 			$MY_INPUT = filter_var_array( $_POST, [
-				"select_project"  => FILTER_SANITIZE_STRING,
-				"company_name"    => FILTER_SANITIZE_STRING,
-				"country"         => FILTER_SANITIZE_STRING,
-				"Addr1"           => FILTER_SANITIZE_STRING,
-				"Addr2"           => FILTER_SANITIZE_STRING,
-				"City"            => FILTER_SANITIZE_STRING,
-				"State"           => FILTER_SANITIZE_STRING,
-				"ZipCode"         => FILTER_SANITIZE_STRING,
-				"FirstName"       => FILTER_SANITIZE_STRING,
-				"LastName"        => FILTER_SANITIZE_STRING,
-				"Phone"           => FILTER_SANITIZE_STRING,
-				"Email"           => FILTER_SANITIZE_EMAIL,
-				"MotorCarrNo"     => FILTER_SANITIZE_STRING,
-				"DotNo"           => FILTER_SANITIZE_STRING,
-				"set_up"          => FILTER_SANITIZE_STRING,
-				"set_up_platform" => FILTER_SANITIZE_STRING,
+				"select_project"      => FILTER_SANITIZE_STRING,
+				"company_name"        => FILTER_SANITIZE_STRING,
+				"country"             => FILTER_SANITIZE_STRING,
+				"Addr1"               => FILTER_SANITIZE_STRING,
+				"Addr2"               => FILTER_SANITIZE_STRING,
+				"City"                => FILTER_SANITIZE_STRING,
+				"State"               => FILTER_SANITIZE_STRING,
+				"ZipCode"             => FILTER_SANITIZE_STRING,
+				"FirstName"           => FILTER_SANITIZE_STRING,
+				"LastName"            => FILTER_SANITIZE_STRING,
+				"Phone"               => FILTER_SANITIZE_STRING,
+				"Email"               => FILTER_SANITIZE_EMAIL,
+				"MotorCarrNo"         => FILTER_SANITIZE_STRING,
+				"DotNo"               => FILTER_SANITIZE_STRING,
+				"set_up"              => FILTER_SANITIZE_STRING,
+				"set_up_platform"     => FILTER_SANITIZE_STRING,
+				"notes"               => FILTER_SANITIZE_STRING,
+				"work_with_odysseia"  => FILTER_VALIDATE_BOOLEAN,
+				"work_with_martlet"   => FILTER_VALIDATE_BOOLEAN,
+				"work_with_endurance" => FILTER_VALIDATE_BOOLEAN,
 			] );
+			
+			$post_meta = array(
+				"notes"               => $MY_INPUT["notes"],
+				"work_with_odysseia"  => $MY_INPUT["work_with_odysseia"],
+				"work_with_martlet"   => $MY_INPUT["work_with_martlet"],
+				"work_with_endurance" => $MY_INPUT["work_with_endurance"],
+			);
 			
 			// Check if 'set_up' is 'completed' and set the timestamp
 			$set_up_timestamp = null;
@@ -202,27 +214,30 @@ class TMSReportsCompany extends TMSReportsHelper {
 			}
 			
 			$set_up_array = array(
-				"Odysseia" => null,
-				"Martlet" => null,
+				"Odysseia"  => null,
+				"Martlet"   => null,
 				"Endurance" => null,
 			);
 			
 			$set_up_completed_array = array(
-				"Odysseia" => null,
-				"Martlet" => null,
+				"Odysseia"  => null,
+				"Martlet"   => null,
 				"Endurance" => null,
 			);
 			
-			$set_up_array[$MY_INPUT['select_project']] = $MY_INPUT['set_up'];
-			$set_up_completed_array[$MY_INPUT['select_project']] = $set_up_timestamp;
+			$set_up_array[ $MY_INPUT[ 'select_project' ] ]           = $MY_INPUT[ 'set_up' ];
+			$set_up_completed_array[ $MY_INPUT[ 'select_project' ] ] = $set_up_timestamp;
 			
-			$MY_INPUT[ 'set_up' ] = json_encode($set_up_array);
-			$MY_INPUT[ 'completed' ] = json_encode($set_up_completed_array);
+			$MY_INPUT[ 'set_up' ]    = json_encode( $set_up_array );
+			$MY_INPUT[ 'completed' ] = json_encode( $set_up_completed_array );
 			
 			// Insert the company report
 			$result = $this->add_company( $MY_INPUT );
 			
 			if ( is_numeric( $result ) ) {
+				
+				$this->update_post_meta_data( $result, $post_meta );
+				
 				wp_send_json_success( [ 'message' => 'Company successfully added', 'data' => $MY_INPUT ] );
 			} else {
 				// Handle specific errors
@@ -316,19 +331,19 @@ class TMSReportsCompany extends TMSReportsHelper {
 		global $wpdb;
 		$table_name = $wpdb->prefix . $this->table_main;
 		
-		$current_page = isset($_GET['paged']) ? (int) $_GET['paged'] : 1;
+		$current_page = isset( $_GET[ 'paged' ] ) ? (int) $_GET[ 'paged' ] : 1;
 		
-		$search = isset($_GET['my_search']) ? sanitize_text_field($_GET['my_search']) : '';
-		$platform = isset($_GET['platform']) ? sanitize_text_field($_GET['platform']) : '';
+		$search   = isset( $_GET[ 'my_search' ] ) ? sanitize_text_field( $_GET[ 'my_search' ] ) : '';
+		$platform = isset( $_GET[ 'platform' ] ) ? sanitize_text_field( $_GET[ 'platform' ] ) : '';
 		
-		$offset = ($current_page - 1) * $this->posts_per_page;
+		$offset = ( $current_page - 1 ) * $this->posts_per_page;
 		
 		$count_query = "SELECT COUNT(*) FROM $table_name WHERE 1=1";
 		
 		$main_query = "SELECT * FROM $table_name WHERE 1=1";
 		
-		if (!empty($search)) {
-			$search = '%' . $wpdb->esc_like($search) . '%';
+		if ( ! empty( $search ) ) {
+			$search           = '%' . $wpdb->esc_like( $search ) . '%';
 			$search_condition = " AND (
             company_name LIKE %s OR
             zip_code LIKE %s OR
@@ -336,48 +351,49 @@ class TMSReportsCompany extends TMSReportsHelper {
             phone_number LIKE %s OR
             email LIKE %s
         )";
-			$count_query .= $search_condition;
-			$main_query .= $search_condition;
+			$count_query      .= $search_condition;
+			$main_query       .= $search_condition;
 		}
 		
-		if (!empty($platform)) {
+		if ( ! empty( $platform ) ) {
 			$platform_condition = " AND set_up_platform = %s";
-			$count_query .= $platform_condition;
-			$main_query .= $platform_condition;
+			$count_query        .= $platform_condition;
+			$main_query         .= $platform_condition;
 		}
 		
 		$main_query .= " LIMIT %d OFFSET %d";
 		
 		$params = [];
-		if (!empty($search)) {
-			$params = array_merge($params, [$search, $search, $search, $search, $search]);
+		if ( ! empty( $search ) ) {
+			$params = array_merge( $params, [ $search, $search, $search, $search, $search ] );
 		}
-		if (!empty($platform)) {
+		if ( ! empty( $platform ) ) {
 			$params[] = $platform;
 		}
 		
-		$total_records = (int) $wpdb->get_var($wpdb->prepare($count_query, ...$params));
-		$main_results = $wpdb->get_results(
-			$wpdb->prepare($main_query, array_merge($params, [$this->posts_per_page, $offset])),
-			ARRAY_A
-		);
+		$total_records = (int) $wpdb->get_var( $wpdb->prepare( $count_query, ...$params ) );
+		$main_results  = $wpdb->get_results( $wpdb->prepare( $main_query, array_merge( $params, [
+			$this->posts_per_page,
+			$offset
+		] ) ), ARRAY_A );
 		
-		$total_pages = ceil($total_records / $this->posts_per_page);
+		$total_pages = ceil( $total_records / $this->posts_per_page );
 		
 		return array(
-			'results'       => $main_results,
-			'total_pages'   => $total_pages,
-			'total_posts'   => $total_records,
-			'current_page'  => $current_page,
+			'results'      => $main_results,
+			'total_pages'  => $total_pages,
+			'total_posts'  => $total_records,
+			'current_page' => $current_page,
 		);
 	}
-
 	
 	public function create_table_company() {
 		global $wpdb;
 		
 		$table_name      = $wpdb->prefix . $this->table_main;
 		$charset_collate = $wpdb->get_charset_collate();
+		
+		$table_meta_name = $wpdb->prefix . $this->table_meta;
 		
 		$sql = "CREATE TABLE $table_name (
         id mediumint(9) NOT NULL AUTO_INCREMENT,
@@ -410,6 +426,83 @@ class TMSReportsCompany extends TMSReportsHelper {
         INDEX idx_email (email)
     ) $charset_collate;";
 		dbDelta( $sql );
+		
+		$sql = "CREATE TABLE $table_meta_name (
+		        id mediumint(9) NOT NULL AUTO_INCREMENT,
+		        post_id mediumint(9) NOT NULL,
+		        meta_key longtext,
+		        meta_value longtext,
+		        PRIMARY KEY  (id),
+                INDEX idx_post_id (post_id),
+         		INDEX idx_meta_key (meta_key(191)),
+         		INDEX idx_meta_key_value (meta_key(191), meta_value(191))
+    		) $charset_collate;";
+		
+		dbDelta( $sql );
+		
 	}
 	
+	public function get_all_meta_by_post_id($post_id) {
+		global $wpdb;
+		$post_id = intval($post_id);
+		$table_meta_name = $wpdb->prefix . $this->table_meta;
+		$sql = $wpdb->prepare(
+			"SELECT meta_key, meta_value FROM $table_meta_name WHERE post_id = %d",
+			$post_id
+		);
+		
+		// Выполняем запрос
+		$results = $wpdb->get_results($sql, ARRAY_A);
+		
+		// Если результаты пусты, возвращаем пустой массив
+		if (empty($results)) {
+			return [];
+		}
+		
+		// Преобразуем записи в удобный для работы массив
+		$meta_data = [];
+		foreach ($results as $row) {
+			$meta_data[$row['meta_key']] = maybe_unserialize($row['meta_value']);
+		}
+		
+		return $meta_data;
+	}
+	
+	/**
+	 * @param $post_id
+	 * @param $meta_data
+	 * update post meta fields in db
+	 *
+	 * @return true|WP_Error
+	 */
+	function update_post_meta_data( $post_id, $meta_data ) {
+		global $wpdb;
+		$table_meta_name = $wpdb->prefix . $this->table_meta;
+		
+		foreach ( $meta_data as $meta_key => $meta_value ) {
+			$existing = $wpdb->get_var( $wpdb->prepare( "
+            SELECT id FROM $table_meta_name
+            WHERE post_id = %d AND meta_key = %s
+        ", $post_id, $meta_key ) );
+			
+			if ( $existing ) {
+				// Обновляем существующую запись
+				$wpdb->update( $table_meta_name, array( 'meta_value' => $meta_value ), array( 'id' => $existing ), array( '%s' ), array( '%d' ) );
+			} else {
+				// Вставляем новую запись
+				$wpdb->insert( $table_meta_name, array(
+					'post_id'    => $post_id,
+					'meta_key'   => $meta_key,
+					'meta_value' => $meta_value
+				), array( '%d', '%s', '%s' ) );
+			}
+		}
+		
+		// Проверка на ошибки
+		if ( $wpdb->last_error ) {
+			return new WP_Error( 'db_error', 'Ошибка при обновлении метаданных: ' . $wpdb->last_error );
+		}
+		
+		return true;
+	}
 }

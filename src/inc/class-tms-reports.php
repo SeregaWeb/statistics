@@ -12,6 +12,8 @@ class TMSReports extends TMSReportsHelper {
 	
 	public $project = '';
 	
+	public $log_controller = false;
+	
 	public function __construct() {
 		$user_id = get_current_user_id();
 		
@@ -19,11 +21,14 @@ class TMSReports extends TMSReportsHelper {
 		$this->email_helper->init();
 		$this->user_emails = $this->email_helper->get_all_emails();
 		
+		$this->log_controller = new TMSLogs();
+		
 		$curent_tables = get_field( 'current_select', 'user_' . $user_id );
 		if ( $curent_tables ) {
 			$this->project    = $curent_tables;
 			$this->table_main = 'reports_' . strtolower( $curent_tables );
 			$this->table_meta = 'reportsmeta_' . strtolower( $curent_tables );
+			
 		}
 	}
 	
@@ -525,10 +530,12 @@ class TMSReports extends TMSReportsHelper {
 		return null; // Если нет результатов
 	}
 	
-	public function get_counters_broker ($broker_id) {
+	public function get_counters_broker( $broker_id ) {
 		global $wpdb;
 		
-		if (!is_numeric($broker_id)) return false;
+		if ( ! is_numeric( $broker_id ) ) {
+			return false;
+		}
 		
 		$table_meta = "{$wpdb->prefix}{$this->table_meta}";
 		
@@ -552,14 +559,16 @@ class TMSReports extends TMSReportsHelper {
 		return $results;
 	}
 	
-	public function get_counters_shipper($shipper_id) {
+	public function get_counters_shipper( $shipper_id ) {
 		global $wpdb;
 		
-		if (!is_numeric($shipper_id)) return false;
+		if ( ! is_numeric( $shipper_id ) ) {
+			return false;
+		}
 		$table_meta = "{$wpdb->prefix}{$this->table_meta}";
-
+		
 		// SQL-запрос
-				$sql = "SELECT
+		$sql     = "SELECT
     COUNT(CASE WHEN meta_pickup.meta_value LIKE '%\"address_id\":\"$shipper_id\"%' THEN 1 END) AS Pickup,
     COUNT(CASE WHEN meta_delivery.meta_value LIKE '%\"address_id\":\"$shipper_id\"%' THEN 1 END) AS Delivary
 FROM $table_meta AS meta_pickup
@@ -571,6 +580,7 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 		
 		return $results;
 	}
+	
 	/**
 	 * @param $user_id
 	 * @param $project_needs
@@ -759,23 +769,27 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 		if ( defined( 'DOING_AJAX' ) && DOING_AJAX ) {
 			// Sanitize input data
 			$MY_INPUT = filter_var_array( $_POST, [
-				"post_id"           => FILTER_SANITIZE_STRING,
-				"factoring_status"  => FILTER_SANITIZE_STRING,
-				"load_problem"      => FILTER_SANITIZE_STRING,
-				"processing"        => FILTER_SANITIZE_STRING,
-				"short_pay"         => FILTER_SANITIZE_STRING,
-				"rc_proof"          => FILTER_VALIDATE_BOOLEAN,
-				"pod_proof"         => FILTER_VALIDATE_BOOLEAN,
-				"invoiced_proof"    => FILTER_VALIDATE_BOOLEAN,
-				"processing_fees"   => FILTER_SANITIZE_STRING,
-				"type_pay"          => FILTER_SANITIZE_STRING,
-				"percent_quick_pay" => FILTER_SANITIZE_STRING,
-				"booked_rate"       => FILTER_SANITIZE_STRING,
-				"driver_rate"       => FILTER_SANITIZE_STRING,
-				"profit"            => FILTER_SANITIZE_STRING,
-				"tbd"               => FILTER_VALIDATE_BOOLEAN,
-				"ar-action"         => FILTER_VALIDATE_BOOLEAN,
-				"ar_status"         => FILTER_SANITIZE_STRING,
+				"post_id"               => FILTER_SANITIZE_STRING,
+				"factoring_status"      => FILTER_SANITIZE_STRING,
+				"load_problem"          => FILTER_SANITIZE_STRING,
+				"processing"            => FILTER_SANITIZE_STRING,
+				"short_pay"             => FILTER_SANITIZE_STRING,
+				"rc_proof"              => FILTER_VALIDATE_BOOLEAN,
+				"pod_proof"             => FILTER_VALIDATE_BOOLEAN,
+				"invoiced_proof"        => FILTER_VALIDATE_BOOLEAN,
+				"processing_fees"       => FILTER_SANITIZE_STRING,
+				"type_pay"              => FILTER_SANITIZE_STRING,
+				"percent_quick_pay"     => FILTER_SANITIZE_STRING,
+				"booked_rate"           => FILTER_SANITIZE_STRING,
+				"driver_rate"           => FILTER_SANITIZE_STRING,
+				"profit"                => FILTER_SANITIZE_STRING,
+				"tbd"                   => FILTER_VALIDATE_BOOLEAN,
+				"ar-action"             => FILTER_VALIDATE_BOOLEAN,
+				"ar_status"             => FILTER_SANITIZE_STRING,
+				"old_ar_status"         => FILTER_SANITIZE_STRING,
+				"old_factoring_status"  => FILTER_SANITIZE_STRING,
+				"checked_invoice_proof" => FILTER_SANITIZE_STRING,
+				"checked_ar_action"     => FILTER_SANITIZE_STRING,
 			] );
 			
 			if ( ! $MY_INPUT[ 'ar-action' ] ) {
@@ -927,19 +941,19 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 			] );
 			
 			if ( ! empty( $_FILES[ 'screen_picture' ] ) ) {
-				$MY_INPUT[ 'screen_picture' ] = $this->upload_one_file($_FILES[ 'screen_picture' ]);
+				$MY_INPUT[ 'screen_picture' ] = $this->upload_one_file( $_FILES[ 'screen_picture' ] );
 			}
 			
 			if ( ! empty( $_FILES[ 'update_rate_confirmation' ] ) ) {
-				$MY_INPUT[ 'updated_rate_confirmation' ] = $this->upload_one_file($_FILES[ 'update_rate_confirmation' ]);
+				$MY_INPUT[ 'updated_rate_confirmation' ] = $this->upload_one_file( $_FILES[ 'update_rate_confirmation' ] );
 			}
 			
 			if ( ! empty( $_FILES[ 'attached_file_required' ] ) ) {
-				$MY_INPUT[ 'uploaded_file_required' ] = $this->upload_one_file($_FILES[ 'attached_file_required' ]);;
+				$MY_INPUT[ 'uploaded_file_required' ] = $this->upload_one_file( $_FILES[ 'attached_file_required' ] );;
 			}
 			
 			if ( ! empty( $_FILES[ 'proof_of_delivery' ] ) ) {
-				$MY_INPUT[ 'proof_of_delivery' ] = $this->upload_one_file($_FILES[ 'proof_of_delivery' ]);;
+				$MY_INPUT[ 'proof_of_delivery' ] = $this->upload_one_file( $_FILES[ 'proof_of_delivery' ] );;
 			}
 			
 			if ( ! empty( $_FILES[ 'attached_files' ] ) ) {
@@ -1007,7 +1021,7 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 		}
 	}
 	
-	function upload_one_file ($files) {
+	function upload_one_file( $files ) {
 		$uploaded_files = false;
 		if ( $files[ 'size' ] > 0 ) {
 			
@@ -1148,23 +1162,29 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 				"percent_quick_pay"     => FILTER_SANITIZE_STRING,
 				"processing"            => FILTER_SANITIZE_STRING,
 				"driver_rate"           => FILTER_SANITIZE_STRING,
+				"old_value_driver_rate" => FILTER_SANITIZE_STRING,
 				"driver_phone"          => FILTER_SANITIZE_STRING,
+				"old_driver_phone"      => FILTER_SANITIZE_STRING,
 				"profit"                => FILTER_SANITIZE_STRING,
 				"pick_up_date"          => FILTER_SANITIZE_STRING,
 				"old_pick_up_date"      => FILTER_SANITIZE_STRING,
 				"delivery_date"         => FILTER_SANITIZE_STRING,
+				"old_delivery_date"     => FILTER_SANITIZE_STRING,
 				"load_status"           => FILTER_SANITIZE_STRING,
 				"old_load_status"       => FILTER_SANITIZE_STRING,
 				"instructions"          => [ 'filter' => FILTER_SANITIZE_STRING, 'flags' => FILTER_REQUIRE_ARRAY ],
+				"old_instructions"      => FILTER_SANITIZE_STRING,
 				"source"                => FILTER_SANITIZE_STRING,
 				"load_type"             => FILTER_SANITIZE_STRING,
 				"commodity"             => FILTER_SANITIZE_STRING,
 				"weight"                => FILTER_SANITIZE_STRING,
+				"old_weight"            => FILTER_SANITIZE_STRING,
 				"notes"                 => FILTER_SANITIZE_STRING,
 				"post_id"               => FILTER_SANITIZE_STRING,
 				"post_status"           => FILTER_SANITIZE_STRING,
 				"read_only"             => FILTER_SANITIZE_STRING,
 				"tbd"                   => FILTER_VALIDATE_BOOLEAN,
+				"old_tbd"               => FILTER_VALIDATE_BOOLEAN,
 			] );
 			
 			if ( $MY_INPUT[ 'load_status' ] === 'cancelled' ) {
@@ -1311,7 +1331,7 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 				"post_id"          => FILTER_SANITIZE_STRING,
 				"reference_number" => FILTER_SANITIZE_STRING,
 			] );
-			$result = $this->remove_one_image_in_db( $MY_INPUT );
+			$result   = $this->remove_one_image_in_db( $MY_INPUT );
 			
 			if ( $result === true ) {
 				wp_send_json_success( [ 'message' => 'Remove success', 'data' => $MY_INPUT ] );
@@ -1479,6 +1499,40 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 			'ar-action'               => $data[ 'ar-action' ],
 		);
 		
+		if ($data[ 'ar-action' ] && !isset($data['checked_ar_action'])) {
+			$this->log_controller->create_one_log( array(
+				'user_id' => $user_id,
+				'post_id' => $data[ 'post_id' ],
+				'message' => 'Set Ar action'
+			) );
+		}
+		
+		if (isset($data['checked_ar_action']) && !$data[ 'ar-action' ]) {
+			$this->log_controller->create_one_log( array(
+				'user_id' => $user_id,
+				'post_id' => $data[ 'post_id' ],
+				'message' => 'Unset Ar action'
+			) );
+		}
+		
+		if ($data[ 'invoiced_proof' ] && !isset($data['checked_invoice_proof'])) {
+			$this->log_controller->create_one_log( array(
+				'user_id' => $user_id,
+				'post_id' => $data[ 'post_id' ],
+				'message' => 'Set Invoiced'
+			) );
+		}
+		
+		if (isset($data['checked_invoice_proof']) && !$data[ 'invoiced_proof' ]) {
+			$this->log_controller->create_one_log( array(
+				'user_id' => $user_id,
+				'post_id' => $data[ 'post_id' ],
+				'message' => 'Unset Invoiced'
+			) );
+		}
+		
+		
+		
 		if ( $post_meta[ 'factoring_status' ] === 'charge-back' ) {
 			$post_meta[ 'booked_rate' ] = 0;
 		}
@@ -1530,6 +1584,8 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 			$data[ 'quick_pay_driver_amount' ] = null;
 		}
 		
+		$old_data = $this->get_report_by_id($post_id);
+		
 		$post_meta = array(
 			"bank_payment_status"     => $data[ 'bank_payment_status' ],
 			"driver_pay_statuses"     => $data[ 'driver_pay_statuses' ],
@@ -1538,6 +1594,45 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 			"quick_pay_driver_amount" => $data[ 'quick_pay_driver_amount' ],
 		);
 		
+		$label_fields = array(
+			"bank_payment_status"     => 'Bank status',
+			"driver_pay_statuses"     => 'Driver pay status',
+			"quick_pay_accounting"    => 'Quick pay',
+			"quick_pay_method"        => 'Quick pay method',
+			"quick_pay_driver_amount" => 'Will charge the driver',
+		);
+		
+		// Проверяем, если старые данные существуют
+		if (isset($old_data['meta'])) {
+			foreach ($post_meta as $key => $new_value) {
+				$old_value = isset($old_data['meta'][$key]) ? $old_data['meta'][$key] : null;
+				
+				if ($old_value === null && $new_value) {
+					$this->log_controller->create_one_log( array(
+						'user_id' => $user_id,
+						'post_id' => $data[ 'post_id' ],
+						'message' => "Field '{$label_fields[$key]}' added for the first time with value: {$new_value}."
+					) );
+					
+				} elseif ($old_value !== $new_value && $new_value) {
+					$this->log_controller->create_one_log( array(
+						'user_id' => $user_id,
+						'post_id' => $data[ 'post_id' ],
+						'message' => "Field '{$label_fields[$key]}' updated. Old value: {$old_value}, New value: {$new_value}."
+					) );
+				}
+			}
+		} else {
+			foreach ($post_meta as $key => $value) {
+				if ($value):
+					$this->log_controller->create_one_log( array(
+						'user_id' => $user_id,
+						'post_id' => $data[ 'post_id' ],
+						'message' => "Field '{$label_fields[$key]}' added for the first time with value: {$value}."
+					) );
+				endif;
+			}
+		}
 		
 		// Specify the condition (WHERE clause)
 		$where = array( 'id' => $post_id );
@@ -1756,6 +1851,12 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 			$id_new_post = $wpdb->insert_id;
 			$result      = $this->update_post_meta_data( $id_new_post, $post_meta );
 			
+			$this->log_controller->create_one_log( array(
+				'user_id' => $user_id,
+				'post_id' => $id_new_post,
+				'message' => 'Create load:' . $insert_params[ 'date_created' ]
+			) );
+			
 			return $id_new_post; // Return the ID of the added record
 		} else {
 			// Get the last SQL error
@@ -1809,6 +1910,26 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 			if ( ! empty( $data[ 'old_pick_up_location' ] ) && $data[ 'old_delivery_location' ] ) {
 				$cleanedpick  = stripslashes( $data[ 'old_pick_up_location' ] );
 				$cleaneddeliv = stripslashes( $data[ 'old_delivery_location' ] );
+
+
+//				var_dump($cleanedpick, $data[ 'pick_up_location_json' ], $cleanedpick !== $data[ 'pick_up_location_json' ]);
+//				die;
+				
+				if ( $cleanedpick !== $data[ 'pick_up_location_json' ] ) {
+					$this->log_controller->create_one_log( array(
+						'user_id' => $user_id,
+						'post_id' => $data[ 'post_id' ],
+						'message' => 'Edit Pick UP location: ' . $this->compare_pick_up_locations( $cleanedpick, $data[ 'pick_up_location_json' ] )
+					) );
+				}
+				
+				if ( $cleaneddeliv !== $data[ 'delivery_location_json' ] ) {
+					$this->log_controller->create_one_log( array(
+						'user_id' => $user_id,
+						'post_id' => $data[ 'post_id' ],
+						'message' => 'Edit Delivery location: ' . $this->compare_pick_up_locations( $cleaneddeliv, $data[ 'delivery_location_json' ] )
+					) );
+				}
 				
 				if ( $cleanedpick !== $data[ 'pick_up_location_json' ] || $cleaneddeliv !== $data[ 'delivery_location_json' ] ) {
 					$values = '------- OLD VALUES PICK UP -------' . "<br><br>";
@@ -1826,7 +1947,6 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 					$values .= "<br>" . '------- NEW VALUES DELIVERED-------' . "<br><br>";
 					
 					$values .= $this->formatJsonForEmail( $data[ 'delivery_location_json' ] );
-					
 					
 					$select_emails = $this->email_helper->get_selected_emails( $this->user_emails, array( 'tracking_email' ) );
 					
@@ -1914,13 +2034,42 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 		$updated_screen_picture = ! empty( $data[ 'screen_picture' ] ) ? implode( ', ', $data[ 'screen_picture' ] )
 			: $current_data[ 'screen_picture' ];
 		
-		$proof_of_delivery_picture = ! empty( $data[ 'proof_of_delivery' ] ) ? implode( ', ', $data[ 'proof_of_delivery' ] )
-			: $current_data[ 'proof_of_delivery' ];
+		$proof_of_delivery_picture = ! empty( $data[ 'proof_of_delivery' ] )
+			? implode( ', ', $data[ 'proof_of_delivery' ] ) : $current_data[ 'proof_of_delivery' ];
 		
+		if ( ! empty( $data[ 'proof_of_delivery' ] ) ) {
+			$this->log_controller->create_one_log( array(
+				'user_id' => $user_id,
+				'post_id' => $data[ 'post_id' ],
+				'message' => 'Added proof of delivery'
+			) );
+		}
 		
 		if ( ! empty( $data[ 'updated_rate_confirmation' ] ) ) {
+			
+			$this->log_controller->create_one_log( array(
+				'user_id' => $user_id,
+				'post_id' => $data[ 'post_id' ],
+				'message' => 'Added rate confirmation'
+			) );
+			
 			if ( implode( ', ', $data[ 'updated_rate_confirmation' ] ) !== $current_data[ 'updated_rate_confirmation' ] ) {
-				var_dump( 'NEED SEND MESSAGE USER' );
+				global $global_options;
+				$add_new_load = get_field_value( $global_options, 'add_new_load' );
+				$link         = '';
+				if ( $add_new_load ) {
+					$link = '<a href="' . $add_new_load . '?post_id=' . $data[ 'post_id' ] . '">Load</a>';
+				}
+				
+				$select_emails = $this->email_helper->get_selected_emails( $this->user_emails, array( 'tracking_email' ) );
+				$user_name     = $this->get_user_full_name_by_id( $user_id );
+				
+				$this->email_helper->send_custom_email( $select_emails, array(
+					'subject'      => 'Update rate confirmation',
+					'project_name' => 'Project: ' . $this->project,
+					'subtitle'     => 'User changed: ' . $user_name[ 'full_name' ],
+					'message'      => 'Link to: ' . $link,
+				) );
 			}
 		}
 		
@@ -1974,7 +2123,7 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 		$user_name  = $this->get_user_full_name_by_id( $user_id );
 		
 		// Prepare the instructions field
-		$instructions = ! empty( $data[ 'instructions' ] ) ? implode( ', ', $data[ 'instructions' ] ) : null;
+		$instructions = ! empty( $data[ 'instructions' ] ) ? implode( ',', $data[ 'instructions' ] ) : null;
 		
 		global $global_options;
 		$add_new_load = get_field_value( $global_options, 'add_new_load' );
@@ -1986,8 +2135,33 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 		
 		if ( $data[ 'post_status' ] === 'publish' ) {
 			
+			if ( $data[ 'old_tbd' ] && is_null( $data[ 'tbd' ] ) ) {
+				$this->log_controller->create_one_log( array(
+					'user_id' => $user_id,
+					'post_id' => $data[ 'post_id' ],
+					'message' => 'Remove status TBD'
+				) );
+			}
+			
+			if ( $instructions ) {
+				if ( $this->normalize_string( $instructions ) !== $this->normalize_string( $data[ 'old_instructions' ] ) ) {
+					$this->log_controller->create_one_log( array(
+						'user_id' => $user_id,
+						'post_id' => $data[ 'post_id' ],
+						'message' => 'Changed instructions: ' . 'New value: ' . $instructions . ' Old value: ' . $data[ 'old_instructions' ]
+					) );
+				}
+			}
+			
 			if ( $data[ 'old_unit_number_name' ] && ! empty( $data[ 'old_unit_number_name' ] ) ) {
 				if ( $data[ 'old_unit_number_name' ] !== $data[ 'unit_number_name' ] ) {
+					
+					$this->log_controller->create_one_log( array(
+						'user_id' => $user_id,
+						'post_id' => $data[ 'post_id' ],
+						'message' => 'Changed driver: ' . 'New value: ' . $data[ 'unit_number_name' ] . ' Old value: ' . $data[ 'old_unit_number_name' ]
+					) );
+					
 					$select_emails = $this->email_helper->get_selected_emails( $this->user_emails, array(
 						'tracking_email',
 						'admin_email',
@@ -1999,6 +2173,39 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 						'project_name' => 'Project: ' . $this->project,
 						'subtitle'     => 'User changed: ' . $user_name[ 'full_name' ],
 						'message'      => 'New value: ' . $data[ 'unit_number_name' ] . ' Old value: ' . $data[ 'old_unit_number_name' ] . 'Load № ' . $data[ 'reference_number' ] . ' Link to: ' . $link,
+					) );
+					
+					
+				}
+			}
+			
+			if ( $data[ 'old_driver_phone' ] && ! empty( $data[ 'old_driver_phone' ] ) ) {
+				if ( $data[ 'driver_phone' ] !== $data[ 'old_driver_phone' ] ) {
+					$this->log_controller->create_one_log( array(
+						'user_id' => $user_id,
+						'post_id' => $data[ 'post_id' ],
+						'message' => 'Changed Driver phone: ' . 'New value: ' . $data[ 'driver_phone' ] . ' Old value: ' . $data[ 'old_driver_phone' ]
+					) );
+				}
+			}
+			
+			if ( $data[ 'old_delivery_date' ] && ! empty( $data[ 'old_delivery_date' ] ) ) {
+				if ( $data[ 'delivery_date' ] !== $data[ 'old_delivery_date' ] ) {
+					$this->log_controller->create_one_log( array(
+						'user_id' => $user_id,
+						'post_id' => $data[ 'post_id' ],
+						'message' => 'Changed Delivery date: ' . 'New value: ' . $data[ 'delivery_date' ] . ' Old value: ' . $data[ 'old_delivery_date' ]
+					) );
+				}
+			}
+			
+			
+			if ( $data[ 'weight' ] && ! empty( $data[ 'weight' ] ) ) {
+				if ( $data[ 'weight' ] !== $data[ 'old_weight' ] ) {
+					$this->log_controller->create_one_log( array(
+						'user_id' => $user_id,
+						'post_id' => $data[ 'post_id' ],
+						'message' => 'Changed Weight: ' . 'New value: ' . $data[ 'weight' ] . ' Old value: ' . $data[ 'old_weight' ]
 					) );
 				}
 			}
@@ -2035,8 +2242,29 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 						'message'      => 'New value: ' . $new_status_label . ' Old value: ' . $old_status_label . 'Load № ' . $data[ 'reference_number' ] . ' Link to: ' . $link,
 					) );
 				}
+				
+				if ( $data[ 'load_status' ] !== $data[ 'old_load_status' ] ) {
+					
+					$new_status_label = $this->get_label_by_key( $data[ 'load_status' ], 'statuses' );
+					$old_status_label = $this->get_label_by_key( $data[ 'old_load_status' ], 'statuses' );
+					
+					$this->log_controller->create_one_log( array(
+						'user_id' => $user_id,
+						'post_id' => $data[ 'post_id' ],
+						'message' => 'Changed Load status: ' . 'New value: ' . $new_status_label . ' Old value: ' . $old_status_label
+					) );
+				}
 			}
 			
+			if ( is_numeric( $data[ 'old_value_driver_rate' ] ) ) {
+				if ( $data[ 'driver_rate' ] !== floatval( $data[ 'old_value_driver_rate' ] ) ) {
+					$this->log_controller->create_one_log( array(
+						'user_id' => $user_id,
+						'post_id' => $data[ 'post_id' ],
+						'message' => 'Changed Driver rate: ' . 'New value: ' . $data[ 'driver_rate' ] . ' Old value: $' . $data[ 'old_value_driver_rate' ]
+					) );
+				}
+			}
 			if ( is_numeric( $data[ 'old_value_booked_rate' ] ) ) {
 				if ( $data[ 'booked_rate' ] !== floatval( $data[ 'old_value_booked_rate' ] ) ) {
 					
@@ -2054,6 +2282,12 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 						'project_name' => 'Project: ' . $this->project,
 						'subtitle'     => 'User changed: ' . $user_name[ 'full_name' ],
 						'message'      => 'New value: $' . $data[ 'booked_rate' ] . ' Old value: $' . $data[ 'old_value_booked_rate' ] . 'Load № ' . $data[ 'reference_number' ] . ' Link to: ' . $link,
+					) );
+					
+					$this->log_controller->create_one_log( array(
+						'user_id' => $user_id,
+						'post_id' => $data[ 'post_id' ],
+						'message' => 'Changed Booked rate: ' . 'New value: ' . $data[ 'booked_rate' ] . ' Old value: $' . $data[ 'old_value_booked_rate' ]
 					) );
 				}
 			}
@@ -2210,7 +2444,7 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 				// Удаляем указанный ID
 				$new_ids   = array_diff( $ids, array( $image_id ) );
 				$new_value = implode( ',', $new_ids );
-			} elseif ( $image_field === 'attached_file_required' || $image_field === 'updated_rate_confirmation' || $image_field === 'screen_picture' || $image_field === 'proof_of_delivery') {
+			} elseif ( $image_field === 'attached_file_required' || $image_field === 'updated_rate_confirmation' || $image_field === 'screen_picture' || $image_field === 'proof_of_delivery' ) {
 				
 				if ( $image_field === 'attached_file_required' ) {
 					$select_emails = $this->email_helper->get_selected_emails( $this->user_emails, array(
@@ -2426,6 +2660,6 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 	}
 	
 	// CREATE TABLE AND UPDATE SQL END
-
+	
 	
 }

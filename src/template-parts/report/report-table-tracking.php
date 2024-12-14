@@ -7,6 +7,7 @@ $link_broker = get_field_value( $global_options, 'single_page_broker' );
 $TMSUsers = new TMSUsers();
 $TMSBroker = new TMSReportsCompany();
 $helper = new TMSReportsHelper();
+$logs = new TMSLogs();
 
 $results       = get_field_value($args, 'results');
 $total_pages   = get_field_value($args, 'total_pages');
@@ -32,6 +33,7 @@ if ( ! empty( $results ) ) : ?>
             <th scope="col">Delivery location</th>
             <th scope="col">Unit & name</th>
             <th scope="col">Client</th>
+            <th scope="col">Last log</th>
             <th scope="col"></th>
         </tr>
         </thead>
@@ -100,6 +102,10 @@ if ( ! empty( $results ) ) : ?>
 			if (!$broker_name) {
 				$broker_name = "N/A";
 			}
+            
+            
+            $tmpl = $logs->get_last_log_by_post($row[ 'id' ])
+            
 			?>
 
             <tr>
@@ -208,6 +214,11 @@ if ( ! empty( $results ) ) : ?>
                         <span class="text-small"><?php echo $broker_mc; ?></span>
                     </div>
                 </td>
+
+                <td width="300">
+                    <?php echo $tmpl; ?>
+                </td>
+                
              
 				<?php if ( $TMSUsers->check_user_role_access( array( 'recruiter' ) ) ): ?>
                     <td>

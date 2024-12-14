@@ -36,6 +36,7 @@ html {
     display: none;
     overflow-x: hidden;
     overflow-y: scroll;
+    padding: 0 0 120px;
 
     &-container {
         background: #fff;
@@ -50,9 +51,9 @@ html {
     &__wrapper-inner {
         position: relative;
         z-index: 2;
-        top: 50%;
+        top: 100px;
         left: 50%;
-        transform: translate(-50%, -50%);
+        transform: translate(-50%, 0);
         max-width: 600px;
 
         @include max-break('1024px') {

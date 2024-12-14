@@ -42,12 +42,12 @@ $curent_tables = get_field('current_select', 'user_'.$user_id);
 			</div>
 		</div>
 		
-		<div class="form-group mt-3">
+		<div class="form-group mt-3 col-6">
 			<label for="input-address1" class="form-label">Address 1 <span class="required-star text-danger">*</span></label>
 			<input id="input-address1" type="text" required name="Addr1" placeholder="Address 1" class="form-control">
 		</div>
 		
-		<div class="form-group mt-3">
+		<div class="form-group mt-3 col-6">
 			<label for="input-address2" class="form-label">Address 2</label>
 			<input id="input-address2" type="text" name="Addr2" placeholder="Address 2" class="form-control">
 		</div>
@@ -142,8 +142,35 @@ $curent_tables = get_field('current_select', 'user_'.$user_id);
         </div>
         
 	</div>
+
+    <div class="input-group mt-3">
+        <span class="input-group-text">Notes</span>
+        <textarea class="form-control" aria-label="With textarea" name="notes"></textarea>
+    </div>
+    
+    <div class="w-100 mt-3">
+        <p>Work with</p>
+        
+        <div class="d-flex gap-3">
+        <div class="form-check form-switch">
+            <input class="form-check-input" type="checkbox" name="work_with_odysseia" id="odysseia">
+            <label class="form-check-label" for="odysseia" >Odysseia</label>
+        </div>
+
+        <div class="form-check form-switch">
+            <input class="form-check-input" type="checkbox" name="work_with_martlet" id="martlet">
+            <label class="form-check-label" for="martlet" >Martlet</label>
+        </div>
+
+        <div class="form-check form-switch">
+            <input class="form-check-input" type="checkbox" name="work_with_endurance" id="endurance">
+            <label class="form-check-label" for="endurance" >Endurance</label>
+        </div>
+        </div>
+        
+    </div>
  
-	<div class="modal-footer justify-content-start gap-2">
+	<div class="modal-footer justify-content-start gap-2 mt-3">
 		<button type="button" class="btn btn-dark js-popup-close">Cancel</button>
 		<button type="submit" class="btn btn-outline-primary">Submit <span class="spinner-border spinner-border-sm ms-2" style="display: none;"></span></button>
 	</div>

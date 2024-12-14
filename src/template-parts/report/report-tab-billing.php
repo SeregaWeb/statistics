@@ -64,6 +64,16 @@ if ( $report_object ) {
 
 <form class="js-uploads-billing d-grid">
 
+    <input type="hidden" name="old_ar_status" value="<?php echo $ar_status; ?>">
+    <input type="hidden" name="old_factoring_status" value="<?php echo $factoring_status; ?>">
+    <?php if($invoiced_proof): ?>
+        <input type="hidden" name="checked_invoice_proof" value="1">
+    <?php endif; ?>
+	
+	<?php if($ar_action_field): ?>
+        <input type="hidden" name="checked_ar_action" value="1">
+	<?php endif; ?>
+
     <input type="hidden" name="booked_rate" value="<?php echo $booked_rate; ?>">
     <input type="hidden" name="driver_rate" value="<?php echo $driver_rate; ?>">
     <input type="hidden" name="profit" value="<?php echo $profit; ?>">

@@ -231,7 +231,10 @@ $logshowcontent = isset($_COOKIE['logshow']) && +$_COOKIE['logshow'] !== 0 ? 'co
 
                     <div class="col-12 js-logs-container <?php echo $logshow; ?>">
                         <?php
-                        echo esc_html( get_template_part( 'src/template-parts/report/report', 'logs' ) );
+                        echo esc_html( get_template_part( 'src/template-parts/report/report', 'logs', array(
+                                'post_id' => $post_id,
+                                'user_id' => get_current_user_id(),
+                        ) ) );
                         ?>
                     </div>
                     

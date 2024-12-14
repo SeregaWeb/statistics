@@ -4809,7 +4809,36 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   logsInit: function() { return /* binding */ logsInit; }
 /* harmony export */ });
-var logsInit = function logsInit() {
+/* harmony import */ var _info_messages__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./info-messages */ "./src/js/components/info-messages.ts");
+
+var logsInit = function logsInit(ajaxUrl) {
+  var userLog = document.querySelector('.js-log-message');
+  userLog && userLog.addEventListener('submit', function (event) {
+    event.preventDefault();
+    var target = event.target;
+    var form = new FormData(target);
+    var action = 'add_user_log';
+    form.append('action', action);
+    var logContainer = document.querySelector('.js-log-container');
+    var options = {
+      method: 'POST',
+      body: form
+    };
+    target.setAttribute('disabled', 'disabled');
+    fetch(ajaxUrl, options).then(function (res) {
+      return res.json();
+    }).then(function (requestStatus) {
+      if (requestStatus.success && logContainer) {
+        logContainer.innerHTML = requestStatus.data.template + logContainer.innerHTML;
+        target.removeAttribute('disabled');
+        target.reset();
+      }
+    }).catch(function (error) {
+      (0,_info_messages__WEBPACK_IMPORTED_MODULE_0__.printMessage)("Request failed: ".concat(error), 'danger', 8000);
+      console.error('Request failed:', error);
+      target.removeAttribute('disabled');
+    });
+  });
   var btns = document.querySelectorAll('.js-hide-logs');
   btns && btns.forEach(function (item) {
     item.addEventListener('click', function (event) {
@@ -10515,8 +10544,8 @@ class Popup {
                     ? event.target.getAttribute('href')
                     : event.target.dataset.href;
 
-            // this.body.classList.add('popup-opened');
-            // this.html.classList.add('popup-opened');
+            this.body.classList.add('popup-opened');
+            this.html.classList.add('popup-opened');
             (0,_helpers__WEBPACK_IMPORTED_MODULE_0__.fadeIn)(elHref);
             return true;
         });
@@ -15116,6 +15145,7 @@ function ready() {
   (0,_components_create_report__WEBPACK_IMPORTED_MODULE_3__.quickEditInit)(urlAjax, '.js-quick-edit', 'quick_update_post');
   (0,_components_create_report__WEBPACK_IMPORTED_MODULE_3__.quickEditInit)(urlAjax, '.js-quick-edit-ar', 'quick_update_post_ar');
   (0,_components_bookmark__WEBPACK_IMPORTED_MODULE_18__.bookmarkInit)(urlAjax);
+  (0,_components_logs__WEBPACK_IMPORTED_MODULE_17__.logsInit)(urlAjax);
   (0,_components_driver_Info__WEBPACK_IMPORTED_MODULE_10__.initGetInfoDriver)(useServices);
   (0,_components_create_report__WEBPACK_IMPORTED_MODULE_3__.additionalContactsInit)();
   (0,_components_create_report__WEBPACK_IMPORTED_MODULE_3__.addShipperPointInit)();
@@ -15134,7 +15164,6 @@ function ready() {
   (0,_components_toggle_blocks_init__WEBPACK_IMPORTED_MODULE_8__.toggleCheckboxInit)();
   (0,_components_chow_hidden_value__WEBPACK_IMPORTED_MODULE_16__.disabledValuesInSelectInit)();
   (0,_components_input_helpers__WEBPACK_IMPORTED_MODULE_2__.quick_pay_method)();
-  (0,_components_logs__WEBPACK_IMPORTED_MODULE_17__.logsInit)();
   var preloaders = document.querySelectorAll('.js-preloader');
   preloaders && preloaders.forEach(function (item) {
     item.remove();

@@ -1,4 +1,47 @@
-export const logsInit = () => {
+import { printMessage } from './info-messages';
+import { updateStatusPost } from './create-report';
+
+export const logsInit = (ajaxUrl) => {
+    const userLog = document.querySelector('.js-log-message');
+
+    userLog &&
+        userLog.addEventListener('submit', (event) => {
+            event.preventDefault();
+            const { target } = event;
+            // @ts-ignore
+            const form = new FormData(target);
+            const action = 'add_user_log';
+            // @ts-ignore
+            form.append('action', action);
+
+            const logContainer = document.querySelector('.js-log-container');
+
+            const options = {
+                method: 'POST',
+                body: form,
+            };
+
+            // @ts-ignore
+            target.setAttribute('disabled', 'disabled');
+            fetch(ajaxUrl, options)
+                .then((res) => res.json())
+                .then((requestStatus) => {
+                    if (requestStatus.success && logContainer) {
+                        logContainer.innerHTML = requestStatus.data.template + logContainer.innerHTML;
+                        // @ts-ignore
+                        target.removeAttribute('disabled');
+                        // @ts-ignore
+                        target.reset();
+                    }
+                })
+                .catch((error) => {
+                    printMessage(`Request failed: ${error}`, 'danger', 8000);
+                    console.error('Request failed:', error);
+                    // @ts-ignore
+                    target.removeAttribute('disabled');
+                });
+        });
+
     const btns = document.querySelectorAll('.js-hide-logs');
 
     btns &&

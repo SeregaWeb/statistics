@@ -273,6 +273,62 @@ class TMSReportsHelper extends TMSReportsIcons {
 		return $dispatchers;
 	}
 	
+	function compare_pick_up_locations($originalJson, $modifiedJson) {
+		$originalArray = json_decode($originalJson, true);
+		$modifiedArray = json_decode($modifiedJson, true);
+		
+		if ($originalArray === null || $modifiedArray === null) {
+			return "JSON decoding error: " . json_last_error_msg();
+		}
+		
+		$originalKeys = array_column($originalArray, 'address');
+		$modifiedKeys = array_column($modifiedArray, 'address');
+		
+		$added = array_diff($modifiedKeys, $originalKeys);
+		$removed = array_diff($originalKeys, $modifiedKeys);
+		
+		$output = "";
+		
+		// Handle added points
+		if (!empty($added)) {
+			foreach ($added as $index => $address) {
+				$output .= "Added new point: $address<br>";
+			}
+		}
+		
+		// Handle removed points
+		if (!empty($removed)) {
+			foreach ($removed as $index => $address) {
+				$output .= "Removed point: $address<br>";
+			}
+		}
+		
+		// Handle modified points
+		foreach ($modifiedArray as $modifiedLocation) {
+			foreach ($originalArray as $originalLocation) {
+				if ($originalLocation['address'] === $modifiedLocation['address']) {
+					$changes = [];
+					foreach ($modifiedLocation as $key => $value) {
+						if (isset($originalLocation[$key]) && $originalLocation[$key] !== $value) {
+							$changes[] = ucfirst($key) . " changed from '{$originalLocation[$key]}' to '$value'";
+						}
+					}
+					if (!empty($changes)) {
+						$output .= "Modified point: {$modifiedLocation['address']}<br>"
+						           . implode("<br>", $changes) . "<br>";
+					}
+				}
+			}
+		}
+		
+		// If no changes were detected
+		if (empty($output)) {
+			$output = "No changes detected.<br>";
+		}
+		
+		return $output;
+	}
+	
 	function formatJsonForEmail( $jsonString ) {
 		$decodedArray = json_decode( $jsonString, true );
 		
@@ -641,6 +697,10 @@ class TMSReportsHelper extends TMSReportsIcons {
 			$args[ 'my_search' ] = $my_search;
 		}
 		return $args;
+	}
+	
+	public function normalize_string($string) {
+		return preg_replace('/\s+/', ' ', trim($string));
 	}
 }
 

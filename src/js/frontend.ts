@@ -79,6 +79,7 @@ function ready() {
     quickEditInit(urlAjax, '.js-quick-edit', 'quick_update_post');
     quickEditInit(urlAjax, '.js-quick-edit-ar', 'quick_update_post_ar');
     bookmarkInit(urlAjax);
+    logsInit(urlAjax);
     // API request
     initGetInfoDriver(useServices);
 
@@ -100,7 +101,6 @@ function ready() {
     toggleCheckboxInit();
     disabledValuesInSelectInit();
     quick_pay_method();
-    logsInit();
 
     const preloaders = document.querySelectorAll('.js-preloader');
     preloaders &&

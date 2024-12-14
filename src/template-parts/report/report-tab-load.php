@@ -309,6 +309,10 @@ $read_only = $TMSUsers->check_read_only($post_status);
             <div class="form-check form-switch">
                 <input class="form-check-input js-tbd" <?php echo $tbd ? 'checked' : ''; ?> type="checkbox" name="tbd" id="tbd">
                 <label class="form-check-label" for="tbd">TBD</label>
+
+                <?php if($tbd): ?>
+                    <input type="hidden" name="old_tbd" value="1">
+                <?php endif; ?>
             </div>
         </div>
 
@@ -366,6 +370,8 @@ $read_only = $TMSUsers->check_read_only($post_status);
                 <span class="input-group-text">$</span>
                 <input type="text" name="driver_rate" <?php echo $tbd ? 'readonly' : ''; ?> data-value="<?php echo $driver_rate; ?>" value="<?php echo $tbd ? 0 : $driver_rate; ?>"
                        class="form-control js-money js-driver-value" required>
+
+                <input type="hidden" class="js-old_value_driver_rate" name="old_value_driver_rate" value="<?php echo $driver_rate; ?>">
             </div>
         </div>
 
@@ -374,6 +380,7 @@ $read_only = $TMSUsers->check_read_only($post_status);
         <div class="mb-2 col-12 col-md-6 col-xl-4">
             <label for="driver_phone" class="form-label ">Driver phone</label>
             <input type="text" data-value="<?php echo $driver_phone; ?>" <?php echo $tbd ? 'readonly' : ''; ?> name="driver_phone" value="<?php echo $driver_phone; ?>" class="form-control js-phone-driver" required>
+            <input type="hidden" name="old_driver_phone" value="<?php echo $driver_phone; ?>">
         </div>
 
         <div class="col-12 col-md-6 col-xl-4">
@@ -397,6 +404,8 @@ $read_only = $TMSUsers->check_read_only($post_status);
         <div class="mb-2 col-12 col-md-6 col-xl-4">
             <label for="pick_up_date" class="form-label">Delivery Date</label>
             <input type="date" name="delivery_date" value="<?php echo $delivery_date_formatted; ?>" class="form-control" required>
+            <input type="hidden" name="old_delivery_date" value="<?php echo $delivery_date_formatted; ?>" class="form-control" required>
+            
         </div>
 
         <?php endif; ?>
@@ -457,6 +466,8 @@ $read_only = $TMSUsers->check_read_only($post_status);
                         </label>
                     </div>
 				<?php endforeach; ?>
+
+                <input type="hidden" name="old_instructions" value="<?php echo $instructions_str; ?>">
 			<?php endif ?>
         </div>
 
@@ -472,6 +483,7 @@ $read_only = $TMSUsers->check_read_only($post_status);
         <div class="mb-2 col-12 col-md-6 col-xl-4">
             <label for="weight" class="form-label">Weight (lbs)</label>
             <input type="number" step="0.1" name="weight" value="<?php echo $weight; ?>" class="form-control" required>
+            <input type="hidden" name="old_weight" value="<?php echo $weight; ?>">
         </div>
 
         <div class="mb-5 col-12 col-xl-8">

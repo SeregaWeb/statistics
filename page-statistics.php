@@ -45,6 +45,10 @@ if ( ! $active_item ) {
                                 <a class="nav-link <?php echo $active_item === 'top' ? 'active' : '' ?>"
                                    href="<?php echo get_the_permalink() . '?active_state=top' ?>">Top list</a>
                             </li>
+                            <li class="nav-item">
+                                <a class="nav-link <?php echo $active_item === 'source' ? 'active' : '' ?>"
+                                   href="<?php echo get_the_permalink() . '?active_state=source' ?>">Source</a>
+                            </li>
                         </ul>
                     </div>
 
@@ -150,7 +154,6 @@ if ( ! $active_item ) {
                             </script>
 						
 						<?php endif; ?>
-						
 						
 						<?php if ( $active_item === 'top' ):
 							$top3 = $statistics->get_table_top_3_loads();
@@ -459,6 +462,78 @@ if ( ! $active_item ) {
                                 
                                 endif;
 							endif; ?>
+                        
+                        <?php if ($active_item === 'source'): ?>
+                            <div class="w-100 ">
+                                <div class="w-100 mb-2">
+                                    <h2>Source</h2>
+                                    <?php
+                                    $dispatcher_json = $statistics->get_sources_statistics();
+                                    ?>
+                                    <div class="d-flex">
+                                    <div id="sourcePostCountChart" style="width:100%; max-width:50%; height:50vh;"></div>
+                                    <div id="sourceProfitChart" style="width:100%; max-width:50%; height:50vh;"></div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <script>
+                              
+                              const sourcesData = <?php echo $dispatcher_json; ?>;
+                              console.log('sourcesData', sourcesData);
+                              window.document.addEventListener('DOMContentLoaded', () => {
+                                google.charts.load('current', { 'packages': ['corechart'] });
+                                
+                                google.charts.setOnLoadCallback(drawSourcePostCountChart);
+                                google.charts.setOnLoadCallback(drawSourceProfitChart);
+                                
+                                // График количества постов по источникам
+                                function drawSourcePostCountChart() {
+                                  const dataArray = [['Source', 'Post Count']];
+                                  
+                                  Object.keys(sourcesData).forEach(key => {
+                                    const source = sourcesData[key];
+                                    dataArray.push([source.label, parseInt(source.post_count)]);
+                                  });
+                                  
+                                  const data = google.visualization.arrayToDataTable(dataArray);
+                                  
+                                  const options = {
+                                    title       : 'Post Count by Source',
+                                    pieSliceText: 'value',
+                                    legend      : { position: 'center' },
+                                  };
+                                  
+                                  const chart = new google.visualization.PieChart(document.getElementById('sourcePostCountChart'));
+                                  chart.draw(data, options);
+                                }
+                                
+                                // График суммарного профита по источникам
+                                function drawSourceProfitChart() {
+                                  const dataArray = [['Source', 'Total Profit']];
+                                  
+                                  Object.keys(sourcesData).forEach(key => {
+                                    const source = sourcesData[key];
+                                    const profit = parseFloat(source.total_profit.replace(',', '')); // Убираем $ и запятые
+                                    dataArray.push([source.label, profit]);
+                                  });
+                                  
+                                  const data = google.visualization.arrayToDataTable(dataArray);
+                                  
+                                  const options = {
+                                    title       : 'Profit by Source',
+                                    pieSliceText: 'value',
+                                    legend      : { position: 'center' },
+                                  };
+                                  
+                                  const chart = new google.visualization.PieChart(document.getElementById('sourceProfitChart'));
+                                  chart.draw(data, options);
+                                }
+                              });
+                            </script>
+                        
+                        <?php endif; ?>
+                        
                         </form>
                     </div>
                 </div>

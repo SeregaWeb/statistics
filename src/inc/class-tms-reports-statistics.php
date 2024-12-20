@@ -35,7 +35,38 @@ class  TMSStatistics extends TMSReportsHelper {
 		
 		return $weekdayCount;
 	}
-	
+	public function get_sources_statistics () {
+		global $wpdb;
+		$table_meta    = $wpdb->prefix . $this->table_meta;
+		
+		// Результирующий массив
+		$statistics = [];
+		
+		foreach ($this->sources as $key => $label) {
+			$query = $wpdb->prepare(
+				"
+        SELECT COUNT(DISTINCT source_meta.post_id) as count,
+               SUM(CASE WHEN profit_meta.meta_key = 'profit' THEN profit_meta.meta_value ELSE 0 END) as profit
+        FROM $table_meta as source_meta
+        INNER JOIN $table_meta as profit_meta
+            ON source_meta.post_id = profit_meta.post_id
+            AND profit_meta.meta_key = 'profit'
+        WHERE source_meta.meta_key = 'source' AND source_meta.meta_value = %s
+        ",
+				$key
+			);
+			
+			$result = $wpdb->get_row($query);
+			
+			$statistics[$key] = [
+				'label'        => $label,
+				'post_count'   => $result->count ?? 0,
+				'total_profit' => isset($result->profit) ? number_format($result->profit, 2) : '0.00',
+			];
+		}
+		
+		return json_encode( $statistics );
+	}
 	public function get_dispatcher_statistics() {
 		global $wpdb;
 		

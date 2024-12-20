@@ -61,10 +61,68 @@ if ( function_exists( 'get_field' ) ) {
 
 <pre class="d-none">
 
+время в логе установить по таймзоне EST
+месяц число год - заменить в логе формат даты
+
+load - таб билинг добавить статус
+(только если факторинг)
+Delayed advance
+Unapplied payment
+Pending to TAFS
+
+вынести инвоис - выделить что бы случайно не нажали
+
+при инвойсд в биллинг - предзаполнить дату инвойса
+
+квик пей - логи
+
+Brokers
+_______________
+Factoring status: (Approved / Denied / Credit Approval Required / One load allowed / Not Found)
+Accounting email:
+Accounting phone:
+Days to pay:
+Quick Pay option (switch available / not available)
+Quick pay percent: (если Quick Pay option = available)
+
+
+месяц/число/год
+12/19/2024
+
+
+Billing info
+________________
+Select status: + Pending to TAFS / Unapplied payment / Delayed advance при условии что выше выбран Select processing: Factoring
+
+
+Direct Invoicing & Unapplied Payments
+___________________________________________
+
+Date booked
+Dispatcher initials
+Reference number
+Broker company
+Factoring status
+Shipper location
+Receiver location
+Booked rate
+Load status
+QP option (из Broker)
+QP percent (из Broker)
+Delivery Date
+Days to pay (из Broker)
+Days since invoiced
+
+
+Поиск по статусам: All / Pending to TAFS / Unapplied payment / Delayed advance / Processing / Paid / Processed / Fraud / Company closed
+
 <!--- добавить в статистику тотал ( всей команды ) лоадс - профит - гоалс - лефт - среднее - проценты-->
 
 <!--- топ 3 вывести-->
-- пироги - по соурс (количесво лоадов и профит)
+<!--- пироги - по соурс (количесво лоадов и профит)-->
+<!--- брокеру грос и профит-->
+<!--- редактирование брокера и шипера-->
+
 <!--- выбор диспетчера и количество его посто canceled-->
 <!---->
 <!--- страницу шипера и брокера-->

@@ -1,6 +1,6 @@
 // eslint-disable-next-line import/prefer-default-export
 import Popup from '../parts/popup-window';
-import { printMessage } from "./info-messages";
+import { printMessage } from './info-messages';
 
 // eslint-disable-next-line import/prefer-default-export
 export const actionCreateCompanyInit = (ajaxUrl) => {
@@ -39,4 +39,39 @@ export const actionCreateCompanyInit = (ajaxUrl) => {
                     });
             });
         });
+};
+
+export const ActionUpdateCompanyInit = (ajaxUrl) => {
+    const form = document.querySelector('.js-update-company');
+
+    if (form) {
+        form.addEventListener('submit', (event) => {
+            event.preventDefault();
+            const { target } = event;
+            // @ts-ignore
+            const formData = new FormData(target);
+            formData.append('action', 'update_company');
+
+            const options = {
+                method: 'POST',
+                body: formData,
+            };
+
+            fetch(ajaxUrl, options)
+                .then((res) => res.json())
+                .then((requestStatus) => {
+                    if (requestStatus.success) {
+                        console.log('Broker update successfully:', requestStatus.data);
+                        printMessage(requestStatus.data.message, 'success', 8000);
+                    } else {
+                        // eslint-disable-next-line no-alert
+                        printMessage(`Error update broker: ${requestStatus.data.message}`, 'danger', 8000);
+                    }
+                })
+                .catch((error) => {
+                    printMessage(`Request failed: ${error}`, 'danger', 8000);
+                    console.error('Request failed:', error);
+                });
+        });
+    }
 };

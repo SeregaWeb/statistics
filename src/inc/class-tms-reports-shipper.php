@@ -8,6 +8,7 @@ class TMSReportsShipper extends TMSReportsHelper {
 	
 	public function ajax_actions() {
 		add_action( 'wp_ajax_add_new_shipper', array( $this, 'add_new_shipper' ) );
+		add_action( 'wp_ajax_update_shipper', array( $this, 'update_shipper' ) );
 		add_action( 'wp_ajax_search_shipper', array( $this, 'search_shipper' ) );
 		
 	}
@@ -133,6 +134,51 @@ class TMSReportsShipper extends TMSReportsHelper {
 		}
 	}
 	
+	public function update_shipper () {
+		// Check if it's an AJAX request (simple defense)
+		if ( defined( 'DOING_AJAX' ) && DOING_AJAX ) {
+			// Sanitize input data
+			$MY_INPUT = filter_var_array( $_POST, [
+				"shipper_id" => FILTER_SANITIZE_STRING,
+				"shipper_name" => FILTER_SANITIZE_STRING,
+				"country"      => FILTER_SANITIZE_STRING,
+				"Addr1"        => FILTER_SANITIZE_STRING,
+				"Addr2"        => FILTER_SANITIZE_STRING,
+				"City"         => FILTER_SANITIZE_STRING,
+				"State"        => FILTER_SANITIZE_STRING,
+				"ZipCode"      => FILTER_SANITIZE_STRING,
+				"FirstName"    => FILTER_SANITIZE_STRING,
+				"LastName"     => FILTER_SANITIZE_STRING,
+				"Phone"        => FILTER_SANITIZE_STRING,
+				"Email"        => FILTER_SANITIZE_EMAIL,
+			] );
+			
+			$st = !empty($MY_INPUT['Addr1']) ? $MY_INPUT['Addr1'] . ', ' : '';
+			$city = !empty($MY_INPUT['City']) ? $MY_INPUT['City'] . ', ' : '';
+			$state = !empty($MY_INPUT['State']) ? $MY_INPUT['State'] . ' ' : '';
+			$zip = !empty($MY_INPUT['ZipCode']) ? $MY_INPUT['ZipCode'] : ' ';
+			$country = $MY_INPUT['country'] !== 'USA' ? ' '.$MY_INPUT['country'] : '';
+			
+			$MY_INPUT[ "full_address" ] = $st . $city . $state . $zip . $country;
+			
+			// Insert the company report
+			$result = $this->update_shipper_in_db( $MY_INPUT );
+			
+			if ( $result ) {
+				wp_send_json_success( [ 'message' => 'shipper successfully updated', 'data' => $MY_INPUT ] );
+			} else {
+				// Handle specific errors
+				if ( is_wp_error( $result ) ) {
+					wp_send_json_error( [ 'message' => $result->get_error_message() ] );
+				} else {
+					wp_send_json_error( [ 'message' => 'shipper not created, error adding to database' ] );
+				}
+			}
+		} else {
+			wp_send_json_error( [ 'message' => 'Invalid request' ] );
+		}
+	}
+	
 	public function add_shipper( $data ) {
 		global $wpdb;
 		
@@ -193,6 +239,76 @@ class TMSReportsShipper extends TMSReportsHelper {
 			
 			// Return a generic database error if no specific match is found
 			return new WP_Error( 'db_error', 'Error adding the shipper report to the database: ' . $error );
+		}
+	}
+	
+	public function update_shipper_in_db( $data ) {
+		global $wpdb;
+		
+		$table_name = $wpdb->prefix . $this->table_main;
+		$user_id    = get_current_user_id();
+		$shipper_id = $data['shipper_id'];
+		
+		$update_params = array(
+			'shipper_name'       => $data['shipper_name'],
+			'country'            => $data['country'],
+			'address1'           => $data['Addr1'],
+			'address2'           => $data['Addr2'],
+			'city'               => $data['City'],
+			'state'              => $data['State'],
+			'zip_code'           => $data['ZipCode'],
+			'contact_first_name' => $data['FirstName'],
+			'contact_last_name'  => $data['LastName'],
+			'phone_number'       => $data['Phone'],
+			'email'              => $data['Email'],
+			'user_id_updated'    => $user_id,
+			'date_updated'       => current_time('mysql'),
+			'full_address'       => $data['full_address'],
+		);
+		
+		$where = array(
+			'id' => $shipper_id, // Assuming 'id' is the primary key column in your table
+		);
+		
+		$result = $wpdb->update(
+			$table_name,
+			$update_params,
+			$where,
+			array(
+				'%s', // shipper_name
+				'%s', // country
+				'%s', // address1
+				'%s', // address2
+				'%s', // city
+				'%s', // state
+				'%s', // zip_code
+				'%s', // contact_first_name
+				'%s', // contact_last_name
+				'%s', // phone_number
+				'%s', // email
+				'%d', // user_id_updated
+				'%s', // date_updated
+				'%s', // full_address
+			),
+			array('%d') // Data type for the 'id' column in the WHERE clause
+		);
+		
+		// Check if the update was successful
+		if ( $result !== false ) {
+			return true; // Return true to indicate a successful update
+		} else {
+			// Get the last SQL error
+			$error = $wpdb->last_error;
+			
+			// Handle specific error cases if needed
+			if ( strpos( $error, 'Duplicate entry' ) !== false ) {
+				if ( strpos( $error, 'shipper_name' ) !== false ) {
+					return new WP_Error( 'db_error', 'A shipper with this name already exists.' );
+				}
+			}
+			
+			// Return a generic database error if no specific match is found
+			return new WP_Error( 'db_error', 'Error updating the shipper record in the database: ' . $error );
 		}
 	}
 	

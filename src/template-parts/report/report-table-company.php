@@ -3,6 +3,7 @@
 global $global_options;
 
 $helper = new TMSReportsHelper();
+$report = new TMSReports();
 
 $link_broker = get_field_value($global_options, 'single_page_broker');
 $results       = get_field_value( $args, 'results' );
@@ -22,10 +23,16 @@ if ( ! empty( $results ) ) :
 			<th scope="col">DOT</th>
 			<th scope="col">Set up platform</th>
 			<th scope="col">Set up</th>
+			<th scope="col">Gross</th>
+			<th scope="col">Profit</th>
 		</tr>
 		</thead>
 		<tbody>
 		<?php foreach ( $results as $row ) :
+            
+            $profit = $report->get_profit_and_gross_by_brocker_id($row['id']);
+//            var_dump($profit);
+            
 			$full_address =  $row['address1'] . ' ' .  $row['city'] . ' ' . $row['state'] . ' ' . $row['zip_code'] . ' ' . $row['country'] ;
 			
 			$platform = $helper->get_label_by_key($row['set_up_platform'], 'set_up_platform');
@@ -59,6 +66,8 @@ if ( ! empty( $results ) ) :
 				<td><?php echo esc_html( $row['dot_number'] ); ?></td>
 				<td><?php echo esc_html( $platform ); ?></td>
 				<td><?php echo esc_html( $completed_keys_string ); ?></td>
+                <td><?php echo $profit['booked_rate_total']; ?></td>
+                <td><?php echo $profit['profit_total']; ?></td>
 			</tr>
 		<?php endforeach; ?>
 		</tbody>

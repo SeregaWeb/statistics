@@ -480,6 +480,44 @@ class TMSReports extends TMSReportsHelper {
 		return $result;
 	}
 	
+	public function get_profit_and_gross_by_brocker_id($customer_id) {
+		
+		global $wpdb;
+		$table_meta   = $wpdb->prefix . $this->table_meta;
+		
+		// Шаг 1: Получаем список post_id для указанного customer_id.
+		$post_ids = $wpdb->get_col( $wpdb->prepare( "SELECT DISTINCT post_id
+             FROM $table_meta
+             WHERE meta_key = %s AND meta_value = %s", 'customer_id', $customer_id ) );
+		
+		if ( empty( $post_ids ) ) {
+			return [
+				'booked_rate_total' => 0,
+				'profit_total'      => 0
+			];
+		}
+		
+		// Шаг 2: Получаем суммы booked_rate и profit для найденных post_id.
+		$placeholders = implode( ',', array_fill( 0, count( $post_ids ), '%d' ) );
+		$query        = $wpdb->prepare( "SELECT meta_key, SUM(meta_value) AS total
+         FROM $table_meta
+         WHERE post_id IN ($placeholders)
+           AND meta_key IN (%s, %s)
+         GROUP BY meta_key", array_merge( $post_ids, [ 'booked_rate', 'profit' ] ) );
+		
+		$results = $wpdb->get_results( $query, OBJECT_K );
+		
+		// Шаг 3: Возвращаем результаты.
+		return [
+			'booked_rate_total' => isset($results['booked_rate'])
+				? '$' . number_format($results['booked_rate']->total, 2)
+				: '$0.00',
+			'profit_total' => isset($results['profit'])
+				? '$' . number_format($results['profit']->total, 2)
+				: '$0.00',
+		];
+		
+	}
 	
 	/**
 	 * @param $ID
@@ -503,7 +541,6 @@ class TMSReports extends TMSReportsHelper {
 		
 		// Выполняем запрос
 		$results = $wpdb->get_results( $query );
-		
 		// Преобразуем результаты, чтобы сгруппировать мета-данные
 		if ( ! empty( $results ) ) {
 			$report = array(
@@ -1499,7 +1536,7 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 			'ar-action'               => $data[ 'ar-action' ],
 		);
 		
-		if ($data[ 'ar-action' ] && !isset($data['checked_ar_action'])) {
+		if ( $data[ 'ar-action' ] && ! isset( $data[ 'checked_ar_action' ] ) ) {
 			$this->log_controller->create_one_log( array(
 				'user_id' => $user_id,
 				'post_id' => $data[ 'post_id' ],
@@ -1507,7 +1544,7 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 			) );
 		}
 		
-		if (isset($data['checked_ar_action']) && !$data[ 'ar-action' ]) {
+		if ( isset( $data[ 'checked_ar_action' ] ) && ! $data[ 'ar-action' ] ) {
 			$this->log_controller->create_one_log( array(
 				'user_id' => $user_id,
 				'post_id' => $data[ 'post_id' ],
@@ -1515,7 +1552,7 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 			) );
 		}
 		
-		if ($data[ 'invoiced_proof' ] && !isset($data['checked_invoice_proof'])) {
+		if ( $data[ 'invoiced_proof' ] && ! isset( $data[ 'checked_invoice_proof' ] ) ) {
 			$this->log_controller->create_one_log( array(
 				'user_id' => $user_id,
 				'post_id' => $data[ 'post_id' ],
@@ -1523,14 +1560,13 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 			) );
 		}
 		
-		if (isset($data['checked_invoice_proof']) && !$data[ 'invoiced_proof' ]) {
+		if ( isset( $data[ 'checked_invoice_proof' ] ) && ! $data[ 'invoiced_proof' ] ) {
 			$this->log_controller->create_one_log( array(
 				'user_id' => $user_id,
 				'post_id' => $data[ 'post_id' ],
 				'message' => 'Unset Invoiced'
 			) );
 		}
-		
 		
 		
 		if ( $post_meta[ 'factoring_status' ] === 'charge-back' ) {
@@ -1584,7 +1620,7 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 			$data[ 'quick_pay_driver_amount' ] = null;
 		}
 		
-		$old_data = $this->get_report_by_id($post_id);
+		$old_data = $this->get_report_by_id( $post_id );
 		
 		$post_meta = array(
 			"bank_payment_status"     => $data[ 'bank_payment_status' ],
@@ -1603,18 +1639,18 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 		);
 		
 		// Проверяем, если старые данные существуют
-		if (isset($old_data['meta'])) {
-			foreach ($post_meta as $key => $new_value) {
-				$old_value = isset($old_data['meta'][$key]) ? $old_data['meta'][$key] : null;
+		if ( isset( $old_data[ 'meta' ] ) ) {
+			foreach ( $post_meta as $key => $new_value ) {
+				$old_value = isset( $old_data[ 'meta' ][ $key ] ) ? $old_data[ 'meta' ][ $key ] : null;
 				
-				if ($old_value === null && $new_value) {
+				if ( $old_value === null && $new_value ) {
 					$this->log_controller->create_one_log( array(
 						'user_id' => $user_id,
 						'post_id' => $data[ 'post_id' ],
 						'message' => "Field '{$label_fields[$key]}' added for the first time with value: {$new_value}."
 					) );
 					
-				} elseif ($old_value !== $new_value && $new_value) {
+				} elseif ( $old_value !== $new_value && $new_value ) {
 					$this->log_controller->create_one_log( array(
 						'user_id' => $user_id,
 						'post_id' => $data[ 'post_id' ],
@@ -1623,8 +1659,8 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 				}
 			}
 		} else {
-			foreach ($post_meta as $key => $value) {
-				if ($value):
+			foreach ( $post_meta as $key => $value ) {
+				if ( $value ):
 					$this->log_controller->create_one_log( array(
 						'user_id' => $user_id,
 						'post_id' => $data[ 'post_id' ],

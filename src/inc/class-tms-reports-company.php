@@ -9,6 +9,7 @@ class TMSReportsCompany extends TMSReportsHelper {
 	
 	public function ajax_actions() {
 		add_action( 'wp_ajax_add_new_company', array( $this, 'add_new_company' ) );
+		add_action( 'wp_ajax_update_company', array( $this, 'update_company' ) );
 		add_action( 'wp_ajax_search_company', array( $this, 'search_company' ) );
 	}
 	
@@ -214,18 +215,18 @@ class TMSReportsCompany extends TMSReportsHelper {
 			}
 			
 			$set_up_array = array(
-				"Odysseia"  => null,
-				"Martlet"   => null,
-				"Endurance" => null,
+				"Odysseia"  => '',
+				"Martlet"   => '',
+				"Endurance" => '',
 			);
 			
 			$set_up_completed_array = array(
-				"Odysseia"  => null,
-				"Martlet"   => null,
-				"Endurance" => null,
+				"Odysseia"  => '',
+				"Martlet"   => '',
+				"Endurance" => '',
 			);
 			
-			$set_up_array[ $MY_INPUT[ 'select_project' ] ]           = $MY_INPUT[ 'set_up' ];
+			$set_up_array[ $MY_INPUT[ 'select_project' ] ]  = $MY_INPUT[ 'set_up' ];
 			$set_up_completed_array[ $MY_INPUT[ 'select_project' ] ] = $set_up_timestamp;
 			
 			$MY_INPUT[ 'set_up' ]    = json_encode( $set_up_array );
@@ -249,6 +250,165 @@ class TMSReportsCompany extends TMSReportsHelper {
 			}
 		} else {
 			wp_send_json_error( [ 'message' => 'Invalid request' ] );
+		}
+	}
+	
+	public function update_company() {
+		// Check if it's an AJAX request (simple defense)
+		if ( defined( 'DOING_AJAX' ) && DOING_AJAX ) {
+			// Sanitize input data
+			$MY_INPUT = filter_var_array( $_POST, [
+				"select_project"      => FILTER_SANITIZE_STRING,
+				"broker_id"           => FILTER_SANITIZE_STRING,
+				"company_name"        => FILTER_SANITIZE_STRING,
+				"country"             => FILTER_SANITIZE_STRING,
+				"Addr1"               => FILTER_SANITIZE_STRING,
+				"Addr2"               => FILTER_SANITIZE_STRING,
+				"City"                => FILTER_SANITIZE_STRING,
+				"State"               => FILTER_SANITIZE_STRING,
+				"ZipCode"             => FILTER_SANITIZE_STRING,
+				"FirstName"           => FILTER_SANITIZE_STRING,
+				"LastName"            => FILTER_SANITIZE_STRING,
+				"Phone"               => FILTER_SANITIZE_STRING,
+				"Email"               => FILTER_SANITIZE_EMAIL,
+				"MotorCarrNo"         => FILTER_SANITIZE_STRING,
+				"DotNo"               => FILTER_SANITIZE_STRING,
+				"set_up"              => FILTER_SANITIZE_STRING,
+				"set_up_platform"     => FILTER_SANITIZE_STRING,
+				"notes"               => FILTER_SANITIZE_STRING,
+				"work_with_odysseia"  => FILTER_VALIDATE_BOOLEAN,
+				"work_with_martlet"   => FILTER_VALIDATE_BOOLEAN,
+				"work_with_endurance" => FILTER_VALIDATE_BOOLEAN,
+			] );
+			
+			$post_meta = array(
+				"notes"               => $MY_INPUT["notes"],
+				"work_with_odysseia"  => $MY_INPUT["work_with_odysseia"],
+				"work_with_martlet"   => $MY_INPUT["work_with_martlet"],
+				"work_with_endurance" => $MY_INPUT["work_with_endurance"],
+			);
+			
+			// Check if 'set_up' is 'completed' and set the timestamp
+			$set_up_timestamp = null;
+			if ( isset( $MY_INPUT[ 'set_up' ] ) && $MY_INPUT[ 'set_up' ] === 'completed' ) {
+				$set_up_timestamp = current_time( 'mysql' ); // or you can use date('Y-m-d H:i:s') if needed
+			}
+			
+			$json_input = str_replace('"null"', 'null', $_POST[ 'json-set-up' ]);
+			$json_input2 = str_replace('"null"', 'null', $_POST[ 'json-completed' ]);
+			
+			$set_up_array = json_decode(stripslashes($json_input), true );
+			$set_up_completed_array = json_decode( stripslashes($json_input2), true );
+			
+			$set_up_array[ $MY_INPUT[ 'select_project' ] ]           = $MY_INPUT[ 'set_up' ];
+			$set_up_completed_array[ $MY_INPUT[ 'select_project' ] ] = $set_up_timestamp;
+			
+			$MY_INPUT[ 'set_up' ]    = json_encode( $set_up_array );
+			$MY_INPUT[ 'completed' ] = json_encode( $set_up_completed_array );
+			$result = $this->update_company_in_db( $MY_INPUT );
+			
+			if ( $result ) {
+				$this->update_post_meta_data( $MY_INPUT['broker_id'], $post_meta );
+				wp_send_json_success( [ 'message' => 'Company successfully update', 'data' => $MY_INPUT ] );
+			} else {
+				// Handle specific errors
+				if ( is_wp_error( $result ) ) {
+					wp_send_json_error( [ 'message' => $result->get_error_message() ] );
+				} else {
+					wp_send_json_error( [ 'message' => 'Company not update, error adding to database' ] );
+				}
+			}
+		} else {
+			wp_send_json_error( [ 'message' => 'Invalid request' ] );
+		}
+	}
+	
+	
+	public function update_company_in_db ( $data ) {
+		global $wpdb;
+		$table_name = $wpdb->prefix . $this->table_main;
+		$user_id    = get_current_user_id();
+		$record_id = $data['broker_id'];
+		
+		$insert_params = array(
+			'company_name'         => $data[ 'company_name' ],
+			'country'              => $data[ 'country' ],
+			'address1'             => $data[ 'Addr1' ],
+			'address2'             => $data[ 'Addr2' ],
+			'city'                 => $data[ 'City' ],
+			'state'                => $data[ 'State' ],
+			'zip_code'             => $data[ 'ZipCode' ],
+			'contact_first_name'   => $data[ 'FirstName' ],
+			'contact_last_name'    => $data[ 'LastName' ],
+			'phone_number'         => $data[ 'Phone' ],
+			'email'                => $data[ 'Email' ],
+			'mc_number'            => $data[ 'MotorCarrNo' ],
+			'dot_number'           => $data[ 'DotNo' ],
+			'user_id_updated'      => $user_id,
+			'date_updated'         => current_time( 'mysql' ),
+			'set_up'               => $data[ 'set_up' ],
+			'set_up_platform'      => $data[ 'set_up_platform' ],
+			'date_set_up_compleat' => $data[ 'completed' ],
+		);
+		$result = $wpdb->update(
+			$table_name, // Table name
+			array(       // Columns to update
+			             'company_name'         => $data['company_name'],
+			             'country'              => $data['country'],
+			             'address1'             => $data['Addr1'],
+			             'address2'             => $data['Addr2'],
+			             'city'                 => $data['City'],
+			             'state'                => $data['State'],
+			             'zip_code'             => $data['ZipCode'],
+			             'contact_first_name'   => $data['FirstName'],
+			             'contact_last_name'    => $data['LastName'],
+			             'phone_number'         => $data['Phone'],
+			             'email'                => $data['Email'],
+			             'mc_number'            => $data['MotorCarrNo'],
+			             'dot_number'           => $data['DotNo'],
+			             'user_id_updated'      => $user_id,
+			             'date_updated'         => current_time('mysql'),
+			             'set_up'               => $data['set_up'],
+			             'set_up_platform'      => $data['set_up_platform'],
+			             'date_set_up_compleat' => $data['completed'],
+			),
+			array(       // WHERE condition
+			             'id' => $record_id, // Assuming 'id' is the primary key for identifying records
+			),
+			array(       // Format for columns being updated
+			             '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%d', '%s', '%s', '%s', '%s',
+			),
+			array(       // Format for WHERE condition
+			             '%d',
+			)
+		);
+		
+		
+		if ( false !== $result ) {
+			if ( $result > 0 ) {
+				// Update successful
+				return true;
+			} else {
+				// No rows were updated (possibly because the data is the same)
+				return new WP_Error( 'no_changes', 'No changes were made to the record.' );
+			}
+		} else {
+			// Get the last SQL error
+			$error = $wpdb->last_error;
+			
+			// Check for specific errors
+			if ( strpos( $error, 'Duplicate entry' ) !== false ) {
+				if ( strpos( $error, 'company_name' ) !== false ) {
+					return new WP_Error( 'db_error', 'A company with this name already exists.' );
+				} elseif ( strpos( $error, 'mc_number' ) !== false ) {
+					return new WP_Error( 'db_error', 'A company with this MC number already exists.' );
+				} elseif ( strpos( $error, 'dot_number' ) !== false ) {
+					return new WP_Error( 'db_error', 'A company with this DOT number already exists.' );
+				}
+			}
+			
+			// Generic error handling
+			return new WP_Error( 'db_error', 'Error updating the record in the database: ' . $error );
 		}
 	}
 	

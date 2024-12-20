@@ -3482,6 +3482,7 @@ var disabledValuesInSelectInit = function disabledValuesInSelectInit() {
 "use strict";
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   ActionUpdateCompanyInit: function() { return /* binding */ ActionUpdateCompanyInit; },
 /* harmony export */   actionCreateCompanyInit: function() { return /* binding */ actionCreateCompanyInit; }
 /* harmony export */ });
 /* harmony import */ var _parts_popup_window__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ../parts/popup-window */ "./src/js/parts/popup-window.js");
@@ -3517,6 +3518,34 @@ var actionCreateCompanyInit = function actionCreateCompanyInit(ajaxUrl) {
       });
     });
   });
+};
+var ActionUpdateCompanyInit = function ActionUpdateCompanyInit(ajaxUrl) {
+  var form = document.querySelector('.js-update-company');
+  if (form) {
+    form.addEventListener('submit', function (event) {
+      event.preventDefault();
+      var target = event.target;
+      var formData = new FormData(target);
+      formData.append('action', 'update_company');
+      var options = {
+        method: 'POST',
+        body: formData
+      };
+      fetch(ajaxUrl, options).then(function (res) {
+        return res.json();
+      }).then(function (requestStatus) {
+        if (requestStatus.success) {
+          console.log('Broker update successfully:', requestStatus.data);
+          (0,_info_messages__WEBPACK_IMPORTED_MODULE_1__.printMessage)(requestStatus.data.message, 'success', 8000);
+        } else {
+          (0,_info_messages__WEBPACK_IMPORTED_MODULE_1__.printMessage)("Error update broker: ".concat(requestStatus.data.message), 'danger', 8000);
+        }
+      }).catch(function (error) {
+        (0,_info_messages__WEBPACK_IMPORTED_MODULE_1__.printMessage)("Request failed: ".concat(error), 'danger', 8000);
+        console.error('Request failed:', error);
+      });
+    });
+  }
 };
 
 /***/ }),
@@ -4335,7 +4364,8 @@ var quickEditInit = function quickEditInit(ajaxUrl, selector, action) {
 "use strict";
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
-/* harmony export */   actionCreateShipperInit: function() { return /* binding */ actionCreateShipperInit; }
+/* harmony export */   actionCreateShipperInit: function() { return /* binding */ actionCreateShipperInit; },
+/* harmony export */   actionUpdateShipperInit: function() { return /* binding */ actionUpdateShipperInit; }
 /* harmony export */ });
 /* harmony import */ var _parts_popup_window__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ../parts/popup-window */ "./src/js/parts/popup-window.js");
 /* harmony import */ var _info_messages__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./info-messages */ "./src/js/components/info-messages.ts");
@@ -4363,6 +4393,35 @@ var actionCreateShipperInit = function actionCreateShipperInit(ajaxUrl) {
           (0,_info_messages__WEBPACK_IMPORTED_MODULE_1__.printMessage)(requestStatus.data.message, 'success', 8000);
         } else {
           (0,_info_messages__WEBPACK_IMPORTED_MODULE_1__.printMessage)("Error adding shipper: ".concat(requestStatus.data.message), 'danger', 8000);
+        }
+      }).catch(function (error) {
+        (0,_info_messages__WEBPACK_IMPORTED_MODULE_1__.printMessage)("Request failed: ".concat(error), 'danger', 8000);
+        console.error('Request failed:', error);
+      });
+    });
+  });
+};
+var actionUpdateShipperInit = function actionUpdateShipperInit(ajaxUrl) {
+  var forms = document.querySelectorAll('.js-update-shipper');
+  var popupInstance = new _parts_popup_window__WEBPACK_IMPORTED_MODULE_0__["default"]();
+  forms && forms.forEach(function (item) {
+    item.addEventListener('submit', function (event) {
+      event.preventDefault();
+      var target = event.target;
+      var formData = new FormData(target);
+      formData.append('action', 'update_shipper');
+      var options = {
+        method: 'POST',
+        body: formData
+      };
+      fetch(ajaxUrl, options).then(function (res) {
+        return res.json();
+      }).then(function (requestStatus) {
+        if (requestStatus.success) {
+          console.log('Shipper update successfully:', requestStatus.data);
+          (0,_info_messages__WEBPACK_IMPORTED_MODULE_1__.printMessage)(requestStatus.data.message, 'success', 8000);
+        } else {
+          (0,_info_messages__WEBPACK_IMPORTED_MODULE_1__.printMessage)("Error update shipper: ".concat(requestStatus.data.message), 'danger', 8000);
         }
       }).catch(function (error) {
         (0,_info_messages__WEBPACK_IMPORTED_MODULE_1__.printMessage)("Request failed: ".concat(error), 'danger', 8000);
@@ -15132,7 +15191,9 @@ function ready() {
   (0,_components_create_report__WEBPACK_IMPORTED_MODULE_3__.createDraftPosts)(urlAjax);
   (0,_components_create_report__WEBPACK_IMPORTED_MODULE_3__.updateFilesReportInit)(urlAjax);
   (0,_components_create_company__WEBPACK_IMPORTED_MODULE_4__.actionCreateCompanyInit)(urlAjax);
+  (0,_components_create_company__WEBPACK_IMPORTED_MODULE_4__.ActionUpdateCompanyInit)(urlAjax);
   (0,_components_create_shipper__WEBPACK_IMPORTED_MODULE_5__.actionCreateShipperInit)(urlAjax);
+  (0,_components_create_shipper__WEBPACK_IMPORTED_MODULE_5__.actionUpdateShipperInit)(urlAjax);
   (0,_components_create_report__WEBPACK_IMPORTED_MODULE_3__.sendShipperFormInit)(urlAjax);
   (0,_components_search_action__WEBPACK_IMPORTED_MODULE_7__.addSearchAction)(urlAjax);
   (0,_components_create_report__WEBPACK_IMPORTED_MODULE_3__.updateStatusPost)(urlAjax);

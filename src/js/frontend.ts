@@ -23,8 +23,8 @@ import {
     updateFilesReportInit,
     updateStatusPost,
 } from './components/create-report';
-import { actionCreateCompanyInit } from './components/create-company';
-import { actionCreateShipperInit } from './components/create-shipper';
+import { actionCreateCompanyInit, ActionUpdateCompanyInit } from './components/create-company';
+import { actionCreateShipperInit, actionUpdateShipperInit } from './components/create-shipper';
 import { nextTabTrigger } from './components/tab-helper';
 import { addSearchAction } from './components/search-action';
 import { toggleBlocksInit, toggleCheckboxInit } from './components/toggle-blocks-init';
@@ -66,7 +66,9 @@ function ready() {
     createDraftPosts(urlAjax);
     updateFilesReportInit(urlAjax);
     actionCreateCompanyInit(urlAjax);
+    ActionUpdateCompanyInit(urlAjax);
     actionCreateShipperInit(urlAjax);
+    actionUpdateShipperInit(urlAjax);
     sendShipperFormInit(urlAjax);
     addSearchAction(urlAjax);
     updateStatusPost(urlAjax);

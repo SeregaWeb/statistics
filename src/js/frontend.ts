@@ -7,7 +7,7 @@ import '../scss/frontend.scss';
  */
 import Popup from './parts/popup-window';
 // eslint-disable-next-line camelcase
-import { checboxesHelperInit, initMoneyMask, quick_pay_method } from './components/input-helpers';
+import { checboxesHelperInit, initMoneyMask, quick_pay_method, trigger_current_time } from './components/input-helpers';
 import {
     actionCreateReportInit,
     additionalContactsInit,
@@ -103,6 +103,7 @@ function ready() {
     toggleCheckboxInit();
     disabledValuesInSelectInit();
     quick_pay_method();
+    trigger_current_time();
 
     const preloaders = document.querySelectorAll('.js-preloader');
     preloaders &&

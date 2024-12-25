@@ -315,6 +315,163 @@ class TMSReports extends TMSReportsHelper {
 	}
 	
 	
+	public function get_table_items_unapplied( $args = array() ) {
+		global $wpdb;
+		
+		$table_main        = $wpdb->prefix . $this->table_main;
+		$table_meta        = $wpdb->prefix . $this->table_meta;
+		$table_company     = $wpdb->prefix . 'reports_company';
+		$table_metacompany = $wpdb->prefix . 'reportsmeta_company';
+		$per_page          = $this->per_page_loads;
+		$current_page      = isset( $_GET[ 'paged' ] ) ? absint( $_GET[ 'paged' ] ) : 1;
+		$sort_by           = ! empty( $args[ 'sort_by' ] ) ? $args[ 'sort_by' ] : 'date_booked';
+		$sort_order        = ! empty( $args[ 'sort_order' ] ) && strtolower( $args[ 'sort_order' ] ) === 'asc' ? 'ASC'
+			: 'DESC';
+		
+		$join_builder = "
+        FROM $table_main AS main
+        LEFT JOIN $table_meta AS reference
+            ON main.id = reference.post_id
+            AND reference.meta_key = 'reference_number'
+        LEFT JOIN $table_meta AS factoring_status
+            ON main.id = factoring_status.post_id
+            AND factoring_status.meta_key = 'factoring_status'
+        LEFT JOIN $table_meta AS processing
+            ON main.id = processing.post_id
+            AND processing.meta_key = 'processing'
+        LEFT JOIN $table_meta AS customer_meta
+            ON main.id = customer_meta.post_id
+            AND customer_meta.meta_key = 'customer_id'
+        LEFT JOIN $table_company AS company
+            ON customer_meta.meta_value = company.id
+        LEFT JOIN $table_metacompany AS companymeta
+        ON company.id = companymeta.post_id
+	    LEFT JOIN $table_metacompany AS days_to_pay
+	        ON company.id = days_to_pay.post_id
+	        AND days_to_pay.meta_key = 'days_to_pay'
+	    LEFT JOIN $table_metacompany AS quick_pay_option
+	        ON company.id = quick_pay_option.post_id
+	        AND quick_pay_option.meta_key = 'quick_pay_option'
+	    LEFT JOIN $table_metacompany AS quick_pay_percent
+	        ON company.id = quick_pay_percent.post_id
+	        AND quick_pay_percent.meta_key = 'quick_pay_percent'
+		WHERE 1=1
+    ";
+		
+		$sql = "SELECT DISTINCT
+        main.*,
+        reference.meta_value AS reference_number_value,
+        company.company_name,
+        company.mc_number,
+        days_to_pay.meta_value AS days_to_pay_value,
+	    quick_pay_option.meta_value AS quick_pay_option_value,
+	    quick_pay_percent.meta_value AS quick_pay_percent_value" . $join_builder;
+		
+		$where_conditions = array();
+		$where_values     = array();
+		
+		// Добавляем фильтрацию по значениям processing
+		$processing_values = array(
+			'factoring-delayed-advance',
+			'factoring-wire-transfer',
+			'unapplied-payment',
+			'direct'
+		);
+		
+		$placeholders       = implode( ', ', array_fill( 0, count( $processing_values ), '%s' ) );
+		$where_conditions[] = "processing.meta_value IN ($placeholders)";
+		$where_values       = array_merge( $where_values, $processing_values );
+		
+		// Фильтрация по статусу
+		if ( ! empty( $args[ 'status_post' ] ) ) {
+			$where_conditions[] = "main.status_post = %s";
+			$where_values[]     = $args[ 'status_post' ];
+		}
+		
+		if ( ! empty( $args[ 'status' ] ) && $args[ 'status' ] !== 'all' ) {
+			$where_conditions[] = "factoring_status.meta_value = %s";
+			$where_values[]     = $args[ 'status' ];
+		}
+		
+		if ( ! empty( $args[ 'my_search' ] ) ) {
+			$where_conditions[] = "(
+		        reference.meta_value LIKE %s OR
+		        company.mc_number LIKE %s OR
+		        company.company_name LIKE %s
+		    )";
+			$search_value       = '%' . $wpdb->esc_like( $args[ 'my_search' ] ) . '%';
+			$where_values[]     = $search_value;
+			$where_values[]     = $search_value;
+			$where_values[]     = $search_value;
+		}
+		
+		if ( ! empty( $where_conditions ) ) {
+			$sql .= ' AND ' . implode( ' AND ', $where_conditions );
+		}
+		
+		$total_records_sql = "SELECT COUNT(*)" . $join_builder;
+		if ( ! empty( $where_conditions ) ) {
+			$total_records_sql .= ' AND ' . implode( ' AND ', $where_conditions );
+		}
+		
+		$total_records = $wpdb->get_var( $wpdb->prepare( $total_records_sql, ...$where_values ) );
+		
+		// Вычисляем количество страниц
+		$total_pages = ceil( $total_records / $per_page );
+		
+		// Смещение для текущей страницы
+		$offset = ( $current_page - 1 ) * $per_page;
+		
+		// Добавляем сортировку и лимит для текущей страницы
+		$sql            .= " ORDER BY main.$sort_by $sort_order LIMIT %d, %d";
+		$where_values[] = $offset;
+		$where_values[] = $per_page;
+		
+		// Выполняем запрос
+		$main_results = $wpdb->get_results( $wpdb->prepare( $sql, ...$where_values ), ARRAY_A );
+		
+		if ( $wpdb->last_error ) {
+			var_dump( 'Database error: ' . $wpdb->last_error );
+		}
+		
+		// Собираем все ID записей для получения дополнительных метаданных
+		$post_ids = wp_list_pluck( $main_results, 'id' );
+		
+		// Если есть записи, получаем метаданные
+		$meta_data = array();
+		if ( ! empty( $post_ids ) ) {
+			$meta_sql     = "SELECT post_id, meta_key, meta_value
+                 FROM $table_meta
+                 WHERE post_id IN (" . implode( ',', array_map( 'absint', $post_ids ) ) . ")";
+			$meta_results = $wpdb->get_results( $meta_sql, ARRAY_A );
+			
+			// Преобразуем метаданные в ассоциативный массив по post_id
+			foreach ( $meta_results as $meta_row ) {
+				$post_id = $meta_row[ 'post_id' ];
+				if ( ! isset( $meta_data[ $post_id ] ) ) {
+					$meta_data[ $post_id ] = array();
+				}
+				$meta_data[ $post_id ][ $meta_row[ 'meta_key' ] ] = $meta_row[ 'meta_value' ];
+			}
+		}
+		
+		if ( is_array( $main_results ) && ! empty( $main_results ) ) {
+			// Объединяем основную таблицу с метаданными
+			foreach ( $main_results as &$result ) {
+				$post_id               = $result[ 'id' ];
+				$result[ 'meta_data' ] = isset( $meta_data[ $post_id ] ) ? $meta_data[ $post_id ] : array();
+			}
+		}
+		
+		return array(
+			'results'       => $main_results,
+			'total_pages'   => $total_pages,
+			'total_posts'   => $total_records,
+			'current_pages' => $current_page,
+		);
+	}
+	
+	
 	/**
 	 * @param $args
 	 * Get table items and filter
@@ -332,7 +489,6 @@ class TMSReports extends TMSReportsHelper {
 		$sort_by       = ! empty( $args[ 'sort_by' ] ) ? $args[ 'sort_by' ] : 'date_booked';
 		$sort_order    = ! empty( $args[ 'sort_order' ] ) && strtolower( $args[ 'sort_order' ] ) === 'asc' ? 'ASC'
 			: 'DESC';
-		
 		
 		$join_builder = "
 		    FROM $table_main AS main
@@ -480,10 +636,10 @@ class TMSReports extends TMSReportsHelper {
 		return $result;
 	}
 	
-	public function get_profit_and_gross_by_brocker_id($customer_id) {
+	public function get_profit_and_gross_by_brocker_id( $customer_id ) {
 		
 		global $wpdb;
-		$table_meta   = $wpdb->prefix . $this->table_meta;
+		$table_meta = $wpdb->prefix . $this->table_meta;
 		
 		// Шаг 1: Получаем список post_id для указанного customer_id.
 		$post_ids = $wpdb->get_col( $wpdb->prepare( "SELECT DISTINCT post_id
@@ -509,11 +665,9 @@ class TMSReports extends TMSReportsHelper {
 		
 		// Шаг 3: Возвращаем результаты.
 		return [
-			'booked_rate_total' => isset($results['booked_rate'])
-				? '$' . number_format($results['booked_rate']->total, 2)
-				: '$0.00',
-			'profit_total' => isset($results['profit'])
-				? '$' . number_format($results['profit']->total, 2)
+			'booked_rate_total' => isset( $results[ 'booked_rate' ] )
+				? '$' . number_format( $results[ 'booked_rate' ]->total, 2 ) : '$0.00',
+			'profit_total'      => isset( $results[ 'profit' ] ) ? '$' . number_format( $results[ 'profit' ]->total, 2 )
 				: '$0.00',
 		];
 		
@@ -830,8 +984,7 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 			] );
 			
 			if ( ! $MY_INPUT[ 'ar-action' ] ) {
-				$MY_INPUT[ 'load_problem' ] = null;
-				$MY_INPUT[ 'ar_status' ]    = 'not-solved';
+				$MY_INPUT[ 'ar_status' ] = 'not-solved';
 			}
 			
 			if ( $MY_INPUT[ 'factoring_status' ] === 'charge-back' ) {
@@ -1315,6 +1468,7 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 				return ! empty( $value ) || $value === false;
 			} );
 			
+			
 			$result = $this->update_quick_data_in_db( $filled_fields );
 			if ( $result ) {
 				wp_send_json_success( [ 'message' => 'Loads successfully updated', 'data' => $MY_INPUT ] );
@@ -1566,6 +1720,8 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 				'post_id' => $data[ 'post_id' ],
 				'message' => 'Unset Invoiced'
 			) );
+			
+			$update_params[ 'load_problem' ] = null;
 		}
 		
 		
@@ -1712,11 +1868,30 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 		foreach ( $post_ids as $post_id ) {
 			$where = array( 'id' => $post_id );
 			
-			// Обновляем общие данные в основной таблице
-			$result = $wpdb->update( $table_name, $update_params, $where, array(
-				'%d', // user_id_updated
-				'%s'  // date_updated
-			), array( '%d' ) );
+			$update_time = false;
+			
+			if ( isset( $data[ 'invoiced_proof' ] ) && $data[ 'invoiced_proof' ] ) {
+				$update_time                     = true;
+				$date_est                        = new DateTime( 'now', new DateTimeZone( 'America/New_York' ) );
+				$current_time_est                = $date_est->format( 'Y-m-d H:i:s' );
+				$update_params[ 'load_problem' ] = $current_time_est;
+			}
+			
+			if ( $update_time ) {
+				// Обновляем общие данные в основной таблице
+				$result = $wpdb->update( $table_name, $update_params, $where, array(
+					'%d', // user_id_updated
+					'%s',  // date_updated
+					'%s'  // load_problem
+				), array( '%d' ) );
+			} else {
+				// Обновляем общие данные в основной таблице
+				$result = $wpdb->update( $table_name, $update_params, $where, array(
+					'%d', // user_id_updated
+					'%s'  // date_updated
+				), array( '%d' ) );
+			}
+			
 			
 			if ( $result === false ) {
 				// Если обновление неудачно, возвращаем ошибку
@@ -1732,6 +1907,31 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 			), function( $value ) {
 				return ! is_null( $value ); // Исключаем отсутствующие значения
 			} );
+			
+			$meta_descriptions = array_map( function( $key, $value ) {
+				$description_map = array(
+					"factoring_status"    => "Factoring status new value",
+					"bank_payment_status" => "Bank payment status new value",
+					"driver_pay_statuses" => "Driver pay statuses new value",
+					"invoiced_proof"      => "Invoiced"
+				);
+				
+				$description = $description_map[ $key ] ?? $key;
+				
+				$value = ( $value == '1' || $value === true ) ? 'on' : $value;
+				
+				return "$description - $value</br>";
+			}, array_keys( $post_meta ), $post_meta );
+			
+			$meta_string = implode( " ", $meta_descriptions );
+			
+			
+			$this->log_controller->create_one_log( array(
+				'user_id' => $user_id,
+				'post_id' => $post_id,
+				'message' => 'Quick edit:</br>' . $meta_string
+			) );
+			
 			
 			// Обновляем мета-данные, если они заданы
 			if ( ! empty( $post_meta ) ) {
@@ -1782,6 +1982,27 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 			), function( $value ) {
 				return ! is_null( $value ); // Исключаем отсутствующие значения
 			} );
+			
+			$meta_descriptions = array_map( function( $key, $value ) {
+				$description_map = array(
+					"ar_status" => "A/R status: ",
+				);
+				
+				$description = $description_map[ $key ] ?? $key;
+				
+				$value = ( $value == '1' || $value === true ) ? 'on' : $value;
+				
+				return "$description - $value</br>";
+			}, array_keys( $post_meta ), $post_meta );
+			
+			$meta_string = implode( " ", $meta_descriptions );
+			
+			
+			$this->log_controller->create_one_log( array(
+				'user_id' => $user_id,
+				'post_id' => $post_id,
+				'message' => 'Quick edit:</br>' . $meta_string
+			) );
 			
 			// Обновляем мета-данные, если они заданы
 			if ( ! empty( $post_meta ) ) {

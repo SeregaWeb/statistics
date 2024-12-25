@@ -37,12 +37,12 @@ class TMSLogs extends TMSReports {
 		
 		// SQL-запрос для получения последнего добавленного лога
 		$query = $wpdb->prepare("
-        SELECT id, id_user, user_name, user_role, log_priority, log_date, log_text
-        FROM $logs_table
-        WHERE id_load = %d
-        ORDER BY log_date DESC
-        LIMIT 1
-    ", $post_id);
+	        SELECT id, id_user, user_name, user_role, log_priority, log_date, log_text
+	        FROM $logs_table
+	        WHERE id_load = %d
+	        ORDER BY log_date DESC
+	        LIMIT 1
+	    ", $post_id);
 		
 		$log = $wpdb->get_row($query);
 		
@@ -113,6 +113,10 @@ class TMSLogs extends TMSReports {
 		
 		// Имя таблицы
 		$table_name = $wpdb->prefix . 'reports_logs_' .$this->use_project;
+		
+		$date_est = new DateTime('now', new DateTimeZone('America/New_York')); // Указываем временную зону EST
+		$current_time_est = $date_est->format('Y-m-d H:i:s');
+		
 		// Добавление записи в таблицу
 		$result = $wpdb->insert(
 			$table_name,
@@ -122,7 +126,7 @@ class TMSLogs extends TMSReports {
 				'user_name' => $user_name,
 				'user_role' => $user_role,
 				'log_priority' => $log_priority,
-				'log_date' => current_time('mysql'),
+				'log_date' => $current_time_est,
 				'log_text' => $array_data['message'],
 			],
 			['%d', '%d', '%s', '%s', '%d', '%s', '%s']
@@ -135,9 +139,8 @@ class TMSLogs extends TMSReports {
 	public function generate_log_card($log_data) {
 		$role = esc_html($log_data['role']);
 		$name = esc_html($log_data['name']);
-		$date = esc_html($log_data['date']);
+		$date = $this->formatDate($log_data['date']);
 		$message = $log_data['message'];
-		
 		return "
     <div class='log-card {$role}'>
         <span class='log-card__role'>{$role}</span>

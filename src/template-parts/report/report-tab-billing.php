@@ -84,20 +84,26 @@ if ( $report_object ) {
             <label for="processing" class="form-label">Select processing</label>
             <select name="processing"
                     class="form-control form-select js-show-hidden-values js-blocked-value"
-                    data-blocked="charge-back"
+                    data-blocked="charge-back|delayed-advance|unapplied-payment|pending-to-tafs"
                     data-blocked-selector="js-blocked-status"
                     data-blocked-current="direct"
                     required
                     data-value="direct"
+                    data-revertlogic=".js-ar-aging-by-direct"
                     data-selector=".js-select-type-direct">
-                <option value="factoring">Factoring</option>
+                <option value="factoring"  <?php echo $processing === 'factoring' ? 'selected' : ''; ?>>Factoring (ACH)</option>
+                <option value="factoring-delayed-advance" <?php echo $processing === 'factoring-delayed-advance' ? 'selected' : ''; ?>>Factoring (Delayed advance)</option>
+                <option value="factoring-wire-transfer" <?php echo $processing === 'factoring-wire-transfer' ? 'selected' : ''; ?>>Factoring (Wire Transfer)</option>
+                <option value="unapplied-payment" <?php echo $processing === 'unapplied-payment' ? 'selected' : ''; ?>>Unapplied payment</option>
                 <option value="direct" <?php echo $processing === 'direct' ? 'selected' : ''; ?>>Direct</option>
             </select>
         </div>
 
         <div class="col-12"></div>
 		
-		<?php $hide_all_info = $processing === "direct" ? '' : 'd-none'; ?>
+		<?php
+        $hide_all_info = $processing === "direct" ? '' : 'd-none';
+        ?>
 
         <div class="col-12 mb-2 js-select-type-direct <?php echo $hide_all_info; ?>">
             <div class="row">
@@ -128,7 +134,7 @@ if ( $report_object ) {
                     </select>
                 </div>
 				
-				<?php $hide_dop_info = $type_pay_method === "quick-pay" ? '' : 'd-none' ?>
+				<?php $hide_dop_info = $type_pay_method !== "direct" ? '' : 'd-none' ?>
 
                 <div class="mb-2 col-12 col-md-6 col-xl-4 js-select-quick-pay-percent <?php echo $hide_dop_info; ?>">
                     <!-- gross - this percent -->
@@ -142,20 +148,7 @@ if ( $report_object ) {
             </div>
         </div>
 
-
-        <!--	    --><?php
-		//	    $classShortPay = 'd-none';
-		//	    if ($factoring_status === 'short-pay') {
-		//		    $classShortPay = '';
-		//	    } ?>
-        <!---->
-        <!--        <div class="mb-2 col-12 col-md-6 col-xl-4 js-short-pay --><?php //echo $classShortPay; ?><!--">-->
-        <!--            <label for="short_pay" class="form-label">Short pay value</label>-->
-        <!--            <input type="text" value="" name="short_pay" required-->
-        <!--                   class="form-control js-money">-->
-        <!--        </div>-->
-
-        <div class="col-12 d-flex gap-2 mt-2 mb-4">
+        <div class="col-12 d-flex gap-2 mt-2 mb-2">
             <div class="form-check form-switch">
                 <input class="form-check-input" <?php echo $rc_proof ? 'checked' : ''; ?> name="rc_proof"
                        type="checkbox" id="rc_proof">
@@ -166,8 +159,12 @@ if ( $report_object ) {
                        type="checkbox" id="pod_proof">
                 <label class="form-check-label" for="pod_proof">Proof of Delivery</label>
             </div>
+            
+        </div>
+        
+        <div class="col-12 d-flex gap-2 mt-2 mb-4">
             <div class="form-check form-switch">
-                <input class="form-check-input" <?php echo $invoiced_proof ? 'checked' : ''; ?> name="invoiced_proof"
+                <input class="form-check-input js-trigger-set-date" <?php echo $invoiced_proof ? 'checked' : ''; ?> name="invoiced_proof"
                        type="checkbox" id="invoiced_proof">
                 <label class="form-check-label" for="invoiced_proof">Invoiced</label>
             </div>
@@ -213,39 +210,49 @@ if ( $report_object ) {
 
         <div class="col-12"></div>
 
-        <div class="mb-2 col-12 col-md-6 col-xl-4">
-            <div class="form-check form-switch">
-                <input class="form-check-input js-switch-toggle" data-toggle="js-ar-actions" name="ar-action"
-                       type="checkbox" id="ar_action" <?php echo $ar_action; ?>>
-                <label class="form-check-label" for="ar_action">A/R aging</label>
-            </div>
-        </div>
-
-        <div class="col-12 js-ar-actions <?php echo $ar_action_field ? '' : 'd-none'; ?>">
+        <?php
+        $hide_ar = $processing === "direct" ? 'd-none' : '';
+        ?>
+        
+        <div class="col-12 js-ar-aging-by-direct <?php echo $hide_ar; ?>">
             <div class="row">
                 <div class="mb-2 col-12 col-md-6 col-xl-4">
-                    <label for="load_problem" class="form-label">Select invoice date</label>
-                    <input type="date" name="load_problem" value="<?php echo $load_problem_formatted; ?>"
-                           class="form-control">
+                    <div class="form-check form-switch">
+                        <input class="form-check-input js-switch-toggle" data-toggle="js-ar-actions" name="ar-action"
+                               type="checkbox" id="ar_action" <?php echo $ar_action; ?>>
+                        <label class="form-check-label" for="ar_action">A/R aging</label>
+                    </div>
                 </div>
 
-                <div class="mb-2 col-12 col-md-6 col-xl-4">
-                    <label for="ar_status" class="form-label">Select invoice status</label>
-                    <select name="ar_status" class="form-control form-select">
-						<?php if ( is_array( $ar_statuses ) ): ?>
-							<?php foreach ( $ar_statuses as $key => $status ): ?>
-                                <option <?php echo $ar_status === $key ? 'selected' : ''; ?>
-                                        value="<?php echo $key; ?>">
-									<?php echo $status; ?>
-                                </option>
-							<?php endforeach; ?>
-						<?php endif ?>
-                    </select>
+                <div class="col-12 js-ar-actions <?php echo $ar_action_field ? '' : 'd-none'; ?>">
+                    <div class="row">
+                        <div class="mb-2 col-12 col-md-6 col-xl-4">
+                            <label for="load_problem" class="form-label">Select invoice date</label>
+                            <input type="date" name="load_problem" value="<?php echo $load_problem_formatted; ?>"
+                                   class="form-control js-set-date">
+                        </div>
+
+                        <div class="mb-2 col-12 col-md-6 col-xl-4">
+                            <label for="ar_status" class="form-label">Select invoice status</label>
+                            <select name="ar_status" class="form-control form-select">
+					            <?php if ( is_array( $ar_statuses ) ): ?>
+						            <?php foreach ( $ar_statuses as $key => $status ): ?>
+                                        <option <?php echo $ar_status === $key ? 'selected' : ''; ?>
+                                                value="<?php echo $key; ?>">
+								            <?php echo $status; ?>
+                                        </option>
+						            <?php endforeach; ?>
+					            <?php endif ?>
+                            </select>
+                        </div>
+
+
+                    </div>
                 </div>
-
-
             </div>
         </div>
+        
+
 
         <div class="col-12 mt-4 order-5" role="presentation">
             <div class="justify-content-start gap-2">

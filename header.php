@@ -61,41 +61,40 @@ if ( function_exists( 'get_field' ) ) {
 
 <pre class="d-none">
 
-время в логе установить по таймзоне EST
-месяц число год - заменить в логе формат даты
+<!--время в логе установить по таймзоне EST-->
+<!--месяц число год - заменить в логе формат даты-->
 
-load - таб билинг добавить статус
-(только если факторинг)
-Delayed advance
-Unapplied payment
-Pending to TAFS
+<!--load - таб билинг добавить статус-->
+<!--(только если факторинг)-->
+<!--Delayed advance-->
+<!--Unapplied payment-->
+<!--Pending to TAFS-->
 
-вынести инвоис - выделить что бы случайно не нажали
+<!--вынести инвоис - выделить что бы случайно не нажали-->
 
-при инвойсд в биллинг - предзаполнить дату инвойса
+<!--при инвойсд в биллинг - предзаполнить дату инвойса-->
 
-квик пей - логи
-
-Brokers
-_______________
-Factoring status: (Approved / Denied / Credit Approval Required / One load allowed / Not Found)
-Accounting email:
-Accounting phone:
-Days to pay:
-Quick Pay option (switch available / not available)
-Quick pay percent: (если Quick Pay option = available)
-
-
-месяц/число/год
-12/19/2024
+<!---->
+<!--Brokers-->
+<!--_______________-->
+<!--Factoring status: (Approved / Denied / Credit Approval Required / One load allowed / Not Found)-->
+<!--Accounting email:-->
+<!--Accounting phone:-->
+<!--Days to pay:-->
+<!--Quick Pay option (switch available / not available)-->
+<!--Quick pay percent: (если Quick Pay option = available)-->
 
 
-Billing info
-________________
-Select status: + Pending to TAFS / Unapplied payment / Delayed advance при условии что выше выбран Select processing: Factoring
+<!--месяц/число/год-->
+<!--12/19/2024-->
 
 
-Direct Invoicing & Unapplied Payments
+<!--Billing info-->
+<!--________________-->
+<!--Select status: + Pending to TAFS / Unapplied payment / Delayed advance при условии что выше выбран Select processing: Factoring-->
+
+
+<!--Direct Invoicing & Unapplied Payments-->
 ___________________________________________
 
 Date booked
@@ -113,74 +112,10 @@ Delivery Date
 Days to pay (из Broker)
 Days since invoiced
 
-
 Поиск по статусам: All / Pending to TAFS / Unapplied payment / Delayed advance / Processing / Paid / Processed / Fraud / Company closed
 
-<!--- добавить в статистику тотал ( всей команды ) лоадс - профит - гоалс - лефт - среднее - проценты-->
+квик пей - логи
 
-<!--- топ 3 вывести-->
-<!--- пироги - по соурс (количесво лоадов и профит)-->
-<!--- брокеру грос и профит-->
-<!--- редактирование брокера и шипера-->
-
-<!--- выбор диспетчера и количество его посто canceled-->
-<!---->
-<!--- страницу шипера и брокера-->
-<!--- страница список (шипера и брокера)-->
-
-<!---брокеру - заметки и галочки (работает с нами или нет)-->
-<!---название брокера - ссылка на его страницу-->
-
-<!--- в лоад добавить файл-->
-<!--POD (Proof of delivery) required (billing/tracking/dispatcher) (без этого файла нельзя поставить статус delivered - load_status )-->
-
-<!--- сделать букмарк-->
-
-<!--брокер - добавить каутнеры-->
-<!--delivered loads-->
-<!--cancelled loads-->
-<!--TONU - loads-->
-<!--loads in process (все кроме тех что сверху)-->
-<!--нули скрываем-->
-
-<!--shippers - добавить каунтер-->
-<!--loads (pick-up / delivered)-->
-
-<!--logs - вывести в лоаде - справа (сделать возможность свернуть)-->
-
-<!--logs - добавить для всех ролей (billing / accounting ) - эти видят и свое и трекинг/диспетчер-->
-<!--tracking - dispatcher - recruiter - видят только свои сообщения в логе и (accounting)-->
-<!--- в треккинг добавить последний лог-->
-
-<!--date-booked текущий день по умолчанию-->
-
-<!--что попадает в лог-->
-<!--- дата-время создания лоада-->
-<!--- меняется Load Status - пишем в лог-->
-<!--- редактируется Driver Rate-->
-<!--- редактируется Booked rate-->
-<!--- delivery date-->
-<!--- меняется вес-->
-<!--- водила меняется-->
-<!--- телефон водилы-->
-<!--- добавляются инструкции после публикации-->
-<!--- если убирают статус TBD-->
-
-<!--- пикап - деливери локейшн меняется-->
-
-<!--- если что то загружают в updated rate confirmation-->
-<!--- если POD - файл загружают тоже в лог (ПОЛЕ ЕЩЕ НЕ СОЗДАНО)-->
-
-<!--- billing-->
-<!--- invoiced-->
-<!--- change status-->
-<!--- ar aging-->
-<!--- ar-aging solved-->
-<!---->
-<!--- accounting-->
-<!--- любое действие-->
-
-<!--- можно в лог добавить свое сообщение-->
 </pre>
 
 <body <?php body_class( $page_class ); ?>>

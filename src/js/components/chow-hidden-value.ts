@@ -14,6 +14,8 @@ export const showHiddenValueInit = () => {
                 const valuesNeeded = target.getAttribute('data-value')?.split('|') || [];
                 const selectorsNeeded = target.getAttribute('data-selector')?.split('|') || [];
                 let dataRequired = target.getAttribute('data-required');
+                // eslint-disable-next-line @wordpress/no-unused-vars-before-return
+                const revertLogic = target.getAttribute('data-revertlogic');
                 const currentValue = target.value;
 
                 if (!dataRequired) {
@@ -25,7 +27,9 @@ export const showHiddenValueInit = () => {
                 // Show or hide each selector based on the valuesNeeded array
                 selectorsNeeded.forEach((selectorString) => {
                     const selector = document.querySelector(selectorString);
-
+                    // @ts-ignore
+                    // eslint-disable-next-line @wordpress/no-unused-vars-before-return
+                    const selectorRevertLogic = document.querySelector(revertLogic);
                     if (!selector) return;
 
                     // Check if the currentValue matches any value in valuesNeeded
@@ -40,6 +44,10 @@ export const showHiddenValueInit = () => {
                         }
 
                         selector.classList.remove('d-none');
+
+                        if (selectorRevertLogic) {
+                            selectorRevertLogic.classList.add('d-none');
+                        }
                     } else {
                         if (dataRequired === 'true' && input && input instanceof HTMLInputElement) {
                             input.removeAttribute('required');
@@ -47,6 +55,10 @@ export const showHiddenValueInit = () => {
                         }
 
                         selector.classList.add('d-none');
+
+                        if (selectorRevertLogic) {
+                            selectorRevertLogic.classList.remove('d-none');
+                        }
                     }
                 });
             });
@@ -65,7 +77,6 @@ export const disabledValuesInSelectInit = () => {
         // @ts-ignore
         const targetSelector = selectElement.dataset.blockedSelector;
         const targetSelect = document.querySelector(`.${targetSelector}`);
-
 
         // Function to update disabled status
         // eslint-disable-next-line no-inner-declarations

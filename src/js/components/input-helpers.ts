@@ -205,3 +205,30 @@ export function quick_pay_method() {
             }
         });
 }
+
+export function trigger_current_time() {
+    const trigger = document.querySelector('.js-trigger-set-date');
+
+    // Убедиться, что чекбокс найден
+    if (trigger) {
+        trigger.addEventListener('change', (event) => {
+            // Найти связанное поле с датой
+            const dateField = document.querySelector('.js-set-date[type="date"]');
+
+            // Убедиться, что поле найдено
+            if (dateField) {
+                // @ts-ignore
+                if (event.target.checked) {
+                    // Установить текущую дату, если чекбокс включен
+                    const currentDate = new Date().toISOString().split('T')[0];
+                    // @ts-ignore
+                    dateField.value = currentDate;
+                } else {
+                    // Очистить поле даты, если чекбокс выключен
+                    // @ts-ignore
+                    dateField.value = '';
+                }
+            }
+        });
+    }
+}

@@ -119,7 +119,13 @@ class TMSReportsHelper extends TMSReportsIcons {
 		'processed'          => 'Processed',
 		'charge-back'        => 'Charge Back',
 		'short-pay'          => 'Short Pay',
+		'pending-to-tafs'    => 'Pending to factoring',
+		'paid'               => 'Paid',
+		'fraud'              => 'Fraud',
+		'company-closed'     => 'Company closed',
 	);
+
+
 	public $bank_statuses           = array(
 		'approved'         => 'Approved',
 		'not-in-payees'    => 'Not in payees',
@@ -212,6 +218,27 @@ class TMSReportsHelper extends TMSReportsIcons {
 		'mcp'     => 'MCP',
 		'other'   => 'Other',
 	);
+
+    public $factoring_broker = array (
+	    'approved'    => 'Approved',
+	    'denied'     => 'Denied',
+	    'credit-approval-required' => 'Credit Approval Required',
+	    'one-load-allowed'  => 'One load allowed',
+	    'not-found'     => 'Not Found',
+    );
+	
+	function formatDate( $inputDate ) {
+		// Создаем объект даты из строки
+		$dateTime = DateTime::createFromFormat( 'Y-m-d H:i:s', $inputDate );
+		
+		if ( $dateTime ) {
+			// Возвращаем дату в формате MM/DD/YYYY HH:mm:ss
+			return $dateTime->format( 'm/d/Y H:i:s' );
+		} else {
+			// Возвращаем ошибку, если формат не соответствует
+			return "Неверный формат даты.";
+		}
+	}
 	
 	function get_dispatchers() {
 		// Аргументы для получения пользователей с ролью 'dispatcher'
@@ -246,7 +273,7 @@ class TMSReportsHelper extends TMSReportsIcons {
 	function get_dispatchers_tl() {
 		// Аргументы для получения пользователей с ролью 'dispatcher'
 		$args = array(
-			'role__in' => array('dispatcher-tl' ),
+			'role__in' => array( 'dispatcher-tl' ),
 			'orderby'  => 'display_name',
 			'order'    => 'ASC',
 		);
@@ -273,56 +300,55 @@ class TMSReportsHelper extends TMSReportsIcons {
 		return $dispatchers;
 	}
 	
-	function compare_pick_up_locations($originalJson, $modifiedJson) {
-		$originalArray = json_decode($originalJson, true);
-		$modifiedArray = json_decode($modifiedJson, true);
+	function compare_pick_up_locations( $originalJson, $modifiedJson ) {
+		$originalArray = json_decode( $originalJson, true );
+		$modifiedArray = json_decode( $modifiedJson, true );
 		
-		if ($originalArray === null || $modifiedArray === null) {
+		if ( $originalArray === null || $modifiedArray === null ) {
 			return "JSON decoding error: " . json_last_error_msg();
 		}
 		
-		$originalKeys = array_column($originalArray, 'address');
-		$modifiedKeys = array_column($modifiedArray, 'address');
+		$originalKeys = array_column( $originalArray, 'address' );
+		$modifiedKeys = array_column( $modifiedArray, 'address' );
 		
-		$added = array_diff($modifiedKeys, $originalKeys);
-		$removed = array_diff($originalKeys, $modifiedKeys);
+		$added   = array_diff( $modifiedKeys, $originalKeys );
+		$removed = array_diff( $originalKeys, $modifiedKeys );
 		
 		$output = "";
 		
 		// Handle added points
-		if (!empty($added)) {
-			foreach ($added as $index => $address) {
+		if ( ! empty( $added ) ) {
+			foreach ( $added as $index => $address ) {
 				$output .= "Added new point: $address<br>";
 			}
 		}
 		
 		// Handle removed points
-		if (!empty($removed)) {
-			foreach ($removed as $index => $address) {
+		if ( ! empty( $removed ) ) {
+			foreach ( $removed as $index => $address ) {
 				$output .= "Removed point: $address<br>";
 			}
 		}
 		
 		// Handle modified points
-		foreach ($modifiedArray as $modifiedLocation) {
-			foreach ($originalArray as $originalLocation) {
-				if ($originalLocation['address'] === $modifiedLocation['address']) {
+		foreach ( $modifiedArray as $modifiedLocation ) {
+			foreach ( $originalArray as $originalLocation ) {
+				if ( $originalLocation[ 'address' ] === $modifiedLocation[ 'address' ] ) {
 					$changes = [];
-					foreach ($modifiedLocation as $key => $value) {
-						if (isset($originalLocation[$key]) && $originalLocation[$key] !== $value) {
-							$changes[] = ucfirst($key) . " changed from '{$originalLocation[$key]}' to '$value'";
+					foreach ( $modifiedLocation as $key => $value ) {
+						if ( isset( $originalLocation[ $key ] ) && $originalLocation[ $key ] !== $value ) {
+							$changes[] = ucfirst( $key ) . " changed from '{$originalLocation[$key]}' to '$value'";
 						}
 					}
-					if (!empty($changes)) {
-						$output .= "Modified point: {$modifiedLocation['address']}<br>"
-						           . implode("<br>", $changes) . "<br>";
+					if ( ! empty( $changes ) ) {
+						$output .= "Modified point: {$modifiedLocation['address']}<br>" . implode( "<br>", $changes ) . "<br>";
 					}
 				}
 			}
 		}
 		
 		// If no changes were detected
-		if (empty($output)) {
+		if ( empty( $output ) ) {
 			$output = "No changes detected.<br>";
 		}
 		
@@ -355,19 +381,23 @@ class TMSReportsHelper extends TMSReportsIcons {
 	function get_quick_pay_methods() {
 		return $this->quick_pay_methods;
 	}
-    
-    function get_quick_pay_methods_for_accounting( $key ) {
-        $array_methods = $this->get_quick_pay_methods();
-        
-        if ( ! in_array( $key, $array_methods ) ) {
-            return $array_methods[$key]['label'];
-        }
-        
-        return false;
-    }
+	
+	function get_quick_pay_methods_for_accounting( $key ) {
+		$array_methods = $this->get_quick_pay_methods();
+		
+		if ( ! in_array( $key, $array_methods ) ) {
+			return $array_methods[ $key ][ 'label' ];
+		}
+		
+		return false;
+	}
 	
 	function get_ar_statuses() {
 		return $this->statuses_ar;
+	}
+	
+	function get_factoring_statuses() {
+		return $this->factoring_status;
 	}
 	
 	function get_set_up_platform() {
@@ -435,11 +465,10 @@ class TMSReportsHelper extends TMSReportsIcons {
 		if ( $search_list === 'driver_payment_statuses' ) {
 			return isset( $this->driver_payment_statuses[ $key ] ) ? $this->driver_payment_statuses[ $key ] : $key;
 		}
-        
-        if ($search_list === 'set_up_platform') {
-            return isset( $this->set_up_platform[ $key ] ) ? $this->set_up_platform[ $key ] : $key;
-        }
 		
+		if ( $search_list === 'set_up_platform' ) {
+			return isset( $this->set_up_platform[ $key ] ) ? $this->set_up_platform[ $key ] : $key;
+		}
 		
 		if ( $search_list === 'invoices' ) {
 			return isset( $this->invoices[ $key ] ) ? $this->invoices[ $key ] : $key;
@@ -682,12 +711,12 @@ class TMSReportsHelper extends TMSReportsIcons {
 	}
 	
 	function set_filter_params_arr( $args ) {
-		$my_search         = get_field_value( $_GET, 'my_search' );
-		$status           = get_field_value( $_GET, 'status' );
-        
-        if (!$status) {
-	        $status = 'not-solved';
-        }
+		$my_search = get_field_value( $_GET, 'my_search' );
+		$status    = get_field_value( $_GET, 'status' );
+		
+		if ( ! $status ) {
+			$status = 'not-solved';
+		}
 		
 		if ( $status ) {
 			$args[ 'status' ] = $status;
@@ -696,11 +725,31 @@ class TMSReportsHelper extends TMSReportsIcons {
 		if ( $my_search ) {
 			$args[ 'my_search' ] = $my_search;
 		}
+		
 		return $args;
 	}
 	
-	public function normalize_string($string) {
-		return preg_replace('/\s+/', ' ', trim($string));
+	function set_filter_unapplied( $args ) {
+		$my_search = get_field_value( $_GET, 'my_search' );
+		$status    = get_field_value( $_GET, 'status' );
+		
+		if ( ! $status ) {
+			$status = 'all';
+		}
+		
+		if ( $status ) {
+			$args[ 'status' ] = $status;
+		}
+		
+		if ( $my_search ) {
+			$args[ 'my_search' ] = $my_search;
+		}
+		
+		return $args;
+	}
+	
+	public function normalize_string( $string ) {
+		return preg_replace( '/\s+/', ' ', trim( $string ) );
 	}
 }
 

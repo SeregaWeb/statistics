@@ -3419,6 +3419,7 @@ var showHiddenValueInit = function showHiddenValueInit() {
       var valuesNeeded = ((_a = target.getAttribute('data-value')) === null || _a === void 0 ? void 0 : _a.split('|')) || [];
       var selectorsNeeded = ((_b = target.getAttribute('data-selector')) === null || _b === void 0 ? void 0 : _b.split('|')) || [];
       var dataRequired = target.getAttribute('data-required');
+      var revertLogic = target.getAttribute('data-revertlogic');
       var currentValue = target.value;
       if (!dataRequired) {
         dataRequired = 'false';
@@ -3426,6 +3427,7 @@ var showHiddenValueInit = function showHiddenValueInit() {
       if (!valuesNeeded.length || !selectorsNeeded.length) return;
       selectorsNeeded.forEach(function (selectorString) {
         var selector = document.querySelector(selectorString);
+        var selectorRevertLogic = document.querySelector(revertLogic);
         if (!selector) return;
         var shouldShow = valuesNeeded.includes(currentValue);
         var input = selector.querySelector('input');
@@ -3434,12 +3436,18 @@ var showHiddenValueInit = function showHiddenValueInit() {
             input.setAttribute('required', 'required');
           }
           selector.classList.remove('d-none');
+          if (selectorRevertLogic) {
+            selectorRevertLogic.classList.add('d-none');
+          }
         } else {
           if (dataRequired === 'true' && input && input instanceof HTMLInputElement) {
             input.removeAttribute('required');
             input.value = '';
           }
           selector.classList.add('d-none');
+          if (selectorRevertLogic) {
+            selectorRevertLogic.classList.remove('d-none');
+          }
         }
       });
     });
@@ -4697,7 +4705,8 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   checboxesHelperInit: function() { return /* binding */ checboxesHelperInit; },
 /* harmony export */   initMoneyMask: function() { return /* binding */ initMoneyMask; },
-/* harmony export */   quick_pay_method: function() { return /* binding */ quick_pay_method; }
+/* harmony export */   quick_pay_method: function() { return /* binding */ quick_pay_method; },
+/* harmony export */   trigger_current_time: function() { return /* binding */ trigger_current_time; }
 /* harmony export */ });
 /* harmony import */ var imask__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! imask */ "../../../node_modules/imask/esm/index.js");
 function _slicedToArray(r, e) { return _arrayWithHoles(r) || _iterableToArrayLimit(r, e) || _unsupportedIterableToArray(r, e) || _nonIterableRest(); }
@@ -4853,6 +4862,22 @@ function quick_pay_method() {
       }
     }
   });
+}
+function trigger_current_time() {
+  var trigger = document.querySelector('.js-trigger-set-date');
+  if (trigger) {
+    trigger.addEventListener('change', function (event) {
+      var dateField = document.querySelector('.js-set-date[type="date"]');
+      if (dateField) {
+        if (event.target.checked) {
+          var currentDate = new Date().toISOString().split('T')[0];
+          dateField.value = currentDate;
+        } else {
+          dateField.value = '';
+        }
+      }
+    });
+  }
 }
 
 /***/ }),
@@ -15225,6 +15250,7 @@ function ready() {
   (0,_components_toggle_blocks_init__WEBPACK_IMPORTED_MODULE_8__.toggleCheckboxInit)();
   (0,_components_chow_hidden_value__WEBPACK_IMPORTED_MODULE_16__.disabledValuesInSelectInit)();
   (0,_components_input_helpers__WEBPACK_IMPORTED_MODULE_2__.quick_pay_method)();
+  (0,_components_input_helpers__WEBPACK_IMPORTED_MODULE_2__.trigger_current_time)();
   var preloaders = document.querySelectorAll('.js-preloader');
   preloaders && preloaders.forEach(function (item) {
     item.remove();

@@ -202,10 +202,10 @@ class TMSReportsCompany extends TMSReportsHelper {
 			] );
 			
 			$post_meta = array(
-				"notes"               => $MY_INPUT["notes"],
-				"work_with_odysseia"  => $MY_INPUT["work_with_odysseia"],
-				"work_with_martlet"   => $MY_INPUT["work_with_martlet"],
-				"work_with_endurance" => $MY_INPUT["work_with_endurance"],
+				"notes"               => $MY_INPUT[ "notes" ],
+				"work_with_odysseia"  => $MY_INPUT[ "work_with_odysseia" ],
+				"work_with_martlet"   => $MY_INPUT[ "work_with_martlet" ],
+				"work_with_endurance" => $MY_INPUT[ "work_with_endurance" ],
 			);
 			
 			// Check if 'set_up' is 'completed' and set the timestamp
@@ -226,7 +226,7 @@ class TMSReportsCompany extends TMSReportsHelper {
 				"Endurance" => '',
 			);
 			
-			$set_up_array[ $MY_INPUT[ 'select_project' ] ]  = $MY_INPUT[ 'set_up' ];
+			$set_up_array[ $MY_INPUT[ 'select_project' ] ]           = $MY_INPUT[ 'set_up' ];
 			$set_up_completed_array[ $MY_INPUT[ 'select_project' ] ] = $set_up_timestamp;
 			
 			$MY_INPUT[ 'set_up' ]    = json_encode( $set_up_array );
@@ -279,13 +279,28 @@ class TMSReportsCompany extends TMSReportsHelper {
 				"work_with_odysseia"  => FILTER_VALIDATE_BOOLEAN,
 				"work_with_martlet"   => FILTER_VALIDATE_BOOLEAN,
 				"work_with_endurance" => FILTER_VALIDATE_BOOLEAN,
+				
+				"factoring_broker"  => FILTER_SANITIZE_STRING,
+				"accounting_phone"  => FILTER_SANITIZE_STRING,
+				"accounting_email"  => FILTER_SANITIZE_STRING,
+				"days_to_pay"       => FILTER_SANITIZE_STRING,
+				"quick_pay_option"  => FILTER_VALIDATE_BOOLEAN,
+				"quick_pay_percent" => FILTER_SANITIZE_STRING,
+			
+			
 			] );
 			
 			$post_meta = array(
-				"notes"               => $MY_INPUT["notes"],
-				"work_with_odysseia"  => $MY_INPUT["work_with_odysseia"],
-				"work_with_martlet"   => $MY_INPUT["work_with_martlet"],
-				"work_with_endurance" => $MY_INPUT["work_with_endurance"],
+				"notes"               => $MY_INPUT[ "notes" ],
+				"work_with_odysseia"  => $MY_INPUT[ "work_with_odysseia" ],
+				"work_with_martlet"   => $MY_INPUT[ "work_with_martlet" ],
+				"work_with_endurance" => $MY_INPUT[ "work_with_endurance" ],
+				"factoring_broker" => $MY_INPUT[ "factoring_broker" ],
+				"accounting_phone" => $MY_INPUT[ "accounting_phone" ],
+				"accounting_email" => $MY_INPUT[ "accounting_email" ],
+				"days_to_pay" => $MY_INPUT[ "days_to_pay" ],
+				"quick_pay_option" => $MY_INPUT[ "quick_pay_option" ],
+				"quick_pay_percent" => $MY_INPUT[ "quick_pay_percent" ],
 			);
 			
 			// Check if 'set_up' is 'completed' and set the timestamp
@@ -294,21 +309,21 @@ class TMSReportsCompany extends TMSReportsHelper {
 				$set_up_timestamp = current_time( 'mysql' ); // or you can use date('Y-m-d H:i:s') if needed
 			}
 			
-			$json_input = str_replace('"null"', 'null', $_POST[ 'json-set-up' ]);
-			$json_input2 = str_replace('"null"', 'null', $_POST[ 'json-completed' ]);
+			$json_input  = str_replace( '"null"', 'null', $_POST[ 'json-set-up' ] );
+			$json_input2 = str_replace( '"null"', 'null', $_POST[ 'json-completed' ] );
 			
-			$set_up_array = json_decode(stripslashes($json_input), true );
-			$set_up_completed_array = json_decode( stripslashes($json_input2), true );
+			$set_up_array           = json_decode( stripslashes( $json_input ), true );
+			$set_up_completed_array = json_decode( stripslashes( $json_input2 ), true );
 			
 			$set_up_array[ $MY_INPUT[ 'select_project' ] ]           = $MY_INPUT[ 'set_up' ];
 			$set_up_completed_array[ $MY_INPUT[ 'select_project' ] ] = $set_up_timestamp;
 			
 			$MY_INPUT[ 'set_up' ]    = json_encode( $set_up_array );
 			$MY_INPUT[ 'completed' ] = json_encode( $set_up_completed_array );
-			$result = $this->update_company_in_db( $MY_INPUT );
+			$result                  = $this->update_company_in_db( $MY_INPUT );
 			
 			if ( $result ) {
-				$this->update_post_meta_data( $MY_INPUT['broker_id'], $post_meta );
+				$this->update_post_meta_data( $MY_INPUT[ 'broker_id' ], $post_meta );
 				wp_send_json_success( [ 'message' => 'Company successfully update', 'data' => $MY_INPUT ] );
 			} else {
 				// Handle specific errors
@@ -324,11 +339,11 @@ class TMSReportsCompany extends TMSReportsHelper {
 	}
 	
 	
-	public function update_company_in_db ( $data ) {
+	public function update_company_in_db( $data ) {
 		global $wpdb;
 		$table_name = $wpdb->prefix . $this->table_main;
 		$user_id    = get_current_user_id();
-		$record_id = $data['broker_id'];
+		$record_id  = $data[ 'broker_id' ];
 		
 		$insert_params = array(
 			'company_name'         => $data[ 'company_name' ],
@@ -350,38 +365,50 @@ class TMSReportsCompany extends TMSReportsHelper {
 			'set_up_platform'      => $data[ 'set_up_platform' ],
 			'date_set_up_compleat' => $data[ 'completed' ],
 		);
-		$result = $wpdb->update(
-			$table_name, // Table name
+		$result        = $wpdb->update( $table_name, // Table name
 			array(       // Columns to update
-			             'company_name'         => $data['company_name'],
-			             'country'              => $data['country'],
-			             'address1'             => $data['Addr1'],
-			             'address2'             => $data['Addr2'],
-			             'city'                 => $data['City'],
-			             'state'                => $data['State'],
-			             'zip_code'             => $data['ZipCode'],
-			             'contact_first_name'   => $data['FirstName'],
-			             'contact_last_name'    => $data['LastName'],
-			             'phone_number'         => $data['Phone'],
-			             'email'                => $data['Email'],
-			             'mc_number'            => $data['MotorCarrNo'],
-			             'dot_number'           => $data['DotNo'],
+			             'company_name'         => $data[ 'company_name' ],
+			             'country'              => $data[ 'country' ],
+			             'address1'             => $data[ 'Addr1' ],
+			             'address2'             => $data[ 'Addr2' ],
+			             'city'                 => $data[ 'City' ],
+			             'state'                => $data[ 'State' ],
+			             'zip_code'             => $data[ 'ZipCode' ],
+			             'contact_first_name'   => $data[ 'FirstName' ],
+			             'contact_last_name'    => $data[ 'LastName' ],
+			             'phone_number'         => $data[ 'Phone' ],
+			             'email'                => $data[ 'Email' ],
+			             'mc_number'            => $data[ 'MotorCarrNo' ],
+			             'dot_number'           => $data[ 'DotNo' ],
 			             'user_id_updated'      => $user_id,
-			             'date_updated'         => current_time('mysql'),
-			             'set_up'               => $data['set_up'],
-			             'set_up_platform'      => $data['set_up_platform'],
-			             'date_set_up_compleat' => $data['completed'],
-			),
-			array(       // WHERE condition
-			             'id' => $record_id, // Assuming 'id' is the primary key for identifying records
-			),
-			array(       // Format for columns being updated
-			             '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%d', '%s', '%s', '%s', '%s',
-			),
-			array(       // Format for WHERE condition
-			             '%d',
-			)
-		);
+			             'date_updated'         => current_time( 'mysql' ),
+			             'set_up'               => $data[ 'set_up' ],
+			             'set_up_platform'      => $data[ 'set_up_platform' ],
+			             'date_set_up_compleat' => $data[ 'completed' ],
+			), array(       // WHERE condition
+			                'id' => $record_id, // Assuming 'id' is the primary key for identifying records
+			), array(       // Format for columns being updated
+			                '%s',
+			                '%s',
+			                '%s',
+			                '%s',
+			                '%s',
+			                '%s',
+			                '%s',
+			                '%s',
+			                '%s',
+			                '%s',
+			                '%s',
+			                '%s',
+			                '%s',
+			                '%d',
+			                '%s',
+			                '%s',
+			                '%s',
+			                '%s',
+			), array(       // Format for WHERE condition
+			                '%d',
+			) );
 		
 		
 		if ( false !== $result ) {
@@ -602,27 +629,24 @@ class TMSReportsCompany extends TMSReportsHelper {
 		
 	}
 	
-	public function get_all_meta_by_post_id($post_id) {
+	public function get_all_meta_by_post_id( $post_id ) {
 		global $wpdb;
-		$post_id = intval($post_id);
+		$post_id         = intval( $post_id );
 		$table_meta_name = $wpdb->prefix . $this->table_meta;
-		$sql = $wpdb->prepare(
-			"SELECT meta_key, meta_value FROM $table_meta_name WHERE post_id = %d",
-			$post_id
-		);
+		$sql             = $wpdb->prepare( "SELECT meta_key, meta_value FROM $table_meta_name WHERE post_id = %d", $post_id );
 		
 		// Выполняем запрос
-		$results = $wpdb->get_results($sql, ARRAY_A);
+		$results = $wpdb->get_results( $sql, ARRAY_A );
 		
 		// Если результаты пусты, возвращаем пустой массив
-		if (empty($results)) {
+		if ( empty( $results ) ) {
 			return [];
 		}
 		
 		// Преобразуем записи в удобный для работы массив
 		$meta_data = [];
-		foreach ($results as $row) {
-			$meta_data[$row['meta_key']] = maybe_unserialize($row['meta_value']);
+		foreach ( $results as $row ) {
+			$meta_data[ $row[ 'meta_key' ] ] = maybe_unserialize( $row[ 'meta_value' ] );
 		}
 		
 		return $meta_data;

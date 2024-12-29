@@ -83,7 +83,7 @@ if (!$mount_param) {
                             <div class="d-flex flex-column gap-1">
                                 <?php
                                 $data = $statistics->get_monthly_fuctoring_stats($year_param, $mount_param );
-                                $general_profit = floatval($data['total_profit']) - floatval($data['total_driver_rate']);
+                                $general_profit = floatval($data['total_booked_rate']) - floatval($data['total_driver_rate']);
                                 $general_true_profit = floatval($data['total_true_profit']);
                                 
                                 $paid_to_factoring = $general_profit - $general_true_profit;

@@ -74,7 +74,7 @@ if ( ! empty( $results ) ) : ?>
 			$reference_number = esc_html( get_field_value( $meta, 'reference_number' ) );
 			
 			$booked_rate_raw = get_field_value( $meta, 'booked_rate' );
-			$booked_rate     = esc_html( '$' . str_replace( '.00', '', $booked_rate_raw ) );
+			$booked_rate     = esc_html( '$' . $helper->format_currency( $booked_rate_raw ) );
 			
 			$pick_up_date_raw = get_field_value( $row, 'pick_up_date' );
 			$pick_up_date     = esc_html( date( 'm/d/Y', strtotime( $pick_up_date_raw ) ) );

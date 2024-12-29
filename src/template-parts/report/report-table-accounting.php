@@ -97,7 +97,7 @@ if ( ! empty( $results ) ) : ?>
 			$driver_phone     = esc_html( get_field_value( $meta, 'driver_phone' ) );
 			
 			$booked_rate_raw = get_field_value( $meta, 'booked_rate' );
-			$booked_rate     = esc_html( '$' . str_replace( '.00', '', $booked_rate_raw ) );
+			$booked_rate = esc_html('$' . $helper->format_currency($booked_rate_raw));
 			
 			$driver_rate_raw         = get_field_value( $meta, 'driver_rate' );
 			$quick_pay_driver_amount = get_field_value( $meta, 'quick_pay_driver_amount' );
@@ -106,11 +106,11 @@ if ( ! empty( $results ) ) : ?>
 				$driver_rate_raw = floatval( $driver_rate_raw ) - floatval( $quick_pay_driver_amount );
 			}
 			
-			$driver_rate = esc_html( '$' . str_replace( '.00', '', $driver_rate_raw ) );
+			$driver_rate = esc_html( '$' . $helper->format_currency($driver_rate_raw ) );
 			
 			$true_profit_raw = get_field_value( $meta, 'true_profit' );
 			$profit_class    = $true_profit_raw < 0 ? 'modified-price' : '';
-			$true_profit     = esc_html( '$' . str_replace( '.00', '', $true_profit_raw ) );
+			$true_profit     = esc_html( '$' . $helper->format_currency( $true_profit_raw ) );
 			
 			$pick_up_date_raw = get_field_value( $row, 'pick_up_date' );
 			$pick_up_date     = esc_html( date( 'm/d/Y', strtotime( $pick_up_date_raw ) ) );

@@ -84,18 +84,19 @@ if ( ! empty( $results ) ) : ?>
 			$reference_number = esc_html( get_field_value( $meta, 'reference_number' ) );
 			$unit_number_name = esc_html( get_field_value( $meta, 'unit_number_name' ) );
 			$driver_phone     = esc_html( get_field_value( $meta, 'driver_phone' ) );
-			
-			$booked_rate_raw = get_field_value( $meta, 'booked_rate' );
-			$booked_rate     = esc_html( '$' . str_replace( '.00', '', $booked_rate_raw ) );
-			
-			$driver_rate_raw = get_field_value( $meta, 'driver_rate' );
-			$driver_rate     = esc_html( '$' . str_replace( '.00', '', $driver_rate_raw ) );
-			
-			$profit_raw       = get_field_value( $meta, 'profit' );
-			$profit_class     = $profit_raw < 0 ? 'modified-price' : '';
-			$profit           = esc_html( '$' . str_replace( '.00', '', $profit_raw ) );
-			
-			$pick_up_date_raw = get_field_value( $row, 'pick_up_date' );
+	        
+	        $booked_rate_raw = get_field_value($meta, 'booked_rate');
+	        $booked_rate = esc_html('$' . $helper->format_currency($booked_rate_raw));
+	        
+	        $driver_rate_raw = get_field_value($meta, 'driver_rate');
+	        $driver_rate = esc_html('$' . $helper->format_currency($driver_rate_raw));
+	        
+	        $profit_raw = get_field_value($meta, 'profit');
+	        $profit_class = $profit_raw < 0 ? 'modified-price' : '';
+	        $profit = esc_html('$' . $helper->format_currency($profit_raw));
+	        
+	        
+	        $pick_up_date_raw = get_field_value( $row, 'pick_up_date' );
 			$pick_up_date     = esc_html( date( 'm/d/Y', strtotime( $pick_up_date_raw ) ) );
 			
 			$delivery_date_raw = get_field_value( $row, 'delivery_date' );

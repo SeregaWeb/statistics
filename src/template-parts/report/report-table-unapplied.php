@@ -81,7 +81,7 @@ if ( ! empty( $results ) ) :?>
 			$reference_number = esc_html( get_field_value( $meta, 'reference_number' ) );
 			
 			$booked_rate_raw = get_field_value( $meta, 'booked_rate' );
-			$booked_rate     = esc_html( '$' . str_replace( '.00', '', $booked_rate_raw ) );
+			$booked_rate     = esc_html( '$' . $helper->format_currency( $booked_rate_raw ) );
 			
 			$date_booked_raw = get_field_value( $row, 'date_booked' );
 			$date_booked     = esc_html( date( 'm/d/Y', strtotime( $date_booked_raw ) ) );

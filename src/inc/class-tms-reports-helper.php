@@ -752,5 +752,12 @@ class TMSReportsHelper extends TMSReportsIcons {
 	public function normalize_string( $string ) {
 		return preg_replace( '/\s+/', ' ', trim( $string ) );
 	}
+	
+	function format_currency($value) {
+		// Преобразуем значение в float и форматируем число
+		$formatted = number_format((float)$value, 2, '.', ',');
+		return str_ends_with($formatted, '.00') ? str_replace( '.00', '', $formatted ) : $formatted;
+	}
+	
 }
 

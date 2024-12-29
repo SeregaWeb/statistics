@@ -5,7 +5,7 @@ class TMSReportsCompany extends TMSReportsHelper {
 	
 	public $table_main     = 'reports_company';
 	public $table_meta     = 'reportsmeta_company';
-	public $posts_per_page = 20;
+	public $posts_per_page = 25;
 	
 	public function ajax_actions() {
 		add_action( 'wp_ajax_add_new_company', array( $this, 'add_new_company' ) );

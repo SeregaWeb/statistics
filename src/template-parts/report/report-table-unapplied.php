@@ -62,7 +62,7 @@ if ( ! empty( $results ) ) :?>
             $days_to_pay_value = get_field_value( $row, 'days_to_pay_value' );
             $quick_pay_option_value = get_field_value( $row, 'quick_pay_option_value' );
             $quick_pay_percent_value = get_field_value( $row, 'quick_pay_percent_value' );
-            
+            $factoring_broker_value = get_field_value( $row, 'factoring_broker_value' );
             
 			$delivery_raw = get_field_value( $meta, 'delivery_location' );
 			$delivery     = $delivery_raw ? json_decode( $delivery_raw, ARRAY_A ) : [];
@@ -89,7 +89,7 @@ if ( ! empty( $results ) ) :?>
 			$delivery_date_raw = get_field_value( $row, 'delivery_date' );
 			$delivery_date     = esc_html( date( 'm/d/Y', strtotime( $delivery_date_raw ) ) );
             
-            $factoring_status = get_field_value( $meta, 'factoring_status' );
+            $factoring_status = $factoring_broker_value ? $factoring_broker_value : 'N/A';
             $load_status      = get_field_value( $meta, 'load_status' );
             
 			
@@ -216,7 +216,6 @@ if ( ! empty( $results ) ) :?>
                 <td><?php echo $quick_pay_percent_value ? $quick_pay_percent_value.'%' : ''; ?></td>
                 <td><?php echo $delivery_date; ?></td>
                 <td><?php echo $days_to_pay_value; ?></td>
-
                 <td><?php echo $days_passed; ?> days</td>
                 
                 <td>

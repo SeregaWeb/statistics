@@ -66,7 +66,7 @@ if ( $report_object ) {
         </figure>
 
         <div class="mb-3 col-12 col-xl-8 js-result-search-wrap">
-            <label for="address" class="form-label">Address</label>
+            <label for="address" class="form-label">Location</label>
             <div class="form-group position-relative js-container-search">
                 <input id="input-name" type="text" name="address"
                        placeholder=""

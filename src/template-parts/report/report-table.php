@@ -54,7 +54,9 @@ if ( ! empty( $results ) ) : ?>
         </tr>
         </thead>
         <tbody>
-		<?php foreach ( $results as $row ) :
+		<?php
+		$previous_date  = null;
+        foreach ( $results as $row ) :
 			$meta = get_field_value( $row, 'meta_data' );
 			$main = get_field_value( $row, 'main' );
 			
@@ -115,10 +117,24 @@ if ( ! empty( $results ) ) : ?>
 			
 			$bank_status       = 'Approved';
 			$driver_pay_status = 'Processing';
+            
+            
+            $show_separator = false;
+           
+            
+            if ($previous_date !== $date_booked && !is_null($previous_date)) {
+	            $show_separator = true;
+            }
+            
+            $previous_date = $date_booked;
 			?>
+        
+            <?php if($show_separator): ?>
+                <tr><td colspan="13" class="separator-date"><?php echo $date_booked; ?></td></tr>
+            <?php endif; ?>
 
             <tr class="">
-                    <td><label class="h-100 cursor-pointer"
+                <td><label class="h-100 cursor-pointer"
                                for="load-<?php echo $row[ 'id' ]; ?>"><?php echo $date_booked; ?></label></td>
                 <td>
                     <div class="d-flex gap-1 flex-column">
@@ -178,7 +194,7 @@ if ( ! empty( $results ) ) : ?>
                 <td>
                     <div class="d-flex flex-column">
                         <p class="m-0"><?php echo $unit_number_name; ?></p>
-                        <?php if ( $page_type === 'accounting' ) { ?>
+                        <?php if ($driver_phone ) { ?>
                             <span class="text-small">
                             <?php echo $driver_phone; ?>
                         </span>

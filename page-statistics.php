@@ -350,7 +350,7 @@ if ( ! $active_item ) {
 							
 							// Проходим по массиву диспетчеров, чтобы гарантировать вывод всех диспетчеров
 							foreach ( $dispatchers as $dispatcher ) {
-								if ( in_array( $dispatcher[ 'id' ], $my_team ) ) {
+								if ( $my_team !== null && is_array($my_team)  && in_array( $dispatcher[ 'id' ], $my_team ) ) {
 									$fullname = $dispatcher[ 'fullname' ];
 									// Если данные по диспетчеру есть в $dispatcher_stats_indexed, используем их, иначе нули
 									if ( isset( $dispatcher_stats_indexed[ $fullname ] ) ) {

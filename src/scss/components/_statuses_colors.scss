@@ -12,6 +12,7 @@ $color_accounting_others: #ff0000;
 .tonu,
 .cancelled {
     span {
+        display: inline-flex;
         padding: 5px;
         background-color: $color_status_canceled !important;
         color: #ffffff !important;
@@ -20,6 +21,7 @@ $color_accounting_others: #ff0000;
 
 .waiting-on-rc {
     span {
+        display: inline-flex;
         padding: 5px;
         background-color: $color_status_waiting !important;
     }
@@ -27,6 +29,7 @@ $color_accounting_others: #ff0000;
 
 .at-del {
     span {
+        display: inline-flex;
         padding: 5px;
         background-color: $color_status_dell !important;
     }
@@ -34,6 +37,7 @@ $color_accounting_others: #ff0000;
 
 .loaded-enroute {
     span {
+        display: inline-flex;
         padding: 5px;
         background-color: $color_status_loaded !important;
     }
@@ -41,6 +45,7 @@ $color_accounting_others: #ff0000;
 
 .delivered {
     span {
+        display: inline-flex;
         padding: 5px;
         background-color: $color_status_delivery !important;
 
@@ -51,6 +56,7 @@ $color_accounting_others: #ff0000;
 .unsubmitted,
 .in-processing {
     span {
+        display: inline-flex;
         padding: 5px;
         background-color: $color_accounting_unsubmitted !important;
     }
@@ -58,6 +64,7 @@ $color_accounting_others: #ff0000;
 
 .processed {
     span {
+        display: inline-flex;
         padding: 5px;
 
         background-color: $color_accounting_processed !important;
@@ -69,6 +76,7 @@ $color_accounting_others: #ff0000;
 .requires-attention,
 .short-pay {
     span {
+        display: inline-flex;
         padding: 5px;
 
         background-color: $color_accounting_others !important;
@@ -78,6 +86,7 @@ $color_accounting_others: #ff0000;
 
 .invoiced {
     span {
+        display: inline-flex;
         padding: 5px;
         background: #b7e1cd !important;
     }
@@ -85,6 +94,7 @@ $color_accounting_others: #ff0000;
 
 .not-invoiced {
     span {
+        display: inline-flex;
         padding: 5px;
         color: #ffffff !important;
         background: #ff0000 !important;

@@ -4,7 +4,7 @@ require_once( ABSPATH . 'wp-admin/includes/upgrade.php' );
 class TMSReportsShipper extends TMSReportsHelper {
 	
 	public $table_main = 'reports_shipper';
-	public $posts_per_page = 20;
+	public $posts_per_page = 25;
 	
 	public function ajax_actions() {
 		add_action( 'wp_ajax_add_new_shipper', array( $this, 'add_new_shipper' ) );
@@ -382,16 +382,17 @@ class TMSReportsShipper extends TMSReportsHelper {
 				foreach ( $response as $value ) {
 					$address = $value->full_address;
 					$short_address = $value->city . ' ' . $value->state;
-					
+					$name = $value->shipper_name;
 					$tmp .= '
 						<li class="my-dropdown-search__item">
 	                        <a class="my-dropdown-search__link js-link-search-result" href="#">
 	                            <span class="my-dropdown-search__name">
+	                            	<span>'.$name . '</span>
 	                                <span>' . $address . '</span>
 	                            </span>
 	                            <div class="d-none">
 		                            <div class="js-content-company my-dropdown-search__hidden">
-		                                ' . $this->print_list_shipper( $address, $value->id , $short_address ) . '
+		                                ' . $this->print_list_shipper( $address, $value->id , $short_address, $name ) . '
 									</div>
 								</div>
 	                        </a>
@@ -404,15 +405,23 @@ class TMSReportsShipper extends TMSReportsHelper {
 		}
 	}
 	
-	public function print_list_shipper( $address = '', $id, $short_address ) {
+	public function print_list_shipper( $address = '', $id, $short_address, $name = false ) {
 		
 		if ( ! $id ) {
 			return false;
 		}
 		
+		$name_tmpl = '';
+		
+		if ($name) {
+			$name_tmpl = '<li><h4>' . $name . '</h4></li>';
+		} else {
+			$name_tmpl = '<li><h4>Selected shipper</h4></li>';
+		}
+		
 		$template = '
 		<ul class="result-search-el">
-			<li><h4>Selected shipper</h4></li>
+			'.$name_tmpl.'
             <li class="address">' . $address . '</li>
 		</ul>
 		<input type="hidden" class="js-full-address" data-short-address="'.$short_address.'" data-current-address="'. $address .'" name="shipper_id" value="' . $id . '">';
@@ -442,7 +451,11 @@ class TMSReportsShipper extends TMSReportsHelper {
 		// Define the query to search in the specified fields, ignoring case sensitivity
 		$query = $wpdb->prepare( "
         SELECT * FROM {$wpdb->prefix}{$this->table_main}
-        WHERE LOWER(full_address) LIKE LOWER(%s) LIMIT 5
+        WHERE
+            LOWER(full_address) LIKE LOWER(%s) OR
+            LOWER(shipper_name) LIKE LOWER(%s) OR
+            LOWER(phone_number) LIKE LOWER(%s)
+        LIMIT 5
     ", $search_term, $search_term, $search_term );
 		
 		// Execute the query

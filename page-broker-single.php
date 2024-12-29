@@ -126,7 +126,47 @@ if ( ! empty( $broker ) ) {
                                         <span class="status-list__label">Contact email:</span>
                                         <span class="status-list__value"><?php echo $broker[ 'email' ] ?></span>
                                     </li>
+									
+									<?php
+									
+									
+									if ( isset( $broker_meta[ 'days_to_pay' ] ) ) { ?>
+                                        <li class="status-list__item">
+                                            <span class="status-list__label">Days to pay:</span>
+                                            <span class="status-list__value"><?php echo $broker_meta[ 'days_to_pay' ] ?></span>
+                                        </li>
+									<?php } ?>
+									<?php if ( isset( $broker_meta[ 'quick_pay_option' ] ) ) { ?>
 
+                                        <li class="status-list__item">
+                                            <span class="status-list__label">Quick pay option:</span>
+                                            <span class="status-list__value"><?php echo $broker_meta[ 'quick_pay_option' ] == '1'
+													? 'On' : 'Off'; ?></span>
+                                        </li>
+									
+									<?php } ?>
+									<?php if ( isset( $broker_meta[ 'quick_pay_percent' ] ) ) { ?>
+
+                                        <li class="status-list__item">
+                                            <span class="status-list__label">Quick pay percent:</span>
+                                            <span class="status-list__value"><?php echo $broker_meta[ 'quick_pay_percent' ] ?></span>
+                                        </li>
+									
+									<?php } ?>
+									<?php if ( isset( $broker_meta[ 'accounting_phone' ] ) ) { ?>
+
+                                        <li class="status-list__item">
+                                            <span class="status-list__label">Accounting phone:</span>
+                                            <span class="status-list__value"><?php echo $broker_meta[ 'accounting_phone' ] ?></span>
+                                        </li>
+									
+									<?php } ?>
+									<?php if ( isset( $broker_meta[ 'accounting_email' ] ) ) { ?>
+                                        <li class="status-list__item">
+                                            <span class="status-list__label">Accounting email:</span>
+                                            <span class="status-list__value"><?php echo $broker_meta[ 'accounting_email' ] ?></span>
+                                        </li>
+									<?php } ?>
                                     <li class="status-list__item">
                                         <span class="status-list__label">Set-up platform:</span>
                                         <span class="status-list__value"><?php echo $brokers->get_label_by_key( $broker[ 'set_up_platform' ], 'set_up_platform' ); ?></span>
@@ -149,11 +189,10 @@ if ( ! empty( $broker ) ) {
                                         <span class="status-list__label">Completed date:</span>
                                         <span class="status-list__value d-flex flex-column">
                                          <?php foreach ( $completed_dated_keys as $key ):
-	                                         if ( $set_up_array_complete[ $key ] !== "null" ) {
+	                                         if ( $set_up_array_complete[ $key ] !== "null" && $set_up_array_complete[ $key ] !== ""  ) {
 		                                         $date_set = esc_html( date( 'm/d/Y', strtotime( $set_up_array_complete[ $key ] ) ) );
 		                                         ?>
                                                  <span><?php echo $key . ': ' . $date_set ?></span>
-	                                         
 	                                         <?php }
                                          endforeach; ?>
                                 </span>
@@ -161,8 +200,12 @@ if ( ! empty( $broker ) ) {
 
                                     <li class="status-list__item">
                                         <span class="status-list__label">Profile created:</span>
+                                        <?php if ($user_name) { ?>
                                         <span class="status-list__value"><?php echo $user_name[ 'full_name' ];
 											echo ' ' . $date_created; ?></span>
+                                        <?php } else { ?>
+                                        <span class="status-list__value">N/A</span>
+                                        <?php } ?>
                                     </li>
 									<?php if ( $broker[ 'date_created' ] !== $broker[ 'date_updated' ] ) { ?>
                                         <li class="status-list__item">
@@ -342,24 +385,28 @@ if ( ! empty( $broker ) ) {
                                     <div class="form-group mt-3 col-6">
                                         <label for="set_up" class="form-label">Set up<span
                                                     class="required-star text-danger">*</span></label>
-	                                    <?php if ( is_array( $brokers->set_up ) ):
-		                                    $data =$broker_data['set_up'];
-		                                    $data = mb_convert_encoding( $data, 'UTF-8', 'auto' );
-		                                    $data = json_decode( $data, true );
-		                                    ?>
-                                        <select name="set_up" class="form-control form-select" required>
-                                            <option value="">Select set up</option>
-                                            
+										<?php if ( is_array( $brokers->set_up ) ):
+											$data = $broker_data[ 'set_up' ];
+											$data = mb_convert_encoding( $data, 'UTF-8', 'auto' );
+											$data = json_decode( $data, true );
+											?>
+                                            <select name="set_up" class="form-control form-select" required>
+                                                <option value="">Select set up</option>
+												
 												<?php foreach ( $brokers->set_up as $key => $val ): ?>
-                                                <option value="<?php echo $key; ?>" <?php echo $data[$loads->project] === $key ? 'selected' : ''; ?>>
-													<?php echo $val; ?>
-                                                </option>
-											<?php endforeach; ?>
-                                        </select>
-                                        <input type="hidden" name="json-set-up" value='<?php echo $broker_data['set_up']; ?>'>
-                                        <input type="hidden" name="json-completed" value='<?php echo $broker_data['date_set_up_compleat']; ?>'>
-                                        <input type="hidden" name="select_project" value="<?php echo $loads->project; ?>">
-											<?php endif ?>
+                                                    <option value="<?php echo $key; ?>" <?php echo $data[ $loads->project ] === $key
+														? 'selected' : ''; ?>>
+														<?php echo $val; ?>
+                                                    </option>
+												<?php endforeach; ?>
+                                            </select>
+                                            <input type="hidden" name="json-set-up"
+                                                   value='<?php echo $broker_data[ 'set_up' ]; ?>'>
+                                            <input type="hidden" name="json-completed"
+                                                   value='<?php echo $broker_data[ 'date_set_up_compleat' ]; ?>'>
+                                            <input type="hidden" name="select_project"
+                                                   value="<?php echo $loads->project; ?>">
+										<?php endif ?>
                                     </div>
 
                                     <div class="form-group mt-3 col-6">
@@ -369,7 +416,8 @@ if ( ! empty( $broker ) ) {
                                             <option value="">Select platform</option>
 											<?php if ( is_array( $brokers->set_up_platform ) ): ?>
 												<?php foreach ( $brokers->set_up_platform as $key => $val ): ?>
-                                                    <option value="<?php echo $key; ?>" <?php echo fill_field('set_up_platform', $broker_data) === $key ? 'selected' : '';?>>
+                                                    <option value="<?php echo $key; ?>" <?php echo fill_field( 'set_up_platform', $broker_data ) === $key
+														? 'selected' : ''; ?>>
 														<?php echo $val; ?>
                                                     </option>
 												<?php endforeach; ?>
@@ -379,35 +427,40 @@ if ( ! empty( $broker ) ) {
 
                                     <div class="form-group mt-3 col-6">
                                         <label for="factoring_broker" class="form-label">Factoring status</label>
-                                        <select name="factoring_broker" class="form-control form-select" >
+                                        <select name="factoring_broker" class="form-control form-select">
                                             <option value="">Select Factoring status</option>
-			                                <?php if ( is_array( $brokers->factoring_broker ) ): ?>
-				                                <?php foreach ( $brokers->factoring_broker as $key => $val ): ?>
-                                                    <option value="<?php echo $key; ?>" <?php echo fill_field('factoring_broker', $broker_meta) === $key ? 'selected' : '';?>>
-						                                <?php echo $val; ?>
+											<?php if ( is_array( $brokers->factoring_broker ) ): ?>
+												<?php foreach ( $brokers->factoring_broker as $key => $val ): ?>
+                                                    <option value="<?php echo $key; ?>" <?php echo fill_field( 'factoring_broker', $broker_meta ) === $key
+														? 'selected' : ''; ?>>
+														<?php echo $val; ?>
                                                     </option>
-				                                <?php endforeach; ?>
-			                                <?php endif ?>
+												<?php endforeach; ?>
+											<?php endif ?>
                                         </select>
                                     </div>
-                                    
+
                                     <div class="form-group mt-3 col-6">
-                                        <label for="accounting-input-phone" class="form-label">Accounting Phone Number </label>
-                                        <input id="accounting-input-phone"  type="text" name="accounting_phone" placeholder="Phone"
+                                        <label for="accounting-input-phone" class="form-label">Accounting Phone
+                                            Number </label>
+                                        <input id="accounting-input-phone" type="text" name="accounting_phone"
+                                               placeholder="Phone"
                                                class="form-control"
                                                value="<?php echo fill_field( 'accounting_phone', $broker_meta ); ?>">
                                     </div>
 
                                     <div class="form-group mt-3 col-6">
                                         <label for="accounting-input-email" class="form-label">Accounting Email</label>
-                                        <input id="accounting-input-email" type="text" name="accounting_email" placeholder="Email"
+                                        <input id="accounting-input-email" type="text" name="accounting_email"
+                                               placeholder="Email"
                                                class="form-control"
                                                value="<?php echo fill_field( 'accounting_email', $broker_meta ); ?>">
                                     </div>
 
                                     <div class="form-group mt-3 col-6">
                                         <label for="days-to-pay" class="form-label">Days to pay</label>
-                                        <input id="days-to-pay" type="number" name="days_to_pay" placeholder="Days to pay"
+                                        <input id="days-to-pay" type="number" name="days_to_pay"
+                                               placeholder="Days to pay"
                                                class="form-control"
                                                value="<?php echo fill_field( 'days_to_pay', $broker_meta ); ?>">
                                     </div>
@@ -418,29 +471,34 @@ if ( ! empty( $broker ) ) {
                                             <input class="form-check-input js-switch-toggle"
                                                    data-toggle="js-quick-actions" <?php echo is_checked( 'quick_pay_option', $broker_meta ); ?>
                                                    name="quick_pay_option" type="checkbox" id="quick_pay_option">
-                                            <label class="form-check-label" for="quick_pay_option">Quick Pay option?</label>
+                                            <label class="form-check-label" for="quick_pay_option">Quick Pay
+                                                option?</label>
                                         </div>
                                     </div>
 
-                                    <div class="col-12 js-quick-actions <?php echo isset($broker_meta['quick_pay_option']) && $broker_meta['quick_pay_option'] ? '' : 'd-none'; ?>">
+                                    <div class="col-12 js-quick-actions <?php echo isset( $broker_meta[ 'quick_pay_option' ] ) && $broker_meta[ 'quick_pay_option' ]
+										? '' : 'd-none'; ?>">
                                         <div class="row">
                                             <div class="form-group mt-3 col-6">
-                                                <label for="quick_pay_percent" class="form-label">Quick pay percent</label>
+                                                <label for="quick_pay_percent" class="form-label">Quick pay
+                                                    percent</label>
                                                 <div class="input-group mt-3">
-                                                <span class="input-group-text">%</span>
-                                                <input id="quick_pay_percent" type="number" name="quick_pay_percent" placeholder=""
-                                                       class="form-control"
-                                                       value="<?php echo fill_field( 'quick_pay_percent', $broker_meta ); ?>">
+                                                    <span class="input-group-text">%</span>
+                                                    <input id="quick_pay_percent" type="number" name="quick_pay_percent"
+                                                           placeholder=""
+                                                           class="form-control"
+                                                           value="<?php echo fill_field( 'quick_pay_percent', $broker_meta ); ?>">
                                                 </div>
                                             </div>
                                         </div>
                                     </div>
-                                    
+
                                 </div>
 
                                 <div class="input-group mt-3">
                                     <span class="input-group-text">Notes</span>
-                                    <textarea class="form-control" aria-label="With textarea" name="notes"><?php echo fill_field( 'notes', $broker_meta ); ?></textarea>
+                                    <textarea class="form-control" aria-label="With textarea"
+                                              name="notes"><?php echo fill_field( 'notes', $broker_meta ); ?></textarea>
                                 </div>
 
                                 <div class="form-group d-flex gap-2 mt-3">
@@ -463,11 +521,11 @@ if ( ! empty( $broker ) ) {
                                         <label class="form-check-label" for="martlet">Martlet</label>
                                     </div>
                                 </div>
-                                
+
                                 <div class="mt-3">
                                     <button class="btn btn-primary" type="submit">End edit</button>
                                 </div>
-                                
+
                         </div>
                         </form>
 

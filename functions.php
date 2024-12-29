@@ -43,6 +43,14 @@ require THEME_DIR . '/src/inc/custom-hooks.php';
 require THEME_DIR . '/src/inc/custom-shortcodes.php';
 require THEME_DIR . '/src/inc/class-mobile-detect.php';
 
+function disable_canonical_redirect_for_paged( $redirect_url ) {
+	if ( is_paged() && strpos( $redirect_url, '/page/' ) !== false ) {
+		return false;
+	}
+	return $redirect_url;
+}
+add_filter( 'redirect_canonical', 'disable_canonical_redirect_for_paged' );
+
 if ( false ) {
 	global $wpdb;
 	

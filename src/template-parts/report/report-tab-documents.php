@@ -149,6 +149,7 @@ if ( $report_object ) {
     <div class="container-uploads <?php echo $full_view_only ? "read-only" : '' ?>">
 		<?php if ( isset( $required_file_arr ) && $required_file ): ?>
             <form class="js-remove-one card-upload required">
+                <a class="view-document" target="_blank" href="<?php echo $required_file_arr[ 'url' ]; ?>"><?php echo $reports->get_icon_view('view'); ?></a>
                 <span class="required-label">Rate Confirmation</span>
                 <figure class="card-upload__figure">
 					<?php
@@ -182,6 +183,7 @@ if ( $report_object ) {
 		<?php
         if ( isset( $update_rate_conf_arr ) && $update_rate_conf ): ?>
             <form class="js-remove-one card-upload updated">
+                <a class="view-document" target="_blank" href="<?php echo $update_rate_conf_arr[ 'url' ]; ?>"><?php echo $reports->get_icon_view('view'); ?></a>
                 <span class="required-label">Updated Rate Confirmation</span>
                 <figure class="card-upload__figure">
 					
@@ -212,6 +214,7 @@ if ( $report_object ) {
 		
 		<?php if ( isset( $screen_picture_arr ) && $screen_picture ): ?>
             <form class="js-remove-one card-upload screen-picture">
+                <a class="view-document" target="_blank" href="<?php echo $screen_picture_arr[ 'url' ]; ?>"><?php echo $reports->get_icon_view('view'); ?></a>
                 <span class="required-label">Dispatch message</span>
                 <figure class="card-upload__figure">
 					
@@ -242,6 +245,7 @@ if ( $report_object ) {
   
 		<?php if ( isset( $proof_of_delivery_arr ) && $proof_of_delivery ): ?>
             <form class="js-remove-one card-upload proof_of_delivery">
+                <a class="view-document" target="_blank" href="<?php echo $proof_of_delivery_arr[ 'url' ]; ?>"><?php echo $reports->get_icon_view('view'); ?></a>
                 <span class="required-label">Proof Of Delivery</span>
                 <figure class="card-upload__figure">
 					
@@ -274,6 +278,7 @@ if ( $report_object ) {
 		<?php if ( isset( $others_files_arr ) && is_array( $others_files_arr ) ):
 			foreach ( $others_files_arr as $value ):?>
                 <form class="js-remove-one card-upload">
+                    <a class="view-document" target="_blank" href="<?php echo $value[ 'url' ]; ?>"><?php echo $reports->get_icon_view('view'); ?></a>
                     <figure class="card-upload__figure">
 						
 						<?php

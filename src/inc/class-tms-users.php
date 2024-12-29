@@ -224,8 +224,7 @@ class  TMSUsers extends TMSReportsHelper {
 	}
 	
 	public function check_user_in_my_group( $my_team, $id_user ) {
-		
-		if ( $my_team === null ) {
+		if ( $my_team === null || !is_array($my_team) ) {
 			return false;
 		}
 		

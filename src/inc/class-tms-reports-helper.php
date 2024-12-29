@@ -225,6 +225,7 @@ class TMSReportsHelper extends TMSReportsIcons {
 	    'credit-approval-required' => 'Credit Approval Required',
 	    'one-load-allowed'  => 'One load allowed',
 	    'not-found'     => 'Not Found',
+	    'can-be-discussed'     => 'Can be discussed',
     );
 	
 	function formatDate( $inputDate ) {

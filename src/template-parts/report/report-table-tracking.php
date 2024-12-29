@@ -17,10 +17,9 @@ $page_type     =  get_field_value($args, 'page_type');
 
 $current_user_id = get_current_user_id();
 
-$billing_info = $TMSUsers->check_user_role_access(array('administrator', 'billing', 'accounting'),true);
-$hide_billing_and_shipping = $TMSUsers->check_user_role_access(array('billing', 'accounting'),true);
-
 $my_team = $TMSUsers->check_group_access();
+$all_statuses = $helper->get_statuses();
+
 
 if ( ! empty( $results ) ) : ?>
     <table class="table mb-5 w-100">
@@ -33,6 +32,8 @@ if ( ! empty( $results ) ) : ?>
             <th scope="col">Delivery location</th>
             <th scope="col">Unit & name</th>
             <th scope="col">Client</th>
+            <th scope="col">Load status</th>
+            <th scope="col">Instructions</th>
             <th scope="col">Last log</th>
             <th scope="col"></th>
         </tr>
@@ -65,8 +66,7 @@ if ( ! empty( $results ) ) : ?>
 			}
 
 			$load_status  = get_field_value( $meta, 'load_status' );
-			$status_label = $helper->get_label_by_key( $load_status, 'statuses' );
-			$status       = esc_html( $status_label );
+			$status       = $load_status;
 			
 			$date_booked_raw = get_field_value( $row, 'date_booked' );
 			$date_booked     = esc_html( date( 'm/d/Y', strtotime( $date_booked_raw ) ) );
@@ -86,8 +86,12 @@ if ( ! empty( $results ) ) : ?>
 			$id_customer              = get_field_value( $meta, 'customer_id' );
 			$broker_info             = $TMSBroker->get_company_by_id($id_customer, ARRAY_A);
 			
+			$instructions_raw = get_field_value( $meta, 'instructions' );
+			$instructions     = $helper->get_label_by_key( $instructions_raw, 'instructions' );
+   
 			$broker_name = '';
 			$broker_mc = '';
+			
    
 			if (isset($broker_info[0]) && $broker_info[0]) {
 				$broker_name = $broker_info[0]['company_name'];
@@ -211,7 +215,29 @@ if ( ! empty( $results ) ) : ?>
                         <?php else: ?>
                             <p class="m-0"><?php echo $broker_name; ?></p>
                         <?php endif; ?>
-                        <span class="text-small"><?php echo $broker_mc; ?></span>
+                        <span class="text-small">МС: <?php echo $broker_mc; ?></span>
+                    </div>
+                </td>
+
+                <td class="">
+                    <form class="js-save-status d-flex gap-1 align-items-center form-quick-tracking" >
+                        <input type="hidden" name="id_load" value="<?php echo $row[ 'id' ]; ?>">
+                        <?php if (is_array($all_statuses)) { ?>
+                            <select name="status" class="js-trigger-disable-btn" >
+                                <?php foreach ($all_statuses as $key => $st):?>
+                                    <option <?php echo $key === $status ? 'selected' : ''; ?> value="<?php echo $key; ?>"><?php echo $st; ?></option>
+                                <?php endforeach; ?>
+                            </select>
+                        <?php } ?>
+                        <button type="submit" disabled>
+                            <?php echo $helper->get_icon_save(); ?>
+                        </button>
+                    </form>
+                </td>
+                
+                <td>
+                    <div class="table-list-icons">
+                    <?php echo $instructions; ?>
                     </div>
                 </td>
 

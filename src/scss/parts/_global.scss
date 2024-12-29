@@ -59,3 +59,27 @@ iframe {
 .tab-content {
     padding-bottom: 20px;
 }
+
+.separator-date {
+    background: #f7f7f7 !important;
+    font-size: 16px !important;
+    font-weight: 400;
+    padding: 5px 4px !important;
+    text-align: center !important;
+    text-transform: uppercase;
+}
+
+#main-wrapper {
+
+    .table-performance {
+        th {
+            font-size: 10px;
+            font-weight: bold;
+        }
+
+        .week-divider {
+            background-color: #d1e7dd;
+            border-right: 1px solid #000000;
+        }
+    }
+}

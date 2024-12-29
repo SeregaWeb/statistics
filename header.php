@@ -61,60 +61,26 @@ if ( function_exists( 'get_field' ) ) {
 
 <pre class="d-none">
 
-<!--время в логе установить по таймзоне EST-->
-<!--месяц число год - заменить в логе формат даты-->
+Любые телефоны в формате: (954) 398-4969
+Performance
 
-<!--load - таб билинг добавить статус-->
-<!--(только если факторинг)-->
-<!--Delayed advance-->
-<!--Unapplied payment-->
-<!--Pending to TAFS-->
+Добавить колонку Miles которая бы считала мили от Pick up до Delivery. В случае множества pickups & deliveries считать цепочкой в порядке заданном диспетчером при добавлении груза.
 
-<!--вынести инвоис - выделить что бы случайно не нажали-->
+Под Booked rate добавить (Booker rate деленный на miles)
+Под Driver rate добавить (Driver rate деленный на miles)
 
-<!--при инвойсд в биллинг - предзаполнить дату инвойса-->
+пример:    Driver rate: $1000, Miles: 1142    1000 / 1142 = $0.87
 
-<!---->
-<!--Brokers-->
-<!--_______________-->
-<!--Factoring status: (Approved / Denied / Credit Approval Required / One load allowed / Not Found)-->
-<!--Accounting email:-->
-<!--Accounting phone:-->
-<!--Days to pay:-->
-<!--Quick Pay option (switch available / not available)-->
-<!--Quick pay percent: (если Quick Pay option = available)-->
+- после статуса пейд закрывать полностью лоад
+- сгружаем логи
+- при выборе статуса Paid вывессти предупреждение
+- после закрытия лоада ничего нельзя редактировать всем кроме админа
 
+Perf. = (1 call x 1%) + (1 load x 20%) + (каждые $10 x 1%)
 
-<!--месяц/число/год-->
-<!--12/19/2024-->
+лоадс - добавить номер телефона под водилой
 
-
-<!--Billing info-->
-<!--________________-->
-<!--Select status: + Pending to TAFS / Unapplied payment / Delayed advance при условии что выше выбран Select processing: Factoring-->
-
-
-<!--Direct Invoicing & Unapplied Payments-->
-___________________________________________
-
-Date booked
-Dispatcher initials
-Reference number
-Broker company
-Factoring status
-Shipper location
-Receiver location
-Booked rate
-Load status
-QP option (из Broker)
-QP percent (из Broker)
-Delivery Date
-Days to pay (из Broker)
-Days since invoiced
-
-Поиск по статусам: All / Pending to TAFS / Unapplied payment / Delayed advance / Processing / Paid / Processed / Fraud / Company closed
-
-квик пей - логи
+в лоадсах посмотреть формат xxx.5 заменить на общий формат для денег
 
 </pre>
 

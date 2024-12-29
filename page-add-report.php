@@ -55,28 +55,53 @@ $access = $TMSUsers->check_user_role_access(array('recruiter'));
 $full_only_view = false;
 
 if ($TMSUsers->check_user_role_access(array('dispatcher'), true) && isset($meta)) {
-	$user_id_added = get_field_value($meta, 'dispatcher_initials');
-
-    if (is_array($report_object) && intval($user_id_added) !== get_current_user_id()) {
-	    $access = false;
-    }
+	$dispatcher_initials = get_field_value($meta, 'dispatcher_initials');
+	$user_id_added = get_field_value($main, 'user_id_added');
+	
+	if (is_array($report_object)) {
+		$current_user_id = get_current_user_id();
+		if (intval($user_id_added) === $current_user_id || intval($dispatcher_initials) === $current_user_id) {
+			$access = true;
+		} else {
+			$access = false;
+		}
+	}
 }
 
 if ($TMSUsers->check_user_role_access(array('dispatcher-tl','tracking'), true) && isset($meta)) {
-	$user_id_added = get_field_value($meta, 'dispatcher_initials');
+	$dispatcher_initials = get_field_value($meta, 'dispatcher_initials');
+	$user_id_added = get_field_value($main, 'user_id_added');
 	$my_team = $TMSUsers->check_group_access();
-	$access = $TMSUsers->check_user_in_my_group($my_team, $user_id_added);
+    if ($TMSUsers->check_user_in_my_group($my_team, intval($dispatcher_initials)) || $TMSUsers->check_user_in_my_group($my_team, intval($user_id_added))) {
+	$access = true;
+    }
 }
 
 if ($access) {
 	$full_only_view = $TMSUsers->check_user_role_access(array('billing', 'dispatcher-tl'), true);
 }
 
+if ($TMSUsers->check_user_role_access(array('dispatcher-tl','dispatcher'), true) && isset($main) && isset($meta)) {
+	$dispatcher_initials = get_field_value($meta, 'dispatcher_initials');
+	$user_id_added = get_field_value($main, 'user_id_added');
+	if (is_array($report_object)) {
+		$current_user_id = get_current_user_id();
+		if (intval($user_id_added) === intval($current_user_id) || intval($dispatcher_initials) === intval($current_user_id)) {
+			$access = true;
+			$full_only_view = false;
+		} else {
+			$access = false;
+		}
+	}
+}
+
+
+
+
 $billing_info = $TMSUsers->check_user_role_access(array('administrator', 'billing', 'accounting'),true);
 
 get_header();
 
-//logshow
 
 $logshow = isset($_COOKIE['logshow']) && +$_COOKIE['logshow'] !== 0 ? 'hidden-logs col-lg-1' : 'col-lg-3';
 $logshowcontent = isset($_COOKIE['logshow']) && +$_COOKIE['logshow'] !== 0 ? 'col-lg-11' : 'col-lg-9';

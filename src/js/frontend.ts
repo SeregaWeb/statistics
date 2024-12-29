@@ -16,8 +16,10 @@ import {
     fullRemovePost,
     previewFileUpload,
     quickEditInit,
+    quickEditTrackingStatus,
     removeOneFileInitial,
     sendShipperFormInit,
+    triggerDisableBtnInit,
     updateAccountingReportInit,
     updateBillingReportInit,
     updateFilesReportInit,
@@ -36,8 +38,8 @@ import { autoFillAddress } from './components/auto-fill-address';
 import { AuthUsersInit } from './components/auth-users';
 import { cleanUrlByFilter, cleanUrlByFilterAr, cleanUrlByFilterPlatform } from './components/filter-clean';
 import { disabledValuesInSelectInit, showHiddenValueInit } from './components/chow-hidden-value';
-import { logsInit } from "./components/logs";
-import { bookmarkInit } from "./components/bookmark";
+import { logsInit } from './components/logs';
+import { bookmarkInit } from './components/bookmark';
 
 function ready() {
     console.log('ready');
@@ -82,8 +84,9 @@ function ready() {
     quickEditInit(urlAjax, '.js-quick-edit-ar', 'quick_update_post_ar');
     bookmarkInit(urlAjax);
     logsInit(urlAjax);
+    quickEditTrackingStatus(urlAjax);
     // API request
-    initGetInfoDriver(useServices);
+    initGetInfoDriver(urlAjax, useServices);
 
     additionalContactsInit();
     addShipperPointInit();
@@ -104,6 +107,7 @@ function ready() {
     disabledValuesInSelectInit();
     quick_pay_method();
     trigger_current_time();
+    triggerDisableBtnInit();
 
     const preloaders = document.querySelectorAll('.js-preloader');
     preloaders &&

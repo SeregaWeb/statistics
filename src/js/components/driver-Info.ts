@@ -1,34 +1,7 @@
 import { printMessage } from './info-messages';
 
-async function getDriverById(useProject, driverId, ProjectsLinks) {
-    try {
-        // Формируем URL с параметром driver-id
-        const endpoint = `${ProjectsLinks[useProject]}wp-json/wp/v2/driver-name?driver-id=${driverId}`;
-
-        // Отправляем GET-запрос
-        const response = await fetch(endpoint, {
-            method: 'GET',
-        });
-
-        // Получаем ответ в формате JSON
-        const data = await response.json();
-
-        if (data.success) {
-            console.log('Driver data:', data.data); // Данные водителя
-            return data.data;
-        }
-        console.log('data', data);
-        printMessage(`${data.data.message}`, 'danger', 8000);
-        return false;
-    } catch (error) {
-        printMessage(`'Request failed' ${error}`, 'danger', 8000);
-        console.error('Request failed', error);
-        return false;
-    }
-}
-
 // eslint-disable-next-line import/prefer-default-export
-export const initGetInfoDriver = (ProjectsLinks) => {
+export const initGetInfoDriver = (urlAjax, ProjectsLinks) => {
     const btns = document.querySelectorAll('.js-fill-driver');
 
     if (btns) {
@@ -39,38 +12,71 @@ export const initGetInfoDriver = (ProjectsLinks) => {
                 const { target } = event;
                 if (!target) return;
 
-                // Найти контейнер и input
+                // Find the container and input
                 // @ts-ignore
                 const container = target.closest('.js-container-number');
                 if (!container) return;
                 const input = container.querySelector('input');
                 if (!input) return;
 
-                const { value } = input;
+                const { value } = input; // Driver ID
+                if (!value) {
+                    console.warn('Input value (Driver ID) is empty.');
+                    return;
+                }
 
-                // Найти проект
+                // Find the project selector
                 const useProject = document.querySelector('.js-select-current-table');
-                if (!useProject) return;
+                if (!useProject) {
+                    console.warn('Project selector not found.');
+                    return;
+                }
 
                 // @ts-ignore
                 const valueProject = useProject.value;
 
-                // Вызвать асинхронную функцию и дождаться её выполнения
-                const driver = await getDriverById(valueProject, value, ProjectsLinks);
+                console.log('Fetching driver for ID:', value, 'and project:', valueProject);
 
-                // Проверить результат
-                if (driver && driver.driver) {
-                    const driverPhone = document.querySelector('.js-phone-driver');
+                try {
+                    // Call the async function and wait for its result
+                    const formData = new FormData();
+                    formData.append('action', 'get_driver_by_id');
+                    // @ts-ignore
+                    formData.append('id', value);
+                    // @ts-ignore
+                    formData.append('project', ProjectsLinks[valueProject]);
 
-                    if (driverPhone) {
-                        // @ts-ignore
-                        driverPhone.value = driver.phone;
-                    }
+                    const options = {
+                        method: 'POST',
+                        body: formData,
+                    };
 
-                    input.value = `(${value}) ${driver.driver}`;
-                    console.log('driver', `${value && driver.driver}`);
-                } else {
-                    console.log('Driver not found or error occurred.');
+                    fetch(urlAjax, options)
+                        .then((res) => res.json())
+                        .then((requestStatus) => {
+                            if (requestStatus.success) {
+                                const driver = requestStatus.data;
+                                if (!driver) return;
+                                const driverPhone = document.querySelector('.js-phone-driver');
+                                if (driverPhone) {
+                                    // @ts-ignore
+                                    driverPhone.value = driver.phone;
+                                }
+                                // @ts-ignore
+                                input.value = `(${value}) ${driver.driver}`;
+                                // eslint-disable-next-line consistent-return
+                                return true;
+                            }
+                            printMessage(`${requestStatus.data.message}`, 'danger', 8000);
+                            // eslint-disable-next-line consistent-return
+                            return false;
+                        })
+                        .catch((error) => {
+                            printMessage(`'Request failed' ${error}`, 'danger', 8000);
+                            return false;
+                        });
+                } catch (error) {
+                    console.error('Error occurred while fetching driver:', error);
                 }
             });
         });

@@ -967,21 +967,21 @@ export const addShipperPointInit = () => {
                         return false;
                     }
 
-                    if (contactValue === '') {
-                        printMessage(`Contact shipper empty`, 'danger', 5000);
-                        // eslint-disable-next-line consistent-return
-                        return false;
-                    }
+                    // if (contactValue === '') {
+                    //     printMessage(`Contact shipper empty`, 'danger', 5000);
+                    //     // eslint-disable-next-line consistent-return
+                    //     return false;
+                    // }
 
                     if (infoValue === '') {
                         infoValue = 'unset';
                     }
 
-                    if (info.value === '') {
-                        printMessage(`Specific information empty`, 'danger', 5000);
-                        // eslint-disable-next-line consistent-return
-                        return false;
-                    }
+                    // if (info.value === '') {
+                    //     printMessage(`Specific information empty`, 'danger', 5000);
+                    //     // eslint-disable-next-line consistent-return
+                    //     return false;
+                    // }
 
                     let typeDelivery = 'Delivery';
 
@@ -1223,5 +1223,66 @@ export const quickEditInit = (ajaxUrl, selector, action) => {
                     printMessage(`Request failed: ${error}`, 'danger', 8000);
                     console.error('Request failed:', error);
                 });
+        });
+};
+
+export const quickEditTrackingStatus = (ajaxUrl) => {
+    const forms = document.querySelectorAll('.js-save-status');
+
+    forms &&
+        forms.forEach((item) => {
+            item.addEventListener('submit', (e) => {
+                e.preventDefault();
+
+                // @ts-ignore
+                const formData = new FormData(e.target);
+
+                formData.append('action', 'quick_update_status');
+
+                const options = {
+                    method: 'POST',
+                    body: formData,
+                };
+
+                // @ts-ignore
+                const btn = e.target.querySelector('button');
+                btn && btn.setAttribute('disabled', true);
+
+                // @ts-ignore
+                fetch(ajaxUrl, options)
+                    .then((res) => res.json())
+                    .then((requestStatus) => {
+                        if (requestStatus.success) {
+                            printMessage(requestStatus.data.message, 'success', 8000);
+                            window.location.reload();
+                        } else {
+                            printMessage(requestStatus.data.message, 'danger', 8000);
+                        }
+                    })
+                    .catch((error) => {
+                        printMessage(`Request failed: ${error}`, 'danger', 8000);
+                        console.error('Request failed:', error);
+                    });
+            });
+        });
+};
+
+export const triggerDisableBtnInit = () => {
+    const triggers = document.querySelectorAll('.js-trigger-disable-btn');
+
+    triggers &&
+        triggers.forEach((item) => {
+            item.addEventListener('change', (e) => {
+                e.preventDefault();
+
+                // @ts-ignore
+                const form = e.target.closest('form');
+
+                if (form) {
+                    const btn = form.querySelector('button');
+
+                    btn.removeAttribute('disabled');
+                }
+            });
         });
 };

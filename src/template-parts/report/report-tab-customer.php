@@ -22,9 +22,12 @@ $post_status               = 'draft';
 $read_only                 = false;
 $additional_contacts_isset = false;
 
-$full_view_only = get_field_value($args, 'full_view_only');
+$full_view_only = false;
 
 if ( $report_object ) {
+	
+	$full_view_only = get_field_value($args, 'full_view_only');
+ 
 	$values = $report_object;
 	$meta   = get_field_value( $values, 'meta' );
 	$main   = get_field_value( $values, 'main' );

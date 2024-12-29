@@ -173,6 +173,16 @@ class TMSReportsIcons {
 		';
 	}
 	
+	public function get_icon_view($tooltip_text) {
+		$tooltip = $tooltip_text ? "<title>$tooltip_text</title>" : '';
+		return '
+		<svg width="32px" height="32px" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+		' . $tooltip . '
+			<path fill-rule="evenodd" clip-rule="evenodd" d="M20.7703 12C20.7703 11.6412 20.5762 11.4056 20.188 10.9343C18.768 9.21014 15.6357 6 12 6C8.36428 6 5.23207 9.21014 3.81198 10.9343C3.42382 11.4056 3.22974 11.6412 3.22974 12C3.22974 12.3588 3.42382 12.5944 3.81198 13.0657C5.23207 14.7899 8.36428 18 12 18C15.6357 18 18.768 14.7899 20.188 13.0657C20.5762 12.5944 20.7703 12.3588 20.7703 12ZM12 15C13.6569 15 15 13.6569 15 12C15 10.3431 13.6569 9 12 9C10.3432 9 9.00002 10.3431 9.00002 12C9.00002 13.6569 10.3432 15 12 15Z" fill="#33363F"/>
+		</svg>
+		';
+	}
+	
 	public function get_icon_fake_team( $tooltip_text = null ) {
 		$tooltip = $tooltip_text ? "<title>$tooltip_text</title>" : '';
 		
@@ -190,6 +200,12 @@ class TMSReportsIcons {
 <path d="M158.853 147.059H39.6764C35.6318 147.059 32.3529 150.337 32.3529 154.382V160.323C32.3529 164.368 35.6318 167.647 39.6764 167.647H158.853C162.898 167.647 166.176 164.368 166.176 160.323V154.382C166.176 150.337 162.898 147.059 158.853 147.059Z" fill="#FF8B8B" stroke="#FF8B8B" stroke-width="2" stroke-miterlimit="10"/>
 </g>
 </svg>
+		';
+	}
+	
+	public function get_icon_save () {
+		return '
+		<svg fill="#000000" width="32px" height="32px" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg"><title>save</title><path d="M380.44,32H64A32,32,0,0,0,32,64V448a32,32,0,0,0,32,32H448a32.09,32.09,0,0,0,32-32V131.56ZM112,176V112H304v64ZM335.91,355.76a80,80,0,1,1-83.66-83.67A80.21,80.21,0,0,1,335.91,355.76Z"/></svg>
 		';
 	}
 	

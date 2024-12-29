@@ -3574,8 +3574,10 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */   fullRemovePost: function() { return /* binding */ fullRemovePost; },
 /* harmony export */   previewFileUpload: function() { return /* binding */ previewFileUpload; },
 /* harmony export */   quickEditInit: function() { return /* binding */ quickEditInit; },
+/* harmony export */   quickEditTrackingStatus: function() { return /* binding */ quickEditTrackingStatus; },
 /* harmony export */   removeOneFileInitial: function() { return /* binding */ removeOneFileInitial; },
 /* harmony export */   sendShipperFormInit: function() { return /* binding */ sendShipperFormInit; },
+/* harmony export */   triggerDisableBtnInit: function() { return /* binding */ triggerDisableBtnInit; },
 /* harmony export */   updateAccountingReportInit: function() { return /* binding */ updateAccountingReportInit; },
 /* harmony export */   updateBillingReportInit: function() { return /* binding */ updateBillingReportInit; },
 /* harmony export */   updateFilesReportInit: function() { return /* binding */ updateFilesReportInit; },
@@ -4195,16 +4197,8 @@ var addShipperPointInit = function addShipperPointInit() {
           (0,_info_messages__WEBPACK_IMPORTED_MODULE_2__.printMessage)("Stop type empty", 'danger', 5000);
           return false;
         }
-        if (contactValue === '') {
-          (0,_info_messages__WEBPACK_IMPORTED_MODULE_2__.printMessage)("Contact shipper empty", 'danger', 5000);
-          return false;
-        }
         if (infoValue === '') {
           infoValue = 'unset';
-        }
-        if (info.value === '') {
-          (0,_info_messages__WEBPACK_IMPORTED_MODULE_2__.printMessage)("Specific information empty", 'danger', 5000);
-          return false;
         }
         var typeDelivery = 'Delivery';
         if (stopTypeValue === 'pick_up_location') {
@@ -4360,6 +4354,48 @@ var quickEditInit = function quickEditInit(ajaxUrl, selector, action) {
     });
   });
 };
+var quickEditTrackingStatus = function quickEditTrackingStatus(ajaxUrl) {
+  var forms = document.querySelectorAll('.js-save-status');
+  forms && forms.forEach(function (item) {
+    item.addEventListener('submit', function (e) {
+      e.preventDefault();
+      var formData = new FormData(e.target);
+      formData.append('action', 'quick_update_status');
+      var options = {
+        method: 'POST',
+        body: formData
+      };
+      var btn = e.target.querySelector('button');
+      btn && btn.setAttribute('disabled', true);
+      fetch(ajaxUrl, options).then(function (res) {
+        return res.json();
+      }).then(function (requestStatus) {
+        if (requestStatus.success) {
+          (0,_info_messages__WEBPACK_IMPORTED_MODULE_2__.printMessage)(requestStatus.data.message, 'success', 8000);
+          window.location.reload();
+        } else {
+          (0,_info_messages__WEBPACK_IMPORTED_MODULE_2__.printMessage)(requestStatus.data.message, 'danger', 8000);
+        }
+      }).catch(function (error) {
+        (0,_info_messages__WEBPACK_IMPORTED_MODULE_2__.printMessage)("Request failed: ".concat(error), 'danger', 8000);
+        console.error('Request failed:', error);
+      });
+    });
+  });
+};
+var triggerDisableBtnInit = function triggerDisableBtnInit() {
+  var triggers = document.querySelectorAll('.js-trigger-disable-btn');
+  triggers && triggers.forEach(function (item) {
+    item.addEventListener('change', function (e) {
+      e.preventDefault();
+      var form = e.target.closest('form');
+      if (form) {
+        var btn = form.querySelector('button');
+        btn.removeAttribute('disabled');
+      }
+    });
+  });
+};
 
 /***/ }),
 
@@ -4483,107 +4519,92 @@ var __awaiter = undefined && undefined.__awaiter || function (thisArg, _argument
   });
 };
 
-function getDriverById(useProject, driverId, ProjectsLinks) {
-  return __awaiter(this, void 0, void 0, /*#__PURE__*/_regeneratorRuntime().mark(function _callee() {
-    var endpoint, response, data;
-    return _regeneratorRuntime().wrap(function _callee$(_context) {
-      while (1) switch (_context.prev = _context.next) {
-        case 0:
-          _context.prev = 0;
-          endpoint = "".concat(ProjectsLinks[useProject], "wp-json/wp/v2/driver-name?driver-id=").concat(driverId);
-          _context.next = 4;
-          return fetch(endpoint, {
-            method: 'GET'
-          });
-        case 4:
-          response = _context.sent;
-          _context.next = 7;
-          return response.json();
-        case 7:
-          data = _context.sent;
-          if (!data.success) {
-            _context.next = 11;
-            break;
-          }
-          console.log('Driver data:', data.data);
-          return _context.abrupt("return", data.data);
-        case 11:
-          console.log('data', data);
-          (0,_info_messages__WEBPACK_IMPORTED_MODULE_0__.printMessage)("".concat(data.data.message), 'danger', 8000);
-          return _context.abrupt("return", false);
-        case 16:
-          _context.prev = 16;
-          _context.t0 = _context["catch"](0);
-          (0,_info_messages__WEBPACK_IMPORTED_MODULE_0__.printMessage)("'Request failed' ".concat(_context.t0), 'danger', 8000);
-          console.error('Request failed', _context.t0);
-          return _context.abrupt("return", false);
-        case 21:
-        case "end":
-          return _context.stop();
-      }
-    }, _callee, null, [[0, 16]]);
-  }));
-}
-var initGetInfoDriver = function initGetInfoDriver(ProjectsLinks) {
+var initGetInfoDriver = function initGetInfoDriver(urlAjax, ProjectsLinks) {
   var btns = document.querySelectorAll('.js-fill-driver');
   if (btns) {
     btns.forEach(function (item) {
       item.addEventListener('click', function (event) {
-        return __awaiter(void 0, void 0, void 0, /*#__PURE__*/_regeneratorRuntime().mark(function _callee2() {
-          var target, container, input, value, useProject, valueProject, driver, driverPhone;
-          return _regeneratorRuntime().wrap(function _callee2$(_context2) {
-            while (1) switch (_context2.prev = _context2.next) {
+        return __awaiter(void 0, void 0, void 0, /*#__PURE__*/_regeneratorRuntime().mark(function _callee() {
+          var target, container, input, value, useProject, valueProject, formData, options;
+          return _regeneratorRuntime().wrap(function _callee$(_context) {
+            while (1) switch (_context.prev = _context.next) {
               case 0:
                 event.preventDefault();
                 target = event.target;
                 if (target) {
-                  _context2.next = 4;
+                  _context.next = 4;
                   break;
                 }
-                return _context2.abrupt("return");
+                return _context.abrupt("return");
               case 4:
                 container = target.closest('.js-container-number');
                 if (container) {
-                  _context2.next = 7;
+                  _context.next = 7;
                   break;
                 }
-                return _context2.abrupt("return");
+                return _context.abrupt("return");
               case 7:
                 input = container.querySelector('input');
                 if (input) {
-                  _context2.next = 10;
+                  _context.next = 10;
                   break;
                 }
-                return _context2.abrupt("return");
+                return _context.abrupt("return");
               case 10:
                 value = input.value;
-                useProject = document.querySelector('.js-select-current-table');
-                if (useProject) {
-                  _context2.next = 14;
+                if (value) {
+                  _context.next = 14;
                   break;
                 }
-                return _context2.abrupt("return");
+                console.warn('Input value (Driver ID) is empty.');
+                return _context.abrupt("return");
               case 14:
-                valueProject = useProject.value;
-                _context2.next = 17;
-                return getDriverById(valueProject, value, ProjectsLinks);
-              case 17:
-                driver = _context2.sent;
-                if (driver && driver.driver) {
-                  driverPhone = document.querySelector('.js-phone-driver');
-                  if (driverPhone) {
-                    driverPhone.value = driver.phone;
-                  }
-                  input.value = "(".concat(value, ") ").concat(driver.driver);
-                  console.log('driver', "".concat(value && driver.driver));
-                } else {
-                  console.log('Driver not found or error occurred.');
+                useProject = document.querySelector('.js-select-current-table');
+                if (useProject) {
+                  _context.next = 18;
+                  break;
                 }
-              case 19:
+                console.warn('Project selector not found.');
+                return _context.abrupt("return");
+              case 18:
+                valueProject = useProject.value;
+                console.log('Fetching driver for ID:', value, 'and project:', valueProject);
+                try {
+                  formData = new FormData();
+                  formData.append('action', 'get_driver_by_id');
+                  formData.append('id', value);
+                  formData.append('project', ProjectsLinks[valueProject]);
+                  options = {
+                    method: 'POST',
+                    body: formData
+                  };
+                  fetch(urlAjax, options).then(function (res) {
+                    return res.json();
+                  }).then(function (requestStatus) {
+                    if (requestStatus.success) {
+                      var driver = requestStatus.data;
+                      if (!driver) return;
+                      var driverPhone = document.querySelector('.js-phone-driver');
+                      if (driverPhone) {
+                        driverPhone.value = driver.phone;
+                      }
+                      input.value = "(".concat(value, ") ").concat(driver.driver);
+                      return true;
+                    }
+                    (0,_info_messages__WEBPACK_IMPORTED_MODULE_0__.printMessage)("".concat(requestStatus.data.message), 'danger', 8000);
+                    return false;
+                  }).catch(function (error) {
+                    (0,_info_messages__WEBPACK_IMPORTED_MODULE_0__.printMessage)("'Request failed' ".concat(error), 'danger', 8000);
+                    return false;
+                  });
+                } catch (error) {
+                  console.error('Error occurred while fetching driver:', error);
+                }
+              case 21:
               case "end":
-                return _context2.stop();
+                return _context.stop();
             }
-          }, _callee2);
+          }, _callee);
         }));
       });
     });
@@ -15232,7 +15253,8 @@ function ready() {
   (0,_components_create_report__WEBPACK_IMPORTED_MODULE_3__.quickEditInit)(urlAjax, '.js-quick-edit-ar', 'quick_update_post_ar');
   (0,_components_bookmark__WEBPACK_IMPORTED_MODULE_18__.bookmarkInit)(urlAjax);
   (0,_components_logs__WEBPACK_IMPORTED_MODULE_17__.logsInit)(urlAjax);
-  (0,_components_driver_Info__WEBPACK_IMPORTED_MODULE_10__.initGetInfoDriver)(useServices);
+  (0,_components_create_report__WEBPACK_IMPORTED_MODULE_3__.quickEditTrackingStatus)(urlAjax);
+  (0,_components_driver_Info__WEBPACK_IMPORTED_MODULE_10__.initGetInfoDriver)(urlAjax, useServices);
   (0,_components_create_report__WEBPACK_IMPORTED_MODULE_3__.additionalContactsInit)();
   (0,_components_create_report__WEBPACK_IMPORTED_MODULE_3__.addShipperPointInit)();
   (0,_components_input_helpers__WEBPACK_IMPORTED_MODULE_2__.initMoneyMask)();
@@ -15251,6 +15273,7 @@ function ready() {
   (0,_components_chow_hidden_value__WEBPACK_IMPORTED_MODULE_16__.disabledValuesInSelectInit)();
   (0,_components_input_helpers__WEBPACK_IMPORTED_MODULE_2__.quick_pay_method)();
   (0,_components_input_helpers__WEBPACK_IMPORTED_MODULE_2__.trigger_current_time)();
+  (0,_components_create_report__WEBPACK_IMPORTED_MODULE_3__.triggerDisableBtnInit)();
   var preloaders = document.querySelectorAll('.js-preloader');
   preloaders && preloaders.forEach(function (item) {
     item.remove();

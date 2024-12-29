@@ -355,6 +355,9 @@ class TMSReports extends TMSReportsHelper {
 	    LEFT JOIN $table_metacompany AS quick_pay_percent
 	        ON company.id = quick_pay_percent.post_id
 	        AND quick_pay_percent.meta_key = 'quick_pay_percent'
+        LEFT JOIN $table_metacompany AS factoring_broker
+	        ON company.id = factoring_broker.post_id
+	        AND factoring_broker.meta_key = 'factoring_broker'
 		WHERE 1=1
     ";
 		
@@ -365,6 +368,7 @@ class TMSReports extends TMSReportsHelper {
         company.mc_number,
         days_to_pay.meta_value AS days_to_pay_value,
 	    quick_pay_option.meta_value AS quick_pay_option_value,
+	    factoring_broker.meta_value AS factoring_broker_value,
 	    quick_pay_percent.meta_value AS quick_pay_percent_value" . $join_builder;
 		
 		$where_conditions = array();
@@ -1594,6 +1598,87 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 		}
 	}
 	
+	
+	public function get_driver_by_id() {
+		if (defined('DOING_AJAX') && DOING_AJAX) {
+			// Sanitize the input data
+			$MY_INPUT = filter_var_array($_POST, [
+				"id" => FILTER_SANITIZE_STRING,
+				"project" => FILTER_SANITIZE_URL,
+			]);
+			
+			$driver_id = $MY_INPUT['id'];
+			$project_url = rtrim($MY_INPUT['project'], '/'); // Remove trailing slash if any
+			
+			// Construct the API URL
+			$api_url = "{$project_url}/wp-json/wp/v2/driver-name/?driver-id={$driver_id}";
+			
+			// Initialize cURL
+			$ch = curl_init();
+			
+			// Configure cURL options
+			curl_setopt($ch, CURLOPT_URL, $api_url);
+			curl_setopt($ch, CURLOPT_RETURNTRANSFER, true); // Get the response as a string
+			curl_setopt($ch, CURLOPT_HTTPHEADER, [
+				'Content-Type: application/json',
+			]);
+			
+			// Execute the request
+			$response = curl_exec($ch);
+			
+			// Check for cURL errors
+			if (curl_errno($ch)) {
+				wp_send_json_error(['message' => 'cURL error: ' . curl_error($ch)]);
+				curl_close($ch);
+				return;
+			}
+			
+			// Get HTTP response code
+			$http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+			
+			// Close the cURL handle
+			curl_close($ch);
+			
+			// Handle the response
+			if ($http_code === 200) {
+				$response_data = json_decode($response, true);
+				
+				if ($response_data && isset($response_data['success']) && $response_data['success']) {
+					wp_send_json_success($response_data['data']);
+				} else {
+					wp_send_json_error(['message' => 'Failed to fetch driver details.']);
+				}
+			} else {
+				wp_send_json_error([
+					'message' => 'Invalid response from the API.',
+					'http_code' => $http_code,
+					'response' => $response,
+				]);
+			}
+		}
+		
+		// Exit if not an AJAX request
+		wp_die();
+	}
+	
+	public function quick_update_status () {
+		if ( defined( 'DOING_AJAX' ) && DOING_AJAX ) {
+			$MY_INPUT = filter_var_array( $_POST, [
+				'id_load' => FILTER_SANITIZE_NUMBER_INT,
+				'status' => FILTER_SANITIZE_STRING,
+			]);
+			
+			$result = $this->update_quick_status_in_db( $MY_INPUT );
+			if ( $result ) {
+				wp_send_json_success( [ 'message' => 'status successfully updated', 'data' => $MY_INPUT ] );
+			}
+			
+			wp_send_json_error( [ 'message' => 'status not update, error add in database' ] );
+		} else {
+			wp_send_json_error( [ 'message' => 'Invalid request' ] );
+		}
+	}
+	
 	/**
 	 * function remove one load by id
 	 * @return void
@@ -1943,6 +2028,66 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 		}
 		
 		return true;
+	}
+	
+	
+	public function update_quick_status_in_db( $data ) {
+		global $wpdb;
+		
+		$post_id = $data[ 'id_load' ];
+		
+		$table_name = $wpdb->prefix . $this->table_main;
+		$user_id    = get_current_user_id();
+		
+		// Определяем общие данные для обновления
+		$update_params = array(
+			'user_id_updated' => $user_id,
+			'date_updated'    => current_time( 'mysql' )
+		);
+		
+		$post_meta = array(
+			'load_status' => $data[ 'status' ],
+		);
+		
+		if ( $data[ 'status' ] === 'cancelled' ) {
+			$post_meta['booked_rate'] = '0.00';
+			$post_meta['driver_rate'] = '0.00';
+			$post_meta['profit'] = '0.00';
+		}
+		
+		// Specify the condition (WHERE clause)
+		$where = array( 'id' => $post_id );
+		
+		// Update the record in the database
+		$result = $wpdb->update( $table_name, $update_params, $where, array(
+			'%d',  // user_id_updated
+			'%s',  // date_updated
+		), array( '%d' ) );
+		
+		// Check if the update was successful
+		if ( $result !== false ) {
+			if ( $data[ 'status' ] === 'cancelled') {
+				$this->log_controller->create_one_log( array(
+					'user_id' => $user_id,
+					'post_id' => $post_id,
+					'message' => 'Set new status: '. $this->get_label_by_key($data[ 'status' ], 'statuses') . '<br>Gross, Driver Rate, Profit = 0.00',
+				) );
+			} else {
+				$this->log_controller->create_one_log( array(
+					'user_id' => $user_id,
+					'post_id' => $post_id,
+					'message' => 'Set new status: '. $this->get_label_by_key($data[ 'status' ], 'statuses'),
+				) );
+			}
+			
+			return $this->update_post_meta_data( $post_id, $post_meta ); // Update was successful
+		} else {
+			// Get the last SQL error
+			$error = $wpdb->last_error;
+			
+			// Return a generic database error if no specific match is found
+			return new WP_Error( 'db_error', 'Error updating the company report in the database: ' . $error );
+		}
 	}
 	
 	public function update_quick_data_ar_in_db( $data ) {
@@ -2898,9 +3043,11 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 		add_action( 'wp_ajax_update_post_status', array( $this, 'update_post_status' ) );
 		add_action( 'wp_ajax_rechange_status_load', array( $this, 'rechange_status_load' ) );
 		add_action( 'wp_ajax_remove_one_load', array( $this, 'remove_one_load' ) );
+		add_action( 'wp_ajax_get_driver_by_id', array( $this, 'get_driver_by_id' ) );
 		add_action( 'wp_ajax_update_accounting_report', array( $this, 'update_accounting_report' ) );
 		add_action( 'wp_ajax_quick_update_post', array( $this, 'quick_update_post' ) );
 		add_action( 'wp_ajax_quick_update_post_ar', array( $this, 'quick_update_post_ar' ) );
+		add_action( 'wp_ajax_quick_update_status', array( $this, 'quick_update_status' ) );
 	}
 	
 	/**

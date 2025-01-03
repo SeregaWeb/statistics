@@ -112,7 +112,7 @@ if ( ! empty( $results ) ) : ?>
             
 			?>
 
-            <tr>
+            <tr class="<?php echo 'status-tracking-'. $status; ?>">
 
                 <td>
                     <div class="d-flex gap-1 align-items-center">

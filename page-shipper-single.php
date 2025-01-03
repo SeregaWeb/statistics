@@ -210,7 +210,7 @@ if ( ! empty( $shipper_fields ) ) {
                                 <div class="form-group mt-3 col-6">
                                     <label for="input-phone" class="form-label">Phone Number</label>
                                     <input id="input-phone" type="text" name="Phone" placeholder="Phone"
-                                           class="form-control" value="<?php echo htmlspecialchars($shipper_fields['phone_number']); ?>">
+                                           class="form-control js-tel-mask" value="<?php echo htmlspecialchars($shipper_fields['phone_number']); ?>">
                                 </div>
 
                                 <div class="form-group mt-3 col-6">

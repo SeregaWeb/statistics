@@ -43,6 +43,7 @@ if ( ! empty( $results ) ) : ?>
             <th scope="col">Booked rate</th>
             <th scope="col">Driver rate</th>
             <th scope="col">Profit</th>
+            <th scope="col">Miles</th>
             <th scope="col">Pick Up Date</th>
             <th scope="col">Load status</th>
             <th scope="col">Instructions</th>
@@ -89,8 +90,13 @@ if ( ! empty( $results ) ) : ?>
 	        $booked_rate = esc_html('$' . $helper->format_currency($booked_rate_raw));
 	        
 	        $driver_rate_raw = get_field_value($meta, 'driver_rate');
+         
 	        $driver_rate = esc_html('$' . $helper->format_currency($driver_rate_raw));
 	        
+	        $all_miles = get_field_value($meta, 'all_miles');
+            
+            $miles = $helper->calculate_price_per_mile( $booked_rate_raw, $driver_rate_raw, $all_miles );
+
 	        $profit_raw = get_field_value($meta, 'profit');
 	        $profit_class = $profit_raw < 0 ? 'modified-price' : '';
 	        $profit = esc_html('$' . $helper->format_currency($profit_raw));
@@ -131,7 +137,7 @@ if ( ! empty( $results ) ) : ?>
 			?>
         
             <?php if($show_separator): ?>
-                <tr><td colspan="13" class="separator-date"><?php echo $date_booked; ?></td></tr>
+                <tr><td colspan="14" class="separator-date"><?php echo $date_booked; ?></td></tr>
             <?php endif; ?>
 
             <tr class="">
@@ -203,12 +209,22 @@ if ( ! empty( $results ) ) : ?>
                     </div>
                 </td>
                 
-                <td><span class="<?php echo $modify_booked_price_class; ?>"><?php echo $booked_rate; ?></span></td>
+                <td>
+                    <span class="<?php echo $modify_booked_price_class; ?>"><?php echo $booked_rate; ?></span>
+                    <?php if ($miles['booked_rate_per_mile'] != 0 && $miles['booked_rate_per_mile'] != '0'): ?>
+                    <p class="text-small mb-0 mt-1"><?php echo '$'. $miles['booked_rate_per_mile'] . ' per mile' ?></p>
+                    <?php endif; ?>
+                </td>
         
-                <td><?php echo $driver_rate; ?></td>
+                <td>
+                    <span><?php echo $driver_rate; ?></span>
+	                <?php if ($miles['driver_rate_per_mile'] != 0 && $miles['driver_rate_per_mile'] != '0'): ?>
+                        <p class="text-small mb-0 mt-1"><?php echo '$'. $miles['driver_rate_per_mile'] . ' per mile' ?></p>
+	                <?php endif; ?>
+                </td>
                     
                 <td><span class="<?php echo $profit_class; ?>"><?php echo $profit; ?></span></td>
-
+                <td><?php if ($all_miles && is_numeric($all_miles)) { echo $all_miles ;} ?></td>
                 <td><?php echo $pick_up_date; ?></td>
             
                 <td class="<?php echo $status_class; ?>"><span><?php echo $status; ?></span></td>

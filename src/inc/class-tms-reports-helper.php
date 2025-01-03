@@ -759,5 +759,104 @@ class TMSReportsHelper extends TMSReportsIcons {
 		return str_ends_with($formatted, '.00') ? str_replace( '.00', '', $formatted ) : $formatted;
 	}
 	
+	function get_week_dates_from_monday($date = null) {
+		// Если дата не передана, использовать текущую
+		$current_date = $date ? new DateTime($date) : new DateTime();
+		
+		// Найти ближайший понедельник
+		$current_day = $current_date->format('w'); // 0 (вс) - 6 (сб)
+		$days_to_monday = ($current_day == 0) ? 6 : $current_day - 1; // Дни до понедельника
+		$monday = $current_date->modify("-$days_to_monday days");
+		
+		// Получить даты с понедельника по воскресенье
+		$week_dates = [];
+		for ($i = 0; $i < 7; $i++) {
+			$week_dates[] = $monday->format('m/d/Y');
+			$monday->modify('+1 day');
+		}
+		
+		return $week_dates;
+	}
+	
+	function merge_unique_dispatchers($array1, $array2) {
+		$merged = array_merge($array1, $array2);
+		$unique = [];
+		$ids = [];
+		
+		foreach ($merged as $dispatcher) {
+			if (!in_array($dispatcher['id'], $ids)) {
+				$ids[] = $dispatcher['id'];
+				$unique[] = $dispatcher;
+			}
+		}
+		
+		return $unique;
+	}
+	
+	function generateWeeks($date_select = null) {
+		$startDate = new DateTime('2024-12-02');
+		$startDate->modify('Monday this week'); // Find the first Monday before or on the start date
+		$endDate = new DateTime(); // Current date
+		
+		$options = "";
+		$currentMonth = '';
+		
+		while ($startDate <= $endDate) {
+			$monday = clone $startDate;
+			$sunday = clone $startDate;
+			$sunday->modify('Sunday this week');
+			
+			$optionValue = $monday->format('Y-m-d');
+			$optionLabel = $monday->format('M d') . ' - ' . $sunday->format('M d') . ' ' . $monday->format('Y');
+			
+			// Add a month separator if a new month is encountered
+			if ($currentMonth !== $monday->format('F Y')) {
+				$currentMonth = $monday->format('F Y');
+				$options .= "<option disabled>--{$currentMonth}--</option>\n";
+			}
+			
+            $selected = '';
+            
+            if ($date_select === $optionValue) {
+                $selected = 'selected';
+            }
+            
+			$options .= "<option ".$selected." value=\"{$optionValue}\">{$optionLabel}</option>\n";
+			
+			$startDate->modify('+1 week'); // Move to the next week
+		}
+		
+		return $options;
+	}
+	
+	public function is_valid_date($date) {
+		// Check if the date is a valid format and not '0000-00-00'
+		$date_object = DateTime::createFromFormat('Y-m-d', $date);
+		return $date_object && $date_object->format('Y-m-d') === $date && $date !== '0000-00-00';
+	}
+	
+	function calculate_price_per_mile($booked_rate_raw, $driver_rate_raw, $all_miles) {
+		// Преобразуем входные данные в числа
+		$booked_rate = is_numeric($booked_rate_raw) ? floatval($booked_rate_raw) : 0.0;
+		$driver_rate = is_numeric($driver_rate_raw) ? floatval($driver_rate_raw) : 0.0;
+		$miles = is_numeric($all_miles) ? floatval($all_miles) : 0.0;
+		
+		// Проверяем, чтобы количество миль было больше 0
+		if ($miles > 0) {
+			$booked_rate_per_mile = $booked_rate / $miles;
+			$driver_rate_per_mile = $driver_rate / $miles;
+		} else {
+			// Если миль нет, цена за милю неопределена
+			$booked_rate_per_mile = 0.0;
+			$driver_rate_per_mile = 0.0;
+		}
+		
+		// Возвращаем результаты
+		return [
+			'booked_rate_per_mile' => round($booked_rate_per_mile, 2),
+			'driver_rate_per_mile' => round($driver_rate_per_mile, 2),
+		];
+	}
+	
 }
 

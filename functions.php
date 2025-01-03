@@ -27,6 +27,7 @@ require THEME_DIR . '/src/inc/class-tms-reports-company.php';
 require THEME_DIR . '/src/inc/class-tms-reports-shipper.php';
 require THEME_DIR . '/src/inc/class-tms-emails.php';
 require THEME_DIR . '/src/inc/class-tms-logs.php';
+require THEME_DIR . '/src/inc/class-tms-performance.php';
 
 require THEME_DIR . '/src/inc/initial-setup.php';
 require THEME_DIR . '/src/inc/enqueue-scripts.php';

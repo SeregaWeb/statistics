@@ -100,3 +100,17 @@ $color_accounting_others: #ff0000;
         background: #ff0000 !important;
     }
 }
+
+.status-tracking-loaded-enroute {
+    background-color: #effee9;
+    td {
+        background-color: transparent !important;
+    }
+}
+
+.status-tracking-at-del {
+    background-color: #d9facb;
+    td {
+        background-color: transparent !important;
+    }
+}

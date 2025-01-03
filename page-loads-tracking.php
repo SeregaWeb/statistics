@@ -33,8 +33,9 @@ $items['page_type'] = $post_tp;
                         
                     </div>
                     <div class="col-12">
-
-						<?php
+	                    <?php
+	                    echo esc_html( get_template_part( 'src/template-parts/report/report', 'filter-tracking') );
+	                 
 						echo esc_html( get_template_part( 'src/template-parts/report/report', 'table-tracking', $items ) );
 						?>
 

@@ -61,26 +61,22 @@ if ( function_exists( 'get_field' ) ) {
 
 <pre class="d-none">
 
-Любые телефоны в формате: (954) 398-4969
-Performance
+<!--Любые телефоны в формате: (954) 398-4969-->
+<!--Performance-->
 
-Добавить колонку Miles которая бы считала мили от Pick up до Delivery. В случае множества pickups & deliveries считать цепочкой в порядке заданном диспетчером при добавлении груза.
-
-Под Booked rate добавить (Booker rate деленный на miles)
-Под Driver rate добавить (Driver rate деленный на miles)
-
-пример:    Driver rate: $1000, Miles: 1142    1000 / 1142 = $0.87
+<!--Добавить колонку Miles которая бы считала мили от Pick up до Delivery. В случае множества pickups & deliveries считать цепочкой в порядке заданном диспетчером при добавлении груза.-->
+<!---->
+<!--Под Booked rate добавить (Booker rate деленный на miles)-->
+<!--Под Driver rate добавить (Driver rate деленный на miles)-->
+<!---->
+<!--пример: Driver rate: $1000, Miles: 1142  1000 / 1142 = $0.87-->
 
 - после статуса пейд закрывать полностью лоад
 - сгружаем логи
 - при выборе статуса Paid вывессти предупреждение
 - после закрытия лоада ничего нельзя редактировать всем кроме админа
 
-Perf. = (1 call x 1%) + (1 load x 20%) + (каждые $10 x 1%)
-
-<!--лоадс - добавить номер телефона под водилой-->
-
-в лоадсах посмотреть формат xxx.5 заменить на общий формат для денег
+<!--Perf. = (1 call x 1%) + (1 load x 20%) + (каждые $10 x 1%)-->
 
 </pre>
 
@@ -166,7 +162,7 @@ Perf. = (1 call x 1%) + (1 load x 20%) + (каждые $10 x 1%)
                         </ul>
                          <a class="left-sidebar__btn small" href="<?php echo $first_link; ?>">
                             <?php if (!empty($block['icon'])): ?>
-                            <img class="left-sidebar__icon" src="<?php echo $block['icon'] ?>" alt="icon">
+                            <img class="left-sidebar__icon" src="<?php echo wp_get_attachment_image_url($block['icon']); ?>" alt="icon">
                             <?php endif; ?>
                         </a>
                     </div>

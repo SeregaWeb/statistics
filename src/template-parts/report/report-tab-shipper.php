@@ -20,6 +20,7 @@ if ( $report_object ) {
         $pick_up_location = get_field_value($meta, 'pick_up_location');
         $delivery_location = get_field_value($meta, 'delivery_location');
 		$reference_number    = get_field_value($meta, 'reference_number');
+		$all_miles    = get_field_value($meta, 'all_miles');
 		
 		$post_status         = get_field_value( $main, 'status_post' );
   
@@ -131,10 +132,16 @@ if ( $report_object ) {
         </div>
         
         <div class="col-12"></div>
-
+        
         <div class="col-12 mt-3 mb-5 justify-content-start gap-2">
             <button class="btn btn-outline-primary js-add-point js-add-ship">Add stop</button>
             <button class="btn btn-primary d-none js-add-point js-end-edit-ship">End edit</button>
+        </div>
+
+        <div class="mb-2 col-12 col-xl-4">
+            <label for="all_miles" class="form-label m-0">Enter route length in miles</label>
+            <p class="text-small mt-0">Enter mileage to see rate per mile.</p>
+            <input value="<?php echo $all_miles; ?>" type="number" step="0.1" name="all_miles" class="form-control">
         </div>
         
         <?php endif; ?>

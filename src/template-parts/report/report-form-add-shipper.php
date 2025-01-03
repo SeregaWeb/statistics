@@ -84,7 +84,7 @@ $states = $helper->get_states();
 		
 		<div class="form-group mt-3 col-6">
 			<label for="input-phone" class="form-label">Phone Number</label>
-			<input id="input-phone" type="text" name="Phone" placeholder="Phone" class="form-control">
+			<input id="input-phone" type="text" name="Phone" placeholder="Phone" class="form-control js-tel-mask">
 		</div>
 		
 		<div class="form-group mt-3 col-6">

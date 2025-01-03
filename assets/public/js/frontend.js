@@ -4385,10 +4385,21 @@ var quickEditTrackingStatus = function quickEditTrackingStatus(ajaxUrl) {
 };
 var triggerDisableBtnInit = function triggerDisableBtnInit() {
   var triggers = document.querySelectorAll('.js-trigger-disable-btn');
+  var inputs = document.querySelectorAll('.js-disable-container-trigger');
   triggers && triggers.forEach(function (item) {
     item.addEventListener('change', function (e) {
       e.preventDefault();
       var form = e.target.closest('form');
+      if (form) {
+        var btn = form.querySelector('button');
+        btn.removeAttribute('disabled');
+      }
+    });
+  });
+  inputs && inputs.forEach(function (item) {
+    item.addEventListener('input', function (e) {
+      e.preventDefault();
+      var form = e.target.closest('.js-disable-container');
       if (form) {
         var btn = form.querySelector('button');
         btn.removeAttribute('disabled');
@@ -4974,6 +4985,65 @@ var logsInit = function logsInit(ajaxUrl) {
 
 /***/ }),
 
+/***/ "./src/js/components/performance.ts":
+/*!******************************************!*\
+  !*** ./src/js/components/performance.ts ***!
+  \******************************************/
+/***/ (function(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   sendUpdatePerformance: function() { return /* binding */ sendUpdatePerformance; }
+/* harmony export */ });
+/* harmony import */ var _info_messages__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./info-messages */ "./src/js/components/info-messages.ts");
+
+function collectFormData(parentRow) {
+  var formData = new FormData();
+  var inputs = parentRow.querySelectorAll('input, select, textarea');
+  inputs.forEach(function (input) {
+    var name = input.name;
+    var value = input.value;
+    formData.append(name, value);
+  });
+  return formData;
+}
+var sendUpdatePerformance = function sendUpdatePerformance(ajaxUrl) {
+  var fakeFormSendButtons = document.querySelectorAll('.js-fake-form-send');
+  if (fakeFormSendButtons) {
+    fakeFormSendButtons.forEach(function (item) {
+      item.addEventListener('click', function (event) {
+        var parentRow = event.target.closest('.js-fake-form');
+        if (parentRow) {
+          var formData = collectFormData(parentRow);
+          formData.append('action', 'update_performance');
+          console.log(formData);
+          var options = {
+            method: 'POST',
+            body: formData
+          };
+          fetch(ajaxUrl, options).then(function (res) {
+            return res.json();
+          }).then(function (requestStatus) {
+            if (requestStatus.success) {
+              console.log('Performance update successfully:', requestStatus.data);
+              (0,_info_messages__WEBPACK_IMPORTED_MODULE_0__.printMessage)(requestStatus.data.message, 'success', 8000);
+              window.location.reload();
+            } else {
+              (0,_info_messages__WEBPACK_IMPORTED_MODULE_0__.printMessage)("Error update performance: ".concat(requestStatus.data.message), 'danger', 8000);
+            }
+          }).catch(function (error) {
+            (0,_info_messages__WEBPACK_IMPORTED_MODULE_0__.printMessage)("Request failed: ".concat(error), 'danger', 8000);
+            console.error('Request failed:', error);
+          });
+        }
+      });
+    });
+  }
+};
+
+/***/ }),
+
 /***/ "./src/js/components/search-action.ts":
 /*!********************************************!*\
   !*** ./src/js/components/search-action.ts ***!
@@ -5151,6 +5221,42 @@ var nextTabTrigger = function nextTabTrigger() {
       console.log('nextTargetTab', nextTargetTab, document.getElementById(nextTargetTab));
       var tab = new bootstrap__WEBPACK_IMPORTED_MODULE_0__.Tab(document.getElementById(nextTargetTab));
       tab.show();
+    });
+  });
+};
+
+/***/ }),
+
+/***/ "./src/js/components/tel-mask.ts":
+/*!***************************************!*\
+  !*** ./src/js/components/tel-mask.ts ***!
+  \***************************************/
+/***/ (function(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   telMaskInit: function() { return /* binding */ telMaskInit; }
+/* harmony export */ });
+var maskTel = function maskTel(target) {
+  var x1 = target.value.replace(/\D/g, '').match(/(\d{3})/);
+  var x2 = target.value.replace(/\D/g, '').match(/(\d{3})(\d{3})/);
+  var x3 = target.value.replace(/\D/g, '').match(/(\d{3})(\d{3})(\d{4})/);
+  if (x3) {
+    target.classList.remove('error-tel');
+    target.value = "(".concat(x3[1], ") ").concat(x3[2], "-").concat(x3[3]);
+  } else {
+    target.classList.add('error-tel');
+  }
+};
+var telMaskInit = function telMaskInit() {
+  var telInputs = document.querySelectorAll('.js-tel-mask');
+  telInputs && telInputs.forEach(function (tel) {
+    tel.addEventListener('input', function (event) {
+      maskTel(event.target);
+    });
+    tel.addEventListener('change', function (event) {
+      maskTel(event.target);
     });
   });
 };
@@ -15200,6 +15306,10 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _components_chow_hidden_value__WEBPACK_IMPORTED_MODULE_16__ = __webpack_require__(/*! ./components/chow-hidden-value */ "./src/js/components/chow-hidden-value.ts");
 /* harmony import */ var _components_logs__WEBPACK_IMPORTED_MODULE_17__ = __webpack_require__(/*! ./components/logs */ "./src/js/components/logs.ts");
 /* harmony import */ var _components_bookmark__WEBPACK_IMPORTED_MODULE_18__ = __webpack_require__(/*! ./components/bookmark */ "./src/js/components/bookmark.ts");
+/* harmony import */ var _components_performance__WEBPACK_IMPORTED_MODULE_19__ = __webpack_require__(/*! ./components/performance */ "./src/js/components/performance.ts");
+/* harmony import */ var _components_tel_mask__WEBPACK_IMPORTED_MODULE_20__ = __webpack_require__(/*! ./components/tel-mask */ "./src/js/components/tel-mask.ts");
+
+
 
 
 
@@ -15254,6 +15364,7 @@ function ready() {
   (0,_components_bookmark__WEBPACK_IMPORTED_MODULE_18__.bookmarkInit)(urlAjax);
   (0,_components_logs__WEBPACK_IMPORTED_MODULE_17__.logsInit)(urlAjax);
   (0,_components_create_report__WEBPACK_IMPORTED_MODULE_3__.quickEditTrackingStatus)(urlAjax);
+  (0,_components_performance__WEBPACK_IMPORTED_MODULE_19__.sendUpdatePerformance)(urlAjax);
   (0,_components_driver_Info__WEBPACK_IMPORTED_MODULE_10__.initGetInfoDriver)(urlAjax, useServices);
   (0,_components_create_report__WEBPACK_IMPORTED_MODULE_3__.additionalContactsInit)();
   (0,_components_create_report__WEBPACK_IMPORTED_MODULE_3__.addShipperPointInit)();
@@ -15274,6 +15385,7 @@ function ready() {
   (0,_components_input_helpers__WEBPACK_IMPORTED_MODULE_2__.quick_pay_method)();
   (0,_components_input_helpers__WEBPACK_IMPORTED_MODULE_2__.trigger_current_time)();
   (0,_components_create_report__WEBPACK_IMPORTED_MODULE_3__.triggerDisableBtnInit)();
+  (0,_components_tel_mask__WEBPACK_IMPORTED_MODULE_20__.telMaskInit)();
   var preloaders = document.querySelectorAll('.js-preloader');
   preloaders && preloaders.forEach(function (item) {
     item.remove();

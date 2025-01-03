@@ -93,7 +93,7 @@ $curent_tables = get_field('current_select', 'user_'.$user_id);
 		
 		<div class="form-group mt-3 col-6">
 			<label for="input-phone" class="form-label">Phone Number <span class="required-star text-danger">*</span></label>
-			<input id="input-phone" required type="text" name="Phone" placeholder="Phone" class="form-control">
+			<input id="input-phone" required type="text" name="Phone" placeholder="Phone" class="form-control js-tel-mask">
 		</div>
 		
 		<div class="form-group mt-3 col-6">

@@ -1269,6 +1269,7 @@ export const quickEditTrackingStatus = (ajaxUrl) => {
 
 export const triggerDisableBtnInit = () => {
     const triggers = document.querySelectorAll('.js-trigger-disable-btn');
+    const inputs = document.querySelectorAll('.js-disable-container-trigger');
 
     triggers &&
         triggers.forEach((item) => {
@@ -1277,6 +1278,22 @@ export const triggerDisableBtnInit = () => {
 
                 // @ts-ignore
                 const form = e.target.closest('form');
+
+                if (form) {
+                    const btn = form.querySelector('button');
+
+                    btn.removeAttribute('disabled');
+                }
+            });
+        });
+
+    inputs &&
+        inputs.forEach((item) => {
+            item.addEventListener('input', (e) => {
+                e.preventDefault();
+
+                // @ts-ignore
+                const form = e.target.closest('.js-disable-container');
 
                 if (form) {
                     const btn = form.querySelector('button');

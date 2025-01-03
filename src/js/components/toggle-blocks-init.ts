@@ -1,7 +1,6 @@
 // eslint-disable-next-line import/prefer-default-export
 export const toggleBlocksInit = () => {
     const toggleElements = document.querySelectorAll('.js-toggle');
-
     toggleElements &&
         toggleElements.forEach((item) => {
             item.addEventListener('click', (event) => {
@@ -22,7 +21,6 @@ export const toggleBlocksInit = () => {
 
 export const toggleCheckboxInit = () => {
     const toggleElements = document.querySelectorAll('.js-switch-toggle');
-
     toggleElements &&
         toggleElements.forEach((item) => {
             item.addEventListener('change', (event) => {

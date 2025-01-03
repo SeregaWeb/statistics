@@ -87,7 +87,8 @@
                         "tracking": "Tracking",
                         "billing": "Billing",
                         "recruiter": "Recruiter",
-                        "accounting": "Accounting"
+                        "accounting": "Accounting",
+                        "moderator": "Moderator"
                     },
                     "default_value": [],
                     "return_format": "value",
@@ -213,7 +214,8 @@
                                 "tracking": "Tracking",
                                 "billing": "Billing",
                                 "recruiter": "Recruiter",
-                                "accounting": "Accounting"
+                                "accounting": "Accounting",
+                                "moderator": "Moderator"
                             },
                             "default_value": [],
                             "return_format": "value",
@@ -521,5 +523,5 @@
     "active": true,
     "description": "",
     "show_in_rest": 0,
-    "modified": 1732448133
+    "modified": 1735843557
 }

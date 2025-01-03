@@ -356,7 +356,7 @@ if ( ! empty( $broker ) ) {
                                         <label for="input-phone" class="form-label">Phone Number <span
                                                     class="required-star text-danger">*</span></label>
                                         <input id="input-phone" required type="text" name="Phone" placeholder="Phone"
-                                               class="form-control"
+                                               class="form-control js-tel-mask"
                                                value="<?php echo fill_field( 'phone_number', $broker_data ); ?>">
                                     </div>
 
@@ -445,7 +445,7 @@ if ( ! empty( $broker ) ) {
                                             Number </label>
                                         <input id="accounting-input-phone" type="text" name="accounting_phone"
                                                placeholder="Phone"
-                                               class="form-control"
+                                               class="form-control js-tel-mask"
                                                value="<?php echo fill_field( 'accounting_phone', $broker_meta ); ?>">
                                     </div>
 

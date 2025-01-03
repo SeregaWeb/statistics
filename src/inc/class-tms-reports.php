@@ -2366,6 +2366,7 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 		$post_meta = array(
 			'pick_up_location'  => $data[ 'pick_up_location_json' ],
 			'delivery_location' => $data[ 'delivery_location_json' ],
+			'all_miles'         => $data[ 'all_miles' ]
 		);
 		
 		// Specify the condition (WHERE clause)

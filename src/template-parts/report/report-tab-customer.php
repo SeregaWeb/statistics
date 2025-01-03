@@ -135,7 +135,7 @@ if ( $report_object ) {
                         <input id="contact-input-phone" required type="tel"
                                name="contact_phone"
                                value="<?php echo $value_contact_phone; ?>"
-                               placeholder="Phone" class="form-control">
+                               placeholder="Phone" class="form-control js-tel-mask">
 					
 					<?php else: ?>
                         <p><strong><?php echo $value_contact_phone; ?></strong></p>
@@ -182,10 +182,10 @@ if ( $report_object ) {
                         </div>
 
                         <div class="form-group mt-3 col-12 col-md-4">
-                            <label for="contact-input-phone" class="form-label">Phone Number</label>
+                            <label for="contact-input-phone" class="form-label ">Phone Number</label>
                             <input id="contact-input-phone" type="tel"
                                    name="additional_form_contact_phone"
-                                   placeholder="Phone" class="form-control">
+                                   placeholder="Phone" class="form-control js-tel-mask">
                         </div>
 
                         <div class="form-group mt-3 col-12 col-md-4">

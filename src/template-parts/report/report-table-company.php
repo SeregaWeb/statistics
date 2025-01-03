@@ -66,8 +66,8 @@ if ( ! empty( $results ) ) :
 				<td><?php echo esc_html( $row['dot_number'] ); ?></td>
 				<td><?php echo esc_html( $platform ); ?></td>
 				<td><?php echo esc_html( $completed_keys_string ); ?></td>
-                <td><?php echo $profit['booked_rate_total']; ?></td>
-                <td><?php echo $profit['profit_total']; ?></td>
+                <td><?php echo $profit['booked_rate_total'] === 0 ? '' : $profit['booked_rate_total']; ?></td>
+                <td><?php echo $profit['profit_total'] === 0 ? '' : $profit['profit_total']; ?></td>
 			</tr>
 		<?php endforeach; ?>
 		</tbody>

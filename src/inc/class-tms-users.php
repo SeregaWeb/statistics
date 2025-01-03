@@ -101,6 +101,11 @@ class  TMSUsers extends TMSReportsHelper {
 			'edit_posts'   => true,
 			'upload_files' => true,
 		] );
+		add_role( 'moderator', 'Moderator', [
+			'read'         => true,
+			'edit_posts'   => true,
+			'upload_files' => true,
+		] );
 		
 	}
 	
@@ -123,6 +128,7 @@ class  TMSUsers extends TMSReportsHelper {
 			'recruiter'     => 'Recruiter',
 			'administrator' => 'Administrator',
 			'accounting'    => 'Accounting',
+			'moderator'     => 'Moderator',
 		);
 		
 		return $array_labels[ $key ];

@@ -379,7 +379,7 @@ $read_only = $TMSUsers->check_read_only($post_status);
 
         <div class="mb-2 col-12 col-md-6 col-xl-4">
             <label for="driver_phone" class="form-label ">Driver phone</label>
-            <input type="text" data-value="<?php echo $driver_phone; ?>" <?php echo $tbd ? 'readonly' : ''; ?> name="driver_phone" value="<?php echo $driver_phone; ?>" class="form-control js-phone-driver" required>
+            <input type="text" data-value="<?php echo $driver_phone; ?>" <?php echo $tbd ? 'readonly' : ''; ?> name="driver_phone" value="<?php echo $driver_phone; ?>" class="form-control js-tel-mask js-phone-driver" required>
             <input type="hidden" name="old_driver_phone" value="<?php echo $driver_phone; ?>">
         </div>
 

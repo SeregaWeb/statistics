@@ -40,6 +40,8 @@ import { cleanUrlByFilter, cleanUrlByFilterAr, cleanUrlByFilterPlatform } from '
 import { disabledValuesInSelectInit, showHiddenValueInit } from './components/chow-hidden-value';
 import { logsInit } from './components/logs';
 import { bookmarkInit } from './components/bookmark';
+import { sendUpdatePerformance } from './components/performance';
+import { telMaskInit } from './components/tel-mask';
 
 function ready() {
     console.log('ready');
@@ -85,6 +87,7 @@ function ready() {
     bookmarkInit(urlAjax);
     logsInit(urlAjax);
     quickEditTrackingStatus(urlAjax);
+    sendUpdatePerformance(urlAjax);
     // API request
     initGetInfoDriver(urlAjax, useServices);
 
@@ -108,6 +111,8 @@ function ready() {
     quick_pay_method();
     trigger_current_time();
     triggerDisableBtnInit();
+
+    telMaskInit();
 
     const preloaders = document.querySelectorAll('.js-preloader');
     preloaders &&

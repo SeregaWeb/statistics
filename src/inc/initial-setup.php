@@ -49,6 +49,9 @@ $reportsShipper->init();
 $reportsLogs = new TMSLogs();
 $reportsLogs->init();
 
+$reportsPerformance = new TMSReportsPerformance();
+$reportsPerformance->init();
+
 /**
  * Sanitize uploaded file name
  */

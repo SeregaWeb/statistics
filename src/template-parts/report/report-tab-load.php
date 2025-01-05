@@ -194,8 +194,8 @@ $read_only = $TMSUsers->check_read_only($post_status);
                 <?php endif; ?>
                 
 				<?php if ( is_array( $statuses ) ): ?>
-					<?php foreach ( $statuses as $key => $status ): ?>
-                        <option <?php echo $load_status === $key ? 'selected' : ''; echo isset($disable_status) && $key === 'delivered' ? 'disabled' : ''; ?> value="<?php echo $key; ?>">
+					<?php foreach ( $statuses as $key => $status ):  ?>
+                        <option <?php echo $load_status === $key ? 'selected' : ''; echo isset($disable_status) && $key === 'delivered' ? ' disabled' : ''; ?> value="<?php echo $key; ?>">
 							<?php echo $status; ?>
                         </option>
 					<?php endforeach; ?>

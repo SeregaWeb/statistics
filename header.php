@@ -29,10 +29,7 @@ if ( ! empty( $user->roles ) ) {
     $role = $user->roles[ 0 ];
 }
 
-
-
 $sidebar = get_field_value($global_options, 'sidebar_blocks');
-
 
 if ( function_exists( 'get_field' ) ) {
     $page_class = ( get_field( 'body_class', $page_id ) ) ?: '';
@@ -61,22 +58,10 @@ if ( function_exists( 'get_field' ) ) {
 
 <pre class="d-none">
 
-<!--Любые телефоны в формате: (954) 398-4969-->
-<!--Performance-->
-
-<!--Добавить колонку Miles которая бы считала мили от Pick up до Delivery. В случае множества pickups & deliveries считать цепочкой в порядке заданном диспетчером при добавлении груза.-->
-<!---->
-<!--Под Booked rate добавить (Booker rate деленный на miles)-->
-<!--Под Driver rate добавить (Driver rate деленный на miles)-->
-<!---->
-<!--пример: Driver rate: $1000, Miles: 1142  1000 / 1142 = $0.87-->
-
 - после статуса пейд закрывать полностью лоад
 - сгружаем логи
 - при выборе статуса Paid вывессти предупреждение
 - после закрытия лоада ничего нельзя редактировать всем кроме админа
-
-<!--Perf. = (1 call x 1%) + (1 load x 20%) + (каждые $10 x 1%)-->
 
 </pre>
 

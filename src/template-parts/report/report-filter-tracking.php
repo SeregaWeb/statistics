@@ -5,6 +5,7 @@ $statuses = $helper->get_statuses();
 $search = get_field_value($_GET, 'my_search');
 $load_status = get_field_value($_GET, 'load_status');
 
+$hide_status = get_field_value($args, 'hide_status');
 ?>
 
 <nav class="navbar mb-5 mt-3 navbar-expand-lg navbar-light" >
@@ -19,7 +20,7 @@ $load_status = get_field_value($_GET, 'load_status');
 				<button class="btn btn-outline-dark" type="submit">Search</button>
 			</div>
             <div class="d-flex gap-1">
-
+                <?php if (!$hide_status) :?>
                 <select class="form-select w-auto" name="load_status" aria-label=".form-select-sm example">
                     <option value="">Load status</option>
 					<?php if (is_array($statuses)): ?>
@@ -30,7 +31,8 @@ $load_status = get_field_value($_GET, 'load_status');
 						<?php endforeach; ?>
 					<?php endif; ?>
                 </select>
-
+                <?php endif; ?>
+        
                 <?php if (!empty($_GET)): ?>
                 <a class="btn btn-outline-danger" href="<?php echo get_the_permalink(); ?>">Reset</a>
                 <?php endif; ?>

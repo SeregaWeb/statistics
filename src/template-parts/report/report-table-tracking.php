@@ -14,6 +14,7 @@ $total_pages   = get_field_value($args, 'total_pages');
 $current_pages = get_field_value($args, 'current_pages');
 $is_draft      = get_field_value($args, 'is_draft');
 $page_type     =  get_field_value($args, 'page_type');
+$archive     =  get_field_value($args, 'archive');
 
 $current_user_id = get_current_user_id();
 
@@ -105,6 +106,13 @@ if ( ! empty( $results ) ) : ?>
 			
 			if (!$broker_name) {
 				$broker_name = "N/A";
+			}
+			
+			$disable_status = false;
+			
+			$proof_of_delivery   = get_field_value($meta, 'proof_of_delivery');
+			if (!is_numeric($proof_of_delivery)) {
+				$disable_status = true;
 			}
             
             
@@ -220,12 +228,13 @@ if ( ! empty( $results ) ) : ?>
                 </td>
 
                 <td class="">
+                    <?php if (!$archive): ?>
                     <form class="js-save-status d-flex gap-1 align-items-center form-quick-tracking" >
                         <input type="hidden" name="id_load" value="<?php echo $row[ 'id' ]; ?>">
                         <?php if (is_array($all_statuses)) { ?>
                             <select name="status" class="js-trigger-disable-btn" >
                                 <?php foreach ($all_statuses as $key => $st):?>
-                                    <option <?php echo $key === $status ? 'selected' : ''; ?> value="<?php echo $key; ?>"><?php echo $st; ?></option>
+                                    <option <?php echo $key === $status ? 'selected' : ''; ?> <?php echo $disable_status && $key === 'delivered' ? ' disabled' : ''; ?> value="<?php echo $key; ?>"><?php echo $st; ?></option>
                                 <?php endforeach; ?>
                             </select>
                         <?php } ?>
@@ -233,6 +242,9 @@ if ( ! empty( $results ) ) : ?>
                             <?php echo $helper->get_icon_save(); ?>
                         </button>
                     </form>
+                    <?php else:
+                        echo $helper->get_label_by_key($status,'statuses');
+                    endif; ?>
                 </td>
                 
                 <td>

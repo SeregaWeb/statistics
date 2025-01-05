@@ -17,8 +17,10 @@ export const cleanUrlByFilter = () => {
             const source = form.elements.namedItem('source') as HTMLInputElement | null;
             const factoring = form.elements.namedItem('factoring') as HTMLInputElement | null;
             const invoice = form.elements.namedItem('invoice') as HTMLInputElement | null;
+            const office = form.elements.namedItem('office') as HTMLInputElement | null;
 
             // Проверяем и добавляем параметры только если элементы существуют и не пусты
+            if (office?.value) params.append('office', office.value);
             if (fmonth?.value) params.append('fmonth', fmonth.value);
             if (fyear?.value) params.append('fyear', fyear.value);
             if (dispatcher?.value) params.append('dispatcher', dispatcher.value);

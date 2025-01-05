@@ -37,6 +37,7 @@ if ( $report_object ) {
 		$current_company          = $company->get_company_by_id( $id_customer );
 		$value_contact_name       = get_field_value( $meta, 'contact_name' );
 		$value_contact_phone      = get_field_value( $meta, 'contact_phone' );
+		$value_contact_phone_ext  = get_field_value( $meta, 'contact_phone_ext' );
 		$value_contact_email      = get_field_value( $meta, 'contact_email' );
 		$additional_contacts_json = get_field_value( $meta, 'additional_contacts' );
 		$post_status              = get_field_value( $main, 'status_post' );
@@ -121,7 +122,7 @@ if ( $report_object ) {
                         <input id="contact-input-firstname" required type="text"
                                name="contact_name"
                                value="<?php echo $value_contact_name; ?>" placeholder="Name"
-                               class="form-control">
+                               class="form-control"/>
 					<?php else: ?>
                         <p><strong><?php echo $value_contact_name; ?></strong></p>
 					<?php endif; ?>
@@ -132,13 +133,19 @@ if ( $report_object ) {
                         <span class="required-star text-danger">*</span></label>
 					
 					<?php if ( ! $read_only ): ?>
+                        <div class="d-flex gap-1">
                         <input id="contact-input-phone" required type="tel"
                                name="contact_phone"
                                value="<?php echo $value_contact_phone; ?>"
-                               placeholder="Phone" class="form-control js-tel-mask">
-					
+                               placeholder="Phone" class="form-control js-tel-mask"/>
+
+                            <input id="contact-input-phone_ext" style="max-width: 120px;" required type="number"
+                                   name="contact_phone_ext"
+                                   value="<?php echo $value_contact_phone_ext; ?>"
+                                   placeholder="ext." class="form-control"/>
+                        </div>
 					<?php else: ?>
-                        <p><strong><?php echo $value_contact_phone; ?></strong></p>
+                        <p><strong><?php echo $value_contact_phone; ?></strong> ext:<strong><?php echo $value_contact_phone_ext ?></strong></p>
 					<?php endif; ?>
                 </div>
 

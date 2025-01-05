@@ -72,6 +72,9 @@ class TMSReports extends TMSReportsHelper {
 			LEFT JOIN $table_meta AS invoiced_proof
 				ON main.id = invoiced_proof.post_id
 				AND invoiced_proof.meta_key = 'invoiced_proof'
+			LEFT JOIN $table_meta AS office_dispatcher
+				ON main.id = office_dispatcher.post_id
+				AND office_dispatcher.meta_key = 'office_dispatcher'
 			LEFT JOIN $table_meta AS factoring_status
 				ON main.id = factoring_status.post_id
 				AND factoring_status.meta_key = 'factoring_status'
@@ -89,6 +92,11 @@ class TMSReports extends TMSReportsHelper {
 		$where_values     = array();
 		
 		// Фильтрация по статусу
+		if ( ! empty( $args[ 'office' ] ) && $args[ 'office' ] !== 'all' ) {
+			$where_conditions[] = "office_dispatcher.meta_value = %s";
+			$where_values[]     = $args[ 'office' ];
+		}
+		
 		if ( ! empty( $args[ 'status_post' ] ) ) {
 			$where_conditions[] = "main.status_post = %s";
 			$where_values[]     = $args[ 'status_post' ];
@@ -110,8 +118,18 @@ class TMSReports extends TMSReportsHelper {
 			$where_values[]     = $args[ 'load_status' ];
 		}
 		
+		if ( isset( $args[ 'my_team' ] ) && ! empty( $args[ 'my_team' ] ) && is_array( $args[ 'my_team' ] ) ) {
+			$team_values        = array_map( 'esc_sql', (array) $args[ 'my_team' ] ); // Обрабатываем значения
+			$where_conditions[] = "dispatcher.meta_value IN ('" . implode( "','", $team_values ) . "')";
+		}
+		
 		if ( isset( $args[ 'exclude_status' ] ) && ! empty( $args[ 'exclude_status' ] ) ) {
 			$where_conditions[] = "load_status.meta_value != '" . $args[ 'exclude_status' ] . "'";
+		}
+		
+		
+		if ( isset( $args[ 'include_status' ] ) && ! empty( $args[ 'include_status' ] ) ) {
+			$where_conditions[] = "load_status.meta_value = '" . $args[ 'include_status' ] . "'";
 		}
 		
 		if ( ! empty( $args[ 'invoice' ] ) ) {
@@ -902,12 +920,13 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 		if ( defined( 'DOING_AJAX' ) && DOING_AJAX ) {
 			// Sanitize input data
 			$MY_INPUT = filter_var_array( $_POST, [
-				"customer_id"   => FILTER_SANITIZE_STRING,
-				"contact_name"  => FILTER_SANITIZE_STRING,
-				"contact_phone" => FILTER_SANITIZE_STRING,
-				"contact_email" => FILTER_SANITIZE_STRING,
-				"post_id"       => FILTER_SANITIZE_STRING,
-				"read_only"     => FILTER_SANITIZE_STRING,
+				"customer_id"       => FILTER_SANITIZE_STRING,
+				"contact_name"      => FILTER_SANITIZE_STRING,
+				"contact_phone"     => FILTER_SANITIZE_STRING,
+				"contact_phone_ext" => FILTER_SANITIZE_STRING,
+				"contact_email"     => FILTER_SANITIZE_STRING,
+				"post_id"           => FILTER_SANITIZE_STRING,
+				"read_only"         => FILTER_SANITIZE_STRING,
 			] );
 			
 			if ( isset( $MY_INPUT[ 'read_only' ] ) ) {
@@ -1065,10 +1084,11 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 		if ( defined( 'DOING_AJAX' ) && DOING_AJAX ) {
 			// Sanitize input data
 			$MY_INPUT = filter_var_array( $_POST, [
-				"customer_id"   => FILTER_SANITIZE_STRING,
-				"contact_name"  => FILTER_SANITIZE_STRING,
-				"contact_phone" => FILTER_SANITIZE_STRING,
-				"contact_email" => FILTER_SANITIZE_STRING,
+				"customer_id"       => FILTER_SANITIZE_STRING,
+				"contact_name"      => FILTER_SANITIZE_STRING,
+				"contact_phone"     => FILTER_SANITIZE_STRING,
+				"contact_phone_ext" => FILTER_SANITIZE_STRING,
+				"contact_email"     => FILTER_SANITIZE_STRING,
 			] );
 			
 			$additional_contacts = [];
@@ -1600,15 +1620,15 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 	
 	
 	public function get_driver_by_id() {
-		if (defined('DOING_AJAX') && DOING_AJAX) {
+		if ( defined( 'DOING_AJAX' ) && DOING_AJAX ) {
 			// Sanitize the input data
-			$MY_INPUT = filter_var_array($_POST, [
-				"id" => FILTER_SANITIZE_STRING,
+			$MY_INPUT = filter_var_array( $_POST, [
+				"id"      => FILTER_SANITIZE_STRING,
 				"project" => FILTER_SANITIZE_URL,
-			]);
+			] );
 			
-			$driver_id = $MY_INPUT['id'];
-			$project_url = rtrim($MY_INPUT['project'], '/'); // Remove trailing slash if any
+			$driver_id   = $MY_INPUT[ 'id' ];
+			$project_url = rtrim( $MY_INPUT[ 'project' ], '/' ); // Remove trailing slash if any
 			
 			// Construct the API URL
 			$api_url = "{$project_url}/wp-json/wp/v2/driver-name/?driver-id={$driver_id}";
@@ -1617,43 +1637,44 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 			$ch = curl_init();
 			
 			// Configure cURL options
-			curl_setopt($ch, CURLOPT_URL, $api_url);
-			curl_setopt($ch, CURLOPT_RETURNTRANSFER, true); // Get the response as a string
-			curl_setopt($ch, CURLOPT_HTTPHEADER, [
+			curl_setopt( $ch, CURLOPT_URL, $api_url );
+			curl_setopt( $ch, CURLOPT_RETURNTRANSFER, true ); // Get the response as a string
+			curl_setopt( $ch, CURLOPT_HTTPHEADER, [
 				'Content-Type: application/json',
-			]);
+			] );
 			
 			// Execute the request
-			$response = curl_exec($ch);
+			$response = curl_exec( $ch );
 			
 			// Check for cURL errors
-			if (curl_errno($ch)) {
-				wp_send_json_error(['message' => 'cURL error: ' . curl_error($ch)]);
-				curl_close($ch);
+			if ( curl_errno( $ch ) ) {
+				wp_send_json_error( [ 'message' => 'cURL error: ' . curl_error( $ch ) ] );
+				curl_close( $ch );
+				
 				return;
 			}
 			
 			// Get HTTP response code
-			$http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+			$http_code = curl_getinfo( $ch, CURLINFO_HTTP_CODE );
 			
 			// Close the cURL handle
-			curl_close($ch);
+			curl_close( $ch );
 			
 			// Handle the response
-			if ($http_code === 200) {
-				$response_data = json_decode($response, true);
+			if ( $http_code === 200 ) {
+				$response_data = json_decode( $response, true );
 				
-				if ($response_data && isset($response_data['success']) && $response_data['success']) {
-					wp_send_json_success($response_data['data']);
+				if ( $response_data && isset( $response_data[ 'success' ] ) && $response_data[ 'success' ] ) {
+					wp_send_json_success( $response_data[ 'data' ] );
 				} else {
-					wp_send_json_error(['message' => 'Failed to fetch driver details.']);
+					wp_send_json_error( [ 'message' => 'Failed to fetch driver details.' ] );
 				}
 			} else {
-				wp_send_json_error([
-					'message' => 'Invalid response from the API.',
+				wp_send_json_error( [
+					'message'   => 'Invalid response from the API.',
 					'http_code' => $http_code,
-					'response' => $response,
-				]);
+					'response'  => $response,
+				] );
 			}
 		}
 		
@@ -1661,12 +1682,12 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 		wp_die();
 	}
 	
-	public function quick_update_status () {
+	public function quick_update_status() {
 		if ( defined( 'DOING_AJAX' ) && DOING_AJAX ) {
 			$MY_INPUT = filter_var_array( $_POST, [
 				'id_load' => FILTER_SANITIZE_NUMBER_INT,
-				'status' => FILTER_SANITIZE_STRING,
-			]);
+				'status'  => FILTER_SANITIZE_STRING,
+			] );
 			
 			$result = $this->update_quick_status_in_db( $MY_INPUT );
 			if ( $result ) {
@@ -2050,9 +2071,9 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 		);
 		
 		if ( $data[ 'status' ] === 'cancelled' ) {
-			$post_meta['booked_rate'] = '0.00';
-			$post_meta['driver_rate'] = '0.00';
-			$post_meta['profit'] = '0.00';
+			$post_meta[ 'booked_rate' ] = '0.00';
+			$post_meta[ 'driver_rate' ] = '0.00';
+			$post_meta[ 'profit' ]      = '0.00';
 		}
 		
 		// Specify the condition (WHERE clause)
@@ -2066,17 +2087,17 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 		
 		// Check if the update was successful
 		if ( $result !== false ) {
-			if ( $data[ 'status' ] === 'cancelled') {
+			if ( $data[ 'status' ] === 'cancelled' ) {
 				$this->log_controller->create_one_log( array(
 					'user_id' => $user_id,
 					'post_id' => $post_id,
-					'message' => 'Set new status: '. $this->get_label_by_key($data[ 'status' ], 'statuses') . '<br>Gross, Driver Rate, Profit = 0.00',
+					'message' => 'Set new status: ' . $this->get_label_by_key( $data[ 'status' ], 'statuses' ) . '<br>Gross, Driver Rate, Profit = 0.00',
 				) );
 			} else {
 				$this->log_controller->create_one_log( array(
 					'user_id' => $user_id,
 					'post_id' => $post_id,
-					'message' => 'Set new status: '. $this->get_label_by_key($data[ 'status' ], 'statuses'),
+					'message' => 'Set new status: ' . $this->get_label_by_key( $data[ 'status' ], 'statuses' ),
 				) );
 			}
 			
@@ -2175,7 +2196,6 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 		
 		$table_name = $wpdb->prefix . $this->table_main;
 		$user_id    = get_current_user_id();
-		
 		// Prepare the data to update
 		$update_params = array(
 			'user_id_updated' => $user_id,
@@ -2186,6 +2206,7 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 			'customer_id'         => $data[ 'customer_id' ],
 			'contact_name'        => $data[ 'contact_name' ],
 			'contact_phone'       => $data[ 'contact_phone' ],
+			'contact_phone_ext'   => $data[ 'contact_phone_ext' ],
 			'contact_email'       => $data[ 'contact_email' ],
 			'additional_contacts' => $data[ 'additional_contacts' ],
 		);
@@ -2235,6 +2256,7 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 			'customer_id'         => $data[ 'customer_id' ],
 			'contact_name'        => $data[ 'contact_name' ],
 			'contact_phone'       => $data[ 'contact_phone' ],
+			'contact_phone_ext'   => $data[ 'contact_phone_ext' ],
 			'contact_email'       => $data[ 'contact_email' ],
 			'additional_contacts' => $data[ 'additional_contacts' ],
 		);
@@ -2706,6 +2728,8 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 			'date_booked'     => $data[ 'date_booked' ],
 		);
 		
+		$office_dispatcher = get_field( 'work_location', 'user_'.$data[ 'dispatcher_initials' ]);
+
 		$post_meta = array(
 			'load_status'             => $data[ 'load_status' ],
 			'instructions'            => $instructions,
@@ -2726,6 +2750,7 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 			'percent_quick_pay_value' => $data[ 'percent_quick_pay_value' ],
 			'booked_rate_modify'      => $data[ 'booked_rate_modify' ],
 			'tbd'                     => $data[ 'tbd' ],
+			'office_dispatcher'       => $office_dispatcher,
 		);
 		
 		if ( isset( $data[ 'modify_price' ] ) ) {

@@ -112,7 +112,7 @@ if ( ! $active_item ) {
                                   const data = google.visualization.arrayToDataTable(dataArray)
                                   
                                   const options = {
-                                    title       : 'Dispatcher Loads',
+                                    title       : 'Loads',
                                     pieSliceText: 'value',
                                     legend      : { position: 'center' },
                                     // pieHole: 0.2,  // Optional: make it a donut chart
@@ -141,8 +141,16 @@ if ( ! $active_item ) {
                                   
                                   const data = google.visualization.arrayToDataTable(dataArray)
                                   
+                                  // Создаем форматтер для добавления доллара
+                                  const formatter = new google.visualization.NumberFormat({
+                                    prefix: '$',
+                                  });
+                                  
+                                  // Применяем форматтер к колонке с числами (индекс 1)
+                                  formatter.format(data, 1);
+                                  
                                   const options = {
-                                    title       : 'Dispatcher Prices',
+                                    title       : 'Profit',
                                     pieSliceText: 'value',
                                     legend      : { position: 'center' },
                                   }
@@ -300,6 +308,7 @@ if ( ! $active_item ) {
 						}
 						
 						$my_team        = get_field( 'my_team', 'user_' . $dispatcher_tl_initials );
+                        $my_team[] = $dispatcher_tl_initials;
 						$dispatcher_arr = $statistics->get_dispatcher_statistics_current_month( $my_team );
 						
 						$dispatcher_stats_indexed = [];
@@ -499,7 +508,7 @@ if ( ! $active_item ) {
                                   const data = google.visualization.arrayToDataTable(dataArray);
                                   
                                   const options = {
-                                    title       : 'Post Count by Source',
+                                    title       : 'Loads',
                                     pieSliceText: 'value',
                                     legend      : { position: 'center' },
                                   };
@@ -520,8 +529,17 @@ if ( ! $active_item ) {
                                   
                                   const data = google.visualization.arrayToDataTable(dataArray);
                                   
+                                  
+                                  // Создаем форматтер для добавления доллара
+                                  const formatter = new google.visualization.NumberFormat({
+                                    prefix: '$',
+                                  });
+                                  
+                                  // Применяем форматтер к колонке с числами (индекс 1)
+                                  formatter.format(data, 1);
+                                  
                                   const options = {
-                                    title       : 'Profit by Source',
+                                    title       : 'Profit',
                                     pieSliceText: 'value',
                                     legend      : { position: 'center' },
                                   };

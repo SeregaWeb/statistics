@@ -227,7 +227,14 @@ class TMSReportsHelper extends TMSReportsIcons {
 	    'not-found'     => 'Not Found',
 	    'can-be-discussed'     => 'Can be discussed',
     );
-	
+    
+    function get_offices_from_acf() {
+	    $field_key = 'field_670828a1b54fc';
+	    $field_object = get_field_object($field_key);
+        
+        return $field_object;
+    }
+    
 	function formatDate( $inputDate ) {
 		// Создаем объект даты из строки
 		$dateTime = DateTime::createFromFormat( 'Y-m-d H:i:s', $inputDate );
@@ -666,7 +673,7 @@ class TMSReportsHelper extends TMSReportsIcons {
 		return $message;
 	}
 	
-	function set_filter_params( $args ) {
+	function set_filter_params( $args, $default_office = false ) {
 		$dispatcher_filter = get_field_value( $_GET, 'dispatcher' );
 		$my_search         = get_field_value( $_GET, 'my_search' );
 		$year              = get_field_value( $_GET, 'fyear' );
@@ -675,7 +682,16 @@ class TMSReportsHelper extends TMSReportsIcons {
 		$source            = get_field_value( $_GET, 'source' );
 		$factoring         = get_field_value( $_GET, 'factoring' );
 		$invoice           = get_field_value( $_GET, 'invoice' );
+		$office            = get_field_value( $_GET, 'office' );
 		
+		if ($default_office) {
+			$args[ 'office' ] = $default_office;
+		}
+  
+		if ( $office ) {
+			$args[ 'office' ] = $office;
+		}
+  
 		if ( $dispatcher_filter ) {
 			$args[ 'dispatcher' ] = $dispatcher_filter;
 		}

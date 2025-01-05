@@ -4651,6 +4651,8 @@ var cleanUrlByFilter = function cleanUrlByFilter() {
       var source = form.elements.namedItem('source');
       var factoring = form.elements.namedItem('factoring');
       var invoice = form.elements.namedItem('invoice');
+      var office = form.elements.namedItem('office');
+      if (office === null || office === void 0 ? void 0 : office.value) params.append('office', office.value);
       if (fmonth === null || fmonth === void 0 ? void 0 : fmonth.value) params.append('fmonth', fmonth.value);
       if (fyear === null || fyear === void 0 ? void 0 : fyear.value) params.append('fyear', fyear.value);
       if (dispatcher === null || dispatcher === void 0 ? void 0 : dispatcher.value) params.append('dispatcher', dispatcher.value);

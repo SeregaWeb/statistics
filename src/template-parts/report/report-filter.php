@@ -1,5 +1,6 @@
 <?php
 $helper        = new TMSReportsHelper();
+$TMSUsers      = new TMSUsers();
 $dispatchers   = $helper->get_dispatchers();
 $statuses = $helper->get_statuses();
 $sources = $helper->get_sources();
@@ -14,8 +15,12 @@ $load_status = get_field_value($_GET, 'load_status');
 $source = get_field_value($_GET, 'source');
 $factoring = get_field_value($_GET, 'factoring');
 $invoice = get_field_value($_GET, 'invoice');
+$office = get_field_value($_GET, 'office');
 
 $post_tp = get_field_value($args, 'post_type');
+$offices = $helper->get_offices_from_acf();
+
+$show_filter_by_office = $TMSUsers->check_user_role_access( array( 'dispatcher-tl', 'administrator', 'recruiter' ), true );
 
 ?>
 
@@ -104,6 +109,20 @@ $post_tp = get_field_value($args, 'post_type');
 							<?php endforeach; ?>
 					    <?php endif; ?>
                 </select>
+                
+                <?php if ($show_filter_by_office): ?>
+                <select class="form-select w-auto" name="office" aria-label=".form-select-sm example">
+                    <option value="all">Office</option>
+						<?php if (isset($offices['choices']) && is_array($offices['choices'])): ?>
+							<?php foreach ($offices['choices'] as $key => $val):  ?>
+                                <option value="<?php echo $key; ?>"  <?php echo $office === $key ? 'selected' : '' ?> >
+									<?php echo $val; ?>
+                                </option>
+							<?php endforeach; ?>
+					    <?php endif; ?>
+                </select>
+                <?php endif; ?>
+                
                 <?php endif; ?>
 	            <?php if ($post_tp === 'accounting'): ?>
                     <select class="form-select w-auto" name="invoice" aria-label=".form-select-sm example">

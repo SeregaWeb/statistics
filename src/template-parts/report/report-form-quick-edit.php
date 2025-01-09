@@ -76,11 +76,11 @@ $include_statuses = array('unsubmitted', 'in-processing', 'processed');
         </select>
     </div>
 	
-	<div class="modal-footer justify-content-start gap-2">
-		<button type="button" class="btn btn-dark js-popup-close">Cancel</button>
-		<button type="submit" class="btn btn-outline-primary">Submit</button>
-	</div>
-	
 	<?php endif; ?>
+
+    <div class="modal-footer justify-content-start gap-2">
+        <button type="button" class="btn btn-dark js-popup-close">Cancel</button>
+        <button type="submit" class="btn btn-outline-primary">Submit</button>
+    </div>
  
 </form>

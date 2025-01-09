@@ -87,6 +87,7 @@
                         "tracking": "Tracking",
                         "billing": "Billing",
                         "recruiter": "Recruiter",
+                        "recruiter-tl": "Recruiter Team Leader",
                         "accounting": "Accounting",
                         "moderator": "Moderator"
                     },
@@ -214,6 +215,7 @@
                                 "tracking": "Tracking",
                                 "billing": "Billing",
                                 "recruiter": "Recruiter",
+                                "recruiter-tl": "Recruiter Team Leader",
                                 "accounting": "Accounting",
                                 "moderator": "Moderator"
                             },
@@ -523,5 +525,5 @@
     "active": true,
     "description": "",
     "show_in_rest": 0,
-    "modified": 1735843557
+    "modified": 1736281509
 }

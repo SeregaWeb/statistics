@@ -36,7 +36,6 @@ if ( ! empty( $results ) ) :?>
     <table class="table mb-5 w-100">
         <thead>
         <tr>
-            <th>Date booked</th>
             <th scope="col" title="dispatcher">Disp.</th>
             <th scope="col">Broker</th>
             <th scope="col">Factoring status </th>
@@ -50,6 +49,7 @@ if ( ! empty( $results ) ) :?>
             <th scope="col">QP percent</th>
             <th scope="col">Delivery Date</th>
             <th scope="col">Days to pay</th>
+            <th scope="col">Invoice status</th>
             <th scope="col">Days since invoiced</th>
             <th scope="col"></th>
         </tr>
@@ -71,6 +71,8 @@ if ( ! empty( $results ) ) :?>
 			$pick_up     = $pick_up_raw ? json_decode( $pick_up_raw, ARRAY_A ) : [];
 			
 			$dispatcher_initials = get_field_value( $meta, 'dispatcher_initials' );
+			$invoice_status = get_field_value( $meta, 'factoring_status' );
+			$processing = get_field_value( $meta, 'processing' );
 			
 			$dispatcher     = $helper->get_user_full_name_by_id( $dispatcher_initials );
 			$color_initials = $dispatcher ? get_field( 'initials_color', 'user_' . $dispatcher_initials ) : '#030303';
@@ -97,12 +99,12 @@ if ( ! empty( $results ) ) :?>
             
             
             if ($load_problem_raw == '0000-00-00 00:00:00') {
-	            $days_passed = 'N/A';
+	            $days_passed = '';
             } else {
                 $date_problem     = new DateTime( $load_problem_raw );
                 $current_date     = new DateTime();
                 $interval         = $date_problem->diff( $current_date );
-                $days_passed      = $interval->days;
+                $days_passed      = $interval->days . ' days';
             }
             
 			$show_control = $TMSUsers->show_control_loads( $my_team, $current_user_id, $dispatcher_initials, $is_draft );
@@ -138,9 +140,6 @@ if ( ! empty( $results ) ) :?>
 			?>
 
             <tr class="">
-                <td>
-                    <?php echo $date_booked; ?>
-                </td>
                 <td>
                     <div class="d-flex gap-1 flex-column">
                         <p class="m-0">
@@ -212,11 +211,17 @@ if ( ! empty( $results ) ) :?>
                     <?php echo $helper->get_label_by_key($load_status, 'statuses'); ?>
                 </td>
                 
-                <td><?php echo $quick_pay_option_value === '1' ? 'On' : 'Off'; ?></td>
+                <td><?php echo $quick_pay_option_value === '1' ? 'Av.' : ''; ?></td>
                 <td><?php echo $quick_pay_percent_value ? $quick_pay_percent_value.'%' : ''; ?></td>
                 <td><?php echo $delivery_date; ?></td>
                 <td><?php echo $days_to_pay_value; ?></td>
-                <td><?php echo $days_passed; ?> days</td>
+                <td>
+                    <?php echo $helper->get_label_by_key( $invoice_status, 'factoring_status' ); ?><br>
+                    <span class="text-small">
+                        <?php echo $helper->get_label_by_key($processing, 'processing'); ?>
+                    </span>
+                </td>
+                <td><?php echo $days_passed; ?></td>
                 
                 <td>
 					

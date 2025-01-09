@@ -61,6 +61,8 @@ if ( ! empty( $broker ) ) {
 	$completed_keys_string = implode( ', ', $completed_keys );
 }
 
+$TMSUsers = new TMSUsers();
+$add_broker = $TMSUsers->check_user_role_access( array( 'dispatcher', 'dispatcher-tl', 'administrator', 'billing' ), true );
 
 ?>
     <div class="container-fluid">
@@ -76,12 +78,14 @@ if ( ! empty( $broker ) ) {
                                         aria-selected="true">Info
                                 </button>
                             </li>
+                            <?php if ($add_broker): ?>
                             <li class="nav-item w-25" role="presentation">
                                 <button class="nav-link w-100" id="pills-update-tab" data-bs-toggle="pill"
                                         data-bs-target="#pills-update" type="button" role="tab"
                                         aria-controls="pills-update" aria-selected="false">Edit
                                 </button>
                             </li>
+                            <?php endif; ?>
 
                         </ul>
                     </div>
@@ -235,8 +239,8 @@ if ( ! empty( $broker ) ) {
                                 </div>
                             </div>
                         </div>
-
-
+	                    
+	                    <?php if ($add_broker): ?>
                         <div class="tab-pane fade" id="pills-update" role="tabpanel" aria-labelledby="pills-update-tab">
 							
 							<?php
@@ -525,12 +529,11 @@ if ( ! empty( $broker ) ) {
                                 <div class="mt-3">
                                     <button class="btn btn-primary" type="submit">End edit</button>
                                 </div>
-
-                        </div>
                         </form>
 
 
                     </div>
+                    <?php endif; ?>
 
                 </div>
 				

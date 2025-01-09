@@ -13,7 +13,7 @@ $reports = new TMSReports();
 $args = array(
 	'status_post' => 'publish',
     'user_id' => get_current_user_id(),
-    'include_status' => 'delivered'
+    'include_status' => array('delivered', 'tonu', 'cancelled')
 );
 
 $args = $reports->set_filter_params($args);
@@ -24,7 +24,7 @@ $items['page_type'] = $post_tp;
 $items['archive'] = true;
 
 ?>
-    <div class="container-fluid">
+    <div class="container-fluid tracking-colored">
         <div class="row">
             <div class="container">
                 <div class="row">

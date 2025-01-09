@@ -23,6 +23,12 @@ if ( ! empty( $shipper_fields ) ) {
 	
 	$full_address = $shipper_fields[ 'address1' ] . ' ' . $shipper_fields[ 'city' ] . ' ' . $shipper_fields[ 'state' ] . ' ' . $shipper_fields[ 'zip_code' ] . ' ' . $shipper_fields[ 'country' ];
 }
+
+$TMSUsers = new TMSUsers();
+
+$add_shipper = $TMSUsers->check_user_role_access( array( 'dispatcher', 'dispatcher-tl', 'administrator', 'tracking' ), true );
+
+
 ?>
     <div class="container-fluid">
     <div class="row">
@@ -38,13 +44,14 @@ if ( ! empty( $shipper_fields ) ) {
                                     aria-selected="true">Info
                             </button>
                         </li>
+                        <?php if($add_shipper): ?>
                         <li class="nav-item w-25" role="presentation">
                             <button class="nav-link w-100" id="pills-update-tab" data-bs-toggle="pill"
                                     data-bs-target="#pills-update" type="button" role="tab"
                                     aria-controls="pills-update" aria-selected="false">Edit
                             </button>
                         </li>
-
+                        <?php endif; ?>
                     </ul>
                 </div>
                 <div class="tab-content" id="pills-tabContent">
@@ -116,8 +123,8 @@ if ( ! empty( $shipper_fields ) ) {
                             </div>
                         </div>
                     </div>
-
-
+	                
+	                <?php if($add_shipper): ?>
                     <div class="tab-pane fade" id="pills-update" role="tabpanel" aria-labelledby="pills-update-tab">
                         <form class="ng-pristine ng-invalid ng-touched js-update-shipper" style="max-width: 964px;">
                             <input type="hidden" name="shipper_id" value="<?php echo $id_shipper; ?>">
@@ -225,7 +232,8 @@ if ( ! empty( $shipper_fields ) ) {
                             </div>
                         </form>
                     </div>
-					
+	                <?php endif; ?>
+                 
 					<?php } else { ?>
                         <div class="col-12">
                             <h2 class="mt-3 mb-2">Empty</h2>

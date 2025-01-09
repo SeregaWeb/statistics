@@ -47,7 +47,8 @@ if ( $report_object ) {
     $main = get_field_value($values, 'main');
 	if ( is_array( $meta ) && sizeof( $meta ) > 0 ) {
 		$date_booked         = get_field_value($main, 'date_booked');
-		if (empty($date_booked) || $date_booked = '0000-00-00 00:00:00') {
+  
+		if (empty($date_booked) || $date_booked === '0000-00-00 00:00:00' || is_null($date_booked) || !$date_booked) {
 			$date_booked_formatted = date('Y-m-d');
 		} else {
 			$date_booked_formatted = date('Y-m-d', strtotime($date_booked));

@@ -96,6 +96,12 @@ class  TMSUsers extends TMSReportsHelper {
 			'upload_files' => true,
 		] );
 		
+		add_role( 'recruiter-tl', 'Recruiter Team Leader', [
+			'read'         => true,
+			'edit_posts'   => true,
+			'upload_files' => true,
+		] );
+		
 		add_role( 'accounting', 'Accounting', [
 			'read'         => true,
 			'edit_posts'   => true,
@@ -126,6 +132,7 @@ class  TMSUsers extends TMSReportsHelper {
 			'tracking'      => 'Tracking',
 			'billing'       => 'Billing',
 			'recruiter'     => 'Recruiter',
+			'recruiter-tl'  => 'Recruiter Team Leader',
 			'administrator' => 'Administrator',
 			'accounting'    => 'Accounting',
 			'moderator'     => 'Moderator',

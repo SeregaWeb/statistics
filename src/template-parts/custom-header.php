@@ -15,14 +15,24 @@ $user_name = $helper->get_user_full_name_by_id($user_id);
 
 $view_tables = get_field('permission_view', 'user_'.$user_id);
 $curent_tables = get_field('current_select', 'user_'.$user_id);
+
+$TMSUsers = new TMSUsers();
+
+$add_broker = $TMSUsers->check_user_role_access( array( 'dispatcher-tl', 'administrator', 'billing' ), true );
+$add_shipper = $TMSUsers->check_user_role_access( array( 'dispatcher', 'dispatcher-tl', 'administrator', 'tracking' ), true );
 ?>
 
 <header id="site-header" class="site-header js-site-header">
     <div class="container-fluid">
         <div class="row justify-content-between align-items-center pt-2 pb-2">
             <div class="col main-menu js-main-menu order-2 d-flex gap-2 justify-content-end align-items-center">
+                <?php if ($add_broker): ?>
                 <button class="btn btn-outline-primary js-open-popup-activator" data-href="#popup_add_company">Add broker</button>
+                <?php endif; ?>
+                
+                <?php if($add_shipper): ?>
                 <button class="btn btn-outline-primary js-open-popup-activator" data-href="#popup_add_shipper">Add shipper</button>
+                <?php endif; ?>
                 <?php if(is_array($view_tables) && sizeof($view_tables) > 0) ?>
                 <div class="w-25">
                     <select class="form-select js-select-current-table" aria-label="Default select example">

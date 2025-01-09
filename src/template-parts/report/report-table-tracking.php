@@ -22,7 +22,7 @@ $my_team = $TMSUsers->check_group_access();
 $all_statuses = $helper->get_statuses();
 
 
-if ( ! empty( $results ) ) : ?>
+if ( ! empty( $results )) : ?>
     <table class="table mb-5 w-100">
         <thead>
         <tr>
@@ -68,6 +68,8 @@ if ( ! empty( $results ) ) : ?>
 
 			$load_status  = get_field_value( $meta, 'load_status' );
 			$status       = $load_status;
+			
+			$office_dispatcher  = get_field_value( $meta, 'office_dispatcher' );
 			
 			$date_booked_raw = get_field_value( $row, 'date_booked' );
 			$date_booked     = esc_html( date( 'm/d/Y', strtotime( $date_booked_raw ) ) );
@@ -128,7 +130,9 @@ if ( ! empty( $results ) ) : ?>
                               class="initials-circle" style="background-color: <?php echo $color_initials; ?>">
                               <?php echo esc_html( $dispatcher[ 'initials' ] ); ?>
                         </span>
-                        <span>PL</span>
+                        <?php if ($office_dispatcher): ?>
+                        <span><?php echo strtoupper($office_dispatcher); ?></span>
+                        <?php endif; ?>
                     </div>
                     <span class="mt-1" class="text-small">
                         <?php echo $reference_number; ?>
@@ -228,7 +232,7 @@ if ( ! empty( $results ) ) : ?>
                 </td>
 
                 <td class="">
-                    <?php if (!$archive): ?>
+                    <?php if (!$archive && $show_control): ?>
                     <form class="js-save-status d-flex gap-1 align-items-center form-quick-tracking" >
                         <input type="hidden" name="id_load" value="<?php echo $row[ 'id' ]; ?>">
                         <?php if (is_array($all_statuses)) { ?>

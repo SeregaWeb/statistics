@@ -162,12 +162,18 @@ if ( $report_object ) {
             
         </div>
         
-        <div class="col-12 d-flex gap-2 mt-2 mb-4">
+        <div class="col-12 col-md-6 col-xl-4 d-flex align-items-center gap-2 mt-2 mb-4">
             <div class="form-check form-switch">
                 <input class="form-check-input js-trigger-set-date" <?php echo $invoiced_proof ? 'checked' : ''; ?> name="invoiced_proof"
                        type="checkbox" id="invoiced_proof">
                 <label class="form-check-label" for="invoiced_proof">Invoiced</label>
             </div>
+        </div>
+
+        <div class="mt-2 mb-4 col-12 col-md-6 col-xl-4">
+            <label for="load_problem" class="form-label">Select invoice date</label>
+            <input type="date" name="load_problem" value="<?php echo $load_problem_formatted; ?>"
+                   class="form-control js-set-date">
         </div>
 
         <div class="col-12"></div>
@@ -226,12 +232,6 @@ if ( $report_object ) {
 
                 <div class="col-12 js-ar-actions <?php echo $ar_action_field ? '' : 'd-none'; ?>">
                     <div class="row">
-                        <div class="mb-2 col-12 col-md-6 col-xl-4">
-                            <label for="load_problem" class="form-label">Select invoice date</label>
-                            <input type="date" name="load_problem" value="<?php echo $load_problem_formatted; ?>"
-                                   class="form-control js-set-date">
-                        </div>
-
                         <div class="mb-2 col-12 col-md-6 col-xl-4">
                             <label for="ar_status" class="form-label">Select invoice status</label>
                             <select name="ar_status" class="form-control form-select">

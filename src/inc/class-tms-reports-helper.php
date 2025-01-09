@@ -2,7 +2,15 @@
 
 class TMSReportsHelper extends TMSReportsIcons {
 	
-	public $select                  = array(
+	public $processing = array(
+		'factoring'                 => 'Factoring (ACH)',
+		'factoring-delayed-advance' => 'Factoring (Delayed advance)',
+		'factoring-wire-transfer'   => 'Factoring (Wire Transfer)',
+		'unapplied-payment'         => 'Unapplied payment',
+		'direct'                    => 'Direct',
+	);
+	
+	public $select           = array(
 		"USA_LABEL" => array( "---United states (US)---" ),
 		"AL"        => "Alabama, AL",
 		"AK"        => "Alaska, AK",
@@ -107,11 +115,11 @@ class TMSReportsHelper extends TMSReportsIcons {
 		"YUC"       => "Yucatán, YUC",
 		"ZAC"       => "Zacatecas, ZAC",
 	);
-	public $invoices                = array(
+	public $invoices         = array(
 		'invoiced'     => 'Invoiced',
 		'not-invoiced' => 'Not invoiced',
 	);
-	public $factoring_status        = array(
+	public $factoring_status = array(
 		'unsubmitted'        => 'Unsubmitted',
 		'in-processing'      => 'In Processing',
 		'requires-attention' => 'Requires Attention',
@@ -124,8 +132,8 @@ class TMSReportsHelper extends TMSReportsIcons {
 		'fraud'              => 'Fraud',
 		'company-closed'     => 'Company closed',
 	);
-
-
+	
+	
 	public $bank_statuses           = array(
 		'approved'         => 'Approved',
 		'not-in-payees'    => 'Not in payees',
@@ -209,7 +217,7 @@ class TMSReportsHelper extends TMSReportsIcons {
 		'not_completed' => 'Not completed',
 		'error'         => 'Error',
 	);
- 
+	
 	public $set_up_platform = array(
 		'rmis'    => 'RMIS',
 		'dat'     => 'DAT',
@@ -218,23 +226,23 @@ class TMSReportsHelper extends TMSReportsIcons {
 		'mcp'     => 'MCP',
 		'other'   => 'Other',
 	);
-
-    public $factoring_broker = array (
-	    'approved'    => 'Approved',
-	    'denied'     => 'Denied',
-	    'credit-approval-required' => 'Credit Approval Required',
-	    'one-load-allowed'  => 'One load allowed',
-	    'not-found'     => 'Not Found',
-	    'can-be-discussed'     => 'Can be discussed',
-    );
-    
-    function get_offices_from_acf() {
-	    $field_key = 'field_670828a1b54fc';
-	    $field_object = get_field_object($field_key);
-        
-        return $field_object;
-    }
-    
+	
+	public $factoring_broker = array(
+		'approved'                 => 'Approved',
+		'denied'                   => 'Denied',
+		'credit-approval-required' => 'Credit Approval Required',
+		'one-load-allowed'         => 'One load allowed',
+		'not-found'                => 'Not Found',
+		'can-be-discussed'         => 'Can be discussed',
+	);
+	
+	function get_offices_from_acf() {
+		$field_key    = 'field_670828a1b54fc';
+		$field_object = get_field_object( $field_key );
+		
+		return $field_object;
+	}
+	
 	function formatDate( $inputDate ) {
 		// Создаем объект даты из строки
 		$dateTime = DateTime::createFromFormat( 'Y-m-d H:i:s', $inputDate );
@@ -497,6 +505,10 @@ class TMSReportsHelper extends TMSReportsIcons {
 		if ( $search_list === 'sources' ) {
 			return isset( $this->sources[ $key ] ) ? $this->sources[ $key ] : $key;
 		}
+  
+		if ( $search_list === 'processing' ) {
+			return isset( $this->processing[ $key ] ) ? $this->processing[ $key ] : $key;
+		}
 		
 		if ( $search_list === 'instructions' && ! empty( $key ) ) {
 			return $this->get_icons_from_keys( $key );
@@ -684,14 +696,14 @@ class TMSReportsHelper extends TMSReportsIcons {
 		$invoice           = get_field_value( $_GET, 'invoice' );
 		$office            = get_field_value( $_GET, 'office' );
 		
-		if ($default_office) {
+		if ( $default_office ) {
 			$args[ 'office' ] = $default_office;
 		}
-  
+		
 		if ( $office ) {
 			$args[ 'office' ] = $office;
 		}
-  
+		
 		if ( $dispatcher_filter ) {
 			$args[ 'dispatcher' ] = $dispatcher_filter;
 		}
@@ -769,39 +781,40 @@ class TMSReportsHelper extends TMSReportsIcons {
 		return preg_replace( '/\s+/', ' ', trim( $string ) );
 	}
 	
-	function format_currency($value) {
+	function format_currency( $value ) {
 		// Преобразуем значение в float и форматируем число
-		$formatted = number_format((float)$value, 2, '.', ',');
-		return str_ends_with($formatted, '.00') ? str_replace( '.00', '', $formatted ) : $formatted;
+		$formatted = number_format( (float) $value, 2, '.', ',' );
+		
+		return str_ends_with( $formatted, '.00' ) ? str_replace( '.00', '', $formatted ) : $formatted;
 	}
 	
-	function get_week_dates_from_monday($date = null) {
+	function get_week_dates_from_monday( $date = null ) {
 		// Если дата не передана, использовать текущую
-		$current_date = $date ? new DateTime($date) : new DateTime();
+		$current_date = $date ? new DateTime( $date ) : new DateTime();
 		
 		// Найти ближайший понедельник
-		$current_day = $current_date->format('w'); // 0 (вс) - 6 (сб)
-		$days_to_monday = ($current_day == 0) ? 6 : $current_day - 1; // Дни до понедельника
-		$monday = $current_date->modify("-$days_to_monday days");
+		$current_day    = $current_date->format( 'w' );                 // 0 (вс) - 6 (сб)
+		$days_to_monday = ( $current_day == 0 ) ? 6 : $current_day - 1; // Дни до понедельника
+		$monday         = $current_date->modify( "-$days_to_monday days" );
 		
 		// Получить даты с понедельника по воскресенье
 		$week_dates = [];
-		for ($i = 0; $i < 7; $i++) {
-			$week_dates[] = $monday->format('m/d/Y');
-			$monday->modify('+1 day');
+		for ( $i = 0; $i < 7; $i ++ ) {
+			$week_dates[] = $monday->format( 'm/d/Y' );
+			$monday->modify( '+1 day' );
 		}
 		
 		return $week_dates;
 	}
 	
-	function merge_unique_dispatchers($array1, $array2) {
-		$merged = array_merge($array1, $array2);
+	function merge_unique_dispatchers( $array1, $array2 ) {
+		$merged = array_merge( $array1, $array2 );
 		$unique = [];
-		$ids = [];
+		$ids    = [];
 		
-		foreach ($merged as $dispatcher) {
-			if (!in_array($dispatcher['id'], $ids)) {
-				$ids[] = $dispatcher['id'];
+		foreach ( $merged as $dispatcher ) {
+			if ( ! in_array( $dispatcher[ 'id' ], $ids ) ) {
+				$ids[]    = $dispatcher[ 'id' ];
 				$unique[] = $dispatcher;
 			}
 		}
@@ -809,56 +822,57 @@ class TMSReportsHelper extends TMSReportsIcons {
 		return $unique;
 	}
 	
-	function generateWeeks($date_select = null) {
-		$startDate = new DateTime('2024-12-02');
-		$startDate->modify('Monday this week'); // Find the first Monday before or on the start date
-		$endDate = new DateTime(); // Current date
+	function generateWeeks( $date_select = null ) {
+		$startDate = new DateTime( '2024-12-02' );
+		$startDate->modify( 'Monday this week' ); // Find the first Monday before or on the start date
+		$endDate = new DateTime();                // Current date
 		
-		$options = "";
+		$options      = "";
 		$currentMonth = '';
 		
-		while ($startDate <= $endDate) {
+		while ( $startDate <= $endDate ) {
 			$monday = clone $startDate;
 			$sunday = clone $startDate;
-			$sunday->modify('Sunday this week');
+			$sunday->modify( 'Sunday this week' );
 			
-			$optionValue = $monday->format('Y-m-d');
-			$optionLabel = $monday->format('M d') . ' - ' . $sunday->format('M d') . ' ' . $monday->format('Y');
+			$optionValue = $monday->format( 'Y-m-d' );
+			$optionLabel = $monday->format( 'M d' ) . ' - ' . $sunday->format( 'M d' ) . ' ' . $monday->format( 'Y' );
 			
 			// Add a month separator if a new month is encountered
-			if ($currentMonth !== $monday->format('F Y')) {
-				$currentMonth = $monday->format('F Y');
-				$options .= "<option disabled>--{$currentMonth}--</option>\n";
+			if ( $currentMonth !== $monday->format( 'F Y' ) ) {
+				$currentMonth = $monday->format( 'F Y' );
+				$options      .= "<option disabled>--{$currentMonth}--</option>\n";
 			}
 			
-            $selected = '';
-            
-            if ($date_select === $optionValue) {
-                $selected = 'selected';
-            }
-            
-			$options .= "<option ".$selected." value=\"{$optionValue}\">{$optionLabel}</option>\n";
+			$selected = '';
 			
-			$startDate->modify('+1 week'); // Move to the next week
+			if ( $date_select === $optionValue ) {
+				$selected = 'selected';
+			}
+			
+			$options .= "<option " . $selected . " value=\"{$optionValue}\">{$optionLabel}</option>\n";
+			
+			$startDate->modify( '+1 week' ); // Move to the next week
 		}
 		
 		return $options;
 	}
 	
-	public function is_valid_date($date) {
+	public function is_valid_date( $date ) {
 		// Check if the date is a valid format and not '0000-00-00'
-		$date_object = DateTime::createFromFormat('Y-m-d', $date);
-		return $date_object && $date_object->format('Y-m-d') === $date && $date !== '0000-00-00';
+		$date_object = DateTime::createFromFormat( 'Y-m-d', $date );
+		
+		return $date_object && $date_object->format( 'Y-m-d' ) === $date && $date !== '0000-00-00';
 	}
 	
-	function calculate_price_per_mile($booked_rate_raw, $driver_rate_raw, $all_miles) {
+	function calculate_price_per_mile( $booked_rate_raw, $driver_rate_raw, $all_miles ) {
 		// Преобразуем входные данные в числа
-		$booked_rate = is_numeric($booked_rate_raw) ? floatval($booked_rate_raw) : 0.0;
-		$driver_rate = is_numeric($driver_rate_raw) ? floatval($driver_rate_raw) : 0.0;
-		$miles = is_numeric($all_miles) ? floatval($all_miles) : 0.0;
+		$booked_rate = is_numeric( $booked_rate_raw ) ? floatval( $booked_rate_raw ) : 0.0;
+		$driver_rate = is_numeric( $driver_rate_raw ) ? floatval( $driver_rate_raw ) : 0.0;
+		$miles       = is_numeric( $all_miles ) ? floatval( $all_miles ) : 0.0;
 		
 		// Проверяем, чтобы количество миль было больше 0
-		if ($miles > 0) {
+		if ( $miles > 0 ) {
 			$booked_rate_per_mile = $booked_rate / $miles;
 			$driver_rate_per_mile = $driver_rate / $miles;
 		} else {
@@ -869,8 +883,8 @@ class TMSReportsHelper extends TMSReportsIcons {
 		
 		// Возвращаем результаты
 		return [
-			'booked_rate_per_mile' => round($booked_rate_per_mile, 2),
-			'driver_rate_per_mile' => round($driver_rate_per_mile, 2),
+			'booked_rate_per_mile' => round( $booked_rate_per_mile, 2 ),
+			'driver_rate_per_mile' => round( $driver_rate_per_mile, 2 ),
 		];
 	}
 	

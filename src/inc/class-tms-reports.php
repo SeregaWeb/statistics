@@ -124,12 +124,14 @@ class TMSReports extends TMSReportsHelper {
 		}
 		
 		if ( isset( $args[ 'exclude_status' ] ) && ! empty( $args[ 'exclude_status' ] ) ) {
-			$where_conditions[] = "load_status.meta_value != '" . $args[ 'exclude_status' ] . "'";
+			$exclude_status        = array_map( 'esc_sql', (array) $args[ 'exclude_status' ] );
+			$where_conditions[] = "load_status.meta_value NOT IN ('" . implode( "','", $exclude_status ) . "')";
 		}
 		
 		
 		if ( isset( $args[ 'include_status' ] ) && ! empty( $args[ 'include_status' ] ) ) {
-			$where_conditions[] = "load_status.meta_value = '" . $args[ 'include_status' ] . "'";
+			$include_status        = array_map( 'esc_sql', (array) $args[ 'include_status' ] );
+			$where_conditions[] = "load_status.meta_value IN ('" . implode( "','", $include_status ) . "')";
 		}
 		
 		if ( ! empty( $args[ 'invoice' ] ) ) {
@@ -1408,7 +1410,6 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 			} else {
 				$MY_INPUT = $this->count_all_sum( $MY_INPUT );
 			}
-			
 			
 			$result = $this->add_load( $MY_INPUT );
 			
@@ -2773,6 +2774,7 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 		// Specify the condition (WHERE clause) - assuming post_id is passed in the data array
 		$where = array( 'id' => $data[ 'post_id' ] );
 		// Perform the update
+		
 		$result = $wpdb->update( $table_name, $update_params, $where, array(
 			'%d',  // user_id_updated
 			'%s',  // date_updated

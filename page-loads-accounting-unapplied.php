@@ -26,17 +26,37 @@ $items['ar_problem'] = true;
 			<div class="container">
 				<div class="row">
 					<div class="col-12 mb-3 mt-3">
-						<h2>Direct Invoicing & Unapplied Payments</h2>
-					</div>
-					<div class="col-12">
-						
-						<?php
-						echo esc_html( get_template_part( 'src/template-parts/report/report', 'filter-unapplied' ) );
-						?>
-						
-						<?php
-						echo esc_html( get_template_part( 'src/template-parts/report/report', 'table-unapplied', $items ) );
-						?>
+                        <ul class="nav nav-pills" id="pills-tab" role="tablist">
+                            <li class="nav-item w-25" role="presentation">
+                                <button class="nav-link w-100 active" id="pills-info-tab" data-bs-toggle="pill"
+                                        data-bs-target="#pills-info" type="button" role="tab" aria-controls="pills-info"
+                                        aria-selected="true">Direct Invoicing & Unapplied Payments
+                                </button>
+                            </li>
+                            <li class="nav-item w-25" role="presentation">
+                                <button class="nav-link w-100" id="pills-update-tab" data-bs-toggle="pill"
+                                        data-bs-target="#pills-update" type="button" role="tab"
+                                        aria-controls="pills-update" aria-selected="false">Debt
+                                </button>
+                            </li>
+                        </ul>
+
+                        <div class="tab-content" id="pills-tabContent">
+                            <div class="tab-pane fade show active" id="pills-info" role="tabpanel"
+                                 aria-labelledby="pills-info-tab">
+                                <?php
+                                echo esc_html( get_template_part( 'src/template-parts/report/report', 'filter-unapplied' ) );
+                                ?>
+                                
+                                <?php
+                                echo esc_html( get_template_part( 'src/template-parts/report/report', 'table-unapplied', $items ) );
+                                ?>
+                            </div>
+
+                            <div class="tab-pane fade" id="pills-update" role="tabpanel" aria-labelledby="pills-update-tab">
+                            
+                            </div>
+                        </div>
 					
 					</div>
 				</div>

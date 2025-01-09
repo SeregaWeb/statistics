@@ -139,7 +139,7 @@ if ( $report_object ) {
                                value="<?php echo $value_contact_phone; ?>"
                                placeholder="Phone" class="form-control js-tel-mask"/>
 
-                            <input id="contact-input-phone_ext" style="max-width: 120px;" required type="number"
+                            <input id="contact-input-phone_ext" style="max-width: 120px;" type="number"
                                    name="contact_phone_ext"
                                    value="<?php echo $value_contact_phone_ext; ?>"
                                    placeholder="ext." class="form-control"/>

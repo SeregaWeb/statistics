@@ -16,7 +16,7 @@ $my_team = $TMSUser->check_group_access();
 $args = array(
 	'status_post' => 'publish',
     'user_id' => get_current_user_id(),
-    'exclude_status' => 'delivered',
+	'exclude_status' => array('delivered', 'tonu', 'cancelled'),
     'my_team' => $my_team,
 );
 
@@ -40,9 +40,13 @@ $items['page_type'] = $post_tp;
                     </div>
                     <div class="col-12">
 	                    <?php
-	                    echo esc_html( get_template_part( 'src/template-parts/report/report', 'filter-tracking') );
-	                 
-						echo esc_html( get_template_part( 'src/template-parts/report/report', 'table-tracking', $items ) );
+                        
+                        if (is_array($my_team)) {
+                            echo esc_html( get_template_part( 'src/template-parts/report/report', 'filter-tracking') );
+                            echo esc_html( get_template_part( 'src/template-parts/report/report', 'table-tracking', $items ) );
+                        } else {
+                            echo $reports->message_top('error', 'Team not found');
+                        }
 						?>
 
                     </div>

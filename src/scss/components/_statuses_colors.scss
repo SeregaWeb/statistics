@@ -114,3 +114,11 @@ $color_accounting_others: #ff0000;
         background-color: transparent !important;
     }
 }
+
+.status-tracking-cancelled,
+.status-tracking-tonu {
+    background-color: #ffdcdc;
+    td {
+        background-color: transparent !important;
+    }
+}

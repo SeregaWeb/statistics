@@ -22,8 +22,10 @@ echo paginate_links( array(
 	'current'   => $args['current_page'], // Обязательно передаем текущую страницу
 	'prev_text' => __('Prev'),
 	'next_text' => __('Next'),
-	'rewrite'   => false, // Отключаем перезапись URL
-	'add_args'  => false
+//	'rewrite'   => false, // Отключаем перезапись URL
+//	'add_args'  => false
+	'add_args'  => array(), // Добавляем дополнительные параметры (если есть)
+	'type'      => 'plain',
 ) );
 
 

@@ -15,7 +15,7 @@ $brokers = new TMSReportsShipper();
 $brokers_items = $brokers->get_table_records();
 $results       = get_field_value( $brokers_items, 'results' );
 $total_pages   = get_field_value( $brokers_items, 'total_pages' );
-$current_pages = get_field_value( $brokers_items, 'current_pages' );
+$current_page = get_field_value( $brokers_items, 'current_page' );
 ?>
     <div class="container-fluid">
         <div class="row">
@@ -30,7 +30,7 @@ $current_pages = get_field_value( $brokers_items, 'current_pages' );
 	                    echo esc_html( get_template_part( 'src/template-parts/report/report-table', 'shipper', array(
                             'results' => $results,
 		                    'total_pages'  => $total_pages,
-		                    'current_page' => $current_pages,
+		                    'current_page' => $current_page,
 	                    ) ) );
                         
                         ?>

@@ -442,7 +442,7 @@ if ( ! $active_item ) {
 							echo '</table>';
 							
                             
-                            if ($total_team_profit > 0 && $total_team_load > 0) :
+                            if ($total_team_profit > 0 && $total_team_load > 0 && $total_team_goals > 0) :
                             
                                 $total_team_average  += $total_team_profit / $total_team_load;
                                 $total_team_complete = ( + $total_team_profit / + $total_team_goals ) * 100;

@@ -80,15 +80,21 @@ function get_field_value( $data_arr, $key ) {
 
 // close admin panel for all roles 
 add_action('admin_init', function () {
+	
+	// Пропускаем, если это AJAX-запрос
+	if (defined('DOING_AJAX') && DOING_AJAX) {
+		return;
+	}
+	
 	// Проверяем, авторизован ли пользователь
 	if (!is_user_logged_in()) {
 		wp_redirect(home_url()); // Перенаправление на главную страницу
 		exit;
 	}
-	
+
 	// Получаем текущего пользователя
 	$current_user = wp_get_current_user();
-	
+
 	// Проверяем роль пользователя
 	if (!in_array('administrator', $current_user->roles)) {
 		wp_redirect(home_url()); // Перенаправление на главную страницу

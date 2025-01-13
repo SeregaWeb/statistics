@@ -28,7 +28,6 @@ class TMSReports extends TMSReportsHelper {
 			$this->project    = $curent_tables;
 			$this->table_main = 'reports_' . strtolower( $curent_tables );
 			$this->table_meta = 'reportsmeta_' . strtolower( $curent_tables );
-			
 		}
 	}
 	
@@ -45,7 +44,7 @@ class TMSReports extends TMSReportsHelper {
 		
 		$table_main   = $wpdb->prefix . $this->table_main;
 		$table_meta   = $wpdb->prefix . $this->table_meta;
-		$per_page     = $this->per_page_loads;
+		$per_page    = isset( $args[ 'per_page_loads' ] ) ? $args[ 'per_page_loads'] : $this->per_page_loads;
 		$current_page = isset( $_GET[ 'paged' ] ) ? absint( $_GET[ 'paged' ] ) : 1;
 		$sort_by      = ! empty( $args[ 'sort_by' ] ) ? $args[ 'sort_by' ] : 'date_booked';
 		$sort_order   = ! empty( $args[ 'sort_order' ] ) && strtolower( $args[ 'sort_order' ] ) == 'asc' ? 'ASC'
@@ -75,6 +74,9 @@ class TMSReports extends TMSReportsHelper {
 			LEFT JOIN $table_meta AS office_dispatcher
 				ON main.id = office_dispatcher.post_id
 				AND office_dispatcher.meta_key = 'office_dispatcher'
+			LEFT JOIN $table_meta AS driver_pay_statuses
+				ON main.id = driver_pay_statuses.post_id
+				AND driver_pay_statuses.meta_key = 'driver_pay_statuses'
 			LEFT JOIN $table_meta AS factoring_status
 				ON main.id = factoring_status.post_id
 				AND factoring_status.meta_key = 'factoring_status'
@@ -134,6 +136,14 @@ class TMSReports extends TMSReportsHelper {
 			$where_conditions[] = "load_status.meta_value IN ('" . implode( "','", $include_status ) . "')";
 		}
 		
+		if (isset($args['exclude_paid']) && !empty($args['exclude_paid'])) {
+			$where_conditions[] = "driver_pay_statuses.meta_value NOT IN ('paid')";
+		}
+		
+		if (isset($args['include_paid']) && !empty($args['include_paid'])) {
+			$where_conditions[] = "driver_pay_statuses.meta_value = 'paid'";
+		}
+		
 		if ( ! empty( $args[ 'invoice' ] ) ) {
 			if ( $args[ 'invoice' ] === 'invoiced' ) {
 				$where_conditions[] = "invoiced_proof.meta_value = %s";
@@ -182,6 +192,143 @@ class TMSReports extends TMSReportsHelper {
 			$where_conditions[] = "date_booked IS NOT NULL
         AND MONTH(date_booked) = %d";
 			$where_values[]     = $args[ 'month' ];
+		}
+		
+		// Применяем фильтры к запросу
+		if ( ! empty( $where_conditions ) ) {
+			$sql .= ' AND ' . implode( ' AND ', $where_conditions );
+		}
+		
+		// Подсчёт общего количества записей с учётом фильтров
+		$total_records_sql = "SELECT COUNT(*)" . $join_builder;
+		if ( ! empty( $where_conditions ) ) {
+			$total_records_sql .= ' AND ' . implode( ' AND ', $where_conditions );
+		}
+		
+		$total_records = $wpdb->get_var( $wpdb->prepare( $total_records_sql, ...$where_values ) );
+		
+		// Вычисляем количество страниц
+		$total_pages = ceil( $total_records / $per_page );
+		
+		// Смещение для текущей страницы
+		$offset = ( $current_page - 1 ) * $per_page;
+		
+		// Добавляем сортировку и лимит для текущей страницы
+		$sql            .= " ORDER BY main.$sort_by $sort_order LIMIT %d, %d";
+		$where_values[] = $offset;
+		$where_values[] = $per_page;
+		
+		// Выполняем запрос
+		$main_results = $wpdb->get_results( $wpdb->prepare( $sql, ...$where_values ), ARRAY_A );
+		
+		// Собираем все ID записей для получения дополнительных метаданных
+		$post_ids = wp_list_pluck( $main_results, 'id' );
+		
+		// Если есть записи, получаем метаданные
+		$meta_data = array();
+		if ( ! empty( $post_ids ) ) {
+			$meta_sql     = "SELECT post_id, meta_key, meta_value
+					 FROM $table_meta
+					 WHERE post_id IN (" . implode( ',', array_map( 'absint', $post_ids ) ) . ")";
+			$meta_results = $wpdb->get_results( $meta_sql, ARRAY_A );
+			
+			// Преобразуем метаданные в ассоциативный массив по post_id
+			foreach ( $meta_results as $meta_row ) {
+				$post_id = $meta_row[ 'post_id' ];
+				if ( ! isset( $meta_data[ $post_id ] ) ) {
+					$meta_data[ $post_id ] = array();
+				}
+				$meta_data[ $post_id ][ $meta_row[ 'meta_key' ] ] = $meta_row[ 'meta_value' ];
+			}
+		}
+		
+		if ( is_array( $main_results ) && ! empty( $main_results ) ) {
+			// Объединяем основную таблицу с метаданными
+			foreach ( $main_results as &$result ) {
+				$post_id               = $result[ 'id' ];
+				$result[ 'meta_data' ] = isset( $meta_data[ $post_id ] ) ? $meta_data[ $post_id ] : array();
+			}
+		}
+		
+		return array(
+			'results'       => $main_results,
+			'total_pages'   => $total_pages,
+			'total_posts'   => $total_records,
+			'current_pages' => $current_page,
+		);
+	}
+	
+	public function get_table_items_tracking( $args = array() ) {
+		global $wpdb;
+		
+		$table_main   = $wpdb->prefix . $this->table_main;
+		$table_meta   = $wpdb->prefix . $this->table_meta;
+		$per_page     = $this->per_page_loads;
+		$current_page = isset( $_GET[ 'paged' ] ) ? absint( $_GET[ 'paged' ] ) : 1;
+		$sort_by      = ! empty( $args[ 'sort_by' ] ) ? $args[ 'sort_by' ] : 'date_booked';
+		$sort_order   = ! empty( $args[ 'sort_order' ] ) && strtolower( $args[ 'sort_order' ] ) == 'asc' ? 'ASC'
+			: 'DESC';
+		
+		
+		$join_builder = "
+			FROM $table_main AS main
+			LEFT JOIN $table_meta AS dispatcher
+				ON main.id = dispatcher.post_id
+				AND dispatcher.meta_key = 'dispatcher_initials'
+			LEFT JOIN $table_meta AS reference
+				ON main.id = reference.post_id
+				AND reference.meta_key = 'reference_number'
+			LEFT JOIN $table_meta AS unit_number
+				ON main.id = unit_number.post_id
+				AND unit_number.meta_key = 'unit_number_name'
+			LEFT JOIN $table_meta AS load_status
+				ON main.id = load_status.post_id
+				AND load_status.meta_key = 'load_status'
+			WHERE 1=1
+		";
+		
+		// Основной запрос
+		$sql = "SELECT main.*,
+			dispatcher.meta_value AS dispatcher_initials_value,
+			reference.meta_value AS reference_number_value,
+			unit_number.meta_value AS unit_number_value
+	" . $join_builder;
+		
+		$where_conditions = array();
+		$where_values     = array();
+		
+		if ( ! empty( $args[ 'status_post' ] ) ) {
+			$where_conditions[] = "main.status_post = %s";
+			$where_values[]     = $args[ 'status_post' ];
+		}
+		
+		if ( ! empty( $args[ 'load_status' ] ) ) {
+			$where_conditions[] = "load_status.meta_value = %s";
+			$where_values[]     = $args[ 'load_status' ];
+		}
+		
+		if ( isset( $args[ 'my_team' ] ) && ! empty( $args[ 'my_team' ] ) && is_array( $args[ 'my_team' ] ) ) {
+			$team_values        = array_map( 'esc_sql', (array) $args[ 'my_team' ] ); // Обрабатываем значения
+			$where_conditions[] = "dispatcher.meta_value IN ('" . implode( "','", $team_values ) . "')";
+		}
+		
+		if ( isset( $args[ 'exclude_status' ] ) && ! empty( $args[ 'exclude_status' ] ) ) {
+			$exclude_status        = array_map( 'esc_sql', (array) $args[ 'exclude_status' ] );
+			$where_conditions[] = "load_status.meta_value NOT IN ('" . implode( "','", $exclude_status ) . "')";
+		}
+		
+		
+		if ( isset( $args[ 'include_status' ] ) && ! empty( $args[ 'include_status' ] ) ) {
+			$include_status        = array_map( 'esc_sql', (array) $args[ 'include_status' ] );
+			$where_conditions[] = "load_status.meta_value IN ('" . implode( "','", $include_status ) . "')";
+		}
+		
+		// Фильтрация по reference_number
+		if ( ! empty( $args[ 'my_search' ] ) ) {
+			$where_conditions[] = "(reference.meta_value LIKE %s OR unit_number.meta_value LIKE %s)";
+			$search_value       = '%' . $wpdb->esc_like( $args[ 'my_search' ] ) . '%';
+			$where_values[]     = $search_value;
+			$where_values[]     = $search_value;
 		}
 		
 		// Применяем фильтры к запросу
@@ -342,7 +489,7 @@ class TMSReports extends TMSReportsHelper {
 		$table_meta        = $wpdb->prefix . $this->table_meta;
 		$table_company     = $wpdb->prefix . 'reports_company';
 		$table_metacompany = $wpdb->prefix . 'reportsmeta_company';
-		$per_page          = $this->per_page_loads;
+		$per_page          = isset( $args[ 'per_page_loads' ] ) ? $args[ 'per_page_loads'] : $this->per_page_loads;
 		$current_page      = isset( $_GET[ 'paged' ] ) ? absint( $_GET[ 'paged' ] ) : 1;
 		$sort_by           = ! empty( $args[ 'sort_by' ] ) ? $args[ 'sort_by' ] : 'date_booked';
 		$sort_order        = ! empty( $args[ 'sort_order' ] ) && strtolower( $args[ 'sort_order' ] ) === 'asc' ? 'ASC'
@@ -2513,6 +2660,15 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 			'screen_picture'            => $updated_screen_picture,
 			'proof_of_delivery'         => $proof_of_delivery_picture,
 		);
+		
+		if ( ! empty( $data[ 'proof_of_delivery' ] ) ) {
+			
+			$date_est = new DateTime('now', new DateTimeZone('America/New_York')); // Указываем временную зону EST
+			$current_time_est = $date_est->format('Y-m-d H:i:s');
+			$post_meta['proof_of_delivery_time'] =  $current_time_est;
+		}
+		
+//		var_dump($proof_of_delivery_picture);
 		
 		// Specify the condition (WHERE clause)
 		$where = array( 'id' => $post_id );

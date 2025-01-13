@@ -7,7 +7,7 @@ $helper = new TMSReportsHelper();
 $link_shipper = get_field_value($global_options, 'single_page_shipper');
 $results       = get_field_value( $args, 'results' );
 $total_pages   = get_field_value( $args, 'total_pages' );
-$current_pages = get_field_value( $args, 'current_pages' );
+$current_page = get_field_value( $args, 'current_page' );
 
 if ( ! empty( $results ) ) :
 	?>
@@ -47,7 +47,7 @@ if ( ! empty( $results ) ) :
 	
 	echo esc_html( get_template_part( 'src/template-parts/report/report', 'pagination', array(
 		'total_pages'  => $total_pages,
-		'current_page' => $current_pages,
+		'current_page' => $current_page,
 	) ) );
 
 else : ?>

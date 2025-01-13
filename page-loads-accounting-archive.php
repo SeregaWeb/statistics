@@ -1,6 +1,6 @@
 <?php
 /**
- * Template Name: Page loads tracking
+ * Template Name: Page loads accounting paid
  *
  * @package WP-rock
  * @since 4.4.0
@@ -12,31 +12,29 @@ $reports = new TMSReports();
 
 $args = array(
 	'status_post' => 'publish',
-    'user_id' => get_current_user_id(),
-    'exclude_status' => array('delivered', 'tonu', 'cancelled'),
+	'per_page_loads' => 100,
+    'include_paid' => true,
 );
 
 $args = $reports->set_filter_params($args);
-$items = $reports->get_table_items_tracking($args);
+$items = $reports->get_table_items($args);
 
-$post_tp = 'tracking';
+$post_tp = 'accounting';
 $items['page_type'] = $post_tp;
-
 ?>
     <div class="container-fluid">
         <div class="row">
             <div class="container">
                 <div class="row">
-                    <div class="col-12 pt-3 pb-3">
-                        <h2><?php echo get_the_title(); ?></h2>
-                        <p><?php echo get_the_excerpt(); ?></p>
-                        
-                    </div>
                     <div class="col-12">
+	                    
 	                    <?php
-	                    echo esc_html( get_template_part( 'src/template-parts/report/report', 'filter-tracking') );
-	                 
-						echo esc_html( get_template_part( 'src/template-parts/report/report', 'table-tracking', $items ) );
+	                    echo esc_html( get_template_part( 'src/template-parts/report/report', 'filter-accounting', array('post_type' => $post_tp) ) );
+	                    ?>
+						
+						
+						<?php
+						echo esc_html( get_template_part( 'src/template-parts/report/report', 'table-accounting', $items ) );
 						?>
 
                     </div>

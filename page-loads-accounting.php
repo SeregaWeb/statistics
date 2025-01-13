@@ -12,6 +12,8 @@ $reports = new TMSReports();
 
 $args = array(
 	'status_post' => 'publish',
+	'per_page_loads' => 100,
+    'exclude_paid' => true,
 );
 
 $args = $reports->set_filter_params($args);
@@ -27,7 +29,7 @@ $items['page_type'] = $post_tp;
                     <div class="col-12">
 
                         <?php
-						echo esc_html( get_template_part( 'src/template-parts/report/report', 'filter', array('post_type' => $post_tp) ) );
+						echo esc_html( get_template_part( 'src/template-parts/report/report', 'filter-accounting', array('post_type' => $post_tp) ) );
 						?>
 						
 						

@@ -15,7 +15,8 @@ $brokers = new TMSReportsCompany();
 $brokers_items = $brokers->get_table_records();
 $results       = get_field_value( $brokers_items, 'results' );
 $total_pages   = get_field_value( $brokers_items, 'total_pages' );
-$current_pages = get_field_value( $brokers_items, 'current_pages' );
+$current_pages = get_field_value( $brokers_items, 'current_page' );
+
 ?>
     <div class="container-fluid">
         <div class="row">

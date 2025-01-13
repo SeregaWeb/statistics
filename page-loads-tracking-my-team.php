@@ -22,7 +22,7 @@ $args = array(
 
 
 $args = $reports->set_filter_params($args);
-$items = $reports->get_table_items($args);
+$items = $reports->get_table_items_tracking($args);
 
 $post_tp = 'tracking';
 $items['page_type'] = $post_tp;

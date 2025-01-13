@@ -35,7 +35,6 @@ if ( ! empty( $results ) ) : ?>
         </button>
     </div>
     <?php endif; ?>
-
     <table class="table mb-5 w-100">
         <thead>
         <tr>
@@ -44,12 +43,14 @@ if ( ! empty( $results ) ) : ?>
             <th scope="col" title="dispatcher">Disp.</th>
             <th scope="col">Pick up</th>
             <th scope="col">Delivery</th>
-            <th scope="col">Unit & name</th>
-            <th scope="col">Driver rate</th>
-            <th scope="col">Delivery</th>
+            
+            <th scope="col">
+                Gross
+            </th>
+
             <th scope="col">Load status</th>
-            <th scope="col">Bank</th>
-            <th scope="col">Payment</th>
+            <th scope="col">Invoice</th>
+            <th scope="col">Factoring status</th>
 
             <th scope="col"></th>
         </tr>
@@ -82,6 +83,7 @@ if ( ! empty( $results ) ) : ?>
 			
 			$reference_number = esc_html( get_field_value( $meta, 'reference_number' ) );
 			$unit_number_name = esc_html( get_field_value( $meta, 'unit_number_name' ) );
+			$driver_phone     = esc_html( get_field_value( $meta, 'driver_phone' ) );
 			
 			$booked_rate_raw = get_field_value( $meta, 'booked_rate' );
 			$booked_rate = esc_html('$' . $helper->format_currency($booked_rate_raw));
@@ -125,11 +127,6 @@ if ( ! empty( $results ) ) : ?>
 			
 			$bank_status       = get_field_value( $meta, 'bank_payment_status' );
 			$driver_pay_status = get_field_value( $meta, 'driver_pay_statuses' );
-			$proof_of_delivery_time = get_field_value( $meta, 'proof_of_delivery_time' );
-			
-            if ($proof_of_delivery_time) {
-	            $proof_of_delivery_time     = esc_html( date( 'H:i:s', strtotime( $proof_of_delivery_time ) ) );
-            }
 			
 			
 			$bank_status       = $helper->get_label_by_key( $bank_status, 'bank_statuses' );
@@ -182,9 +179,11 @@ if ( ! empty( $results ) ) : ?>
 
 
                                 </p>
+                            
 							<?php endif; ?>
 						<?php endforeach; ?>
 					<?php endif; ?>
+                    <span class="text-small"><?php echo $pick_up_date; ?></span>
                 </td>
                 <td>
 					<?php if ( is_array( $delivery ) ): ?>
@@ -202,40 +201,12 @@ if ( ! empty( $results ) ) : ?>
 							<?php endif; ?>
 						<?php endforeach; ?>
 					<?php endif; ?>
+                    <span class="text-small"><?php echo $delivery_date; ?></span>
                 </td>
-
-
-                <td>
-                    <div class="d-flex flex-column">
-                        <p class="m-0"><?php echo $unit_number_name; ?></p>
-                    </div>
-                </td>
-
-                <td>
-                    <div class="d-flex flex-column gap-0">
-						<?php echo $driver_rate; ?>
-						<?php if ( $quick_pay_method ):
-							echo $component_quick_pay;
-						endif; ?>
-                    </div>
-                </td>
-
-
-                <td>
-                    <span class="text-small"><?php echo $delivery_date; ?></span></br>
-                    <span class="text-small">
-                        <?php echo $proof_of_delivery_time; ?>
-                    </span>
-                </td>
-
-
+                <td><span class="<?php echo $modify_booked_price_class; ?>"><?php echo $booked_rate; ?></span></td>
                 <td class="<?php echo $status_class; ?>"><span><?php echo $status; ?></span></td>
-                <td>
-					<?php echo $bank_status; ?>
-                </td>
-                <td>
-					<?php echo $driver_pay_status; ?>
-                </td>
+                <td class="<?php echo $invoice_raw ? 'invoiced' : 'not-invoiced'; ?> ?>" ><span><?php echo $invoice_raw ? 'Invoiced' : 'Not invoiced'; ?></span></td>
+                <td class="<?php echo $factoring_class; ?>"><span><?php echo $factoring_status; ?></span></td>
 
                 <td>
 					<?php if ( $show_control ): ?>

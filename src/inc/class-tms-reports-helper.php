@@ -10,7 +10,7 @@ class TMSReportsHelper extends TMSReportsIcons {
 		'direct'                    => 'Direct',
 	);
 	
-	public $select           = array(
+	public $select = array(
 		"USA_LABEL" => array( "---United states (US)---" ),
 		"AL"        => "Alabama, AL",
 		"AK"        => "Alaska, AK",
@@ -115,10 +115,12 @@ class TMSReportsHelper extends TMSReportsIcons {
 		"YUC"       => "Yucatán, YUC",
 		"ZAC"       => "Zacatecas, ZAC",
 	);
-	public $invoices         = array(
+	
+	public $invoices = array(
 		'invoiced'     => 'Invoiced',
 		'not-invoiced' => 'Not invoiced',
 	);
+	
 	public $factoring_status = array(
 		'unsubmitted'        => 'Unsubmitted',
 		'in-processing'      => 'In Processing',
@@ -133,19 +135,20 @@ class TMSReportsHelper extends TMSReportsIcons {
 		'company-closed'     => 'Company closed',
 	);
 	
-	
-	public $bank_statuses           = array(
+	public $bank_statuses = array(
 		'approved'         => 'Approved',
 		'not-in-payees'    => 'Not in payees',
 		'adding-to-payees' => 'Adding to payees',
 		'missing-vc'       => 'Missing VC',
 	);
+	
 	public $driver_payment_statuses = array(
 		'not-paid'   => 'Not paid',
 		'processing' => 'Processing',
 		'paid'       => 'Paid'
 	);
-	public $statuses                = array(
+	
+	public $statuses = array(
 		'waiting-on-pu-date' => 'Waiting on PU Date',
 		'at-pu'              => '@PU',
 		'loaded-enroute'     => 'Loaded & Enroute',
@@ -155,7 +158,8 @@ class TMSReportsHelper extends TMSReportsIcons {
 		'cancelled'          => 'Cancelled',
 		'waiting-on-rc'      => 'Waiting on RC'
 	);
-	public $sources                 = array(
+	
+	public $sources = array(
 		'contact'   => 'Contact',
 		'dat'       => 'DAT',
 		'truckstop' => 'Truckstop',
@@ -164,7 +168,8 @@ class TMSReportsHelper extends TMSReportsIcons {
 		'beon'      => 'Beon',
 		'other'     => 'Other'
 	);
-	public $quick_pay_methods       = array(
+	
+	public $quick_pay_methods = array(
 		'zelle'          => array( 'label' => 'Zelle', 'value' => '3', 'commission' => '0' ),
 		'cashapp'        => array( 'label' => 'CashApp', 'value' => '3.5', 'commission' => '0' ),
 		'ach-individual' => array( 'label' => 'ACH (individual)', 'value' => '2.5', 'commission' => '0.5' ),
@@ -173,7 +178,8 @@ class TMSReportsHelper extends TMSReportsIcons {
 		'cash'           => array( 'label' => 'Cash', 'value' => '0', 'commission' => '0' ),
 		'check'          => array( 'label' => 'Check', 'value' => '0', 'commission' => '0' ),
 	);
-	public $features                = array(
+	
+	public $features = array(
 		'hazmat'              => 'Hazmat',
 		'tanker-end'          => 'Tanker End.',
 		'driver-assist'       => 'Driver assist',
@@ -195,7 +201,8 @@ class TMSReportsHelper extends TMSReportsIcons {
 		'blind-shipment'      => 'Blind shipment',
 		'partial'             => 'Partial'
 	);
-	public $types                   = array(
+	
+	public $types = array(
 		'ltl'           => 'LTL',
 		'container'     => 'Container',
 		'drop_and_hook' => 'Drop and Hook',
@@ -203,16 +210,19 @@ class TMSReportsHelper extends TMSReportsIcons {
 		'other'         => 'Other',
 		'truck_load'    => 'Truck Load',
 	);
-	public $tms_tables              = array(
+	
+	public $tms_tables = array(
 		'Odysseia',
 		'Martlet',
 		'Endurance'
 	);
-	public $statuses_ar             = array(
+	
+	public $statuses_ar = array(
 		'not-solved' => 'Not solved',
 		'solved'     => 'Solved',
 	);
-	public $set_up                  = array(
+	
+	public $set_up = array(
 		'completed'     => 'Completed',
 		'not_completed' => 'Not completed',
 		'error'         => 'Error',
@@ -505,7 +515,7 @@ class TMSReportsHelper extends TMSReportsIcons {
 		if ( $search_list === 'sources' ) {
 			return isset( $this->sources[ $key ] ) ? $this->sources[ $key ] : $key;
 		}
-  
+		
 		if ( $search_list === 'processing' ) {
 			return isset( $this->processing[ $key ] ) ? $this->processing[ $key ] : $key;
 		}

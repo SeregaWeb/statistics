@@ -1,5 +1,5 @@
 <?php
-global $global_options;
+global $global_options, $report_data;
 
 $add_new_load = get_field_value( $global_options, 'add_new_load' );
 $link_broker = get_field_value($global_options, 'single_page_broker');
@@ -27,8 +27,7 @@ $billing_info              = $TMSUsers->check_user_role_access( array(
 $hide_billing_and_shipping = $TMSUsers->check_user_role_access( array( 'billing', 'accounting' ), true );
 
 $my_team = $TMSUsers->check_group_access();
-
-
+$report_data = array();
 
 if ( ! empty( $results ) ) :?>
 
@@ -137,6 +136,37 @@ if ( ! empty( $results ) ) :?>
             if (!$broker_name) {
 			    $broker_name = "N/A";
             }
+			
+            $all_paid = 0;
+            if ($invoice_status != 'in-processing' && $invoice_status != 'paid') {
+	            $all_paid += $booked_rate_raw;
+            }
+            
+			if (in_array($processing, ['factoring-delayed-advance', 'unapplied-payment'], true)) {
+				
+				if (!isset($report_data['broker_name_' . $id_customer])) {
+					$report_data['broker_name_' . $id_customer] = ['name' => $broker_name , 'mc' => $broker_mc, 'statuses' => []];
+				}
+				
+				// Увеличиваем значение или инициализируем его
+				$report_data['broker_name_' . $id_customer]['statuses'][$processing] =
+					($report_data['broker_name_' . $id_customer]['statuses'][$processing] ?? 0) + $booked_rate_raw;
+				
+			} elseif (in_array($invoice_status, ['fraud', 'company-closed', 'pending-to-tafs', 'in-processing'], true)) {
+				// Инициализируем массив, если ключа нет
+				if (!isset($report_data['broker_name_' . $id_customer])) {
+					$report_data['broker_name_' . $id_customer] = ['name' => $broker_name , 'mc' => $broker_mc, 'statuses' => []];
+				}
+				
+				// Увеличиваем значение или инициализируем его
+				$report_data['broker_name_' . $id_customer]['statuses'][$invoice_status] =
+					($report_data['broker_name_' . $id_customer]['statuses'][$invoice_status] ?? 0) + $booked_rate_raw;
+			}
+            
+            if (isset($report_data)) {
+                $report_data['all_paid_without_two_status'] = $all_paid;
+            }
+   
 			?>
 
             <tr class="">

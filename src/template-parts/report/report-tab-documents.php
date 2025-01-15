@@ -11,7 +11,7 @@ $post_id       = ! empty( $args[ 'post_id' ] ) ? $args[ 'post_id' ] : null;
 
 $billing_info = $TMSUsers->check_user_role_access(array('administrator', 'billing', 'accounting'),true);
 
-$required_file_for_user =  $TMSUsers->check_user_role_access(array('billing', 'tracking', 'dispatcher'),true);
+$required_file_for_user =  $TMSUsers->check_user_role_access(array('billing', 'tracking'),true);
 
 if ( $report_object ) {
 	$values = $report_object;

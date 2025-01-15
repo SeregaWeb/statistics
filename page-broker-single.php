@@ -181,7 +181,7 @@ $add_broker = $TMSUsers->check_user_role_access( array( 'dispatcher', 'dispatche
                                     </li>
                                     <li class="status-list__item">
                                         <span class="status-list__label">Notes:</span>
-                                        <span class="status-list__value"><?php echo $broker_meta[ 'notes' ] ?? ''; ?></span>
+                                        <span class="status-list__value"><?php echo stripslashes($broker_meta['notes'] ?? ''); ?></span>
                                     </li>
 
                                     <li class="status-list__item">
@@ -488,7 +488,7 @@ $add_broker = $TMSUsers->check_user_role_access( array( 'dispatcher', 'dispatche
                                                     percent</label>
                                                 <div class="input-group mt-3">
                                                     <span class="input-group-text">%</span>
-                                                    <input id="quick_pay_percent" type="number" name="quick_pay_percent"
+                                                    <input id="quick_pay_percent" type="number" name="quick_pay_percent" step="0.1"
                                                            placeholder=""
                                                            class="form-control"
                                                            value="<?php echo fill_field( 'quick_pay_percent', $broker_meta ); ?>">

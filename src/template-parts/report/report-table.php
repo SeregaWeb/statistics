@@ -21,6 +21,7 @@ $billing_info = $TMSUsers->check_user_role_access( array(
 	'billing',
 	'accounting'
 ), true );
+
 $hide_billing_and_shipping = $TMSUsers->check_user_role_access( array( 'billing', 'accounting' ), true );
 
 $my_team = $TMSUsers->check_group_access();

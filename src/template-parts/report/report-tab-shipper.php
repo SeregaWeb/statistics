@@ -15,6 +15,13 @@ if ( $report_object ) {
 	$values = $report_object;
     $meta = get_field_value($values, 'meta');
 	$main = get_field_value($values, 'main');
+	
+	$pick_up_date        = get_field_value($main, 'pick_up_date');
+	$pick_up_date_formatted = date('Y-m-d', strtotime($pick_up_date));
+	
+	$delivery_date        = get_field_value($main, 'delivery_date');
+	$delivery_date_formatted = date('Y-m-d', strtotime($delivery_date));
+ 
 	if ( is_array( $meta ) && sizeof( $meta ) > 0 ) {
         
         $pick_up_location = get_field_value($meta, 'pick_up_location');
@@ -51,6 +58,14 @@ if ( $report_object ) {
 	       
         <?php if ($post_status): ?>
             <input type="hidden" name="post_status" value="<?php echo $post_status; ?>">
+        <?php endif; ?>
+        
+        <?php if ($delivery_date): ?>
+                <input type="hidden" class="js-delivery-date-setup" value="<?php echo $delivery_date_formatted; ?>">
+        <?php endif; ?>
+        
+        <?php if ($pick_up_date): ?>
+                <input type="hidden" class="js-pick-up-date-setup" value="<?php echo $pick_up_date_formatted; ?>">
         <?php endif; ?>
         
         <figure>
@@ -103,7 +118,7 @@ if ( $report_object ) {
 
         <div class="mb-2 col-12 col-md-6 col-xl-4">
             <label for="pick_up_date" class="form-label">Local Date and time</label>
-            <input type="date" name="pick_up_date" class="form-control  js-shipper-date">
+            <input type="date" name="pick_up_date" class="form-control  js-shipper-date" value="<?php echo $pick_up_date_formatted; ?>">
         </div>
 
         <div class="mb-2 col-12 col-xl-4">

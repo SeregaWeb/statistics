@@ -248,7 +248,7 @@ class  TMSUsers extends TMSReportsHelper {
 	
 	public function show_control_loads( $my_team, $current_user_id, $id_user, $is_draft ) {
 		
-		$allowed_role = $this->check_user_role_access( array( 'administrator', 'billing', 'accounting' ), true );
+		$allowed_role = $this->check_user_role_access( array( 'administrator', 'billing', 'accounting', 'moderator' ), true );
 		
 		if ( $allowed_role || intval( $current_user_id ) === intval( $id_user ) || $is_draft ) {
 			return true;

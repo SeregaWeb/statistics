@@ -67,7 +67,7 @@ class  TMSStatistics extends TMSReportsHelper {
 		
 		return json_encode( $statistics );
 	}
-	public function get_dispatcher_statistics() {
+	public function get_dispatcher_statistics($office_dispatcher_selected) {
 		global $wpdb;
 		
 		$table_reports = $wpdb->prefix . $this->table_main;
@@ -92,17 +92,21 @@ class  TMSStatistics extends TMSReportsHelper {
 		
 		// Выполняем запрос и получаем результаты
 		$dispatcher_stats = $wpdb->get_results( $query, ARRAY_A );
-		
 		if ( is_array( $dispatcher_stats ) ) {
+			
 			foreach ( $dispatcher_stats as $key => $disp ) {
 				$names = $this->get_user_full_name_by_id( $disp[ 'dispatcher_initials' ] );
-				
-				if ( $names ) {
-					$dispatcher_stats[ $key ][ 'dispatcher_initials' ] = $names[ 'full_name' ];
+				$office_dispatcher = get_field( 'work_location', 'user_'.$disp[ 'dispatcher_initials' ]);
+				if ($office_dispatcher_selected !== 'all' && $office_dispatcher !== $office_dispatcher_selected) {
+					unset( $dispatcher_stats[ $key ] );
+				} else {
+					if ( $names ) {
+						$dispatcher_stats[ $key ][ 'dispatcher_initials' ] = $names[ 'full_name' ];
+					}
 				}
 			}
 		}
-		
+		$dispatcher_stats = array_values( $dispatcher_stats );
 		return json_encode( $dispatcher_stats );
 	}
 	

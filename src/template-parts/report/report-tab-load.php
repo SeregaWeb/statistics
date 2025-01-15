@@ -359,7 +359,7 @@ $read_only = $TMSUsers->check_read_only($post_status);
         <div class="mb-2 col-12 col-md-6 col-xl-4">
             <label for="unit_number_name" class="form-label">Unit Number & Name</label>
             <div class="d-flex gap-1 js-container-number">
-            <input type="text" name="unit_number_name" <?php echo $tbd ? 'readonly' : ''; ?> data-value="<?php echo $unit_number_name; ?>" value="<?php echo $unit_number_name; ?>" class="form-control" required>
+            <input type="text" name="unit_number_name" <?php echo $tbd ? 'readonly' : ''; ?> data-value="<?php echo $unit_number_name; ?>" value="<?php echo stripslashes($unit_number_name); ?>" class="form-control" required>
             <button class="btn btn-primary js-fill-driver">Fill</button>
             </div>
             <input type="hidden" name="old_unit_number_name" value="<?php echo $unit_number_name; ?>" >
@@ -478,7 +478,7 @@ $read_only = $TMSUsers->check_read_only($post_status);
 
         <div class="mb-2 col-12 col-md-6 col-xl-4">
             <label for="commodity" class="form-label">Commodity</label>
-            <input type="text" value="<?php echo $commodity; ?>" name="commodity" class="form-control" required>
+            <input type="text" value="<?php echo stripslashes($commodity); ?>" name="commodity" class="form-control" required>
         </div>
 
         <div class="mb-2 col-12 col-md-6 col-xl-4">
@@ -489,7 +489,7 @@ $read_only = $TMSUsers->check_read_only($post_status);
 
         <div class="mb-5 col-12 col-xl-8">
             <label for="notes" class="form-label">Notes</label>
-            <textarea name="notes" class="form-control"><?php echo $notes; ?></textarea>
+            <textarea name="notes" class="form-control"><?php echo stripslashes($notes); ?></textarea>
         </div>
 	    
 	    <?php endif; ?>

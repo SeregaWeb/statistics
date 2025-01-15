@@ -78,7 +78,7 @@ if ($TMSUsers->check_user_role_access(array('dispatcher-tl','tracking'), true) &
 }
 
 if ($access) {
-	$full_only_view = $TMSUsers->check_user_role_access(array('billing', 'dispatcher-tl'), true);
+	$full_only_view = $TMSUsers->check_user_role_access(array('billing', 'dispatcher-tl', 'moderator'), true);
 }
 
 if ($TMSUsers->check_user_role_access(array('dispatcher-tl','dispatcher'), true) && isset($main) && isset($meta)) {

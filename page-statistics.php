@@ -8,6 +8,7 @@
 
 $statistics = new TMSStatistics();
 $helper     = new TMSReportsHelper();
+$TMSUsers      = new TMSUsers();
 
 get_header();
 $dispatchers    = $statistics->get_dispatchers();
@@ -53,17 +54,52 @@ if ( ! $active_item ) {
                     </div>
 
                     <div class="col-12 d-flex flex-wrap">
+	                   
 						
 						<?php if ( $active_item === 'finance' ):
-							$dispatcher_json = $statistics->get_dispatcher_statistics();
+							$office_dispatcher = get_field_value($_GET, 'office');
+       
+							$sellect_all_offices = $TMSUsers->check_user_role_access( array( 'dispatcher-tl', 'administrator', 'recruiter', 'recruiter-tl', 'moderator' ), true );
+							
+							if ($sellect_all_offices) {
+								$office_dispatcher =  $office_dispatcher ? $office_dispatcher : 'all' ;
+							} else if (!$office_dispatcher) {
+								$office_dispatcher = get_field( 'work_location', 'user_'.get_current_user_id());
+                            }
+							$offices = $helper->get_offices_from_acf();
+							$dispatcher_json = $statistics->get_dispatcher_statistics($office_dispatcher);
 							$dispatcher_arr  = json_decode( $dispatcher_json, true );
-							?>
-
+							$show_filter_by_office = $TMSUsers->check_user_role_access( array( 'dispatcher-tl', 'administrator', 'recruiter', 'recruiter-tl', 'tracking' , 'moderator' ), true );
+       
+							if ($show_filter_by_office): ?>
+                            <form class="w-100 d-flex gap-1">
+                            <select class="form-select w-auto" name="office" aria-label=".form-select-sm example">
+                                <option value="all">Office</option>
+								<?php if (isset($offices['choices']) && is_array($offices['choices'])): ?>
+									<?php foreach ($offices['choices'] as $key => $val):  ?>
+                                        <option value="<?php echo $key; ?>"  <?php echo $office_dispatcher === $key ? 'selected' : '' ?> >
+											<?php echo $val; ?>
+                                        </option>
+									<?php endforeach; ?>
+								<?php endif; ?>
+                            </select>
+                                <input type="hidden" name="active_state" value="<?php echo $active_item; ?>">
+                                <button class="btn btn-primary">Select Office</button>
+                            </form>
+						    <?php endif; ?>
+                        
+                        
                             <div id="mainChart" style="width:100%; max-width:600px; height:400px;"></div>
                             <div id="mainChartPrise" style="width:100%; max-width:600px; height:400px;"></div>
 						<?php
 						
 						if ( ! empty( $dispatcher_arr ) ) {
+							
+							$total_loads = 0;
+							$total_total_profit = 0;
+							$total_average_profit = 0;
+							
+							
 							echo '<table border="1" class="table-stat">';
 							echo '<thead>';
 							echo '<tr>';
@@ -82,10 +118,34 @@ if ( ! $active_item ) {
 								echo '<td>$' . number_format( $dispatcher[ 'total_profit' ], 2 ) . '</td>';
 								echo '<td>$' . number_format( $dispatcher[ 'average_profit' ], 2 ) . '</td>';
 								echo '</tr>';
+								
+								$total_loads += $dispatcher[ 'post_count' ];
+								$total_total_profit += $dispatcher[ 'total_profit' ];
+								$total_average_profit += $dispatcher[ 'average_profit' ];
 							}
 							
 							echo '</tbody>';
 							echo '</table>';
+							
+							if (isset($total_loads) && isset($total_total_profit) && isset($total_average_profit)):
+							
+							echo '<h2>Total</h2>';
+							
+							echo '<table class="table-stat total" border="1" cellpadding="5" cellspacing="0">';
+							echo '<tr class="text-left">';
+							echo '<th>Loads</th>';
+							echo '<th>Profit</th>';
+							echo '<th>Average Profit</th>';
+							echo '</tr>';
+							echo '<tr class="text-left">';
+							echo '<td>' . $total_loads . '</td>';
+							echo '<td>$' . number_format( $total_total_profit, 2 ) . '</td>';
+							echo '<td>$' . number_format( $total_average_profit, 2 ) . '</td>';
+							echo '</tr>';
+							echo '</table>';
+       
+                            endif;
+       
 						} else {
 							echo 'No data available.';
 						}
@@ -94,7 +154,7 @@ if ( ! $active_item ) {
                             <script>
                               
                               const dispatcherData = <?php echo $dispatcher_json; ?>;
-                              
+                              console.log('dispatcherData', dispatcherData);
                               window.document.addEventListener('DOMContentLoaded', () => {
                                 google.charts.load('current', { 'packages': ['corechart'] })
                                 google.charts.setOnLoadCallback(drawChart)
@@ -103,7 +163,7 @@ if ( ! $active_item ) {
                                   // Prepare the data in Google Charts format
                                   const dataArray = [['Dispatcher', 'Post Count']]
                                   
-                                  dispatcherData.forEach(item => {
+                                  dispatcherData.forEach((item,index) => {
                                     dataArray.push([
                                       `${ item.dispatcher_initials } \n${ item.post_count }`, parseInt(item.post_count)
                                     ])
@@ -229,7 +289,6 @@ if ( ! $active_item ) {
 						
 						<?php if ( $active_item === 'yearly' ):
 							
-							
 							$current_year = date( 'Y' );
 							$year_param = get_field_value( $_GET, 'fyear' );
 							$dispatcher_initials = get_field_value( $_GET, 'dispatcher' );
@@ -278,6 +337,10 @@ if ( ! $active_item ) {
 								echo '<table class="table-stat">';
 								echo '<thead><tr><th>Month</th><th>Loads</th><th>Profit</th><th>Average per load</th><th>Average daily per month</th></tr></thead>';
 								echo '<tbody>';
+                                
+                                $total_loads = 0;
+                                $total_total_profit = 0;
+                                $total_average_profit = 0;
 								
 								foreach ( $mountly as $month_data ) {
 									
@@ -291,12 +354,37 @@ if ( ! $active_item ) {
 									echo '<td>$' . number_format( $month_data[ 'average_profit' ], 2 ) . '</td>';
 									echo '<td title="Days: ' . $work_day . '">$' . number_format( $month_data[ 'total_profit' ] / $work_day, 2 ) . '</td>';
 									echo '</tr>';
+									
+									
+									$total_loads += $month_data[ 'post_count' ];
+									$total_total_profit += $month_data[ 'total_profit' ];
+									$total_average_profit += $month_data[ 'average_profit' ];
 								}
 								
 								echo '</tbody>';
 								echo '</table>';
 								?>
                             </form>
+                        
+                            <?php
+							if (isset($total_loads) && isset($total_total_profit) && isset($total_average_profit)):
+							echo '<h2>Total per year</h2>';
+							
+							echo '<table class="table-stat total" border="1" cellpadding="5" cellspacing="0">';
+                                echo '<tr class="text-left">';
+                                    echo '<th>Loads</th>';
+                                    echo '<th>Profit</th>';
+                                    echo '<th>Average Profit</th>';
+                                echo '</tr>';
+                                echo '<tr class="text-left">';
+                                    echo '<td>' . $total_loads . '</td>';
+                                    echo '<td>$' . number_format( $total_total_profit, 2 ) . '</td>';
+                                    echo '<td>$' . number_format( $total_average_profit, 2 ) . '</td>';
+                                echo '</tr>';
+							echo '</table>';
+                            endif;
+                            ?>
+                            
 						<?php endif; ?>
 						
 						<?php if ( $active_item === 'goal' ):

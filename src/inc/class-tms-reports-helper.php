@@ -539,64 +539,64 @@ class TMSReportsHelper extends TMSReportsIcons {
 			$tooltip = isset( $this->features[ $key ] ) ? $this->features[ $key ] : $key;
 			switch ( $key ) {
 				case 'hazmat':
-					$icons[] = $this->get_icon_hazmat( $tooltip );
+					$icons[] = $this->get_icon_hazmat( $tooltip ); // +
 					break;
 				case 'tanker-end':
-					$icons[] = $this->get_icon_tanker_end( $tooltip );
+					$icons[] = $this->get_icon_tanker_end( $tooltip ); // +
 					break;
 				case 'driver-assist':
-					$icons[] = $this->get_icon_assist( $tooltip );
+					$icons[] = $this->get_icon_assist( $tooltip ); // new
 					break;
 				case 'liftgate':
-					$icons[] = $this->get_icon_liftgate( $tooltip );
+					$icons[] = $this->get_icon_liftgate( $tooltip ); // +
 					break;
 				case 'pallet-jack':
-					$icons[] = $this->get_icon_palet_jack( $tooltip );
+					$icons[] = $this->get_icon_palet_jack( $tooltip ); // +
 					break;
 				case 'dock-high':
-					$icons[] = $this->get_icon_dock_high( $tooltip );
+					$icons[] = $this->get_icon_dock_high( $tooltip ); // +
 					break;
 				case 'true-team':
-					$icons[] = $this->get_icon_true_team( $tooltip );
+					$icons[] = $this->get_icon_true_team( $tooltip ); // new
 					break;
 				case 'fake-team':
-					$icons[] = $this->get_icon_fake_team( $tooltip );
+					$icons[] = $this->get_icon_fake_team( $tooltip ); // new
 					break;
 				case 'tsa':
-					$icons[] = $this->get_icon_tsa( $tooltip );
+					$icons[] = $this->get_icon_tsa( $tooltip ); // +
 					break;
 				case 'twic':
-					$icons[] = $this->get_icon_twic( $tooltip );
+					$icons[] = $this->get_icon_twic( $tooltip ); // +
 					break;
 				case 'airport':
-					$icons[] = $this->get_icon_airport( $tooltip );
+					$icons[] = $this->get_icon_airport( $tooltip ); // new
 					break;
 				case 'round-trip':
-					$icons[] = $this->get_icon_round_trip( $tooltip );
+					$icons[] = $this->get_icon_round_trip( $tooltip ); // new
 					break;
 				case 'alcohol':
-					$icons[] = $this->get_icon_alcohol( $tooltip );
+					$icons[] = $this->get_icon_alcohol( $tooltip ); // new
 					break;
 				case 'temperature-control':
-					$icons[] = $this->get_icon_temperature_control( $tooltip );
+					$icons[] = $this->get_icon_temperature_control( $tooltip ); // new
 					break;
 				case 'ace':
-					$icons[] = $this->get_icon_ace( $tooltip );
+					$icons[] = $this->get_icon_ace( $tooltip ); // new
 					break;
 				case 'aci':
-					$icons[] = $this->get_icon_aci( $tooltip );
+					$icons[] = $this->get_icon_aci( $tooltip ); // new
 					break;
 				case 'mexico':
-					$icons[] = $this->get_icon_mexico( $tooltip );
+					$icons[] = $this->get_icon_mexico( $tooltip ); // +/-
 					break;
 				case 'military-base':
-					$icons[] = $this->get_icon_military( $tooltip );
+					$icons[] = $this->get_icon_military( $tooltip ); // new
 					break;
 				case 'blind-shipment':
-					$icons[] = $this->get_icon_blind_shipment( $tooltip );
+					$icons[] = $this->get_icon_blind_shipment( $tooltip ); // new
 					break;
 				case 'partial':
-					$icons[] = $this->get_icon_partial( $tooltip );
+					$icons[] = $this->get_icon_partial( $tooltip ); // new
 					break;
 				default:
 					break;

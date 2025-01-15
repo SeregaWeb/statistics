@@ -64,10 +64,6 @@ if ( function_exists( 'get_field' ) ) {
 - после закрытия лоада ничего нельзя редактировать всем кроме админа
 
 Trip - предзаполнить даты delivary location / pick-up location
-recruiter - team leader read only accounting list / tracking archive and active / loads
-
-//adm-hok-tl-rec
-
 
 1. Приоритет вывода вверх — груз со статусом "Waiting on PU Date" и ближайшая дата к сегодня.
 2. Приоритет вывода вверх — груз со статусом "@DEL" и дата сегодня.
@@ -75,6 +71,7 @@ recruiter - team leader read only accounting list / tracking archive and active 
 4. Приоритет вывода вверх — груз со статусом "Loaded & Enroute" и даты в порядке убывания.
 5. Приоритет вывода вверх — груз со статусом "Waiting on PU Date" и даты в порядке убывания.
 
+Можешь еще в Performance одной общей кнопкой сделать сохранение, а не напротив каждой строки?
 </pre>
 
 <body <?php body_class( $page_class ); ?>>

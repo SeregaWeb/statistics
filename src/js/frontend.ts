@@ -42,6 +42,8 @@ import { logsInit } from './components/logs';
 import { bookmarkInit } from './components/bookmark';
 import { sendUpdatePerformance } from './components/performance';
 import { telMaskInit } from './components/tel-mask';
+import { changeStopType } from './components/stop-type';
+import { setStatusPaid } from './components/set-status-paid';
 
 function ready() {
     console.log('ready');
@@ -111,6 +113,8 @@ function ready() {
     quick_pay_method();
     trigger_current_time();
     triggerDisableBtnInit();
+    changeStopType();
+    setStatusPaid();
 
     telMaskInit();
 

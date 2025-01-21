@@ -9,16 +9,15 @@
 global $global_options;
 
 if ( function_exists( 'get_fields' ) ) {
-    if ( function_exists( 'pll_current_language' ) ) {
-        // @codingStandardsIgnoreStart
-        $locale         = get_locale();
-        // @codingStandardsIgnoreEnd
-        $global_options = get_fields( 'theme-general-settings_' . $locale );
-    } else {
-        $global_options = get_fields( 'theme-general-settings' );
-    }
+	if ( function_exists( 'pll_current_language' ) ) {
+		// @codingStandardsIgnoreStart
+		$locale = get_locale();
+		// @codingStandardsIgnoreEnd
+		$global_options = get_fields( 'theme-general-settings_' . $locale );
+	} else {
+		$global_options = get_fields( 'theme-general-settings' );
+	}
 }
-
 
 show_admin_bar( false );
 
@@ -77,32 +76,34 @@ $wp_rock->px_custom_upload_size_limit( 5 );
 function get_field_value( $data_arr, $key ) {
 	if ( isset( $data_arr[ $key ] ) ) {
 		$value = $data_arr[ $key ];
+		
 		// Убираем слеши, если значение является строкой
 		return is_string( $value ) ? stripslashes( $value ) : $value;
 	}
+	
 	return null;
 }
 
 // close admin panel for all roles 
-add_action('admin_init', function () {
+add_action( 'admin_init', function() {
 	
 	// Пропускаем, если это AJAX-запрос
-	if (defined('DOING_AJAX') && DOING_AJAX) {
+	if ( defined( 'DOING_AJAX' ) && DOING_AJAX ) {
 		return;
 	}
 	
 	// Проверяем, авторизован ли пользователь
-	if (!is_user_logged_in()) {
-		wp_redirect(home_url()); // Перенаправление на главную страницу
+	if ( ! is_user_logged_in() ) {
+		wp_redirect( home_url() ); // Перенаправление на главную страницу
 		exit;
 	}
-
+	
 	// Получаем текущего пользователя
 	$current_user = wp_get_current_user();
-
+	
 	// Проверяем роль пользователя
-	if (!in_array('administrator', $current_user->roles)) {
-		wp_redirect(home_url()); // Перенаправление на главную страницу
+	if ( ! in_array( 'administrator', $current_user->roles ) ) {
+		wp_redirect( home_url() ); // Перенаправление на главную страницу
 		exit;
 	}
-});
+} );

@@ -16,6 +16,8 @@ $driver_rate = 0;
 $profit      = 0;
 $tbd         = false;
 
+$full_view_only = get_field_value( $args, 'full_view_only' );
+
 
 if ( $report_object ) {
 	$values = $report_object;
@@ -48,6 +50,7 @@ if ( $report_object ) {
 		$tbd               = get_field_value( $meta, 'tbd' );
 		
 		$ar_status       = get_field_value( $meta, 'ar_status' );
+		$log_file_isset  = get_field_value( $meta, 'log_file' );
 		$ar_action_field = get_field_value( $meta, 'ar-action' );
 		$ar_action       = $ar_action_field ? 'checked' : '';
 		
@@ -62,7 +65,7 @@ if ( $report_object ) {
 
 <h3 class="p-0 display-6 mb-4">Billing info</h3>
 
-<form class="js-uploads-billing d-grid">
+<form  class="<?php echo ($full_view_only) ? '' : 'js-uploads-billing' ?> d-grid">
 
     <input type="hidden" name="old_ar_status" value="<?php echo $ar_status; ?>">
     <input type="hidden" name="old_factoring_status" value="<?php echo $factoring_status; ?>">
@@ -74,6 +77,12 @@ if ( $report_object ) {
         <input type="hidden" name="checked_ar_action" value="1">
 	<?php endif; ?>
 
+    <?php
+    
+    if($log_file_isset): ?>
+        <input type="hidden" name="log_file_isset" value="1">
+    <?php endif; ?>
+    
     <input type="hidden" name="booked_rate" value="<?php echo $booked_rate; ?>">
     <input type="hidden" name="driver_rate" value="<?php echo $driver_rate; ?>">
     <input type="hidden" name="profit" value="<?php echo $profit; ?>">
@@ -180,8 +189,8 @@ if ( $report_object ) {
 
         <div class="mb-2 col-12 col-md-6 col-xl-4">
             <label for="factoring_status" class="form-label">Select status</label>
-            <select name="factoring_status" class="form-control form-select js-show-hidden-values js-blocked-status"
-                    data-required="true" data-value="short-pay" data-selector=".js-short-pay">
+            <select name="factoring_status" class="form-control form-select js-show-hidden-values js-blocked-status js-select-status-factoring"
+                    data-required="true" data-value="short-pay" data-previous-value="<?php echo $factoring_status;  ?>" data-selector=".js-short-pay">
 				<?php if ( is_array( $factoring_statuses ) ): ?>
 					<?php foreach ( $factoring_statuses as $key => $status ):
 						$disabled_option = ( $processing === 'direct' && $key === 'charge-back' ) ? 'disabled' : '';
@@ -259,8 +268,13 @@ if ( $report_object ) {
                 <button type="button" data-tab-id="pills-documents-tab"
                         class="btn btn-dark js-next-tab">Previous
                 </button>
-                <button type="submit" class="btn btn-primary js-submit-and-next-tab">Update
-                </button>
+	            
+	            <?php if ( !$full_view_only ): ?>
+                    <button type="submit" class="btn btn-primary js-submit-and-next-tab">Update
+                    </button>
+	            <?php endif; ?>
+             
+             
             </div>
         </div>
     </div>

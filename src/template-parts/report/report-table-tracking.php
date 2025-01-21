@@ -66,6 +66,7 @@ if ( ! empty( $results )) : ?>
 				$dispatcher = array( 'full_name' => 'User not found', 'initials' => 'NF' );
 			}
 
+			$factoring_status_row  = get_field_value( $meta, 'factoring_status' );
 			$load_status  = get_field_value( $meta, 'load_status' );
 			$status       = $load_status;
 			
@@ -118,8 +119,9 @@ if ( ! empty( $results )) : ?>
 			}
             
             
-            $tmpl = $logs->get_last_log_by_post($row[ 'id' ])
+            $tmpl = $logs->get_last_log_by_post($row[ 'id' ]);
             
+            $now_show = ($factoring_status_row === 'paid') ;
 			?>
 
             <tr class="<?php echo 'status-tracking-'. $status; ?>">
@@ -232,7 +234,7 @@ if ( ! empty( $results )) : ?>
                 </td>
 
                 <td class="">
-                    <?php if (!$archive && $show_control): ?>
+                    <?php if (!$archive && $show_control && !$now_show): ?>
                     <form class="js-save-status d-flex gap-1 align-items-center form-quick-tracking" >
                         <input type="hidden" name="id_load" value="<?php echo $row[ 'id' ]; ?>">
                         <?php if (is_array($all_statuses)) { ?>

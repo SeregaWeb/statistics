@@ -72,7 +72,6 @@ if ( ! empty( $results ) ) : ?>
 			if ( ! $dispatcher ) {
 				$dispatcher = array( 'full_name' => 'User not found', 'initials' => 'NF' );
 			}
-			
 			$load_status  = get_field_value( $meta, 'load_status' );
 			$status_label = $helper->get_label_by_key( $load_status, 'statuses' );
 			$status       = esc_html( $status_label );
@@ -143,11 +142,13 @@ if ( ! empty( $results ) ) : ?>
 				$quick_pay_show_method = $helper->get_quick_pay_methods_for_accounting( $quick_pay_method );
 				$component_quick_pay   = "<span class='text-small'>$" . $quick_pay_show . " - " . $quick_pay_show_method . "</span>";
 			}
-			
+            
+            $now_show = ($factoring_status_row === 'paid') ;
 			?>
 
             <tr class="">
-                <td><input type="checkbox" id="load-<?php echo $row[ 'id' ]; ?>" class="checkbox-big js-select-load"
+                <td>
+                    <input <?php echo $now_show ? 'disabled' : ''; ?> type="checkbox" id="load-<?php echo $row[ 'id' ]; ?>" class="checkbox-big js-select-load"
                            value="<?php echo $row[ 'id' ]; ?>" name="select-load"></td>
 
                 <td><label class="h-100 cursor-pointer text-small"

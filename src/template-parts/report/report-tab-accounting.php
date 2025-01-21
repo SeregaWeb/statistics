@@ -30,11 +30,13 @@ if ( $report_object ) {
 	}
 }
 
+$full_view_only = get_field_value( $args, 'full_view_only' );
+
 ?>
 
 <h3 class="p-0 display-6 mb-4">Accounting info</h3>
 
-<form class="js-uploads-accounting d-grid">
+<form class="<?php echo ($full_view_only) ? '' : 'js-uploads-accounting' ?> d-grid">
     <div class="row">
 
         <div class="mb-2 col-12 col-md-6 col-xl-4">
@@ -134,8 +136,10 @@ if ( $report_object ) {
                 <button type="button" data-tab-id="pills-billing-tab"
                         class="btn btn-dark js-next-tab">Previous
                 </button>
-                <button type="submit" class="btn btn-primary js-submit-and-next-tab">Update
-                </button>
+	            <?php if ( !$full_view_only ): ?>
+                    <button type="submit" class="btn btn-primary js-submit-and-next-tab">Update
+                    </button>
+	            <?php endif; ?>
             </div>
         </div>
     </div>

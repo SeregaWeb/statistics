@@ -13,6 +13,7 @@ $reports = new TMSReports();
 $args = array(
 	'status_post' => 'publish',
     'user_id' => get_current_user_id(),
+	'sort_by' => 'pick_up_date',
     'include_status' => array('delivered', 'tonu', 'cancelled')
 );
 

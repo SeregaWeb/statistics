@@ -51,3 +51,35 @@
         height: 20px;
     }
 }
+
+.file-btn {
+    outline: none !important;
+    padding: 8px;
+    margin: 0;
+    display: flex;
+    background-color: transparent;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 12px;
+    border-radius: 4px;
+    border: 1px solid $primary;
+    margin-top: 36px;
+    text-decoration: none;
+    svg {
+        path {
+            fill: $primary !important;
+        }
+        width: 20px;
+        height: 20px;
+    }
+
+    &:hover {
+        background-color: $primary;
+        color: #ffffff;
+        svg {
+            path {
+                fill: #ffffff !important;
+            }
+        }
+    }
+}

@@ -269,19 +269,20 @@ class TMSReports extends TMSReportsHelper {
 		$sort_order   = strtolower( $args['sort_order'] ?? 'desc' ) === 'asc' ? 'ASC' : 'DESC';
 		
 		$join_builder = "
-		FROM $table_main AS main
-		LEFT JOIN $table_meta AS dispatcher ON main.id = dispatcher.post_id AND dispatcher.meta_key = 'dispatcher_initials'
-		LEFT JOIN $table_meta AS reference ON main.id = reference.post_id AND reference.meta_key = 'reference_number'
-		LEFT JOIN $table_meta AS unit_number ON main.id = unit_number.post_id AND unit_number.meta_key = 'unit_number_name'
-		LEFT JOIN $table_meta AS load_status ON main.id = load_status.post_id AND load_status.meta_key = 'load_status'
-		WHERE 1=1
-	";
+    FROM $table_main AS main
+    LEFT JOIN $table_meta AS dispatcher ON main.id = dispatcher.post_id AND dispatcher.meta_key = 'dispatcher_initials'
+    LEFT JOIN $table_meta AS reference ON main.id = reference.post_id AND reference.meta_key = 'reference_number'
+    LEFT JOIN $table_meta AS unit_number ON main.id = unit_number.post_id AND unit_number.meta_key = 'unit_number_name'
+    LEFT JOIN $table_meta AS load_status ON main.id = load_status.post_id AND load_status.meta_key = 'load_status'
+    WHERE 1=1
+    ";
 		
 		$sql = "SELECT main.*,
-		dispatcher.meta_value AS dispatcher_initials_value,
-		reference.meta_value AS reference_number_value,
-		unit_number.meta_value AS unit_number_value
-		" . $join_builder;
+    dispatcher.meta_value AS dispatcher_initials_value,
+    reference.meta_value AS reference_number_value,
+    unit_number.meta_value AS unit_number_value,
+    load_status.meta_value AS load_status_value
+    " . $join_builder;
 		
 		// Условия WHERE
 		$where_conditions = [];
@@ -334,8 +335,20 @@ class TMSReports extends TMSReportsHelper {
 		$total_pages = ceil( $total_records / $per_page );
 		$offset = ( $current_page - 1 ) * $per_page;
 		
-		// Добавляем сортировку и лимит
-		$sql .= " ORDER BY main.$sort_by $sort_order LIMIT %d, %d";
+		$sql .= " ORDER BY
+    CASE
+        WHEN LOWER(load_status.meta_value) = 'at-pu' THEN 1
+        WHEN LOWER(load_status.meta_value) = 'at-del' THEN 2
+        WHEN LOWER(load_status.meta_value) = 'waiting-on-pu-date' THEN 3
+        WHEN LOWER(load_status.meta_value) = 'loaded-enroute' THEN 4
+        WHEN LOWER(load_status.meta_value) = 'waiting-on-rc' THEN 5
+        ELSE 6
+    END,
+    CASE
+        WHEN LOWER(load_status.meta_value) IN ('at-pu', 'at-del', 'waiting-on-pu-date', 'waiting-on-rc') THEN COALESCE(main.pick_up_date, '9999-12-31 23:59:59')
+        ELSE COALESCE(main.delivery_date, '9999-12-31 23:59:59')
+    END $sort_order
+    LIMIT %d, %d";
 		$where_values[] = $offset;
 		$where_values[] = $per_page;
 		
@@ -366,6 +379,7 @@ class TMSReports extends TMSReportsHelper {
 			'current_pages' => $current_page,
 		];
 	}
+	
 	
 	
 	public function get_favorites( $post_ids = array(), $args = array() ) {
@@ -1126,6 +1140,7 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 				"old_factoring_status"  => FILTER_SANITIZE_STRING,
 				"checked_invoice_proof" => FILTER_SANITIZE_STRING,
 				"checked_ar_action"     => FILTER_SANITIZE_STRING,
+				"log_file_isset"        => FILTER_SANITIZE_STRING,
 			] );
 			
 			if ( ! $MY_INPUT[ 'ar-action' ] ) {
@@ -1134,6 +1149,13 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 			
 			if ( $MY_INPUT[ 'factoring_status' ] === 'charge-back' ) {
 				$MY_INPUT[ 'booked_rate' ] = 0;
+			}
+			
+			if ( $MY_INPUT[ 'factoring_status' ] === 'paid' && !isset($MY_INPUT[ 'log_file_isset' ]) ) {
+				$id_logs_file = $this->archive_logs_and_close_load($MY_INPUT);
+				if(is_numeric($id_logs_file)) {
+					$MY_INPUT['log_file'] = $id_logs_file;
+				}
 			}
 			
 			$MY_INPUT = $this->count_all_sum( $MY_INPUT );
@@ -1156,6 +1178,52 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 			}
 		} else {
 			wp_send_json_error( [ 'message' => 'Invalid request' ] );
+		}
+	}
+	
+	public function archive_logs_and_close_load ($data) {
+		$load_id = get_field_value($data, 'post_id');
+		$template = $this->log_controller->get_all_logs($load_id); // Получаем шаблон с логами
+		
+		// Определяем имя файла
+		$file_name = "load-logs-{$load_id}.txt";
+		$upload_dir = wp_upload_dir(); // Получаем директорию для загрузок
+		$file_path = trailingslashit($upload_dir['path']) . $file_name;
+		
+		// Сохраняем содержимое шаблона в файл
+		file_put_contents($file_path, $template);
+		
+		// Проверяем, создан ли файл
+		if (!file_exists($file_path)) {
+			return new WP_Error('file_creation_failed', 'Failed to create the log file.');
+		}
+		
+		// Подготавливаем данные для добавления файла в медиабиблиотеку
+		$file_type = wp_check_filetype($file_name, null);
+		$attachment = [
+			'post_mime_type' => $file_type['type'],
+			'post_title'     => basename($file_name, '.txt'),
+			'post_content'   => '',
+			'post_status'    => 'inherit'
+		];
+		
+		// Вставляем файл как вложение
+		$attachment_id = wp_insert_attachment($attachment, $file_path);
+		
+		// Если вставка прошла успешно
+		if (!is_wp_error($attachment_id)) {
+			// Генерируем метаданные
+			require_once(ABSPATH . 'wp-admin/includes/image.php');
+			$attachment_data = wp_generate_attachment_metadata($attachment_id, $file_path);
+			wp_update_attachment_metadata($attachment_id, $attachment_data);
+			
+			if (is_numeric($attachment_id)) {
+				$this->log_controller->delete_all_logs($load_id);
+			}
+			
+			return $attachment_id;
+		} else {
+			return $attachment_id; // Возвращаем ошибку, если wp_insert_attachment не удалось
 		}
 	}
 	
@@ -1500,6 +1568,7 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 				"driver_rate"           => FILTER_SANITIZE_STRING,
 				"old_value_driver_rate" => FILTER_SANITIZE_STRING,
 				"driver_phone"          => FILTER_SANITIZE_STRING,
+				"shared_with_client"    => FILTER_VALIDATE_BOOLEAN,
 				"old_driver_phone"      => FILTER_SANITIZE_STRING,
 				"profit"                => FILTER_SANITIZE_STRING,
 				"pick_up_date"          => FILTER_SANITIZE_STRING,
@@ -1916,6 +1985,10 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 			'ar_status'               => $data[ 'ar_status' ],
 			'ar-action'               => $data[ 'ar-action' ],
 		);
+		
+		if (isset($data['log_file']) && is_numeric($data['log_file'])) {
+			$post_meta['log_file'] = $data['log_file'];
+		}
 		
 		if ( $data[ 'ar-action' ] && ! isset( $data[ 'checked_ar_action' ] ) ) {
 			$this->log_controller->create_one_log( array(
@@ -2880,6 +2953,7 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 			'percent_quick_pay_value' => $data[ 'percent_quick_pay_value' ],
 			'booked_rate_modify'      => $data[ 'booked_rate_modify' ],
 			'tbd'                     => $data[ 'tbd' ],
+			'shared_with_client'      => $data[ 'shared_with_client' ],
 			'office_dispatcher'       => $office_dispatcher,
 		);
 		

@@ -154,6 +154,68 @@ class TMSLogs extends TMSReports {
     </div>";
 	}
 	
+	public function delete_all_logs($post_id) {
+		global $wpdb;
+		
+		$logs_table = $wpdb->prefix . 'reports_logs_' . strtolower($this->use_project);
+		
+		// Проверяем существование таблицы
+		if ($wpdb->get_var("SHOW TABLES LIKE '$logs_table'") !== $logs_table) {
+			return new WP_Error('table_not_found', 'Logs table does not exist.');
+		}
+		
+		// Удаляем все записи по id_load
+		$query = $wpdb->prepare("DELETE FROM $logs_table WHERE id_load = %d", $post_id);
+		$result = $wpdb->query($query);
+		
+		// Проверяем, были ли удалены записи
+		if ($result === false) {
+			return new WP_Error('delete_failed', 'Failed to delete logs.');
+		}
+		
+		return $result; // Возвращаем количество удаленных записей
+	}
+	
+	public function get_all_logs ($post_id) {
+		global $wpdb;
+		
+		$logs_table = $wpdb->prefix . 'reports_logs_' . strtolower($this->use_project);
+		
+		if ($wpdb->get_var("SHOW TABLES LIKE '$logs_table'") !== $logs_table) {
+			return false;
+		}
+		
+		$query = $wpdb->prepare("
+        SELECT id, id_user, user_name, user_role, log_priority, log_date, log_text
+        FROM $logs_table
+        WHERE id_load = %d
+        ORDER BY log_date DESC
+    ", $post_id);
+		
+		$logs = $wpdb->get_results($query);
+		
+		// Формируем HTML для логов
+		if (empty($logs)) {
+			return false;
+		}
+		
+		$output = "";
+		
+		foreach ($logs as $log) {
+			$log_text = str_replace('<br>', "\n", $log->log_text); // Заменяем <br> на \n
+			
+			$output .= "User: {$log->user_name}\n";
+			$output .= "Role: {$log->user_role}\n";
+			$output .= "Date: {$log->log_date}\n";
+			$output .= "Message: {$log_text}\n";
+			$output .= "\n"; // Empty line to separate logs
+		}
+		
+		$output .= "--- End of Logs ---\n";
+		
+		return $output;
+	}
+	
 	public function get_user_logs_by_post($post_id, $user_id) {
 		global $wpdb;
 		

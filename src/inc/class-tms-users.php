@@ -3,7 +3,7 @@
 class  TMSUsers extends TMSReportsHelper {
 	
 	private $curent_select_table_key = 'field_66eeba6448749';
-	private $project_for_bookmark = '';
+	private $project_for_bookmark    = '';
 	
 	public function __construct() {
 		$this->project_for_bookmark = $this->get_select_project();
@@ -14,50 +14,55 @@ class  TMSUsers extends TMSReportsHelper {
 		add_action( 'wp_ajax_toggle_bookmark', array( $this, 'toggle_bookmark' ) );
 	}
 	
-	function get_select_project () {
-		$user_id = get_current_user_id();
+	function get_select_project() {
+		$user_id       = get_current_user_id();
 		$curent_tables = get_field( 'current_select', 'user_' . $user_id );
 		if ( ! $curent_tables ) {
 			return false;
 		}
-		return strtolower($curent_tables);
+		
+		return strtolower( $curent_tables );
 	}
 	
-	function is_bookmarked($id) {
-		$user_bookmarks = get_user_meta( get_current_user_id(), 'user_bookmarks_'.$this->project_for_bookmark, true ) ?: [];
+	function is_bookmarked( $id ) {
+		$user_bookmarks = get_user_meta( get_current_user_id(), 'user_bookmarks_' . $this->project_for_bookmark, true )
+			?: [];
 		$is_bookmarked  = in_array( $id, $user_bookmarks );
 		
 		return $is_bookmarked;
 	}
 	
-	function get_all_bookmarks () {
-		$user_bookmarks = get_user_meta(get_current_user_id(), 'user_bookmarks_'.$this->project_for_bookmark, true) ?: [];
+	function get_all_bookmarks() {
+		$user_bookmarks = get_user_meta( get_current_user_id(), 'user_bookmarks_' . $this->project_for_bookmark, true )
+			?: [];
+		
 		return $user_bookmarks;
 	}
+	
 	function toggle_bookmark() {
-		if (!is_user_logged_in()) {
-			wp_send_json_error(['message' => 'You must be logged in to bookmark posts.']);
+		if ( ! is_user_logged_in() ) {
+			wp_send_json_error( [ 'message' => 'You must be logged in to bookmark posts.' ] );
 		}
 		
-		$post_id = isset($_POST['post_id']) ? intval($_POST['post_id']) : 0;
-		if (!$post_id || $post_id === 0) {
-			wp_send_json_error(['message' => 'Invalid post ID.']);
+		$post_id = isset( $_POST[ 'post_id' ] ) ? intval( $_POST[ 'post_id' ] ) : 0;
+		if ( ! $post_id || $post_id === 0 ) {
+			wp_send_json_error( [ 'message' => 'Invalid post ID.' ] );
 		}
 		
-		$user_id = get_current_user_id();
-		$user_bookmarks = get_user_meta($user_id, 'user_bookmarks_'.$this->project_for_bookmark, true) ?: [];
+		$user_id        = get_current_user_id();
+		$user_bookmarks = get_user_meta( $user_id, 'user_bookmarks_' . $this->project_for_bookmark, true ) ?: [];
 		
-		if (in_array($post_id, $user_bookmarks)) {
-			$user_bookmarks = array_diff($user_bookmarks, [$post_id]);
-			$is_bookmarked = false;
+		if ( in_array( $post_id, $user_bookmarks ) ) {
+			$user_bookmarks = array_diff( $user_bookmarks, [ $post_id ] );
+			$is_bookmarked  = false;
 		} else {
 			$user_bookmarks[] = $post_id;
-			$is_bookmarked = true;
+			$is_bookmarked    = true;
 		}
 		
-		update_user_meta($user_id, 'user_bookmarks_'.$this->project_for_bookmark, $user_bookmarks);
+		update_user_meta( $user_id, 'user_bookmarks_' . $this->project_for_bookmark, $user_bookmarks );
 		
-		wp_send_json_success(['is_bookmarked' => $is_bookmarked]);
+		wp_send_json_success( [ 'is_bookmarked' => $is_bookmarked ] );
 	}
 	
 	public function init() {
@@ -83,6 +88,13 @@ class  TMSUsers extends TMSReportsHelper {
 			'edit_posts'   => true,
 			'upload_files' => true,
 		] );
+		
+		add_role( 'tracking-tl', 'Tracking Team Leader', [
+			'read'         => true,
+			'edit_posts'   => true,
+			'upload_files' => true,
+		] );
+		
 		
 		add_role( 'billing', 'Billing', [
 			'read'         => true,
@@ -130,6 +142,7 @@ class  TMSUsers extends TMSReportsHelper {
 			'dispatcher'    => 'Dispatcher',
 			'dispatcher-tl' => 'Dispatcher Team Leader',
 			'tracking'      => 'Tracking',
+			'tracking-tl'   => 'Tracking Team Leader',
 			'billing'       => 'Billing',
 			'recruiter'     => 'Recruiter',
 			'recruiter-tl'  => 'Recruiter Team Leader',
@@ -237,7 +250,7 @@ class  TMSUsers extends TMSReportsHelper {
 	}
 	
 	public function check_user_in_my_group( $my_team, $id_user ) {
-		if ( $my_team === null || !is_array($my_team) ) {
+		if ( $my_team === null || ! is_array( $my_team ) ) {
 			return false;
 		}
 		
@@ -248,7 +261,13 @@ class  TMSUsers extends TMSReportsHelper {
 	
 	public function show_control_loads( $my_team, $current_user_id, $id_user, $is_draft ) {
 		
-		$allowed_role = $this->check_user_role_access( array( 'administrator', 'billing', 'accounting', 'moderator' ), true );
+		$allowed_role = $this->check_user_role_access( array(
+			'administrator',
+			'billing',
+			'accounting',
+			'moderator',
+			'tracking-tl'
+		), true );
 		
 		if ( $allowed_role || intval( $current_user_id ) === intval( $id_user ) || $is_draft ) {
 			return true;

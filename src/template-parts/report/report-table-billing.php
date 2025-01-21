@@ -141,10 +141,12 @@ if ( ! empty( $results ) ) : ?>
 				$component_quick_pay   = "<span class='text-small'>$" . $quick_pay_show . " - " . $quick_pay_show_method . "</span>";
 			}
 			
+			$now_show = ($factoring_status_row === 'paid') ;
+			
 			?>
 
             <tr class="">
-                <td><input type="checkbox" id="load-<?php echo $row[ 'id' ]; ?>" class="checkbox-big js-select-load"
+                <td><input <?php echo $now_show ? 'disabled' : ''; ?> type="checkbox" id="load-<?php echo $row[ 'id' ]; ?>" class="checkbox-big js-select-load"
                            value="<?php echo $row[ 'id' ]; ?>" name="select-load"></td>
 
                 <td><label class="h-100 cursor-pointer text-small"

@@ -47,7 +47,9 @@ if ( $post_id && is_numeric( $post_id ) ) {
 	        $status_publish = 'draft';
         }
     }
- 
+	
+	$log_file = get_field_value($meta, 'log_file');
+    $factoring_status = get_field_value($meta, 'factoring_status');
 }
 
 $access = $TMSUsers->check_user_role_access(array('recruiter'));
@@ -96,12 +98,14 @@ if ($TMSUsers->check_user_role_access(array('dispatcher-tl','dispatcher'), true)
 }
 
 
-
-
 $billing_info = $TMSUsers->check_user_role_access(array('administrator', 'billing', 'accounting'),true);
 
-get_header();
 
+if ($factoring_status == 'paid' && !$TMSUsers->check_user_role_access(array('administrator'),true)) {
+	$full_only_view = true;
+}
+
+get_header();
 
 $logshow = isset($_COOKIE['logshow']) && +$_COOKIE['logshow'] !== 0 ? 'hidden-logs col-lg-1' : 'col-lg-3';
 $logshowcontent = isset($_COOKIE['logshow']) && +$_COOKIE['logshow'] !== 0 ? 'col-lg-11' : 'col-lg-9';
@@ -256,10 +260,22 @@ $logshowcontent = isset($_COOKIE['logshow']) && +$_COOKIE['logshow'] !== 0 ? 'co
 
                     <div class="col-12 js-logs-container <?php echo $logshow; ?>">
                         <?php
-                        echo esc_html( get_template_part( 'src/template-parts/report/report', 'logs', array(
-                                'post_id' => $post_id,
-                                'user_id' => get_current_user_id(),
-                        ) ) );
+                        if ($log_file) {
+                            $file_url = wp_get_attachment_url($log_file);
+                            if ($file_url) {
+                                ?>
+                                <a class="file-btn" href="<?php echo $file_url; ?>" target="_blank" rel="noopener noreferrer">
+                                    <?php echo $helper->get_file_icon(); ?>
+                                    Open Log Archive
+                                </a>
+                                <?php
+                            }
+                        } else {
+                            echo esc_html( get_template_part( 'src/template-parts/report/report', 'logs', array(
+                                    'post_id' => $post_id,
+                                    'user_id' => get_current_user_id(),
+                            ) ) );
+                        }
                         ?>
                     </div>
                     

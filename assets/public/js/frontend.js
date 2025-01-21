@@ -5164,6 +5164,40 @@ var addSearchAction = function addSearchAction(ajaxUrl) {
 
 /***/ }),
 
+/***/ "./src/js/components/set-status-paid.ts":
+/*!**********************************************!*\
+  !*** ./src/js/components/set-status-paid.ts ***!
+  \**********************************************/
+/***/ (function(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   setStatusPaid: function() { return /* binding */ setStatusPaid; }
+/* harmony export */ });
+var setStatusPaid = function setStatusPaid() {
+  var selectElement = document.querySelector('.js-select-status-factoring');
+  if (!selectElement) return;
+  selectElement.addEventListener('change', function (event) {
+    var target = event.target;
+    var selectedValue = target.value;
+    var previousValue = target.dataset.previousValue || '';
+    if (selectedValue === 'paid') {
+      var confirmationMessage = "If you select 'Paid', make sure editing is finished, as the load will be locked and no further changes will be possible.";
+      var userConfirmed = confirm(confirmationMessage);
+      if (userConfirmed) {
+        target.dataset.previousValue = selectedValue;
+      } else {
+        target.value = previousValue;
+      }
+    } else {
+      target.dataset.previousValue = selectedValue;
+    }
+  });
+};
+
+/***/ }),
+
 /***/ "./src/js/components/sidebar-init.ts":
 /*!*******************************************!*\
   !*** ./src/js/components/sidebar-init.ts ***!
@@ -5191,6 +5225,35 @@ var toggleSidebarInit = function toggleSidebarInit() {
       }
       document.cookie = "sidebar=".concat(val, "; path=/; max-age=86400");
     });
+  });
+};
+
+/***/ }),
+
+/***/ "./src/js/components/stop-type.ts":
+/*!****************************************!*\
+  !*** ./src/js/components/stop-type.ts ***!
+  \****************************************/
+/***/ (function(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   changeStopType: function() { return /* binding */ changeStopType; }
+/* harmony export */ });
+var changeStopType = function changeStopType() {
+  var stopType = document.querySelector('.js-shipper-stop-type');
+  var dateDelivery = document.querySelector('.js-delivery-date-setup');
+  var datePickUp = document.querySelector('.js-pick-up-date-setup');
+  var shipperDate = document.querySelector('.js-shipper-date');
+  if (!stopType || !shipperDate) return;
+  stopType.addEventListener('change', function (event) {
+    var selectedValue = event.target.value;
+    if (selectedValue === 'pick_up_location' && datePickUp) {
+      shipperDate.value = datePickUp.value;
+    } else if (selectedValue === 'delivery_location' && dateDelivery) {
+      shipperDate.value = dateDelivery.value;
+    }
   });
 };
 
@@ -15310,6 +15373,10 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _components_bookmark__WEBPACK_IMPORTED_MODULE_18__ = __webpack_require__(/*! ./components/bookmark */ "./src/js/components/bookmark.ts");
 /* harmony import */ var _components_performance__WEBPACK_IMPORTED_MODULE_19__ = __webpack_require__(/*! ./components/performance */ "./src/js/components/performance.ts");
 /* harmony import */ var _components_tel_mask__WEBPACK_IMPORTED_MODULE_20__ = __webpack_require__(/*! ./components/tel-mask */ "./src/js/components/tel-mask.ts");
+/* harmony import */ var _components_stop_type__WEBPACK_IMPORTED_MODULE_21__ = __webpack_require__(/*! ./components/stop-type */ "./src/js/components/stop-type.ts");
+/* harmony import */ var _components_set_status_paid__WEBPACK_IMPORTED_MODULE_22__ = __webpack_require__(/*! ./components/set-status-paid */ "./src/js/components/set-status-paid.ts");
+
+
 
 
 
@@ -15387,6 +15454,8 @@ function ready() {
   (0,_components_input_helpers__WEBPACK_IMPORTED_MODULE_2__.quick_pay_method)();
   (0,_components_input_helpers__WEBPACK_IMPORTED_MODULE_2__.trigger_current_time)();
   (0,_components_create_report__WEBPACK_IMPORTED_MODULE_3__.triggerDisableBtnInit)();
+  (0,_components_stop_type__WEBPACK_IMPORTED_MODULE_21__.changeStopType)();
+  (0,_components_set_status_paid__WEBPACK_IMPORTED_MODULE_22__.setStatusPaid)();
   (0,_components_tel_mask__WEBPACK_IMPORTED_MODULE_20__.telMaskInit)();
   var preloaders = document.querySelectorAll('.js-preloader');
   preloaders && preloaders.forEach(function (item) {

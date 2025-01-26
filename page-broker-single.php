@@ -20,6 +20,7 @@ $broker_meta = $brokers->get_all_meta_by_post_id( $id_broker );
 if ( ! empty( $broker ) ) {
 	
 	$get_counters_broker = $loads->get_counters_broker( $id_broker );
+	$get_profit_broker = $loads->get_profit_broker( $id_broker );
 	if ( isset( $broker[ 0 ] ) ) {
 		$broker = $broker[ 0 ];
 	}
@@ -132,8 +133,19 @@ $add_broker = $TMSUsers->check_user_role_access( array( 'dispatcher', 'dispatche
                                     </li>
 									
 									<?php
-									
-									
+									if ( isset( $broker_meta[ 'factoring_broker' ] ) ) {
+										
+										$status = isset($loads->factoring_broker[$broker_meta[ 'factoring_broker' ]]) ? $loads->factoring_broker[$broker_meta[ 'factoring_broker' ]] : '';
+                                        
+                                        
+                                        ?>
+                                        <li class="status-list__item">
+                                            <span class="status-list__label">Factoring status:</span>
+                                            <span class="status-list__value"><?php echo $status ?></span>
+                                        </li>
+									<?php } ?>
+	                                
+	                                <?php
 									if ( isset( $broker_meta[ 'days_to_pay' ] ) ) { ?>
                                         <li class="status-list__item">
                                             <span class="status-list__label">Days to pay:</span>
@@ -226,8 +238,37 @@ $add_broker = $TMSUsers->check_user_role_access( array( 'dispatcher', 'dispatche
 								<?php
 								?>
                                 <div class="counters-status d-flex gap-2">
+	                                <?php if ( is_array( $get_profit_broker ) ): ?>
+		                                <?php foreach ( $get_profit_broker as $key => $count ):
+			                                
+			                                $name = '';
+			                                $value = '';
+			                                if ($key === 'total_profit') {
+				                                $name = 'Total Profit';
+				                                $value =  esc_html( '$' . $loads->format_currency( $count ) );
+			                                }
+			                                
+			                                if ($key === 'total_booked_rate') {
+				                                $name = 'Total Gross';
+				                                $value =  esc_html( '$' . $loads->format_currency( $count ) );
+			                                }
+			                                
+			                                if ($key === 'post_count') {
+				                                $name = 'Total Loads';
+				                                $value = $count;
+			                                }
+			                                
+			                                ?>
+			                                <?php if ( + $count !== 0 ): ?>
+                                            <div class="counters-status-card d-flex align-items-center justify-content-center flex-column">
+                                                <span><?php echo $name; ?></span>
+                                                <strong><?php echo $value; ?></strong>
+                                            </div>
+		                                <?php endif; ?>
+		                                <?php endforeach; ?>
+	                                <?php endif; ?>
 									<?php if ( is_array( $get_counters_broker ) ): ?>
-										<?php foreach ( $get_counters_broker as $key => $count ): ?>
+										<?php foreach ( $get_counters_broker as $key => $count ):?>
 											<?php if ( + $count !== 0 ): ?>
                                                 <div class="counters-status-card d-flex align-items-center justify-content-center flex-column">
                                                     <span><?php echo $key === 'Others' ? 'In Process' : $key; ?></span>

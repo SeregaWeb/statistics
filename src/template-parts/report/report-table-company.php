@@ -20,7 +20,7 @@ if ( ! empty( $results ) ) :
 			<th scope="col">Address</th>
 			<th scope="col">Contacts</th>
 			<th scope="col">MC</th>
-			<th scope="col">DOT</th>
+			<th scope="col">Factoring status</th>
 			<th scope="col">Set up platform</th>
 			<th scope="col">Set up</th>
 			<th scope="col">Gross</th>
@@ -36,7 +36,8 @@ if ( ! empty( $results ) ) :
 			$full_address =  $row['address1'] . ' ' .  $row['city'] . ' ' . $row['state'] . ' ' . $row['zip_code'] . ' ' . $row['country'] ;
 			
 			$platform = $helper->get_label_by_key($row['set_up_platform'], 'set_up_platform');
-			
+			$meta = get_field_value($row, 'meta_fields');
+            $factoring_status = get_field_value($meta, 'factoring_broker');
 			// Декодируем JSON в ассоциативный массив
 			$set_up_array = json_decode($row['set_up'], true);
 			
@@ -49,7 +50,7 @@ if ( ! empty( $results ) ) :
 			$completed_keys_string = implode(', ', $completed_keys);
 			
 			?>
-			<tr>
+			<tr class="broker-<?php echo $factoring_status; ?>">
 				<td><a  href="<?php echo $link_broker . '?broker_id=' . $row['id']; ?>"><?php echo esc_html( $row['company_name'] ); ?></a></td>
 				<td style="width: 260px;"><?php echo esc_html( $full_address ); ?></td>
 				<td>
@@ -63,7 +64,13 @@ if ( ! empty( $results ) ) :
 					</div>
 				</td>
 				<td><?php echo esc_html( $row['mc_number'] ); ?></td>
-				<td><?php echo esc_html( $row['dot_number'] ); ?></td>
+				<td>
+                    <?php
+                    if (isset($factoring_status)){
+	                    echo isset($helper->factoring_broker[$factoring_status]) ? $helper->factoring_broker[$factoring_status] : '';
+                    }
+                    ?>
+                </td>
 				<td><?php echo esc_html( $platform ); ?></td>
 				<td><?php echo esc_html( $completed_keys_string ); ?></td>
                 <td><?php echo $profit['booked_rate_total'] === 0 ? '' : $profit['booked_rate_total']; ?></td>

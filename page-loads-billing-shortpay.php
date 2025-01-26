@@ -1,6 +1,6 @@
 <?php
 /**
- * Template Name: Page loads billing
+ * Template Name: Page loads billing short pay
  *
  * @package WP-rock
  * @since 4.4.0
@@ -13,6 +13,7 @@ $reports = new TMSReports();
 $args = array(
 	'status_post' => 'publish',
     'exclude_factoring_status' => array( 'paid' ),
+    'include_factoring_status' => array( 'short-pay', 'charge-back' ),
     'per_page_loads' => 100,
 );
 

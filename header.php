@@ -58,25 +58,16 @@ if ( function_exists( 'get_field' ) ) {
 
 <pre class="d-none">
 
-<!--- после статуса пейд закрывать полностью лоад-->
-<!--- сгружаем логи-->
-<!--- при выборе статуса Paid вывессти предупреждение (factoring)-->
-<!--- после закрытия лоада ничего нельзя редактировать всем кроме админа-->
-
-<!--Trip - предзаполнить даты delivary location / pick-up location-->
-
-<!--1. Приоритет вывода вверх — груз со статусом "@PU"-->
-<!--2. Приоритет вывода вверх — груз со статусом "@DEL"-->
-<!--3. Приоритет вывода вверх — груз со статусом "Waiting on PU Date" и ближайшая дата к сегодня.-->
-<!--4. Приоритет вывода вверх — груз со статусом "Loaded & Enroute" и даты в порядке убывания по Delivery date.-->
-<!--5. Грузы со статусом "Waiting on RC"-->
-
 Можешь еще в Performance одной общей кнопкой сделать сохранение, а не напротив каждой строки?
-<!--- пикап дейт фильтровать все для трекинг-->
 
-<!--Кнопка / switch напротив телефонного номера-->
-<!--Shared with client-->
-
+Автоматическая система создания email chains.
+Subject (тема письма): Load number: 0000000 Pick up location - Delivery location / Название компании
+Пример Load number: 2645798A Salt Lake City, UT - Idaho Falls, ID / Odysseia
+В копию письма включить: email диспетчера который добавил груз в систему, email broker'a, email tracking'a этого диспетчера, email team leader'a этого диспетчера, billing@odysseia.one, andrew@odysseia.one / marshall@odysseia.one
+Текст оповещения:
+Hello, it's Odysseia.
+Our team will keep you updated throughout the whole process in this chain. If you need to add any other email for the updates, please feel free to do that.
+We will immediately let you know once the truck is on-site.
 </pre>
 
 <body <?php body_class( $page_class ); ?>>

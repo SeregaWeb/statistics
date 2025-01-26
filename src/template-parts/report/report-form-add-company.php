@@ -141,6 +141,21 @@ $curent_tables = get_field('current_select', 'user_'.$user_id);
             </select>
         </div>
         
+        <div class="form-group mt-3 col-6">
+            <label for="factoring_broker" class="form-label">Factoring status<span
+                        class="required-star text-danger">*</span></label>
+            <select name="factoring_broker" required class="form-control form-select">
+                <option value="">Select Factoring status</option>
+		        <?php if ( is_array( $helper->factoring_broker ) ): ?>
+			        <?php foreach ( $helper->factoring_broker as $key => $val ): ?>
+                        <option value="<?php echo $key; ?>">
+					        <?php echo $val; ?>
+                        </option>
+			        <?php endforeach; ?>
+		        <?php endif ?>
+            </select>
+        </div>
+        
 	</div>
 
     <div class="input-group mt-3">

@@ -8,6 +8,10 @@ $sources       = $helper->get_sources();
 $instructions  = $helper->get_instructions();
 $types         = $helper->get_load_types();
 $dispatchers   = $helper->get_dispatchers();
+$admins   = $helper->get_administrators();
+
+$dispatchers = array_merge($dispatchers, $admins);
+
 $post_id       = ! empty( $args[ 'post_id' ] ) ? $args[ 'post_id' ] : null;
 $report_object = ! empty( $args[ 'report_object' ] ) ? $args[ 'report_object' ] : null;
 
@@ -345,10 +349,7 @@ $read_only = $TMSUsers->check_read_only( $post_status );
             <div class="mb-2 col-12 col-md-6 col-xl-4">
                 <label for="driver_phone" class="form-label">Driver phone</label>
                 <p class="m-0"><strong><?php echo $driver_phone; ?></strong></p>
-            </div>
-        
-            <div class="mb-2 col-12 col-md-6 col-xl-4 d-flex align-items-center">
-                <div class="form-check form-switch p-0">
+                <div class="form-check form-switch p-0 mt-1">
                     <input disabled class="form-check-input disabled ml-0" <?php echo is_numeric( $shared_with_client )
 			            ? 'checked' : ''; ?> name="shared_with_client"
                            type="checkbox">
@@ -357,11 +358,6 @@ $read_only = $TMSUsers->check_read_only( $post_status );
                 </div>
             </div>
         
-            <div class="col-12"></div>
-        
-            <div class="col-12 col-md-6 col-xl-4 mb-2"></div>
-
-
             <div class="col-12 col-md-6 col-xl-4  mb-2">
                 <label for="profit" class="form-label">Profit</label>
                 <p class="m-0"><strong>$<?php echo $profit; ?></strong></p>
@@ -412,21 +408,15 @@ $read_only = $TMSUsers->check_read_only( $post_status );
                        name="driver_phone" value="<?php echo $driver_phone; ?>"
                        class="form-control js-tel-mask js-phone-driver" required>
                 <input type="hidden" name="old_driver_phone" value="<?php echo $driver_phone; ?>">
-            </div>
-
-            <div class="mb-2 col-12 col-md-6 col-xl-4 d-flex align-items-center">
-                <div class="form-check form-switch p-0">
+                <div class="form-check form-switch p-0 mt-1">
                     <input class="form-check-input ml-0" <?php echo is_numeric( $shared_with_client )
-					    ? 'checked' : ''; ?> id="shared_with_client" name="shared_with_client"
+			            ? 'checked' : ''; ?> id="shared_with_client" name="shared_with_client"
                            type="checkbox">
                     <label class="form-check-label ml-2" for="shared_with_client">Shared with client
                     </label>
                 </div>
             </div>
 
-            <div class="col-12"></div>
-
-            <div class="col-12 col-md-6 col-xl-4 mb-2"></div>
 
             <div class="col-12 col-md-6 col-xl-4">
                 <label for="profit" class="form-label">Profit</label>

@@ -196,12 +196,14 @@ class TMSReportsCompany extends TMSReportsHelper {
 				"set_up"              => FILTER_SANITIZE_STRING,
 				"set_up_platform"     => FILTER_SANITIZE_STRING,
 				"notes"               => FILTER_SANITIZE_STRING,
+				"factoring_broker"    => FILTER_SANITIZE_STRING,
 				"work_with_odysseia"  => FILTER_VALIDATE_BOOLEAN,
 				"work_with_martlet"   => FILTER_VALIDATE_BOOLEAN,
 				"work_with_endurance" => FILTER_VALIDATE_BOOLEAN,
 			] );
 			
 			$post_meta = array(
+				"factoring_broker"    => $MY_INPUT[ "factoring_broker" ],
 				"notes"               => $MY_INPUT[ "notes" ],
 				"work_with_odysseia"  => $MY_INPUT[ "work_with_odysseia" ],
 				"work_with_martlet"   => $MY_INPUT[ "work_with_martlet" ],
@@ -345,26 +347,6 @@ class TMSReportsCompany extends TMSReportsHelper {
 		$user_id    = get_current_user_id();
 		$record_id  = $data[ 'broker_id' ];
 		
-		$insert_params = array(
-			'company_name'         => $data[ 'company_name' ],
-			'country'              => $data[ 'country' ],
-			'address1'             => $data[ 'Addr1' ],
-			'address2'             => $data[ 'Addr2' ],
-			'city'                 => $data[ 'City' ],
-			'state'                => $data[ 'State' ],
-			'zip_code'             => $data[ 'ZipCode' ],
-			'contact_first_name'   => $data[ 'FirstName' ],
-			'contact_last_name'    => $data[ 'LastName' ],
-			'phone_number'         => $data[ 'Phone' ],
-			'email'                => $data[ 'Email' ],
-			'mc_number'            => $data[ 'MotorCarrNo' ],
-			'dot_number'           => $data[ 'DotNo' ],
-			'user_id_updated'      => $user_id,
-			'date_updated'         => current_time( 'mysql' ),
-			'set_up'               => $data[ 'set_up' ],
-			'set_up_platform'      => $data[ 'set_up_platform' ],
-			'date_set_up_compleat' => $data[ 'completed' ],
-		);
 		$result        = $wpdb->update( $table_name, // Table name
 			array(       // Columns to update
 			             'company_name'         => $data[ 'company_name' ],
@@ -516,62 +498,122 @@ class TMSReportsCompany extends TMSReportsHelper {
 	
 	public function get_table_records() {
 		global $wpdb;
-		$table_name = $wpdb->prefix . $this->table_main;
 		
-		$current_page = isset( $_GET[ 'paged' ] ) ? (int) $_GET[ 'paged' ] : 1;
+		// Основные таблицы
+		$table_name = $wpdb->prefix . $this->table_main; // Основная таблица
+		$table_meta = $wpdb->prefix . $this->table_meta; // Таблица мета-данных
 		
-		$search   = isset( $_GET[ 'my_search' ] ) ? sanitize_text_field( $_GET[ 'my_search' ] ) : '';
-		$platform = isset( $_GET[ 'platform' ] ) ? sanitize_text_field( $_GET[ 'platform' ] ) : '';
+		// Параметры запроса
+		$current_page = isset($_GET['paged']) ? (int)$_GET['paged'] : 1;
+		$search = isset($_GET['my_search']) ? sanitize_text_field($_GET['my_search']) : '';
+		$platform = isset($_GET['platform']) ? sanitize_text_field($_GET['platform']) : '';
+		$offset = ($current_page - 1) * $this->posts_per_page;
 		
-		$offset = ( $current_page - 1 ) * $this->posts_per_page;
+		// Базовый запрос для подсчета записей
+		$count_query = "SELECT COUNT(DISTINCT main.id) FROM $table_name AS main LEFT JOIN $table_meta AS meta ON main.id = meta.post_id WHERE 1=1";
 		
-		$count_query = "SELECT COUNT(*) FROM $table_name WHERE 1=1";
+		// Базовый запрос для получения записей из основной таблицы
+		$main_query = "
+    SELECT main.*,
+           MAX(CASE WHEN meta.meta_key = 'factoring_broker' THEN meta.meta_value END) AS factoring_broker
+    FROM $table_name AS main
+    LEFT JOIN $table_meta AS meta ON main.id = meta.post_id
+    WHERE 1=1
+    ";
 		
-		$main_query = "SELECT * FROM $table_name WHERE 1=1";
-		
-		if ( ! empty( $search ) ) {
-			$search           = '%' . $wpdb->esc_like( $search ) . '%';
-			$search_condition = " AND (
-            company_name LIKE %s OR
-            zip_code LIKE %s OR
-            mc_number LIKE %s OR
-            phone_number LIKE %s OR
-            email LIKE %s
+		// Условие поиска
+		if (!empty($search)) {
+			$search = '%' . $wpdb->esc_like($search) . '%';
+			$search_condition = "
+        AND (
+            main.company_name LIKE %s OR
+            main.zip_code LIKE %s OR
+            main.mc_number LIKE %s OR
+            main.phone_number LIKE %s OR
+            main.email LIKE %s
         )";
-			$count_query      .= $search_condition;
-			$main_query       .= $search_condition;
+			$count_query .= $search_condition;
+			$main_query .= $search_condition;
 		}
 		
-		if ( ! empty( $platform ) ) {
-			$platform_condition = " AND set_up_platform = %s";
-			$count_query        .= $platform_condition;
-			$main_query         .= $platform_condition;
+		// Условие фильтрации по платформе
+		if (!empty($platform)) {
+			$platform_condition = " AND main.set_up_platform = %s";
+			$count_query .= $platform_condition;
+			$main_query .= $platform_condition;
 		}
 		
-		$main_query .= " LIMIT %d OFFSET %d";
+		// Добавляем группировку, сортировку и пагинацию
+		$main_query .= "
+    GROUP BY main.id
+    ORDER BY main.date_created DESC
+    LIMIT %d OFFSET %d
+    ";
 		
+		// Подготовка параметров для запроса
 		$params = [];
-		if ( ! empty( $search ) ) {
-			$params = array_merge( $params, [ $search, $search, $search, $search, $search ] );
+		if (!empty($search)) {
+			$params = array_merge($params, [$search, $search, $search, $search, $search]);
 		}
-		if ( ! empty( $platform ) ) {
+		if (!empty($platform)) {
 			$params[] = $platform;
 		}
 		
-		$total_records = (int) $wpdb->get_var( $wpdb->prepare( $count_query, ...$params ) );
-		$main_results  = $wpdb->get_results( $wpdb->prepare( $main_query, array_merge( $params, [
-			$this->posts_per_page,
-			$offset
-		] ) ), ARRAY_A );
+		// Выполняем запрос для подсчета записей
+		$total_records = (int) $wpdb->get_var($wpdb->prepare($count_query, ...$params));
 		
-		$total_pages = ceil( $total_records / $this->posts_per_page );
-		
-		return array(
-			'results'      => $main_results,
-			'total_pages'  => $total_pages,
-			'total_posts'  => $total_records,
-			'current_page' => $current_page,
+		// Выполняем основной запрос для получения записей из основной таблицы
+		$raw_results = $wpdb->get_results(
+			$wpdb->prepare($main_query, array_merge($params, [$this->posts_per_page, $offset])),
+			ARRAY_A
 		);
+		// Обработка результатов
+		$results = [];
+		foreach ($raw_results as $row) {
+			$post_id = $row['id'];
+			if (!isset($results[$post_id])) {
+				$results[$post_id] = [
+					'id' => $row['id'],
+					'company_name' => $row['company_name'],
+					'country' => $row['country'],
+					'address1' => $row['address1'],
+					'address2' => $row['address2'],
+					'city' => $row['city'],
+					'state' => $row['state'],
+					'zip_code' => $row['zip_code'],
+					'contact_first_name' => $row['contact_first_name'],
+					'contact_last_name' => $row['contact_last_name'],
+					'phone_number' => $row['phone_number'],
+					'email' => $row['email'],
+					'mc_number' => $row['mc_number'],
+					'dot_number' => $row['dot_number'],
+					'user_id_added' => $row['user_id_added'],
+					'date_created' => $row['date_created'],
+					'user_id_updated' => $row['user_id_updated'],
+					'date_updated' => $row['date_updated'],
+					'set_up' => $row['set_up'],
+					'set_up_platform' => $row['set_up_platform'],
+					'date_set_up_compleat' => $row['date_set_up_compleat'],
+					'meta_fields' => [] // Массив для мета-данных
+				];
+			}
+			
+			// Добавляем мета-данные для 'factoring_broker'
+			if (!empty($row['factoring_broker'])) {
+				$results[$post_id]['meta_fields']['factoring_broker'] = $row['factoring_broker'];
+			}
+		}
+		
+		// Подсчет общего числа страниц
+		$total_pages = ceil($total_records / $this->posts_per_page);
+		
+		// Возвращаем результат
+		return [
+			'results' => array_values($results), // Сбрасываем индексы массива
+			'total_pages' => $total_pages,
+			'total_posts' => $total_records,
+			'current_page' => $current_page,
+		];
 	}
 	
 	public function create_table_company() {

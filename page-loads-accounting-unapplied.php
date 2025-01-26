@@ -158,7 +158,10 @@ $items[ 'ar_problem' ] = true;
                                     </tr>
                                     </thead>
                                     <tbody>
-		                            <?php foreach ( $statuses_labels as $status_key => $label ) : ?>
+		                            <?php
+                                    foreach ( $statuses_labels as $status_key => $label ) :
+                                        if ($statuses_totals[ $status_key ] > 0) {
+                                        ?>
                                         <tr>
                                             <td><?php echo esc_html( $label ); ?></td>
                                             <td>
@@ -167,7 +170,10 @@ $items[ 'ar_problem' ] = true;
 					                            ?>
                                             </td>
                                         </tr>
-		                            <?php endforeach; ?>
+		                            <?php  }
+                                    endforeach; ?>
+                                    
+                                    
                                     </tbody>
                                 </table>
                                     <?php endif; ?>

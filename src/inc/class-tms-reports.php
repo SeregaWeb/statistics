@@ -258,6 +258,190 @@ class TMSReports extends TMSReportsHelper {
 		);
 	}
 	
+	public function get_table_items_billing( $args = array() ) {
+		global $wpdb;
+		
+		$table_main   = $wpdb->prefix . $this->table_main;
+		$table_meta   = $wpdb->prefix . $this->table_meta;
+		$per_page    = isset( $args[ 'per_page_loads' ] ) ? $args[ 'per_page_loads'] : $this->per_page_loads;
+		$current_page = isset( $_GET[ 'paged' ] ) ? absint( $_GET[ 'paged' ] ) : 1;
+		$sort_by      = ! empty( $args[ 'sort_by' ] ) ? $args[ 'sort_by' ] : 'date_booked';
+		$sort_order   = ! empty( $args[ 'sort_order' ] ) && strtolower( $args[ 'sort_order' ] ) == 'asc' ? 'ASC'
+			: 'DESC';
+		
+		$join_builder = "
+			FROM $table_main AS main
+			LEFT JOIN $table_meta AS dispatcher
+				ON main.id = dispatcher.post_id
+				AND dispatcher.meta_key = 'dispatcher_initials'
+			LEFT JOIN $table_meta AS reference
+				ON main.id = reference.post_id
+				AND reference.meta_key = 'reference_number'
+			LEFT JOIN $table_meta AS unit_number
+				ON main.id = unit_number.post_id
+				AND unit_number.meta_key = 'unit_number_name'
+			LEFT JOIN $table_meta AS load_status
+				ON main.id = load_status.post_id
+				AND load_status.meta_key = 'load_status'
+			LEFT JOIN $table_meta AS invoiced_proof
+				ON main.id = invoiced_proof.post_id
+				AND invoiced_proof.meta_key = 'invoiced_proof'
+			LEFT JOIN $table_meta AS factoring_status
+				ON main.id = factoring_status.post_id
+				AND factoring_status.meta_key = 'factoring_status'
+			WHERE 1=1
+		";
+		
+		// Основной запрос
+		$sql = "SELECT main.*,
+			dispatcher.meta_value AS dispatcher_initials_value,
+			reference.meta_value AS reference_number_value,
+			unit_number.meta_value AS unit_number_value
+	" . $join_builder;
+		
+		$where_conditions = array();
+		$where_values     = array();
+		
+		if ( ! empty( $args[ 'status_post' ] ) ) {
+			$where_conditions[] = "main.status_post = %s";
+			$where_values[]     = $args[ 'status_post' ];
+		}
+		
+		if ( isset( $args[ 'ar_problem' ] ) && $args[ 'ar_problem' ] ) {
+			$where_conditions[] = "main.load_problem IS NOT NULL";
+			$where_conditions[] = "DATEDIFF(NOW(), main.load_problem) > 50";
+		}
+		
+		// Фильтрация по dispatcher_initials
+		if ( ! empty( $args[ 'dispatcher' ] ) ) {
+			$where_conditions[] = "dispatcher.meta_value = %s";
+			$where_values[]     = $args[ 'dispatcher' ];
+		}
+		
+		if ( ! empty( $args[ 'load_status' ] ) ) {
+			$where_conditions[] = "load_status.meta_value = %s";
+			$where_values[]     = $args[ 'load_status' ];
+		}
+		
+	
+		if (isset($args['exclude_factoring_status']) && !empty($args['exclude_factoring_status'])) {
+			$exclude_factoring_status        = array_map( 'esc_sql', (array) $args[ 'exclude_factoring_status' ] );
+			$where_conditions[] = "factoring_status.meta_value NOT IN ('" . implode( "','", $exclude_factoring_status ) . "')";
+		}
+		
+		if (isset($args['include_factoring_status']) && !empty($args['include_factoring_status'])) {
+			$include_factoring_status        = array_map( 'esc_sql', (array) $args[ 'include_factoring_status' ] );
+			$where_conditions[] = "factoring_status.meta_value IN ('" . implode( "','", $include_factoring_status ) . "')";
+		}
+		
+		if ( ! empty( $args[ 'invoice' ] ) ) {
+			if ( $args[ 'invoice' ] === 'invoiced' ) {
+				$where_conditions[] = "invoiced_proof.meta_value = %s";
+				$where_values[]     = '1';
+			} else {
+				$where_conditions[] = "(invoiced_proof.meta_value = %s OR invoiced_proof.meta_value IS NULL)";
+				$where_values[]     = '0';
+			}
+		}
+		
+		if ( ! empty( $args[ 'factoring' ] ) ) {
+			$where_conditions[] = "factoring_status.meta_value = %s";
+			$where_values[]     = $args[ 'factoring' ];
+		}
+		
+		if ( ! empty( $args[ 'my_search' ] ) ) {
+			$where_conditions[] = "(reference.meta_value LIKE %s OR unit_number.meta_value LIKE %s)";
+			$search_value       = '%' . $wpdb->esc_like( $args[ 'my_search' ] ) . '%';
+			$where_values[]     = $search_value;
+			$where_values[]     = $search_value;
+		}
+		
+		if ( ! empty( $args[ 'month' ] ) && ! empty( $args[ 'year' ] ) ) {
+			$where_conditions[] = "date_booked IS NOT NULL
+        AND YEAR(date_booked) = %d
+        AND MONTH(date_booked) = %d";
+			$where_values[]     = $args[ 'year' ];
+			$where_values[]     = $args[ 'month' ];
+		}
+		
+		// Фильтрация по только году
+		if ( ! empty( $args[ 'year' ] ) && empty( $args[ 'month' ] ) ) {
+			$where_conditions[] = "date_booked IS NOT NULL
+        AND YEAR(date_booked) = %d";
+			$where_values[]     = $args[ 'year' ];
+		}
+		
+		// Фильтрация по только месяцу
+		if ( ! empty( $args[ 'month' ] ) && empty( $args[ 'year' ] ) ) {
+			$where_conditions[] = "date_booked IS NOT NULL
+        AND MONTH(date_booked) = %d";
+			$where_values[]     = $args[ 'month' ];
+		}
+		
+		// Применяем фильтры к запросу
+		if ( ! empty( $where_conditions ) ) {
+			$sql .= ' AND ' . implode( ' AND ', $where_conditions );
+		}
+		
+		// Подсчёт общего количества записей с учётом фильтров
+		$total_records_sql = "SELECT COUNT(*)" . $join_builder;
+		if ( ! empty( $where_conditions ) ) {
+			$total_records_sql .= ' AND ' . implode( ' AND ', $where_conditions );
+		}
+		
+		$total_records = $wpdb->get_var( $wpdb->prepare( $total_records_sql, ...$where_values ) );
+		
+		// Вычисляем количество страниц
+		$total_pages = ceil( $total_records / $per_page );
+		
+		// Смещение для текущей страницы
+		$offset = ( $current_page - 1 ) * $per_page;
+		
+		// Добавляем сортировку и лимит для текущей страницы
+		$sql            .= " ORDER BY main.$sort_by $sort_order LIMIT %d, %d";
+		$where_values[] = $offset;
+		$where_values[] = $per_page;
+		
+		// Выполняем запрос
+		$main_results = $wpdb->get_results( $wpdb->prepare( $sql, ...$where_values ), ARRAY_A );
+		
+		// Собираем все ID записей для получения дополнительных метаданных
+		$post_ids = wp_list_pluck( $main_results, 'id' );
+		
+		// Если есть записи, получаем метаданные
+		$meta_data = array();
+		if ( ! empty( $post_ids ) ) {
+			$meta_sql     = "SELECT post_id, meta_key, meta_value
+					 FROM $table_meta
+					 WHERE post_id IN (" . implode( ',', array_map( 'absint', $post_ids ) ) . ")";
+			$meta_results = $wpdb->get_results( $meta_sql, ARRAY_A );
+			
+			// Преобразуем метаданные в ассоциативный массив по post_id
+			foreach ( $meta_results as $meta_row ) {
+				$post_id = $meta_row[ 'post_id' ];
+				if ( ! isset( $meta_data[ $post_id ] ) ) {
+					$meta_data[ $post_id ] = array();
+				}
+				$meta_data[ $post_id ][ $meta_row[ 'meta_key' ] ] = $meta_row[ 'meta_value' ];
+			}
+		}
+		
+		if ( is_array( $main_results ) && ! empty( $main_results ) ) {
+			// Объединяем основную таблицу с метаданными
+			foreach ( $main_results as &$result ) {
+				$post_id               = $result[ 'id' ];
+				$result[ 'meta_data' ] = isset( $meta_data[ $post_id ] ) ? $meta_data[ $post_id ] : array();
+			}
+		}
+		
+		return array(
+			'results'       => $main_results,
+			'total_pages'   => $total_pages,
+			'total_posts'   => $total_records,
+			'current_pages' => $current_page,
+		);
+	}
+	
 	public function get_table_items_tracking( $args = array() ) {
 		global $wpdb;
 		
@@ -901,6 +1085,32 @@ class TMSReports extends TMSReportsHelper {
 		WHERE meta_broker.meta_key = 'customer_id'
 		  AND meta_broker.meta_value = %s
 		  AND meta_status.meta_key = 'load_status'
+		";
+		
+		$results = $wpdb->get_row( $wpdb->prepare( $sql, $broker_id ), ARRAY_A );
+		
+		return $results;
+	}
+	public function get_profit_broker( $broker_id ) {
+		global $wpdb;
+		
+		if ( ! is_numeric( $broker_id ) ) {
+			return false;
+		}
+		
+		$table_meta = "{$wpdb->prefix}{$this->table_meta}";
+		
+		// SQL-запрос для подсчёта статусов
+		$sql = "
+		SELECT
+		    SUM(CASE WHEN meta_status.meta_key = 'profit' THEN meta_status.meta_value ELSE 0 END) AS total_profit,
+		    SUM(CASE WHEN meta_status.meta_key = 'booked_rate' THEN meta_status.meta_value ELSE 0 END) AS total_booked_rate,
+		    COUNT(DISTINCT meta_broker.post_id) AS post_count
+		FROM $table_meta AS meta_broker
+		INNER JOIN $table_meta AS meta_status
+		    ON meta_broker.post_id = meta_status.post_id
+		WHERE meta_broker.meta_key = 'customer_id'
+		  AND meta_broker.meta_value = %s
 		";
 		
 		$results = $wpdb->get_row( $wpdb->prepare( $sql, $broker_id ), ARRAY_A );

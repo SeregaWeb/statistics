@@ -8,6 +8,55 @@ $color_accounting_processed: #b7e1cd;
 $color_accounting_unsubmitted: #ffff00;
 $color_accounting_others: #ff0000;
 
+.load-status-tonu,
+.load-status-cancelled {
+    background-color: #ffdcdc;
+
+    td {
+        background-color: transparent !important;
+
+        &.cancelled, &.tonu {
+            span {
+                background-color: transparent !important;
+                color: #000000 !important;
+                padding: 0;
+            }
+        }
+    }
+}
+
+.load-status-at-del,
+.load-status-delivered {
+    background-color: #effee9;
+
+    td {
+        background-color: transparent !important;
+
+        &.at-del, &.delivered {
+            span {
+                background-color: transparent !important;
+                color: #000000 !important;
+                padding: 0;
+            }
+        }
+    }
+}
+
+.load-status-loaded-enroute {
+    background-color: #f7fef5;
+
+    td {
+        background-color: transparent !important;
+
+        &.loaded-enroute {
+            span {
+                background-color: transparent !important;
+                color: #000000 !important;
+                padding: 0;
+            }
+        }
+    }
+}
 
 .tonu,
 .cancelled {
@@ -103,6 +152,7 @@ $color_accounting_others: #ff0000;
 
 .status-tracking-loaded-enroute {
     background-color: #effee9;
+
     td {
         background-color: transparent !important;
     }
@@ -110,6 +160,7 @@ $color_accounting_others: #ff0000;
 
 .status-tracking-at-del {
     background-color: #d9facb;
+
     td {
         background-color: transparent !important;
     }
@@ -118,7 +169,28 @@ $color_accounting_others: #ff0000;
 .status-tracking-cancelled,
 .status-tracking-tonu {
     background-color: #ffdcdc;
+
     td {
         background-color: transparent !important;
+    }
+}
+
+.credit-approval-required,
+.broker-can-be-discussed,
+.broker-one-load-allowed {
+    td {
+        background-color: #fff2cc !important;
+    }
+}
+
+.broker-denied {
+    td {
+        background-color: #f4cccc !important;
+    }
+}
+
+.broker-not-found {
+    td {
+        background-color: #efefef !important;
     }
 }

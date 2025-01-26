@@ -141,7 +141,7 @@ if ( ! empty( $results ) ) : ?>
                 <tr><td colspan="14" class="separator-date"><?php echo $date_booked; ?></td></tr>
             <?php endif; ?>
 
-            <tr class="">
+            <tr class="load-status-<?php echo $load_status; ?>">
                 <td><label class="h-100 cursor-pointer"
                                for="load-<?php echo $row[ 'id' ]; ?>"><?php echo $date_booked; ?></label></td>
                 <td>

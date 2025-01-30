@@ -72,16 +72,25 @@ iframe {
 #main-wrapper {
 
     .table-performance {
-
-
-
-
         tr {
-
             th {
                 font-size: 10px;
                 font-weight: bold;
-                padding: 10px 2px;
+                padding: 10px 3px;
+            }
+
+            &.need-separate {
+                th {
+                    &:nth-of-type(5),
+                    &:nth-of-type(9),
+                    &:nth-of-type(13),
+                    &:nth-of-type(17),
+                    &:nth-of-type(21),
+                    &:nth-of-type(25),
+                    &:nth-of-type(29),{
+                        border-right: 1px solid #000000;
+                    }
+                }
             }
 
             input {
@@ -93,7 +102,7 @@ iframe {
             }
 
             td {
-                padding: 10px 2px;
+                padding: 10px 3px;
                 &:nth-of-type(2),
                 &:nth-of-type(3),
                 &:nth-of-type(4),
@@ -112,6 +121,17 @@ iframe {
                 &:nth-of-type(29),{
                     background-color: #f2f2f2;
                 }
+
+                &:nth-of-type(5),
+                &:nth-of-type(9),
+                &:nth-of-type(13),
+                &:nth-of-type(17),
+                &:nth-of-type(21),
+                &:nth-of-type(25),
+                &:nth-of-type(29),{
+                    border-right: 1px solid #000000;
+                }
+
             }
         }
 

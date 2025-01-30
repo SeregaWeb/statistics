@@ -28,9 +28,6 @@ $my_team = $TMSUsers->check_group_access();
 
 $helper = $TMSUsers;
 
-
-
-
 if ( ! empty( $results ) ) : ?>
 
     <table class="table mb-5 w-100">

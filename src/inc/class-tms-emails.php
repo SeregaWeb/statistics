@@ -75,10 +75,9 @@ class TMSEmails extends TMSUsers {
 		return implode(',' , $emails);
 	}
 	
-	function get_team_leader_email() {
-		$current_select = get_field_value($this->user_fields, 'current_select');
-		$current_user_id = get_current_user_id(); // Get the current user ID
-		
+	function get_team_leader_email($user_id = null, $project = null) {
+		$current_select = $project ?? get_field_value($this->user_fields, 'current_select');
+		$current_user_id = $user_id ? intval($user_id) : get_current_user_id(); // Get the current user ID
 		$args = array(
 			'role'       => 'dispatcher-tl',
 			'meta_query' => array(
@@ -98,6 +97,7 @@ class TMSEmails extends TMSUsers {
 		
 		$query = new WP_User_Query($args);
 		$team_leaders = $query->get_results();
+		
 		$emails = array();
 		
 		if (!empty($team_leaders)) {
@@ -109,9 +109,9 @@ class TMSEmails extends TMSUsers {
 		return implode(',' , $emails);
 	}
 	
-	function get_tracking_email() {
-		$current_select = get_field_value($this->user_fields, 'current_select');
-		$current_user_id = get_current_user_id(); // Get the current user ID
+	function get_tracking_email($user_id = null, $project = null) {
+		$current_select = $project ?? get_field_value($this->user_fields, 'current_select');
+		$current_user_id = $user_id ? intval($user_id) : get_current_user_id(); // Get the current user ID
 		
 		$args = array(
 			'role'       => 'tracking',
@@ -203,4 +203,252 @@ class TMSEmails extends TMSUsers {
 			}
 		}
 	}
+	
+	function send_email_create_load($id_load) {
+		global $global_options;
+		// Получение пользователей для ответа
+		$reply_users = get_field_value($global_options, 'reply_create_loads_emails');
+		if (empty($reply_users)) {
+			$reply_users = []; // Убедимся, что это массив
+		}
+		
+		//TODO THIS NEED DELETE FOR PRODUCTION
+		$check_tmp = $this->check_user_role_access(array('administrator'), true);
+		if (!$check_tmp) {
+			return ['success' => false, 'message' => 'No Send email chains'];
+		}
+		
+		$reports = new TMSReports();
+		$project_name = $reports->project;
+		$project_email = get_field_value($global_options, strtolower($project_name).'_email');
+		// Проверка наличия post_id
+		if (empty($id_load)) {
+			return ['success' => false, 'message' => 'Missing post ID'];
+		}
+		
+		$report_object = $reports->get_report_by_id($id_load);
+		if (!$report_object) {
+			return ['success' => false, 'message' => 'Report not found'];
+		}
+		
+		$meta = get_field_value($report_object, 'meta');
+		if (empty($meta) || !is_array($meta)) {
+			return ['success' => false, 'message' => 'Invalid meta data'];
+		}
+		
+		$errors = [];
+		
+		// Получение данных из мета
+		$dispatcher = get_field_value($meta, 'dispatcher_initials');
+		$tl_dispatcher = $this->get_team_leader_email(+$dispatcher, $project_name);
+		$tracking = $this->get_tracking_email(+$dispatcher, $project_name);
+		
+		$reference_number = get_field_value($meta, 'reference_number');
+		$pick_up_location = get_field_value($meta, 'pick_up_location');
+		$delivery_location = get_field_value($meta, 'delivery_location');
+		$value_contact_email = get_field_value($meta, 'contact_email');
+		
+		// Проверка email брокера
+		if (empty($value_contact_email) || !filter_var($value_contact_email, FILTER_VALIDATE_EMAIL)) {
+			$errors[] = 'Invalid contact email';
+		}
+		
+		// Обработка дополнительных контактов
+		$additional_emails = [];
+		$additional_contacts_json = get_field_value($meta, 'additional_contacts');
+		if (!empty($additional_contacts_json)) {
+			$additional_contacts = json_decode($additional_contacts_json, true);
+			if (is_array($additional_contacts)) {
+				foreach ($additional_contacts as $contact) {
+					if (isset($contact['email']) && filter_var($contact['email'], FILTER_VALIDATE_EMAIL)) {
+						$additional_emails[] = $contact['email'];
+					}
+				}
+			}
+		}
+		
+		// Обработка локаций
+		$template_p = [];
+		$template_d = [];
+		
+		if (!empty($pick_up_location)) {
+			$pick_up_location_array = json_decode($pick_up_location, true);
+			if (is_array($pick_up_location_array)) {
+				foreach ($pick_up_location_array as $pick_up) {
+					if (!empty($pick_up['short_address'])) {
+						$template_p[] = $pick_up['short_address'];
+					}
+				}
+			} else {
+				$errors[] = 'Problem with pick up location';
+			}
+		} else {
+			$errors[] = 'Empty pick up location';
+		}
+		
+		if (!empty($delivery_location)) {
+			$delivery_location_array = json_decode($delivery_location, true);
+			if (is_array($delivery_location_array)) {
+				foreach ($delivery_location_array as $delivery) {
+					if (!empty($delivery['short_address'])) {
+						$template_d[] = $delivery['short_address'];
+					}
+				}
+			} else {
+				$errors[] = 'Problem with delivery location';
+			}
+		} else {
+			$errors[] = 'Empty delivery location';
+		}
+		
+		// Проверка обязательных данных
+		if (empty($reference_number)) {
+			$errors[] = 'Missing reference number';
+		}
+		
+		// Если есть ошибки, возвращаем их
+		if (!empty($errors)) {
+			return ['success' => false, 'message' => implode(', ', $errors)];
+		}
+		
+		// Формирование темы письма
+		$subject = sprintf(
+			'#%s %s - %s / %s',
+			$reference_number,
+			implode(', ', $template_p),
+			implode(', ', $template_d),
+			$project_name
+		);
+		
+		// Формирование текста письма
+		$text = sprintf(
+			"Hello, it's %s.<br>Our team will keep you updated throughout the whole process in this chain. If you need to add any other email for the updates, please feel free to do that.<br>We will immediately let you know once the truck is on-site.",
+			$project_name
+		);
+		
+		// Возврат собранных данных
+		return $this->send_email_for_brocker([
+			'subject' => $subject,
+			'text' => $text,
+			'emails' => $reply_users,
+			'email_main_broker' => $value_contact_email,
+			'additional_emails' => $additional_emails,
+			'team_leader_email' => $tl_dispatcher,
+			'tracking_email' => $tracking,
+			'project_name' => $project_name,
+			'project_email' => $project_email,
+		]);
+	}
+	
+	function build_email_content($data) {
+		// Проверка входных данных
+		if (empty($data['subject']) || empty($data['text'])) {
+			return ['success' => false, 'message' => 'Missing required data for email content'];
+		}
+		
+		// Объединение всех email
+		$all_emails = array_merge(
+			isset($data['emails']) ? explode(',', $data['emails']) : [],
+			isset($data['additional_emails']) ? $data['additional_emails'] : [],
+			isset($data['email_main_broker']) ? [$data['email_main_broker']] : [],
+			isset($data['team_leader_email']) ? [$data['team_leader_email']] : [],
+			isset($data['tracking_email']) ? [$data['tracking_email']] : []
+		);
+		
+		// Удаление дубликатов и пустых значений
+		$all_emails = array_filter(array_unique($all_emails));
+		
+		// Генерация HTML-содержимого
+		$html_content = "
+    	<html>
+    <head>
+        <style>
+            body {
+                font-family: Arial, sans-serif;
+                line-height: 1.6;
+                color: #333;
+                margin: 0;
+                padding: 0;
+            }
+            .email-container {
+                max-width: 600px;
+                margin: 20px auto;
+                padding: 20px;
+                border-radius: 8px;
+                background-color: #f9f9f9;
+            }
+            .email-header {
+                font-size: 20px;
+                font-weight: bold;
+                color: #555;
+                margin-bottom: 20px;
+                text-align: left;
+            }
+            .email-body {
+                font-size: 16px;
+                color: #444;
+            }
+            .email-footer {
+                font-size: 14px;
+                color: #777;
+                margin-top: 20px;
+                text-align: left;
+            }
+        </style>
+    </head>
+    <body>
+        <div class='email-container'>
+            <div class='email-header'>{$data['subject']}</div>
+            <div class='email-body'>
+                <p>" . $data['text'] . "</p>
+            </div>
+            <div class='email-footer'>
+            </div>
+        </div>
+    </body>
+    </html>";
+		
+		return [
+			'html' => $html_content,
+			'emails' => implode(', ', $all_emails),
+		];
+	}
+	
+	function send_email_for_brocker($data) {
+		// Создание HTML контента
+		$email_content = $this->build_email_content($data);
+		
+		// Проверка на ошибки
+		if (isset($email_content['error'])) {
+			return ['success' => false, 'message' =>implode(', ', $email_content['error'])];
+		}
+		
+		// Получение HTML-контента и email-адресов
+		$html_body = $email_content['html'];
+		$all_emails = $email_content['emails'];
+		
+		// Настройка заголовков для HTML email
+		
+		$headers = array(
+			'Content-Type: text/html; charset=UTF-8',
+			'From: Tracking chain <'.$data['project_email'].'>' // Replace with your sender name and email
+		);
+
+		// Отправка письма с помощью wp_mail() (для WordPress) или mail()
+		if (function_exists('wp_mail')) {
+			$result = wp_mail($all_emails, $data['subject'], $html_body, $headers);
+		} else {
+			// Для PHP mail()
+			$headers[] = 'MIME-Version: 1.0';
+			$headers[] = 'Content-Transfer-Encoding: 8bit';
+			$result = mail($all_emails, $data['subject'], $html_body, implode("\r\n", $headers));
+		}
+		
+		if ($result) {
+			return ['success' => true, 'message' => 'Send email chains. for emails:' . $all_emails];
+		} else {
+			return ['success' => false, 'message' => 'Failed to send email for broker'];
+		}
+	}
+	
 }

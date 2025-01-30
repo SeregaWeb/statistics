@@ -59,7 +59,7 @@ get_header();
                                     <th>Bonus</th>
                                     <th></th>
                                 </tr>
-                                <tr>
+                                <tr class="need-separate">
                                     <th></th>
                                     <th>Calls</th>
                                     <th>Loads</th>

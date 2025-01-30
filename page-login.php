@@ -36,8 +36,8 @@ get_header('noauth');
                             </div>
                             
                             <div class="mb-3 d-flex gap-1">
-                                <button class="btn btn-success js-send-code">Send code</button>
-                                <button type="submit" class="btn btn-primary js-login-btn d-none">Login</button>
+                                <button type="submit" class="btn btn-success js-login-btn d-none">Login</button>
+                                <button class="btn btn-primary js-send-code">Send code</button>
                             </div>
                         </form>
                     </div>

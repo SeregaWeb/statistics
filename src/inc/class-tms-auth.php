@@ -67,7 +67,7 @@ class  TMSAuth {
 			'subject' => 'Verification code',
 			'project_name' => '',
 			'subtitle' => '',
-			'message' => 'you varification code: ' . $code,
+			'message' => 'Your verification code is: <strong style="font-size: 32px;">' . $code . '</strong>',
 		));
 		wp_send_json_success( [ 'message' => 'Verification code sent to your email' ] );
 	}

@@ -16,9 +16,9 @@ $source = get_field_value($_GET, 'source');
 $factoring = get_field_value($_GET, 'factoring');
 $invoice = get_field_value($_GET, 'invoice');
 $office = get_field_value($_GET, 'office');
+$offices = $helper->get_offices_from_acf();
 
 $post_tp = get_field_value($args, 'post_type');
-$offices = $helper->get_offices_from_acf();
 
 $show_filter_by_office = $TMSUsers->check_user_role_access( array( 'dispatcher-tl', 'administrator', 'recruiter', 'recruiter-tl', 'moderator' ), true );
 

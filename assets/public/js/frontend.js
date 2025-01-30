@@ -4296,12 +4296,21 @@ var updateStatusPost = function updateStatusPost(ajaxUrl) {
       fetch(ajaxUrl, options).then(function (res) {
         return res.json();
       }).then(function (requestStatus) {
+        var _a, _b, _c;
         if (requestStatus.success) {
           (0,_info_messages__WEBPACK_IMPORTED_MODULE_2__.printMessage)(requestStatus.data.message, 'success', 8000);
+          if ((_a = requestStatus.data.send_email) === null || _a === void 0 ? void 0 : _a.success) {
+            console.log(requestStatus.data);
+            (0,_info_messages__WEBPACK_IMPORTED_MODULE_2__.printMessage)((_b = requestStatus.data.send_email) === null || _b === void 0 ? void 0 : _b.message, 'success', 8000);
+            setTimeout(function () {
+              window.location.reload();
+            }, 4000);
+          } else {
+            (0,_info_messages__WEBPACK_IMPORTED_MODULE_2__.printMessage)((_c = requestStatus.data.send_email) === null || _c === void 0 ? void 0 : _c.message, 'danger', 8000);
+          }
           var container = document.querySelector('.js-update-status');
           if (!container) return;
           container.innerHTML = '';
-          window.location.reload();
         } else {
           (0,_info_messages__WEBPACK_IMPORTED_MODULE_2__.printMessage)(requestStatus.data.message, 'danger', 8000);
         }
@@ -5160,6 +5169,60 @@ var addSearchAction = function addSearchAction(ajaxUrl) {
   console.log('ajaxUrl', ajaxUrl);
   searchHelperActions('.js-search-company', 'search_company', ajaxUrl);
   searchHelperActions('.js-search-shipper', 'search_shipper', ajaxUrl);
+};
+
+/***/ }),
+
+/***/ "./src/js/components/send-email-chain.ts":
+/*!***********************************************!*\
+  !*** ./src/js/components/send-email-chain.ts ***!
+  \***********************************************/
+/***/ (function(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   sendEmailChain: function() { return /* binding */ sendEmailChain; }
+/* harmony export */ });
+/* harmony import */ var _info_messages__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./info-messages */ "./src/js/components/info-messages.ts");
+
+var sendEmailChain = function sendEmailChain(ajaxUrl) {
+  var forms = document.querySelectorAll('.js-send-email-chain');
+  forms && forms.forEach(function (form) {
+    form.addEventListener('submit', function (e) {
+      e.preventDefault();
+      var target = e.target;
+      var formData = new FormData(target);
+      var action = 'send_email_chain';
+      formData.append('action', action);
+      var options = {
+        method: 'POST',
+        body: formData
+      };
+      var btn = target.querySelector('button');
+      if (btn) {
+        btn.setAttribute('disabled', 'disabled');
+      }
+      fetch(ajaxUrl, options).then(function (res) {
+        return res.json();
+      }).then(function (requestStatus) {
+        if (requestStatus.success) {
+          (0,_info_messages__WEBPACK_IMPORTED_MODULE_0__.printMessage)(requestStatus.data.message, 'success', 8000);
+          setTimeout(function () {
+            window.location.reload();
+          }, 4000);
+        } else {
+          if (btn) {
+            btn.removeAttribute('disabled');
+          }
+          (0,_info_messages__WEBPACK_IMPORTED_MODULE_0__.printMessage)(requestStatus.data.message, 'danger', 8000);
+        }
+      }).catch(function (error) {
+        (0,_info_messages__WEBPACK_IMPORTED_MODULE_0__.printMessage)("Request failed: ".concat(error), 'danger', 8000);
+        console.error('Request failed:', error);
+      });
+    });
+  });
 };
 
 /***/ }),
@@ -15375,6 +15438,8 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _components_tel_mask__WEBPACK_IMPORTED_MODULE_20__ = __webpack_require__(/*! ./components/tel-mask */ "./src/js/components/tel-mask.ts");
 /* harmony import */ var _components_stop_type__WEBPACK_IMPORTED_MODULE_21__ = __webpack_require__(/*! ./components/stop-type */ "./src/js/components/stop-type.ts");
 /* harmony import */ var _components_set_status_paid__WEBPACK_IMPORTED_MODULE_22__ = __webpack_require__(/*! ./components/set-status-paid */ "./src/js/components/set-status-paid.ts");
+/* harmony import */ var _components_send_email_chain__WEBPACK_IMPORTED_MODULE_23__ = __webpack_require__(/*! ./components/send-email-chain */ "./src/js/components/send-email-chain.ts");
+
 
 
 
@@ -15434,6 +15499,7 @@ function ready() {
   (0,_components_logs__WEBPACK_IMPORTED_MODULE_17__.logsInit)(urlAjax);
   (0,_components_create_report__WEBPACK_IMPORTED_MODULE_3__.quickEditTrackingStatus)(urlAjax);
   (0,_components_performance__WEBPACK_IMPORTED_MODULE_19__.sendUpdatePerformance)(urlAjax);
+  (0,_components_send_email_chain__WEBPACK_IMPORTED_MODULE_23__.sendEmailChain)(urlAjax);
   (0,_components_driver_Info__WEBPACK_IMPORTED_MODULE_10__.initGetInfoDriver)(urlAjax, useServices);
   (0,_components_create_report__WEBPACK_IMPORTED_MODULE_3__.additionalContactsInit)();
   (0,_components_create_report__WEBPACK_IMPORTED_MODULE_3__.addShipperPointInit)();

@@ -115,6 +115,12 @@ class TMSReports extends TMSReportsHelper {
 			$where_values[]     = $args[ 'dispatcher' ];
 		}
 		
+		if ( isset($args[ 'user_id' ]) && ! empty( $args[ 'user_id' ] ) ) {
+			$where_conditions[] = "(main.user_id_added = %s OR dispatcher.meta_value = %s )";
+			$where_values[]     = $args[ 'user_id' ];
+			$where_values[]     = $args[ 'user_id' ];
+		}
+		
 		if ( ! empty( $args[ 'load_status' ] ) ) {
 			$where_conditions[] = "load_status.meta_value = %s";
 			$where_values[]     = $args[ 'load_status' ];
@@ -137,12 +143,23 @@ class TMSReports extends TMSReportsHelper {
 		}
 		
 		if (isset($args['exclude_paid']) && !empty($args['exclude_paid'])) {
-			$where_conditions[] = "driver_pay_statuses.meta_value NOT IN ('paid')";
+			// Условие для exclude_paid: показывать все записи, где значение не "paid" или оно отсутствует/пустое
+			$where_conditions[] = "(
+        driver_pay_statuses.meta_value NOT IN ('paid')
+        OR driver_pay_statuses.meta_value IS NULL
+        OR driver_pay_statuses.meta_value = ''
+    )";
 		}
 		
 		if (isset($args['include_paid']) && !empty($args['include_paid'])) {
-			$where_conditions[] = "driver_pay_statuses.meta_value = 'paid'";
+			// Условие для include_paid: показывать только записи, где значение "paid" и оно не пустое/не NULL
+			$where_conditions[] = "(
+        driver_pay_statuses.meta_value = 'paid'
+        AND driver_pay_statuses.meta_value IS NOT NULL
+        AND driver_pay_statuses.meta_value != ''
+    )";
 		}
+		
 		
 		if ( ! empty( $args[ 'invoice' ] ) ) {
 			if ( $args[ 'invoice' ] === 'invoiced' ) {
@@ -307,11 +324,6 @@ class TMSReports extends TMSReportsHelper {
 			$where_values[]     = $args[ 'status_post' ];
 		}
 		
-		if ( isset( $args[ 'ar_problem' ] ) && $args[ 'ar_problem' ] ) {
-			$where_conditions[] = "main.load_problem IS NOT NULL";
-			$where_conditions[] = "DATEDIFF(NOW(), main.load_problem) > 50";
-		}
-		
 		// Фильтрация по dispatcher_initials
 		if ( ! empty( $args[ 'dispatcher' ] ) ) {
 			$where_conditions[] = "dispatcher.meta_value = %s";
@@ -323,15 +335,23 @@ class TMSReports extends TMSReportsHelper {
 			$where_values[]     = $args[ 'load_status' ];
 		}
 		
-	
+		
 		if (isset($args['exclude_factoring_status']) && !empty($args['exclude_factoring_status'])) {
-			$exclude_factoring_status        = array_map( 'esc_sql', (array) $args[ 'exclude_factoring_status' ] );
-			$where_conditions[] = "factoring_status.meta_value NOT IN ('" . implode( "','", $exclude_factoring_status ) . "')";
+			$exclude_factoring_status = array_map('esc_sql', (array) $args['exclude_factoring_status']);
+			$where_conditions[] = "(
+        factoring_status.meta_value NOT IN ('" . implode("','", $exclude_factoring_status) . "')
+        OR factoring_status.meta_value IS NULL
+        OR factoring_status.meta_value = ''
+    )";
 		}
 		
 		if (isset($args['include_factoring_status']) && !empty($args['include_factoring_status'])) {
-			$include_factoring_status        = array_map( 'esc_sql', (array) $args[ 'include_factoring_status' ] );
-			$where_conditions[] = "factoring_status.meta_value IN ('" . implode( "','", $include_factoring_status ) . "')";
+			$include_factoring_status = array_map('esc_sql', (array) $args['include_factoring_status']);
+			$where_conditions[] = "(
+        factoring_status.meta_value IN ('" . implode("','", $include_factoring_status) . "')
+        AND factoring_status.meta_value IS NOT NULL
+        AND factoring_status.meta_value != ''
+    )";
 		}
 		
 		if ( ! empty( $args[ 'invoice' ] ) ) {
@@ -382,6 +402,7 @@ class TMSReports extends TMSReportsHelper {
 		if ( ! empty( $where_conditions ) ) {
 			$sql .= ' AND ' . implode( ' AND ', $where_conditions );
 		}
+		
 		
 		// Подсчёт общего количества записей с учётом фильтров
 		$total_records_sql = "SELECT COUNT(*)" . $join_builder;
@@ -458,6 +479,9 @@ class TMSReports extends TMSReportsHelper {
     LEFT JOIN $table_meta AS reference ON main.id = reference.post_id AND reference.meta_key = 'reference_number'
     LEFT JOIN $table_meta AS unit_number ON main.id = unit_number.post_id AND unit_number.meta_key = 'unit_number_name'
     LEFT JOIN $table_meta AS load_status ON main.id = load_status.post_id AND load_status.meta_key = 'load_status'
+    LEFT JOIN $table_meta AS office_dispatcher
+				ON main.id = office_dispatcher.post_id
+				AND office_dispatcher.meta_key = 'office_dispatcher'
     WHERE 1=1
     ";
 		
@@ -484,6 +508,11 @@ class TMSReports extends TMSReportsHelper {
 		
 		if ( ! empty( $args['load_status'] ) ) {
 			$add_condition( "load_status.meta_value = %s", $args['load_status'] );
+		}
+		
+		if ( ! empty( $args[ 'office' ] ) && $args[ 'office' ] !== 'all' ) {
+			$where_conditions[] = "office_dispatcher.meta_value = %s";
+			$where_values[]     = $args[ 'office' ];
 		}
 		
 		if ( ! empty( $args['my_team'] ) && is_array( $args['my_team'] ) ) {
@@ -733,6 +762,15 @@ class TMSReports extends TMSReportsHelper {
 		if ( ! empty( $args[ 'status' ] ) && $args[ 'status' ] !== 'all' ) {
 			$where_conditions[] = "factoring_status.meta_value = %s";
 			$where_values[]     = $args[ 'status' ];
+		}
+		
+		if (isset($args['exclude_factoring_status']) && !empty($args['exclude_factoring_status'])) {
+			$exclude_factoring_status = array_map('esc_sql', (array) $args['exclude_factoring_status']);
+			$where_conditions[] = "(
+        factoring_status.meta_value NOT IN ('" . implode("','", $exclude_factoring_status) . "')
+        OR factoring_status.meta_value IS NULL
+        OR factoring_status.meta_value = ''
+    )";
 		}
 		
 		if ( ! empty( $args[ 'my_search' ] ) ) {
@@ -1958,6 +1996,27 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 		}
 	}
 	
+	public function send_email_chain () {
+		if ( defined( 'DOING_AJAX' ) && DOING_AJAX ) {
+			
+			$MY_INPUT = filter_var_array( $_POST, [
+				"load_id" => FILTER_SANITIZE_STRING,
+			] );
+			
+			$TMSEmails = new TMSEmails();
+			$email_send = $TMSEmails->send_email_create_load($MY_INPUT['load_id']);
+			
+			if ($email_send['success']) {
+				$post_meta = array (
+					'mail_chain_success_send' => '1',
+				);
+				$this->update_post_meta_data( $MY_INPUT['load_id'], $post_meta );
+				
+				wp_send_json_success( $email_send );
+			}
+			wp_send_json_error( $email_send );
+		}
+	}
 	/**
 	 * function update post status
 	 * @return void
@@ -3481,6 +3540,7 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 		add_action( 'wp_ajax_update_files_report', array( $this, 'update_files_report' ) );
 		add_action( 'wp_ajax_delete_open_image', array( $this, 'delete_open_image' ) );
 		add_action( 'wp_ajax_update_shipper_info', array( $this, 'update_shipper_info' ) );
+		add_action( 'wp_ajax_send_email_chain', array( $this, 'send_email_chain' ) );
 		add_action( 'wp_ajax_update_post_status', array( $this, 'update_post_status' ) );
 		add_action( 'wp_ajax_rechange_status_load', array( $this, 'rechange_status_load' ) );
 		add_action( 'wp_ajax_remove_one_load', array( $this, 'remove_one_load' ) );

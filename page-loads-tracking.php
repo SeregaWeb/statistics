@@ -9,6 +9,7 @@
 get_header();
 
 $reports = new TMSReports();
+$TMSUsers = new TMSUsers();
 
 $args = array(
 	'status_post' => 'publish',
@@ -17,7 +18,14 @@ $args = array(
     'exclude_status' => array('delivered', 'tonu', 'cancelled'),
 );
 
-$args = $reports->set_filter_params($args);
+$office_dispatcher = get_field( 'work_location', 'user_'.get_current_user_id());
+$sellect_all_offices = $TMSUsers->check_user_role_access( array( 'dispatcher-tl', 'administrator', 'recruiter', 'recruiter-tl', 'moderator' ), true );
+
+if (!$office_dispatcher || $sellect_all_offices) {
+	$office_dispatcher = 'all';
+}
+
+$args = $reports->set_filter_params($args, $office_dispatcher);
 $items = $reports->get_table_items_tracking($args);
 
 $post_tp = 'tracking';

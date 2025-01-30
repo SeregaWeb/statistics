@@ -100,12 +100,13 @@ We will immediately let you know once the truck is on-site.
                 $first_link = false;
             
                 $exclude = array_search($role, $block['exclude_role_all_list']);
+                $target_top = $block['menu'][0]['link']['target'];
                
                 if (is_array($block['menu']) && !is_numeric($exclude)):
                     if (isset($block['menu'][0]['link']) && is_array($block['menu'][0]['link'])): ?>
                     <div class="left-sidebar__block">
                         
-                        <a class="left-sidebar__btn full js-toggle active" data-block-toggle="js-menu-block_<?php echo $key; ?>" href="<?php echo $block['menu'][0]['link']['url'];
+                        <a class="left-sidebar__btn full js-toggle active" target="<?php echo !empty($target_top) ? $target_top : '_self' ?>" data-block-toggle="js-menu-block_<?php echo $key; ?>" href="<?php echo $block['menu'][0]['link']['url'];
                             ?>">
                             <?php if (!empty($block['icon'])): ?>
                             <img class="left-sidebar__icon" src="<?php echo wp_get_attachment_image_url($block['icon']); ?>" alt="icon">
@@ -126,6 +127,7 @@ We will immediately let you know once the truck is on-site.
                              
                              if ($first_link === false) {
                                  $first_link = $menu['link']['url'];
+                                 $target = $menu['link']['target'];
                              }
                              
                              $link_url = $menu['link']['url'];
@@ -143,14 +145,14 @@ We will immediately let you know once the truck is on-site.
                              
                              ?>
                                 <li class="left-sidebar__item">
-                                    <a class="left-sidebar__link <?php echo $current_page; ?> <?php echo $popup_class; ?>" href="<?php echo $link_url; ?>">
+                                    <a class="left-sidebar__link <?php echo $current_page; ?> <?php echo $popup_class; ?>" target="<?php echo empty($menu['link']['target']) ? '_self' : $menu['link']['target'] ?>" href="<?php echo $link_url; ?>">
                                     <?php echo $link_title; ?>
                                     </a>
                                 </li>
                             <?php endif; ?>
                         <?php endforeach; ?>
                         </ul>
-                         <a class="left-sidebar__btn small" href="<?php echo $first_link; ?>">
+                         <a class="left-sidebar__btn small" target="<?php echo !empty($target) ? $target : '_self'; ?>" href="<?php echo $first_link; ?>">
                             <?php if (!empty($block['icon'])): ?>
                             <img class="left-sidebar__icon" src="<?php echo wp_get_attachment_image_url($block['icon']); ?>" alt="icon">
                             <?php endif; ?>

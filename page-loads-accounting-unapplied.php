@@ -15,7 +15,8 @@ $args = array(
 	'status_post'    => 'publish',
 	'per_page_loads' => 1000,
     'sort_by' => 'load_problem',
-    'sort_order' => 'asc'
+    'sort_order' => 'asc',
+    'exclude_factoring_status' => array( 'processed' ),
 );
 
 $args  = $reports->set_filter_unapplied( $args );

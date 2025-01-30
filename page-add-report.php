@@ -25,7 +25,7 @@ if ( $post_id && is_numeric( $post_id ) ) {
 	$report_object = $reports->get_report_by_id( $_GET[ 'post_id' ] );
     $main = get_field_value($report_object, 'main');
     $meta = get_field_value($report_object, 'meta');
-    
+ 
 	if ( is_array( $report_object ) && sizeof( $report_object ) > 0 ) {
 		$disabled_tabs = '';
         $status_publish = get_field_value($main, 'status_post');
@@ -35,8 +35,6 @@ if ( $post_id && is_numeric( $post_id ) ) {
 	}
 	
 	$message_arr = $reports->check_empty_fields($post_id);
- 
- 
 	$print_status = true;
     $status_type = $message_arr['status'];
     $status_message = $message_arr['message'];
@@ -48,6 +46,7 @@ if ( $post_id && is_numeric( $post_id ) ) {
         }
     }
 	
+    $send_mesaage = get_field_value($meta, 'mail_chain_success_send');
 	$log_file = get_field_value($meta, 'log_file');
     $factoring_status = get_field_value($meta, 'factoring_status');
 }
@@ -83,7 +82,7 @@ if ($access) {
 	$full_only_view = $TMSUsers->check_user_role_access(array('billing', 'dispatcher-tl', 'moderator'), true);
 }
 
-if ($TMSUsers->check_user_role_access(array('dispatcher-tl','dispatcher'), true) && isset($main) && isset($meta)) {
+if ($TMSUsers->check_user_role_access(array('dispatcher-tl','dispatcher'), true) && isset($main) && isset($meta) && !$access) {
 	$dispatcher_initials = get_field_value($meta, 'dispatcher_initials');
 	$user_id_added = get_field_value($main, 'user_id_added');
 	if (is_array($report_object)) {
@@ -101,7 +100,7 @@ if ($TMSUsers->check_user_role_access(array('dispatcher-tl','dispatcher'), true)
 $billing_info = $TMSUsers->check_user_role_access(array('administrator', 'billing', 'accounting'),true);
 
 
-if ($factoring_status == 'paid' && !$TMSUsers->check_user_role_access(array('administrator'),true)) {
+if (isset($factoring_status) && $factoring_status == 'paid' && !$TMSUsers->check_user_role_access(array('administrator'),true)) {
 	$full_only_view = true;
 }
 
@@ -121,6 +120,23 @@ $logshowcontent = isset($_COOKIE['logshow']) && +$_COOKIE['logshow'] !== 0 ? 'co
                     <div class="col-12 js-update-status mt-3">
 
                         <?php
+                        $access_for_btn = $TMSUsers->check_user_role_access(array('administrator', 'dispatcher-tl','dispatcher','tracking', 'tracking-tl'),true);
+                        if (isset($status_publish) && $status_publish === 'publish') {
+	                        if (!isset($send_mesaage) || !$send_mesaage) {
+		                        ?>
+                                <form class="w-100 d-flex justify-content-end mb-3 js-send-email-chain">
+                                    <input type="hidden" name="load_id" value="<?php echo $post_id; ?>">
+                                    <button class="btn btn-warning">Create tracking chain</button>
+                                </form>
+		                        <?php
+	                        } else {
+		                        ?>
+                                <div class="w-100 d-flex justify-content-end mb-3">
+                                    <button class="btn btn-success" disabled>Tracking chain created successful</button>
+                                </div>
+		                        <?php
+	                        }
+                        }
                         if (isset($status_publish) && $status_publish === 'draft') {
                             if ($print_status) {
                                 if ($status_type) {
@@ -260,7 +276,7 @@ $logshowcontent = isset($_COOKIE['logshow']) && +$_COOKIE['logshow'] !== 0 ? 'co
 
                     <div class="col-12 js-logs-container <?php echo $logshow; ?>">
                         <?php
-                        if ($log_file) {
+                        if (isset($log_file) && !empty($log_file)) {
                             $file_url = wp_get_attachment_url($log_file);
                             if ($file_url) {
                                 ?>

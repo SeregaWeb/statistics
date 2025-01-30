@@ -54,8 +54,11 @@ if ( ! empty( $results )) : ?>
 			
 			$pick_up_raw = get_field_value( $meta, 'pick_up_location' );
 			$pick_up     = $pick_up_raw ? json_decode( $pick_up_raw, ARRAY_A ) : [];
+			
+			
+			$commodity           = get_field_value( $meta, 'commodity' );
+			$weight              = get_field_value( $meta, 'weight' );
    
-            
 			$dispatcher_initials = get_field_value( $meta, 'dispatcher_initials' );
 			$driver_phone = get_field_value( $meta, 'driver_phone' );
 
@@ -151,7 +154,7 @@ if ( ! empty( $results )) : ?>
 							}
                             ?>
 							<?php if ( isset( $val[ 'short_address' ] ) ): ?>
-                            <div class="w-100 d-flex flex-column align-items-start">
+                            <div data-bs-toggle="tooltip" data-bs-placement="top" title="<?php echo 'Commodity: '.$commodity.' Weight: '.$weight; ?>" class="w-100 d-flex flex-column align-items-start">
                                 <p class="m-0" >
 		                            <?php echo $val[ 'address' ]; ?>
                                 </p>
@@ -187,7 +190,7 @@ if ( ! empty( $results )) : ?>
 							}
 							?>
 							<?php if ( isset( $val[ 'short_address' ] ) ): ?>
-                            <div class="w-100 d-flex flex-column align-items-start">
+                            <div data-bs-toggle="tooltip" data-bs-placement="top" title="<?php echo 'Commodity:'.$commodity.' Weight:'.$weight; ?>" class="w-100 d-flex flex-column align-items-start">
                                 <p class="m-0" >
 		                            <?php echo $val[ 'address' ]; ?>
                                 </p>
@@ -266,7 +269,12 @@ if ( ! empty( $results )) : ?>
              
 				<?php if ( $TMSUsers->check_user_role_access( array( 'recruiter' ) ) ): ?>
                     <td>
-                        
+                        <div class="d-flex">
+
+                            <button class="btn-bookmark js-btn-bookmark <?php echo $TMSUsers->is_bookmarked($row['id']) ? 'active' : ''; ?>" data-id="<?php echo $row[ 'id' ]; ?>">
+		                        <?php echo $helper->get_icon_bookmark(); ?>
+                            </button>
+                            
                         <?php if ($show_control): ?>
                         
                         <div class="dropdown">
@@ -292,6 +300,7 @@ if ( ! empty( $results )) : ?>
                         </div>
         
                         <?php endif; ?>
+                        </div>
                     </td>
 				<?php endif; ?>
             </tr>

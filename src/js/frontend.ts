@@ -44,6 +44,7 @@ import { sendUpdatePerformance } from './components/performance';
 import { telMaskInit } from './components/tel-mask';
 import { changeStopType } from './components/stop-type';
 import { setStatusPaid } from './components/set-status-paid';
+import { sendEmailChain } from "./components/send-email-chain";
 
 function ready() {
     console.log('ready');
@@ -90,6 +91,8 @@ function ready() {
     logsInit(urlAjax);
     quickEditTrackingStatus(urlAjax);
     sendUpdatePerformance(urlAjax);
+    sendEmailChain(urlAjax);
+    
     // API request
     initGetInfoDriver(urlAjax, useServices);
 
@@ -115,7 +118,6 @@ function ready() {
     triggerDisableBtnInit();
     changeStopType();
     setStatusPaid();
-
     telMaskInit();
 
     const preloaders = document.querySelectorAll('.js-preloader');

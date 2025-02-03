@@ -55,19 +55,6 @@ $access = $TMSUsers->check_user_role_access(array('recruiter'));
 
 $full_only_view = false;
 
-if ($TMSUsers->check_user_role_access(array('dispatcher'), true) && isset($meta)) {
-	$dispatcher_initials = get_field_value($meta, 'dispatcher_initials');
-	$user_id_added = get_field_value($main, 'user_id_added');
-	
-	if (is_array($report_object)) {
-		$current_user_id = get_current_user_id();
-		if (intval($user_id_added) === $current_user_id || intval($dispatcher_initials) === $current_user_id) {
-			$access = true;
-		} else {
-			$access = false;
-		}
-	}
-}
 
 if ($TMSUsers->check_user_role_access(array('dispatcher-tl','tracking'), true) && isset($meta)) {
 	$dispatcher_initials = get_field_value($meta, 'dispatcher_initials');
@@ -79,7 +66,7 @@ if ($TMSUsers->check_user_role_access(array('dispatcher-tl','tracking'), true) &
 }
 
 if ($access) {
-	$full_only_view = $TMSUsers->check_user_role_access(array('billing', 'dispatcher-tl', 'moderator'), true);
+	$full_only_view = $TMSUsers->check_user_role_access(array('billing', 'moderator'), true);
 }
 
 if ($TMSUsers->check_user_role_access(array('dispatcher-tl','dispatcher'), true) && isset($main) && isset($meta) && !$access) {
@@ -99,9 +86,33 @@ if ($TMSUsers->check_user_role_access(array('dispatcher-tl','dispatcher'), true)
 
 $billing_info = $TMSUsers->check_user_role_access(array('administrator', 'billing', 'accounting'),true);
 
+$tracking_tl = false;
+if ($TMSUsers->check_user_role_access(array('tracking-tl'), true) && isset($meta)) {
+	$full_only_view = true;
+    $tracking_tl = true;
+}
 
 if (isset($factoring_status) && $factoring_status == 'paid' && !$TMSUsers->check_user_role_access(array('administrator'),true)) {
 	$full_only_view = true;
+}
+
+if ($TMSUsers->check_user_role_access(array('dispatcher'), true) && isset($meta)) {
+	$dispatcher_initials = get_field_value($meta, 'dispatcher_initials');
+	$user_id_added = get_field_value($main, 'user_id_added');
+	
+	if (is_array($report_object)) {
+		$current_user_id = get_current_user_id();
+		if (intval($user_id_added) === $current_user_id || intval($dispatcher_initials) === $current_user_id) {
+			$access = true;
+			$full_only_view = false;
+		} else {
+			$access = false;
+		}
+	}
+}
+
+if ($status_publish === 'draft') {
+	$full_only_view = false;
 }
 
 get_header();
@@ -153,28 +164,30 @@ $logshowcontent = isset($_COOKIE['logshow']) && +$_COOKIE['logshow'] !== 0 ? 'co
                     <div class="col-12 js-logs-content <?php echo $logshowcontent; ?>">
 
                         <ul class="nav nav-pills gap-2 mb-3" id="pills-tab" role="tablist">
-                            <li class="nav-item flex-grow-1" role="presentation">
-                                <button class="nav-link w-100 active" id="pills-customer-tab" data-bs-toggle="pill"
+                            <li  class="nav-item js-change-url-tab flex-grow-1" role="presentation">
+                                <button class="nav-link w-100 <?php echo $helper->change_active_tab('pills-customer-tab'); ?> " id="pills-customer-tab" data-bs-toggle="pill"
                                         data-bs-target="#pills-customer" type="button" role="tab"
                                         aria-controls="pills-customer" aria-selected="true">Customer
                                 </button>
                             </li>
-                            <li class="nav-item flex-grow-1" role="presentation">
-                                <button class="nav-link w-100 <?php echo $disabled_tabs; ?> " id="pills-load-tab"
+                            <li  class="nav-item js-change-url-tab flex-grow-1" role="presentation">
+                                <button class="nav-link w-100 <?php echo $disabled_tabs; ?> <?php echo $helper->change_active_tab('pills-load-tab'); ?> " id="pills-load-tab"
                                         data-bs-toggle="pill"
                                         data-bs-target="#pills-load" type="button" role="tab" aria-controls="pills-load"
                                         aria-selected="false">Load
                                 </button>
                             </li>
-                            <li class="nav-item flex-grow-1" role="presentation">
-                                <button class="nav-link w-100 <?php echo $disabled_tabs; ?> " id="pills-trip-tab"
+                            <li  class="nav-item js-change-url-tab flex-grow-1" role="presentation">
+                                <button class="nav-link w-100 <?php echo $disabled_tabs;
+                                echo $helper->change_active_tab( 'pills-trip-tab' ); ?> " id="pills-trip-tab"
                                         data-bs-toggle="pill"
                                         data-bs-target="#pills-trip" type="button" role="tab" aria-controls="pills-trip"
                                         aria-selected="false">Trip
                                 </button>
                             </li>
-                            <li class="nav-item flex-grow-1" role="presentation">
-                                <button class="nav-link w-100 <?php echo $disabled_tabs; ?> " id="pills-documents-tab"
+                            <li  class="nav-item js-change-url-tab flex-grow-1" role="presentation">
+                                <button class="nav-link w-100 <?php echo $disabled_tabs;
+                                echo $helper->change_active_tab( 'pills-documents-tab' ); ?> " id="pills-documents-tab"
                                         data-bs-toggle="pill"
                                         data-bs-target="#pills-documents" type="button" role="tab"
                                         aria-controls="pills-documents" aria-selected="false">Documents
@@ -182,15 +195,17 @@ $logshowcontent = isset($_COOKIE['logshow']) && +$_COOKIE['logshow'] !== 0 ? 'co
                             </li>
 
                             <?php if ($billing_info): ?>
-                            <li class="nav-item flex-grow-1" role="presentation">
-                                <button class="nav-link w-100 <?php echo $disabled_tabs; ?> " id="pills-billing-tab"
+                            <li  class="nav-item js-change-url-tab flex-grow-1" role="presentation">
+                                <button class="nav-link w-100 <?php echo $disabled_tabs;
+                                echo $helper->change_active_tab( 'pills-billing-tab' ); ?> " id="pills-billing-tab"
                                         data-bs-toggle="pill"
                                         data-bs-target="#pills-billing" type="button" role="tab"
                                         aria-controls="pills-billing" aria-selected="false">Billing
                                 </button>
                             </li>
-                            <li class="nav-item flex-grow-1" role="presentation">
-                                <button class="nav-link w-100 <?php echo $disabled_tabs; ?> " id="pills-accounting-tab"
+                            <li  class="nav-item js-change-url-tab flex-grow-1" role="presentation">
+                                <button class="nav-link w-100 <?php echo $disabled_tabs;
+                                echo $helper->change_active_tab( 'pills-accounting-tab' ); ?> " id="pills-accounting-tab"
                                         data-bs-toggle="pill"
                                         data-bs-target="#pills-accounting" type="button" role="tab"
                                         aria-controls="pills-accounting" aria-selected="false">Accounting
@@ -201,7 +216,7 @@ $logshowcontent = isset($_COOKIE['logshow']) && +$_COOKIE['logshow'] !== 0 ? 'co
                        
                         <div class="tab-content" id="pills-tabContent">
 
-                            <div class="tab-pane fade show active" id="pills-customer" role="tabpanel"
+                            <div class="tab-pane fade <?php echo $helper->change_active_tab('pills-customer-tab', 'show'); ?>" id="pills-customer" role="tabpanel"
                                  aria-labelledby="pills-customer-tab">
 	                            <?php
 	                            echo esc_html( get_template_part( 'src/template-parts/report/report', 'tab-customer', array(
@@ -212,17 +227,18 @@ $logshowcontent = isset($_COOKIE['logshow']) && +$_COOKIE['logshow'] !== 0 ? 'co
 	                            ?>
                             </div>
 
-                            <div class="tab-pane fade" id="pills-load" role="tabpanel" aria-labelledby="pills-load-tab">
+                            <div class="tab-pane fade <?php echo $helper->change_active_tab('pills-load-tab', 'show'); ?>" id="pills-load" role="tabpanel" aria-labelledby="pills-load-tab">
 								<?php
 								echo esc_html( get_template_part( 'src/template-parts/report/report', 'tab-load', array(
 									'full_view_only' => $full_only_view,
+									'tracking_tl' => $tracking_tl,
                                     'report_object' => $report_object,
 									'post_id'       => $post_id
 								) ) );
 								?>
                             </div>
                             
-                            <div class="tab-pane fade" id="pills-trip" role="tabpanel" aria-labelledby="pills-trip-tab">
+                            <div class="tab-pane fade <?php echo $helper->change_active_tab('pills-trip-tab', 'show'); ?>" id="pills-trip" role="tabpanel" aria-labelledby="pills-trip-tab">
 	                            <?php
 	                            echo esc_html( get_template_part( 'src/template-parts/report/report', 'tab-shipper', array(
 		                            'full_view_only' => $full_only_view,
@@ -232,7 +248,7 @@ $logshowcontent = isset($_COOKIE['logshow']) && +$_COOKIE['logshow'] !== 0 ? 'co
 	                            ?>
                             </div>
                             
-                            <div class="tab-pane fade" id="pills-documents" role="tabpanel"
+                            <div class="tab-pane fade <?php echo $helper->change_active_tab('pills-documents-tab', 'show'); ?>" id="pills-documents" role="tabpanel"
                                  aria-labelledby="pills-documents-tab">
 								
 								<?php
@@ -246,7 +262,7 @@ $logshowcontent = isset($_COOKIE['logshow']) && +$_COOKIE['logshow'] !== 0 ? 'co
 	
 	                        <?php if ($billing_info): ?>
                             
-                            <div class="tab-pane fade" id="pills-billing" role="tabpanel"
+                            <div class="tab-pane fade <?php echo $helper->change_active_tab('pills-billing-tab', 'show'); ?>" id="pills-billing" role="tabpanel"
                                  aria-labelledby="pills-billing-tab">
 		                        
 		                        <?php
@@ -258,7 +274,7 @@ $logshowcontent = isset($_COOKIE['logshow']) && +$_COOKIE['logshow'] !== 0 ? 'co
 		                        ?>
                             </div>
                             
-                            <div class="tab-pane fade" id="pills-accounting" role="tabpanel"
+                            <div class="tab-pane fade <?php echo $helper->change_active_tab('pills-accounting-tab', 'show'); ?>" id="pills-accounting" role="tabpanel"
                                  aria-labelledby="pills-accounting-tab">
                                 
                                 <?php

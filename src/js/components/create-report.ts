@@ -127,7 +127,6 @@ export const actionCreateReportInit = (ajaxUrl) => {
                 const { target } = event;
 
                 const nextTargetTab = 'pills-trip-tab';
-                const tab = new Tab(document.getElementById(nextTargetTab));
 
                 // @ts-ignore
                 const formData = new FormData(target);
@@ -145,15 +144,14 @@ export const actionCreateReportInit = (ajaxUrl) => {
                             console.log('Load added successfully:', requestStatus.data);
                             popupInstance.forceCloseAllPopup();
 
-                            // @ts-ignore
-                            tab.show();
-
                             console.log('requestStatus.data?.read_only', requestStatus.data?.read_only);
 
                             if (requestStatus.data.data?.read_only !== 'true') {
                                 updateStatusRechange(ajaxUrl);
                             }
                             printMessage(requestStatus.data.message, 'success', 8000);
+
+                            setUpTabInUrl(nextTargetTab);
                         } else {
                             // eslint-disable-next-line no-alert
                             printMessage(`Error adding Load:${requestStatus.data.message}`, 'danger', 8000);
@@ -166,6 +164,15 @@ export const actionCreateReportInit = (ajaxUrl) => {
             });
         });
 };
+
+function setUpTabInUrl(tab) {
+    const url = new URL(window.location.href);
+    // Set the 'post_id' parameter
+    url.searchParams.set('tab', tab);
+    // Update the URL without reloading the page
+    window.history.pushState({}, '', url);
+    window.location.href = <string>url?.href;
+}
 
 /**
  * check isset post use param in url address
@@ -193,7 +200,7 @@ export const createDraftPosts = (ajaxUrl) => {
             item.addEventListener('submit', (event) => {
                 event.preventDefault();
                 const nextTargetTab = 'pills-load-tab';
-                const tab = new Tab(document.getElementById(nextTargetTab));
+                // const tab = new Tab(document.getElementById(nextTargetTab));
                 let action = 'add_new_draft_report';
 
                 if (hasReportIdInUrl()) {
@@ -236,6 +243,7 @@ export const createDraftPosts = (ajaxUrl) => {
                                 const url = new URL(window.location.href);
                                 // Set the 'post_id' parameter
                                 url.searchParams.set('post_id', requestStatus.data.id_created_post);
+                                url.searchParams.set('tab', 'pills-load-tab');
                                 // Update the URL without reloading the page
                                 window.history.pushState({}, '', url);
                                 console.log('url', url);
@@ -246,8 +254,8 @@ export const createDraftPosts = (ajaxUrl) => {
                                 if (requestStatus.data.data?.read_only !== 'true') {
                                     updateStatusRechange(ajaxUrl);
                                 }
-                                tab.show();
                                 printMessage(requestStatus.data?.message, 'success', 8000);
+                                setUpTabInUrl(nextTargetTab);
                             }
                         } else {
                             // eslint-disable-next-line no-alert
@@ -306,9 +314,8 @@ export const updateFilesReportInit = (ajaxUrl) => {
                         if (requestStatus.success) {
                             console.log('upload files successfully:', requestStatus.data);
                             printMessage(requestStatus.data.message, 'success', 8000);
-                            if (requestStatus.data.data?.read_only !== 'true') {
-                                updateStatusRechange(ajaxUrl);
-                            }
+
+                            setUpTabInUrl('pills-documents-tab');
                         } else {
                             // eslint-disable-next-line no-alert
                             printMessage(`Error upload files:${requestStatus.data.message}`, 'danger', 8000);
@@ -347,6 +354,8 @@ export const updateBillingReportInit = (ajaxUrl) => {
                             if (requestStatus.data.data?.read_only !== 'true') {
                                 updateStatusRechange(ajaxUrl);
                             }
+
+                            setUpTabInUrl('pills-billing-tab');
                         } else {
                             // eslint-disable-next-line no-alert
                             printMessage(`Error update:${requestStatus.data.message}`, 'danger', 8000);
@@ -382,6 +391,7 @@ export const updateAccountingReportInit = (ajaxUrl) => {
                         if (requestStatus.success) {
                             console.log('update successfully:', requestStatus.data);
                             printMessage(requestStatus.data.message, 'success', 8000);
+                            setUpTabInUrl('pills-accounting-tab');
                         } else {
                             // eslint-disable-next-line no-alert
                             printMessage(`Error update:${requestStatus.data.message}`, 'danger', 8000);
@@ -426,68 +436,9 @@ export const removeOneFileInitial = (ajaxUrl) => {
                         if (requestStatus.success) {
                             const container = document.querySelector('.js-uploads-files') as HTMLElement;
 
-                            if (requestStatus.data.data['image-fields'] === 'attached_file_required') {
-                                const addTemplateUpload = ` <div class="js-add-new-report order-1">
-                                    <div class="p-0 mb-2 col-12">
-                                    <p class="h5">Required file <span
-                                    class="required-star text-danger">*</span></p>
-                                    <label for="attached_file_required" class="form-label">Rate
-                                    Confirmation</label>
-                                    <input type="file" required name="attached_file_required"
-                                           class="form-control js-control-uploads">
-                                    </div>
-                                    
-                                    <div class="p-0 col-12 mb-3 mt-3 preview-photo js-preview-photo-upload">
-                                    
-                                    </div>
-                                </div>
-                                `;
-                                container.insertAdjacentHTML('afterbegin', addTemplateUpload);
-                            }
-
-                            if (requestStatus.data.data['image-fields'] === 'updated_rate_confirmation') {
-                                const addTemplateUpload = `
-                                <div class="js-add-new-report order-3">
-                                    <div class="p-0 mb-2 col-12">
-                                        <p class="h5">Updated rate confirmation</p>
-                                        <label for="update_rate_confirmation" class="form-label">Optional file</label>
-                                        <input type="file" name="update_rate_confirmation"
-                                               class="form-control js-control-uploads">
-                                    </div>
-                            
-                                    <div class="p-0 col-12 mb-3 mt-3 preview-photo js-preview-photo-upload">
-                            
-                                    </div>
-                                </div>
-                                `;
-
-                                container.insertAdjacentHTML('beforeend', addTemplateUpload);
-                            }
-
-                            if (requestStatus.data.data['image-fields'] === 'screen_picture') {
-                                const addTemplateUpload = `
-                                <div class="js-add-new-report order-4">
-                                    <div class="p-0 mb-2 col-12">
-                                        <p class="h5">Screen picture <span
-                                                    class="required-star text-danger">*</span></p>
-                                        <label for="screen_picture" class="form-label">screen picture</label>
-                                        <input type="file" required
-                                               name="screen_picture"
-                                               class="form-control js-control-uploads">
-                                    </div>
-                        
-                                    <div class="p-0 col-12 mb-3 mt-3 preview-photo js-preview-photo-upload">
-                        
-                                    </div>
-                                </div>
-                                `;
-
-                                container.insertAdjacentHTML('beforeend', addTemplateUpload);
-                            }
-
                             printMessage(requestStatus.data.message, 'success', 8000);
-                            // @ts-ignore
-                            target.remove();
+
+                            setUpTabInUrl('pills-documents-tab');
                         } else {
                             printMessage(`Error adding report:${requestStatus.data.message}`, 'danger', 8000);
                         }
@@ -1084,7 +1035,6 @@ export const sendShipperFormInit = (ajaxUrl) => {
             const { target } = event;
 
             const nextTargetTab = 'pills-documents-tab';
-            const tab = new Tab(document.getElementById(nextTargetTab));
             // @ts-ignore
             const formData = new FormData(target);
             const action = 'update_shipper_info';
@@ -1101,11 +1051,11 @@ export const sendShipperFormInit = (ajaxUrl) => {
                 .then((requestStatus) => {
                     if (requestStatus.success) {
                         printMessage(requestStatus.data.message, 'success', 8000);
-                        // @ts-ignore
-                        tab.show();
                         if (requestStatus.data.data?.read_only !== 'true') {
                             updateStatusRechange(ajaxUrl);
                         }
+
+                        setUpTabInUrl(nextTargetTab);
                     } else {
                         printMessage(`Error adding shipper info:${requestStatus.data.message}`, 'danger', 8000);
                     }
@@ -1166,6 +1116,8 @@ export const updateStatusPost = (ajaxUrl) => {
 
                             if (!container) return;
                             container.innerHTML = '';
+
+                            setUpTabInUrl('pills-customer-tab');
                         } else {
                             printMessage(requestStatus.data.message, 'danger', 8000);
                         }
@@ -1278,7 +1230,7 @@ export const quickEditTrackingStatus = (ajaxUrl) => {
 export const triggerDisableBtnInit = () => {
     const triggers = document.querySelectorAll('.js-trigger-disable-btn');
     const inputs = document.querySelectorAll('.js-disable-container-trigger');
-
+    const saveAll = document.querySelectorAll('.js-save-all-tracking');
     triggers &&
         triggers.forEach((item) => {
             item.addEventListener('change', (e) => {
@@ -1291,6 +1243,11 @@ export const triggerDisableBtnInit = () => {
                     const btn = form.querySelector('button');
 
                     btn.removeAttribute('disabled');
+
+                    saveAll &&
+                        saveAll.forEach((itemSaveAll) => {
+                            itemSaveAll.classList.remove('d-none');
+                        });
                 }
             });
         });
@@ -1307,6 +1264,10 @@ export const triggerDisableBtnInit = () => {
                     const btn = form.querySelector('button');
 
                     btn.removeAttribute('disabled');
+                    saveAll &&
+                        saveAll.forEach((itemSaveAll) => {
+                            itemSaveAll.classList.remove('d-none');
+                        });
                 }
             });
         });

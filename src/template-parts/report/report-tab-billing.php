@@ -65,7 +65,7 @@ if ( $report_object ) {
 
 <h3 class="p-0 display-6 mb-4">Billing info</h3>
 
-<form  class="<?php echo ($full_view_only) ? '' : 'js-uploads-billing' ?> d-grid">
+<form  class="js-uploads-billing d-grid">
 
     <input type="hidden" name="old_ar_status" value="<?php echo $ar_status; ?>">
     <input type="hidden" name="old_factoring_status" value="<?php echo $factoring_status; ?>">
@@ -269,11 +269,8 @@ if ( $report_object ) {
                         class="btn btn-dark js-next-tab">Previous
                 </button>
 	            
-	            <?php if ( !$full_view_only ): ?>
-                    <button type="submit" class="btn btn-primary js-submit-and-next-tab">Update
-                    </button>
-	            <?php endif; ?>
-             
+                <button type="submit" class="btn btn-primary js-submit-and-next-tab">Update
+                </button>
              
             </div>
         </div>

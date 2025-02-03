@@ -3583,10 +3583,8 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */   updateFilesReportInit: function() { return /* binding */ updateFilesReportInit; },
 /* harmony export */   updateStatusPost: function() { return /* binding */ updateStatusPost; }
 /* harmony export */ });
-/* harmony import */ var bootstrap__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! bootstrap */ "./node_modules/bootstrap/dist/js/bootstrap.esm.js");
-/* harmony import */ var _parts_popup_window__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ../parts/popup-window */ "./src/js/parts/popup-window.js");
-/* harmony import */ var _info_messages__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./info-messages */ "./src/js/components/info-messages.ts");
-
+/* harmony import */ var _parts_popup_window__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ../parts/popup-window */ "./src/js/parts/popup-window.js");
+/* harmony import */ var _info_messages__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./info-messages */ "./src/js/components/info-messages.ts");
 
 
 var updateStatusRechange = function updateStatusRechange(ajaxUrl) {
@@ -3601,7 +3599,7 @@ var updateStatusRechange = function updateStatusRechange(ajaxUrl) {
     return;
   }
   if (!postId) {
-    (0,_info_messages__WEBPACK_IMPORTED_MODULE_2__.printMessage)('Post id not found', 'danger', 8000);
+    (0,_info_messages__WEBPACK_IMPORTED_MODULE_1__.printMessage)('Post id not found', 'danger', 8000);
     return;
   }
   formData.append('action', action);
@@ -3618,7 +3616,7 @@ var updateStatusRechange = function updateStatusRechange(ajaxUrl) {
       updateStatusPost(ajaxUrl);
     }
   }).catch(function (error) {
-    (0,_info_messages__WEBPACK_IMPORTED_MODULE_2__.printMessage)("Request failed: ".concat(error), 'danger', 8000);
+    (0,_info_messages__WEBPACK_IMPORTED_MODULE_1__.printMessage)("Request failed: ".concat(error), 'danger', 8000);
     console.error('Request failed:', error);
   });
 };
@@ -3632,7 +3630,7 @@ var fullRemovePost = function fullRemovePost(ajaxUrl) {
       if (target instanceof HTMLElement && question) {
         var idLoad = target.getAttribute('data-id');
         if (!idLoad) {
-          (0,_info_messages__WEBPACK_IMPORTED_MODULE_2__.printMessage)("Error remove Load: reload this page and try again", 'danger', 8000);
+          (0,_info_messages__WEBPACK_IMPORTED_MODULE_1__.printMessage)("Error remove Load: reload this page and try again", 'danger', 8000);
           return;
         }
         var action = 'remove_one_load';
@@ -3652,12 +3650,12 @@ var fullRemovePost = function fullRemovePost(ajaxUrl) {
             if (contain) {
               contain.remove();
             }
-            (0,_info_messages__WEBPACK_IMPORTED_MODULE_2__.printMessage)(requestStatus.data.message, 'success', 8000);
+            (0,_info_messages__WEBPACK_IMPORTED_MODULE_1__.printMessage)(requestStatus.data.message, 'success', 8000);
           } else {
-            (0,_info_messages__WEBPACK_IMPORTED_MODULE_2__.printMessage)("Error remove Load:".concat(requestStatus.data.message), 'danger', 8000);
+            (0,_info_messages__WEBPACK_IMPORTED_MODULE_1__.printMessage)("Error remove Load:".concat(requestStatus.data.message), 'danger', 8000);
           }
         }).catch(function (error) {
-          (0,_info_messages__WEBPACK_IMPORTED_MODULE_2__.printMessage)("Request failed: ".concat(error), 'danger', 8000);
+          (0,_info_messages__WEBPACK_IMPORTED_MODULE_1__.printMessage)("Request failed: ".concat(error), 'danger', 8000);
           console.error('Request failed:', error);
         });
       }
@@ -3666,13 +3664,12 @@ var fullRemovePost = function fullRemovePost(ajaxUrl) {
 };
 var actionCreateReportInit = function actionCreateReportInit(ajaxUrl) {
   var forms = document.querySelectorAll('.js-add-new-report');
-  var popupInstance = new _parts_popup_window__WEBPACK_IMPORTED_MODULE_1__["default"]();
+  var popupInstance = new _parts_popup_window__WEBPACK_IMPORTED_MODULE_0__["default"]();
   forms && forms.forEach(function (item) {
     item.addEventListener('submit', function (event) {
       event.preventDefault();
       var target = event.target;
       var nextTargetTab = 'pills-trip-tab';
-      var tab = new bootstrap__WEBPACK_IMPORTED_MODULE_0__.Tab(document.getElementById(nextTargetTab));
       var formData = new FormData(target);
       formData.append('action', 'add_new_report');
       var options = {
@@ -3686,22 +3683,28 @@ var actionCreateReportInit = function actionCreateReportInit(ajaxUrl) {
         if (requestStatus.success) {
           console.log('Load added successfully:', requestStatus.data);
           popupInstance.forceCloseAllPopup();
-          tab.show();
           console.log('requestStatus.data?.read_only', (_a = requestStatus.data) === null || _a === void 0 ? void 0 : _a.read_only);
           if (((_b = requestStatus.data.data) === null || _b === void 0 ? void 0 : _b.read_only) !== 'true') {
             updateStatusRechange(ajaxUrl);
           }
-          (0,_info_messages__WEBPACK_IMPORTED_MODULE_2__.printMessage)(requestStatus.data.message, 'success', 8000);
+          (0,_info_messages__WEBPACK_IMPORTED_MODULE_1__.printMessage)(requestStatus.data.message, 'success', 8000);
+          setUpTabInUrl(nextTargetTab);
         } else {
-          (0,_info_messages__WEBPACK_IMPORTED_MODULE_2__.printMessage)("Error adding Load:".concat(requestStatus.data.message), 'danger', 8000);
+          (0,_info_messages__WEBPACK_IMPORTED_MODULE_1__.printMessage)("Error adding Load:".concat(requestStatus.data.message), 'danger', 8000);
         }
       }).catch(function (error) {
-        (0,_info_messages__WEBPACK_IMPORTED_MODULE_2__.printMessage)("Request failed: ".concat(error), 'danger', 8000);
+        (0,_info_messages__WEBPACK_IMPORTED_MODULE_1__.printMessage)("Request failed: ".concat(error), 'danger', 8000);
         console.error('Request failed:', error);
       });
     });
   });
 };
+function setUpTabInUrl(tab) {
+  var url = new URL(window.location.href);
+  url.searchParams.set('tab', tab);
+  window.history.pushState({}, '', url);
+  window.location.href = url === null || url === void 0 ? void 0 : url.href;
+}
 function hasReportIdInUrl() {
   var url = new URL(window.location.href);
   return url.searchParams.has('post_id');
@@ -3713,7 +3716,6 @@ var createDraftPosts = function createDraftPosts(ajaxUrl) {
     item.addEventListener('submit', function (event) {
       event.preventDefault();
       var nextTargetTab = 'pills-load-tab';
-      var tab = new bootstrap__WEBPACK_IMPORTED_MODULE_0__.Tab(document.getElementById(nextTargetTab));
       var action = 'add_new_draft_report';
       if (hasReportIdInUrl()) {
         action = 'update_new_draft_report';
@@ -3724,7 +3726,7 @@ var createDraftPosts = function createDraftPosts(ajaxUrl) {
       }
       var searchSelectCompany = event.target.querySelector('input[name="customer_id"]');
       if (!searchSelectCompany) {
-        (0,_info_messages__WEBPACK_IMPORTED_MODULE_2__.printMessage)("Your need select company or add new and select", 'danger', 8000);
+        (0,_info_messages__WEBPACK_IMPORTED_MODULE_1__.printMessage)("Your need select company or add new and select", 'danger', 8000);
         return false;
       }
       var target = event.target;
@@ -3742,9 +3744,10 @@ var createDraftPosts = function createDraftPosts(ajaxUrl) {
           console.log('Report added successfully:', requestStatus.data);
           if (!hasReportIdInUrl()) {
             console.log('1');
-            (0,_info_messages__WEBPACK_IMPORTED_MODULE_2__.printMessage)((_a = requestStatus.data) === null || _a === void 0 ? void 0 : _a.message, 'success', 8000);
+            (0,_info_messages__WEBPACK_IMPORTED_MODULE_1__.printMessage)((_a = requestStatus.data) === null || _a === void 0 ? void 0 : _a.message, 'success', 8000);
             var url = new URL(window.location.href);
             url.searchParams.set('post_id', requestStatus.data.id_created_post);
+            url.searchParams.set('tab', 'pills-load-tab');
             window.history.pushState({}, '', url);
             console.log('url', url);
             window.location.href = url === null || url === void 0 ? void 0 : url.href;
@@ -3753,14 +3756,14 @@ var createDraftPosts = function createDraftPosts(ajaxUrl) {
             if (((_b = requestStatus.data.data) === null || _b === void 0 ? void 0 : _b.read_only) !== 'true') {
               updateStatusRechange(ajaxUrl);
             }
-            tab.show();
-            (0,_info_messages__WEBPACK_IMPORTED_MODULE_2__.printMessage)((_c = requestStatus.data) === null || _c === void 0 ? void 0 : _c.message, 'success', 8000);
+            (0,_info_messages__WEBPACK_IMPORTED_MODULE_1__.printMessage)((_c = requestStatus.data) === null || _c === void 0 ? void 0 : _c.message, 'success', 8000);
+            setUpTabInUrl(nextTargetTab);
           }
         } else {
-          (0,_info_messages__WEBPACK_IMPORTED_MODULE_2__.printMessage)("Error adding report:".concat(requestStatus.data.message), 'danger', 8000);
+          (0,_info_messages__WEBPACK_IMPORTED_MODULE_1__.printMessage)("Error adding report:".concat(requestStatus.data.message), 'danger', 8000);
         }
       }).catch(function (error) {
-        (0,_info_messages__WEBPACK_IMPORTED_MODULE_2__.printMessage)("Request failed: ".concat(error), 'danger', 8000);
+        (0,_info_messages__WEBPACK_IMPORTED_MODULE_1__.printMessage)("Request failed: ".concat(error), 'danger', 8000);
         console.error('Request failed:', error);
       });
     });
@@ -3790,18 +3793,15 @@ var updateFilesReportInit = function updateFilesReportInit(ajaxUrl) {
       fetch(ajaxUrl, options).then(function (res) {
         return res.json();
       }).then(function (requestStatus) {
-        var _a;
         if (requestStatus.success) {
           console.log('upload files successfully:', requestStatus.data);
-          (0,_info_messages__WEBPACK_IMPORTED_MODULE_2__.printMessage)(requestStatus.data.message, 'success', 8000);
-          if (((_a = requestStatus.data.data) === null || _a === void 0 ? void 0 : _a.read_only) !== 'true') {
-            updateStatusRechange(ajaxUrl);
-          }
+          (0,_info_messages__WEBPACK_IMPORTED_MODULE_1__.printMessage)(requestStatus.data.message, 'success', 8000);
+          setUpTabInUrl('pills-documents-tab');
         } else {
-          (0,_info_messages__WEBPACK_IMPORTED_MODULE_2__.printMessage)("Error upload files:".concat(requestStatus.data.message), 'danger', 8000);
+          (0,_info_messages__WEBPACK_IMPORTED_MODULE_1__.printMessage)("Error upload files:".concat(requestStatus.data.message), 'danger', 8000);
         }
       }).catch(function (error) {
-        (0,_info_messages__WEBPACK_IMPORTED_MODULE_2__.printMessage)("Request failed: ".concat(error), 'danger', 8000);
+        (0,_info_messages__WEBPACK_IMPORTED_MODULE_1__.printMessage)("Request failed: ".concat(error), 'danger', 8000);
         console.error('Request failed:', error);
       });
     });
@@ -3825,15 +3825,16 @@ var updateBillingReportInit = function updateBillingReportInit(ajaxUrl) {
         var _a;
         if (requestStatus.success) {
           console.log('update successfully:', requestStatus.data);
-          (0,_info_messages__WEBPACK_IMPORTED_MODULE_2__.printMessage)(requestStatus.data.message, 'success', 8000);
+          (0,_info_messages__WEBPACK_IMPORTED_MODULE_1__.printMessage)(requestStatus.data.message, 'success', 8000);
           if (((_a = requestStatus.data.data) === null || _a === void 0 ? void 0 : _a.read_only) !== 'true') {
             updateStatusRechange(ajaxUrl);
           }
+          setUpTabInUrl('pills-billing-tab');
         } else {
-          (0,_info_messages__WEBPACK_IMPORTED_MODULE_2__.printMessage)("Error update:".concat(requestStatus.data.message), 'danger', 8000);
+          (0,_info_messages__WEBPACK_IMPORTED_MODULE_1__.printMessage)("Error update:".concat(requestStatus.data.message), 'danger', 8000);
         }
       }).catch(function (error) {
-        (0,_info_messages__WEBPACK_IMPORTED_MODULE_2__.printMessage)("Request failed: ".concat(error), 'danger', 8000);
+        (0,_info_messages__WEBPACK_IMPORTED_MODULE_1__.printMessage)("Request failed: ".concat(error), 'danger', 8000);
         console.error('Request failed:', error);
       });
     });
@@ -3856,12 +3857,13 @@ var updateAccountingReportInit = function updateAccountingReportInit(ajaxUrl) {
       }).then(function (requestStatus) {
         if (requestStatus.success) {
           console.log('update successfully:', requestStatus.data);
-          (0,_info_messages__WEBPACK_IMPORTED_MODULE_2__.printMessage)(requestStatus.data.message, 'success', 8000);
+          (0,_info_messages__WEBPACK_IMPORTED_MODULE_1__.printMessage)(requestStatus.data.message, 'success', 8000);
+          setUpTabInUrl('pills-accounting-tab');
         } else {
-          (0,_info_messages__WEBPACK_IMPORTED_MODULE_2__.printMessage)("Error update:".concat(requestStatus.data.message), 'danger', 8000);
+          (0,_info_messages__WEBPACK_IMPORTED_MODULE_1__.printMessage)("Error update:".concat(requestStatus.data.message), 'danger', 8000);
         }
       }).catch(function (error) {
-        (0,_info_messages__WEBPACK_IMPORTED_MODULE_2__.printMessage)("Request failed: ".concat(error), 'danger', 8000);
+        (0,_info_messages__WEBPACK_IMPORTED_MODULE_1__.printMessage)("Request failed: ".concat(error), 'danger', 8000);
         console.error('Request failed:', error);
       });
     });
@@ -3885,25 +3887,13 @@ var removeOneFileInitial = function removeOneFileInitial(ajaxUrl) {
       }).then(function (requestStatus) {
         if (requestStatus.success) {
           var container = document.querySelector('.js-uploads-files');
-          if (requestStatus.data.data['image-fields'] === 'attached_file_required') {
-            var addTemplateUpload = " <div class=\"js-add-new-report order-1\">\n                                    <div class=\"p-0 mb-2 col-12\">\n                                    <p class=\"h5\">Required file <span\n                                    class=\"required-star text-danger\">*</span></p>\n                                    <label for=\"attached_file_required\" class=\"form-label\">Rate\n                                    Confirmation</label>\n                                    <input type=\"file\" required name=\"attached_file_required\"\n                                           class=\"form-control js-control-uploads\">\n                                    </div>\n                                    \n                                    <div class=\"p-0 col-12 mb-3 mt-3 preview-photo js-preview-photo-upload\">\n                                    \n                                    </div>\n                                </div>\n                                ";
-            container.insertAdjacentHTML('afterbegin', addTemplateUpload);
-          }
-          if (requestStatus.data.data['image-fields'] === 'updated_rate_confirmation') {
-            var _addTemplateUpload = "\n                                <div class=\"js-add-new-report order-3\">\n                                    <div class=\"p-0 mb-2 col-12\">\n                                        <p class=\"h5\">Updated rate confirmation</p>\n                                        <label for=\"update_rate_confirmation\" class=\"form-label\">Optional file</label>\n                                        <input type=\"file\" name=\"update_rate_confirmation\"\n                                               class=\"form-control js-control-uploads\">\n                                    </div>\n                            \n                                    <div class=\"p-0 col-12 mb-3 mt-3 preview-photo js-preview-photo-upload\">\n                            \n                                    </div>\n                                </div>\n                                ";
-            container.insertAdjacentHTML('beforeend', _addTemplateUpload);
-          }
-          if (requestStatus.data.data['image-fields'] === 'screen_picture') {
-            var _addTemplateUpload2 = "\n                                <div class=\"js-add-new-report order-4\">\n                                    <div class=\"p-0 mb-2 col-12\">\n                                        <p class=\"h5\">Screen picture <span\n                                                    class=\"required-star text-danger\">*</span></p>\n                                        <label for=\"screen_picture\" class=\"form-label\">screen picture</label>\n                                        <input type=\"file\" required\n                                               name=\"screen_picture\"\n                                               class=\"form-control js-control-uploads\">\n                                    </div>\n                        \n                                    <div class=\"p-0 col-12 mb-3 mt-3 preview-photo js-preview-photo-upload\">\n                        \n                                    </div>\n                                </div>\n                                ";
-            container.insertAdjacentHTML('beforeend', _addTemplateUpload2);
-          }
-          (0,_info_messages__WEBPACK_IMPORTED_MODULE_2__.printMessage)(requestStatus.data.message, 'success', 8000);
-          target.remove();
+          (0,_info_messages__WEBPACK_IMPORTED_MODULE_1__.printMessage)(requestStatus.data.message, 'success', 8000);
+          setUpTabInUrl('pills-documents-tab');
         } else {
-          (0,_info_messages__WEBPACK_IMPORTED_MODULE_2__.printMessage)("Error adding report:".concat(requestStatus.data.message), 'danger', 8000);
+          (0,_info_messages__WEBPACK_IMPORTED_MODULE_1__.printMessage)("Error adding report:".concat(requestStatus.data.message), 'danger', 8000);
         }
       }).catch(function (error) {
-        (0,_info_messages__WEBPACK_IMPORTED_MODULE_2__.printMessage)("Request failed: ".concat(error), 'danger', 8000);
+        (0,_info_messages__WEBPACK_IMPORTED_MODULE_1__.printMessage)("Request failed: ".concat(error), 'danger', 8000);
         console.error('Request failed:', error);
       });
     });
@@ -4030,7 +4020,7 @@ var addActionsEditAdditionalCard = function addActionsEditAdditionalCard() {
     var additionalPhone = activeItem.querySelector('.js-additional-field-phone');
     var additionalEmail = activeItem.querySelector('.js-additional-field-email');
     if (contactName.value.trim() === '' && contactPhone.value.trim() === '' && contactEmail.value.trim() === '') {
-      (0,_info_messages__WEBPACK_IMPORTED_MODULE_2__.printMessage)("All fields empty", 'danger', 8000);
+      (0,_info_messages__WEBPACK_IMPORTED_MODULE_1__.printMessage)("All fields empty", 'danger', 8000);
       return false;
     }
     if (activeItem) {
@@ -4082,7 +4072,7 @@ var additionalContactsInit = function additionalContactsInit() {
         valueEmail = 'unset';
       }
       if (valueName === 'unset' && valuePhone === 'unset' && valueEmail === 'unset') {
-        (0,_info_messages__WEBPACK_IMPORTED_MODULE_2__.printMessage)("All fields empty", 'danger', 8000);
+        (0,_info_messages__WEBPACK_IMPORTED_MODULE_1__.printMessage)("All fields empty", 'danger', 8000);
         return false;
       }
       var template = "<div class=\"additional-card js-additional-card\">\n                            <input type=\"text\" name=\"additional_contact_name[]\" readonly=\"\" value=\"".concat(valueName, "\" class=\"form-control js-additional-field-name\">\n                            <input type=\"text\" name=\"additional_contact_phone[]\" readonly=\"\" value=\"").concat(valuePhone, "\" class=\"form-control js-additional-field-phone\">\n                            <input type=\"text\" name=\"additional_contact_email[]\" readonly=\"\" value=\"").concat(valueEmail, "\" class=\"form-control js-additional-field-email\">\n                            <button class=\"additional-card__edit js-edit-contact\">\n                        \n                            <svg width=\"668\" height=\"668\" viewBox=\"0 0 668 668\" fill=\"none\" xmlns=\"http://www.w3.org/2000/svg\">\n                                <path d=\"M640.46 27.5413C676.29 63.3746 676.29 121.472 640.46 157.305L623.94 173.823C619.13 172.782 613.073 171.196 606.17 168.801C587.693 162.391 563.41 150.276 540.567 127.433C517.723 104.591 505.61 80.3076 499.2 61.8299C496.803 54.9269 495.22 48.8696 494.177 44.0596L510.697 27.5413C546.53 -8.29175 604.627 -8.29175 640.46 27.5413Z\" fill=\"#1C274C\"></path>\n                                <path d=\"M420.003 377.76C406.537 391.227 399.803 397.96 392.377 403.753C383.62 410.583 374.143 416.44 364.117 421.22C355.617 425.27 346.583 428.28 328.513 434.303L233.236 466.063C224.345 469.027 214.542 466.713 207.915 460.087C201.287 453.457 198.973 443.657 201.937 434.763L233.696 339.487C239.719 321.417 242.73 312.383 246.781 303.883C251.56 293.857 257.416 284.38 264.248 275.623C270.04 268.197 276.773 261.465 290.24 247.998L454.11 84.1284C462.9 107.268 478.31 135.888 505.21 162.789C532.113 189.69 560.733 205.099 583.873 213.891L420.003 377.76Z\" fill=\"#1C274C\"></path>\n                                <path d=\"M618.517 618.516C667.333 569.703 667.333 491.133 667.333 334C667.333 282.39 667.333 239.258 665.603 202.87L453.533 414.943C441.823 426.656 433.027 435.456 423.127 443.176C411.507 452.243 398.933 460.013 385.627 466.353C374.293 471.756 362.487 475.686 346.777 480.92L249.048 513.496C222.189 522.45 192.578 515.46 172.559 495.44C152.54 475.423 145.55 445.81 154.503 418.953L187.078 321.223C192.312 305.513 196.244 293.706 201.645 282.373C207.986 269.066 215.757 256.493 224.822 244.871C232.543 234.972 241.344 226.176 253.058 214.468L465.13 2.39583C428.743 0.6665 385.61 0.666504 334 0.666504C176.865 0.666504 98.2977 0.6665 49.4824 49.4822C0.666744 98.2975 0.666748 176.865 0.666748 334C0.666748 491.133 0.666744 569.703 49.4824 618.516C98.2977 667.333 176.865 667.333 334 667.333C491.133 667.333 569.703 667.333 618.517 618.516Z\" fill=\"#1C274C\"></path>\n                            </svg>\n                            </button>\n                            <button class=\"additional-card__remove js-remove-contact\">\n                                \n                            <svg width=\"668\" height=\"668\" viewBox=\"0 0 668 668\" fill=\"none\" xmlns=\"http://www.w3.org/2000/svg\">\n                                <path fill-rule=\"evenodd\" clip-rule=\"evenodd\" d=\"M334 667.333C176.865 667.333 98.2976 667.333 49.4823 618.516C0.666622 569.703 0.666626 491.133 0.666626 334C0.666626 176.865 0.666622 98.2975 49.4823 49.4822C98.2976 0.6665 176.865 0.666504 334 0.666504C491.133 0.666504 569.703 0.6665 618.517 49.4822C667.333 98.2975 667.333 176.865 667.333 334C667.333 491.133 667.333 569.703 618.517 618.516C569.703 667.333 491.133 667.333 334 667.333ZM232.988 232.989C242.751 223.226 258.581 223.226 268.343 232.989L334 298.646L399.653 232.99C409.417 223.227 425.247 223.227 435.01 232.99C444.773 242.753 444.773 258.582 435.01 268.343L369.353 334L435.01 399.656C444.773 409.416 444.773 425.246 435.01 435.01C425.247 444.773 409.417 444.773 399.653 435.01L334 369.357L268.343 435.01C258.581 444.773 242.752 444.773 232.989 435.01C223.226 425.246 223.226 409.42 232.989 399.656L298.643 334L232.988 268.343C223.225 258.581 223.225 242.752 232.988 232.989Z\" fill=\"#1C274C\"></path>\n                            </svg>\n                            </button>\n                        </div>");
@@ -4171,7 +4161,7 @@ var addShipperPointInit = function addShipperPointInit() {
         var dateEnd = form.querySelector('.js-shipper-time-end');
         var dateStrict = form.querySelector('.js-shipper-time-strict');
         if (!address) {
-          (0,_info_messages__WEBPACK_IMPORTED_MODULE_2__.printMessage)("The address must be selected from the drop-down list", 'danger', 5000);
+          (0,_info_messages__WEBPACK_IMPORTED_MODULE_1__.printMessage)("The address must be selected from the drop-down list", 'danger', 5000);
           return false;
         }
         var addressValueID = address.value;
@@ -4186,15 +4176,15 @@ var addShipperPointInit = function addShipperPointInit() {
         var infoValue = info.value;
         var shipperContacts = form.querySelector('.js-table-shipper');
         if (!addressValueID || addressValueFullAddrres === '') {
-          (0,_info_messages__WEBPACK_IMPORTED_MODULE_2__.printMessage)("Address empty", 'danger', 5000);
+          (0,_info_messages__WEBPACK_IMPORTED_MODULE_1__.printMessage)("Address empty", 'danger', 5000);
           return false;
         }
         if (!start) {
-          (0,_info_messages__WEBPACK_IMPORTED_MODULE_2__.printMessage)("Need fill time start", 'danger', 5000);
+          (0,_info_messages__WEBPACK_IMPORTED_MODULE_1__.printMessage)("Need fill time start", 'danger', 5000);
           return false;
         }
         if (stopTypeValue === '') {
-          (0,_info_messages__WEBPACK_IMPORTED_MODULE_2__.printMessage)("Stop type empty", 'danger', 5000);
+          (0,_info_messages__WEBPACK_IMPORTED_MODULE_1__.printMessage)("Stop type empty", 'danger', 5000);
           return false;
         }
         if (infoValue === '') {
@@ -4247,7 +4237,6 @@ var sendShipperFormInit = function sendShipperFormInit(ajaxUrl) {
     event.preventDefault();
     var target = event.target;
     var nextTargetTab = 'pills-documents-tab';
-    var tab = new bootstrap__WEBPACK_IMPORTED_MODULE_0__.Tab(document.getElementById(nextTargetTab));
     var formData = new FormData(target);
     var action = 'update_shipper_info';
     formData.append('action', action);
@@ -4260,16 +4249,16 @@ var sendShipperFormInit = function sendShipperFormInit(ajaxUrl) {
     }).then(function (requestStatus) {
       var _a;
       if (requestStatus.success) {
-        (0,_info_messages__WEBPACK_IMPORTED_MODULE_2__.printMessage)(requestStatus.data.message, 'success', 8000);
-        tab.show();
+        (0,_info_messages__WEBPACK_IMPORTED_MODULE_1__.printMessage)(requestStatus.data.message, 'success', 8000);
         if (((_a = requestStatus.data.data) === null || _a === void 0 ? void 0 : _a.read_only) !== 'true') {
           updateStatusRechange(ajaxUrl);
         }
+        setUpTabInUrl(nextTargetTab);
       } else {
-        (0,_info_messages__WEBPACK_IMPORTED_MODULE_2__.printMessage)("Error adding shipper info:".concat(requestStatus.data.message), 'danger', 8000);
+        (0,_info_messages__WEBPACK_IMPORTED_MODULE_1__.printMessage)("Error adding shipper info:".concat(requestStatus.data.message), 'danger', 8000);
       }
     }).catch(function (error) {
-      (0,_info_messages__WEBPACK_IMPORTED_MODULE_2__.printMessage)("Request failed: ".concat(error), 'danger', 8000);
+      (0,_info_messages__WEBPACK_IMPORTED_MODULE_1__.printMessage)("Request failed: ".concat(error), 'danger', 8000);
       console.error('Request failed:', error);
     });
   });
@@ -4284,7 +4273,7 @@ var updateStatusPost = function updateStatusPost(ajaxUrl) {
       var action = 'update_post_status';
       var postId = document.querySelector('.js-post-id');
       if (!postId) {
-        (0,_info_messages__WEBPACK_IMPORTED_MODULE_2__.printMessage)('Post id not found', 'danger', 8000);
+        (0,_info_messages__WEBPACK_IMPORTED_MODULE_1__.printMessage)('Post id not found', 'danger', 8000);
         return;
       }
       formData.append('action', action);
@@ -4298,24 +4287,25 @@ var updateStatusPost = function updateStatusPost(ajaxUrl) {
       }).then(function (requestStatus) {
         var _a, _b, _c;
         if (requestStatus.success) {
-          (0,_info_messages__WEBPACK_IMPORTED_MODULE_2__.printMessage)(requestStatus.data.message, 'success', 8000);
+          (0,_info_messages__WEBPACK_IMPORTED_MODULE_1__.printMessage)(requestStatus.data.message, 'success', 8000);
           if ((_a = requestStatus.data.send_email) === null || _a === void 0 ? void 0 : _a.success) {
             console.log(requestStatus.data);
-            (0,_info_messages__WEBPACK_IMPORTED_MODULE_2__.printMessage)((_b = requestStatus.data.send_email) === null || _b === void 0 ? void 0 : _b.message, 'success', 8000);
+            (0,_info_messages__WEBPACK_IMPORTED_MODULE_1__.printMessage)((_b = requestStatus.data.send_email) === null || _b === void 0 ? void 0 : _b.message, 'success', 8000);
             setTimeout(function () {
               window.location.reload();
             }, 4000);
           } else {
-            (0,_info_messages__WEBPACK_IMPORTED_MODULE_2__.printMessage)((_c = requestStatus.data.send_email) === null || _c === void 0 ? void 0 : _c.message, 'danger', 8000);
+            (0,_info_messages__WEBPACK_IMPORTED_MODULE_1__.printMessage)((_c = requestStatus.data.send_email) === null || _c === void 0 ? void 0 : _c.message, 'danger', 8000);
           }
           var container = document.querySelector('.js-update-status');
           if (!container) return;
           container.innerHTML = '';
+          setUpTabInUrl('pills-customer-tab');
         } else {
-          (0,_info_messages__WEBPACK_IMPORTED_MODULE_2__.printMessage)(requestStatus.data.message, 'danger', 8000);
+          (0,_info_messages__WEBPACK_IMPORTED_MODULE_1__.printMessage)(requestStatus.data.message, 'danger', 8000);
         }
       }).catch(function (error) {
-        (0,_info_messages__WEBPACK_IMPORTED_MODULE_2__.printMessage)("Request failed: ".concat(error), 'danger', 8000);
+        (0,_info_messages__WEBPACK_IMPORTED_MODULE_1__.printMessage)("Request failed: ".concat(error), 'danger', 8000);
         console.error('Request failed:', error);
       });
     });
@@ -4338,7 +4328,7 @@ var quickEditInit = function quickEditInit(ajaxUrl, selector, action) {
     console.log('Selected values:', selectedValues);
     var formData = new FormData(event.target);
     if (!selectedValues) {
-      (0,_info_messages__WEBPACK_IMPORTED_MODULE_2__.printMessage)('Posts id not select', 'danger', 8000);
+      (0,_info_messages__WEBPACK_IMPORTED_MODULE_1__.printMessage)('Posts id not select', 'danger', 8000);
       return;
     }
     formData.append('action', action);
@@ -4351,14 +4341,14 @@ var quickEditInit = function quickEditInit(ajaxUrl, selector, action) {
       return res.json();
     }).then(function (requestStatus) {
       if (requestStatus.success) {
-        (0,_info_messages__WEBPACK_IMPORTED_MODULE_2__.printMessage)(requestStatus.data.message, 'success', 8000);
+        (0,_info_messages__WEBPACK_IMPORTED_MODULE_1__.printMessage)(requestStatus.data.message, 'success', 8000);
         var container = document.querySelector('.js-update-status');
         window.location.reload();
       } else {
-        (0,_info_messages__WEBPACK_IMPORTED_MODULE_2__.printMessage)(requestStatus.data.message, 'danger', 8000);
+        (0,_info_messages__WEBPACK_IMPORTED_MODULE_1__.printMessage)(requestStatus.data.message, 'danger', 8000);
       }
     }).catch(function (error) {
-      (0,_info_messages__WEBPACK_IMPORTED_MODULE_2__.printMessage)("Request failed: ".concat(error), 'danger', 8000);
+      (0,_info_messages__WEBPACK_IMPORTED_MODULE_1__.printMessage)("Request failed: ".concat(error), 'danger', 8000);
       console.error('Request failed:', error);
     });
   });
@@ -4380,13 +4370,13 @@ var quickEditTrackingStatus = function quickEditTrackingStatus(ajaxUrl) {
         return res.json();
       }).then(function (requestStatus) {
         if (requestStatus.success) {
-          (0,_info_messages__WEBPACK_IMPORTED_MODULE_2__.printMessage)(requestStatus.data.message, 'success', 8000);
+          (0,_info_messages__WEBPACK_IMPORTED_MODULE_1__.printMessage)(requestStatus.data.message, 'success', 8000);
           window.location.reload();
         } else {
-          (0,_info_messages__WEBPACK_IMPORTED_MODULE_2__.printMessage)(requestStatus.data.message, 'danger', 8000);
+          (0,_info_messages__WEBPACK_IMPORTED_MODULE_1__.printMessage)(requestStatus.data.message, 'danger', 8000);
         }
       }).catch(function (error) {
-        (0,_info_messages__WEBPACK_IMPORTED_MODULE_2__.printMessage)("Request failed: ".concat(error), 'danger', 8000);
+        (0,_info_messages__WEBPACK_IMPORTED_MODULE_1__.printMessage)("Request failed: ".concat(error), 'danger', 8000);
         console.error('Request failed:', error);
       });
     });
@@ -4395,6 +4385,7 @@ var quickEditTrackingStatus = function quickEditTrackingStatus(ajaxUrl) {
 var triggerDisableBtnInit = function triggerDisableBtnInit() {
   var triggers = document.querySelectorAll('.js-trigger-disable-btn');
   var inputs = document.querySelectorAll('.js-disable-container-trigger');
+  var saveAll = document.querySelectorAll('.js-save-all-tracking');
   triggers && triggers.forEach(function (item) {
     item.addEventListener('change', function (e) {
       e.preventDefault();
@@ -4402,6 +4393,9 @@ var triggerDisableBtnInit = function triggerDisableBtnInit() {
       if (form) {
         var btn = form.querySelector('button');
         btn.removeAttribute('disabled');
+        saveAll && saveAll.forEach(function (itemSaveAll) {
+          itemSaveAll.classList.remove('d-none');
+        });
       }
     });
   });
@@ -4412,6 +4406,9 @@ var triggerDisableBtnInit = function triggerDisableBtnInit() {
       if (form) {
         var btn = form.querySelector('button');
         btn.removeAttribute('disabled');
+        saveAll && saveAll.forEach(function (itemSaveAll) {
+          itemSaveAll.classList.remove('d-none');
+        });
       }
     });
   });
@@ -5055,6 +5052,123 @@ var sendUpdatePerformance = function sendUpdatePerformance(ajaxUrl) {
 
 /***/ }),
 
+/***/ "./src/js/components/save-all-tracking.ts":
+/*!************************************************!*\
+  !*** ./src/js/components/save-all-tracking.ts ***!
+  \************************************************/
+/***/ (function(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   saveAllTracking: function() { return /* binding */ saveAllTracking; }
+/* harmony export */ });
+/* harmony import */ var _info_messages__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./info-messages */ "./src/js/components/info-messages.ts");
+function _typeof(o) { "@babel/helpers - typeof"; return _typeof = "function" == typeof Symbol && "symbol" == typeof Symbol.iterator ? function (o) { return typeof o; } : function (o) { return o && "function" == typeof Symbol && o.constructor === Symbol && o !== Symbol.prototype ? "symbol" : typeof o; }, _typeof(o); }
+function _regeneratorRuntime() { "use strict"; /*! regenerator-runtime -- Copyright (c) 2014-present, Facebook, Inc. -- license (MIT): https://github.com/facebook/regenerator/blob/main/LICENSE */ _regeneratorRuntime = function _regeneratorRuntime() { return e; }; var t, e = {}, r = Object.prototype, n = r.hasOwnProperty, o = Object.defineProperty || function (t, e, r) { t[e] = r.value; }, i = "function" == typeof Symbol ? Symbol : {}, a = i.iterator || "@@iterator", c = i.asyncIterator || "@@asyncIterator", u = i.toStringTag || "@@toStringTag"; function define(t, e, r) { return Object.defineProperty(t, e, { value: r, enumerable: !0, configurable: !0, writable: !0 }), t[e]; } try { define({}, ""); } catch (t) { define = function define(t, e, r) { return t[e] = r; }; } function wrap(t, e, r, n) { var i = e && e.prototype instanceof Generator ? e : Generator, a = Object.create(i.prototype), c = new Context(n || []); return o(a, "_invoke", { value: makeInvokeMethod(t, r, c) }), a; } function tryCatch(t, e, r) { try { return { type: "normal", arg: t.call(e, r) }; } catch (t) { return { type: "throw", arg: t }; } } e.wrap = wrap; var h = "suspendedStart", l = "suspendedYield", f = "executing", s = "completed", y = {}; function Generator() {} function GeneratorFunction() {} function GeneratorFunctionPrototype() {} var p = {}; define(p, a, function () { return this; }); var d = Object.getPrototypeOf, v = d && d(d(values([]))); v && v !== r && n.call(v, a) && (p = v); var g = GeneratorFunctionPrototype.prototype = Generator.prototype = Object.create(p); function defineIteratorMethods(t) { ["next", "throw", "return"].forEach(function (e) { define(t, e, function (t) { return this._invoke(e, t); }); }); } function AsyncIterator(t, e) { function invoke(r, o, i, a) { var c = tryCatch(t[r], t, o); if ("throw" !== c.type) { var u = c.arg, h = u.value; return h && "object" == _typeof(h) && n.call(h, "__await") ? e.resolve(h.__await).then(function (t) { invoke("next", t, i, a); }, function (t) { invoke("throw", t, i, a); }) : e.resolve(h).then(function (t) { u.value = t, i(u); }, function (t) { return invoke("throw", t, i, a); }); } a(c.arg); } var r; o(this, "_invoke", { value: function value(t, n) { function callInvokeWithMethodAndArg() { return new e(function (e, r) { invoke(t, n, e, r); }); } return r = r ? r.then(callInvokeWithMethodAndArg, callInvokeWithMethodAndArg) : callInvokeWithMethodAndArg(); } }); } function makeInvokeMethod(e, r, n) { var o = h; return function (i, a) { if (o === f) throw Error("Generator is already running"); if (o === s) { if ("throw" === i) throw a; return { value: t, done: !0 }; } for (n.method = i, n.arg = a;;) { var c = n.delegate; if (c) { var u = maybeInvokeDelegate(c, n); if (u) { if (u === y) continue; return u; } } if ("next" === n.method) n.sent = n._sent = n.arg;else if ("throw" === n.method) { if (o === h) throw o = s, n.arg; n.dispatchException(n.arg); } else "return" === n.method && n.abrupt("return", n.arg); o = f; var p = tryCatch(e, r, n); if ("normal" === p.type) { if (o = n.done ? s : l, p.arg === y) continue; return { value: p.arg, done: n.done }; } "throw" === p.type && (o = s, n.method = "throw", n.arg = p.arg); } }; } function maybeInvokeDelegate(e, r) { var n = r.method, o = e.iterator[n]; if (o === t) return r.delegate = null, "throw" === n && e.iterator.return && (r.method = "return", r.arg = t, maybeInvokeDelegate(e, r), "throw" === r.method) || "return" !== n && (r.method = "throw", r.arg = new TypeError("The iterator does not provide a '" + n + "' method")), y; var i = tryCatch(o, e.iterator, r.arg); if ("throw" === i.type) return r.method = "throw", r.arg = i.arg, r.delegate = null, y; var a = i.arg; return a ? a.done ? (r[e.resultName] = a.value, r.next = e.nextLoc, "return" !== r.method && (r.method = "next", r.arg = t), r.delegate = null, y) : a : (r.method = "throw", r.arg = new TypeError("iterator result is not an object"), r.delegate = null, y); } function pushTryEntry(t) { var e = { tryLoc: t[0] }; 1 in t && (e.catchLoc = t[1]), 2 in t && (e.finallyLoc = t[2], e.afterLoc = t[3]), this.tryEntries.push(e); } function resetTryEntry(t) { var e = t.completion || {}; e.type = "normal", delete e.arg, t.completion = e; } function Context(t) { this.tryEntries = [{ tryLoc: "root" }], t.forEach(pushTryEntry, this), this.reset(!0); } function values(e) { if (e || "" === e) { var r = e[a]; if (r) return r.call(e); if ("function" == typeof e.next) return e; if (!isNaN(e.length)) { var o = -1, i = function next() { for (; ++o < e.length;) if (n.call(e, o)) return next.value = e[o], next.done = !1, next; return next.value = t, next.done = !0, next; }; return i.next = i; } } throw new TypeError(_typeof(e) + " is not iterable"); } return GeneratorFunction.prototype = GeneratorFunctionPrototype, o(g, "constructor", { value: GeneratorFunctionPrototype, configurable: !0 }), o(GeneratorFunctionPrototype, "constructor", { value: GeneratorFunction, configurable: !0 }), GeneratorFunction.displayName = define(GeneratorFunctionPrototype, u, "GeneratorFunction"), e.isGeneratorFunction = function (t) { var e = "function" == typeof t && t.constructor; return !!e && (e === GeneratorFunction || "GeneratorFunction" === (e.displayName || e.name)); }, e.mark = function (t) { return Object.setPrototypeOf ? Object.setPrototypeOf(t, GeneratorFunctionPrototype) : (t.__proto__ = GeneratorFunctionPrototype, define(t, u, "GeneratorFunction")), t.prototype = Object.create(g), t; }, e.awrap = function (t) { return { __await: t }; }, defineIteratorMethods(AsyncIterator.prototype), define(AsyncIterator.prototype, c, function () { return this; }), e.AsyncIterator = AsyncIterator, e.async = function (t, r, n, o, i) { void 0 === i && (i = Promise); var a = new AsyncIterator(wrap(t, r, n, o), i); return e.isGeneratorFunction(r) ? a : a.next().then(function (t) { return t.done ? t.value : a.next(); }); }, defineIteratorMethods(g), define(g, u, "Generator"), define(g, a, function () { return this; }), define(g, "toString", function () { return "[object Generator]"; }), e.keys = function (t) { var e = Object(t), r = []; for (var n in e) r.push(n); return r.reverse(), function next() { for (; r.length;) { var t = r.pop(); if (t in e) return next.value = t, next.done = !1, next; } return next.done = !0, next; }; }, e.values = values, Context.prototype = { constructor: Context, reset: function reset(e) { if (this.prev = 0, this.next = 0, this.sent = this._sent = t, this.done = !1, this.delegate = null, this.method = "next", this.arg = t, this.tryEntries.forEach(resetTryEntry), !e) for (var r in this) "t" === r.charAt(0) && n.call(this, r) && !isNaN(+r.slice(1)) && (this[r] = t); }, stop: function stop() { this.done = !0; var t = this.tryEntries[0].completion; if ("throw" === t.type) throw t.arg; return this.rval; }, dispatchException: function dispatchException(e) { if (this.done) throw e; var r = this; function handle(n, o) { return a.type = "throw", a.arg = e, r.next = n, o && (r.method = "next", r.arg = t), !!o; } for (var o = this.tryEntries.length - 1; o >= 0; --o) { var i = this.tryEntries[o], a = i.completion; if ("root" === i.tryLoc) return handle("end"); if (i.tryLoc <= this.prev) { var c = n.call(i, "catchLoc"), u = n.call(i, "finallyLoc"); if (c && u) { if (this.prev < i.catchLoc) return handle(i.catchLoc, !0); if (this.prev < i.finallyLoc) return handle(i.finallyLoc); } else if (c) { if (this.prev < i.catchLoc) return handle(i.catchLoc, !0); } else { if (!u) throw Error("try statement without catch or finally"); if (this.prev < i.finallyLoc) return handle(i.finallyLoc); } } } }, abrupt: function abrupt(t, e) { for (var r = this.tryEntries.length - 1; r >= 0; --r) { var o = this.tryEntries[r]; if (o.tryLoc <= this.prev && n.call(o, "finallyLoc") && this.prev < o.finallyLoc) { var i = o; break; } } i && ("break" === t || "continue" === t) && i.tryLoc <= e && e <= i.finallyLoc && (i = null); var a = i ? i.completion : {}; return a.type = t, a.arg = e, i ? (this.method = "next", this.next = i.finallyLoc, y) : this.complete(a); }, complete: function complete(t, e) { if ("throw" === t.type) throw t.arg; return "break" === t.type || "continue" === t.type ? this.next = t.arg : "return" === t.type ? (this.rval = this.arg = t.arg, this.method = "return", this.next = "end") : "normal" === t.type && e && (this.next = e), y; }, finish: function finish(t) { for (var e = this.tryEntries.length - 1; e >= 0; --e) { var r = this.tryEntries[e]; if (r.finallyLoc === t) return this.complete(r.completion, r.afterLoc), resetTryEntry(r), y; } }, catch: function _catch(t) { for (var e = this.tryEntries.length - 1; e >= 0; --e) { var r = this.tryEntries[e]; if (r.tryLoc === t) { var n = r.completion; if ("throw" === n.type) { var o = n.arg; resetTryEntry(r); } return o; } } throw Error("illegal catch attempt"); }, delegateYield: function delegateYield(e, r, n) { return this.delegate = { iterator: values(e), resultName: r, nextLoc: n }, "next" === this.method && (this.arg = t), y; } }, e; }
+var __awaiter = undefined && undefined.__awaiter || function (thisArg, _arguments, P, generator) {
+  function adopt(value) {
+    return value instanceof P ? value : new P(function (resolve) {
+      resolve(value);
+    });
+  }
+  return new (P || (P = Promise))(function (resolve, reject) {
+    function fulfilled(value) {
+      try {
+        step(generator.next(value));
+      } catch (e) {
+        reject(e);
+      }
+    }
+    function rejected(value) {
+      try {
+        step(generator["throw"](value));
+      } catch (e) {
+        reject(e);
+      }
+    }
+    function step(result) {
+      result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected);
+    }
+    step((generator = generator.apply(thisArg, _arguments || [])).next());
+  });
+};
+
+var saveAllTracking = function saveAllTracking(urlAjax) {
+  var saveAllForms = document.querySelectorAll('.js-save-all-tracking');
+  saveAllForms.forEach(function (form) {
+    form.addEventListener('submit', function (event) {
+      return __awaiter(void 0, void 0, void 0, /*#__PURE__*/_regeneratorRuntime().mark(function _callee() {
+        var table, result, formData, btn, response, requestStatus;
+        return _regeneratorRuntime().wrap(function _callee$(_context) {
+          while (1) switch (_context.prev = _context.next) {
+            case 0:
+              event.preventDefault();
+              table = document.querySelector('.js-table-tracking');
+              if (table) {
+                _context.next = 4;
+                break;
+              }
+              return _context.abrupt("return");
+            case 4:
+              result = Array.from(table.querySelectorAll('.js-save-status button:not([disabled])')).map(function (button) {
+                var formInTable = button.closest('.js-save-status');
+                if (!formInTable) return null;
+                var idLoadInput = formInTable.querySelector('[name="id_load"]');
+                var statusSelect = formInTable.querySelector('[name="status"]');
+                if (!idLoadInput || !statusSelect) return null;
+                return "".concat(idLoadInput.value, "|").concat(statusSelect.value);
+              }).filter(function (item) {
+                return item !== null;
+              });
+              formData = new FormData();
+              formData.append('action', 'quick_update_status_all');
+              formData.append('data', result.join(','));
+              btn = form.querySelector('button');
+              if (btn) btn.setAttribute('disabled', 'true');
+              _context.prev = 10;
+              _context.next = 13;
+              return fetch(urlAjax, {
+                method: 'POST',
+                body: formData
+              });
+            case 13:
+              response = _context.sent;
+              _context.next = 16;
+              return response.json();
+            case 16:
+              requestStatus = _context.sent;
+              if (requestStatus.success) {
+                (0,_info_messages__WEBPACK_IMPORTED_MODULE_0__.printMessage)(requestStatus.data.message, 'success', 8000);
+                window.location.reload();
+              } else {
+                (0,_info_messages__WEBPACK_IMPORTED_MODULE_0__.printMessage)(requestStatus.data.message, 'danger', 8000);
+              }
+              _context.next = 24;
+              break;
+            case 20:
+              _context.prev = 20;
+              _context.t0 = _context["catch"](10);
+              (0,_info_messages__WEBPACK_IMPORTED_MODULE_0__.printMessage)("Request failed: ".concat(_context.t0), 'danger', 8000);
+              console.error('Request failed:', _context.t0);
+            case 24:
+              _context.prev = 24;
+              if (btn) btn.removeAttribute('disabled');
+              return _context.finish(24);
+            case 27:
+              console.log(result);
+            case 28:
+            case "end":
+              return _context.stop();
+          }
+        }, _callee, null, [[10, 20, 24, 27]]);
+      }));
+    });
+  });
+};
+
+/***/ }),
+
 /***/ "./src/js/components/search-action.ts":
 /*!********************************************!*\
   !*** ./src/js/components/search-action.ts ***!
@@ -5114,6 +5228,7 @@ function searchHelperActions(seachInputsSelector, action, ajaxUrl) {
     }
   });
   seachInputs.forEach(function (items) {
+    console.log('items', items);
     items.addEventListener('focus', function (event) {
       var target = event.target;
       var container = target.closest('.js-container-search');
@@ -5331,7 +5446,8 @@ var changeStopType = function changeStopType() {
 "use strict";
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
-/* harmony export */   nextTabTrigger: function() { return /* binding */ nextTabTrigger; }
+/* harmony export */   nextTabTrigger: function() { return /* binding */ nextTabTrigger; },
+/* harmony export */   tabUrlUpdeter: function() { return /* binding */ tabUrlUpdeter; }
 /* harmony export */ });
 /* harmony import */ var bootstrap__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! bootstrap */ "./node_modules/bootstrap/dist/js/bootstrap.esm.js");
 
@@ -5349,6 +5465,17 @@ var nextTabTrigger = function nextTabTrigger() {
       console.log('nextTargetTab', nextTargetTab, document.getElementById(nextTargetTab));
       var tab = new bootstrap__WEBPACK_IMPORTED_MODULE_0__.Tab(document.getElementById(nextTargetTab));
       tab.show();
+    });
+  });
+};
+var tabUrlUpdeter = function tabUrlUpdeter() {
+  var tabs = document.querySelectorAll('.js-change-url-tab');
+  tabs.forEach(function (tab) {
+    tab.addEventListener('shown.bs.tab', function (event) {
+      var activeTabId = event.target.id;
+      var url = new URL(window.location.href);
+      url.searchParams.set('tab', activeTabId);
+      history.replaceState(null, '', url);
     });
   });
 };
@@ -15439,6 +15566,8 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _components_stop_type__WEBPACK_IMPORTED_MODULE_21__ = __webpack_require__(/*! ./components/stop-type */ "./src/js/components/stop-type.ts");
 /* harmony import */ var _components_set_status_paid__WEBPACK_IMPORTED_MODULE_22__ = __webpack_require__(/*! ./components/set-status-paid */ "./src/js/components/set-status-paid.ts");
 /* harmony import */ var _components_send_email_chain__WEBPACK_IMPORTED_MODULE_23__ = __webpack_require__(/*! ./components/send-email-chain */ "./src/js/components/send-email-chain.ts");
+/* harmony import */ var _components_save_all_tracking__WEBPACK_IMPORTED_MODULE_24__ = __webpack_require__(/*! ./components/save-all-tracking */ "./src/js/components/save-all-tracking.ts");
+
 
 
 
@@ -15500,6 +15629,7 @@ function ready() {
   (0,_components_create_report__WEBPACK_IMPORTED_MODULE_3__.quickEditTrackingStatus)(urlAjax);
   (0,_components_performance__WEBPACK_IMPORTED_MODULE_19__.sendUpdatePerformance)(urlAjax);
   (0,_components_send_email_chain__WEBPACK_IMPORTED_MODULE_23__.sendEmailChain)(urlAjax);
+  (0,_components_save_all_tracking__WEBPACK_IMPORTED_MODULE_24__.saveAllTracking)(urlAjax);
   (0,_components_driver_Info__WEBPACK_IMPORTED_MODULE_10__.initGetInfoDriver)(urlAjax, useServices);
   (0,_components_create_report__WEBPACK_IMPORTED_MODULE_3__.additionalContactsInit)();
   (0,_components_create_report__WEBPACK_IMPORTED_MODULE_3__.addShipperPointInit)();
@@ -15523,6 +15653,7 @@ function ready() {
   (0,_components_stop_type__WEBPACK_IMPORTED_MODULE_21__.changeStopType)();
   (0,_components_set_status_paid__WEBPACK_IMPORTED_MODULE_22__.setStatusPaid)();
   (0,_components_tel_mask__WEBPACK_IMPORTED_MODULE_20__.telMaskInit)();
+  (0,_components_tab_helper__WEBPACK_IMPORTED_MODULE_6__.tabUrlUpdeter)();
   var preloaders = document.querySelectorAll('.js-preloader');
   preloaders && preloaders.forEach(function (item) {
     item.remove();

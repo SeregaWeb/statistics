@@ -27,7 +27,7 @@ import {
 } from './components/create-report';
 import { actionCreateCompanyInit, ActionUpdateCompanyInit } from './components/create-company';
 import { actionCreateShipperInit, actionUpdateShipperInit } from './components/create-shipper';
-import { nextTabTrigger } from './components/tab-helper';
+import { nextTabTrigger, tabUrlUpdeter } from './components/tab-helper';
 import { addSearchAction } from './components/search-action';
 import { toggleBlocksInit, toggleCheckboxInit } from './components/toggle-blocks-init';
 import { changeTableInit } from './components/change-table';
@@ -44,7 +44,8 @@ import { sendUpdatePerformance } from './components/performance';
 import { telMaskInit } from './components/tel-mask';
 import { changeStopType } from './components/stop-type';
 import { setStatusPaid } from './components/set-status-paid';
-import { sendEmailChain } from "./components/send-email-chain";
+import { sendEmailChain } from './components/send-email-chain';
+import { saveAllTracking } from './components/save-all-tracking';
 
 function ready() {
     console.log('ready');
@@ -92,7 +93,7 @@ function ready() {
     quickEditTrackingStatus(urlAjax);
     sendUpdatePerformance(urlAjax);
     sendEmailChain(urlAjax);
-    
+    saveAllTracking(urlAjax);
     // API request
     initGetInfoDriver(urlAjax, useServices);
 
@@ -119,6 +120,8 @@ function ready() {
     changeStopType();
     setStatusPaid();
     telMaskInit();
+
+    tabUrlUpdeter();
 
     const preloaders = document.querySelectorAll('.js-preloader');
     preloaders &&

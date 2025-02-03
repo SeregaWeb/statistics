@@ -23,7 +23,14 @@ $all_statuses = $helper->get_statuses();
 
 
 if ( ! empty( $results )) : ?>
-    <table class="table mb-5 w-100">
+
+    <div class="w-100">
+        <form class="js-save-all-tracking d-none mb-3">
+            <button class="btn btn-primary" type="submit">Save all</button>
+        </form>
+    </div>
+
+    <table class="table mb-5 w-100 js-table-tracking">
         <thead>
         <tr>
             <th scope="col">
@@ -309,15 +316,23 @@ if ( ! empty( $results )) : ?>
 
         </tbody>
     </table>
-	
-	<?php
-	
-	
-	echo esc_html( get_template_part( 'src/template-parts/report/report', 'pagination', array(
-		'total_pages'  => $total_pages,
-		'current_page' => $current_pages,
-	) ) );
-	?>
+
+    <div class="d-flex justify-content-between">
+        <div class="w-100">
+            <form class="js-save-all-tracking d-none mb-3">
+                <button class="btn btn-primary" type="submit">Save all</button>
+            </form>
+        </div>
+    
+        <?php
+        
+        
+        echo esc_html( get_template_part( 'src/template-parts/report/report', 'pagination', array(
+            'total_pages'  => $total_pages,
+            'current_page' => $current_pages,
+        ) ) );
+        ?>
+    </div>
 
 <?php else : ?>
     <p>No reports found.</p>

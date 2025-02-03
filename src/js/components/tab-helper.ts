@@ -27,3 +27,18 @@ export const nextTabTrigger = () => {
         });
     });
 };
+
+export const tabUrlUpdeter = () => {
+    const tabs = document.querySelectorAll('.js-change-url-tab');
+
+    tabs.forEach((tab) => {
+        tab.addEventListener('shown.bs.tab', (event) => {
+            // @ts-ignore
+            const activeTabId = event.target.id; // Получаем ID активного таба
+            const url = new URL(window.location.href);
+            url.searchParams.set('tab', activeTabId); // Обновляем GET-параметр
+            // eslint-disable-next-line no-restricted-globals
+            history.replaceState(null, '', url); // Меняем URL без перезагрузки
+        });
+    });
+};

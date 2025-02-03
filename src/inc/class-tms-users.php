@@ -296,7 +296,7 @@ class  TMSUsers extends TMSReportsHelper {
 				'dispatcher',
 				'dispatcher-tl'
 			), true ) && $post_status === 'publish' ) {
-			$read_only = true;
+			$read_only = false;
 		}
 		
 		return $read_only;

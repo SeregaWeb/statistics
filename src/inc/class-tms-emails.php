@@ -213,11 +213,11 @@ class TMSEmails extends TMSUsers {
 		}
 		
 		//TODO THIS NEED DELETE FOR PRODUCTION
-		$check_tmp = $this->check_user_role_access(array('administrator'), true);
-		if (!$check_tmp) {
-			return ['success' => false, 'message' => 'No Send email chains'];
-		}
-		
+//		$check_tmp = $this->check_user_role_access(array('administrator'), true);
+//		if (!$check_tmp) {
+//			return ['success' => false, 'message' => 'No Send email chains'];
+//		}
+//
 		$reports = new TMSReports();
 		$project_name = $reports->project;
 		$project_email = get_field_value($global_options, strtolower($project_name).'_email');
@@ -240,6 +240,9 @@ class TMSEmails extends TMSUsers {
 		
 		// Получение данных из мета
 		$dispatcher = get_field_value($meta, 'dispatcher_initials');
+		
+		$dispatcher_email = $dispatcher ? get_the_author_meta('user_email', $dispatcher) : '';
+		
 		$tl_dispatcher = $this->get_team_leader_email(+$dispatcher, $project_name);
 		$tracking = $this->get_tracking_email(+$dispatcher, $project_name);
 		
@@ -337,6 +340,7 @@ class TMSEmails extends TMSUsers {
 			'tracking_email' => $tracking,
 			'project_name' => $project_name,
 			'project_email' => $project_email,
+			'dispatcher_email' => $dispatcher_email,
 		]);
 	}
 	
@@ -352,12 +356,13 @@ class TMSEmails extends TMSUsers {
 			isset($data['additional_emails']) ? $data['additional_emails'] : [],
 			isset($data['email_main_broker']) ? [$data['email_main_broker']] : [],
 			isset($data['team_leader_email']) ? [$data['team_leader_email']] : [],
-			isset($data['tracking_email']) ? [$data['tracking_email']] : []
+			isset($data['tracking_email']) ? [$data['tracking_email']] : [],
+			isset($data['dispatcher_email']) ? [$data['dispatcher_email']] : []
 		);
 		
 		// Удаление дубликатов и пустых значений
 		$all_emails = array_filter(array_unique($all_emails));
-		
+//		var_dump($all_emails);die;
 		// Генерация HTML-содержимого
 		$html_content = "
     	<html>

@@ -19,6 +19,8 @@ $read_only      = false;
 $full_view_only = get_field_value( $args, 'full_view_only' );
 $post_status    = 'draft';
 
+$tracking_tl    = get_field_value( $args, 'tracking_tl' );
+
 $date_booked         = '';
 $dispatcher_initials = '';
 $reference_number    = '';
@@ -105,10 +107,10 @@ if ( $report_object ) {
 if ( ! is_numeric( $proof_of_delivery ) ) {
 	$disable_status = 'disabled';
 }
-
 $read_only = $TMSUsers->check_read_only( $post_status );
+
 ?>
-<form class="form-group <?php echo ! $full_view_only ? 'js-add-new-report' : ''; ?>">
+<form class="form-group <?php echo (!$full_view_only || ($full_view_only &&  $tracking_tl)) ? 'js-add-new-report' : ''; ?>">
 	
 	<?php if ( $read_only ): ?>
         <input type="hidden" name="read_only" value="true">
@@ -122,6 +124,7 @@ $read_only = $TMSUsers->check_read_only( $post_status );
         <input type="hidden" name="post_status" value="<?php echo $post_status; ?>">
 	<?php endif; ?>
 
+
     <div class="row">
         <h3 class="display-6 mb-4">Load info</h3>
 
@@ -131,20 +134,21 @@ $read_only = $TMSUsers->check_read_only( $post_status );
 
         <div class="mb-2 col-12 col-xl-4">
             <label for="reference_number" class="form-label">Reference Number</label>
-			<?php if ( ! $read_only ): ?>
+			<?php if ( !$read_only && !$tracking_tl ): ?>
                 <input type="text" name="reference_number" value="<?php echo $reference_number; ?>" class="form-control"
                        required>
 			<?php else: ?>
                 <p class="m-0"><strong><?php echo $reference_number ?></strong></p>
+                <input type="hidden" name="reference_number" value="<?php echo $reference_number; ?>">
 			<?php endif; ?>
         </div>
 
 
         <div class="mb-2 col-12 col-md-6 col-xl-4">
             <label for="booked_rate" class="form-label">Booked Rate</label>
-			
-			<?php if ( $full_view_only || $factoring_status === 'charge-back' ):
-				?>
+            <input type="hidden" value="<?php echo $booked_rate; ?>" name="booked_rate"
+                   class="form-control js-money">
+			<?php if ( $full_view_only || $factoring_status === 'charge-back' ):?>
                 <p class="m-0"><strong>$<?php echo $modifi_price ?></strong></p>
 			<?php else: ?>
 
@@ -173,18 +177,18 @@ $read_only = $TMSUsers->check_read_only( $post_status );
 					echo '<strong class="mt-1 d-block js-update-mod-price">$' . $modifi_price . ' <span class="text-small"> price including quick pay  ' . $percent_quick_pay . '% and processing fees $' . $processing_fees . '</span></strong>';
 				endif; ?>
 				<?php endif; ?>
-
-                <input type="hidden" class="js-old_value_booked_rate" name="old_value_booked_rate"
-                       value="<?php echo $booked_rate; ?>">
-
-                <input type="hidden" class="js-processing_fees" name="processing_fees"
-                       value="<?php echo $processing_fees; ?>">
-                <input type="hidden" class="js-type_pay" name="type_pay" value="<?php echo $type_pay_method; ?>">
-                <input type="hidden" class="js-percent_quick_pay" name="percent_quick_pay"
-                       value="<?php echo $percent_quick_pay; ?>">
-                <input type="hidden" class="js-processing" name="processing" value="<?php echo $processing; ?>">
 			
 			<?php endif; ?>
+
+            <input type="hidden" class="js-old_value_booked_rate" name="old_value_booked_rate"
+                   value="<?php echo $booked_rate; ?>">
+
+            <input type="hidden" class="js-processing_fees" name="processing_fees"
+                   value="<?php echo $processing_fees; ?>">
+            <input type="hidden" class="js-type_pay" name="type_pay" value="<?php echo $type_pay_method; ?>">
+            <input type="hidden" class="js-percent_quick_pay" name="percent_quick_pay"
+                   value="<?php echo $percent_quick_pay; ?>">
+            <input type="hidden" class="js-processing" name="processing" value="<?php echo $processing; ?>">
         </div>
 
         <div class="col-12"></div>
@@ -192,8 +196,9 @@ $read_only = $TMSUsers->check_read_only( $post_status );
         <div class="mb-2 col-12 col-md-6 col-xl-4">
             <label for="load_status" class="form-label">Load Status</label>
 			
-			<?php if ( $full_view_only ): ?>
+			<?php if ( ($full_view_only && !$tracking_tl ) && !empty($load_status) ): ?>
                 <p class="m-0"><strong><?php echo $statuses[ $load_status ]; ?></strong></p>
+                <input type="hidden" name="load_status" value="<?php echo $load_status; ?>">
 			<?php else: ?>
 
                 <select name="load_status" class="form-control form-select" required>
@@ -218,7 +223,7 @@ $read_only = $TMSUsers->check_read_only( $post_status );
 
         <div class="mb-2 col-12 col-md-6 col-xl-4">
             <label for="load_type" class="form-label">Load Type</label>
-			<?php if ( ! $read_only ): ?>
+			<?php if ( ! $read_only && !$tracking_tl ): ?>
                 <select name="load_type" class="form-control form-select" required>
                     <option value="">Load type</option>
 					<?php if ( is_array( $types ) ): ?>
@@ -230,8 +235,9 @@ $read_only = $TMSUsers->check_read_only( $post_status );
 					<?php endif ?>
                 </select>
 			
-			<?php else: ?>
-                <p class="m-0"><strong><?php echo $load_type; ?></strong></p>
+			<?php elseif (isset($types[$load_type])): ?>
+                <p class="m-0"><strong><?php echo $types[$load_type]; ?></strong></p>
+                <input type="hidden" name="load_type" value="<?php echo $load_type; ?>">
 			<?php endif; ?>
         </div>
 
@@ -242,10 +248,12 @@ $read_only = $TMSUsers->check_read_only( $post_status );
         <div class="mb-2 col-12 col-md-6 col-xl-4">
             <label for="dispatcher_initials" class="form-label">Dispatcher Initials</label>
 			
-			<?php if ( $full_view_only ):
+			<?php if ( $full_view_only && intval($dispatcher_initials)):
 				$user_name = $helper->get_user_full_name_by_id( $dispatcher_initials );
 				?>
                 <p class="m-0"><strong><?php echo $user_name[ 'full_name' ]; ?></strong></p>
+                <input type="hidden" name="dispatcher_initials" value="<?php echo $dispatcher_initials; ?>"
+                       required>
 			<?php else:
 				
 				if ( current_user_can( 'dispatcher' ) || current_user_can( 'dispatcher-tl' ) ) {
@@ -285,7 +293,7 @@ $read_only = $TMSUsers->check_read_only( $post_status );
 
         <div class="mb-2 col-12 col-md-6 col-xl-4">
             <label for="date_booked" class="form-label">Date Booked</label>
-			<?php if ( ! $read_only ): ?>
+			<?php if ( ! $read_only && !$tracking_tl ): ?>
                 <input type="date" name="date_booked" value="<?php echo $date_booked_formatted; ?>" class="form-control"
                        required>
 			<?php else: ?>
@@ -298,7 +306,7 @@ $read_only = $TMSUsers->check_read_only( $post_status );
 
         <div class="mb-2 col-12 col-md-6 col-xl-4">
             <label for="source" class="form-label">Source</label>
-			<?php if ( ! $read_only ): ?>
+			<?php if ( ! $read_only && ! $tracking_tl ): ?>
                 <select name="source" class="form-control form-select" required>
                     <option value="">Select source</option>
 					<?php if ( is_array( $sources ) ): ?>
@@ -312,6 +320,7 @@ $read_only = $TMSUsers->check_read_only( $post_status );
 			
 			<?php else: ?>
                 <p class="m-0"><strong><?php echo $source_val; ?></strong></p>
+                <input type="hidden" name="source" value="<?php echo $source_val; ?>">
 			<?php endif; ?>
         </div>
 
@@ -321,10 +330,13 @@ $read_only = $TMSUsers->check_read_only( $post_status );
 
         <div class="mb-2 col-12 col-md-6 col-xl-4">
             <div class="form-check form-switch">
-                <input class="form-check-input js-tbd" <?php echo $tbd ? 'checked' : ''; ?> type="checkbox" name="tbd"
-                       id="tbd">
+                <input <?php  echo $read_only || $tracking_tl ? 'disabled' : ''; ?> class="form-check-input js-tbd" <?php echo $tbd ? 'checked' : ''; ?> type="checkbox" name="<?php echo $tracking_tl ? 'fake-tbd' : 'tbd'; ?>" id="tbd">
                 <label class="form-check-label" for="tbd">TBD</label>
 				
+                <?php if ($tracking_tl): ?>
+                    <input type="hidden" name="tbd" value="<?php echo $tbd; ?>">
+                <?php endif; ?>
+                
 				<?php if ( $tbd ): ?>
                     <input type="hidden" name="old_tbd" value="1">
 				<?php endif; ?>
@@ -337,11 +349,13 @@ $read_only = $TMSUsers->check_read_only( $post_status );
             <div class="mb-2 col-12 col-md-6 col-xl-4">
                 <label for="unit_number_name" class="form-label">Unit Number & Name</label>
                 <p class="m-0"><strong><?php echo $unit_number_name; ?></strong></p>
+                <input type="hidden" name="unit_number_name" value="<?php echo $unit_number_name; ?>">
             </div>
 
             <div class="mb-2 col-12 col-md-6 col-xl-4">
                 <label for="driver_rate" class="form-label">Driver Rate</label>
                 <p class="m-0"><strong>$<?php echo $driver_rate; ?></strong></p>
+                <input type="hidden" name="driver_rate" value="<?php echo $driver_rate; ?>">
             </div>
 
             <div class="col-12"></div>
@@ -351,16 +365,23 @@ $read_only = $TMSUsers->check_read_only( $post_status );
                 <p class="m-0"><strong><?php echo $driver_phone; ?></strong></p>
                 <div class="form-check form-switch p-0 mt-1">
                     <input disabled class="form-check-input disabled ml-0" <?php echo is_numeric( $shared_with_client )
-			            ? 'checked' : ''; ?> name="shared_with_client"
+			            ? 'checked' : ''; ?> name="fake-shared_with_client"
                            type="checkbox">
                     <label class="form-check-label ml-2" for="shared_with_client">Shared with client
                     </label>
+	                
+	                <?php if ($tracking_tl): ?>
+                        <input type="hidden" name="shared_with_client" value="<?php echo $shared_with_client; ?>">
+	                <?php endif; ?>
+                 
                 </div>
+                <input type="hidden" name="driver_phone" value="<?php echo $driver_phone; ?>">
             </div>
         
             <div class="col-12 col-md-6 col-xl-4  mb-2">
                 <label for="profit" class="form-label">Profit</label>
                 <p class="m-0"><strong>$<?php echo $profit; ?></strong></p>
+                <input type="hidden" name="profit" value="<?php echo $profit; ?>">
             </div>
 
             <div class="col-12"></div>
@@ -368,14 +389,12 @@ $read_only = $TMSUsers->check_read_only( $post_status );
             <div class="mb-2 col-12 col-md-6 col-xl-4">
                 <label for="pick_up_date" class="form-label">Pick Up Date</label>
                 <p class="m-0"><strong><?php echo $pick_up_date_formatted; ?></strong></p>
+                <input type="hidden" name="pick_up_date" value="<?php echo $pick_up_date_formatted; ?>">
             </div>
 
-            <div class="mb-2 col-12 col-md-6 col-xl-4">
-                <label for="pick_up_date" class="form-label">Delivery Date</label>
-                <p class="m-0"><strong><?php echo $delivery_date_formatted; ?></strong></p>
-            </div>
+            
 		<?php else: ?>
-
+        
             <div class="mb-2 col-12 col-md-6 col-xl-4">
                 <label for="unit_number_name" class="form-label">Unit Number & Name</label>
                 <div class="d-flex gap-1 js-container-number">
@@ -438,6 +457,19 @@ $read_only = $TMSUsers->check_read_only( $post_status );
                 <input type="hidden" name="old_pick_up_date" value="<?php echo $pick_up_date_formatted; ?>">
             </div>
 
+        
+		
+		<?php endif; ?>
+	    
+	    
+	    
+	    <?php if ($full_view_only && !$tracking_tl): ?>
+            <div class="mb-2 col-12 col-md-6 col-xl-4">
+                <label for="delivery_date" class="form-label">Delivery Date</label>
+                <p class="m-0"><strong><?php echo $delivery_date_formatted; ?></strong></p>
+                <input type="hidden" name="delivery_date" value="<?php echo $delivery_date_formatted; ?>">
+            </div>
+	    <?php else: ?>
             <div class="mb-2 col-12 col-md-6 col-xl-4">
                 <label for="pick_up_date" class="form-label">Delivery Date</label>
                 <input type="date" name="delivery_date" value="<?php echo $delivery_date_formatted; ?>"
@@ -446,8 +478,8 @@ $read_only = $TMSUsers->check_read_only( $post_status );
                        class="form-control" required>
 
             </div>
-		
-		<?php endif; ?>
+	    <?php endif; ?>
+        
 
         <div class="col-12">
             <label class="form-label mt-3">Instructions</label>
@@ -467,6 +499,10 @@ $read_only = $TMSUsers->check_read_only( $post_status );
                             <label class="form-check-label ml-2"
                                    for="flexSwitchCheckDefault_<?php echo $key; ?>"><?php echo $instruction; ?>
                             </label>
+	                        
+	                        <?php if ($tracking_tl && is_numeric( $checked ) ): ?>
+                                <input type="hidden" name="instructions[]" value="<?php echo $key; ?>">
+	                        <?php endif; ?>
                         </div>
 					<?php endforeach; ?>
 				<?php endif ?>
@@ -479,16 +515,19 @@ $read_only = $TMSUsers->check_read_only( $post_status );
             <div class="mb-2 col-12 col-md-6 col-xl-4">
                 <label for="commodity" class="form-label">Commodity</label>
                 <p class="m-0"><strong><?php echo $commodity; ?></strong></p>
+                <input type="hidden" name="commodity" value="<?php echo $commodity; ?>">
             </div>
 
             <div class="mb-2 col-12 col-md-6 col-xl-4">
                 <label for="weight" class="form-label">Weight (lbs)</label>
                 <p class="m-0"><strong><?php echo $weight; ?></strong></p>
+                <input type="hidden" name="weight" value="<?php echo $weight; ?>">
             </div>
 
             <div class="mb-5 col-12 col-xl-8">
                 <label for="notes" class="form-label">Notes</label>
                 <p class="m-0"><strong><?php echo $notes; ?></strong></p>
+                <input type="hidden" name="notes" value="<?php echo $notes; ?>">
             </div>
 		<?php else: ?>
 
@@ -542,7 +581,7 @@ $read_only = $TMSUsers->check_read_only( $post_status );
                 <button type="button" data-tab-id="pills-customer-tab"
                         class="btn btn-dark js-next-tab">Previous
                 </button>
-				<?php if ( $full_view_only ): ?>
+				<?php if ( $full_view_only && !$tracking_tl ): ?>
                     <button type="button" data-tab-id="pills-trip-tab"
                             class="btn btn-primary js-next-tab">Next
                     </button>

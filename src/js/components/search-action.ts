@@ -52,7 +52,6 @@ function searchResultActions() {
 
 function searchHelperActions(seachInputsSelector, action, ajaxUrl) {
     const seachInputs = document.querySelectorAll(seachInputsSelector);
-
     if (!seachInputs) return;
     // this action close dropdown list searched values
     document.addEventListener('click', (event) => {
@@ -62,7 +61,6 @@ function searchHelperActions(seachInputsSelector, action, ajaxUrl) {
         if (!container) return;
         const containerList = container.querySelector('.js-container-search-list');
         if (!containerList) return;
-
         // @ts-ignore
         if (container && !container.contains(target)) {
             containerList.classList.add('d-none');
@@ -70,6 +68,7 @@ function searchHelperActions(seachInputsSelector, action, ajaxUrl) {
     });
 
     seachInputs.forEach((items) => {
+        console.log('items', items);
         items.addEventListener('focus', (event) => {
             const { target } = event;
             // @ts-ignore

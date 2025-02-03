@@ -10,7 +10,7 @@ global $global_options;
 $copyright = get_field_value( $global_options, 'copyright' );
 $TMSUsers = new TMSUsers();
 
-$add_broker = $TMSUsers->check_user_role_access( array( 'dispatcher-tl', 'administrator', 'billing' ), true );
+$add_broker = $TMSUsers->check_user_role_access( array(  'dispatcher', 'dispatcher-tl', 'administrator', 'billing' ), true );
 $add_shipper = $TMSUsers->check_user_role_access( array( 'dispatcher', 'dispatcher-tl', 'administrator', 'tracking' ), true );
 
 if ($add_broker):

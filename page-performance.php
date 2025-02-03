@@ -21,8 +21,21 @@ $week_dates         = $helper->get_week_dates_from_monday( $date );
 if ( is_null( $date ) ) {
 	$date = date( 'Y-m-d', strtotime( $week_dates[ 0 ] ) );
 }
+
+$office = get_field_value($_GET, 'office');
+$offices = $helper->get_offices_from_acf();
+
+if (!$office) {
+	$office = get_field('work_location', "user_".get_current_user_id());
+}
+
 //'administrator',
 $edit_access = $TMSUsers->check_user_role_access( array( 'administrator','moderator' ), true );
+$show_filter_by_office = $TMSUsers->check_user_role_access( array( 'dispatcher-tl', 'tracking-tl', 'administrator', 'recruiter-tl', 'moderator' ), true );
+
+if (!$show_filter_by_office) {
+    $office = get_field('work_location', "user_".get_current_user_id());
+}
 
 get_header();
 
@@ -32,6 +45,9 @@ get_header();
             <div class="container">
                 <div class="row">
                     <div class="col-12 pt-4 pb-6">
+                        
+                        <?php if ($office): ?>
+                        
                         <h1 class="mb-4">Performance</h1>
 
                         <div class="d-flex justify-content-start mb-2 w-100">
@@ -39,6 +55,20 @@ get_header();
                                 <select class="form-select" name="date" id="date">
 									<?php echo $helper->generateWeeks( $date ); ?>
                                 </select>
+	                            
+	                            <?php if ($show_filter_by_office): ?>
+                                    <select class="form-select w-auto" name="office" aria-label=".form-select-sm example">
+                                        <option value="all">Office</option>
+			                            <?php if (isset($offices['choices']) && is_array($offices['choices'])): ?>
+				                            <?php foreach ($offices['choices'] as $key => $val):  ?>
+                                                <option value="<?php echo $key; ?>"  <?php echo $office === $key ? 'selected' : '' ?> >
+						                            <?php echo $val; ?>
+                                                </option>
+				                            <?php endforeach; ?>
+			                            <?php endif; ?>
+                                    </select>
+	                            <?php endif; ?>
+                                
                                 <button class="btn btn-primary" type="submit">Select</button>
                             </form>
                         </div>
@@ -150,6 +180,11 @@ get_header();
 									);
 									
 									foreach ( $merged_dispatchers as $dispatcher ):
+                                        
+                                        if ($office !== 'all' && $dispatcher[ 'office' ] !== $office) {
+                                            continue;
+                                        }
+                                        
 										$dbdate = $performance->get_or_create_performance_record( $dispatcher[ 'id' ], $date );
 										$report       = $performance->get_dispatcher_weekly_report( $date, $dispatcher[ 'id' ] );
 										$print_date   = array(
@@ -429,6 +464,11 @@ get_header();
                                 </tbody>
                             </table>
 						<?php endif; ?>
+
+                        <?php else:
+                            echo $helper->message_top('error', '
+it is impossible to determine your office, contact the Administrator');
+                        endif; ?>
                     </div>
                 </div>
             </div>

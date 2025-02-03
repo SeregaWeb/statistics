@@ -18,7 +18,7 @@ $curent_tables = get_field('current_select', 'user_'.$user_id);
 
 $TMSUsers = new TMSUsers();
 
-$add_broker = $TMSUsers->check_user_role_access( array( 'dispatcher-tl', 'administrator', 'billing' ), true );
+$add_broker = $TMSUsers->check_user_role_access( array( 'dispatcher', 'dispatcher-tl', 'administrator', 'billing' ), true );
 $add_shipper = $TMSUsers->check_user_role_access( array( 'dispatcher', 'dispatcher-tl', 'administrator', 'tracking' ), true );
 ?>
 

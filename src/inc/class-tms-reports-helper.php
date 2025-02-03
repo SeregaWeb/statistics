@@ -285,11 +285,12 @@ class TMSReportsHelper extends TMSReportsIcons {
 			// Получаем имя и фамилию пользователя
 			$first_name = get_user_meta( $user->ID, 'first_name', true );
 			$last_name  = get_user_meta( $user->ID, 'last_name', true );
-			
+			$office = get_field('work_location', "user_".$user->ID);
 			// Собираем массив с ID и полным именем
 			$dispatchers[] = array(
 				'id'       => $user->ID,
 				'fullname' => trim( $first_name . ' ' . $last_name ),
+                'office'   => $office,
 			);
 		}
 		
@@ -345,11 +346,13 @@ class TMSReportsHelper extends TMSReportsIcons {
 			// Получаем имя и фамилию пользователя
 			$first_name = get_user_meta( $user->ID, 'first_name', true );
 			$last_name  = get_user_meta( $user->ID, 'last_name', true );
+			$office = get_field('work_location', "user_".$user->ID);
 			
 			// Собираем массив с ID и полным именем
 			$dispatchers[] = array(
 				'id'       => $user->ID,
 				'fullname' => trim( $first_name . ' ' . $last_name ),
+                'office'   => $office,
 			);
 		}
 		
@@ -897,6 +900,20 @@ class TMSReportsHelper extends TMSReportsIcons {
 		
 		return $options;
 	}
+    
+    public function change_active_tab( $current_tab, $additional_class = '') {
+        $active_tab = get_field_value( $_GET, 'tab' );
+        
+       if (!$active_tab) {
+           $active_tab = 'pills-customer-tab';
+       }
+       
+       if ($current_tab === $active_tab) {
+           return 'active '. $additional_class;
+       } else {
+           return '';
+       }
+    }
 	
 	public function is_valid_date( $date ) {
 		// Check if the date is a valid format and not '0000-00-00'

@@ -2158,6 +2158,53 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 			wp_send_json_error( [ 'message' => 'Invalid request' ] );
 		}
 	}
+	public function quick_update_status_all() {
+		if ( defined( 'DOING_AJAX' ) && DOING_AJAX ) {
+			$MY_INPUT = filter_var_array( $_POST, [
+				'data' => FILTER_DEFAULT, // Оставляем строку как есть
+			] );
+			
+			// Проверяем, что пришли данные
+			if ( empty( $MY_INPUT['data'] ) ) {
+				wp_send_json_error( [ 'message' => 'No data received' ] );
+			}
+			
+			// Преобразуем JSON-строку в массив
+			
+			$decoded_data =  $MY_INPUT['data'];
+			$decoded_data = explode(',', $decoded_data);
+			
+			if ( ! is_array( $decoded_data ) ) {
+				wp_send_json_error( [ 'message' => 'Uncorrected data' ] );
+			}
+			$update_results = [];
+			
+			// Обрабатываем каждый элемент массива 689598 864590
+			foreach ( $decoded_data as $entry ) {
+				list( $id_load, $status ) = explode( '|', $entry );
+				
+				// Проверяем, что ID - число, а статус - строка
+				if ( ! is_numeric( $id_load ) || empty( $status ) ) {
+					continue;
+				}
+				
+				$result = $this->update_quick_status_in_db( [
+					'id_load' => (int) $id_load,
+					'status'  => sanitize_text_field( $status ),
+				] );
+				
+				if ( is_wp_error( $result ) ) {
+					$update_results[] = [ 'id_load' => $id_load, 'success' => false, 'error' => $result->get_error_message() ];
+				} else {
+					$update_results[] = [ 'id_load' => $id_load, 'success' => true ];
+				}
+			}
+			
+			wp_send_json_success( [ 'message' => 'Statuses processed', 'results' => $update_results ] );
+		} else {
+			wp_send_json_error( [ 'message' => 'Invalid request' ] );
+		}
+	}
 	
 	/**
 	 * function remove one load by id
@@ -2573,7 +2620,6 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 			return new WP_Error( 'db_error', 'Error updating the company report in the database: ' . $error );
 		}
 	}
-	
 	public function update_quick_data_ar_in_db( $data ) {
 		global $wpdb;
 		
@@ -3086,17 +3132,6 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 				}
 			}
 			
-			if ( $data[ 'old_delivery_date' ] && ! empty( $data[ 'old_delivery_date' ] ) ) {
-				if ( $data[ 'delivery_date' ] !== $data[ 'old_delivery_date' ] ) {
-					$this->log_controller->create_one_log( array(
-						'user_id' => $user_id,
-						'post_id' => $data[ 'post_id' ],
-						'message' => 'Changed Delivery date: ' . 'New value: ' . $data[ 'delivery_date' ] . ' Old value: ' . $data[ 'old_delivery_date' ]
-					) );
-				}
-			}
-			
-			
 			if ( $data[ 'weight' ] && ! empty( $data[ 'weight' ] ) ) {
 				if ( $data[ 'weight' ] !== $data[ 'old_weight' ] ) {
 					$this->log_controller->create_one_log( array(
@@ -3119,7 +3154,6 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 					) );
 				}
 			}
-			
 			
 			if ( $data[ 'old_load_status' ] && ! empty( $data[ 'old_load_status' ] ) ) {
 				$array_chacked = array( 'delivered', 'tonu', 'cancelled' );
@@ -3149,6 +3183,16 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 						'user_id' => $user_id,
 						'post_id' => $data[ 'post_id' ],
 						'message' => 'Changed Load status: ' . 'New value: ' . $new_status_label . ' Old value: ' . $old_status_label
+					) );
+				}
+			}
+			
+			if ( $data[ 'old_delivery_date' ] && ! empty( $data[ 'old_delivery_date' ] ) ) {
+				if ( $data[ 'delivery_date' ] !== $data[ 'old_delivery_date' ] ) {
+					$this->log_controller->create_one_log( array(
+						'user_id' => $user_id,
+						'post_id' => $data[ 'post_id' ],
+						'message' => 'Changed Delivery date: ' . 'New value: ' . $data[ 'delivery_date' ] . ' Old value: ' . $data[ 'old_delivery_date' ]
 					) );
 				}
 			}
@@ -3549,6 +3593,7 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 		add_action( 'wp_ajax_quick_update_post', array( $this, 'quick_update_post' ) );
 		add_action( 'wp_ajax_quick_update_post_ar', array( $this, 'quick_update_post_ar' ) );
 		add_action( 'wp_ajax_quick_update_status', array( $this, 'quick_update_status' ) );
+		add_action( 'wp_ajax_quick_update_status_all', array( $this, 'quick_update_status_all' ) );
 	}
 	
 	/**

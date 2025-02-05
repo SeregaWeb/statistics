@@ -19,6 +19,11 @@ if ( $report_object ) {
 	$main   = get_field_value( $values, 'main' );
 	
 	$full_view_only = get_field_value( $args, 'full_view_only' );
+	$tracking_tl = get_field_value( $args, 'tracking_tl' );
+    
+    if ($full_view_only && $tracking_tl) {
+        $full_view_only = false;
+    }
 	
 	if ( is_array( $values ) && sizeof( $values ) > 0 ) {
 		
@@ -31,8 +36,9 @@ if ( $report_object ) {
 		$screen_picture   = get_field_value( $meta, 'screen_picture' );
 		$proof_of_delivery   = get_field_value( $meta, 'proof_of_delivery' );
   
-		$reference_number    = get_field_value($meta, 'reference_number');
-  
+        $reference_number    = get_field_value($meta, 'reference_number');
+		
+		$tbd                 = get_field_value( $meta, 'tbd' );
 		
 		$required_file_arr    = false;
 		$others_files_arr     = false;
@@ -360,10 +366,14 @@ if ( $report_object ) {
 		<?php if ( ! $screen_picture ): ?>
             <div class="js-add-new-report order-4">
                 <div class="p-0 mb-2 col-12">
-                    <p class="h5">Dispatch message <span
-                                class="required-star text-danger">*</span></p>
+                    <p class="h5">Dispatch message
+                        
+                        <?php if (!$tbd): ?>
+                        <span class="required-star text-danger">*</span>
+                        <?php endif; ?>
+                    </p>
                     <label for="screen_picture" class="form-label">screen picture</label>
-                    <input type="file" required
+                    <input type="file" <?php echo !$tbd ? 'required' : ''; ?>
                            name="screen_picture"
                            class="form-control js-control-uploads">
                 </div>

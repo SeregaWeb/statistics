@@ -11,7 +11,7 @@ $total_pages   = get_field_value( $args, 'total_pages' );
 $current_pages = get_field_value( $args, 'current_pages' );
 $is_draft      = get_field_value( $args, 'is_draft' );
 $is_ar_problev = get_field_value( $args, 'ar_problem' );
-
+$profit_mod    = false;
 $page_type = get_field_value( $args, 'page_type' );
 
 $current_user_id = get_current_user_id();
@@ -55,6 +55,20 @@ if ( ! empty( $results ) ) : ?>
         <tbody>
 		<?php
 		$previous_date  = null;
+        $pfofit_for_date = 0;
+        $profit_for_date_array = array();
+	    foreach ( $results as $row ) :
+		    $meta = get_field_value( $row, 'meta_data' );
+		    $profit_raw = get_field_value($meta, 'profit');
+		    
+		    $date_booked_raw = get_field_value( $row, 'date_booked' );
+		    if (isset($profit_for_date_array[$date_booked_raw])) {
+                $profit_for_date_array[$date_booked_raw] += $profit_raw;
+            } else {
+                $profit_for_date_array[$date_booked_raw] = $profit_raw;
+            }
+        endforeach;
+        $index = 0;
         foreach ( $results as $row ) :
 			$meta = get_field_value( $row, 'meta_data' );
 			$main = get_field_value( $row, 'main' );
@@ -99,7 +113,6 @@ if ( ! empty( $results ) ) : ?>
 	        $profit_class = $profit_raw < 0 ? 'modified-price' : '';
 	        $profit = esc_html('$' . $helper->format_currency($profit_raw));
 	        
-	        
 	        $pick_up_date_raw = get_field_value( $row, 'pick_up_date' );
 			$pick_up_date     = esc_html( date( 'm/d/Y', strtotime( $pick_up_date_raw ) ) );
 			
@@ -125,7 +138,6 @@ if ( ! empty( $results ) ) : ?>
             
             
             $show_separator = false;
-           
             
             if ($previous_date !== $date_booked && !is_null($previous_date)) {
 	            $show_separator = true;
@@ -134,15 +146,26 @@ if ( ! empty( $results ) ) : ?>
             $previous_date = $date_booked;
 			?>
         
-            <?php if($show_separator): ?>
-                <tr><td colspan="14" class="separator-date"><?php echo $date_booked; ?></td></tr>
-            <?php endif; ?>
+            <?php if($show_separator || $index === 0):
+            
+                if (isset($profit_for_date_array[$date_booked_raw])) {
+	                $profit_mod = esc_html('$' . $helper->format_currency($profit_for_date_array[$date_booked_raw]));
+                    $profit_mod = '<span style="text-transform: capitalize">Profit: <b>'.$profit_mod.'</b></span>';
+                }
+                
+                $index = 1;
+            
+            ?>
+                <tr><td colspan="14" class="separator-date"><?php echo $date_booked; echo ' '. $profit_mod; ?> </td></tr>
+            <?php
+	            $pfofit_for_date = 0;
+            endif; ?>
 
             <tr class="load-status-<?php echo $load_status; ?>">
                 <td><label class="h-100 cursor-pointer"
                                for="load-<?php echo $row[ 'id' ]; ?>"><?php echo $date_booked; ?></label></td>
                 <td>
-                    <div class="d-flex gap-1 flex-column">
+                    <div class="d-flex gap-1 flex-row align-items-center">
                         <p class="m-0">
                               <span data-bs-toggle="tooltip" data-bs-placement="top"
                                     title="<?php echo $dispatcher[ 'full_name' ]; ?>"
@@ -160,13 +183,16 @@ if ( ! empty( $results ) ) : ?>
 							<?php if ( isset( $val[ 'short_address' ] ) ): ?>
                                 <p class="m-0" data-bs-toggle="tooltip" data-bs-placement="top"
                                    title="<?php echo $val[ 'address' ]; ?>">
-									<?php echo $val[ 'short_address' ];
+                                   
+									<?php
+									echo $val[ 'short_address' ];
 									
 									$detailed_address = $TMSShipper->get_shipper_by_id( $val[ 'address_id' ] );
-									if ( is_array( $detailed_address ) ) {
+									if ( is_array( $detailed_address ) && !empty($detailed_address) ) {
 										echo ' ' . $detailed_address[ 0 ]->zip_code;
+									} else {
+										echo '<br/><span class="text-danger">This shipper has been deleted</span>';
 									}
-									
 									?>
 
 
@@ -181,14 +207,17 @@ if ( ! empty( $results ) ) : ?>
 							<?php if ( isset( $val[ 'short_address' ] ) ): ?>
                                 <p class="m-0" data-bs-toggle="tooltip" data-bs-placement="top"
                                    title="<?php echo $val[ 'address' ]; ?>">
-									<?php echo $val[ 'short_address' ];
-									$detailed_address = $TMSShipper->get_shipper_by_id( $val[ 'address_id' ] );
-									if ( is_array( $detailed_address ) ) {
-										echo ' ' . $detailed_address[ 0 ]->zip_code;
-									}
+                                   
+	                                <?php
+	                                echo $val[ 'short_address' ];
+	                                
+	                                $detailed_address = $TMSShipper->get_shipper_by_id( $val[ 'address_id' ] );
+	                                if ( is_array( $detailed_address ) && !empty($detailed_address) ) {
+		                                echo ' ' . $detailed_address[ 0 ]->zip_code;
+	                                } else {
+		                                echo '<br/><span class="text-danger">This shipper has been deleted</span>';
+	                                }
 									?>
-
-
                                 </p>
 							<?php endif; ?>
 						<?php endforeach; ?>

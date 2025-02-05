@@ -184,12 +184,17 @@ if ( ! empty( $results ) ) :?>
                 </td>
                 <td>
                     <div class="d-flex flex-column">
-			            <?php if ($broker_name != 'N/A'): ?>
-                            <a class="m-0" href="<?php echo $link_broker . '?broker_id='. $id_customer; ?>"><?php echo $broker_name; ?></a>
-			            <?php else: ?>
-                            <p class="m-0"><?php echo $broker_name; ?></p>
-			            <?php endif; ?>
-                        <span class="text-small"><?php echo $broker_mc; ?></span>
+		
+                        <?php if (!isset($broker_info[0])): ?>
+                            <span class="text-danger">This broker has been deleted</span>
+                        <?php else: ?>
+                            <?php if ($broker_name != 'N/A'): ?>
+                                <a class="m-0" href="<?php echo $link_broker . '?broker_id='. $id_customer; ?>"><?php echo $broker_name; ?></a>
+                            <?php else: ?>
+                                <p class="m-0"><?php echo $broker_name; ?></p>
+                            <?php endif; ?>
+                            <span class="text-small"><?php echo $broker_mc; ?></span>
+                        <?php endif; ?>
                     </div>
                 </td>
                 <td><?php echo $helper->get_label_by_key($factoring_status, 'factoring_status'); ?></td>
@@ -200,13 +205,14 @@ if ( ! empty( $results ) ) :?>
 							<?php if ( isset( $val[ 'short_address' ] ) ): ?>
                                 <p class="m-0" data-bs-toggle="tooltip" data-bs-placement="top"
                                    title="<?php echo $val[ 'address' ]; ?>">
-									<?php echo $val[ 'short_address' ];
-									
-									$detailed_address = $TMSShipper->get_shipper_by_id( $val[ 'address_id' ] );
-									if ( is_array( $detailed_address ) ) {
-										echo ' ' . $detailed_address[ 0 ]->zip_code;
-									}
-									
+	                                <?php echo $val[ 'short_address' ];
+	                                
+	                                $detailed_address = $TMSShipper->get_shipper_by_id( $val[ 'address_id' ] );
+	                                if ( is_array( $detailed_address ) && !empty($detailed_address) ) {
+		                                echo ' ' . $detailed_address[ 0 ]->zip_code;
+	                                } else {
+		                                echo '<br/><span class="text-danger">This shipper has been deleted</span>';
+	                                }
 									?>
 
 
@@ -221,11 +227,14 @@ if ( ! empty( $results ) ) :?>
 							<?php if ( isset( $val[ 'short_address' ] ) ): ?>
                                 <p class="m-0" data-bs-toggle="tooltip" data-bs-placement="top"
                                    title="<?php echo $val[ 'address' ]; ?>">
-									<?php echo $val[ 'short_address' ];
-									$detailed_address = $TMSShipper->get_shipper_by_id( $val[ 'address_id' ] );
-									if ( is_array( $detailed_address ) ) {
-										echo ' ' . $detailed_address[ 0 ]->zip_code;
-									}
+	                                <?php echo $val[ 'short_address' ];
+	                                
+	                                $detailed_address = $TMSShipper->get_shipper_by_id( $val[ 'address_id' ] );
+	                                if ( is_array( $detailed_address ) && !empty($detailed_address) ) {
+		                                echo ' ' . $detailed_address[ 0 ]->zip_code;
+	                                } else {
+		                                echo '<br/><span class="text-danger">This shipper has been deleted</span>';
+	                                }
 									?>
                                 </p>
 							<?php endif; ?>

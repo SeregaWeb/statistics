@@ -3490,6 +3490,7 @@ var disabledValuesInSelectInit = function disabledValuesInSelectInit() {
 "use strict";
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   ActionDeleteCompanyInit: function() { return /* binding */ ActionDeleteCompanyInit; },
 /* harmony export */   ActionUpdateCompanyInit: function() { return /* binding */ ActionUpdateCompanyInit; },
 /* harmony export */   actionCreateCompanyInit: function() { return /* binding */ actionCreateCompanyInit; }
 /* harmony export */ });
@@ -3545,6 +3546,40 @@ var ActionUpdateCompanyInit = function ActionUpdateCompanyInit(ajaxUrl) {
         if (requestStatus.success) {
           console.log('Broker update successfully:', requestStatus.data);
           (0,_info_messages__WEBPACK_IMPORTED_MODULE_1__.printMessage)(requestStatus.data.message, 'success', 8000);
+        } else {
+          (0,_info_messages__WEBPACK_IMPORTED_MODULE_1__.printMessage)("Error update broker: ".concat(requestStatus.data.message), 'danger', 8000);
+        }
+      }).catch(function (error) {
+        (0,_info_messages__WEBPACK_IMPORTED_MODULE_1__.printMessage)("Request failed: ".concat(error), 'danger', 8000);
+        console.error('Request failed:', error);
+      });
+    });
+  }
+};
+var ActionDeleteCompanyInit = function ActionDeleteCompanyInit(ajaxUrl) {
+  var form = document.querySelector('.js-delete-broker');
+  if (form) {
+    form.addEventListener('submit', function (event) {
+      event.preventDefault();
+      var target = event.target;
+      var formData = new FormData(target);
+      formData.append('action', 'delete_broker');
+      var options = {
+        method: 'POST',
+        body: formData
+      };
+      fetch(ajaxUrl, options).then(function (res) {
+        return res.json();
+      }).then(function (requestStatus) {
+        if (requestStatus.success) {
+          console.log('Broker delete successfully:', requestStatus.data);
+          (0,_info_messages__WEBPACK_IMPORTED_MODULE_1__.printMessage)(requestStatus.data.message, 'success', 8000);
+          var link = document.querySelector('.js-brokers-page-link');
+          if (link) {
+            setTimeout(function () {
+              window.location.href = link.getAttribute('href');
+            }, 1500);
+          }
         } else {
           (0,_info_messages__WEBPACK_IMPORTED_MODULE_1__.printMessage)("Error update broker: ".concat(requestStatus.data.message), 'danger', 8000);
         }
@@ -4425,6 +4460,7 @@ var triggerDisableBtnInit = function triggerDisableBtnInit() {
 "use strict";
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   ActionDeleteShipperInit: function() { return /* binding */ ActionDeleteShipperInit; },
 /* harmony export */   actionCreateShipperInit: function() { return /* binding */ actionCreateShipperInit; },
 /* harmony export */   actionUpdateShipperInit: function() { return /* binding */ actionUpdateShipperInit; }
 /* harmony export */ });
@@ -4490,6 +4526,40 @@ var actionUpdateShipperInit = function actionUpdateShipperInit(ajaxUrl) {
       });
     });
   });
+};
+var ActionDeleteShipperInit = function ActionDeleteShipperInit(ajaxUrl) {
+  var form = document.querySelector('.js-delete-shipper');
+  if (form) {
+    form.addEventListener('submit', function (event) {
+      event.preventDefault();
+      var target = event.target;
+      var formData = new FormData(target);
+      formData.append('action', 'delete_shipper');
+      var options = {
+        method: 'POST',
+        body: formData
+      };
+      fetch(ajaxUrl, options).then(function (res) {
+        return res.json();
+      }).then(function (requestStatus) {
+        if (requestStatus.success) {
+          console.log('Shipper delete successfully:', requestStatus.data);
+          (0,_info_messages__WEBPACK_IMPORTED_MODULE_1__.printMessage)(requestStatus.data.message, 'success', 8000);
+          var link = document.querySelector('.js-shippers-page-link');
+          if (link) {
+            setTimeout(function () {
+              window.location.href = link.getAttribute('href');
+            }, 1500);
+          }
+        } else {
+          (0,_info_messages__WEBPACK_IMPORTED_MODULE_1__.printMessage)("Error update shipper: ".concat(requestStatus.data.message), 'danger', 8000);
+        }
+      }).catch(function (error) {
+        (0,_info_messages__WEBPACK_IMPORTED_MODULE_1__.printMessage)("Request failed: ".concat(error), 'danger', 8000);
+        console.error('Request failed:', error);
+      });
+    });
+  }
 };
 
 /***/ }),
@@ -15630,6 +15700,8 @@ function ready() {
   (0,_components_performance__WEBPACK_IMPORTED_MODULE_19__.sendUpdatePerformance)(urlAjax);
   (0,_components_send_email_chain__WEBPACK_IMPORTED_MODULE_23__.sendEmailChain)(urlAjax);
   (0,_components_save_all_tracking__WEBPACK_IMPORTED_MODULE_24__.saveAllTracking)(urlAjax);
+  (0,_components_create_company__WEBPACK_IMPORTED_MODULE_4__.ActionDeleteCompanyInit)(urlAjax);
+  (0,_components_create_shipper__WEBPACK_IMPORTED_MODULE_5__.ActionDeleteShipperInit)(urlAjax);
   (0,_components_driver_Info__WEBPACK_IMPORTED_MODULE_10__.initGetInfoDriver)(urlAjax, useServices);
   (0,_components_create_report__WEBPACK_IMPORTED_MODULE_3__.additionalContactsInit)();
   (0,_components_create_report__WEBPACK_IMPORTED_MODULE_3__.addShipperPointInit)();

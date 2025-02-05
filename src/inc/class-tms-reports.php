@@ -478,6 +478,7 @@ class TMSReports extends TMSReportsHelper {
     LEFT JOIN $table_meta AS dispatcher ON main.id = dispatcher.post_id AND dispatcher.meta_key = 'dispatcher_initials'
     LEFT JOIN $table_meta AS reference ON main.id = reference.post_id AND reference.meta_key = 'reference_number'
     LEFT JOIN $table_meta AS unit_number ON main.id = unit_number.post_id AND unit_number.meta_key = 'unit_number_name'
+    LEFT JOIN $table_meta AS unit_phone ON main.id = unit_phone.post_id AND unit_phone.meta_key = 'driver_phone'
     LEFT JOIN $table_meta AS load_status ON main.id = load_status.post_id AND load_status.meta_key = 'load_status'
     LEFT JOIN $table_meta AS office_dispatcher
 				ON main.id = office_dispatcher.post_id
@@ -532,7 +533,8 @@ class TMSReports extends TMSReportsHelper {
 		
 		if ( ! empty( $args['my_search'] ) ) {
 			$search_value = '%' . $wpdb->esc_like( $args['my_search'] ) . '%';
-			$where_conditions[] = "(reference.meta_value LIKE %s OR unit_number.meta_value LIKE %s)";
+			$where_conditions[] = "(reference.meta_value LIKE %s OR unit_number.meta_value LIKE %s OR unit_phone.meta_value LIKE %s)";
+			$where_values[] = $search_value;
 			$where_values[] = $search_value;
 			$where_values[] = $search_value;
 		}

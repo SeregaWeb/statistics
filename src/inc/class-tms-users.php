@@ -239,7 +239,7 @@ class  TMSUsers extends TMSReportsHelper {
 	}
 	
 	public function check_group_access() {
-		$check_group = $this->check_user_role_access( array( 'dispatcher-tl', 'tracking' ), true );
+		$check_group = $this->check_user_role_access( array( 'tracking-tl', 'dispatcher-tl', 'tracking' ), true );
 		$my_team     = null;
 		if ( $check_group ) {
 			$current_user_id = get_current_user_id();

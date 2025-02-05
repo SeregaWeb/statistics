@@ -64,6 +64,7 @@ if ( ! empty( $broker ) ) {
 
 $TMSUsers = new TMSUsers();
 $add_broker = $TMSUsers->check_user_role_access( array( 'dispatcher', 'dispatcher-tl', 'administrator', 'billing' ), true );
+$remove_broker = $TMSUsers->check_user_role_access( array( 'administrator' ), true );
 
 ?>
     <div class="container-fluid">
@@ -577,7 +578,16 @@ $add_broker = $TMSUsers->check_user_role_access( array( 'dispatcher', 'dispatche
                     <?php endif; ?>
 
                 </div>
-				
+                    
+                    <?php if ($remove_broker): ?>
+                    <div class="col-12 d-flex justify-content-end">
+                        <form class="js-delete-broker text-end">
+                            <input type="hidden" name="id" value="<?php echo $id_broker; ?>">
+                            <button class="btn btn-danger mb-1" type="submit">Remove this broker</button>
+                            <p class="text-small">the broker will be permanently deleted, it will not be possible to return it</p>
+                        </form>
+                    </div>
+                    <?php endif; ?>
 				
 				<?php } else { ?>
                     <div class="col-12">

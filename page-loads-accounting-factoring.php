@@ -10,6 +10,7 @@ get_header();
 
 $statistics = new TMSStatistics();
 
+
 $current_year = date('Y'); // Returns the current year
 $current_month = date('m'); // Returns the current month
 
@@ -93,35 +94,35 @@ if (!$mount_param) {
                                 <div class="table-values">
                                     <div class="table-values-col">
                                         <p>Gross</p>
-                                        $<?php echo $data['total_booked_rate']; ?>
+                                        <?php echo esc_html('$' . $statistics->format_currency($data['total_booked_rate'])); ?>
                                     </div>
 
                                     <div class="table-values-col">
                                         <p>Driver rate</p>
-		                                $<?php echo $data['total_driver_rate']; ?>
+	                                    <?php echo esc_html('$' . $statistics->format_currency($data['total_driver_rate'])); ?>
                                     </div>
 
                                     <div class="table-values-col">
                                         <p>After Factoring</p>
-		                                $<?php echo $after_factoring; ?>
+	                                    <?php echo esc_html('$' . $statistics->format_currency($after_factoring)); ?>
                                     </div>
 
 
                                     <div class="table-values-col">
                                         <p>General profit</p>
-	                                    $<?php echo $general_profit; ?>
+	                                    <?php echo esc_html('$' . $statistics->format_currency($general_profit)); ?>
                                     </div>
                                     
                                     <div class="table-values-col">
                                         <p>True profit</p>
-	                                    $<?php echo $general_true_profit; ?>
+	                                    <?php echo esc_html('$' . $statistics->format_currency($general_true_profit)); ?>
                                     </div>
                                     
                                     <div></div>
                                     <div></div>
                                     <div class="table-values-col">
                                         <p>Paid to Factoring</p>
-                                        $<?php echo $paid_to_factoring; ?>
+	                                    <?php echo esc_html('$' . $statistics->format_currency($paid_to_factoring)); ?>
                                     </div>
                                   
                                 </div>

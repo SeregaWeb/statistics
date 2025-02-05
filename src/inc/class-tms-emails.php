@@ -9,7 +9,6 @@ class TMSEmails extends TMSUsers {
 	private $user_fields = array();
 	
 	public function __construct() {
-	
 	}
 	
 	public function init () {
@@ -242,7 +241,8 @@ class TMSEmails extends TMSUsers {
 		$dispatcher = get_field_value($meta, 'dispatcher_initials');
 		
 		$dispatcher_email = $dispatcher ? get_the_author_meta('user_email', $dispatcher) : '';
-		
+		$nightshift = get_field('nightshift_tracking', 'user_'.$dispatcher );
+
 		$tl_dispatcher = $this->get_team_leader_email(+$dispatcher, $project_name);
 		$tracking = $this->get_tracking_email(+$dispatcher, $project_name);
 		
@@ -341,6 +341,7 @@ class TMSEmails extends TMSUsers {
 			'project_name' => $project_name,
 			'project_email' => $project_email,
 			'dispatcher_email' => $dispatcher_email,
+			'nightshift' => $nightshift,
 		]);
 	}
 	
@@ -353,6 +354,7 @@ class TMSEmails extends TMSUsers {
 		// Объединение всех email
 		$all_emails = array_merge(
 			isset($data['emails']) ? explode(',', $data['emails']) : [],
+			isset($data['nightshift']) ? explode(',', $data['nightshift']) : [],
 			isset($data['additional_emails']) ? $data['additional_emails'] : [],
 			isset($data['email_main_broker']) ? [$data['email_main_broker']] : [],
 			isset($data['team_leader_email']) ? [$data['team_leader_email']] : [],
@@ -438,7 +440,7 @@ class TMSEmails extends TMSUsers {
 			'Content-Type: text/html; charset=UTF-8',
 			'From: Tracking chain <'.$data['project_email'].'>' // Replace with your sender name and email
 		);
-
+		
 		// Отправка письма с помощью wp_mail() (для WordPress) или mail()
 		if (function_exists('wp_mail')) {
 			$result = wp_mail($all_emails, $data['subject'], $html_body, $headers);

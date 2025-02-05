@@ -28,6 +28,7 @@ $TMSUsers = new TMSUsers();
 
 $add_shipper = $TMSUsers->check_user_role_access( array( 'dispatcher', 'dispatcher-tl', 'administrator', 'tracking' ), true );
 
+$remove_shipper = $TMSUsers->check_user_role_access( array( 'administrator' ), true );
 
 ?>
     <div class="container-fluid">
@@ -232,6 +233,16 @@ $add_shipper = $TMSUsers->check_user_role_access( array( 'dispatcher', 'dispatch
                             </div>
                         </form>
                     </div>
+	                <?php endif; ?>
+	                
+	                <?php if ($remove_shipper): ?>
+                        <div class="col-12 d-flex justify-content-end">
+                            <form class="js-delete-shipper text-end">
+                                <input type="hidden" name="id" value="<?php echo $id_shipper; ?>">
+                                <button class="btn btn-danger mb-1" type="submit">Remove this shipper</button>
+                                <p class="text-small">the shipper will be permanently deleted, it will not be possible to return it</p>
+                            </form>
+                        </div>
 	                <?php endif; ?>
                  
 					<?php } else { ?>

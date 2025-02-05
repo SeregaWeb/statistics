@@ -271,6 +271,27 @@
                             "prepend": "",
                             "append": "",
                             "parent_repeater": "field_66e59448bdfaa"
+                        },
+                        {
+                            "key": "field_67a2774a5e0c4",
+                            "label": "Additional class",
+                            "name": "additional_class",
+                            "aria-label": "",
+                            "type": "text",
+                            "instructions": "",
+                            "required": 0,
+                            "conditional_logic": 0,
+                            "wrapper": {
+                                "width": "",
+                                "class": "",
+                                "id": ""
+                            },
+                            "default_value": "",
+                            "maxlength": "",
+                            "placeholder": "",
+                            "prepend": "",
+                            "append": "",
+                            "parent_repeater": "field_66e59448bdfaa"
                         }
                     ],
                     "parent_repeater": "field_66e593d9bdfa7"
@@ -607,5 +628,5 @@
     "active": true,
     "description": "",
     "show_in_rest": 0,
-    "modified": 1738013763
+    "modified": 1738700657
 }

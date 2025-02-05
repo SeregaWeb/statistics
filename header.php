@@ -58,16 +58,34 @@ if ( function_exists( 'get_field' ) ) {
 
 <pre class="d-none">
 
-Можешь еще в Performance одной общей кнопкой сделать сохранение, а не напротив каждой строки?
+Для Martlet Express & Endurance Transport нужно написать уникальный текст при автоматической отправке Tracking Chain через кнопку на грузе.
 
-Автоматическая система создания email chains.
-Subject (тема письма): Load number: 0000000 Pick up location - Delivery location / Название компании
-Пример Load number: 2645798A Salt Lake City, UT - Idaho Falls, ID / Odysseia
-В копию письма включить: email диспетчера который добавил груз в систему, email broker'a, email tracking'a этого диспетчера, email team leader'a этого диспетчера, billing@odysseia.one, andrew@odysseia.one / marshall@odysseia.one
-Текст оповещения:
-Hello, it's Odysseia.
-Our team will keep you updated throughout the whole process in this chain. If you need to add any other email for the updates, please feel free to do that.
+
+MARTLET EXPRESS
+
+Hello,
+In this chain we will provide you with updates during the whole trip.
+If you need an immediate update or assistance please send us an email and we will give back to you in a few moments.
+Feel free to add to this chain your team members to keep them updated as well.
+Thank you for all the business you are turning our way!
+
+------------
+ENDURANCE TRANSPORT
+
+Hello, it's Endurance Transport team.
+We will keep you updated during the whole process in this email thread. If you need to add any other email for the updates, please to do that.
 We will immediately let you know once the truck is on-site.
+------------
+Добавить новое окно для загрузки файлов "Freight Pictures" - много картинок может быть
+добавить дополнительного водителя
+добавить криэйт инвойс как в тмс
+------------
+сделать разбивку емаила для чейн на разные проекты
+------------
+Добавить switch "MacroPoint set" под "Shared with client" подобный ему же.
+
+Вывести маленькую иконку напротив номера телефона водителя в Tracking если switch включен.
+
 </pre>
 
 <body <?php body_class( $page_class ); ?>>
@@ -122,6 +140,11 @@ We will immediately let you know once the truck is on-site.
                              
                              $popup_use = $menu['popup_use'];
                 
+                             $custom_class = '';
+                             if (isset($menu['additional_class'])) {
+                                 $custom_class = $menu['additional_class'];
+                             }
+                             
                             $popup_class = '';
                             
                              
@@ -145,7 +168,7 @@ We will immediately let you know once the truck is on-site.
                              
                              ?>
                                 <li class="left-sidebar__item">
-                                    <a class="left-sidebar__link <?php echo $current_page; ?> <?php echo $popup_class; ?>" target="<?php echo empty($menu['link']['target']) ? '_self' : $menu['link']['target'] ?>" href="<?php echo $link_url; ?>">
+                                    <a class="left-sidebar__link <?php echo $current_page; ?> <?php echo $popup_class; ?> <?php echo $custom_class; ?>" target="<?php echo empty($menu['link']['target']) ? '_self' : $menu['link']['target'] ?>" href="<?php echo $link_url; ?>">
                                     <?php echo $link_title; ?>
                                     </a>
                                 </li>

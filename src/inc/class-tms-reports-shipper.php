@@ -10,6 +10,7 @@ class TMSReportsShipper extends TMSReportsHelper {
 		add_action( 'wp_ajax_add_new_shipper', array( $this, 'add_new_shipper' ) );
 		add_action( 'wp_ajax_update_shipper', array( $this, 'update_shipper' ) );
 		add_action( 'wp_ajax_search_shipper', array( $this, 'search_shipper' ) );
+		add_action( 'wp_ajax_delete_shipper', array( $this, 'delete_shipper' ) );
 		
 	}
 	
@@ -19,6 +20,48 @@ class TMSReportsShipper extends TMSReportsHelper {
 //		add_action( 'after_setup_theme', array( $this, 'update_table_shipper_with_indexes' ) );
 		
 		$this->ajax_actions();
+	}
+	
+	public function delete_shipper() {
+		if ( defined( 'DOING_AJAX' ) && DOING_AJAX ) {
+			$MY_INPUT = filter_var_array( $_POST, [
+				"id" => FILTER_SANITIZE_NUMBER_INT
+			] );
+			
+			if ( empty( $MY_INPUT[ 'id' ] ) || !is_numeric( $MY_INPUT[ 'id' ]) ) {
+				wp_send_json_error( [ 'message' => 'Shipper not deleted, id not found' ] );
+			}
+			
+			$delete = $this->delete_shipper_by_id($MY_INPUT[ 'id' ]);
+			
+			if ( $delete['status'] ) {
+				wp_send_json_success( $delete );
+			}
+			
+			wp_send_json_error( $delete );
+		}
+	}
+	public function delete_shipper_by_id( $post_id ) {
+		
+		global $wpdb;
+		
+		$table_main = $wpdb->prefix . $this->table_main; // Основная таблица
+		
+		// Удаляем сам пост
+		$post_deleted = $wpdb->delete( $table_main, [ 'id' => $post_id ], [ '%d' ] );
+		
+		// Проверяем удаление поста
+		if ( $post_deleted === false ) {
+			return array('status' => false, 'message'=>'Error deleting post: ' . $wpdb->last_error);
+		}
+		
+		// Проверяем, были ли найдены записи для удаления
+		if ( $post_deleted === 0 ) {
+			echo 'Записи для удаления не найдены.';
+			return array('status' => false, 'message'=>'No records found for deletion.');
+		} else {
+			return array('status' => true, 'message'=>'Successfully deleted post and its meta data.');
+		}
 	}
 	
 	public function update_table_shipper_with_indexes() {

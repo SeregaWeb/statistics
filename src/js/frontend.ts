@@ -25,8 +25,8 @@ import {
     updateFilesReportInit,
     updateStatusPost,
 } from './components/create-report';
-import { actionCreateCompanyInit, ActionUpdateCompanyInit } from './components/create-company';
-import { actionCreateShipperInit, actionUpdateShipperInit } from './components/create-shipper';
+import { actionCreateCompanyInit, ActionDeleteCompanyInit, ActionUpdateCompanyInit } from './components/create-company';
+import { actionCreateShipperInit, ActionDeleteShipperInit, actionUpdateShipperInit } from './components/create-shipper';
 import { nextTabTrigger, tabUrlUpdeter } from './components/tab-helper';
 import { addSearchAction } from './components/search-action';
 import { toggleBlocksInit, toggleCheckboxInit } from './components/toggle-blocks-init';
@@ -94,6 +94,8 @@ function ready() {
     sendUpdatePerformance(urlAjax);
     sendEmailChain(urlAjax);
     saveAllTracking(urlAjax);
+    ActionDeleteCompanyInit(urlAjax);
+    ActionDeleteShipperInit(urlAjax);
     // API request
     initGetInfoDriver(urlAjax, useServices);
 

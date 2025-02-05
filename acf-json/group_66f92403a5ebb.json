@@ -36,6 +36,13 @@
                 "operator": "==",
                 "value": "tracking"
             }
+        ],
+        [
+            {
+                "param": "user_role",
+                "operator": "==",
+                "value": "tracking-tl"
+            }
         ]
     ],
     "menu_order": 0,
@@ -47,5 +54,5 @@
     "active": true,
     "description": "",
     "show_in_rest": 0,
-    "modified": 1729333095
+    "modified": 1738619143
 }

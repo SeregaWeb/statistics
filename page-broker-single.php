@@ -28,7 +28,8 @@ if ( ! empty( $broker ) ) {
 	$full_address = $broker[ 'address1' ] . ' ' . $broker[ 'city' ] . ' ' . $broker[ 'state' ] . ' ' . $broker[ 'zip_code' ] . ' ' . $broker[ 'country' ];
 	
 	$platform = $brokers->get_label_by_key( $broker[ 'set_up_platform' ], 'set_up_platform' );
-
+    $company_status = get_field_value($broker_meta, 'company_status' );
+    $company_status_label = $brokers->get_label_by_key( $company_status, 'company_status' );
 // Декодируем JSON в ассоциативный массив
 	$set_up_array          = json_decode( $broker[ 'set_up' ], true );
 	$set_up_array_complete = json_decode( $broker[ 'date_set_up_compleat' ], true );
@@ -108,6 +109,12 @@ $remove_broker = $TMSUsers->check_user_role_access( array( 'administrator' ), tr
 								?>
                                 <h2><?php echo $broker[ 'company_name' ] ?></h2>
                                 <ul class="status-list">
+                                    <?php if ($company_status):  ?>
+                                        <li class="status-list__item">
+                                            <span class="status-list__label">Company status:</span>
+                                            <span class="status-list__value"><?php echo $company_status_label; ?></span>
+                                        </li>
+                                    <?php endif; ?>
                                     <li class="status-list__item">
                                         <span class="status-list__label">Address:</span>
                                         <span class="status-list__value"><?php echo $full_address; ?></span>
@@ -317,6 +324,21 @@ $remove_broker = $TMSUsers->check_user_role_access( array( 'administrator' ), tr
                                                placeholder="Company Name"
                                                value="<?php echo fill_field( 'company_name', $broker_data ); ?>"
                                                class="form-control">
+                                    </div>
+
+                                    <div class="form-group mt-3 ">
+                                        <label for="company_status" class="form-label">Company status</label>
+                                        <select name="company_status" class="form-control form-select">
+                                            <option value="">Select Company status</option>
+			                                <?php if ( is_array( $brokers->company_status ) ): ?>
+				                                <?php foreach ( $brokers->company_status as $key => $val ): ?>
+                                                    <option value="<?php echo $key; ?>" <?php echo fill_field( 'company_status', $broker_meta ) === $key
+						                                ? 'selected' : ''; ?>>
+						                                <?php echo $val; ?>
+                                                    </option>
+				                                <?php endforeach; ?>
+			                                <?php endif ?>
+                                        </select>
                                     </div>
 
                                     <div class="form-group mt-3">

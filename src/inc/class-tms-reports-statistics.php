@@ -117,11 +117,14 @@ class  TMSStatistics extends TMSReportsHelper {
 		
 		$query = "
 			SELECT dispatcher_meta.meta_value AS dispatcher_initials,
-			profit_meta.meta_value AS profit
+			profit_meta.meta_value AS profit, reference_number.meta_value AS reference_number
 			FROM $table_reports reports
 			INNER JOIN $table_meta dispatcher_meta
 			    ON reports.id = dispatcher_meta.post_id
 			    AND dispatcher_meta.meta_key = 'dispatcher_initials'
+		    INNER JOIN $table_meta reference_number
+			    ON reports.id = reference_number.post_id
+			    AND reference_number.meta_key = 'reference_number'
 			INNER JOIN $table_meta profit_meta
 			    ON reports.id = profit_meta.post_id
 			    AND profit_meta.meta_key = 'profit'

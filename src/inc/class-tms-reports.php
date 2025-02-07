@@ -1610,57 +1610,73 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 				$MY_INPUT[ 'proof_of_delivery' ] = $this->upload_one_file( $_FILES[ 'proof_of_delivery' ] );;
 			}
 			
-			if ( ! empty( $_FILES[ 'attached_files' ] ) ) {
-				$files          = $_FILES[ 'attached_files' ];
+			if ( ! empty( $_FILES['attached_files'] ) ) {
+				$files = $_FILES['attached_files'];
 				$uploaded_files = [];
+				$user_id = get_current_user_id();
 				
-				foreach ( $files[ 'name' ] as $key => $value ) {
-					if ( $files[ 'name' ][ $key ] ) {
+				foreach ( $files['name'] as $key => $value ) {
+					if ( $files['name'][ $key ] ) {
+						// Получаем оригинальное имя и расширение
+						$original_name = $files['name'][ $key ];
+						$file_info     = pathinfo( $original_name );
+						$filename      = $file_info['filename'];
+						$extension     = isset( $file_info['extension'] ) ? $file_info['extension'] : '';
+						
+						// Формируем уникальное имя: {user_id}_{timestamp}_{original_filename}.{extension}
+						$timestamp    = time();
+						$unique        = rand(1,99999);
+						$new_filename = $user_id . '_' . $unique . $timestamp . '_' . $filename;
+						if ( ! empty( $extension ) ) {
+							$new_filename .= '.' . $extension;
+						}
+						
+						// Формируем массив файла для загрузки
 						$file = [
-							'name'     => $files[ 'name' ][ $key ],
-							'type'     => $files[ 'type' ][ $key ],
-							'tmp_name' => $files[ 'tmp_name' ][ $key ],
-							'error'    => $files[ 'error' ][ $key ],
-							'size'     => $files[ 'size' ][ $key ]
+							'name'     => $new_filename,
+							'type'     => $files['type'][ $key ],
+							'tmp_name' => $files['tmp_name'][ $key ],
+							'error'    => $files['error'][ $key ],
+							'size'     => $files['size'][ $key ]
 						];
 						
 						// Используем wp_handle_upload для обработки загрузки
 						$upload_result = wp_handle_upload( $file, [ 'test_form' => false ] );
 						
-						if ( ! isset( $upload_result[ 'error' ] ) ) {
-							// Данные о файле
-							$file_url  = $upload_result[ 'url' ];
-							$file_type = $upload_result[ 'type' ];
-							$file_path = $upload_result[ 'file' ];
+						if ( ! isset( $upload_result['error'] ) ) {
+							// Получаем данные о загруженном файле
+							$file_url  = $upload_result['url'];
+							$file_type = $upload_result['type'];
+							$file_path = $upload_result['file'];
 							
-							// Подготовка данных для записи в медиабиблиотеку
-							$attachment = array(
+							// Подготавливаем данные для записи в медиабиблиотеку
+							$attachment = [
 								'guid'           => $file_url,
 								'post_mime_type' => $file_type,
 								'post_title'     => basename( $file_url ),
 								'post_content'   => '',
 								'post_status'    => 'inherit'
-							);
+							];
 							
-							// Вставляем запись в базу данных (в таблицу attachments)
+							// Вставляем запись в базу данных (таблица attachments)
 							$attachment_id = wp_insert_attachment( $attachment, $file_path );
 							
-							// Генерация метаданных для вложения и обновление базы данных
+							// Генерируем метаданные для вложения и обновляем базу данных
 							require_once( ABSPATH . 'wp-admin/includes/image.php' );
 							$attachment_data = wp_generate_attachment_metadata( $attachment_id, $file_path );
 							wp_update_attachment_metadata( $attachment_id, $attachment_data );
 							
-							// Теперь у вас есть ID загруженного файла
+							// Добавляем ID загруженного файла в результирующий массив
 							$uploaded_files[] = $attachment_id;
 						} else {
-							// Ошибка загрузки файла
-							wp_send_json_error( [ 'message' => $upload_result[ 'error' ] ] );
+							// Если произошла ошибка загрузки, возвращаем JSON-ответ с ошибкой
+							wp_send_json_error( [ 'message' => $upload_result['error'] ] );
 						}
 					}
 				}
 				
-				// Теперь у нас есть массив $uploaded_files с загруженными файлами
-				$MY_INPUT[ 'uploaded_files' ] = $uploaded_files;
+				// Теперь в массиве $MY_INPUT['uploaded_files'] содержатся ID загруженных файлов
+				$MY_INPUT['uploaded_files'] = $uploaded_files;
 			}
 			
 			$result = $this->add_report_files( $MY_INPUT );
@@ -1677,37 +1693,53 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 	
 	function upload_one_file( $files ) {
 		$uploaded_files = false;
-		if ( $files[ 'size' ] > 0 ) {
-			
+		
+		if ( $files['size'] > 0 ) {
 			$uploaded_files = [];
 			
+			// Получаем ID текущего пользователя и временную метку
+			$user_id   = get_current_user_id();
+			$timestamp = time();
+			
+			// Разбиваем оригинальное имя файла на имя и расширение
+			$original_name = $files['name'];
+			$file_info     = pathinfo( $original_name );
+			$filename      = $file_info['filename'];
+			$unique        = rand(1,99999);
+			$extension     = isset( $file_info['extension'] ) ? $file_info['extension'] : '';
+			$new_filename = $user_id . '_' . $unique . $timestamp . '_' . $filename;
+			if ( ! empty( $extension ) ) {
+				$new_filename .= '.' . $extension;
+			}
+			
+			// Подготавливаем массив файла для загрузки
 			$file = [
-				'name'     => $files[ 'name' ],
-				'type'     => $files[ 'type' ],
-				'tmp_name' => $files[ 'tmp_name' ],
-				'error'    => $files[ 'error' ],
-				'size'     => $files[ 'size' ]
+				'name'     => $new_filename,
+				'type'     => $files['type'],
+				'tmp_name' => $files['tmp_name'],
+				'error'    => $files['error'],
+				'size'     => $files['size']
 			];
 			
 			// Используем wp_handle_upload для обработки загрузки
 			$upload_result = wp_handle_upload( $file, [ 'test_form' => false ] );
 			
-			if ( ! isset( $upload_result[ 'error' ] ) ) {
-				// Данные о файле
-				$file_url  = $upload_result[ 'url' ];
-				$file_type = $upload_result[ 'type' ];
-				$file_path = $upload_result[ 'file' ];
+			if ( ! isset( $upload_result['error'] ) ) {
+				// Получаем данные о файле
+				$file_url  = $upload_result['url'];
+				$file_type = $upload_result['type'];
+				$file_path = $upload_result['file'];
 				
-				// Подготовка данных для записи в медиабиблиотеку
-				$attachment = array(
+				// Подготавливаем данные для записи в медиабиблиотеку
+				$attachment = [
 					'guid'           => $file_url,
 					'post_mime_type' => $file_type,
 					'post_title'     => basename( $file_url ),
 					'post_content'   => '',
 					'post_status'    => 'inherit'
-				);
+				];
 				
-				// Вставляем запись в базу данных (в таблицу attachments)
+				// Вставляем запись в базу данных (таблица attachments)
 				$attachment_id = wp_insert_attachment( $attachment, $file_path );
 				
 				// Генерация метаданных для вложения и обновление базы данных
@@ -1715,11 +1747,11 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 				$attachment_data = wp_generate_attachment_metadata( $attachment_id, $file_path );
 				wp_update_attachment_metadata( $attachment_id, $attachment_data );
 				
-				// Теперь у вас есть ID загруженного файла
+				// Теперь у нас есть ID загруженного файла
 				$uploaded_files[] = $attachment_id;
 			} else {
-				// Ошибка загрузки файла
-				wp_send_json_error( [ 'message' => $upload_result[ 'error' ] ] );
+				// Возвращаем ошибку загрузки файла
+				wp_send_json_error( [ 'message' => $upload_result['error'] ] );
 			}
 		}
 		
@@ -1819,6 +1851,7 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 				"old_value_driver_rate" => FILTER_SANITIZE_STRING,
 				"driver_phone"          => FILTER_SANITIZE_STRING,
 				"shared_with_client"    => FILTER_VALIDATE_BOOLEAN,
+				"macropoint_set"        => FILTER_VALIDATE_BOOLEAN,
 				"old_driver_phone"      => FILTER_SANITIZE_STRING,
 				"profit"                => FILTER_SANITIZE_STRING,
 				"pick_up_date"          => FILTER_SANITIZE_STRING,
@@ -3269,6 +3302,7 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 			'booked_rate_modify'      => $data[ 'booked_rate_modify' ],
 			'tbd'                     => $data[ 'tbd' ],
 			'shared_with_client'      => $data[ 'shared_with_client' ],
+			'macropoint_set'          => $data[ 'macropoint_set' ],
 			'office_dispatcher'       => $office_dispatcher,
 		);
 		

@@ -235,7 +235,7 @@ if ( ! $active_item ) {
 							?>
 
                             <div class="top">
-                                <h2 class="top-title">Top 3 loads</h2>
+                                <h2 class="top-title">Biggest profit from a single load</h2>
                                 <div class="top-3">
 									<?php if ( is_array( $top3 ) ): ?>
 										<?php foreach ( $top3 as $top ):
@@ -251,6 +251,9 @@ if ( ! $active_item ) {
                                                 <p class="top-3__sum">
                                                     $<?php echo $top[ 'profit' ]; ?>
                                                 </p>
+                                                <span class="text-primary text-small">
+                                                    <?php echo $top['reference_number']; ?>
+                                                </span>
                                             </div>
 										<?php endforeach; ?>
 									<?php endif; ?>

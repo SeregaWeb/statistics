@@ -245,6 +245,13 @@ class TMSReportsHelper extends TMSReportsIcons {
 		'not-found'                => 'Not Found',
 		'can-be-discussed'         => 'Can be discussed',
 	);
+    
+    public $company_status = array(
+            'approved' => 'Approved',
+            'be_attentive' => 'Be attentive',
+            'discuss_with_manager' => 'Discuss with manager',
+            'blocked' => 'Blocked',
+    );
 	
 	function get_offices_from_acf() {
 		$field_key    = 'field_670828a1b54fc';
@@ -455,6 +462,14 @@ class TMSReportsHelper extends TMSReportsIcons {
 		return $this->statuses_ar;
 	}
 	
+    function get_company_status() {
+	    return $this->company_status;
+    }
+    
+    function get_factoring_broker () {
+        return $this->factoring_broker;
+    }
+    
 	function get_factoring_statuses() {
 		return $this->factoring_status;
 	}
@@ -518,6 +533,10 @@ class TMSReportsHelper extends TMSReportsIcons {
 			return false;
 		}
 		
+		if ( $search_list === 'company_status' ) {
+			return isset( $this->company_status[ $key ] ) ? $this->company_status[ $key ] : $key;
+		}
+  
 		if ( $search_list === 'bank_statuses' ) {
 			return isset( $this->bank_statuses[ $key ] ) ? $this->bank_statuses[ $key ] : $key;
 		}

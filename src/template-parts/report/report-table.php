@@ -128,8 +128,10 @@ if ( ! empty( $results ) ) : ?>
 			
 			$modify_booked_price       = get_field_value( $meta, 'modify_price' );
 			$modify_booked_price_class = '';
-			
-			if ( $modify_booked_price === '1' ) {
+	        
+	        $macropoint_set      = get_field_value( $meta, 'macropoint_set' );
+	        
+	        if ( $modify_booked_price === '1' ) {
 				$modify_booked_price_class = 'modified-price';
 			}
 			
@@ -229,9 +231,9 @@ if ( ! empty( $results ) ) : ?>
                     <div class="d-flex flex-column">
                         <p class="m-0"><?php echo $unit_number_name; ?></p>
                         <?php if ($driver_phone ) { ?>
-                            <span class="text-small">
-                            <?php echo $driver_phone; ?>
-                        </span>
+                            <span class="text-small relative <?php echo $macropoint_set ? 'macropoint' : '';  ?>" <?php echo $macropoint_set ? 'title="MacroPoint set"' : '';  ?>>
+                                <?php echo $driver_phone; ?>
+                            </span>
                         <?php } ?>
                     </div>
                 </td>

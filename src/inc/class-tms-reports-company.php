@@ -289,6 +289,7 @@ class TMSReportsCompany extends TMSReportsHelper {
 				"days_to_pay"       => FILTER_SANITIZE_STRING,
 				"quick_pay_option"  => FILTER_VALIDATE_BOOLEAN,
 				"quick_pay_percent" => FILTER_SANITIZE_STRING,
+				"company_status"    => FILTER_SANITIZE_STRING,
 			
 			
 			] );
@@ -304,6 +305,7 @@ class TMSReportsCompany extends TMSReportsHelper {
 				"days_to_pay"         => $MY_INPUT[ "days_to_pay" ],
 				"quick_pay_option"    => $MY_INPUT[ "quick_pay_option" ],
 				"quick_pay_percent"   => $MY_INPUT[ "quick_pay_percent" ],
+				"company_status"      => $MY_INPUT[ "company_status" ],
 			);
 			
 			// Check if 'set_up' is 'completed' and set the timestamp
@@ -503,170 +505,172 @@ class TMSReportsCompany extends TMSReportsHelper {
 				"id" => FILTER_SANITIZE_NUMBER_INT
 			] );
 			
-			if ( empty( $MY_INPUT[ 'id' ] ) || !is_numeric( $MY_INPUT[ 'id' ]) ) {
+			if ( empty( $MY_INPUT[ 'id' ] ) || ! is_numeric( $MY_INPUT[ 'id' ] ) ) {
 				wp_send_json_error( [ 'message' => 'Broker not deleted, id not found' ] );
 			}
 			
-			$delete = $this->delete_broker_by_id($MY_INPUT[ 'id' ]);
+			$delete = $this->delete_broker_by_id( $MY_INPUT[ 'id' ] );
 			
-			if ( $delete['status'] ) {
+			if ( $delete[ 'status' ] ) {
 				wp_send_json_success( $delete );
 			}
 			
 			wp_send_json_error( $delete );
 		}
 	}
+	
 	public function delete_broker_by_id( $post_id ) {
 		
 		global $wpdb;
 		
 		$table_main = $wpdb->prefix . $this->table_main; // Основная таблица
 		$table_meta = $wpdb->prefix . $this->table_meta; // Таблица мета-данных
-
+		
 		// Удаляем мета-данные
 		$meta_deleted = $wpdb->delete( $table_meta, [ 'post_id' => $post_id ], [ '%d' ] );
-
+		
 		// Проверяем удаление мета-данных
 		if ( $meta_deleted === false ) {
-			return array('status' => false, 'message'=>'Error deleting meta data: ' . $wpdb->last_error);
+			return array( 'status' => false, 'message' => 'Error deleting meta data: ' . $wpdb->last_error );
 		}
-
+		
 		// Удаляем сам пост
 		$post_deleted = $wpdb->delete( $table_main, [ 'id' => $post_id ], [ '%d' ] );
-
+		
 		// Проверяем удаление поста
 		if ( $post_deleted === false ) {
-			return array('status' => false, 'message'=>'Error deleting post: ' . $wpdb->last_error);
+			return array( 'status' => false, 'message' => 'Error deleting post: ' . $wpdb->last_error );
 		}
-
+		
 		// Проверяем, были ли найдены записи для удаления
 		if ( $meta_deleted === 0 && $post_deleted === 0 ) {
 			echo 'Записи для удаления не найдены.';
-			return array('status' => false, 'message'=>'No records found for deletion.');
+			
+			return array( 'status' => false, 'message' => 'No records found for deletion.' );
 		} else {
-			return array('status' => true, 'message'=>'Successfully deleted post and its meta data.');
+			return array( 'status' => true, 'message' => 'Successfully deleted post and its meta data.' );
 		}
 	}
 	
+	public function get_table_records_2() {
+	
+	}
 	public function get_table_records() {
 		global $wpdb;
 		
-		// Основные таблицы
-		$table_name = $wpdb->prefix . $this->table_main; // Основная таблица
-		$table_meta = $wpdb->prefix . $this->table_meta; // Таблица мета-данных
+		$table_name = $wpdb->prefix . $this->table_main;
+		$table_meta = $wpdb->prefix . $this->table_meta;
 		
-		// Параметры запроса
-		$current_page = isset( $_GET[ 'paged' ] ) ? (int) $_GET[ 'paged' ] : 1;
-		$search       = isset( $_GET[ 'my_search' ] ) ? sanitize_text_field( $_GET[ 'my_search' ] ) : '';
-		$platform     = isset( $_GET[ 'platform' ] ) ? sanitize_text_field( $_GET[ 'platform' ] ) : '';
-		$offset       = ( $current_page - 1 ) * $this->posts_per_page;
+		$current_page     = isset($_GET['paged']) ? (int) $_GET['paged'] : 1;
+		$search           = isset($_GET['my_search']) ? sanitize_text_field($_GET['my_search']) : '';
+		$platform         = isset($_GET['platform']) ? sanitize_text_field($_GET['platform']) : '';
+		$factoring_status = isset($_GET['factoring_status']) ? sanitize_text_field($_GET['factoring_status']) : '';
+		$setup_status     = isset($_GET['setup_status']) ? sanitize_text_field($_GET['setup_status']) : '';
+		$company_status   = isset($_GET['company_status']) ? sanitize_text_field($_GET['company_status']) : '';
+		$offset           = ($current_page - 1) * $this->posts_per_page;
+		$loads = new TMSReports();
+		$current_project = $loads->project;
 		
-		// Базовый запрос для подсчета записей
-		$count_query = "SELECT COUNT(DISTINCT main.id) FROM $table_name AS main LEFT JOIN $table_meta AS meta ON main.id = meta.post_id WHERE 1=1";
+		$where_clause = " WHERE 1=1";
+		$where_params = [];
 		
-		// Базовый запрос для получения записей из основной таблицы
-		$main_query = "
-    SELECT main.*,
-           MAX(CASE WHEN meta.meta_key = 'factoring_broker' THEN meta.meta_value END) AS factoring_broker
-    FROM $table_name AS main
-    LEFT JOIN $table_meta AS meta ON main.id = meta.post_id
-    WHERE 1=1
-    ";
-		
-		// Условие поиска
-		if ( ! empty( $search ) ) {
-			$search           = '%' . $wpdb->esc_like( $search ) . '%';
-			$search_condition = "
-        AND (
+		if (!empty($search)) {
+			$search_term = '%' . $wpdb->esc_like($search) . '%';
+			$where_clause .= " AND (
             main.company_name LIKE %s OR
             main.zip_code LIKE %s OR
             main.mc_number LIKE %s OR
             main.phone_number LIKE %s OR
             main.email LIKE %s
         )";
-			$count_query      .= $search_condition;
-			$main_query       .= $search_condition;
+			$where_params = array_merge($where_params, array_fill(0, 5, $search_term));
 		}
 		
-		// Условие фильтрации по платформе
-		if ( ! empty( $platform ) ) {
-			$platform_condition = " AND main.set_up_platform = %s";
-			$count_query        .= $platform_condition;
-			$main_query         .= $platform_condition;
+		if (!empty($platform)) {
+			$where_clause .= " AND main.set_up_platform = %s";
+			$where_params[] = $platform;
 		}
 		
-		// Добавляем группировку, сортировку и пагинацию
-		$main_query .= "
+		if (!empty($setup_status) && !empty($current_project)) {
+			$where_clause .= " AND JSON_UNQUOTE(JSON_EXTRACT(main.set_up, %s)) = %s";
+			$where_params[] = '$."' . $current_project . '"';
+			$where_params[] = $setup_status;
+		}
+		
+		$main_query = "
+    SELECT main.*,
+        MAX(CASE WHEN meta.meta_key = 'factoring_broker' THEN meta.meta_value END) AS factoring_broker,
+        MAX(CASE WHEN meta.meta_key = 'company_status' THEN meta.meta_value END) AS company_status
+    FROM $table_name AS main
+    LEFT JOIN $table_meta AS meta ON main.id = meta.post_id
+    $where_clause
     GROUP BY main.id
-    ORDER BY main.date_created DESC
-    LIMIT %d OFFSET %d
+";
+		
+		$having_clauses = [];
+		$having_params  = [];
+		
+		if (!empty($factoring_status)) {
+			$having_clauses[] = "MAX(CASE WHEN meta.meta_key = 'factoring_broker' THEN meta.meta_value END) = %s";
+			$having_params[] = $factoring_status;
+		}
+		if (!empty($company_status)) {
+			$having_clauses[] = "MAX(CASE WHEN meta.meta_key = 'company_status' THEN meta.meta_value END) = %s";
+			$having_params[] = $company_status;
+		}
+		
+		if (!empty($having_clauses)) {
+			$main_query .= " HAVING " . implode(" AND ", $having_clauses);
+		}
+		
+		$main_query .= " ORDER BY main.date_created DESC LIMIT %d OFFSET %d";
+		$where_params[] = $this->posts_per_page;
+		$where_params[] = $offset;
+		
+		$final_params = array_merge($where_params, $having_params);
+		$raw_results = $wpdb->get_results($wpdb->prepare($main_query, ...$final_params), ARRAY_A);
+//		var_dump($wpdb->prepare($main_query, ...$final_params));
+		$count_query = "
+        SELECT COUNT(*) FROM (
+            SELECT main.id
+            FROM $table_name AS main
+            LEFT JOIN $table_meta AS meta ON main.id = meta.post_id
+            " . $where_clause . "
+            GROUP BY main.id
     ";
-		
-		// Подготовка параметров для запроса
-		$params = [];
-		if ( ! empty( $search ) ) {
-			$params = array_merge( $params, [ $search, $search, $search, $search, $search ] );
+		if (!empty($having_clauses)) {
+			$count_query .= " HAVING " . implode(" AND ", $having_clauses);
 		}
-		if ( ! empty( $platform ) ) {
-			$params[] = $platform;
-		}
+		$count_query .= ") AS sub";
 		
-		// Выполняем запрос для подсчета записей
-		$total_records = (int) $wpdb->get_var( $wpdb->prepare( $count_query, ...$params ) );
+		$count_where_params = array_slice($where_params, 0, count($where_params)-2);
+		$count_params = array_merge($count_where_params, $having_params);
+		$total_records = (int)$wpdb->get_var($wpdb->prepare($count_query, ...$count_params));
+		$total_pages   = ceil($total_records / $this->posts_per_page);
 		
-		// Выполняем основной запрос для получения записей из основной таблицы
-		$raw_results = $wpdb->get_results( $wpdb->prepare( $main_query, array_merge( $params, [
-			$this->posts_per_page,
-			$offset
-		] ) ), ARRAY_A );
-		// Обработка результатов
 		$results = [];
-		foreach ( $raw_results as $row ) {
-			$post_id = $row[ 'id' ];
-			if ( ! isset( $results[ $post_id ] ) ) {
-				$results[ $post_id ] = [
-					'id'                   => $row[ 'id' ],
-					'company_name'         => $row[ 'company_name' ],
-					'country'              => $row[ 'country' ],
-					'address1'             => $row[ 'address1' ],
-					'address2'             => $row[ 'address2' ],
-					'city'                 => $row[ 'city' ],
-					'state'                => $row[ 'state' ],
-					'zip_code'             => $row[ 'zip_code' ],
-					'contact_first_name'   => $row[ 'contact_first_name' ],
-					'contact_last_name'    => $row[ 'contact_last_name' ],
-					'phone_number'         => $row[ 'phone_number' ],
-					'email'                => $row[ 'email' ],
-					'mc_number'            => $row[ 'mc_number' ],
-					'dot_number'           => $row[ 'dot_number' ],
-					'user_id_added'        => $row[ 'user_id_added' ],
-					'date_created'         => $row[ 'date_created' ],
-					'user_id_updated'      => $row[ 'user_id_updated' ],
-					'date_updated'         => $row[ 'date_updated' ],
-					'set_up'               => $row[ 'set_up' ],
-					'set_up_platform'      => $row[ 'set_up_platform' ],
-					'date_set_up_compleat' => $row[ 'date_set_up_compleat' ],
-					'meta_fields'          => [] // Массив для мета-данных
-				];
+		foreach ($raw_results as $row) {
+			$post_id = $row['id'];
+			if (!isset($results[$post_id])) {
+				$results[$post_id] = $row;
+				$results[$post_id]['meta_fields'] = [];
 			}
-			
-			// Добавляем мета-данные для 'factoring_broker'
-			if ( ! empty( $row[ 'factoring_broker' ] ) ) {
-				$results[ $post_id ][ 'meta_fields' ][ 'factoring_broker' ] = $row[ 'factoring_broker' ];
+			if (!empty($row['factoring_broker'])) {
+				$results[$post_id]['meta_fields']['factoring_broker'] = $row['factoring_broker'];
+			}
+			if (!empty($row['company_status'])) {
+				$results[$post_id]['meta_fields']['company_status'] = $row['company_status'];
 			}
 		}
 		
-		// Подсчет общего числа страниц
-		$total_pages = ceil( $total_records / $this->posts_per_page );
-		
-		// Возвращаем результат
 		return [
-			'results'      => array_values( $results ), // Сбрасываем индексы массива
+			'results'      => array_values($results),
 			'total_pages'  => $total_pages,
 			'total_posts'  => $total_records,
 			'current_page' => $current_page,
 		];
 	}
+	
 	
 	public function create_table_company() {
 		global $wpdb;

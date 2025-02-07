@@ -4763,8 +4763,14 @@ var cleanUrlByFilterPlatform = function cleanUrlByFilterPlatform() {
       var params = new URLSearchParams();
       var mySearch = form.elements.namedItem('my_search');
       var status = form.elements.namedItem('platform');
+      var factoringStatus = form.elements.namedItem('factoring_status');
+      var setupStatus = form.elements.namedItem('setup_status');
+      var companyStatus = form.elements.namedItem('company_status');
       if (mySearch === null || mySearch === void 0 ? void 0 : mySearch.value) params.append('my_search', mySearch.value);
       if (status === null || status === void 0 ? void 0 : status.value) params.append('platform', status.value);
+      if (factoringStatus === null || factoringStatus === void 0 ? void 0 : factoringStatus.value) params.append('factoring_status', factoringStatus.value);
+      if (setupStatus === null || setupStatus === void 0 ? void 0 : setupStatus.value) params.append('setup_status', setupStatus.value);
+      if (companyStatus === null || companyStatus === void 0 ? void 0 : companyStatus.value) params.append('company_status', companyStatus.value);
       window.location.href = "?".concat(params.toString());
     });
   }

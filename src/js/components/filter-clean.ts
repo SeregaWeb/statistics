@@ -69,10 +69,16 @@ export const cleanUrlByFilterPlatform = () => {
 
             const mySearch = form.elements.namedItem('my_search') as HTMLInputElement | null;
             const status = form.elements.namedItem('platform') as HTMLInputElement | null;
+            const factoringStatus = form.elements.namedItem('factoring_status') as HTMLInputElement | null;
+            const setupStatus = form.elements.namedItem('setup_status') as HTMLInputElement | null;
+            const companyStatus = form.elements.namedItem('company_status') as HTMLInputElement | null;
 
             // Проверяем и добавляем параметры только если элементы существуют и не пусты
             if (mySearch?.value) params.append('my_search', mySearch.value);
             if (status?.value) params.append('platform', status.value);
+            if (factoringStatus?.value) params.append('factoring_status', factoringStatus.value);
+            if (setupStatus?.value) params.append('setup_status', setupStatus.value);
+            if (companyStatus?.value) params.append('company_status', companyStatus.value);
 
             // Перенаправляем на URL с параметрами
             window.location.href = `?${params.toString()}`;

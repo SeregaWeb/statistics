@@ -89,6 +89,7 @@ if ( $report_object ) {
 		$processing          = get_field_value( $meta, 'processing' );
 		$tbd                 = get_field_value( $meta, 'tbd' );
 		$shared_with_client  = get_field_value( $meta, 'shared_with_client' );
+		$macropoint_set      = get_field_value( $meta, 'macropoint_set' );
 		
 		$post_status = get_field_value( $main, 'status_post' );
 		
@@ -385,6 +386,24 @@ $read_only = $TMSUsers->check_read_only( $post_status );
             </div>
 
             <div class="col-12"></div>
+        
+            <div class="col-12 col-md-6 col-xl-4  mb-2">
+                <div class="form-check form-switch p-0 mt-1">
+                    <input disabled class="form-check-input disabled ml-0" <?php echo is_numeric( $macropoint_set )
+			            ? 'checked' : ''; ?> name="fake-macropoint_set"
+                           type="checkbox">
+                    <label class="form-check-label ml-2" for="macropoint_set">MacroPoint set
+                    </label>
+		            
+		            <?php if ($tracking_tl): ?>
+                        <input type="hidden" name="macropoint_set" value="<?php echo $macropoint_set; ?>">
+		            <?php endif; ?>
+
+                </div>
+            </div>
+        
+        
+            <div class="col-12"></div>
 
             <div class="mb-2 col-12 col-md-6 col-xl-4">
                 <label for="pick_up_date" class="form-label">Pick Up Date</label>
@@ -446,6 +465,19 @@ $read_only = $TMSUsers->check_read_only( $post_status );
                            class="form-control js-money js-money-total" required>
                 </div>
             </div>
+
+            <div class="col-12"></div>
+
+            <div class="mb-2 col-12 col-md-6 col-xl-4">
+                <div class="form-check form-switch p-0 mt-1">
+                    <input class="form-check-input ml-0" <?php echo is_numeric( $macropoint_set )
+					    ? 'checked' : ''; ?> id="macropoint_set" name="macropoint_set"
+                           type="checkbox">
+                    <label class="form-check-label ml-2" for="macropoint_set">MacroPoint set
+                    </label>
+                </div>
+            </div>
+
 
             <div class="col-12"></div>
 

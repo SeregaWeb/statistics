@@ -387,6 +387,18 @@ $read_only = $TMSUsers->check_read_only( $post_status );
 
             <div class="col-12"></div>
         
+            
+            <?php if ($tracking_tl && $full_view_only ): ?>
+                <div class="mb-2 col-12 col-md-6 col-xl-4">
+                    <div class="form-check form-switch p-0 mt-1">
+                        <input class="form-check-input ml-0" <?php echo is_numeric( $macropoint_set )
+						    ? 'checked' : ''; ?> id="macropoint_set" name="macropoint_set"
+                               type="checkbox">
+                        <label class="form-check-label ml-2" for="macropoint_set">MacroPoint set
+                        </label>
+                    </div>
+                </div>
+            <?php else: ?>
             <div class="col-12 col-md-6 col-xl-4  mb-2">
                 <div class="form-check form-switch p-0 mt-1">
                     <input disabled class="form-check-input disabled ml-0" <?php echo is_numeric( $macropoint_set )
@@ -395,12 +407,10 @@ $read_only = $TMSUsers->check_read_only( $post_status );
                     <label class="form-check-label ml-2" for="macropoint_set">MacroPoint set
                     </label>
 		            
-		            <?php if ($tracking_tl): ?>
-                        <input type="hidden" name="macropoint_set" value="<?php echo $macropoint_set; ?>">
-		            <?php endif; ?>
-
+                    <input type="hidden" name="macropoint_set" value="<?php echo $macropoint_set; ?>">
                 </div>
             </div>
+            <?php endif; ?>
         
         
             <div class="col-12"></div>

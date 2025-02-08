@@ -37,6 +37,57 @@ class TMSReportsCompany extends TMSReportsHelper {
     " );
 	}
 	
+	public function get_broker_and_link_by_id( $id, $return_html = true ) {
+		
+		global $global_options;
+		$ling_brocker_single = get_field_value( $global_options, 'single_page_broker' );
+  
+		$broker_info = $this->get_company_by_id( $id, ARRAY_A );
+		
+		$broker_name = '';
+		$broker_mc   = '';
+		
+		if ( isset( $broker_info[ 0 ] ) && $broker_info[ 0 ] ) {
+			$broker_name = $broker_info[ 0 ][ 'company_name' ];
+			$broker_mc   = $broker_info[ 0 ][ 'mc_number' ];
+		}
+		
+		if ( ! $broker_mc ) {
+			$broker_mc = "N/A";
+		}
+		
+		if ( ! $broker_name ) {
+			$broker_name = "N/A";
+		}
+		
+		ob_start();
+		?>
+        <div class="d-flex flex-column">
+			
+			<?php if ( ! isset( $broker_info[ 0 ] ) ): ?>
+                <span class="text-small text-danger">This broker has been deleted</span>
+			<?php else: ?>
+				<?php if ( $broker_name != 'N/A' ): ?>
+                    <a class="m-0"
+                       href="<?php echo $ling_brocker_single . '?broker_id=' . $id; ?>"><?php echo $broker_name; ?></a>
+				<?php else: ?>
+                    <p class="m-0"><?php echo $broker_name; ?></p>
+				<?php endif; ?>
+                <span class="text-small"><?php echo $broker_mc; ?></span>
+			<?php endif; ?>
+        </div>
+		<?php
+		if ( $return_html ) {
+			return ob_get_clean();
+		}
+		
+		return array(
+			'template' => ob_get_clean(),
+			'name'     => $broker_name,
+			'mc'       => $broker_mc,
+		);
+	}
+	
 	public function search_company() {
 		if ( defined( 'DOING_AJAX' ) && DOING_AJAX ) {
 			$MY_INPUT = filter_var_array( $_POST, [
@@ -555,27 +606,29 @@ class TMSReportsCompany extends TMSReportsHelper {
 	public function get_table_records_2() {
 	
 	}
+	
 	public function get_table_records() {
 		global $wpdb;
 		
 		$table_name = $wpdb->prefix . $this->table_main;
 		$table_meta = $wpdb->prefix . $this->table_meta;
 		
-		$current_page     = isset($_GET['paged']) ? (int) $_GET['paged'] : 1;
-		$search           = isset($_GET['my_search']) ? sanitize_text_field($_GET['my_search']) : '';
-		$platform         = isset($_GET['platform']) ? sanitize_text_field($_GET['platform']) : '';
-		$factoring_status = isset($_GET['factoring_status']) ? sanitize_text_field($_GET['factoring_status']) : '';
-		$setup_status     = isset($_GET['setup_status']) ? sanitize_text_field($_GET['setup_status']) : '';
-		$company_status   = isset($_GET['company_status']) ? sanitize_text_field($_GET['company_status']) : '';
-		$offset           = ($current_page - 1) * $this->posts_per_page;
-		$loads = new TMSReports();
-		$current_project = $loads->project;
+		$current_page     = isset( $_GET[ 'paged' ] ) ? (int) $_GET[ 'paged' ] : 1;
+		$search           = isset( $_GET[ 'my_search' ] ) ? sanitize_text_field( $_GET[ 'my_search' ] ) : '';
+		$platform         = isset( $_GET[ 'platform' ] ) ? sanitize_text_field( $_GET[ 'platform' ] ) : '';
+		$factoring_status = isset( $_GET[ 'factoring_status' ] ) ? sanitize_text_field( $_GET[ 'factoring_status' ] )
+			: '';
+		$setup_status     = isset( $_GET[ 'setup_status' ] ) ? sanitize_text_field( $_GET[ 'setup_status' ] ) : '';
+		$company_status   = isset( $_GET[ 'company_status' ] ) ? sanitize_text_field( $_GET[ 'company_status' ] ) : '';
+		$offset           = ( $current_page - 1 ) * $this->posts_per_page;
+		$loads            = new TMSReports();
+		$current_project  = $loads->project;
 		
 		$where_clause = " WHERE 1=1";
 		$where_params = [];
 		
-		if (!empty($search)) {
-			$search_term = '%' . $wpdb->esc_like($search) . '%';
+		if ( ! empty( $search ) ) {
+			$search_term  = '%' . $wpdb->esc_like( $search ) . '%';
 			$where_clause .= " AND (
             main.company_name LIKE %s OR
             main.zip_code LIKE %s OR
@@ -583,16 +636,16 @@ class TMSReportsCompany extends TMSReportsHelper {
             main.phone_number LIKE %s OR
             main.email LIKE %s
         )";
-			$where_params = array_merge($where_params, array_fill(0, 5, $search_term));
+			$where_params = array_merge( $where_params, array_fill( 0, 5, $search_term ) );
 		}
 		
-		if (!empty($platform)) {
-			$where_clause .= " AND main.set_up_platform = %s";
+		if ( ! empty( $platform ) ) {
+			$where_clause   .= " AND main.set_up_platform = %s";
 			$where_params[] = $platform;
 		}
 		
-		if (!empty($setup_status) && !empty($current_project)) {
-			$where_clause .= " AND JSON_UNQUOTE(JSON_EXTRACT(main.set_up, %s)) = %s";
+		if ( ! empty( $setup_status ) && ! empty( $current_project ) ) {
+			$where_clause   .= " AND JSON_UNQUOTE(JSON_EXTRACT(main.set_up, %s)) = %s";
 			$where_params[] = '$."' . $current_project . '"';
 			$where_params[] = $setup_status;
 		}
@@ -610,25 +663,25 @@ class TMSReportsCompany extends TMSReportsHelper {
 		$having_clauses = [];
 		$having_params  = [];
 		
-		if (!empty($factoring_status)) {
+		if ( ! empty( $factoring_status ) ) {
 			$having_clauses[] = "MAX(CASE WHEN meta.meta_key = 'factoring_broker' THEN meta.meta_value END) = %s";
-			$having_params[] = $factoring_status;
+			$having_params[]  = $factoring_status;
 		}
-		if (!empty($company_status)) {
+		if ( ! empty( $company_status ) ) {
 			$having_clauses[] = "MAX(CASE WHEN meta.meta_key = 'company_status' THEN meta.meta_value END) = %s";
-			$having_params[] = $company_status;
+			$having_params[]  = $company_status;
 		}
 		
-		if (!empty($having_clauses)) {
-			$main_query .= " HAVING " . implode(" AND ", $having_clauses);
+		if ( ! empty( $having_clauses ) ) {
+			$main_query .= " HAVING " . implode( " AND ", $having_clauses );
 		}
 		
-		$main_query .= " ORDER BY main.date_created DESC LIMIT %d OFFSET %d";
+		$main_query     .= " ORDER BY main.date_created DESC LIMIT %d OFFSET %d";
 		$where_params[] = $this->posts_per_page;
 		$where_params[] = $offset;
 		
-		$final_params = array_merge($where_params, $having_params);
-		$raw_results = $wpdb->get_results($wpdb->prepare($main_query, ...$final_params), ARRAY_A);
+		$final_params = array_merge( $where_params, $having_params );
+		$raw_results  = $wpdb->get_results( $wpdb->prepare( $main_query, ...$final_params ), ARRAY_A );
 //		var_dump($wpdb->prepare($main_query, ...$final_params));
 		$count_query = "
         SELECT COUNT(*) FROM (
@@ -638,33 +691,33 @@ class TMSReportsCompany extends TMSReportsHelper {
             " . $where_clause . "
             GROUP BY main.id
     ";
-		if (!empty($having_clauses)) {
-			$count_query .= " HAVING " . implode(" AND ", $having_clauses);
+		if ( ! empty( $having_clauses ) ) {
+			$count_query .= " HAVING " . implode( " AND ", $having_clauses );
 		}
 		$count_query .= ") AS sub";
 		
-		$count_where_params = array_slice($where_params, 0, count($where_params)-2);
-		$count_params = array_merge($count_where_params, $having_params);
-		$total_records = (int)$wpdb->get_var($wpdb->prepare($count_query, ...$count_params));
-		$total_pages   = ceil($total_records / $this->posts_per_page);
+		$count_where_params = array_slice( $where_params, 0, count( $where_params ) - 2 );
+		$count_params       = array_merge( $count_where_params, $having_params );
+		$total_records      = (int) $wpdb->get_var( $wpdb->prepare( $count_query, ...$count_params ) );
+		$total_pages        = ceil( $total_records / $this->posts_per_page );
 		
 		$results = [];
-		foreach ($raw_results as $row) {
-			$post_id = $row['id'];
-			if (!isset($results[$post_id])) {
-				$results[$post_id] = $row;
-				$results[$post_id]['meta_fields'] = [];
+		foreach ( $raw_results as $row ) {
+			$post_id = $row[ 'id' ];
+			if ( ! isset( $results[ $post_id ] ) ) {
+				$results[ $post_id ]                  = $row;
+				$results[ $post_id ][ 'meta_fields' ] = [];
 			}
-			if (!empty($row['factoring_broker'])) {
-				$results[$post_id]['meta_fields']['factoring_broker'] = $row['factoring_broker'];
+			if ( ! empty( $row[ 'factoring_broker' ] ) ) {
+				$results[ $post_id ][ 'meta_fields' ][ 'factoring_broker' ] = $row[ 'factoring_broker' ];
 			}
-			if (!empty($row['company_status'])) {
-				$results[$post_id]['meta_fields']['company_status'] = $row['company_status'];
+			if ( ! empty( $row[ 'company_status' ] ) ) {
+				$results[ $post_id ][ 'meta_fields' ][ 'company_status' ] = $row[ 'company_status' ];
 			}
 		}
 		
 		return [
-			'results'      => array_values($results),
+			'results'      => array_values( $results ),
 			'total_pages'  => $total_pages,
 			'total_posts'  => $total_records,
 			'current_page' => $current_page,

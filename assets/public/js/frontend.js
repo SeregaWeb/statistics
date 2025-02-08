@@ -3498,6 +3498,14 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _info_messages__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./info-messages */ "./src/js/components/info-messages.ts");
 
 
+function redirectToList() {
+  var link = document.querySelector('.js-brokers-page-link');
+  if (link) {
+    setTimeout(function () {
+      window.location.href = link.getAttribute('href');
+    }, 1000);
+  }
+}
 var actionCreateCompanyInit = function actionCreateCompanyInit(ajaxUrl) {
   var forms = document.querySelectorAll('.js-add-new-company');
   var popupInstance = new _parts_popup_window__WEBPACK_IMPORTED_MODULE_0__["default"]();
@@ -3546,6 +3554,7 @@ var ActionUpdateCompanyInit = function ActionUpdateCompanyInit(ajaxUrl) {
         if (requestStatus.success) {
           console.log('Broker update successfully:', requestStatus.data);
           (0,_info_messages__WEBPACK_IMPORTED_MODULE_1__.printMessage)(requestStatus.data.message, 'success', 8000);
+          redirectToList();
         } else {
           (0,_info_messages__WEBPACK_IMPORTED_MODULE_1__.printMessage)("Error update broker: ".concat(requestStatus.data.message), 'danger', 8000);
         }
@@ -3574,12 +3583,7 @@ var ActionDeleteCompanyInit = function ActionDeleteCompanyInit(ajaxUrl) {
         if (requestStatus.success) {
           console.log('Broker delete successfully:', requestStatus.data);
           (0,_info_messages__WEBPACK_IMPORTED_MODULE_1__.printMessage)(requestStatus.data.message, 'success', 8000);
-          var link = document.querySelector('.js-brokers-page-link');
-          if (link) {
-            setTimeout(function () {
-              window.location.href = link.getAttribute('href');
-            }, 1500);
-          }
+          redirectToList();
         } else {
           (0,_info_messages__WEBPACK_IMPORTED_MODULE_1__.printMessage)("Error update broker: ".concat(requestStatus.data.message), 'danger', 8000);
         }
@@ -4468,6 +4472,14 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _info_messages__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./info-messages */ "./src/js/components/info-messages.ts");
 
 
+function redirectToList() {
+  var link = document.querySelector('.js-shippers-page-link');
+  if (link) {
+    setTimeout(function () {
+      window.location.href = link.getAttribute('href');
+    }, 1000);
+  }
+}
 var actionCreateShipperInit = function actionCreateShipperInit(ajaxUrl) {
   var forms = document.querySelectorAll('.js-add-new-shipper');
   var popupInstance = new _parts_popup_window__WEBPACK_IMPORTED_MODULE_0__["default"]();
@@ -4517,6 +4529,7 @@ var actionUpdateShipperInit = function actionUpdateShipperInit(ajaxUrl) {
         if (requestStatus.success) {
           console.log('Shipper update successfully:', requestStatus.data);
           (0,_info_messages__WEBPACK_IMPORTED_MODULE_1__.printMessage)(requestStatus.data.message, 'success', 8000);
+          redirectToList();
         } else {
           (0,_info_messages__WEBPACK_IMPORTED_MODULE_1__.printMessage)("Error update shipper: ".concat(requestStatus.data.message), 'danger', 8000);
         }
@@ -4545,12 +4558,7 @@ var ActionDeleteShipperInit = function ActionDeleteShipperInit(ajaxUrl) {
         if (requestStatus.success) {
           console.log('Shipper delete successfully:', requestStatus.data);
           (0,_info_messages__WEBPACK_IMPORTED_MODULE_1__.printMessage)(requestStatus.data.message, 'success', 8000);
-          var link = document.querySelector('.js-shippers-page-link');
-          if (link) {
-            setTimeout(function () {
-              window.location.href = link.getAttribute('href');
-            }, 1500);
-          }
+          redirectToList();
         } else {
           (0,_info_messages__WEBPACK_IMPORTED_MODULE_1__.printMessage)("Error update shipper: ".concat(requestStatus.data.message), 'danger', 8000);
         }

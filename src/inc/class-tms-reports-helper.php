@@ -245,13 +245,13 @@ class TMSReportsHelper extends TMSReportsIcons {
 		'not-found'                => 'Not Found',
 		'can-be-discussed'         => 'Can be discussed',
 	);
-    
-    public $company_status = array(
-            'approved' => 'Approved',
-            'be_attentive' => 'Be attentive',
-            'discuss_with_manager' => 'Discuss with manager',
-            'blocked' => 'Blocked',
-    );
+	
+	public $company_status = array(
+		'approved'             => 'Approved',
+		'be_attentive'         => 'Be attentive',
+		'discuss_with_manager' => 'Discuss with manager',
+		'blocked'              => 'Blocked',
+	);
 	
 	function get_offices_from_acf() {
 		$field_key    = 'field_670828a1b54fc';
@@ -292,12 +292,12 @@ class TMSReportsHelper extends TMSReportsIcons {
 			// Получаем имя и фамилию пользователя
 			$first_name = get_user_meta( $user->ID, 'first_name', true );
 			$last_name  = get_user_meta( $user->ID, 'last_name', true );
-			$office = get_field('work_location', "user_".$user->ID);
+			$office     = get_field( 'work_location', "user_" . $user->ID );
 			// Собираем массив с ID и полным именем
 			$dispatchers[] = array(
 				'id'       => $user->ID,
 				'fullname' => trim( $first_name . ' ' . $last_name ),
-                'office'   => $office,
+				'office'   => $office,
 			);
 		}
 		
@@ -353,13 +353,13 @@ class TMSReportsHelper extends TMSReportsIcons {
 			// Получаем имя и фамилию пользователя
 			$first_name = get_user_meta( $user->ID, 'first_name', true );
 			$last_name  = get_user_meta( $user->ID, 'last_name', true );
-			$office = get_field('work_location', "user_".$user->ID);
+			$office     = get_field( 'work_location', "user_" . $user->ID );
 			
 			// Собираем массив с ID и полным именем
 			$dispatchers[] = array(
 				'id'       => $user->ID,
 				'fullname' => trim( $first_name . ' ' . $last_name ),
-                'office'   => $office,
+				'office'   => $office,
 			);
 		}
 		
@@ -462,14 +462,14 @@ class TMSReportsHelper extends TMSReportsIcons {
 		return $this->statuses_ar;
 	}
 	
-    function get_company_status() {
-	    return $this->company_status;
-    }
-    
-    function get_factoring_broker () {
-        return $this->factoring_broker;
-    }
-    
+	function get_company_status() {
+		return $this->company_status;
+	}
+	
+	function get_factoring_broker() {
+		return $this->factoring_broker;
+	}
+	
 	function get_factoring_statuses() {
 		return $this->factoring_status;
 	}
@@ -536,7 +536,7 @@ class TMSReportsHelper extends TMSReportsIcons {
 		if ( $search_list === 'company_status' ) {
 			return isset( $this->company_status[ $key ] ) ? $this->company_status[ $key ] : $key;
 		}
-  
+		
 		if ( $search_list === 'bank_statuses' ) {
 			return isset( $this->bank_statuses[ $key ] ) ? $this->bank_statuses[ $key ] : $key;
 		}
@@ -919,20 +919,20 @@ class TMSReportsHelper extends TMSReportsIcons {
 		
 		return $options;
 	}
-    
-    public function change_active_tab( $current_tab, $additional_class = '') {
-        $active_tab = get_field_value( $_GET, 'tab' );
-        
-       if (!$active_tab) {
-           $active_tab = 'pills-customer-tab';
-       }
-       
-       if ($current_tab === $active_tab) {
-           return 'active '. $additional_class;
-       } else {
-           return '';
-       }
-    }
+	
+	public function change_active_tab( $current_tab, $additional_class = '' ) {
+		$active_tab = get_field_value( $_GET, 'tab' );
+		
+		if ( ! $active_tab ) {
+			$active_tab = 'pills-customer-tab';
+		}
+		
+		if ( $current_tab === $active_tab ) {
+			return 'active ' . $additional_class;
+		} else {
+			return '';
+		}
+	}
 	
 	public function is_valid_date( $date ) {
 		// Check if the date is a valid format and not '0000-00-00'
@@ -962,6 +962,26 @@ class TMSReportsHelper extends TMSReportsIcons {
 			'booked_rate_per_mile' => round( $booked_rate_per_mile, 2 ),
 			'driver_rate_per_mile' => round( $driver_rate_per_mile, 2 ),
 		];
+	}
+	
+	function get_driver_tempate( $meta ) {
+		$unit_number_name = esc_html( get_field_value( $meta, 'unit_number_name' ) );
+		$driver_phone     = esc_html( get_field_value( $meta, 'driver_phone' ) );
+		$macropoint_set   = get_field_value( $meta, 'macropoint_set' );
+		
+		ob_start();
+		?>
+        <div class="d-flex flex-column">
+            <p class="m-0"><?php echo $unit_number_name; ?></p>
+			<?php if ( $driver_phone ) { ?>
+                <span class="text-small relative <?php echo $macropoint_set ? 'macropoint'
+					: ''; ?>" <?php echo $macropoint_set ? 'title="MacroPoint set"' : ''; ?>>
+                                <?php echo $driver_phone; ?>
+                            </span>
+			<?php } ?>
+        </div>
+		<?php
+		return ob_get_clean();
 	}
 	
 }

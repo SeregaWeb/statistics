@@ -3,8 +3,10 @@ global $global_options;
 
 $add_new_load = get_field_value( $global_options, 'add_new_load' );
 
+$TMSReports = new TMSReports();
 $TMSUsers   = new TMSUsers();
 $TMSShipper = new TMSReportsShipper();
+$TMSHelper  = new TMSReportsHelper();
 
 $results       = get_field_value( $args, 'results' );
 $total_pages   = get_field_value( $args, 'total_pages' );
@@ -54,24 +56,24 @@ if ( ! empty( $results ) ) : ?>
         </thead>
         <tbody>
 		<?php
+		
+		$array_date = array();
 		$previous_date  = null;
-        $pfofit_for_date = 0;
-        $profit_for_date_array = array();
 	    foreach ( $results as $row ) :
 		    $meta = get_field_value( $row, 'meta_data' );
-		    $profit_raw = get_field_value($meta, 'profit');
-		    
 		    $date_booked_raw = get_field_value( $row, 'date_booked' );
-		    if (isset($profit_for_date_array[$date_booked_raw])) {
-                $profit_for_date_array[$date_booked_raw] += $profit_raw;
-            } else {
-                $profit_for_date_array[$date_booked_raw] = $profit_raw;
+            
+            if ($date_booked_raw) {
+                $array_date[] = substr($date_booked_raw, 0, 10);
             }
+		   
         endforeach;
+            $array_date = array_unique($array_date);
+            $new_array_date = $TMSReports->get_profit_by_dates($array_date);
+            
         $index = 0;
         foreach ( $results as $row ) :
 			$meta = get_field_value( $row, 'meta_data' );
-			$main = get_field_value( $row, 'main' );
 			
 			$delivery_raw = get_field_value( $meta, 'delivery_location' );
 			$delivery     = $delivery_raw ? json_decode( $delivery_raw, ARRAY_A ) : [];
@@ -95,8 +97,8 @@ if ( ! empty( $results ) ) : ?>
 			$date_booked     = esc_html( date( 'm/d/Y', strtotime( $date_booked_raw ) ) );
 			
 			$reference_number = esc_html( get_field_value( $meta, 'reference_number' ) );
-			$unit_number_name = esc_html( get_field_value( $meta, 'unit_number_name' ) );
-			$driver_phone     = esc_html( get_field_value( $meta, 'driver_phone' ) );
+            
+            $driver_with_macropoint = $TMSHelper->get_driver_tempate($meta);
 	        
 	        $booked_rate_raw = get_field_value($meta, 'booked_rate');
 	        $booked_rate = esc_html('$' . $helper->format_currency($booked_rate_raw));
@@ -129,7 +131,6 @@ if ( ! empty( $results ) ) : ?>
 			$modify_booked_price       = get_field_value( $meta, 'modify_price' );
 			$modify_booked_price_class = '';
 	        
-	        $macropoint_set      = get_field_value( $meta, 'macropoint_set' );
 	        
 	        if ( $modify_booked_price === '1' ) {
 				$modify_booked_price_class = 'modified-price';
@@ -149,18 +150,19 @@ if ( ! empty( $results ) ) : ?>
 			?>
         
             <?php if($show_separator || $index === 0):
-            
-                if (isset($profit_for_date_array[$date_booked_raw])) {
-	                $profit_mod = esc_html('$' . $helper->format_currency($profit_for_date_array[$date_booked_raw]));
+                $date_search = substr($date_booked_raw, 0, 10);
+                if ($date_booked_raw && isset($new_array_date) && $date_search) {
+	                $profit_mod = esc_html('$' . $helper->format_currency($new_array_date[$date_search]));
                     $profit_mod = '<span style="text-transform: capitalize">Profit: <b>'.$profit_mod.'</b></span>';
                 }
+                
+                if ($profit_mod) {}
                 
                 $index = 1;
             
             ?>
                 <tr><td colspan="14" class="separator-date"><?php echo $date_booked; echo ' '. $profit_mod; ?> </td></tr>
             <?php
-	            $pfofit_for_date = 0;
             endif; ?>
 
             <tr class="load-status-<?php echo $load_status; ?>">
@@ -228,14 +230,7 @@ if ( ! empty( $results ) ) : ?>
 		
                 
                 <td>
-                    <div class="d-flex flex-column">
-                        <p class="m-0"><?php echo $unit_number_name; ?></p>
-                        <?php if ($driver_phone ) { ?>
-                            <span class="text-small relative <?php echo $macropoint_set ? 'macropoint' : '';  ?>" <?php echo $macropoint_set ? 'title="MacroPoint set"' : '';  ?>>
-                                <?php echo $driver_phone; ?>
-                            </span>
-                        <?php } ?>
-                    </div>
+                    <?php echo $driver_with_macropoint; ?>
                 </td>
                 
                 <td>

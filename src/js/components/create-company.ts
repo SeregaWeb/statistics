@@ -2,6 +2,16 @@
 import Popup from '../parts/popup-window';
 import { printMessage } from './info-messages';
 
+function redirectToList() {
+    const link = document.querySelector('.js-brokers-page-link');
+
+    if (link) {
+        setTimeout(() => {
+            window.location.href = <string>link.getAttribute('href');
+        }, 1000);
+    }
+}
+
 // eslint-disable-next-line import/prefer-default-export
 export const actionCreateCompanyInit = (ajaxUrl) => {
     const forms = document.querySelectorAll('.js-add-new-company');
@@ -63,6 +73,7 @@ export const ActionUpdateCompanyInit = (ajaxUrl) => {
                     if (requestStatus.success) {
                         console.log('Broker update successfully:', requestStatus.data);
                         printMessage(requestStatus.data.message, 'success', 8000);
+                        redirectToList();
                     } else {
                         // eslint-disable-next-line no-alert
                         printMessage(`Error update broker: ${requestStatus.data.message}`, 'danger', 8000);
@@ -97,13 +108,7 @@ export const ActionDeleteCompanyInit = (ajaxUrl) => {
                     if (requestStatus.success) {
                         console.log('Broker delete successfully:', requestStatus.data);
                         printMessage(requestStatus.data.message, 'success', 8000);
-                        const link = document.querySelector('.js-brokers-page-link');
-
-                        if (link) {
-                            setTimeout(() => {
-                                window.location.href = <string>link.getAttribute('href');
-                            }, 1500);
-                        }
+                        redirectToList();
                     } else {
                         // eslint-disable-next-line no-alert
                         printMessage(`Error update broker: ${requestStatus.data.message}`, 'danger', 8000);

@@ -5,6 +5,7 @@ $add_new_load = get_field_value( $global_options, 'add_new_load' );
 
 $TMSUsers   = new TMSUsers();
 $TMSShipper = new TMSReportsShipper();
+$TMSBroker = new TMSReportsCompany();
 
 $results       = get_field_value( $args, 'results' );
 $total_pages   = get_field_value( $args, 'total_pages' );
@@ -41,6 +42,7 @@ if ( ! empty( $results ) ) : ?>
             <th><input class="checkbox-big js-select-load-all" type="checkbox" name="select-all"></th>
             <th scope="col">Booked</th>
             <th scope="col" title="dispatcher">Disp.</th>
+            <th scope="col">Client</th>
             <th scope="col">Pick up</th>
             <th scope="col">Delivery</th>
             
@@ -143,6 +145,10 @@ if ( ! empty( $results ) ) : ?>
 			
 			$now_show = ($factoring_status_row === 'paid') ;
 			
+			$id_customer              = get_field_value( $meta, 'customer_id' );
+			$template_broker = $TMSBroker->get_broker_and_link_by_id($id_customer);
+   
+   
 			?>
 
             <tr class="">
@@ -162,6 +168,10 @@ if ( ! empty( $results ) ) : ?>
                         </p>
                         <span class="text-small"><?php echo $reference_number; ?></span>
                     </div>
+                </td>
+                
+                <td>
+                    <?php echo $template_broker; ?>
                 </td>
 
                 <td>

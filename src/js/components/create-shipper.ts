@@ -2,6 +2,15 @@
 import Popup from '../parts/popup-window';
 import { printMessage } from './info-messages';
 
+function redirectToList() {
+    const link = document.querySelector('.js-shippers-page-link');
+
+    if (link) {
+        setTimeout(() => {
+            window.location.href = <string>link.getAttribute('href');
+        }, 1000);
+    }
+}
 // eslint-disable-next-line import/prefer-default-export
 export const actionCreateShipperInit = (ajaxUrl) => {
     const forms = document.querySelectorAll('.js-add-new-shipper');
@@ -65,6 +74,7 @@ export const actionUpdateShipperInit = (ajaxUrl) => {
                         if (requestStatus.success) {
                             console.log('Shipper update successfully:', requestStatus.data);
                             printMessage(requestStatus.data.message, 'success', 8000);
+                            redirectToList();
                         } else {
                             // eslint-disable-next-line no-alert
                             printMessage(`Error update shipper: ${requestStatus.data.message}`, 'danger', 8000);
@@ -99,13 +109,7 @@ export const ActionDeleteShipperInit = (ajaxUrl) => {
                     if (requestStatus.success) {
                         console.log('Shipper delete successfully:', requestStatus.data);
                         printMessage(requestStatus.data.message, 'success', 8000);
-                        const link = document.querySelector('.js-shippers-page-link');
-
-                        if (link) {
-                            setTimeout(() => {
-                                window.location.href = <string>link.getAttribute('href');
-                            }, 1500);
-                        }
+                        redirectToList();
                     } else {
                         // eslint-disable-next-line no-alert
                         printMessage(`Error update shipper: ${requestStatus.data.message}`, 'danger', 8000);

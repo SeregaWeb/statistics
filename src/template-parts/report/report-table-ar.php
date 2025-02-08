@@ -102,24 +102,7 @@ if ( ! empty( $results ) ) : ?>
 			
 			
 			$id_customer              = get_field_value( $meta, 'customer_id' );
-            $broker_info             = $TMSBroker->get_company_by_id($id_customer);
-			
-			$broker_name = '';
-			$broker_mc = '';
-            
-            if (isset($broker_info[0])) {
-	            $broker_name = $broker_info[0]->company_name;
-	            $broker_mc = $broker_info[0]->mc_number;
-            }
-            
-            
-            if ( ! $broker_mc ) {
-	            $broker_mc = "N/A";
-            }
-            
-            if (!$broker_name) {
-			    $broker_name = "N/A";
-            }
+			$template_broker = $TMSBroker->get_broker_and_link_by_id($id_customer);
 			?>
 
             <tr class="">
@@ -186,21 +169,7 @@ if ( ! empty( $results ) ) : ?>
                 <td><span class="<?php echo $modify_booked_price_class; ?>"><?php echo $booked_rate; ?></span></td>
                 
                 <td>
-                    <div class="d-flex flex-column">
-                        
-                        <?php if (!isset($broker_info[0])): ?>
-                            <span class="text-danger">This broker has been deleted</span>
-                        <?php else: ?>
-                        
-		                <?php if ($broker_name != 'N/A'): ?>
-                            <a class="m-0" href="<?php echo $link_broker . '?broker_id='. $id_customer; ?>"><?php echo $broker_name; ?></a>
-		                <?php else: ?>
-                            <p class="m-0"><?php echo $broker_name; ?></p>
-		                <?php endif; ?>
-                        <span class="text-small"><?php echo $broker_mc; ?></span>
-                        <?php endif; ?>
-    
-                    </div>
+                   <?php echo $template_broker; ?>
                 </td>
 
                 <td><?php echo $pick_up_date; ?></td>

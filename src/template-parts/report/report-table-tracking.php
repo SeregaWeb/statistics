@@ -2,7 +2,6 @@
 global $global_options;
 
 $add_new_load = get_field_value( $global_options, 'add_new_load' );
-$link_broker = get_field_value( $global_options, 'single_page_broker' );
 
 $TMSUsers = new TMSUsers();
 $TMSBroker = new TMSReportsCompany();
@@ -65,10 +64,9 @@ if ( ! empty( $results )) : ?>
 			
 			$commodity           = get_field_value( $meta, 'commodity' );
 			$weight              = get_field_value( $meta, 'weight' );
+			
    
 			$dispatcher_initials = get_field_value( $meta, 'dispatcher_initials' );
-			$driver_phone = get_field_value( $meta, 'driver_phone' );
-
 			$dispatcher          = $helper->get_user_full_name_by_id( $dispatcher_initials );
 			$color_initials      = $dispatcher ? get_field( 'initials_color', 'user_' . $dispatcher_initials )
 				: '#030303';
@@ -86,8 +84,7 @@ if ( ! empty( $results )) : ?>
 			$date_booked     = esc_html( date( 'm/d/Y', strtotime( $date_booked_raw ) ) );
 			
 			$reference_number = esc_html( get_field_value( $meta, 'reference_number' ) );
-			$unit_number_name = esc_html( get_field_value( $meta, 'unit_number_name' ) );
-	
+			$driver_with_macropoint = $helper->get_driver_tempate($meta);
 			$pick_up_date_raw = get_field_value( $row, 'pick_up_date' );
 			$pick_up_date     = esc_html( date( 'm/d/Y', strtotime( $pick_up_date_raw ) ) );
             
@@ -98,29 +95,11 @@ if ( ! empty( $results )) : ?>
             $show_control = $TMSUsers->show_control_loads($my_team, $current_user_id, $dispatcher_initials, $is_draft);
 			
 			$id_customer              = get_field_value( $meta, 'customer_id' );
-			$broker_info             = $TMSBroker->get_company_by_id($id_customer, ARRAY_A);
+			$template_broker = $TMSBroker->get_broker_and_link_by_id($id_customer);
 			
 			$instructions_raw = get_field_value( $meta, 'instructions' );
 			$instructions     = $helper->get_label_by_key( $instructions_raw, 'instructions' );
    
-			$broker_name = '';
-			$broker_mc = '';
-			
-   
-			if (isset($broker_info[0]) && $broker_info[0]) {
-				$broker_name = $broker_info[0]['company_name'];
-				$broker_mc = $broker_info[0]['mc_number'];
-			}
-			
-			
-			if ( ! $broker_mc ) {
-				$broker_mc = "N/A";
-			}
-			
-			if (!$broker_name) {
-				$broker_name = "N/A";
-			}
-			
 			$disable_status = false;
 			
 			$proof_of_delivery   = get_field_value($meta, 'proof_of_delivery');
@@ -223,24 +202,10 @@ if ( ! empty( $results )) : ?>
 					<?php endif; ?>
                 </td>
                 <td>
-                    <div class="w-100 d-flex flex-column align-items-start">
-                        <p class="m-0">
-                            <?php echo $unit_number_name; ?>
-                        </p>
-                        <?php if ($driver_phone): ?>
-                            <span class="text-small"><?php echo $driver_phone; ?></span>
-                        <?php endif; ?>
-                    </div>
+                    <?php echo $driver_with_macropoint; ?>
                 </td>
                 <td>
-                    <div class="d-flex flex-column">
-                        <?php if ($broker_name != 'N/A'): ?>
-                            <a class="m-0" href="<?php echo $link_broker . '?broker_id='. $id_customer; ?>"><?php echo $broker_name; ?></a>
-                        <?php else: ?>
-                            <p class="m-0"><?php echo $broker_name; ?></p>
-                        <?php endif; ?>
-                        <span class="text-small">МС: <?php echo $broker_mc; ?></span>
-                    </div>
+                  <?php echo $template_broker; ?>
                 </td>
 
                 <td class="">

@@ -57,11 +57,7 @@ if ( ! empty( $results ) ) : ?>
 			$meta = get_field_value( $row, 'meta_data' );
 			$main = get_field_value( $row, 'main' );
 			
-			$delivery_raw = get_field_value( $meta, 'delivery_location' );
-			$delivery     = $delivery_raw ? json_decode( $delivery_raw, ARRAY_A ) : [];
-			
-			$pick_up_raw = get_field_value( $meta, 'pick_up_location' );
-			$pick_up     = $pick_up_raw ? json_decode( $pick_up_raw, ARRAY_A ) : [];
+			$pdlocations = $helper->get_locations_template($row);
 			
 			$dispatcher_initials = get_field_value( $meta, 'dispatcher_initials' );
 			
@@ -75,12 +71,6 @@ if ( ! empty( $results ) ) : ?>
 			
 			$booked_rate_raw = get_field_value( $meta, 'booked_rate' );
 			$booked_rate     = esc_html( '$' . $helper->format_currency( $booked_rate_raw ) );
-			
-			$pick_up_date_raw = get_field_value( $row, 'pick_up_date' );
-			$pick_up_date     = esc_html( date( 'm/d/Y', strtotime( $pick_up_date_raw ) ) );
-			
-			$delivery_date_raw = get_field_value( $row, 'delivery_date' );
-			$delivery_date     = esc_html( date( 'm/d/Y', strtotime( $delivery_date_raw ) ) );
 			
 			$load_problem_raw = get_field_value( $row, 'load_problem' );
 			$date_problem     = new DateTime( $load_problem_raw );
@@ -123,47 +113,10 @@ if ( ! empty( $results ) ) : ?>
                 </td>
 
                 <td>
-					<?php if ( is_array( $pick_up ) ): ?>
-						<?php foreach ( $pick_up as $val ): ?>
-							<?php if ( isset( $val[ 'short_address' ] ) ): ?>
-                                <p class="m-0" data-bs-toggle="tooltip" data-bs-placement="top"
-                                   title="<?php echo $val[ 'address' ]; ?>">
-									<?php     echo $val[ 'short_address' ];
-									
-									$detailed_address = $TMSShipper->get_shipper_by_id( $val[ 'address_id' ] );
-									if ( is_array( $detailed_address ) && !empty($detailed_address) ) {
-										echo ' ' . $detailed_address[ 0 ]->zip_code;
-									} else {
-										echo '<br/><span class="text-danger">This shipper has been deleted</span>';
-									}
-									
-									?>
-
-
-                                </p>
-							<?php endif; ?>
-						<?php endforeach; ?>
-					<?php endif; ?>
+					<?php echo $pdlocations['pick_up_template'] ?>
                 </td>
                 <td>
-					<?php if ( is_array( $delivery ) ): ?>
-						<?php foreach ( $delivery as $val ): ?>
-							<?php if ( isset( $val[ 'short_address' ] ) ): ?>
-                                <p class="m-0" data-bs-toggle="tooltip" data-bs-placement="top"
-                                   title="<?php echo $val[ 'address' ]; ?>">
-									<?php echo $val[ 'short_address' ];
-									
-									$detailed_address = $TMSShipper->get_shipper_by_id( $val[ 'address_id' ] );
-									if ( is_array( $detailed_address ) && !empty($detailed_address) ) {
-										echo ' ' . $detailed_address[ 0 ]->zip_code;
-									} else {
-										echo '<br/><span class="text-danger">This shipper has been deleted</span>';
-									}
-									?>
-                                </p>
-							<?php endif; ?>
-						<?php endforeach; ?>
-					<?php endif; ?>
+	                <?php echo $pdlocations['delivery_template'] ?>
                 </td>
 
                 <td><span class="<?php echo $modify_booked_price_class; ?>"><?php echo $booked_rate; ?></span></td>
@@ -172,8 +125,12 @@ if ( ! empty( $results ) ) : ?>
                    <?php echo $template_broker; ?>
                 </td>
 
-                <td><?php echo $pick_up_date; ?></td>
-                <td><?php echo $delivery_date; ?></td>
+                <td>
+	                <?php echo $pdlocations['pick_up_date'] ?>
+                </td>
+                <td>
+                    <?php echo $pdlocations['delivery_date'] ?>
+                </td>
                 <td><?php echo $days_passed; ?> days</td>
                 <td><?php echo $ar_status === 'solved' ? 'Solved' : 'Not solved'; ?></td>
                 <td>

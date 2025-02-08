@@ -50,7 +50,6 @@ if ( ! empty( $results ) ) : ?>
             <th scope="col">Load status</th>
             <th scope="col">Bank</th>
             <th scope="col">Payment</th>
-
             <th scope="col"></th>
         </tr>
         </thead>
@@ -59,12 +58,8 @@ if ( ! empty( $results ) ) : ?>
 			$meta = get_field_value( $row, 'meta_data' );
 			$main = get_field_value( $row, 'main' );
 			
-			$delivery_raw = get_field_value( $meta, 'delivery_location' );
-			$delivery     = $delivery_raw ? json_decode( $delivery_raw, ARRAY_A ) : [];
-			
-			$pick_up_raw = get_field_value( $meta, 'pick_up_location' );
-			$pick_up     = $pick_up_raw ? json_decode( $pick_up_raw, ARRAY_A ) : [];
-			
+			$pdlocations = $helper->get_locations_template($row);
+   
 			$dispatcher_initials = get_field_value( $meta, 'dispatcher_initials' );
 			
 			$dispatcher     = $helper->get_user_full_name_by_id( $dispatcher_initials );
@@ -98,12 +93,6 @@ if ( ! empty( $results ) ) : ?>
 			$profit_class    = $true_profit_raw < 0 ? 'modified-price' : '';
 			$true_profit     = esc_html( '$' . $helper->format_currency( $true_profit_raw ) );
 			
-			$pick_up_date_raw = get_field_value( $row, 'pick_up_date' );
-			$pick_up_date     = esc_html( date( 'm/d/Y', strtotime( $pick_up_date_raw ) ) );
-			
-			$delivery_date_raw = get_field_value( $row, 'delivery_date' );
-			$delivery_date     = esc_html( date( 'm/d/Y', strtotime( $delivery_date_raw ) ) );
-			
 			$factoring_status_row = get_field_value( $meta, 'factoring_status' );
 			$factoring_status     = esc_html( $helper->get_label_by_key( $factoring_status_row, 'factoring_status' ) );
 			
@@ -124,11 +113,7 @@ if ( ! empty( $results ) ) : ?>
 			
 			$bank_status       = get_field_value( $meta, 'bank_payment_status' );
 			$driver_pay_status = get_field_value( $meta, 'driver_pay_statuses' );
-			$proof_of_delivery_time = get_field_value( $meta, 'proof_of_delivery_time' );
-			
-            if ($proof_of_delivery_time) {
-	            $proof_of_delivery_time     = esc_html( date( 'H:i:s', strtotime( $proof_of_delivery_time ) ) );
-            }
+		
 			
 			
 			$bank_status       = $helper->get_label_by_key( $bank_status, 'bank_statuses' );
@@ -167,50 +152,11 @@ if ( ! empty( $results ) ) : ?>
                 </td>
 
                 <td>
-					<?php if ( is_array( $pick_up ) ): ?>
-						<?php foreach ( $pick_up as $val ): ?>
-							<?php if ( isset( $val[ 'short_address' ] ) ): ?>
-                                <p class="m-0 text-small" data-bs-toggle="tooltip" data-bs-placement="top"
-                                   title="<?php echo $val[ 'address' ]; ?>">
-	                                <?php
-		                                echo $val[ 'short_address' ];
-	                               
-	                                
-	                                $detailed_address = $TMSShipper->get_shipper_by_id( $val[ 'address_id' ] );
-	                                if ( is_array( $detailed_address ) && !empty($detailed_address) ) {
-		                                echo ' ' . $detailed_address[ 0 ]->zip_code;
-	                                } else {
-		                                echo '<br/><span class="text-danger">This shipper has been deleted</span>';
-	                                }
-									
-									?>
-
-
-                                </p>
-							<?php endif; ?>
-						<?php endforeach; ?>
-					<?php endif; ?>
+					<?php echo $pdlocations['pick_up_template']; ?>
                 </td>
                 <td>
-					<?php if ( is_array( $delivery ) ): ?>
-						<?php foreach ( $delivery as $val ): ?>
-							<?php if ( isset( $val[ 'short_address' ] ) ): ?>
-                                <p class="m-0 text-small" data-bs-toggle="tooltip" data-bs-placement="top"
-                                   title="<?php echo $val[ 'address' ]; ?>">
-	                                <?php
-		                                echo $val[ 'short_address' ];
-	                                
-									$detailed_address = $TMSShipper->get_shipper_by_id( $val[ 'address_id' ] );
-	                                if ( is_array( $detailed_address ) && !empty($detailed_address) ) {
-		                                echo ' ' . $detailed_address[ 0 ]->zip_code;
-									} else {
-		                                echo '<br/><span class="text-danger">This shipper has been deleted</span>';
-                                    }
-									?>
-                                </p>
-							<?php endif; ?>
-						<?php endforeach; ?>
-					<?php endif; ?>
+	                <?php echo $pdlocations['delivery_template']; ?>
+
                 </td>
 
 
@@ -231,9 +177,11 @@ if ( ! empty( $results ) ) : ?>
 
 
                 <td>
-                    <span class="text-small"><?php echo $delivery_date; ?></span></br>
                     <span class="text-small">
-                        <?php echo $proof_of_delivery_time; ?>
+                        <?php echo $pdlocations['delivery_date']; ?>
+                    </span></br>
+                    <span class="text-small">
+                        <?php echo $pdlocations['proof_of_delivery_time']; ?>
                     </span>
                 </td>
 

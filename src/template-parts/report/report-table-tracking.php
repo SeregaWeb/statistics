@@ -3,25 +3,25 @@ global $global_options;
 
 $add_new_load = get_field_value( $global_options, 'add_new_load' );
 
-$TMSUsers = new TMSUsers();
+$TMSUsers  = new TMSUsers();
 $TMSBroker = new TMSReportsCompany();
-$helper = new TMSReportsHelper();
-$logs = new TMSLogs();
+$helper    = new TMSReportsHelper();
+$logs      = new TMSLogs();
 
-$results       = get_field_value($args, 'results');
-$total_pages   = get_field_value($args, 'total_pages');
-$current_pages = get_field_value($args, 'current_pages');
-$is_draft      = get_field_value($args, 'is_draft');
-$page_type     =  get_field_value($args, 'page_type');
-$archive     =  get_field_value($args, 'archive');
+$results       = get_field_value( $args, 'results' );
+$total_pages   = get_field_value( $args, 'total_pages' );
+$current_pages = get_field_value( $args, 'current_pages' );
+$is_draft      = get_field_value( $args, 'is_draft' );
+$page_type     = get_field_value( $args, 'page_type' );
+$archive       = get_field_value( $args, 'archive' );
 
 $current_user_id = get_current_user_id();
 
-$my_team = $TMSUsers->check_group_access();
+$my_team      = $TMSUsers->check_group_access();
 $all_statuses = $helper->get_statuses();
 
 
-if ( ! empty( $results )) : ?>
+if ( ! empty( $results ) ) : ?>
 
     <div class="w-100">
         <form class="js-save-all-tracking d-none mb-3">
@@ -49,23 +49,9 @@ if ( ! empty( $results )) : ?>
 		<?php foreach ( $results as $row ) :
 			$meta = get_field_value( $row, 'meta_data' );
 			$main = get_field_value( $row, 'main' );
-   
-			$attached_files = get_field_value( $meta, 'attached_files' );
-			$array_id_files = $attached_files ? explode( ',', $attached_files ) : false;
-			$files_count    = is_array( $array_id_files ) ? '(' . sizeof( $array_id_files ) . ')' : '';
-			$files_state    = empty( $files_count ) ? 'disabled' : '';
-
-			$delivery_raw = get_field_value( $meta, 'delivery_location' );
-			$delivery     = $delivery_raw ? json_decode( $delivery_raw, ARRAY_A ) : [];
 			
-			$pick_up_raw = get_field_value( $meta, 'pick_up_location' );
-			$pick_up     = $pick_up_raw ? json_decode( $pick_up_raw, ARRAY_A ) : [];
+			$pdlocations = $helper->get_locations_template( $row, 'tracking' );
 			
-			
-			$commodity           = get_field_value( $meta, 'commodity' );
-			$weight              = get_field_value( $meta, 'weight' );
-			
-   
 			$dispatcher_initials = get_field_value( $meta, 'dispatcher_initials' );
 			$dispatcher          = $helper->get_user_full_name_by_id( $dispatcher_initials );
 			$color_initials      = $dispatcher ? get_field( 'initials_color', 'user_' . $dispatcher_initials )
@@ -73,205 +59,140 @@ if ( ! empty( $results )) : ?>
 			if ( ! $dispatcher ) {
 				$dispatcher = array( 'full_name' => 'User not found', 'initials' => 'NF' );
 			}
-
-			$factoring_status_row  = get_field_value( $meta, 'factoring_status' );
-			$load_status  = get_field_value( $meta, 'load_status' );
-			$status       = $load_status;
 			
-			$office_dispatcher  = get_field_value( $meta, 'office_dispatcher' );
+			$factoring_status_row = get_field_value( $meta, 'factoring_status' );
+			$load_status          = get_field_value( $meta, 'load_status' );
+			$status               = $load_status;
+			
+			$office_dispatcher = get_field_value( $meta, 'office_dispatcher' );
 			
 			$date_booked_raw = get_field_value( $row, 'date_booked' );
 			$date_booked     = esc_html( date( 'm/d/Y', strtotime( $date_booked_raw ) ) );
 			
-			$reference_number = esc_html( get_field_value( $meta, 'reference_number' ) );
-			$driver_with_macropoint = $helper->get_driver_tempate($meta);
-			$pick_up_date_raw = get_field_value( $row, 'pick_up_date' );
-			$pick_up_date     = esc_html( date( 'm/d/Y', strtotime( $pick_up_date_raw ) ) );
-            
-            $delivery_date_raw = get_field_value( $row, 'delivery_date' );
-			$delivery_date     = esc_html( date( 'm/d/Y', strtotime( $delivery_date_raw ) ) );
+			$reference_number       = esc_html( get_field_value( $meta, 'reference_number' ) );
+			$driver_with_macropoint = $helper->get_driver_tempate( $meta );
 			
-            
-            $show_control = $TMSUsers->show_control_loads($my_team, $current_user_id, $dispatcher_initials, $is_draft);
+			$show_control = $TMSUsers->show_control_loads( $my_team, $current_user_id, $dispatcher_initials, $is_draft );
 			
-			$id_customer              = get_field_value( $meta, 'customer_id' );
-			$template_broker = $TMSBroker->get_broker_and_link_by_id($id_customer);
+			$id_customer     = get_field_value( $meta, 'customer_id' );
+			$template_broker = $TMSBroker->get_broker_and_link_by_id( $id_customer );
 			
 			$instructions_raw = get_field_value( $meta, 'instructions' );
 			$instructions     = $helper->get_label_by_key( $instructions_raw, 'instructions' );
-   
+			
 			$disable_status = false;
 			
-			$proof_of_delivery   = get_field_value($meta, 'proof_of_delivery');
-			if (!is_numeric($proof_of_delivery)) {
+			$proof_of_delivery = get_field_value( $meta, 'proof_of_delivery' );
+			if ( ! is_numeric( $proof_of_delivery ) ) {
 				$disable_status = true;
 			}
-            
-            
-            $tmpl = $logs->get_last_log_by_post($row[ 'id' ]);
-            
-            $now_show = ($factoring_status_row === 'paid') ;
+			
+			$tmpl = $logs->get_last_log_by_post( $row[ 'id' ] );
+			
+			$now_show = ( $factoring_status_row === 'paid' );
 			?>
 
-            <tr class="<?php echo 'status-tracking-'. $status; ?>">
+            <tr class="<?php echo 'status-tracking-' . $status; ?>">
 
                 <td>
                     <div class="d-flex gap-1 align-items-center">
-                        <span data-bs-toggle="tooltip" data-bs-placement="top" title="<?php echo $dispatcher[ 'full_name' ]; ?>"
+                        <span data-bs-toggle="tooltip" data-bs-placement="top"
+                              title="<?php echo $dispatcher[ 'full_name' ]; ?>"
                               class="initials-circle" style="background-color: <?php echo $color_initials; ?>">
                               <?php echo esc_html( $dispatcher[ 'initials' ] ); ?>
                         </span>
-                        <?php if ($office_dispatcher): ?>
-                        <span><?php echo strtoupper($office_dispatcher); ?></span>
-                        <?php endif; ?>
+						<?php if ( $office_dispatcher ): ?>
+                            <span><?php echo strtoupper( $office_dispatcher ); ?></span>
+						<?php endif; ?>
                     </div>
                     <span class="mt-1" class="text-small">
                         <?php echo $reference_number; ?>
                     </span>
                 </td>
-                
+
                 <td>
-					<?php if ( is_array( $pick_up ) ): ?>
-						<?php foreach ( $pick_up as $val ):
-							if (isset($val['date'])) {
-								$date = esc_html( date( 'm/d/Y', strtotime( $val['date'] ) ) );
-							} else {
-								$date = '';
-							}
-                            ?>
-							<?php if ( isset( $val[ 'short_address' ] ) ): ?>
-                            <div data-bs-toggle="tooltip" data-bs-placement="top" title="<?php echo 'Commodity: '.$commodity.' Weight: '.$weight; ?>" class="w-100 d-flex flex-column align-items-start">
-                                <p class="m-0" >
-		                            <?php echo $val[ 'address' ]; ?>
-                                </p>
-                                <span class="text-small">
-                                    <?php echo $date; ?>
-                                    
-                                    <?php
-                                    if (isset($val['time_start'])):
-	                                    $time_start = get_field_value($val, 'time_start');
-	                                    $time_end = get_field_value($val, 'time_end');
-	                                    $strict_time = get_field_value($val, 'strict_time');
-	                                    
-	                                    if ( $strict_time === "false" ) :
-		                                    echo $time_start . ' - ' . $time_end;
-	                                    else:
-		                                    echo $time_start . ' - strict';
-	                                    endif;
-                                    endif; ?>
-                                </span>
-                            </div>
-                            
-							<?php endif; ?>
-						<?php endforeach; ?>
-					<?php endif; ?>
+					<?php echo $pdlocations[ 'pick_up_template' ]; ?>
                 </td>
                 <td>
-					<?php if ( is_array( $delivery ) ): ?>
-						<?php foreach ( $delivery as $val ):
-							if (isset($val['date'])) {
-								$date = esc_html( date( 'm/d/Y', strtotime( $val['date'] ) ) );
-							} else {
-								$date = '';
-							}
-							?>
-							<?php if ( isset( $val[ 'short_address' ] ) ): ?>
-                            <div data-bs-toggle="tooltip" data-bs-placement="top" title="<?php echo 'Commodity:'.$commodity.' Weight:'.$weight; ?>" class="w-100 d-flex flex-column align-items-start">
-                                <p class="m-0" >
-		                            <?php echo $val[ 'address' ]; ?>
-                                </p>
-                                
-                                <span class="text-small">
-                                    <?php echo $date; ?>
-	                                <?php if (isset($val['time_start'])):
-	                                    $time_start = get_field_value($val, 'time_start');
-	                                    $time_end = get_field_value($val, 'time_end');
-	                                    $strict_time = get_field_value($val, 'strict_time');
-                                     
-	                                    if ( $strict_time === "false" ) :
-		                                    echo $time_start . ' - ' . $time_end;
-	                                    else:
-		                                    echo $time_start . ' - strict';
-	                                    endif;
-                                    endif; ?>
-            
-                                </span>
-                            </div>
-						<?php endif; ?>
-						<?php endforeach; ?>
-					<?php endif; ?>
+					<?php echo $pdlocations[ 'delivery_template' ]; ?>
                 </td>
                 <td>
-                    <?php echo $driver_with_macropoint; ?>
+					<?php echo $driver_with_macropoint; ?>
                 </td>
                 <td>
-                  <?php echo $template_broker; ?>
+					<?php echo $template_broker; ?>
                 </td>
 
                 <td class="">
-                    <?php if (!$archive && $show_control && !$now_show): ?>
-                    <form class="js-save-status d-flex gap-1 align-items-center form-quick-tracking" >
-                        <input type="hidden" name="id_load" value="<?php echo $row[ 'id' ]; ?>">
-                        <?php if (is_array($all_statuses)) { ?>
-                            <select name="status" class="js-trigger-disable-btn" >
-                                <?php foreach ($all_statuses as $key => $st):?>
-                                    <option <?php echo $key === $status ? 'selected' : ''; ?> <?php echo $disable_status && $key === 'delivered' ? ' disabled' : ''; ?> value="<?php echo $key; ?>"><?php echo $st; ?></option>
-                                <?php endforeach; ?>
-                            </select>
-                        <?php } ?>
-                        <button type="submit" disabled>
-                            <?php echo $helper->get_icon_save(); ?>
-                        </button>
-                    </form>
-                    <?php else:
-                        echo $helper->get_label_by_key($status,'statuses');
-                    endif; ?>
+					<?php if ( ! $archive && $show_control && ! $now_show ): ?>
+                        <form class="js-save-status d-flex gap-1 align-items-center form-quick-tracking">
+                            <input type="hidden" name="id_load" value="<?php echo $row[ 'id' ]; ?>">
+							<?php if ( is_array( $all_statuses ) ) { ?>
+                                <select name="status" class="js-trigger-disable-btn">
+									<?php foreach ( $all_statuses as $key => $st ): ?>
+                                        <option <?php echo $key === $status ? 'selected'
+											: ''; ?> <?php echo $disable_status && $key === 'delivered' ? ' disabled'
+											: ''; ?> value="<?php echo $key; ?>"><?php echo $st; ?></option>
+									<?php endforeach; ?>
+                                </select>
+							<?php } ?>
+                            <button type="submit" disabled>
+								<?php echo $helper->get_icon_save(); ?>
+                            </button>
+                        </form>
+					<?php else:
+						echo $helper->get_label_by_key( $status, 'statuses' );
+					endif; ?>
                 </td>
-                
+
                 <td>
                     <div class="table-list-icons">
-                    <?php echo $instructions; ?>
+						<?php echo $instructions; ?>
                     </div>
                 </td>
 
                 <td width="300">
-                    <?php echo $tmpl; ?>
+					<?php echo $tmpl; ?>
                 </td>
-                
-             
+				
+				
 				<?php if ( $TMSUsers->check_user_role_access( array( 'recruiter' ) ) ): ?>
                     <td>
                         <div class="d-flex">
 
-                            <button class="btn-bookmark js-btn-bookmark <?php echo $TMSUsers->is_bookmarked($row['id']) ? 'active' : ''; ?>" data-id="<?php echo $row[ 'id' ]; ?>">
-		                        <?php echo $helper->get_icon_bookmark(); ?>
+                            <button class="btn-bookmark js-btn-bookmark <?php echo $TMSUsers->is_bookmarked( $row[ 'id' ] )
+								? 'active' : ''; ?>" data-id="<?php echo $row[ 'id' ]; ?>">
+								<?php echo $helper->get_icon_bookmark(); ?>
                             </button>
-                            
-                        <?php if ($show_control): ?>
-                        
-                        <div class="dropdown">
-                            <button class="btn button-action" type="button" id="dropdownMenu2" data-bs-toggle="dropdown"
-                                    aria-expanded="false">
-                                <?php echo $helper->get_dropdown_load_icon(); ?>
-                            </button>
-                            <ul class="dropdown-menu" aria-labelledby="dropdownMenu2">
-								<?php if ( $TMSUsers->check_user_role_access( array( 'billing' ), true ) ) : ?>
-                                    <li><a href="<?php echo $add_new_load . '?post_id=' . $row[ 'id' ]; ?>"
-                                           class="dropdown-item">View</a></li>
-								<?php else: ?>
-                                    <li><a href="<?php echo $add_new_load . '?post_id=' . $row[ 'id' ]; ?>"
-                                           class="dropdown-item">Edit</a></li>
-								<?php endif; ?>
-		
-		                        <?php if ( $TMSUsers->check_user_role_access( array( 'administrator' ), true ) ): ?>
-                                <li>
-                                    <button class="dropdown-item text-danger js-remove-load" data-id="<?php echo $row[ 'id' ]; ?>" type="button">Delete</button>
-                                </li>
-                                <?php endif; ?>
-                            </ul>
-                        </div>
-        
-                        <?php endif; ?>
+							
+							<?php if ( $show_control ): ?>
+
+                                <div class="dropdown">
+                                    <button class="btn button-action" type="button" id="dropdownMenu2"
+                                            data-bs-toggle="dropdown"
+                                            aria-expanded="false">
+										<?php echo $helper->get_dropdown_load_icon(); ?>
+                                    </button>
+                                    <ul class="dropdown-menu" aria-labelledby="dropdownMenu2">
+										<?php if ( $TMSUsers->check_user_role_access( array( 'billing' ), true ) ) : ?>
+                                            <li><a href="<?php echo $add_new_load . '?post_id=' . $row[ 'id' ]; ?>"
+                                                   class="dropdown-item">View</a></li>
+										<?php else: ?>
+                                            <li><a href="<?php echo $add_new_load . '?post_id=' . $row[ 'id' ]; ?>"
+                                                   class="dropdown-item">Edit</a></li>
+										<?php endif; ?>
+										
+										<?php if ( $TMSUsers->check_user_role_access( array( 'administrator' ), true ) ): ?>
+                                            <li>
+                                                <button class="dropdown-item text-danger js-remove-load"
+                                                        data-id="<?php echo $row[ 'id' ]; ?>" type="button">Delete
+                                                </button>
+                                            </li>
+										<?php endif; ?>
+                                    </ul>
+                                </div>
+							
+							<?php endif; ?>
                         </div>
                     </td>
 				<?php endif; ?>
@@ -288,15 +209,15 @@ if ( ! empty( $results )) : ?>
                 <button class="btn btn-primary" type="submit">Save all</button>
             </form>
         </div>
-    
-        <?php
-        
-        
-        echo esc_html( get_template_part( 'src/template-parts/report/report', 'pagination', array(
-            'total_pages'  => $total_pages,
-            'current_page' => $current_pages,
-        ) ) );
-        ?>
+		
+		<?php
+		
+		
+		echo esc_html( get_template_part( 'src/template-parts/report/report', 'pagination', array(
+			'total_pages'  => $total_pages,
+			'current_page' => $current_pages,
+		) ) );
+		?>
     </div>
 
 <?php else : ?>

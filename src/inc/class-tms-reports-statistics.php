@@ -13,38 +13,38 @@ class  TMSStatistics extends TMSReportsHelper {
 		}
 	}
 	
-	public function countWeekdays($monthName, $year) {
+	public function countWeekdays( $monthName, $year ) {
 		// Преобразуем название месяца в номер (January -> 1, February -> 2 и т.д.)
-		$month = date('n', strtotime($monthName));
+		$month = date( 'n', strtotime( $monthName ) );
 		
 		// Начало и конец месяца
-		$startDate = new DateTime("$year-$month-01");
-		$endDate = (clone $startDate)->modify('last day of this month');
+		$startDate = new DateTime( "$year-$month-01" );
+		$endDate   = ( clone $startDate )->modify( 'last day of this month' );
 		
 		$weekdayCount = 0;
 		
 		// Пробегаемся по всем дням месяца
-		while ($startDate <= $endDate) {
+		while ( $startDate <= $endDate ) {
 			// Проверяем, является ли день будним (1 - понедельник, 5 - пятница)
-			if ($startDate->format('N') >= 1 && $startDate->format('N') <= 5) {
-				$weekdayCount++;
+			if ( $startDate->format( 'N' ) >= 1 && $startDate->format( 'N' ) <= 5 ) {
+				$weekdayCount ++;
 			}
 			// Переход к следующему дню
-			$startDate->modify('+1 day');
+			$startDate->modify( '+1 day' );
 		}
 		
 		return $weekdayCount;
 	}
-	public function get_sources_statistics () {
+	
+	public function get_sources_statistics() {
 		global $wpdb;
-		$table_meta    = $wpdb->prefix . $this->table_meta;
+		$table_meta = $wpdb->prefix . $this->table_meta;
 		
 		// Результирующий массив
 		$statistics = [];
 		
-		foreach ($this->sources as $key => $label) {
-			$query = $wpdb->prepare(
-				"
+		foreach ( $this->sources as $key => $label ) {
+			$query = $wpdb->prepare( "
         SELECT COUNT(DISTINCT source_meta.post_id) as count,
                SUM(CASE WHEN profit_meta.meta_key = 'profit' THEN profit_meta.meta_value ELSE 0 END) as profit
         FROM $table_meta as source_meta
@@ -52,22 +52,21 @@ class  TMSStatistics extends TMSReportsHelper {
             ON source_meta.post_id = profit_meta.post_id
             AND profit_meta.meta_key = 'profit'
         WHERE source_meta.meta_key = 'source' AND source_meta.meta_value = %s
-        ",
-				$key
-			);
+        ", $key );
 			
-			$result = $wpdb->get_row($query);
+			$result = $wpdb->get_row( $query );
 			
-			$statistics[$key] = [
+			$statistics[ $key ] = [
 				'label'        => $label,
 				'post_count'   => $result->count ?? 0,
-				'total_profit' => isset($result->profit) ? number_format($result->profit, 2) : '0.00',
+				'total_profit' => isset( $result->profit ) ? number_format( $result->profit, 2 ) : '0.00',
 			];
 		}
 		
 		return json_encode( $statistics );
 	}
-	public function get_dispatcher_statistics($office_dispatcher_selected) {
+	
+	public function get_dispatcher_statistics( $office_dispatcher_selected ) {
 		global $wpdb;
 		
 		$table_reports = $wpdb->prefix . $this->table_main;
@@ -95,9 +94,9 @@ class  TMSStatistics extends TMSReportsHelper {
 		if ( is_array( $dispatcher_stats ) ) {
 			
 			foreach ( $dispatcher_stats as $key => $disp ) {
-				$names = $this->get_user_full_name_by_id( $disp[ 'dispatcher_initials' ] );
-				$office_dispatcher = get_field( 'work_location', 'user_'.$disp[ 'dispatcher_initials' ]);
-				if ($office_dispatcher_selected !== 'all' && $office_dispatcher !== $office_dispatcher_selected) {
+				$names             = $this->get_user_full_name_by_id( $disp[ 'dispatcher_initials' ] );
+				$office_dispatcher = get_field( 'work_location', 'user_' . $disp[ 'dispatcher_initials' ] );
+				if ( $office_dispatcher_selected !== 'all' && $office_dispatcher !== $office_dispatcher_selected ) {
 					unset( $dispatcher_stats[ $key ] );
 				} else {
 					if ( $names ) {
@@ -107,6 +106,7 @@ class  TMSStatistics extends TMSReportsHelper {
 			}
 		}
 		$dispatcher_stats = array_values( $dispatcher_stats );
+		
 		return json_encode( $dispatcher_stats );
 	}
 	
@@ -165,7 +165,7 @@ class  TMSStatistics extends TMSReportsHelper {
 		
 		// Execute the query
 		$results = $wpdb->get_results( $query, ARRAY_A );
-
+		
 		// Create a mapping of month numbers to names
 		$months = [
 			1  => 'January',
@@ -181,7 +181,7 @@ class  TMSStatistics extends TMSReportsHelper {
 			11 => 'November',
 			12 => 'December'
 		];
-
+		
 		// Initialize the result array with month names and 0 values
 		$monthly_stats = [];
 		foreach ( $months as $month_num => $month_name ) {
@@ -192,7 +192,7 @@ class  TMSStatistics extends TMSReportsHelper {
 				'average_profit' => 0.00
 			];
 		}
-
+		
 		// Populate the result with actual data
 		foreach ( $results as $row ) {
 			$month_key = (int) $row[ 'month' ]; // Ensure we use an integer for the month key
@@ -206,20 +206,20 @@ class  TMSStatistics extends TMSReportsHelper {
 				];
 			}
 		}
-
+		
 		// Return the monthly statistics
 		return $monthly_stats;
 	}
 	
-	public function get_dispatcher_statistics_current_month($user_id = null) {
+	public function get_dispatcher_statistics_current_month( $user_id = null ) {
 		global $wpdb;
 		
 		$table_reports = $wpdb->prefix . $this->table_main;
 		$table_meta    = $wpdb->prefix . $this->table_meta;
 		
 		// Получаем текущий год и месяц
-		$current_year = date('Y');
-		$current_month = date('m');
+		$current_year  = date( 'Y' );
+		$current_month = date( 'm' );
 		
 		// Основная часть запроса
 		$query = "
@@ -241,49 +241,49 @@ class  TMSStatistics extends TMSReportsHelper {
     ";
 		
 		// Если указан user_id, добавляем условие фильтрации
-		if ($user_id) {
-			if (is_array($user_id)) {
+		if ( $user_id ) {
+			if ( is_array( $user_id ) ) {
 				// Создаем плейсхолдеры для массива
-				$placeholders = implode(',', array_fill(0, count($user_id), '%s'));
+				$placeholders = implode( ',', array_fill( 0, count( $user_id ), '%s' ) );
 				// Добавляем условие IN с плейсхолдерами
 				$query .= " AND dispatcher_meta.meta_value IN ($placeholders)";
 				
 				// Объединяем массив значений для $user_id с другими параметрами
-				$query = $wpdb->prepare($query, array_merge([$current_year, $current_month], $user_id));
+				$query = $wpdb->prepare( $query, array_merge( [ $current_year, $current_month ], $user_id ) );
 			} else {
 				$query .= " AND dispatcher_meta.meta_value = %s";
 				$query = $wpdb->prepare( $query, $current_year, $current_month, $user_id );
 			}
 		} else {
-			$query = $wpdb->prepare($query, $current_year, $current_month);
+			$query = $wpdb->prepare( $query, $current_year, $current_month );
 		}
 		
 		// Группировка по диспетчерам
 		$query .= " GROUP BY dispatcher_meta.meta_value";
 		
 		// Выполняем запрос и получаем результаты
-		$dispatcher_stats = $wpdb->get_results($query, ARRAY_A);
-		if (is_array($dispatcher_stats) && !empty($dispatcher_stats)) {
-			foreach ($dispatcher_stats as $key => $disp) {
-				$names = $this->get_user_full_name_by_id($disp['dispatcher_initials']);
-				$goal = get_field('monthly_goal', 'user_'.$disp['dispatcher_initials']);
+		$dispatcher_stats = $wpdb->get_results( $query, ARRAY_A );
+		if ( is_array( $dispatcher_stats ) && ! empty( $dispatcher_stats ) ) {
+			foreach ( $dispatcher_stats as $key => $disp ) {
+				$names = $this->get_user_full_name_by_id( $disp[ 'dispatcher_initials' ] );
+				$goal  = get_field( 'monthly_goal', 'user_' . $disp[ 'dispatcher_initials' ] );
 				
-				if ($names) {
-					$dispatcher_stats[$key]['dispatcher_initials'] = $names['full_name'];
+				if ( $names ) {
+					$dispatcher_stats[ $key ][ 'dispatcher_initials' ] = $names[ 'full_name' ];
 				}
 				
-				if (!$goal) {
+				if ( ! $goal ) {
 					$goal = 0;
 				}
 				
-				$dispatcher_stats[$key]['goal'] = $goal;
+				$dispatcher_stats[ $key ][ 'goal' ] = $goal;
 			}
 		}
 		
 		return $dispatcher_stats;
 	}
 	
-	public function get_dispatcher_statistics_with_status($user_id = null, $load_status = 'cancelled') {
+	public function get_dispatcher_statistics_with_status( $user_id = null, $load_status = 'cancelled' ) {
 		global $wpdb;
 		
 		$table_reports = $wpdb->prefix . $this->table_main;
@@ -306,28 +306,28 @@ class  TMSStatistics extends TMSReportsHelper {
     ";
 		
 		// Если указан user_id, добавляем условие фильтрации
-		if ($user_id) {
-			if (is_array($user_id)) {
+		if ( $user_id ) {
+			if ( is_array( $user_id ) ) {
 				// Создаем плейсхолдеры для массива
-				$placeholders = implode(',', array_fill(0, count($user_id), '%s'));
+				$placeholders = implode( ',', array_fill( 0, count( $user_id ), '%s' ) );
 				// Добавляем условие IN с плейсхолдерами
 				$query .= " AND dispatcher_meta.meta_value IN ($placeholders)";
 				
 				// Объединяем массив значений для $user_id с другими параметрами
-				$query = $wpdb->prepare($query, array_merge([$load_status], $user_id));
+				$query = $wpdb->prepare( $query, array_merge( [ $load_status ], $user_id ) );
 			} else {
 				$query .= " AND dispatcher_meta.meta_value = %s";
-				$query = $wpdb->prepare($query, $load_status, $user_id);
+				$query = $wpdb->prepare( $query, $load_status, $user_id );
 			}
 		} else {
-			$query = $wpdb->prepare($query, $load_status);
+			$query = $wpdb->prepare( $query, $load_status );
 		}
 		
 		// Группировка по диспетчерам
 		$query .= " GROUP BY dispatcher_meta.meta_value";
 		
 		// Выполняем запрос и возвращаем результаты
-		return $wpdb->get_results($query, ARRAY_A);
+		return $wpdb->get_results( $query, ARRAY_A );
 	}
 	
 	
@@ -358,7 +358,7 @@ class  TMSStatistics extends TMSReportsHelper {
 		    LEFT JOIN $table_meta booked_rate_modify ON reports.id = booked_rate_modify.post_id AND booked_rate_modify.meta_key = 'booked_rate_modify'
 		";
 		
-		if ($year === 'all' || $month === 'all') {
+		if ( $year === 'all' || $month === 'all' ) {
 			$sql .= "WHERE reports.status_post = 'publish'";
 		} else {
 			$sql .= "WHERE YEAR(reports.date_booked) = %d
@@ -372,29 +372,29 @@ class  TMSStatistics extends TMSReportsHelper {
 		
 		// Initialize the result array
 		$monthly_stats = [
-			'month'          => $month,
-			'post_count'     => 0,
-			'total_booked_rate' => 0.00,
-			'total_profit'   => 0.00,
-			'total_driver_rate' => 0.00,
-			'total_true_profit' => 0.00,
-			'total_booked_rate_modify' => 0.00,
-			'total_processing_fees' => 0.00,
-			'percent_quick_pay_value' => 0.00,
+			'month'                         => $month,
+			'post_count'                    => 0,
+			'total_booked_rate'             => 0.00,
+			'total_profit'                  => 0.00,
+			'total_driver_rate'             => 0.00,
+			'total_true_profit'             => 0.00,
+			'total_booked_rate_modify'      => 0.00,
+			'total_processing_fees'         => 0.00,
+			'percent_quick_pay_value'       => 0.00,
 			'total_quick_pay_driver_amount' => 0.00,
 		];
 		
 		// Populate the result with actual data if available
-		if (!empty($results) && isset($results[0])) {
-			$monthly_stats['post_count'] = $results[0]['post_count'] ?? 0;
-			$monthly_stats['total_booked_rate'] = $results[0]['total_booked_rate'] ?? 0.00;
-			$monthly_stats['total_profit'] = $results[0]['total_profit'] ?? 0.00;
-			$monthly_stats['total_driver_rate'] = $results[0]['total_driver_rate'] ?? 0.00;
-			$monthly_stats['total_true_profit'] = $results[0]['total_true_profit'] ?? 0.00;
-			$monthly_stats['total_booked_rate_modify'] = $results[0]['total_booked_rate_modify'] ?? 0.00;
-			$monthly_stats['total_processing_fees'] = $results[0]['total_processing_fees'] ?? 0.00;
-			$monthly_stats['percent_quick_pay_value'] = $results[0]['percent_quick_pay_value'] ?? 0.00;
-			$monthly_stats['total_quick_pay_driver_amount'] = $results[0]['total_quick_pay_driver_amount'] ?? 0.00;
+		if ( ! empty( $results ) && isset( $results[ 0 ] ) ) {
+			$monthly_stats[ 'post_count' ]                    = $results[ 0 ][ 'post_count' ] ?? 0;
+			$monthly_stats[ 'total_booked_rate' ]             = $results[ 0 ][ 'total_booked_rate' ] ?? 0.00;
+			$monthly_stats[ 'total_profit' ]                  = $results[ 0 ][ 'total_profit' ] ?? 0.00;
+			$monthly_stats[ 'total_driver_rate' ]             = $results[ 0 ][ 'total_driver_rate' ] ?? 0.00;
+			$monthly_stats[ 'total_true_profit' ]             = $results[ 0 ][ 'total_true_profit' ] ?? 0.00;
+			$monthly_stats[ 'total_booked_rate_modify' ]      = $results[ 0 ][ 'total_booked_rate_modify' ] ?? 0.00;
+			$monthly_stats[ 'total_processing_fees' ]         = $results[ 0 ][ 'total_processing_fees' ] ?? 0.00;
+			$monthly_stats[ 'percent_quick_pay_value' ]       = $results[ 0 ][ 'percent_quick_pay_value' ] ?? 0.00;
+			$monthly_stats[ 'total_quick_pay_driver_amount' ] = $results[ 0 ][ 'total_quick_pay_driver_amount' ] ?? 0.00;
 		}
 		
 		// Return the monthly statistics

@@ -1392,13 +1392,15 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 				
 				$additional_names  = filter_var_array( $_POST[ 'additional_contact_name' ], FILTER_SANITIZE_STRING );
 				$additional_phones = filter_var_array( $_POST[ 'additional_contact_phone' ], FILTER_SANITIZE_STRING );
+				$additional_phones_ext = filter_var_array( $_POST[ 'additional_contact_phone_ext' ], FILTER_SANITIZE_STRING );
 				$additional_emails = filter_var_array( $_POST[ 'additional_contact_email' ], FILTER_SANITIZE_EMAIL );
 				
 				foreach ( $additional_names as $index => $name ) {
 					$additional_contacts[] = [
 						'name'  => $name,
 						'phone' => $additional_phones[ $index ] ?? '',
-						'email' => $additional_emails[ $index ] ?? ''
+						'email' => $additional_emails[ $index ] ?? '',
+						'ext'  => $additional_phones_ext[ $index ] ?? '',
 					];
 				}
 			}
@@ -1605,11 +1607,13 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 				$additional_names  = filter_var_array( $_POST[ 'additional_contact_name' ], FILTER_SANITIZE_STRING );
 				$additional_phones = filter_var_array( $_POST[ 'additional_contact_phone' ], FILTER_SANITIZE_STRING );
 				$additional_emails = filter_var_array( $_POST[ 'additional_contact_email' ], FILTER_SANITIZE_EMAIL );
+				$additional_ext = filter_var_array( $_POST[ 'additional_contact_phone_ext' ], FILTER_SANITIZE_STRING );
 				
 				foreach ( $additional_names as $index => $name ) {
 					$additional_contacts[] = [
 						'name'  => $name,
 						'phone' => $additional_phones[ $index ] ?? '',
+						'ext' => $additional_ext[ $index ] ?? '',
 						'email' => $additional_emails[ $index ] ?? ''
 					];
 				}

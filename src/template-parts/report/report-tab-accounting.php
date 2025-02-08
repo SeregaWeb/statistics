@@ -6,9 +6,8 @@ $reports = new TMSReports();
 
 $invoices           = $reports->get_invoices();
 $factoring_statuses = $reports->get_factoring_status();
-
-$report_object = ! empty( $args[ 'report_object' ] ) ? $args[ 'report_object' ] : null;
-$post_id       = ! empty( $args[ 'post_id' ] ) ? $args[ 'post_id' ] : null;
+$report_object      = ! empty( $args[ 'report_object' ] ) ? $args[ 'report_object' ] : null;
+$post_id            = ! empty( $args[ 'post_id' ] ) ? $args[ 'post_id' ] : null;
 
 $bank_statuses       = $reports->get_bank_statuses();
 $driver_pay_statuses = $reports->get_driver_payment_statuses();
@@ -36,7 +35,7 @@ $full_view_only = get_field_value( $args, 'full_view_only' );
 
 <h3 class="p-0 display-6 mb-4">Accounting info</h3>
 
-<form class="<?php echo ($full_view_only) ? '' : 'js-uploads-accounting' ?> d-grid">
+<form class="<?php echo ( $full_view_only ) ? '' : 'js-uploads-accounting' ?> d-grid">
     <div class="row">
 
         <div class="mb-2 col-12 col-md-6 col-xl-4">
@@ -124,9 +123,10 @@ $full_view_only = get_field_value( $args, 'full_view_only' );
                                name="quick_pay_driver_amount"
                                class="form-control js-money js-quick-pay-driver">
                     </div>
-	                <?php if (is_numeric($quick_pay_driver_amount)): ?>
-                        <p class="text-medium js-sum-after-count text-center mt-1">Sum to pay $<?php echo $driver_rate - $quick_pay_driver_amount; ?></p>
-	                <?php endif; ?>
+					<?php if ( is_numeric( $quick_pay_driver_amount ) ): ?>
+                        <p class="text-medium js-sum-after-count text-center mt-1">Sum to pay
+                            $<?php echo $driver_rate - $quick_pay_driver_amount; ?></p>
+					<?php endif; ?>
                 </div>
             </div>
         </div>
@@ -136,10 +136,10 @@ $full_view_only = get_field_value( $args, 'full_view_only' );
                 <button type="button" data-tab-id="pills-billing-tab"
                         class="btn btn-dark js-next-tab">Previous
                 </button>
-	            <?php if ( !$full_view_only ): ?>
+				<?php if ( ! $full_view_only ): ?>
                     <button type="submit" class="btn btn-primary js-submit-and-next-tab">Update
                     </button>
-	            <?php endif; ?>
+				<?php endif; ?>
             </div>
         </div>
     </div>

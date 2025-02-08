@@ -65,24 +65,24 @@ if ( $report_object ) {
 
 <h3 class="p-0 display-6 mb-4">Billing info</h3>
 
-<form  class="js-uploads-billing d-grid">
+<form class="js-uploads-billing d-grid">
 
     <input type="hidden" name="old_ar_status" value="<?php echo $ar_status; ?>">
     <input type="hidden" name="old_factoring_status" value="<?php echo $factoring_status; ?>">
-    <?php if($invoiced_proof): ?>
+	<?php if ( $invoiced_proof ): ?>
         <input type="hidden" name="checked_invoice_proof" value="1">
-    <?php endif; ?>
+	<?php endif; ?>
 	
-	<?php if($ar_action_field): ?>
+	<?php if ( $ar_action_field ): ?>
         <input type="hidden" name="checked_ar_action" value="1">
 	<?php endif; ?>
-
-    <?php
-    
-    if($log_file_isset): ?>
+	
+	<?php
+	
+	if ( $log_file_isset ): ?>
         <input type="hidden" name="log_file_isset" value="1">
-    <?php endif; ?>
-    
+	<?php endif; ?>
+
     <input type="hidden" name="booked_rate" value="<?php echo $booked_rate; ?>">
     <input type="hidden" name="driver_rate" value="<?php echo $driver_rate; ?>">
     <input type="hidden" name="profit" value="<?php echo $profit; ?>">
@@ -100,10 +100,17 @@ if ( $report_object ) {
                     data-value="direct"
                     data-revertlogic=".js-ar-aging-by-direct"
                     data-selector=".js-select-type-direct">
-                <option value="factoring"  <?php echo $processing === 'factoring' ? 'selected' : ''; ?>>Factoring (ACH)</option>
-                <option value="factoring-delayed-advance" <?php echo $processing === 'factoring-delayed-advance' ? 'selected' : ''; ?>>Factoring (Delayed advance)</option>
-                <option value="factoring-wire-transfer" <?php echo $processing === 'factoring-wire-transfer' ? 'selected' : ''; ?>>Factoring (Wire Transfer)</option>
-                <option value="unapplied-payment" <?php echo $processing === 'unapplied-payment' ? 'selected' : ''; ?>>Unapplied payment</option>
+                <option value="factoring" <?php echo $processing === 'factoring' ? 'selected' : ''; ?>>Factoring (ACH)
+                </option>
+                <option value="factoring-delayed-advance" <?php echo $processing === 'factoring-delayed-advance'
+					? 'selected' : ''; ?>>Factoring (Delayed advance)
+                </option>
+                <option value="factoring-wire-transfer" <?php echo $processing === 'factoring-wire-transfer'
+					? 'selected' : ''; ?>>Factoring (Wire Transfer)
+                </option>
+                <option value="unapplied-payment" <?php echo $processing === 'unapplied-payment' ? 'selected' : ''; ?>>
+                    Unapplied payment
+                </option>
                 <option value="direct" <?php echo $processing === 'direct' ? 'selected' : ''; ?>>Direct</option>
             </select>
         </div>
@@ -111,8 +118,8 @@ if ( $report_object ) {
         <div class="col-12"></div>
 		
 		<?php
-        $hide_all_info = $processing === "direct" ? '' : 'd-none';
-        ?>
+		$hide_all_info = $processing === "direct" ? '' : 'd-none';
+		?>
 
         <div class="col-12 mb-2 js-select-type-direct <?php echo $hide_all_info; ?>">
             <div class="row">
@@ -168,12 +175,13 @@ if ( $report_object ) {
                        type="checkbox" id="pod_proof">
                 <label class="form-check-label" for="pod_proof">Proof of Delivery</label>
             </div>
-            
+
         </div>
-        
+
         <div class="col-12 col-md-6 col-xl-4 d-flex align-items-center gap-2 mt-2 mb-4">
             <div class="form-check form-switch">
-                <input class="form-check-input js-trigger-set-date" <?php echo $invoiced_proof ? 'checked' : ''; ?> name="invoiced_proof"
+                <input class="form-check-input js-trigger-set-date" <?php echo $invoiced_proof ? 'checked' : ''; ?>
+                       name="invoiced_proof"
                        type="checkbox" id="invoiced_proof">
                 <label class="form-check-label" for="invoiced_proof">Invoiced</label>
             </div>
@@ -189,8 +197,10 @@ if ( $report_object ) {
 
         <div class="mb-2 col-12 col-md-6 col-xl-4">
             <label for="factoring_status" class="form-label">Select status</label>
-            <select name="factoring_status" class="form-control form-select js-show-hidden-values js-blocked-status js-select-status-factoring"
-                    data-required="true" data-value="short-pay" data-previous-value="<?php echo $factoring_status;  ?>" data-selector=".js-short-pay">
+            <select name="factoring_status"
+                    class="form-control form-select js-show-hidden-values js-blocked-status js-select-status-factoring"
+                    data-required="true" data-value="short-pay" data-previous-value="<?php echo $factoring_status; ?>"
+                    data-selector=".js-short-pay">
 				<?php if ( is_array( $factoring_statuses ) ): ?>
 					<?php foreach ( $factoring_statuses as $key => $status ):
 						$disabled_option = ( $processing === 'direct' && $key === 'charge-back' ) ? 'disabled' : '';
@@ -224,11 +234,11 @@ if ( $report_object ) {
         </div>
 
         <div class="col-12"></div>
+		
+		<?php
+		$hide_ar = $processing === "direct" ? 'd-none' : '';
+		?>
 
-        <?php
-        $hide_ar = $processing === "direct" ? 'd-none' : '';
-        ?>
-        
         <div class="col-12 js-ar-aging-by-direct <?php echo $hide_ar; ?>">
             <div class="row">
                 <div class="mb-2 col-12 col-md-6 col-xl-4">
@@ -244,14 +254,14 @@ if ( $report_object ) {
                         <div class="mb-2 col-12 col-md-6 col-xl-4">
                             <label for="ar_status" class="form-label">Select invoice status</label>
                             <select name="ar_status" class="form-control form-select">
-					            <?php if ( is_array( $ar_statuses ) ): ?>
-						            <?php foreach ( $ar_statuses as $key => $status ): ?>
+								<?php if ( is_array( $ar_statuses ) ): ?>
+									<?php foreach ( $ar_statuses as $key => $status ): ?>
                                         <option <?php echo $ar_status === $key ? 'selected' : ''; ?>
                                                 value="<?php echo $key; ?>">
-								            <?php echo $status; ?>
+											<?php echo $status; ?>
                                         </option>
-						            <?php endforeach; ?>
-					            <?php endif ?>
+									<?php endforeach; ?>
+								<?php endif ?>
                             </select>
                         </div>
 
@@ -260,7 +270,6 @@ if ( $report_object ) {
                 </div>
             </div>
         </div>
-        
 
 
         <div class="col-12 mt-4 order-5" role="presentation">
@@ -268,10 +277,10 @@ if ( $report_object ) {
                 <button type="button" data-tab-id="pills-documents-tab"
                         class="btn btn-dark js-next-tab">Previous
                 </button>
-	            
+
                 <button type="submit" class="btn btn-primary js-submit-and-next-tab">Update
                 </button>
-             
+
             </div>
         </div>
     </div>

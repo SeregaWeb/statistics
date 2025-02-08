@@ -603,10 +603,17 @@ const addActionsEditAdditionalCard = () => {
                     const contactName = containerMain.querySelector('#contact-input-firstname');
                     const contactPhone = containerMain.querySelector('#contact-input-phone');
                     const contactEmail = containerMain.querySelector('#contact-input-email');
+                    const contactExt = containerMain.querySelector('#contact-input-ext');
 
                     const additionalName = container.querySelector('.js-additional-field-name');
                     const additionalPhone = container.querySelector('.js-additional-field-phone');
                     const additionalEmail = container.querySelector('.js-additional-field-email');
+                    const additionalExt = container.querySelector('.js-additional-field-ext');
+
+                    if (contactExt && additionalExt) {
+                        // @ts-ignore
+                        contactExt.value = additionalExt.value.trim() === '' ? 'unset' : additionalExt.value;
+                    }
 
                     if (contactName && additionalName) {
                         // @ts-ignore
@@ -642,6 +649,7 @@ const addActionsEditAdditionalCard = () => {
         const contactName = containerMain.querySelector('#contact-input-firstname');
         const contactPhone = containerMain.querySelector('#contact-input-phone');
         const contactEmail = containerMain.querySelector('#contact-input-email');
+        const contactExt = containerMain.querySelector('#contact-input-ext');
 
         // eslint-disable-next-line @wordpress/no-unused-vars-before-return
         const additionalName = activeItem.querySelector('.js-additional-field-name');
@@ -649,9 +657,16 @@ const addActionsEditAdditionalCard = () => {
         const additionalPhone = activeItem.querySelector('.js-additional-field-phone');
         // eslint-disable-next-line @wordpress/no-unused-vars-before-return
         const additionalEmail = activeItem.querySelector('.js-additional-field-email');
+        // eslint-disable-next-line @wordpress/no-unused-vars-before-return
+        const additionalExt = activeItem.querySelector('.js-additional-field-ext');
 
         // @ts-ignore
-        if (contactName.value.trim() === '' && contactPhone.value.trim() === '' && contactEmail.value.trim() === '') {
+        if (
+            contactName.value.trim() === '' &&
+            contactPhone.value.trim() === '' &&
+            contactEmail.value.trim() === '' &&
+            contactExt.value.trim() === ''
+        ) {
             printMessage(`All fields empty`, 'danger', 8000);
             // eslint-disable-next-line consistent-return
             return false;
@@ -666,6 +681,12 @@ const addActionsEditAdditionalCard = () => {
             containerMain.classList.remove('edit-now');
 
             activeItem.classList.remove('edit');
+        }
+
+        if (contactExt && additionalExt) {
+            // @ts-ignore
+            additionalExt.value = contactExt.value;
+            contactExt.value = '';
         }
 
         if (contactName && additionalName) {
@@ -707,8 +728,9 @@ export const additionalContactsInit = () => {
                 const contactName = container.querySelector('#contact-input-firstname');
                 const contactPhone = container.querySelector('#contact-input-phone');
                 const contactEmail = container.querySelector('#contact-input-email');
+                const contactExt = container.querySelector('#contact-input-ext');
 
-                if (!contactName || !contactPhone || !contactEmail) return;
+                if (!contactName || !contactPhone || !contactEmail || !contactExt) return;
 
                 // @ts-ignore
                 let valueName = contactName.value;
@@ -716,6 +738,8 @@ export const additionalContactsInit = () => {
                 let valuePhone = contactPhone.value;
                 // @ts-ignore
                 let valueEmail = contactEmail.value;
+                // @ts-ignore
+                let valueExt = contactExt.value;
 
                 console.log('valueName', valueName);
                 console.log('valuePhone', valuePhone);
@@ -723,6 +747,9 @@ export const additionalContactsInit = () => {
 
                 if (valueName.trim() === '') {
                     valueName = 'unset';
+                }
+                if (valueExt.trim() === '') {
+                    valueExt = 'unset';
                 }
 
                 if (valuePhone.trim() === '') {
@@ -733,7 +760,7 @@ export const additionalContactsInit = () => {
                     valueEmail = 'unset';
                 }
 
-                if (valueName === 'unset' && valuePhone === 'unset' && valueEmail === 'unset') {
+                if (valueExt === 'unset' && valueName === 'unset' && valuePhone === 'unset' && valueEmail === 'unset') {
                     printMessage(`All fields empty`, 'danger', 8000);
                     // eslint-disable-next-line consistent-return
                     return false;
@@ -742,6 +769,8 @@ export const additionalContactsInit = () => {
                 const template = `<div class="additional-card js-additional-card">
                             <input type="text" name="additional_contact_name[]" readonly="" value="${valueName}" class="form-control js-additional-field-name">
                             <input type="text" name="additional_contact_phone[]" readonly="" value="${valuePhone}" class="form-control js-additional-field-phone">
+                            <input type="text" name="additional_contact_phone_ext[]" readonly
+                                               value="${valueExt}" class="form-control js-additional-field-phone">
                             <input type="text" name="additional_contact_email[]" readonly="" value="${valueEmail}" class="form-control js-additional-field-email">
                             <button class="additional-card__edit js-edit-contact">
                         

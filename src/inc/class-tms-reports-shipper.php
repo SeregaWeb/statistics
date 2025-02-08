@@ -2,8 +2,7 @@
 require_once( ABSPATH . 'wp-admin/includes/upgrade.php' );
 
 class TMSReportsShipper extends TMSReportsHelper {
-	
-	public $table_main = 'reports_shipper';
+	public $table_main     = 'reports_shipper';
 	public $posts_per_page = 25;
 	
 	public function ajax_actions() {
@@ -16,7 +15,7 @@ class TMSReportsShipper extends TMSReportsHelper {
 	
 	public function init() {
 		add_action( 'after_setup_theme', array( $this, 'create_table_shipper' ) );
-		
+
 //		add_action( 'after_setup_theme', array( $this, 'update_table_shipper_with_indexes' ) );
 		
 		$this->ajax_actions();
@@ -28,19 +27,20 @@ class TMSReportsShipper extends TMSReportsHelper {
 				"id" => FILTER_SANITIZE_NUMBER_INT
 			] );
 			
-			if ( empty( $MY_INPUT[ 'id' ] ) || !is_numeric( $MY_INPUT[ 'id' ]) ) {
+			if ( empty( $MY_INPUT[ 'id' ] ) || ! is_numeric( $MY_INPUT[ 'id' ] ) ) {
 				wp_send_json_error( [ 'message' => 'Shipper not deleted, id not found' ] );
 			}
 			
-			$delete = $this->delete_shipper_by_id($MY_INPUT[ 'id' ]);
+			$delete = $this->delete_shipper_by_id( $MY_INPUT[ 'id' ] );
 			
-			if ( $delete['status'] ) {
+			if ( $delete[ 'status' ] ) {
 				wp_send_json_success( $delete );
 			}
 			
 			wp_send_json_error( $delete );
 		}
 	}
+	
 	public function delete_shipper_by_id( $post_id ) {
 		
 		global $wpdb;
@@ -52,15 +52,16 @@ class TMSReportsShipper extends TMSReportsHelper {
 		
 		// Проверяем удаление поста
 		if ( $post_deleted === false ) {
-			return array('status' => false, 'message'=>'Error deleting post: ' . $wpdb->last_error);
+			return array( 'status' => false, 'message' => 'Error deleting post: ' . $wpdb->last_error );
 		}
 		
 		// Проверяем, были ли найдены записи для удаления
 		if ( $post_deleted === 0 ) {
 			echo 'Записи для удаления не найдены.';
-			return array('status' => false, 'message'=>'No records found for deletion.');
+			
+			return array( 'status' => false, 'message' => 'No records found for deletion.' );
 		} else {
-			return array('status' => true, 'message'=>'Successfully deleted post and its meta data.');
+			return array( 'status' => true, 'message' => 'Successfully deleted post and its meta data.' );
 		}
 	}
 	
@@ -70,31 +71,31 @@ class TMSReportsShipper extends TMSReportsHelper {
 		$table_name = $wpdb->prefix . $this->table_main;
 		
 		// Добавляем индексы для полей, по которым выполняются поиски
-		$wpdb->query("
+		$wpdb->query( "
         ALTER TABLE $table_name
         ADD INDEX idx_full_address (full_address),
         ADD INDEX idx_shipper_name (shipper_name),
         ADD INDEX idx_email (email),
         ADD INDEX idx_phone_number (phone_number);
-    ");
+    " );
 	}
 	
 	public function get_table_records() {
 		global $wpdb;
 		$table_name = $wpdb->prefix . $this->table_main;
 		
-		$current_page = isset($_GET['paged']) ? (int) $_GET['paged'] : 1;
+		$current_page = isset( $_GET[ 'paged' ] ) ? (int) $_GET[ 'paged' ] : 1;
 		
-		$search = isset($_GET['my_search']) ? sanitize_text_field($_GET['my_search']) : '';
+		$search = isset( $_GET[ 'my_search' ] ) ? sanitize_text_field( $_GET[ 'my_search' ] ) : '';
 		
-		$offset = ($current_page - 1) * $this->posts_per_page;
+		$offset = ( $current_page - 1 ) * $this->posts_per_page;
 		
 		$count_query = "SELECT COUNT(*) FROM $table_name WHERE 1=1";
 		
 		$main_query = "SELECT * FROM $table_name WHERE 1=1";
 		
-		if (!empty($search)) {
-			$search = '%' . $wpdb->esc_like($search) . '%';
+		if ( ! empty( $search ) ) {
+			$search           = '%' . $wpdb->esc_like( $search ) . '%';
 			$search_condition = " AND (
             shipper_name LIKE %s OR
             zip_code LIKE %s OR
@@ -102,33 +103,33 @@ class TMSReportsShipper extends TMSReportsHelper {
             full_address LIKE %s OR
             email LIKE %s
         )";
-			$count_query .= $search_condition;
-			$main_query .= $search_condition;
+			$count_query      .= $search_condition;
+			$main_query       .= $search_condition;
 		}
 		
 		$main_query .= " LIMIT %d OFFSET %d";
 		
 		$params = [];
-		if (!empty($search)) {
-			$params = array_merge($params, [$search, $search, $search, $search, $search]);
+		if ( ! empty( $search ) ) {
+			$params = array_merge( $params, [ $search, $search, $search, $search, $search ] );
 		}
-		if (!empty($platform)) {
+		if ( ! empty( $platform ) ) {
 			$params[] = $platform;
 		}
 		
-		$total_records = (int) $wpdb->get_var($wpdb->prepare($count_query, ...$params));
-		$main_results = $wpdb->get_results(
-			$wpdb->prepare($main_query, array_merge($params, [$this->posts_per_page, $offset])),
-			ARRAY_A
-		);
+		$total_records = (int) $wpdb->get_var( $wpdb->prepare( $count_query, ...$params ) );
+		$main_results  = $wpdb->get_results( $wpdb->prepare( $main_query, array_merge( $params, [
+			$this->posts_per_page,
+			$offset
+		] ) ), ARRAY_A );
 		
-		$total_pages = ceil($total_records / $this->posts_per_page);
+		$total_pages = ceil( $total_records / $this->posts_per_page );
 		
 		return array(
-			'results'       => $main_results,
-			'total_pages'   => $total_pages,
-			'total_posts'   => $total_records,
-			'current_page'  => $current_page,
+			'results'      => $main_results,
+			'total_pages'  => $total_pages,
+			'total_posts'  => $total_records,
+			'current_page' => $current_page,
 		);
 	}
 	
@@ -151,11 +152,11 @@ class TMSReportsShipper extends TMSReportsHelper {
 				"Email"        => FILTER_SANITIZE_EMAIL,
 			] );
 			
-			$st = !empty($MY_INPUT['Addr1']) ? $MY_INPUT['Addr1'] . ', ' : '';
-			$city = !empty($MY_INPUT['City']) ? $MY_INPUT['City'] . ', ' : '';
-			$state = !empty($MY_INPUT['State']) ? $MY_INPUT['State'] . ' ' : '';
-			$zip = !empty($MY_INPUT['ZipCode']) ? $MY_INPUT['ZipCode'] : ' ';
-			$country = $MY_INPUT['country'] !== 'USA' ? ' '.$MY_INPUT['country'] : '';
+			$st      = ! empty( $MY_INPUT[ 'Addr1' ] ) ? $MY_INPUT[ 'Addr1' ] . ', ' : '';
+			$city    = ! empty( $MY_INPUT[ 'City' ] ) ? $MY_INPUT[ 'City' ] . ', ' : '';
+			$state   = ! empty( $MY_INPUT[ 'State' ] ) ? $MY_INPUT[ 'State' ] . ' ' : '';
+			$zip     = ! empty( $MY_INPUT[ 'ZipCode' ] ) ? $MY_INPUT[ 'ZipCode' ] : ' ';
+			$country = $MY_INPUT[ 'country' ] !== 'USA' ? ' ' . $MY_INPUT[ 'country' ] : '';
 			
 			$MY_INPUT[ "full_address" ] = $st . $city . $state . $zip . $country;
 			
@@ -177,12 +178,12 @@ class TMSReportsShipper extends TMSReportsHelper {
 		}
 	}
 	
-	public function update_shipper () {
+	public function update_shipper() {
 		// Check if it's an AJAX request (simple defense)
 		if ( defined( 'DOING_AJAX' ) && DOING_AJAX ) {
 			// Sanitize input data
 			$MY_INPUT = filter_var_array( $_POST, [
-				"shipper_id" => FILTER_SANITIZE_STRING,
+				"shipper_id"   => FILTER_SANITIZE_STRING,
 				"shipper_name" => FILTER_SANITIZE_STRING,
 				"country"      => FILTER_SANITIZE_STRING,
 				"Addr1"        => FILTER_SANITIZE_STRING,
@@ -196,11 +197,11 @@ class TMSReportsShipper extends TMSReportsHelper {
 				"Email"        => FILTER_SANITIZE_EMAIL,
 			] );
 			
-			$st = !empty($MY_INPUT['Addr1']) ? $MY_INPUT['Addr1'] . ', ' : '';
-			$city = !empty($MY_INPUT['City']) ? $MY_INPUT['City'] . ', ' : '';
-			$state = !empty($MY_INPUT['State']) ? $MY_INPUT['State'] . ' ' : '';
-			$zip = !empty($MY_INPUT['ZipCode']) ? $MY_INPUT['ZipCode'] : ' ';
-			$country = $MY_INPUT['country'] !== 'USA' ? ' '.$MY_INPUT['country'] : '';
+			$st      = ! empty( $MY_INPUT[ 'Addr1' ] ) ? $MY_INPUT[ 'Addr1' ] . ', ' : '';
+			$city    = ! empty( $MY_INPUT[ 'City' ] ) ? $MY_INPUT[ 'City' ] . ', ' : '';
+			$state   = ! empty( $MY_INPUT[ 'State' ] ) ? $MY_INPUT[ 'State' ] . ' ' : '';
+			$zip     = ! empty( $MY_INPUT[ 'ZipCode' ] ) ? $MY_INPUT[ 'ZipCode' ] : ' ';
+			$country = $MY_INPUT[ 'country' ] !== 'USA' ? ' ' . $MY_INPUT[ 'country' ] : '';
 			
 			$MY_INPUT[ "full_address" ] = $st . $city . $state . $zip . $country;
 			
@@ -248,23 +249,23 @@ class TMSReportsShipper extends TMSReportsHelper {
 		);
 		
 		$result = $wpdb->insert( $table_name, $insert_params, array(
-				'%s',  // company_name
-				'%s',  // country
-				'%s',  // address1
-				'%s',  // address2
-				'%s',  // city
-				'%s',  // state
-				'%s',  // zip_code
-				'%s',  // contact_first_name
-				'%s',  // contact_last_name
-				'%s',  // phone_number
-				'%s',  // email
-				'%d',  // user_id_added
-				'%s',  // date_created
-				'%d',  // user_id_updated
-				'%s',  // date_updated
-				'%s',  // full_address
-			) );
+			'%s',  // company_name
+			'%s',  // country
+			'%s',  // address1
+			'%s',  // address2
+			'%s',  // city
+			'%s',  // state
+			'%s',  // zip_code
+			'%s',  // contact_first_name
+			'%s',  // contact_last_name
+			'%s',  // phone_number
+			'%s',  // email
+			'%d',  // user_id_added
+			'%s',  // date_created
+			'%d',  // user_id_updated
+			'%s',  // date_updated
+			'%s',  // full_address
+		) );
 		
 		// Check if the insert was successful
 		if ( $result ) {
@@ -290,34 +291,30 @@ class TMSReportsShipper extends TMSReportsHelper {
 		
 		$table_name = $wpdb->prefix . $this->table_main;
 		$user_id    = get_current_user_id();
-		$shipper_id = $data['shipper_id'];
+		$shipper_id = $data[ 'shipper_id' ];
 		
 		$update_params = array(
-			'shipper_name'       => $data['shipper_name'],
-			'country'            => $data['country'],
-			'address1'           => $data['Addr1'],
-			'address2'           => $data['Addr2'],
-			'city'               => $data['City'],
-			'state'              => $data['State'],
-			'zip_code'           => $data['ZipCode'],
-			'contact_first_name' => $data['FirstName'],
-			'contact_last_name'  => $data['LastName'],
-			'phone_number'       => $data['Phone'],
-			'email'              => $data['Email'],
+			'shipper_name'       => $data[ 'shipper_name' ],
+			'country'            => $data[ 'country' ],
+			'address1'           => $data[ 'Addr1' ],
+			'address2'           => $data[ 'Addr2' ],
+			'city'               => $data[ 'City' ],
+			'state'              => $data[ 'State' ],
+			'zip_code'           => $data[ 'ZipCode' ],
+			'contact_first_name' => $data[ 'FirstName' ],
+			'contact_last_name'  => $data[ 'LastName' ],
+			'phone_number'       => $data[ 'Phone' ],
+			'email'              => $data[ 'Email' ],
 			'user_id_updated'    => $user_id,
-			'date_updated'       => current_time('mysql'),
-			'full_address'       => $data['full_address'],
+			'date_updated'       => current_time( 'mysql' ),
+			'full_address'       => $data[ 'full_address' ],
 		);
 		
 		$where = array(
 			'id' => $shipper_id, // Assuming 'id' is the primary key column in your table
 		);
 		
-		$result = $wpdb->update(
-			$table_name,
-			$update_params,
-			$where,
-			array(
+		$result = $wpdb->update( $table_name, $update_params, $where, array(
 				'%s', // shipper_name
 				'%s', // country
 				'%s', // address1
@@ -332,8 +329,7 @@ class TMSReportsShipper extends TMSReportsHelper {
 				'%d', // user_id_updated
 				'%s', // date_updated
 				'%s', // full_address
-			),
-			array('%d') // Data type for the 'id' column in the WHERE clause
+			), array( '%d' ) // Data type for the 'id' column in the WHERE clause
 		);
 		
 		// Check if the update was successful
@@ -423,19 +419,19 @@ class TMSReportsShipper extends TMSReportsHelper {
 				}
 				
 				foreach ( $response as $value ) {
-					$address = $value->full_address;
+					$address       = $value->full_address;
 					$short_address = $value->city . ' ' . $value->state;
-					$name = $value->shipper_name;
-					$tmp .= '
+					$name          = $value->shipper_name;
+					$tmp           .= '
 						<li class="my-dropdown-search__item">
 	                        <a class="my-dropdown-search__link js-link-search-result" href="#">
 	                            <span class="my-dropdown-search__name">
-	                            	<span>'.$name . '</span>
+	                            	<span>' . $name . '</span>
 	                                <span>' . $address . '</span>
 	                            </span>
 	                            <div class="d-none">
 		                            <div class="js-content-company my-dropdown-search__hidden">
-		                                ' . $this->print_list_shipper( $address, $value->id , $short_address, $name ) . '
+		                                ' . $this->print_list_shipper( $address, $value->id, $short_address, $name ) . '
 									</div>
 								</div>
 	                        </a>
@@ -443,7 +439,7 @@ class TMSReportsShipper extends TMSReportsHelper {
 					';
 				}
 				
-				wp_send_json_success( array( 'template' => $tmp) );
+				wp_send_json_success( array( 'template' => $tmp ) );
 			}
 		}
 	}
@@ -456,7 +452,7 @@ class TMSReportsShipper extends TMSReportsHelper {
 		
 		$name_tmpl = '';
 		
-		if ($name) {
+		if ( $name ) {
 			$name_tmpl = '<li><h4>' . $name . '</h4></li>';
 		} else {
 			$name_tmpl = '<li><h4>Selected shipper</h4></li>';
@@ -464,10 +460,10 @@ class TMSReportsShipper extends TMSReportsHelper {
 		
 		$template = '
 		<ul class="result-search-el">
-			'.$name_tmpl.'
+			' . $name_tmpl . '
             <li class="address">' . $address . '</li>
 		</ul>
-		<input type="hidden" class="js-full-address" data-short-address="'.$short_address.'" data-current-address="'. $address .'" name="shipper_id" value="' . $id . '">';
+		<input type="hidden" class="js-full-address" data-short-address="' . $short_address . '" data-current-address="' . $address . '" name="shipper_id" value="' . $id . '">';
 		
 		return $template;
 	}

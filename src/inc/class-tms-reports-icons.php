@@ -197,11 +197,12 @@ class TMSReportsIcons {
 		';
 	}
 	
-	public function get_icon_logs () {
+	public function get_icon_logs() {
 		return '
 		<svg fill="#000000" width="24px" height="24px" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path d="M7 3H2v14h5V3zm2 0v14h9V3H9zM0 3c0-1.1.9-2 2-2h16a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V3zm3 1h3v2H3V4zm0 3h3v2H3V7zm0 3h3v2H3v-2z"/></svg>
 		';
 	}
+	
 	public function get_icon_tanker_end( $tooltip_text = null ) {
 		$tooltip = $tooltip_text ? "<title>$tooltip_text</title>" : '';
 		
@@ -259,11 +260,12 @@ class TMSReportsIcons {
 		';
 	}
 	
-	public function get_icon_bookmark () {
+	public function get_icon_bookmark() {
 		return '<svg width="28px" height="28px" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
 					<path d="M10 13.4673L6.24548 17.6665C5.63355 18.3509 4.5 17.9181 4.5 17V3C4.5 2.44772 4.94772 2 5.5 2H14.5C15.0523 2 15.5 2.44772 15.5 3V17C15.5 17.9181 14.3665 18.3509 13.7545 17.6665L10 13.4673Z" fill="#000000"/>
 				</svg>';
 	}
+	
 	public function get_warning_icon() {
 		return '
 		<svg width="42px" height="38px" viewBox="0 0 512 512" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
@@ -321,7 +323,7 @@ class TMSReportsIcons {
 		
 		return '
 <svg fill="#000000" version="1.1" id="Layer_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
-	 viewBox="0 0 496 496" xml:space="preserve">'.$tooltip.'
+	 viewBox="0 0 496 496" xml:space="preserve">' . $tooltip . '
 <g>
 	<g>
 		<g>
@@ -433,8 +435,9 @@ class TMSReportsIcons {
 		';
 	}
 	
-	public function get_icon_view($tooltip_text) {
+	public function get_icon_view( $tooltip_text ) {
 		$tooltip = $tooltip_text ? "<title>$tooltip_text</title>" : '';
+		
 		return '
 		<svg width="32px" height="32px" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
 		' . $tooltip . '
@@ -463,7 +466,7 @@ class TMSReportsIcons {
 		';
 	}
 	
-	public function get_icon_save () {
+	public function get_icon_save() {
 		return '
 		<svg fill="#000000" width="32px" height="32px" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg"><title>save</title><path d="M380.44,32H64A32,32,0,0,0,32,64V448a32,32,0,0,0,32,32H448a32.09,32.09,0,0,0,32-32V131.56ZM112,176V112H304v64ZM335.91,355.76a80,80,0,1,1-83.66-83.67A80.21,80.21,0,0,1,335.91,355.76Z"/></svg>
 		';
@@ -494,7 +497,7 @@ class TMSReportsIcons {
 		$tooltip = $tooltip_text ? "<title>$tooltip_text</title>" : '';
 		
 		return '
-			<svg width="102" height="102" viewBox="0 0 102 102" fill="none" xmlns="http://www.w3.org/2000/svg"> '.$tooltip.'
+			<svg width="102" height="102" viewBox="0 0 102 102" fill="none" xmlns="http://www.w3.org/2000/svg"> ' . $tooltip . '
 			<g clip-path="url(#clip0_2_2)">
 			<path d="M51.5 90C72.763 90 90 72.763 90 51.5C90 30.237 72.763 13 51.5 13C30.237 13 13 30.237 13 51.5C13 72.763 30.237 90 51.5 90Z" stroke="#ACADB3" stroke-width="3" stroke-miterlimit="10"/>
 			<path d="M51 77C65.3594 77 77 65.3594 77 51C77 36.6406 65.3594 25 51 25C36.6406 25 25 36.6406 25 51C25 65.3594 36.6406 77 51 77Z" stroke="#CB5676" stroke-width="2" stroke-miterlimit="10"/>
@@ -560,7 +563,7 @@ class TMSReportsIcons {
 		$tooltip = $tooltip_text ? "<title>$tooltip_text</title>" : '';
 		
 		return '<svg fill="#000000" height="800px" width="800px" version="1.2" baseProfile="tiny" id="Layer_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
-	  viewBox="-63 65 128 128" xml:space="preserve">'.$tooltip.'
+	  viewBox="-63 65 128 128" xml:space="preserve">' . $tooltip . '
 <path d="M-9.9,184.1l-15.8-2V155c30.2-9.2,13.4-43.1,10.1-52.1h-27.9c-3.3,9-20.1,42.9,10.1,52.1v27.1l-15.8,2
 	c-1.1,0.1-1.8,1.1-1.7,2.2c0.1,1.1,1,1.7,2.2,1.7h38.3c1.2,0,2.1-0.6,2.2-1.7C-8.1,185.2-8.9,184.2-9.9,184.1 M39.5,99.4V69.5H24
 	v29.9c-8.1,2-14.2,9.3-14.2,18v66.9c0,2.1,1.7,3.7,3.7,3.7h36.4c2,0,3.7-1.7,3.7-3.7v-66.9C53.6,108.7,47.6,101.4,39.5,99.4z
@@ -640,7 +643,7 @@ class TMSReportsIcons {
 		$tooltip = $tooltip_text ? "<title>$tooltip_text</title>" : '';
 		
 		return '
-		<svg width="200" height="200" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">'.$tooltip.'
+		<svg width="200" height="200" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">' . $tooltip . '
 <rect x="1" y="1" width="198" height="198" rx="19" fill="white"/>
 <rect x="1" y="1" width="198" height="198" rx="19" stroke="black" stroke-width="2"/>
 <path d="M195 100C195 152.467 152.467 195 100 195C47.5329 195 5 152.467 5 100C5 47.5329 47.5329 5 100 5C152.467 5 195 47.5329 195 100Z" fill="#E8BF16"/>
@@ -700,7 +703,7 @@ class TMSReportsIcons {
 	public function get_icon_blind_shipment( $tooltip_text = null ) {
 		$tooltip = $tooltip_text ? "<title>$tooltip_text</title>" : '';
 		
-		return '<svg width="800px" height="800px" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">'.$tooltip.'<path d="M12.5 14.8a3.29 3.29 0 0 1-.598-.06l3.838-3.838A3.272 3.272 0 0 1 12.5 14.8zm6.63-7.29l-.72.722a19.815 19.815 0 0 1 3.45 3.268c-.977 1.19-4.833 5.5-9.361 5.5a8 8 0 0 1-2.455-.404l-.782.783A9.238 9.238 0 0 0 12.5 18c5.708 0 10.212-5.948 10.4-6.201l.224-.299-.224-.299a20.063 20.063 0 0 0-3.77-3.69zM5.5 19.208l-.707-.707 2.231-2.231A19.774 19.774 0 0 1 2.1 11.8l-.224-.299.224-.299C2.288 10.948 6.792 5 12.5 5a9.944 9.944 0 0 1 4.573 1.22L19.5 3.793l.707.707zm2.253-3.667l2.095-2.095A3.27 3.27 0 0 1 9.2 11.5a3.304 3.304 0 0 1 3.3-3.3 3.27 3.27 0 0 1 1.945.648l1.883-1.883A8.759 8.759 0 0 0 12.5 6c-4.528 0-8.384 4.31-9.361 5.5a18.915 18.915 0 0 0 4.614 4.04z"/><path fill="none" d="M0 0h24v24H0z"/></svg>
+		return '<svg width="800px" height="800px" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">' . $tooltip . '<path d="M12.5 14.8a3.29 3.29 0 0 1-.598-.06l3.838-3.838A3.272 3.272 0 0 1 12.5 14.8zm6.63-7.29l-.72.722a19.815 19.815 0 0 1 3.45 3.268c-.977 1.19-4.833 5.5-9.361 5.5a8 8 0 0 1-2.455-.404l-.782.783A9.238 9.238 0 0 0 12.5 18c5.708 0 10.212-5.948 10.4-6.201l.224-.299-.224-.299a20.063 20.063 0 0 0-3.77-3.69zM5.5 19.208l-.707-.707 2.231-2.231A19.774 19.774 0 0 1 2.1 11.8l-.224-.299.224-.299C2.288 10.948 6.792 5 12.5 5a9.944 9.944 0 0 1 4.573 1.22L19.5 3.793l.707.707zm2.253-3.667l2.095-2.095A3.27 3.27 0 0 1 9.2 11.5a3.304 3.304 0 0 1 3.3-3.3 3.27 3.27 0 0 1 1.945.648l1.883-1.883A8.759 8.759 0 0 0 12.5 6c-4.528 0-8.384 4.31-9.361 5.5a18.915 18.915 0 0 0 4.614 4.04z"/><path fill="none" d="M0 0h24v24H0z"/></svg>
 		';
 	}
 	
@@ -708,7 +711,7 @@ class TMSReportsIcons {
 		$tooltip = $tooltip_text ? "<title>$tooltip_text</title>" : '';
 		
 		return '<svg fill="#000000" version="1.1" id="Layer_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
-	 viewBox="0 0 496 496" xml:space="preserve">'.$tooltip.'
+	 viewBox="0 0 496 496" xml:space="preserve">' . $tooltip . '
 <g>
 	<g>
 		<g>

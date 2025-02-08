@@ -984,5 +984,119 @@ class TMSReportsHelper extends TMSReportsIcons {
 		return ob_get_clean();
 	}
 	
+	function get_locations_template( $row, $template = 'default' ) {
+		$meta = get_field_value( $row, 'meta_data' );
+		
+		// Даты с проверкой, чтобы избежать ошибок
+		$delivery_date_raw = get_field_value( $row, 'delivery_date' );
+		$pick_up_date_raw  = get_field_value( $row, 'pick_up_date' );
+		
+		$delivery_date = ! empty( $delivery_date_raw )
+			? esc_html( DateTime::createFromFormat( 'Y-m-d H:i:s', $delivery_date_raw )->format( 'm/d/Y' ) ) : '';
+		$pick_up_date  = ! empty( $pick_up_date_raw )
+			? esc_html( DateTime::createFromFormat( 'Y-m-d H:i:s', $pick_up_date_raw )->format( 'm/d/Y' ) ) : '';
+		
+		// Декодируем JSON, если он не пуст
+		$delivery = ! empty( get_field_value( $meta, 'delivery_location' ) )
+			? json_decode( get_field_value( $meta, 'delivery_location' ), ARRAY_A ) : [];
+		$pick_up  = ! empty( get_field_value( $meta, 'pick_up_location' ) )
+			? json_decode( get_field_value( $meta, 'pick_up_location' ), ARRAY_A ) : [];
+		
+		// Обработка времени подтверждения доставки
+		$proof_of_delivery_time = get_field_value( $meta, 'proof_of_delivery_time' );
+		$proof_of_delivery_time = ! empty( $proof_of_delivery_time )
+			? esc_html( DateTime::createFromFormat( 'Y-m-d H:i:s', $proof_of_delivery_time )->format( 'H:i:s' ) ) : '';
+		
+		// Подставляем нужные шаблоны
+		$pick_up_template  = '';
+		$delivery_template = '';
+		
+		if ( $template === 'default' ) {
+			$pick_up_template  = $this->template_location( $pick_up );
+			$delivery_template = $this->template_location( $delivery );
+		} elseif ( $template === 'tracking' ) {
+			$commodity = get_field_value( $meta, 'commodity' );
+			$weight    = get_field_value( $meta, 'weight' );
+			
+			$pick_up_template  = $this->template_location_tracking( $pick_up, $commodity, $weight );
+			$delivery_template = $this->template_location_tracking( $delivery, $commodity, $weight );
+		}
+		
+		return [
+			'pick_up_date'           => $pick_up_date,
+			'pick_up_template'       => $pick_up_template,
+			'delivery_date'          => $delivery_date,
+			'delivery_template'      => $delivery_template,
+			'proof_of_delivery_time' => $proof_of_delivery_time,
+		];
+	}
+	
+	
+	function template_location( $data ) {
+		$TMSShipper = new TMSReportsShipper();
+		$output     = [];
+		
+		if ( ! empty( $data ) && is_array( $data ) ) {
+			foreach ( $data as $val ) {
+				if ( ! empty( $val[ 'short_address' ] ) ) {
+					$tooltip       = ! empty( $val[ 'address' ] ) ? esc_attr( $val[ 'address' ] ) : '';
+					$short_address = esc_html( $val[ 'short_address' ] );
+					$zip_code      = '';
+					
+					if ( ! empty( $val[ 'address_id' ] ) ) {
+						$detailed_address = $TMSShipper->get_shipper_by_id( $val[ 'address_id' ] );
+						if ( ! empty( $detailed_address ) && is_array( $detailed_address ) ) {
+							$zip_code = ' ' . esc_html( $detailed_address[ 0 ]->zip_code );
+						} else {
+							$zip_code = '<br/><span class="text-danger">This shipper has been deleted</span>';
+						}
+					}
+					
+					$output[] = '<p class="m-0" data-bs-toggle="tooltip" data-bs-placement="top" title="' . $tooltip . '">' . $short_address . $zip_code . '</p>';
+				}
+			}
+		}
+		
+		return implode( "\n", $output );
+	}
+	
+	function template_location_tracking( $data, $commodity, $weight ) {
+		$output = [];
+		
+		if ( ! empty( $data ) && is_array( $data ) ) {
+			foreach ( $data as $val ) {
+				if ( ! empty( $val[ 'address' ] ) ) {
+					$date    = ! empty( $val[ 'date' ] ) ? esc_html( date( 'm/d/Y', strtotime( $val[ 'date' ] ) ) )
+						: '';
+					$tooltip = esc_attr( "Commodity: $commodity Weight: $weight" );
+					$address = esc_html( $val[ 'address' ] );
+					
+					// Получаем значения времени
+					$time_start  = get_field_value( $val, 'time_start' );
+					$time_end    = get_field_value( $val, 'time_end' );
+					$strict_time = get_field_value( $val, 'strict_time' );
+					
+					// Формируем строку времени
+					$time_range = '';
+					if ( ! empty( $time_start ) ) {
+						$time_range = esc_html( $time_start );
+						if ( $strict_time === "false" && ! empty( $time_end ) ) {
+							$time_range .= ' - ' . esc_html( $time_end );
+						} else {
+							$time_range .= ' - strict';
+						}
+					}
+					
+					$output[] = '
+                    <div data-bs-toggle="tooltip" data-bs-placement="top" title="' . $tooltip . '" class="w-100 d-flex flex-column align-items-start">
+                        <p class="m-0">' . $address . '</p>
+                        <span class="text-small">' . trim( "$date $time_range" ) . '</span>
+                    </div>';
+				}
+			}
+		}
+		
+		return implode( "\n", $output );
+	}
 }
 

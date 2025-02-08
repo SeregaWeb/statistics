@@ -174,13 +174,13 @@ if ( $report_object ) {
             <div class="col-12 col-lg-8">
                 <div class="additional-contacts js-additional-contact row <?php echo ( $additional_contacts_isset ) ? ''
 					: 'd-none'; ?>">
-                    <div class="col-12">
+                    <div class="col-12 p-1">
                         <h4>Additional Contact</h4>
                     </div>
 					
 					<?php if ( ! $read_only ): ?>
 
-                        <div class="form-group mt-3 col-12 col-md-4">
+                        <div class="form-group mt-3 col-12 col-md-3 p-1">
                             <label for="contact-input-firstname" class="form-label">Contact Name</label>
                             <input id="contact-input-firstname" type="text"
                                    name="additional_form_contact_name"
@@ -188,14 +188,21 @@ if ( $report_object ) {
                                    class="form-control">
                         </div>
 
-                        <div class="form-group mt-3 col-12 col-md-4">
+                        <div class="form-group mt-3 col-12 col-md-3 p-1">
                             <label for="contact-input-phone" class="form-label ">Phone Number</label>
                             <input id="contact-input-phone" type="tel"
                                    name="additional_form_contact_phone"
                                    placeholder="Phone" class="form-control js-tel-mask">
                         </div>
 
-                        <div class="form-group mt-3 col-12 col-md-4">
+                        <div class="form-group mt-3 col-12 col-md-2 p-1">
+                            <label for="contact-input-phone" class="form-label ">Ext</label>
+                            <input id="contact-input-ext" type="tel"
+                                   name="additional_form_contact_phone_ext"
+                                   placeholder="Ext" class="form-control">
+                        </div>
+
+                        <div class="form-group mt-3 col-12 col-md-4 p-1">
                             <label for="contact-input-email" class="form-label">Email</label>
                             <input id="contact-input-email"
                                    type="email"
@@ -203,7 +210,7 @@ if ( $report_object ) {
                                    class="form-control">
                         </div>
 
-                        <div class="d-flex justify-content-start gap-2 mt-3">
+                        <div class="d-flex justify-content-start gap-2 mt-3 p-1">
                             <button class="btn btn-primary js-add-additional-contact">
                                 Add
                             </button>
@@ -226,17 +233,32 @@ if ( $report_object ) {
                                 <div class="additional-card js-additional-card">
 									
 									<?php if ( ! $read_only ): ?>
-
-                                        <input type="text" name="additional_contact_name[]" readonly
-                                               value="<?php echo $contact_val[ 'name' ]; ?>"
-                                               class="form-control js-additional-field-name">
-                                        <input type="text" name="additional_contact_phone[]" readonly
-                                               value="<?php echo $contact_val[ 'phone' ]; ?>"
-                                               class="form-control js-additional-field-phone">
-                                        <input type="text" name="additional_contact_email[]" readonly
-                                               value="<?php echo $contact_val[ 'email' ]; ?>"
-                                               class="form-control js-additional-field-email">
-
+										
+										<?php
+										$fields = [
+											'name'  => [
+												'name_attr' => 'additional_contact_name[]',
+												'class'     => 'js-additional-field-name'
+											],
+											'phone' => [
+												'name_attr' => 'additional_contact_phone[]',
+												'class'     => 'js-additional-field-phone'
+											],
+											'ext'   => [
+												'name_attr' => 'additional_contact_phone_ext[]',
+												'class'     => 'js-additional-field-ext'
+											],
+											'email' => [
+												'name_attr' => 'additional_contact_email[]',
+												'class'     => 'js-additional-field-email'
+											]
+										];
+										
+										foreach ($fields as $key => $attrs) {
+											$value = isset($contact_val[$key]) && !empty($contact_val[$key]) ? $contact_val[$key] : 'unset';
+											echo '<input type="text" name="' . esc_attr($attrs['name_attr']) . '" readonly value="' . esc_attr($value) . '" class="form-control ' . esc_attr($attrs['class']) . '">';
+										}
+										?>
 
                                         <button class="additional-card__edit js-edit-contact">
 											<?php echo $reports->get_icon_edit(); ?>
@@ -251,6 +273,9 @@ if ( $report_object ) {
                                             </li>
                                             <li>
                                                 <strong><?php echo $contact_val[ 'phone' ]; ?></strong>
+                                            </li>
+                                            <li>
+                                                <strong><?php echo $contact_val[ 'ext' ]; ?></strong>
                                             </li>
                                             <li>
                                                 <strong><?php echo $contact_val[ 'email' ]; ?></strong>

@@ -1,6 +1,6 @@
 <?php
 
-$reports = new TMSReports();
+$reports  = new TMSReports();
 $TMSUsers = new TMSUsers();
 
 // tab 4
@@ -9,9 +9,9 @@ $others_files  = '';
 $report_object = ! empty( $args[ 'report_object' ] ) ? $args[ 'report_object' ] : null;
 $post_id       = ! empty( $args[ 'post_id' ] ) ? $args[ 'post_id' ] : null;
 
-$billing_info = $TMSUsers->check_user_role_access(array('administrator', 'billing', 'accounting'),true);
+$billing_info = $TMSUsers->check_user_role_access( array( 'administrator', 'billing', 'accounting' ), true );
 
-$required_file_for_user =  $TMSUsers->check_user_role_access(array('billing', 'tracking'),true);
+$required_file_for_user = $TMSUsers->check_user_role_access( array( 'billing', 'tracking' ), true );
 
 if ( $report_object ) {
 	$values = $report_object;
@@ -19,26 +19,26 @@ if ( $report_object ) {
 	$main   = get_field_value( $values, 'main' );
 	
 	$full_view_only = get_field_value( $args, 'full_view_only' );
-	$tracking_tl = get_field_value( $args, 'tracking_tl' );
-    
-    if ($full_view_only && $tracking_tl) {
-        $full_view_only = false;
-    }
+	$tracking_tl    = get_field_value( $args, 'tracking_tl' );
+	
+	if ( $full_view_only && $tracking_tl ) {
+		$full_view_only = false;
+	}
 	
 	if ( is_array( $values ) && sizeof( $values ) > 0 ) {
 		
-		$post_status         = get_field_value( $main, 'status_post' );
-  
-		// tab documents start
-		$required_file    = get_field_value( $meta, 'attached_file_required' );
-		$others_files     = get_field_value( $meta, 'attached_files' );
-		$update_rate_conf = get_field_value( $meta, 'updated_rate_confirmation' );
-		$screen_picture   = get_field_value( $meta, 'screen_picture' );
-		$proof_of_delivery   = get_field_value( $meta, 'proof_of_delivery' );
-  
-        $reference_number    = get_field_value($meta, 'reference_number');
+		$post_status = get_field_value( $main, 'status_post' );
 		
-		$tbd                 = get_field_value( $meta, 'tbd' );
+		// tab documents start
+		$required_file     = get_field_value( $meta, 'attached_file_required' );
+		$others_files      = get_field_value( $meta, 'attached_files' );
+		$update_rate_conf  = get_field_value( $meta, 'updated_rate_confirmation' );
+		$screen_picture    = get_field_value( $meta, 'screen_picture' );
+		$proof_of_delivery = get_field_value( $meta, 'proof_of_delivery' );
+		
+		$reference_number = get_field_value( $meta, 'reference_number' );
+		
+		$tbd = get_field_value( $meta, 'tbd' );
 		
 		$required_file_arr    = false;
 		$others_files_arr     = false;
@@ -80,7 +80,7 @@ if ( $report_object ) {
 				);
 			}
 		}
-  
+		
 		if ( ! empty( $proof_of_delivery ) ) {
 			
 			$attachment_url = wp_get_attachment_url( $proof_of_delivery );
@@ -155,7 +155,8 @@ if ( $report_object ) {
     <div class="container-uploads <?php echo $full_view_only ? "read-only" : '' ?>">
 		<?php if ( isset( $required_file_arr ) && $required_file ): ?>
             <form class="js-remove-one card-upload required">
-                <a class="view-document" target="_blank" href="<?php echo $required_file_arr[ 'url' ]; ?>"><?php echo $reports->get_icon_view('view'); ?></a>
+                <a class="view-document" target="_blank"
+                   href="<?php echo $required_file_arr[ 'url' ]; ?>"><?php echo $reports->get_icon_view( 'view' ); ?></a>
                 <span class="required-label">Rate Confirmation</span>
                 <figure class="card-upload__figure">
 					<?php
@@ -185,11 +186,12 @@ if ( $report_object ) {
             </form>
 		<?php endif; ?>
 		
-  
+		
 		<?php
-        if ( isset( $update_rate_conf_arr ) && $update_rate_conf ): ?>
+		if ( isset( $update_rate_conf_arr ) && $update_rate_conf ): ?>
             <form class="js-remove-one card-upload updated">
-                <a class="view-document" target="_blank" href="<?php echo $update_rate_conf_arr[ 'url' ]; ?>"><?php echo $reports->get_icon_view('view'); ?></a>
+                <a class="view-document" target="_blank"
+                   href="<?php echo $update_rate_conf_arr[ 'url' ]; ?>"><?php echo $reports->get_icon_view( 'view' ); ?></a>
                 <span class="required-label">Updated Rate Confirmation</span>
                 <figure class="card-upload__figure">
 					
@@ -220,7 +222,8 @@ if ( $report_object ) {
 		
 		<?php if ( isset( $screen_picture_arr ) && $screen_picture ): ?>
             <form class="js-remove-one card-upload screen-picture">
-                <a class="view-document" target="_blank" href="<?php echo $screen_picture_arr[ 'url' ]; ?>"><?php echo $reports->get_icon_view('view'); ?></a>
+                <a class="view-document" target="_blank"
+                   href="<?php echo $screen_picture_arr[ 'url' ]; ?>"><?php echo $reports->get_icon_view( 'view' ); ?></a>
                 <span class="required-label">Dispatch message</span>
                 <figure class="card-upload__figure">
 					
@@ -248,10 +251,11 @@ if ( $report_object ) {
                 </a>
             </form>
 		<?php endif; ?>
-  
+		
 		<?php if ( isset( $proof_of_delivery_arr ) && $proof_of_delivery ): ?>
             <form class="js-remove-one card-upload proof_of_delivery">
-                <a class="view-document" target="_blank" href="<?php echo $proof_of_delivery_arr[ 'url' ]; ?>"><?php echo $reports->get_icon_view('view'); ?></a>
+                <a class="view-document" target="_blank"
+                   href="<?php echo $proof_of_delivery_arr[ 'url' ]; ?>"><?php echo $reports->get_icon_view( 'view' ); ?></a>
                 <span class="required-label">Proof Of Delivery</span>
                 <figure class="card-upload__figure">
 					
@@ -284,7 +288,8 @@ if ( $report_object ) {
 		<?php if ( isset( $others_files_arr ) && is_array( $others_files_arr ) ):
 			foreach ( $others_files_arr as $value ):?>
                 <form class="js-remove-one card-upload">
-                    <a class="view-document" target="_blank" href="<?php echo $value[ 'url' ]; ?>"><?php echo $reports->get_icon_view('view'); ?></a>
+                    <a class="view-document" target="_blank"
+                       href="<?php echo $value[ 'url' ]; ?>"><?php echo $reports->get_icon_view( 'view' ); ?></a>
                     <figure class="card-upload__figure">
 						
 						<?php
@@ -367,13 +372,13 @@ if ( $report_object ) {
             <div class="js-add-new-report order-4">
                 <div class="p-0 mb-2 col-12">
                     <p class="h5">Dispatch message
-                        
-                        <?php if (!$tbd): ?>
-                        <span class="required-star text-danger">*</span>
-                        <?php endif; ?>
+						
+						<?php if ( ! $tbd ): ?>
+                            <span class="required-star text-danger">*</span>
+						<?php endif; ?>
                     </p>
                     <label for="screen_picture" class="form-label">screen picture</label>
-                    <input type="file" <?php echo !$tbd ? 'required' : ''; ?>
+                    <input type="file" <?php echo ! $tbd ? 'required' : ''; ?>
                            name="screen_picture"
                            class="form-control js-control-uploads">
                 </div>
@@ -383,15 +388,15 @@ if ( $report_object ) {
                 </div>
             </div>
 		<?php endif; ?>
-  
+		
 		<?php if ( ! $proof_of_delivery ): ?>
             <div class="js-add-new-report order-4">
                 <div class="p-0 mb-2 col-12">
                     <p class="h5">
                         Proof Of Delivery
-                        <?php if ($required_file_for_user): ?>
-                        <span class="required-star text-danger">*</span>
-                        <?php endif; ?>
+						<?php if ( $required_file_for_user ): ?>
+                            <span class="required-star text-danger">*</span>
+						<?php endif; ?>
                     </p>
                     <label for="proof_of_delivery" class="form-label">POD file</label>
                     <input type="file" <?php echo $required_file_for_user ? 'required' : ''; ?>
@@ -427,12 +432,12 @@ if ( $report_object ) {
             <button type="button" data-tab-id="pills-trip-tab"
                     class="btn btn-dark js-next-tab">Previous
             </button>
-            
-            <?php if ($billing_info): ?>
+			
+			<?php if ( $billing_info ): ?>
                 <button type="button" data-tab-id="pills-billing-tab"
                         class="btn btn-primary js-next-tab">Next
                 </button>
-            <?php endif; ?>
+			<?php endif; ?>
         </div>
     </div>
 

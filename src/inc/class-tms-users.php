@@ -1,7 +1,6 @@
 <?php
 
 class  TMSUsers extends TMSReportsHelper {
-	
 	private $curent_select_table_key = 'field_66eeba6448749';
 	private $project_for_bookmark    = '';
 	

@@ -41,7 +41,7 @@ class TMSReportsCompany extends TMSReportsHelper {
 		
 		global $global_options;
 		$ling_brocker_single = get_field_value( $global_options, 'single_page_broker' );
-  
+		
 		$broker_info = $this->get_company_by_id( $id, ARRAY_A );
 		
 		$broker_name = '';

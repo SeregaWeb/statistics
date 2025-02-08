@@ -6,12 +6,9 @@ class TMSReports extends TMSReportsHelper {
 	public $table_main     = '';
 	public $table_meta     = '';
 	public $per_page_loads = 100;
-	
-	public $user_emails  = array();
-	public $email_helper = false;
-	
-	public $project = '';
-	
+	public $user_emails    = array();
+	public $email_helper   = false;
+	public $project        = '';
 	public $log_controller = false;
 	
 	public function __construct() {
@@ -31,40 +28,41 @@ class TMSReports extends TMSReportsHelper {
 		}
 	}
 	
-	public function get_profit_by_dates($array_dates) {
+	public function get_profit_by_dates( $array_dates ) {
 		global $wpdb;
 		$table_main = $wpdb->prefix . $this->table_main;
 		$table_meta = $wpdb->prefix . $this->table_meta;
 		
 		// Если входной параметр не массив – возвращаем пустой массив
-		if (!is_array($array_dates)) {
+		if ( ! is_array( $array_dates ) ) {
 			return array();
 		}
 		
 		// Убираем дубликаты, если они есть
-		$array_dates = array_unique($array_dates);
+		$array_dates = array_unique( $array_dates );
 		
 		// Обрезаем время (оставляем только дату) и фильтруем невалидные даты
-		$array_dates = array_filter(array_map(function($date) {
-			$trimmed = substr($date, 0, 10);
+		$array_dates = array_filter( array_map( function( $date ) {
+			$trimmed = substr( $date, 0, 10 );
 			// Простейшая проверка формата YYYY-MM-DD (например, длина 10 и наличие тире)
-			if (strlen($trimmed) === 10 && substr_count($trimmed, '-') === 2) {
+			if ( strlen( $trimmed ) === 10 && substr_count( $trimmed, '-' ) === 2 ) {
 				return $trimmed;
 			}
+			
 			return false;
-		}, $array_dates));
+		}, $array_dates ) );
 		
 		// Если после фильтрации массив пуст – возвращаем пустой массив
-		if (empty($array_dates)) {
+		if ( empty( $array_dates ) ) {
 			return array();
 		}
 		
 		// Создаем строку плейсхолдеров для передачи дат
-		$placeholders = implode(',', array_fill(0, count($array_dates), '%s'));
+		$placeholders = implode( ',', array_fill( 0, count( $array_dates ), '%s' ) );
 		
 		// Подготавливаем SQL-запрос.
 		// Используем функцию DATE() для извлечения даты из поля date_booked.
-		$query = $wpdb->prepare("
+		$query = $wpdb->prepare( "
         SELECT DATE(main.date_booked) AS date, SUM(meta.meta_value) AS total_profit
         FROM $table_main AS main
         LEFT JOIN $table_meta AS meta ON main.id = meta.post_id
@@ -73,24 +71,24 @@ class TMSReports extends TMSReportsHelper {
           AND meta.meta_key = 'profit'
         GROUP BY DATE(main.date_booked)
         ORDER BY DATE(main.date_booked) ASC
-    ", ...$array_dates);
+    ", ...$array_dates );
 		
 		// Для отладки можно раскомментировать следующую строку:
 		// error_log($query);
 		
-		$results = $wpdb->get_results($query, ARRAY_A);
+		$results = $wpdb->get_results( $query, ARRAY_A );
 		
 		// Если запрос вернул null или false, возвращаем пустой массив
-		if (!$results) {
+		if ( ! $results ) {
 			return array();
 		}
 		
 		// Преобразуем результат в ассоциативный массив вида: 'YYYY-MM-DD' => сумма профита
 		$profit_by_date = [];
-		foreach ($results as $row) {
-			if (!empty($row['date'])) {
+		foreach ( $results as $row ) {
+			if ( ! empty( $row[ 'date' ] ) ) {
 				// Приводим сумму к типу float
-				$profit_by_date[$row['date']] = (float) $row['total_profit'];
+				$profit_by_date[ $row[ 'date' ] ] = (float) $row[ 'total_profit' ];
 			}
 		}
 		
@@ -1390,17 +1388,17 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 			$additional_contacts = [];
 			if ( ! empty( $_POST[ 'additional_contact_name' ] ) && ! empty( $_POST[ 'additional_contact_phone' ] ) && ! empty( $_POST[ 'additional_contact_email' ] ) ) {
 				
-				$additional_names  = filter_var_array( $_POST[ 'additional_contact_name' ], FILTER_SANITIZE_STRING );
-				$additional_phones = filter_var_array( $_POST[ 'additional_contact_phone' ], FILTER_SANITIZE_STRING );
+				$additional_names      = filter_var_array( $_POST[ 'additional_contact_name' ], FILTER_SANITIZE_STRING );
+				$additional_phones     = filter_var_array( $_POST[ 'additional_contact_phone' ], FILTER_SANITIZE_STRING );
 				$additional_phones_ext = filter_var_array( $_POST[ 'additional_contact_phone_ext' ], FILTER_SANITIZE_STRING );
-				$additional_emails = filter_var_array( $_POST[ 'additional_contact_email' ], FILTER_SANITIZE_EMAIL );
+				$additional_emails     = filter_var_array( $_POST[ 'additional_contact_email' ], FILTER_SANITIZE_EMAIL );
 				
 				foreach ( $additional_names as $index => $name ) {
 					$additional_contacts[] = [
 						'name'  => $name,
 						'phone' => $additional_phones[ $index ] ?? '',
 						'email' => $additional_emails[ $index ] ?? '',
-						'ext'  => $additional_phones_ext[ $index ] ?? '',
+						'ext'   => $additional_phones_ext[ $index ] ?? '',
 					];
 				}
 			}
@@ -1607,13 +1605,13 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 				$additional_names  = filter_var_array( $_POST[ 'additional_contact_name' ], FILTER_SANITIZE_STRING );
 				$additional_phones = filter_var_array( $_POST[ 'additional_contact_phone' ], FILTER_SANITIZE_STRING );
 				$additional_emails = filter_var_array( $_POST[ 'additional_contact_email' ], FILTER_SANITIZE_EMAIL );
-				$additional_ext = filter_var_array( $_POST[ 'additional_contact_phone_ext' ], FILTER_SANITIZE_STRING );
+				$additional_ext    = filter_var_array( $_POST[ 'additional_contact_phone_ext' ], FILTER_SANITIZE_STRING );
 				
 				foreach ( $additional_names as $index => $name ) {
 					$additional_contacts[] = [
 						'name'  => $name,
 						'phone' => $additional_phones[ $index ] ?? '',
-						'ext' => $additional_ext[ $index ] ?? '',
+						'ext'   => $additional_ext[ $index ] ?? '',
 						'email' => $additional_emails[ $index ] ?? ''
 					];
 				}

@@ -17,29 +17,25 @@ define( 'LIBS_JS', THEME_URI . '/src/js/libs/' );
 // required files.
 require THEME_DIR . '/src/inc/class-wp-rock.php';
 
-require THEME_DIR . '/src/inc/class-tms-reports-icons.php';
-require THEME_DIR . '/src/inc/class-tms-reports-helper.php';
-require THEME_DIR . '/src/inc/class-tms-auth.php';
-require THEME_DIR . '/src/inc/class-tms-reports.php';
-require THEME_DIR . '/src/inc/class-tms-users.php';
-require THEME_DIR . '/src/inc/class-tms-reports-statistics.php';
-require THEME_DIR . '/src/inc/class-tms-reports-company.php';
-require THEME_DIR . '/src/inc/class-tms-reports-shipper.php';
-require THEME_DIR . '/src/inc/class-tms-emails.php';
-require THEME_DIR . '/src/inc/class-tms-logs.php';
-require THEME_DIR . '/src/inc/class-tms-performance.php';
+require THEME_DIR . '/src/inc/core/class-tms-reports-icons.php';
+require THEME_DIR . '/src/inc/core/class-tms-reports-helper.php';
+require THEME_DIR . '/src/inc/core/class-tms-auth.php';
+require THEME_DIR . '/src/inc/core/class-tms-reports.php';
+require THEME_DIR . '/src/inc/core/class-tms-users.php';
+require THEME_DIR . '/src/inc/core/class-tms-reports-statistics.php';
+require THEME_DIR . '/src/inc/core/class-tms-reports-company.php';
+require THEME_DIR . '/src/inc/core/class-tms-reports-shipper.php';
+require THEME_DIR . '/src/inc/core/class-tms-emails.php';
+require THEME_DIR . '/src/inc/core/class-tms-logs.php';
+require THEME_DIR . '/src/inc/core/class-tms-performance.php';
 
 require THEME_DIR . '/src/inc/initial-setup.php';
 require THEME_DIR . '/src/inc/enqueue-scripts.php';
-require THEME_DIR . '/src/inc/wpeditor-formats-options.php';
-require THEME_DIR . '/src/inc/analytics-settings.php';
 require THEME_DIR . '/src/inc/acf-setting.php';
 require THEME_DIR . '/src/inc/custom-posts-type.php';
 require THEME_DIR . '/src/inc/custom-taxonomies.php';
-require THEME_DIR . '/src/inc/woocommerce-customization.php';
 require THEME_DIR . '/src/inc/class-wp-rock-blocks.php';
 require THEME_DIR . '/src/inc/ajax-requests.php';
-require THEME_DIR . '/src/inc/custom-accept-cookies.php';
 require THEME_DIR . '/src/inc/custom-hooks.php';
 require THEME_DIR . '/src/inc/custom-shortcodes.php';
 require THEME_DIR . '/src/inc/class-mobile-detect.php';
@@ -48,8 +44,10 @@ function disable_canonical_redirect_for_paged( $redirect_url ) {
 	if ( is_paged() && strpos( $redirect_url, '/page/' ) !== false ) {
 		return false;
 	}
+	
 	return $redirect_url;
 }
+
 add_filter( 'redirect_canonical', 'disable_canonical_redirect_for_paged' );
 
 if ( false ) {
@@ -70,7 +68,7 @@ if ( false ) {
 			'other'
 		);
 		
-		$statuses = array(
+		$statuses         = array(
 			'waiting-on-pu-date',
 			'at-pu',
 			'loaded-enroute',
@@ -80,21 +78,21 @@ if ( false ) {
 			'cancelled',
 			'waiting-on-rc'
 		);
-		 $invoices = array(
-			'invoiced' => 'Invoiced',
-			'not-invoiced' => 'Not invoiced',
+		$invoices         = array(
+			'invoiced'          => 'Invoiced',
+			'not-invoiced'      => 'Not invoiced',
 			'invoiced-directly' => 'Invoiced directly',
 		);
-		 $factoring_status = array (
-			'unsubmitted' => 'Unsubmitted',
-			'in-processing' => 'In Processing',
+		$factoring_status = array(
+			'unsubmitted'        => 'Unsubmitted',
+			'in-processing'      => 'In Processing',
 			'requires-attention' => 'Requires Attention',
-			'in-dispute' => 'In Dispute',
-			'processed' => 'Processed',
-			'charge-back' => 'Charge Back',
-			'short-pay' => 'Short Pay',
+			'in-dispute'         => 'In Dispute',
+			'processed'          => 'Processed',
+			'charge-back'        => 'Charge Back',
+			'short-pay'          => 'Short Pay',
 		);
-		 $features = array(
+		$features         = array(
 			'hazmat'              => 'Hazmat',
 			'tanker-end'          => 'Tanker End.',
 			'driver-assist'       => 'Driver assist',
@@ -116,34 +114,41 @@ if ( false ) {
 			'blind-shipment'      => 'Blind shipment',
 			'partial'             => 'Partial'
 		);
-		 $types = array (
-			'ltl' => 'LTL',
-			'container' => 'Container',
+		$types            = array(
+			'ltl'           => 'LTL',
+			'container'     => 'Container',
 			'drop_and_hook' => 'Drop and Hook',
-			'last_mile' => 'Last Mile',
-			'other' => 'Other',
-			'truck_load' => 'Truck Load',
+			'last_mile'     => 'Last Mile',
+			'other'         => 'Other',
+			'truck_load'    => 'Truck Load',
 		);
-
 		
-		$dispatcher_ids = [ 2, 3, 5, 8, 9, 10, 11, 12 ];
-		$random_dispatcher = $dispatcher_ids[ array_rand( $dispatcher_ids ) ];
-		$random_source_key = array_rand( $sources );
-		$random_status_key = array_rand( $statuses );
-		$random_factoring_status_key = array_rand($factoring_status);
-		$random_invoices_key = array_rand( $invoices );
-		$random_load_type_key = array_rand($types);
-		$random_features_key = array_rand($features);
+		
+		$dispatcher_ids              = [ 2, 3, 5, 8, 9, 10, 11, 12 ];
+		$random_dispatcher           = $dispatcher_ids[ array_rand( $dispatcher_ids ) ];
+		$random_source_key           = array_rand( $sources );
+		$random_status_key           = array_rand( $statuses );
+		$random_factoring_status_key = array_rand( $factoring_status );
+		$random_invoices_key         = array_rand( $invoices );
+		$random_load_type_key        = array_rand( $types );
+		$random_features_key         = array_rand( $features );
+		
 		return [
 			'customer_id'               => rand( 1, 10 ),
 			'contact_name'              => 'Test Name ' . rand( 1, 100 ),
 			'contact_phone'             => '+1-234-567-' . str_pad( rand( 0, 9999 ), 4, '0', STR_PAD_LEFT ),
 			'contact_email'             => 'test' . rand( 1, 100 ) . '@example.com',
-			'additional_contacts'       => json_encode( [ ['name' => 'name 1', 'phone' => '0994244532', 'email' => 'test' . rand( 1, 100 ) . '@example.com' ] ] ),
+			'additional_contacts'       => json_encode( [
+				[
+					'name'  => 'name 1',
+					'phone' => '0994244532',
+					'email' => 'test' . rand( 1, 100 ) . '@example.com'
+				]
+			] ),
 			'load_status'               => $statuses[ $random_status_key ],
-			'instructions'              => $features[$random_features_key],
+			'instructions'              => $features[ $random_features_key ],
 			'source'                    => $sources[ $random_source_key ],
-			'load_type'                 => $types[$random_load_type_key],
+			'load_type'                 => $types[ $random_load_type_key ],
 			'commodity'                 => 'Commodity ' . rand( 1, 20 ),
 			'weight'                    => rand( 10, 1000 ),
 			'notes'                     => 'Notes for record ' . rand( 1, 100 ),
@@ -174,7 +179,7 @@ if ( false ) {
 			'user_id_updated' => rand( 1, 10 ),
 			'date_updated'    => current_time( 'mysql' ),
 			'pick_up_date'    => date( 'Y-m-d H:i:s', strtotime( '-' . rand( 1, 360 ) . ' days' ) ),
-			'date_booked'     => current_time('mysql'),
+			'date_booked'     => current_time( 'mysql' ),
 			'load_problem'    => null,
 			'delivery_date'   => date( 'Y-m-d H:i:s', strtotime( '-' . rand( 1, 360 ) . ' days' ) ),
 			'status_post'     => 'publish',
@@ -239,25 +244,25 @@ function update_custom_post_meta_with_random_values() {
 		
 		// Подготовка SQL-запроса для обновления мета-данных
 		$wpdb->update( $table_meta, array(
-				'meta_value' => $sources[ $random_source_key ]
-			), array(
-				'post_id'  => $post->post_id,
-				'meta_key' => 'source'
-			) );
+			'meta_value' => $sources[ $random_source_key ]
+		), array(
+			'post_id'  => $post->post_id,
+			'meta_key' => 'source'
+		) );
 		
 		$wpdb->update( $table_meta, array(
-				'meta_value' => $statuses[ $random_status_key ]
-			), array(
-				'post_id'  => $post->post_id,
-				'meta_key' => 'load_status'
-			) );
+			'meta_value' => $statuses[ $random_status_key ]
+		), array(
+			'post_id'  => $post->post_id,
+			'meta_key' => 'load_status'
+		) );
 		
 		$wpdb->update( $table_meta, array(
-				'meta_value' => $random_dispatcher
-			), array(
-				'post_id'  => $post->post_id,
-				'meta_key' => 'dispatcher_initials'
-			) );
+			'meta_value' => $random_dispatcher
+		), array(
+			'post_id'  => $post->post_id,
+			'meta_key' => 'dispatcher_initials'
+		) );
 	}
 	
 	echo "Мета-данные успешно обновлены для всех постов в кастомной таблице!";

@@ -1681,72 +1681,11 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 			}
 			
 			if ( ! empty( $_FILES[ 'attached_files' ] ) ) {
-				$files          = $_FILES[ 'attached_files' ];
-				$uploaded_files = [];
-				$user_id        = get_current_user_id();
-				
-				foreach ( $files[ 'name' ] as $key => $value ) {
-					if ( $files[ 'name' ][ $key ] ) {
-						// Получаем оригинальное имя и расширение
-						$original_name = $files[ 'name' ][ $key ];
-						$file_info     = pathinfo( $original_name );
-						$filename      = $file_info[ 'filename' ];
-						$extension     = isset( $file_info[ 'extension' ] ) ? $file_info[ 'extension' ] : '';
-						
-						// Формируем уникальное имя: {user_id}_{timestamp}_{original_filename}.{extension}
-						$timestamp    = time();
-						$unique       = rand( 1, 99999 );
-						$new_filename = $user_id . '_' . $unique . $timestamp . '_' . $filename;
-						if ( ! empty( $extension ) ) {
-							$new_filename .= '.' . $extension;
-						}
-						
-						// Формируем массив файла для загрузки
-						$file = [
-							'name'     => $new_filename,
-							'type'     => $files[ 'type' ][ $key ],
-							'tmp_name' => $files[ 'tmp_name' ][ $key ],
-							'error'    => $files[ 'error' ][ $key ],
-							'size'     => $files[ 'size' ][ $key ]
-						];
-						
-						// Используем wp_handle_upload для обработки загрузки
-						$upload_result = wp_handle_upload( $file, [ 'test_form' => false ] );
-						
-						if ( ! isset( $upload_result[ 'error' ] ) ) {
-							// Получаем данные о загруженном файле
-							$file_url  = $upload_result[ 'url' ];
-							$file_type = $upload_result[ 'type' ];
-							$file_path = $upload_result[ 'file' ];
-							
-							// Подготавливаем данные для записи в медиабиблиотеку
-							$attachment = [
-								'guid'           => $file_url,
-								'post_mime_type' => $file_type,
-								'post_title'     => basename( $file_url ),
-								'post_content'   => '',
-								'post_status'    => 'inherit'
-							];
-							
-							// Вставляем запись в базу данных (таблица attachments)
-							$attachment_id = wp_insert_attachment( $attachment, $file_path );
-							
-							// Генерируем метаданные для вложения и обновляем базу данных
-							require_once( ABSPATH . 'wp-admin/includes/image.php' );
-							$attachment_data = wp_generate_attachment_metadata( $attachment_id, $file_path );
-							wp_update_attachment_metadata( $attachment_id, $attachment_data );
-							
-							// Добавляем ID загруженного файла в результирующий массив
-							$uploaded_files[] = $attachment_id;
-						} else {
-							// Если произошла ошибка загрузки, возвращаем JSON-ответ с ошибкой
-							wp_send_json_error( [ 'message' => $upload_result[ 'error' ] ] );
-						}
-					}
-				}
-				
-				// Теперь в массиве $MY_INPUT['uploaded_files'] содержатся ID загруженных файлов
-				$MY_INPUT[ 'uploaded_files' ] = $uploaded_files;
+				$MY_INPUT[ 'uploaded_files' ] = $this->multy_upload_files( 'attached_files' );
+			}
+			
+			if ( ! empty( $_FILES[ 'freight_pictures' ] ) ) {
+				$MY_INPUT[ 'freight_pictures' ] = $this->multy_upload_files( 'freight_pictures' );
 			}
 			
 			$result = $this->add_report_files( $MY_INPUT );
@@ -1761,46 +1700,72 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 		}
 	}
 	
-	function upload_one_file( $files ) {
-		$uploaded_files = false;
+	function multy_upload_files( $fields_name ) {
+		if ( ! isset( $_FILES[ $fields_name ] ) || empty( $_FILES[ $fields_name ][ 'name' ][ 0 ] ) ) {
+			return []; // No files to upload
+		}
 		
-		if ( $files[ 'size' ] > 0 ) {
-			$uploaded_files = [];
+		$files          = $_FILES[ $fields_name ];
+		$uploaded_files = [];
+		$errors         = [];
+		$user_id        = get_current_user_id();
+		
+		foreach ( $files[ 'name' ] as $key => $original_name ) {
+			if ( empty( $original_name ) ) {
+				continue;
+			}
 			
-			// Получаем ID текущего пользователя и временную метку
-			$user_id   = get_current_user_id();
-			$timestamp = time();
+			// Check for upload errors
+			if ( $files[ 'error' ][ $key ] !== UPLOAD_ERR_OK ) {
+				$errors[] = "Upload error: " . $original_name;
+				continue;
+			}
 			
-			// Разбиваем оригинальное имя файла на имя и расширение
-			$original_name = $files[ 'name' ];
+			// Validate file type
 			$file_info     = pathinfo( $original_name );
-			$filename      = $file_info[ 'filename' ];
-			$unique        = rand( 1, 99999 );
-			$extension     = isset( $file_info[ 'extension' ] ) ? $file_info[ 'extension' ] : '';
-			$new_filename  = $user_id . '_' . $unique . $timestamp . '_' . $filename;
+			$extension     = isset( $file_info[ 'extension' ] ) ? strtolower( $file_info[ 'extension' ] ) : '';
+			$allowed_types = $this->get_allowed_formats();                                          // Allowed formats
+			
+			if ( ! in_array( $extension, $allowed_types ) ) {
+				$errors[] = "Unsupported file format: " . $original_name;
+				continue;
+			}
+			
+			// Validate file size (max 50MB)
+			
+			$max_size = 50 * 1024 * 1024; // 50MB
+			
+			if ( $files[ 'size' ][ $key ] > $max_size ) {
+				$errors[] = "File is too large (max 50MB): " . $original_name;
+				continue;
+			}
+			
+			// Generate unique file name: {user_id}_{timestamp}_{random}_{filename}.{extension}
+			$timestamp    = time();
+			$unique       = rand( 1000, 99999 );
+			$new_filename = "{$user_id}_{$timestamp}_{$unique}_" . sanitize_file_name( $file_info[ 'filename' ] );
 			if ( ! empty( $extension ) ) {
 				$new_filename .= '.' . $extension;
 			}
 			
-			// Подготавливаем массив файла для загрузки
+			// Prepare file array for upload
 			$file = [
 				'name'     => $new_filename,
-				'type'     => $files[ 'type' ],
-				'tmp_name' => $files[ 'tmp_name' ],
-				'error'    => $files[ 'error' ],
-				'size'     => $files[ 'size' ]
+				'type'     => $files[ 'type' ][ $key ],
+				'tmp_name' => $files[ 'tmp_name' ][ $key ],
+				'error'    => $files[ 'error' ][ $key ],
+				'size'     => $files[ 'size' ][ $key ],
 			];
 			
-			// Используем wp_handle_upload для обработки загрузки
+			// Upload file using wp_handle_upload()
 			$upload_result = wp_handle_upload( $file, [ 'test_form' => false ] );
 			
 			if ( ! isset( $upload_result[ 'error' ] ) ) {
-				// Получаем данные о файле
+				// File uploaded successfully, add to media library
 				$file_url  = $upload_result[ 'url' ];
 				$file_type = $upload_result[ 'type' ];
 				$file_path = $upload_result[ 'file' ];
 				
-				// Подготавливаем данные для записи в медиабиблиотеку
 				$attachment = [
 					'guid'           => $file_url,
 					'post_mime_type' => $file_type,
@@ -1809,23 +1774,100 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 					'post_status'    => 'inherit'
 				];
 				
-				// Вставляем запись в базу данных (таблица attachments)
 				$attachment_id = wp_insert_attachment( $attachment, $file_path );
 				
-				// Генерация метаданных для вложения и обновление базы данных
+				if ( ! is_wp_error( $attachment_id ) ) {
+					require_once( ABSPATH . 'wp-admin/includes/image.php' );
+					$attachment_data = wp_generate_attachment_metadata( $attachment_id, $file_path );
+					wp_update_attachment_metadata( $attachment_id, $attachment_data );
+					$uploaded_files[] = $attachment_id;
+				} else {
+					$errors[] = "Error adding file to media library: " . $original_name;
+				}
+			} else {
+				$errors[] = "Upload failed: " . $upload_result[ 'error' ];
+			}
+		}
+		
+		// Return errors if any
+		if ( ! empty( $errors ) ) {
+			wp_send_json_error( [ 'message' => $errors ] );
+		}
+		
+		return $uploaded_files;
+	}
+	
+	function upload_one_file( $file ) {
+		if ( ! isset( $file ) || empty( $file[ 'size' ] ) ) {
+			return false; // No file uploaded
+		}
+		
+		// Validate upload error
+		if ( $file[ 'error' ] !== UPLOAD_ERR_OK ) {
+			wp_send_json_error( [ 'message' => 'File upload error: ' . $file[ 'error' ] ] );
+		}
+		
+		// Validate file type
+		$file_info     = pathinfo( $file[ 'name' ] );
+		$extension     = isset( $file_info[ 'extension' ] ) ? strtolower( $file_info[ 'extension' ] ) : '';
+		$allowed_types = $this->get_allowed_formats(); // Allowed formats
+		
+		if ( ! in_array( $extension, $allowed_types ) ) {
+			wp_send_json_error( [ 'message' => 'Unsupported file format: ' . $file[ 'name' ] ] );
+		}
+		
+		// Validate file size (max 50MB)
+		$max_size = 50 * 1024 * 1024;                  // 50MB
+		if ( $file[ 'size' ] > $max_size ) {
+			wp_send_json_error( [ 'message' => 'File is too large (max 50MB): ' . $file[ 'name' ] ] );
+		}
+		
+		// Generate unique file name: {user_id}_{timestamp}_{random}_{filename}.{extension}
+		$user_id      = get_current_user_id();
+		$timestamp    = time();
+		$unique       = rand( 1000, 99999 );
+		$new_filename = "{$user_id}_{$timestamp}_{$unique}_" . sanitize_file_name( $file_info[ 'filename' ] );
+		
+		if ( ! empty( $extension ) ) {
+			$new_filename .= '.' . $extension;
+		}
+		
+		// Prepare file array for upload
+		$file[ 'name' ] = $new_filename;
+		
+		// Upload file using wp_handle_upload()
+		$upload_result = wp_handle_upload( $file, [ 'test_form' => false ] );
+		
+		if ( ! isset( $upload_result[ 'error' ] ) ) {
+			// File uploaded successfully, add to media library
+			$file_url  = $upload_result[ 'url' ];
+			$file_type = $upload_result[ 'type' ];
+			$file_path = $upload_result[ 'file' ];
+			
+			$attachment = [
+				'guid'           => $file_url,
+				'post_mime_type' => $file_type,
+				'post_title'     => basename( $file_url ),
+				'post_content'   => '',
+				'post_status'    => 'inherit'
+			];
+			
+			$attachment_id = wp_insert_attachment( $attachment, $file_path );
+			
+			if ( ! is_wp_error( $attachment_id ) ) {
 				require_once( ABSPATH . 'wp-admin/includes/image.php' );
 				$attachment_data = wp_generate_attachment_metadata( $attachment_id, $file_path );
 				wp_update_attachment_metadata( $attachment_id, $attachment_data );
 				
-				// Теперь у нас есть ID загруженного файла
-				$uploaded_files[] = $attachment_id;
+				return $attachment_id; // Return uploaded file ID
 			} else {
-				// Возвращаем ошибку загрузки файла
-				wp_send_json_error( [ 'message' => $upload_result[ 'error' ] ] );
+				wp_send_json_error( [ 'message' => 'Error adding file to media library' ] );
 			}
+		} else {
+			wp_send_json_error( [ 'message' => 'Upload failed: ' . $upload_result[ 'error' ] ] );
 		}
 		
-		return $uploaded_files;
+		return false;
 	}
 	
 	/**
@@ -3060,7 +3102,6 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 		// Преобразуем мета-данные в удобный массив
 		$current_data = array_column( $meta_data, 'meta_value', 'meta_key' );
 		
-		
 		// Подготавливаем новые прикрепленные файлы (добавляем к существующим)
 		$new_attached_files = ! empty( $data[ 'uploaded_files' ] ) ? implode( ', ', $data[ 'uploaded_files' ] ) : '';
 		if ( $new_attached_files && ! empty( $current_data[ 'attached_files' ] ) ) {
@@ -3068,20 +3109,28 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 		} elseif ( empty( $new_attached_files ) ) {
 			$new_attached_files = $current_data[ 'attached_files' ];
 		}
+		// Подготавливаем новые прикрепленные файлы (добавляем к существующим)
+		$new_freight_pictures = ! empty( $data[ 'freight_pictures' ] ) ? implode( ', ', $data[ 'freight_pictures' ] )
+			: '';
+		if ( $new_freight_pictures && ! empty( $current_data[ 'freight_pictures' ] ) ) {
+			$new_freight_pictures = $current_data[ 'freight_pictures' ] . ', ' . $new_freight_pictures;
+		} elseif ( empty( $new_freight_pictures ) ) {
+			$new_freight_pictures = $current_data[ 'freight_pictures' ];
+		}
 		
-		// Используем переданные данные для `attached_file_required`, если они есть, иначе оставляем существующие
-		$attached_files_required = ! empty( $data[ 'uploaded_file_required' ] )
-			? implode( ', ', $data[ 'uploaded_file_required' ] ) : $current_data[ 'attached_file_required' ];
+		// Используем переданные данные, если они есть, иначе оставляем текущие значения
+		$attached_files_required = ! empty( $data[ 'uploaded_file_required' ] ) ? $data[ 'uploaded_file_required' ]
+			: $current_data[ 'attached_file_required' ];
 		
-		// Обновляем подтверждение ставки, если оно изменилось
 		$updated_rate_confirmation = ! empty( $data[ 'updated_rate_confirmation' ] )
-			? implode( ', ', $data[ 'updated_rate_confirmation' ] ) : $current_data[ 'updated_rate_confirmation' ];
+			? $data[ 'updated_rate_confirmation' ] : $current_data[ 'updated_rate_confirmation' ];
 		
-		$updated_screen_picture = ! empty( $data[ 'screen_picture' ] ) ? implode( ', ', $data[ 'screen_picture' ] )
+		$updated_screen_picture = ! empty( $data[ 'screen_picture' ] ) ? $data[ 'screen_picture' ]
 			: $current_data[ 'screen_picture' ];
 		
-		$proof_of_delivery_picture = ! empty( $data[ 'proof_of_delivery' ] )
-			? implode( ', ', $data[ 'proof_of_delivery' ] ) : $current_data[ 'proof_of_delivery' ];
+		$proof_of_delivery_picture = ! empty( $data[ 'proof_of_delivery' ] ) ? $data[ 'proof_of_delivery' ]
+			: $current_data[ 'proof_of_delivery' ];
+		
 		
 		if ( ! empty( $data[ 'proof_of_delivery' ] ) ) {
 			$this->log_controller->create_one_log( array(
@@ -3099,7 +3148,7 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 				'message' => 'Added rate confirmation'
 			) );
 			
-			if ( implode( ', ', $data[ 'updated_rate_confirmation' ] ) !== $current_data[ 'updated_rate_confirmation' ] ) {
+			if ( $data[ 'updated_rate_confirmation' ] !== $current_data[ 'updated_rate_confirmation' ] ) {
 				global $global_options;
 				$add_new_load = get_field_value( $global_options, 'add_new_load' );
 				$link         = '';
@@ -3132,6 +3181,7 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 			'updated_rate_confirmation' => $updated_rate_confirmation,
 			'screen_picture'            => $updated_screen_picture,
 			'proof_of_delivery'         => $proof_of_delivery_picture,
+			'freight_pictures'          => $new_freight_pictures,
 		);
 		
 		if ( ! empty( $data[ 'proof_of_delivery' ] ) ) {
@@ -3140,8 +3190,8 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 			$current_time_est                      = $date_est->format( 'Y-m-d H:i:s' );
 			$post_meta[ 'proof_of_delivery_time' ] = $current_time_est;
 		}
-
-//		var_dump($proof_of_delivery_picture);
+		
+		// var_dump($proof_of_delivery_picture);
 		
 		// Specify the condition (WHERE clause)
 		$where = array( 'id' => $post_id );
@@ -3186,7 +3236,6 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 		if ( $add_new_load ) {
 			$link = '<a href="' . $add_new_load . '?post_id=' . $data[ 'post_id' ] . '">Load</a>';
 		}
-		
 		
 		if ( $data[ 'post_status' ] === 'publish' ) {
 			
@@ -3326,7 +3375,8 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 					$select_emails = $this->email_helper->get_selected_emails( $this->user_emails, array(
 						'admin_email',
 						'billing_email',
-						'team_leader_email'
+						'team_leader_email',
+						'accounting_email',
 					) );
 					
 					
@@ -3496,10 +3546,9 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 			$new_value = '';
 			
 			// Для поля attached_files, где значения хранятся через запятую
-			if ( $image_field === 'attached_files' ) {
+			if ( $image_field === 'attached_files' || $image_field === 'freight_pictures' ) {
 				$ids = explode( ',', $current_value );
 				$ids = array_map( 'intval', $ids );
-				
 				// Удаляем указанный ID
 				$new_ids   = array_diff( $ids, array( $image_id ) );
 				$new_value = implode( ',', $new_ids );
@@ -3690,23 +3739,55 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 	 * @return void
 	 */
 	public function ajax_actions() {
-		add_action( 'wp_ajax_add_new_report', array( $this, 'add_new_report' ) );
-		add_action( 'wp_ajax_add_new_draft_report', array( $this, 'add_new_report_draft' ) );
-		add_action( 'wp_ajax_update_new_draft_report', array( $this, 'update_new_draft_report' ) );
-		add_action( 'wp_ajax_update_billing_report', array( $this, 'update_billing_report' ) );
-		add_action( 'wp_ajax_update_files_report', array( $this, 'update_files_report' ) );
-		add_action( 'wp_ajax_delete_open_image', array( $this, 'delete_open_image' ) );
-		add_action( 'wp_ajax_update_shipper_info', array( $this, 'update_shipper_info' ) );
-		add_action( 'wp_ajax_send_email_chain', array( $this, 'send_email_chain' ) );
-		add_action( 'wp_ajax_update_post_status', array( $this, 'update_post_status' ) );
-		add_action( 'wp_ajax_rechange_status_load', array( $this, 'rechange_status_load' ) );
-		add_action( 'wp_ajax_remove_one_load', array( $this, 'remove_one_load' ) );
-		add_action( 'wp_ajax_get_driver_by_id', array( $this, 'get_driver_by_id' ) );
-		add_action( 'wp_ajax_update_accounting_report', array( $this, 'update_accounting_report' ) );
-		add_action( 'wp_ajax_quick_update_post', array( $this, 'quick_update_post' ) );
-		add_action( 'wp_ajax_quick_update_post_ar', array( $this, 'quick_update_post_ar' ) );
-		add_action( 'wp_ajax_quick_update_status', array( $this, 'quick_update_status' ) );
-		add_action( 'wp_ajax_quick_update_status_all', array( $this, 'quick_update_status_all' ) );
+		
+		$actions = [
+			'add_new_report'           => 'add_new_report',
+			'add_new_draft_report'     => 'add_new_report_draft',
+			'update_new_draft_report'  => 'update_new_draft_report',
+			'update_billing_report'    => 'update_billing_report',
+			'update_files_report'      => 'update_files_report',
+			'delete_open_image'        => 'delete_open_image',
+			'update_shipper_info'      => 'update_shipper_info',
+			'send_email_chain'         => 'send_email_chain',
+			'update_post_status'       => 'update_post_status',
+			'rechange_status_load'     => 'rechange_status_load',
+			'remove_one_load'          => 'remove_one_load',
+			'get_driver_by_id'         => 'get_driver_by_id',
+			'update_accounting_report' => 'update_accounting_report',
+			'quick_update_post'        => 'quick_update_post',
+			'quick_update_post_ar'     => 'quick_update_post_ar',
+			'quick_update_status'      => 'quick_update_status',
+			'quick_update_status_all'  => 'quick_update_status_all',
+		];
+		
+		foreach ( $actions as $ajax_action => $method ) {
+			add_action( "wp_ajax_{$ajax_action}", [ $this, $method ] );
+			add_action( "wp_ajax_nopriv_{$ajax_action}", [ $this, 'need_login' ] );
+		}
+
+//		add_action( 'wp_ajax_add_new_report', array( $this, 'add_new_report' ) );
+//		add_action( 'wp_ajax_add_new_draft_report', array( $this, 'add_new_report_draft' ) );
+//		add_action( 'wp_ajax_update_new_draft_report', array( $this, 'update_new_draft_report' ) );
+//		add_action( 'wp_ajax_update_billing_report', array( $this, 'update_billing_report' ) );
+//		add_action( 'wp_ajax_update_files_report', array( $this, 'update_files_report' ) );
+//		add_action( 'wp_ajax_delete_open_image', array( $this, 'delete_open_image' ) );
+//		add_action( 'wp_ajax_update_shipper_info', array( $this, 'update_shipper_info' ) );
+//		add_action( 'wp_ajax_send_email_chain', array( $this, 'send_email_chain' ) );
+//		add_action( 'wp_ajax_update_post_status', array( $this, 'update_post_status' ) );
+//		add_action( 'wp_ajax_rechange_status_load', array( $this, 'rechange_status_load' ) );
+//		add_action( 'wp_ajax_remove_one_load', array( $this, 'remove_one_load' ) );
+//		add_action( 'wp_ajax_get_driver_by_id', array( $this, 'get_driver_by_id' ) );
+//		add_action( 'wp_ajax_update_accounting_report', array( $this, 'update_accounting_report' ) );
+//		add_action( 'wp_ajax_quick_update_post', array( $this, 'quick_update_post' ) );
+//		add_action( 'wp_ajax_quick_update_post_ar', array( $this, 'quick_update_post_ar' ) );
+//		add_action( 'wp_ajax_quick_update_status', array( $this, 'quick_update_status' ) );
+//		add_action( 'wp_ajax_quick_update_status_all', array( $this, 'quick_update_status_all' ) );
+	}
+	
+	public function need_login() {
+		if ( defined( 'DOING_AJAX' ) && DOING_AJAX ) {
+			wp_send_json_error( [ 'message' => 'You need to log in to perform this action.' ] );
+		}
 	}
 	
 	/**

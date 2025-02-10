@@ -30,13 +30,13 @@ if ( ! empty( $results ) ) : ?>
 		<?php foreach ( $results as $row ) :
 			
 			$profit = $report->get_profit_and_gross_by_brocker_id( $row[ 'id' ] );
-//            var_dump($profit);
 			
 			$full_address = $row[ 'address1' ] . ' ' . $row[ 'city' ] . ' ' . $row[ 'state' ] . ' ' . $row[ 'zip_code' ] . ' ' . $row[ 'country' ];
 			
 			$platform         = $helper->get_label_by_key( $row[ 'set_up_platform' ], 'set_up_platform' );
-			$meta             = get_field_value( $row, 'meta_fields' );
+			$meta             = get_field_value( $row, 'meta' );
 			$factoring_status = get_field_value( $meta, 'factoring_broker' );
+			
 			// Декодируем JSON в ассоциативный массив
 			$set_up_array = json_decode( $row[ 'set_up' ], true );
 			

@@ -29,17 +29,29 @@ $company_status   = get_field_value( $_GET, 'company_status' );
             </div>
             <div class="d-flex gap-1">
 
-                <!--                <select class="form-select w-auto" name="factoring_status" aria-label=".form-select-sm example">-->
-                <!--                    <option value="">Factoring status</option>-->
-                <!--		            --><?php
-				//		            foreach ( $arr_factoring_company as $key => $val ) {
-				//
-				//			            $select = $factoring_status === $key ? 'selected' : '' ;
-				//
-				//			            echo '<option '.$select.' value="' . $key . '">' . $val . '</option>';
-				//		            }
-				//		            ?>
-                <!--                </select>-->
+                <select class="form-select w-auto" name="factoring_status" aria-label=".form-select-sm example">
+                    <option value="">Factoring status</option>
+					<?php
+					foreach ( $arr_factoring_company as $key => $val ) {
+						
+						$select = $factoring_status === $key ? 'selected' : '';
+						
+						echo '<option ' . $select . ' value="' . $key . '">' . $val . '</option>';
+					}
+					?>
+                </select>
+
+                <select class="form-select w-auto" name="company_status" aria-label=".form-select-sm example">
+                    <option value="">Company status</option>
+					<?php
+					foreach ( $arr_company_status as $key => $val ) {
+						
+						$select = $company_status === $key ? 'selected' : '';
+						
+						echo '<option ' . $select . ' value="' . $key . '">' . $val . '</option>';
+					}
+					?>
+                </select>
 
                 <select class="form-select w-auto" name="setup_status" aria-label=".form-select-sm example">
                     <option value="">Setup status</option>
@@ -52,18 +64,6 @@ $company_status   = get_field_value( $_GET, 'company_status' );
 					}
 					?>
                 </select>
-
-                <!--                <select class="form-select w-auto" name="company_status" aria-label=".form-select-sm example">-->
-                <!--                    <option value="">Company status</option>-->
-                <!--		            --><?php
-				//		            foreach ( $arr_company_status as $key => $val ) {
-				//
-				//			            $select = $company_status === $key ? 'selected' : '' ;
-				//
-				//			            echo '<option '.$select.' value="' . $key . '">' . $val . '</option>';
-				//		            }
-				//		            ?>
-                <!--                </select>-->
 
                 <select class="form-select w-auto" name="platform" aria-label=".form-select-sm example">
                     <option value="">Platform</option>

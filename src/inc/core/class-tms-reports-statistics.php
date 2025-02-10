@@ -91,8 +91,8 @@ class  TMSStatistics extends TMSReportsHelper {
 		
 		// Выполняем запрос и получаем результаты
 		$dispatcher_stats = $wpdb->get_results( $query, ARRAY_A );
+		
 		if ( is_array( $dispatcher_stats ) ) {
-			
 			foreach ( $dispatcher_stats as $key => $disp ) {
 				$names             = $this->get_user_full_name_by_id( $disp[ 'dispatcher_initials' ] );
 				$office_dispatcher = get_field( 'work_location', 'user_' . $disp[ 'dispatcher_initials' ] );
@@ -282,6 +282,60 @@ class  TMSStatistics extends TMSReportsHelper {
 		
 		return $dispatcher_stats;
 	}
+	
+	public function get_all_users_statistics() {
+		global $wpdb;
+		
+		$table_reports = $wpdb->prefix . $this->table_main;
+		$table_meta    = $wpdb->prefix . $this->table_meta;
+		
+		// Основная часть запроса
+		$query = "
+    SELECT
+        dispatcher_meta.meta_value AS dispatcher_initials,
+        COUNT(reports.id) AS post_count,
+        SUM(CAST(profit_meta.meta_value AS DECIMAL(10,2))) AS total_profit
+    FROM {$table_reports} reports
+    INNER JOIN {$table_meta} dispatcher_meta
+        ON reports.id = dispatcher_meta.post_id
+    INNER JOIN {$table_meta} profit_meta
+        ON reports.id = profit_meta.post_id
+    WHERE dispatcher_meta.meta_key = 'dispatcher_initials'
+    AND profit_meta.meta_key = 'profit'
+    AND reports.status_post = 'publish'
+    GROUP BY dispatcher_meta.meta_value
+    ORDER BY total_profit DESC
+    ";
+		
+		// Выполняем запрос и получаем результат
+		$dispatcher_stats = $wpdb->get_results( $query, ARRAY_A );
+		
+		// Если есть результаты, обработаем их
+		if ( is_array( $dispatcher_stats ) && ! empty( $dispatcher_stats ) ) {
+			$result = [];
+			
+			foreach ( $dispatcher_stats as $key => $disp ) {
+				// Получаем полное имя диспетчера по dispatcher_initials
+				$names          = $this->get_user_full_name_by_id( $disp[ 'dispatcher_initials' ] );
+				$color_initials = $disp[ 'dispatcher_initials' ]
+					? get_field( 'initials_color', 'user_' . $disp[ 'dispatcher_initials' ] ) : '#030303';
+				
+				$result[] = [
+					'color'        => $color_initials,
+					'id'           => $disp[ 'dispatcher_initials' ],
+					'initials'     => $names[ 'initials' ],
+					'name'         => $names[ 'full_name' ],
+					'post_count'   => $disp[ 'post_count' ],
+					'total_profit' => $disp[ 'total_profit' ],
+				];
+			}
+			
+			return $result;
+		}
+		
+		return []; // Возвращаем пустой массив, если данных нет
+	}
+	
 	
 	public function get_dispatcher_statistics_with_status( $user_id = null, $load_status = 'cancelled' ) {
 		global $wpdb;

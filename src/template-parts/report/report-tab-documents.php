@@ -32,6 +32,7 @@ if ( $report_object ) {
 		// tab documents start
 		$required_file     = get_field_value( $meta, 'attached_file_required' );
 		$others_files      = get_field_value( $meta, 'attached_files' );
+		$freight_pictures  = get_field_value( $meta, 'freight_pictures' );
 		$update_rate_conf  = get_field_value( $meta, 'updated_rate_confirmation' );
 		$screen_picture    = get_field_value( $meta, 'screen_picture' );
 		$proof_of_delivery = get_field_value( $meta, 'proof_of_delivery' );
@@ -43,6 +44,8 @@ if ( $report_object ) {
 		$required_file_arr    = false;
 		$others_files_arr     = false;
 		$update_rate_conf_arr = false;
+		$freight_pictures_arr = false;
+		
 		if ( ! empty( $required_file ) ) {
 			
 			$attachment_url = wp_get_attachment_url( $required_file );
@@ -144,6 +147,32 @@ if ( $report_object ) {
 			}
 			
 		}
+		
+		if ( ! empty( $freight_pictures ) ) {
+			$array_ids_image = explode( ',', $freight_pictures );
+			
+			if ( is_array( $array_ids_image ) ) {
+				foreach ( $array_ids_image as $id_image ) {
+					
+					$attachment_url = wp_get_attachment_url( $id_image );
+					if ( wp_attachment_is_image( $id_image ) ) {
+						$freight_pictures_arr[] = array(
+							'id'  => $id_image,
+							'url' => $attachment_url,
+						);
+					} else {
+						$file_name = basename( $attachment_url );
+						
+						$freight_pictures_arr[] = array(
+							'id'        => $id_image,
+							'url'       => $attachment_url,
+							'file_name' => $file_name,
+						);
+					}
+				}
+			}
+			
+		}
 	}
 }
 
@@ -151,9 +180,10 @@ if ( $report_object ) {
 
 <h3 class="p-0 display-6 mb-4">Upload files</h3>
 
-<?php if ( ( $others_files || $required_file || $screen_picture || $update_rate_conf || $proof_of_delivery ) && isset( $post_id ) ): ?>
+<?php if ( ( $others_files || $freight_pictures || $required_file || $screen_picture || $update_rate_conf || $proof_of_delivery ) && isset( $post_id ) ): ?>
     <div class="container-uploads <?php echo $full_view_only ? "read-only" : '' ?>">
-		<?php if ( isset( $required_file_arr ) && $required_file ): ?>
+		<?php
+		if ( isset( $required_file_arr ) && $required_file ): ?>
             <form class="js-remove-one card-upload required">
                 <a class="view-document" target="_blank"
                    href="<?php echo $required_file_arr[ 'url' ]; ?>"><?php echo $reports->get_icon_view( 'view' ); ?></a>
@@ -184,10 +214,8 @@ if ( $report_object ) {
 					<?php echo $reports->get_download_icon(); ?>
                 </a>
             </form>
-		<?php endif; ?>
+		<?php endif;
 		
-		
-		<?php
 		if ( isset( $update_rate_conf_arr ) && $update_rate_conf ): ?>
             <form class="js-remove-one card-upload updated">
                 <a class="view-document" target="_blank"
@@ -218,9 +246,9 @@ if ( $report_object ) {
 					<?php echo $reports->get_download_icon(); ?>
                 </a>
             </form>
-		<?php endif; ?>
+		<?php endif;
 		
-		<?php if ( isset( $screen_picture_arr ) && $screen_picture ): ?>
+		if ( isset( $screen_picture_arr ) && $screen_picture ): ?>
             <form class="js-remove-one card-upload screen-picture">
                 <a class="view-document" target="_blank"
                    href="<?php echo $screen_picture_arr[ 'url' ]; ?>"><?php echo $reports->get_icon_view( 'view' ); ?></a>
@@ -250,9 +278,9 @@ if ( $report_object ) {
 					<?php echo $reports->get_download_icon(); ?>
                 </a>
             </form>
-		<?php endif; ?>
+		<?php endif;
 		
-		<?php if ( isset( $proof_of_delivery_arr ) && $proof_of_delivery ): ?>
+		if ( isset( $proof_of_delivery_arr ) && $proof_of_delivery ): ?>
             <form class="js-remove-one card-upload proof_of_delivery">
                 <a class="view-document" target="_blank"
                    href="<?php echo $proof_of_delivery_arr[ 'url' ]; ?>"><?php echo $reports->get_icon_view( 'view' ); ?></a>
@@ -282,16 +310,15 @@ if ( $report_object ) {
 					<?php echo $reports->get_download_icon(); ?>
                 </a>
             </form>
-		<?php endif; ?>
+		<?php endif;
 		
-		
-		<?php if ( isset( $others_files_arr ) && is_array( $others_files_arr ) ):
+		if ( isset( $others_files_arr ) && is_array( $others_files_arr ) ):
 			foreach ( $others_files_arr as $value ):?>
                 <form class="js-remove-one card-upload">
                     <a class="view-document" target="_blank"
                        href="<?php echo $value[ 'url' ]; ?>"><?php echo $reports->get_icon_view( 'view' ); ?></a>
+                    <span class="required-label">Other files</span>
                     <figure class="card-upload__figure">
-						
 						<?php
 						if ( ! isset( $value[ 'file_name' ] ) ) : ?>
                             <img class="card-upload__img" src="<?php echo $value[ 'url' ] ?>" alt="img">
@@ -311,12 +338,47 @@ if ( $report_object ) {
                         </button>
 					<?php endif; ?>
                     <a class="card-upload__btn card-upload__btn--download" download
-                       href="<?php echo $required_file_arr[ 'url' ]; ?>">
+                       href="<?php echo $value[ 'url' ]; ?>">
 						<?php echo $reports->get_download_icon(); ?>
                     </a>
                 </form>
 			<?php endforeach;
-		endif; ?>
+		endif;
+		
+		if ( isset( $freight_pictures_arr ) && is_array( $freight_pictures_arr ) ):
+			foreach ( $freight_pictures_arr as $value ):?>
+                <form class="js-remove-one card-upload freight_pictures">
+                    <a class="view-document" target="_blank"
+                       href="<?php echo $value[ 'url' ]; ?>"><?php echo $reports->get_icon_view( 'view' ); ?></a>
+                    <span class="required-label">Freight Picture</span>
+                    <figure class="card-upload__figure">
+						
+						<?php
+						if ( ! isset( $value[ 'file_name' ] ) ) : ?>
+                            <img class="card-upload__img" src="<?php echo $value[ 'url' ] ?>" alt="img">
+						<?php else: ?>
+							<?php echo $reports->get_file_icon(); ?>
+                            <p><?php echo $value[ 'file_name' ]; ?></p>
+						<?php endif; ?>
+
+                    </figure>
+                    <input type="hidden" name="image-id"
+                           value="<?php echo $value[ 'id' ]; ?>">
+                    <input type="hidden" name="image-fields" value="freight_pictures">
+                    <input type="hidden" name="post_id" value="<?php echo $post_id; ?>">
+					<?php if ( ! $full_view_only ): ?>
+                        <button class="card-upload__btn card-upload__btn--remove" type="submit">
+							<?php echo $reports->get_close_icon(); ?>
+                        </button>
+					<?php endif; ?>
+                    <a class="card-upload__btn card-upload__btn--download" download
+                       href="<?php echo $value[ 'url' ]; ?>">
+						<?php echo $reports->get_download_icon(); ?>
+                    </a>
+                </form>
+			<?php endforeach;
+		endif;
+		?>
     </div>
 <?php endif; ?>
 
@@ -340,11 +402,25 @@ if ( $report_object ) {
                 </div>
             </div>
 		<?php endif; ?>
+
         <div class="js-add-new-report order-2">
             <div class="p-0 mb-2 col-12">
                 <p class="h5">Other files</p>
                 <label for="attached_files" class="form-label">Attached Files</label>
                 <input type="file" name="attached_files[]"
+                       class="form-control js-control-uploads" multiple>
+            </div>
+
+            <div class="p-0 col-12 mb-3 mt-3 preview-photo js-preview-photo-upload">
+
+            </div>
+        </div>
+
+        <div class="js-add-new-report order-2">
+            <div class="p-0 mb-2 col-12">
+                <p class="h5">Freight Pictures</p>
+                <label for="attached_files" class="form-label">Attached Files</label>
+                <input type="file" name="freight_pictures[]"
                        class="form-control js-control-uploads" multiple>
             </div>
 
@@ -409,7 +485,6 @@ if ( $report_object ) {
                 </div>
             </div>
 		<?php endif; ?>
-
 
         <div class="col-12 pl-0 order-5" role="presentation">
             <div class="justify-content-start gap-2">

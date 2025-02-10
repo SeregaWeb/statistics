@@ -604,8 +604,112 @@ class TMSReportsCompany extends TMSReportsHelper {
 	}
 	
 	public function get_table_records_2() {
-	
+		global $wpdb;
+		
+		$table_main = $wpdb->prefix . $this->table_main;
+		$table_meta = $wpdb->prefix . $this->table_meta;
+		
+		$current_page     = isset( $_GET[ 'paged' ] ) ? (int) $_GET[ 'paged' ] : 1;
+		$search           = isset( $_GET[ 'my_search' ] ) ? sanitize_text_field( $_GET[ 'my_search' ] ) : '';
+		$platform         = isset( $_GET[ 'platform' ] ) ? sanitize_text_field( $_GET[ 'platform' ] ) : '';
+		$factoring_status = isset( $_GET[ 'factoring_status' ] ) ? sanitize_text_field( $_GET[ 'factoring_status' ] )
+			: '';
+		$setup_status     = isset( $_GET[ 'setup_status' ] ) ? sanitize_text_field( $_GET[ 'setup_status' ] ) : '';
+		$company_status   = isset( $_GET[ 'company_status' ] ) ? sanitize_text_field( $_GET[ 'company_status' ] ) : '';
+		
+		$loads           = new TMSReports();
+		$current_project = $loads->project;
+		
+		$offset = ( $current_page - 1 ) * $this->posts_per_page;
+		
+		// Собираем все условия в один массив
+		$filters      = [];
+		$where_params = [];
+		
+		if ( ! empty( $platform ) ) {
+			$filters[]      = "main.set_up_platform = %s";
+			$where_params[] = $platform;
+		}
+		
+		if ( ! empty( $setup_status ) && ! empty( $current_project ) ) {
+			$filters[]      = "JSON_UNQUOTE(JSON_EXTRACT(main.set_up, %s)) = %s";
+			$where_params[] = '$."' . $current_project . '"';
+			$where_params[] = $setup_status;
+		}
+		
+		if ( ! empty( $factoring_status ) ) {
+			$filters[]      = "(meta.meta_key = 'factoring_broker' AND meta.meta_value = %s)";
+			$where_params[] = $factoring_status;
+		}
+		
+		if ( ! empty( $company_status ) ) {
+			$filters[]      = "(meta.meta_key = 'company_status' AND meta.meta_value = %s)";
+			$where_params[] = $company_status;
+		}
+		
+		if ( ! empty( $search ) ) {
+			$search_term  = '%' . $wpdb->esc_like( $search ) . '%';
+			$filters[]    = "(main.company_name LIKE %s OR main.zip_code LIKE %s OR main.mc_number LIKE %s OR main.phone_number LIKE %s OR main.email LIKE %s)";
+			$where_params = array_merge( $where_params, array_fill( 0, 5, $search_term ) );
+		}
+		
+		$where_clause = ! empty( $filters ) ? "WHERE " . implode( " AND ", $filters ) : "";
+		
+		// Основной SQL-запрос
+		$query = "SELECT
+                main.*,
+                GROUP_CONCAT(COALESCE(meta.meta_key, '') SEPARATOR '||') AS meta_keys,
+                GROUP_CONCAT(COALESCE(meta.meta_value, '') SEPARATOR '||') AS meta_values
+              FROM $table_main AS main
+              LEFT JOIN $table_meta AS meta ON main.id = meta.post_id
+              $where_clause
+              GROUP BY main.id
+              LIMIT %d, %d";
+		
+		$where_params[] = $offset;
+		$where_params[] = $this->posts_per_page;
+		
+		$count_query = "SELECT COUNT(DISTINCT main.id)
+                FROM wp_reports_company AS main
+                LEFT JOIN wp_reportsmeta_company AS meta ON main.id = meta.post_id
+                $where_clause"; // Где $where_clause это тот же фильтр, что и для основного запроса
+		
+		$prepared_query = $wpdb->prepare( $count_query, ...$where_params );
+		$total_records  = $wpdb->get_var( $prepared_query );
+		
+		if ( is_null( $total_records ) ) {
+			error_log( 'COUNT query returned NULL. Query: ' . $count_query );
+		}
+		
+		// Подсчет количества страниц
+		$total_pages = ( $total_records > 0 ) ? ceil( $total_records / $this->posts_per_page ) : 1;
+		
+		// Выполняем основной запрос
+		$results = $wpdb->get_results( $wpdb->prepare( $query, $where_params ), ARRAY_A );
+		
+		// Обрабатываем мета-данные
+		foreach ( $results as &$result ) {
+			$meta_keys   = explode( '||', $result[ 'meta_keys' ] );
+			$meta_values = explode( '||', $result[ 'meta_values' ] );
+			
+			unset( $result[ 'meta_keys' ], $result[ 'meta_values' ] );
+			
+			$meta_data = [];
+			foreach ( $meta_keys as $index => $key ) {
+				$meta_data[ $key ] = $meta_values[ $index ] ?? null;
+			}
+			
+			$result[ 'meta' ] = $meta_data;
+		}
+		
+		return [
+			'results'      => array_values( $results ),
+			'total_pages'  => $total_pages,
+			'total_posts'  => $total_records,
+			'current_page' => $current_page,
+		];
 	}
+	
 	
 	public function get_table_records() {
 		global $wpdb;

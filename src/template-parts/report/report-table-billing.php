@@ -17,11 +17,6 @@ $page_type = get_field_value( $args, 'page_type' );
 
 $current_user_id = get_current_user_id();
 
-$billing_info              = $TMSUsers->check_user_role_access( array(
-	'administrator',
-	'billing',
-	'accounting'
-), true );
 $hide_billing_and_shipping = $TMSUsers->check_user_role_access( array(
 	'billing',
 	'accounting',

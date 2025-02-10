@@ -224,6 +224,7 @@ ul.result-search-el {
         padding: 3px 10px;
         border-radius: 0 0 12px 0;
         font-size: 10px;
+        background-color: #9a9a9a;
     }
 
     &.proof_of_delivery {
@@ -253,6 +254,14 @@ ul.result-search-el {
             background-color: $--primary-color;
         }
     }
+
+    &.freight_pictures {
+        border-color: #000000;
+        .required-label {
+            background-color: #000000;
+        }
+    }
+
     &__figure {
         display: flex;
         align-items: center;

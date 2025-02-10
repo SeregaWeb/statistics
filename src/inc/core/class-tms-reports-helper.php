@@ -1098,5 +1098,21 @@ class TMSReportsHelper extends TMSReportsIcons {
 		
 		return implode( "\n", $output );
 	}
+	
+	function get_allowed_formats() {
+		return array(
+			'jpg',
+			'jpeg',
+			'png',
+			'gif',
+			'txt',
+			'pdf',
+			'doc',
+			'docx',
+			'xls',
+			'xml',
+			'xlsx',
+		);
+	}
 }
 

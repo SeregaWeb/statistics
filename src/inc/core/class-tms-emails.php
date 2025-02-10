@@ -7,6 +7,8 @@ class TMSEmails extends TMSUsers {
 	private $my_team_leader_email = '';
 	private $my_tracking_email    = '';
 	
+	private $my_accounting_email = '';
+	
 	private $user_fields = array();
 	
 	public function __construct() {
@@ -23,6 +25,7 @@ class TMSEmails extends TMSUsers {
 		$this->my_billing_email     = $this->get_billing_email();
 		$this->my_team_leader_email = $this->get_team_leader_email();
 		$this->my_tracking_email    = $this->get_tracking_email();
+		$this->my_accounting_email  = $this->get_accounting_email();
 	}
 	
 	function get_all_emails() {
@@ -31,6 +34,7 @@ class TMSEmails extends TMSUsers {
 			'billing_email'     => $this->my_billing_email,
 			'team_leader_email' => $this->my_team_leader_email,
 			'tracking_email'    => $this->my_tracking_email,
+			'accounting_email'  => $this->my_accounting_email,
 		);
 	}
 	
@@ -50,6 +54,21 @@ class TMSEmails extends TMSUsers {
 		$cleaned_emails = array_filter( array_map( 'trim', $combined_emails ) );
 		
 		return $cleaned_emails; // Возвращаем уникальные адреса электронной почты
+	}
+	
+	function get_accounting_email() {
+		$args = array(
+			'role' => 'accounting',
+		);
+		
+		$users  = get_users( $args );
+		$emails = array();
+		
+		foreach ( $users as $user ) {
+			array_push( $emails, $user->user_email );
+		}
+		
+		return implode( ',', $emails );
 	}
 	
 	function get_billing_email() {

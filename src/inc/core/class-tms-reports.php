@@ -28,7 +28,7 @@ class TMSReports extends TMSReportsHelper {
 		}
 	}
 	
-	public function get_profit_by_dates( $array_dates ) {
+	public function get_profit_by_dates( $array_dates, $office = null ) {
 		global $wpdb;
 		$table_main = $wpdb->prefix . $this->table_main;
 		$table_meta = $wpdb->prefix . $this->table_meta;
@@ -44,7 +44,7 @@ class TMSReports extends TMSReportsHelper {
 		// Обрезаем время (оставляем только дату) и фильтруем невалидные даты
 		$array_dates = array_filter( array_map( function( $date ) {
 			$trimmed = substr( $date, 0, 10 );
-			// Простейшая проверка формата YYYY-MM-DD (например, длина 10 и наличие тире)
+			// Простейшая проверка формата YYYY-MM-DD
 			if ( strlen( $trimmed ) === 10 && substr_count( $trimmed, '-' ) === 2 ) {
 				return $trimmed;
 			}
@@ -57,21 +57,40 @@ class TMSReports extends TMSReportsHelper {
 			return array();
 		}
 		
-		// Создаем строку плейсхолдеров для передачи дат
-		$placeholders = implode( ',', array_fill( 0, count( $array_dates ), '%s' ) );
+		// Создаем строку плейсхолдеров для дат
+		$date_placeholders = implode( ',', array_fill( 0, count( $array_dates ), '%s' ) );
 		
-		// Подготавливаем SQL-запрос.
-		// Используем функцию DATE() для извлечения даты из поля date_booked.
-		$query = $wpdb->prepare( "
-        SELECT DATE(main.date_booked) AS date, SUM(meta.meta_value) AS total_profit
+		// Формируем базовый SQL-запрос.
+		// В данном запросе получаем сумму прибыли (meta с meta_key = 'profit') для каждой даты.
+		// Если задан офис (и он не 'all'), то добавляем LEFT JOIN для фильтрации по метаполю office_dispatcher.
+		$query = "
+        SELECT DATE(main.date_booked) AS date, SUM(profit.meta_value) AS total_profit
         FROM $table_main AS main
-        LEFT JOIN $table_meta AS meta ON main.id = meta.post_id
-        WHERE DATE(main.date_booked) IN ($placeholders)
-          AND main.status_post = 'publish'
-          AND meta.meta_key = 'profit'
-        GROUP BY DATE(main.date_booked)
-        ORDER BY DATE(main.date_booked) ASC
-    ", ...$array_dates );
+        LEFT JOIN $table_meta AS profit ON main.id = profit.post_id AND profit.meta_key = 'profit'
+    ";
+		
+		// Массив параметров для плейсхолдеров. Сначала передаем даты.
+		$params = array_values( $array_dates );
+		
+		// Если офис задан и он не равен 'all', добавляем JOIN и условие по метаполю office_dispatcher
+		if ( ! empty( $office ) && $office !== 'all' ) {
+			$query .= " LEFT JOIN $table_meta AS office_meta ON main.id = office_meta.post_id AND office_meta.meta_key = 'office_dispatcher' ";
+		}
+		
+		// Формируем WHERE часть запроса
+		$query .= " WHERE DATE(main.date_booked) IN ($date_placeholders)
+                AND main.status_post = 'publish' ";
+		
+		if ( ! empty( $office ) && $office !== 'all' ) {
+			$query    .= " AND office_meta.meta_value = %s ";
+			$params[] = $office;
+		}
+		
+		$query .= " GROUP BY DATE(main.date_booked)
+                ORDER BY DATE(main.date_booked) ASC ";
+		
+		// Подготавливаем запрос с переданными параметрами
+		$query = $wpdb->prepare( $query, ...$params );
 		
 		// Для отладки можно раскомментировать следующую строку:
 		// error_log($query);
@@ -84,16 +103,16 @@ class TMSReports extends TMSReportsHelper {
 		}
 		
 		// Преобразуем результат в ассоциативный массив вида: 'YYYY-MM-DD' => сумма профита
-		$profit_by_date = [];
+		$profit_by_date = array();
 		foreach ( $results as $row ) {
 			if ( ! empty( $row[ 'date' ] ) ) {
-				// Приводим сумму к типу float
 				$profit_by_date[ $row[ 'date' ] ] = (float) $row[ 'total_profit' ];
 			}
 		}
 		
 		return $profit_by_date;
 	}
+	
 	
 	// GET ITEMS
 	
@@ -3365,6 +3384,9 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 						'post_id' => $data[ 'post_id' ],
 						'message' => 'Changed Driver rate: ' . 'New value: ' . $data[ 'driver_rate' ] . ' Old value: $' . $data[ 'old_value_driver_rate' ]
 					) );
+					
+					$data[ 'modify_driver_price' ] = '1';
+					
 				}
 			}
 			if ( is_numeric( $data[ 'old_value_booked_rate' ] ) ) {
@@ -3435,6 +3457,10 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 		
 		if ( isset( $data[ 'modify_price' ] ) ) {
 			$post_meta[ 'modify_price' ] = $data[ 'modify_price' ];
+		}
+		
+		if ( isset( $data[ 'modify_driver_price' ] ) ) {
+			$post_meta[ 'modify_driver_price' ] = $data[ 'modify_driver_price' ];
 		}
 		
 		if ( isset( $data[ 'read_only' ] ) ) {

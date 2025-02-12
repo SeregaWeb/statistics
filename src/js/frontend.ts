@@ -18,7 +18,7 @@ import {
     quickEditInit,
     quickEditTrackingStatus,
     removeOneFileInitial,
-    sendShipperFormInit,
+    sendShipperFormInit, timeStrictChange,
     triggerDisableBtnInit,
     updateAccountingReportInit,
     updateBillingReportInit,
@@ -122,8 +122,8 @@ function ready() {
     changeStopType();
     setStatusPaid();
     telMaskInit();
-
     tabUrlUpdeter();
+    timeStrictChange();
 
     const preloaders = document.querySelectorAll('.js-preloader');
     preloaders &&

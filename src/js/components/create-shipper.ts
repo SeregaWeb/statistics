@@ -37,6 +37,12 @@ export const actionCreateShipperInit = (ajaxUrl) => {
                             console.log('Shipper added successfully:', requestStatus.data);
                             popupInstance.forceCloseAllPopup();
                             printMessage(requestStatus.data.message, 'success', 8000);
+
+                            const containAddres = document.querySelector('.js-fast-add-address');
+                            console.log(containAddres, requestStatus.data.tmpl);
+                            if (containAddres && requestStatus.data.tmpl) {
+                                containAddres.innerHTML = requestStatus.data.tmpl;
+                            }
                         } else {
                             // eslint-disable-next-line no-alert
                             printMessage(`Error adding shipper: ${requestStatus.data.message}`, 'danger', 8000);

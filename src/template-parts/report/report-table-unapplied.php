@@ -97,14 +97,9 @@ if ( ! empty( $results ) ) :?>
 			
 			$show_control = $TMSUsers->show_control_loads( $my_team, $current_user_id, $dispatcher_initials, $is_draft );
 			
-			$ar_status                 = get_field_value( $meta, 'ar_status' );
-			$modify_booked_price       = get_field_value( $meta, 'modify_price' );
-			$modify_booked_price_class = '';
+			$ar_status = get_field_value( $meta, 'ar_status' );
 			
-			if ( $modify_booked_price === '1' ) {
-				$modify_booked_price_class = 'modified-price';
-			}
-			
+			$booked_price_class = $helper->get_modify_class( $meta, 'modify_price' );
 			
 			$id_customer          = get_field_value( $meta, 'customer_id' );
 			$template_broker_data = $TMSBroker->get_broker_and_link_by_id( $id_customer, false );
@@ -183,7 +178,7 @@ if ( ! empty( $results ) ) :?>
                 </td>
 
                 <td>
-                    <span class="<?php echo $modify_booked_price_class; ?>"><?php echo $booked_rate; ?></span>
+                    <span class="<?php echo $booked_price_class; ?>"><?php echo $booked_rate; ?></span>
                 </td>
 
                 <td>

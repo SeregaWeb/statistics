@@ -2,12 +2,12 @@
 global $global_options;
 
 $add_new_load = get_field_value( $global_options, 'add_new_load' );
-$link_broker = get_field_value($global_options, 'single_page_broker');
+$link_broker  = get_field_value( $global_options, 'single_page_broker' );
 
 $TMSUsers   = new TMSUsers();
 $TMSShipper = new TMSReportsShipper();
-$TMSBroker = new TMSReportsCompany();
-$helper = new TMSReportsHelper();
+$TMSBroker  = new TMSReportsCompany();
+$helper     = new TMSReportsHelper();
 
 $results       = get_field_value( $args, 'results' );
 $total_pages   = get_field_value( $args, 'total_pages' );
@@ -27,7 +27,6 @@ $billing_info              = $TMSUsers->check_user_role_access( array(
 $hide_billing_and_shipping = $TMSUsers->check_user_role_access( array( 'billing', 'accounting' ), true );
 
 $my_team = $TMSUsers->check_group_access();
-
 
 
 if ( ! empty( $results ) ) : ?>
@@ -57,7 +56,7 @@ if ( ! empty( $results ) ) : ?>
 			$meta = get_field_value( $row, 'meta_data' );
 			$main = get_field_value( $row, 'main' );
 			
-			$pdlocations = $helper->get_locations_template($row);
+			$pdlocations = $helper->get_locations_template( $row );
 			
 			$dispatcher_initials = get_field_value( $meta, 'dispatcher_initials' );
 			
@@ -82,17 +81,10 @@ if ( ! empty( $results ) ) : ?>
 			
 			$show_control = $TMSUsers->show_control_loads( $my_team, $current_user_id, $dispatcher_initials, $is_draft );
 			
-			$ar_status = get_field_value($meta, 'ar_status');
-			$modify_booked_price       = get_field_value( $meta, 'modify_price' );
-			$modify_booked_price_class = '';
-			
-			if ( $modify_booked_price === '1' ) {
-				$modify_booked_price_class = 'modified-price';
-			}
-			
-			
-			$id_customer              = get_field_value( $meta, 'customer_id' );
-			$template_broker = $TMSBroker->get_broker_and_link_by_id($id_customer);
+			$ar_status          = get_field_value( $meta, 'ar_status' );
+			$booked_price_class = $helper->get_modify_class( $meta, 'modify_price' );
+			$id_customer        = get_field_value( $meta, 'customer_id' );
+			$template_broker    = $TMSBroker->get_broker_and_link_by_id( $id_customer );
 			?>
 
             <tr class="">
@@ -113,23 +105,23 @@ if ( ! empty( $results ) ) : ?>
                 </td>
 
                 <td>
-					<?php echo $pdlocations['pick_up_template'] ?>
+					<?php echo $pdlocations[ 'pick_up_template' ] ?>
                 </td>
                 <td>
-	                <?php echo $pdlocations['delivery_template'] ?>
-                </td>
-
-                <td><span class="<?php echo $modify_booked_price_class; ?>"><?php echo $booked_rate; ?></span></td>
-                
-                <td>
-                   <?php echo $template_broker; ?>
+					<?php echo $pdlocations[ 'delivery_template' ] ?>
                 </td>
 
+                <td><span class="<?php echo $booked_price_class; ?>"><?php echo $booked_rate; ?></span></td>
+
                 <td>
-	                <?php echo $pdlocations['pick_up_date'] ?>
+					<?php echo $template_broker; ?>
+                </td>
+
+                <td>
+					<?php echo $pdlocations[ 'pick_up_date' ] ?>
                 </td>
                 <td>
-                    <?php echo $pdlocations['delivery_date'] ?>
+					<?php echo $pdlocations[ 'delivery_date' ] ?>
                 </td>
                 <td><?php echo $days_passed; ?> days</td>
                 <td><?php echo $ar_status === 'solved' ? 'Solved' : 'Not solved'; ?></td>
@@ -141,7 +133,7 @@ if ( ! empty( $results ) ) : ?>
                             <button class="btn button-action" type="button" id="dropdownMenu2"
                                     data-bs-toggle="dropdown"
                                     aria-expanded="false">
-                                <?php echo $helper->get_dropdown_load_icon(); ?>
+								<?php echo $helper->get_dropdown_load_icon(); ?>
                             </button>
                             <ul class="dropdown-menu" aria-labelledby="dropdownMenu2">
 								<?php if ( $TMSUsers->check_user_role_access( array( 'billing' ), true ) ) : ?>

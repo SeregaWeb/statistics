@@ -1060,6 +1060,18 @@ class TMSReportsHelper extends TMSReportsIcons {
 		return implode( "\n", $output );
 	}
 	
+	function get_modify_class( $meta, $key ) {
+		$modify_price       = get_field_value( $meta, $key );
+		$modify_price_class = '';
+		
+		
+		if ( $modify_price === '1' ) {
+			$modify_price_class = 'modified-price';
+		}
+		
+		return $modify_price_class;
+	}
+	
 	function template_location_tracking( $data, $commodity, $weight ) {
 		$output = [];
 		

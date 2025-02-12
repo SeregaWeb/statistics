@@ -93,7 +93,7 @@ if ( $report_object ) {
                     </ul>
                 </div>
 
-                <div class="result-search js-result-search"></div>
+                <div class="result-search js-result-search js-fast-add-address"></div>
 
             </div>
 
@@ -133,7 +133,7 @@ if ( $report_object ) {
                 <label for="pick_up_date_time_start" class="form-label">Time start</label>
                 <input type="time" name="pick_up_date_time_start" class="form-control  js-shipper-time-start">
             </div>
-            <div class="mb-2 col-12 col-md-6 col-xl-4">
+            <div class="mb-2 col-12 col-md-6 col-xl-4 js-hide-end-date">
                 <label for="pick_up_date_time_end" class="form-label">Time end</label>
                 <input type="time" name="pick_up_date_time_end" class="form-control  js-shipper-time-end">
             </div>

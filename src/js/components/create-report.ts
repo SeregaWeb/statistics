@@ -860,6 +860,7 @@ const editShipperStopInit = () => {
                     const currentEnd = card.querySelector('.js-current-shipper_end');
                     const currentStrict = card.querySelector('.js-current-shipper_strict');
                     const currentShortAddress = card.querySelector('.js-current-shipper_short_address');
+                    const timeEndContainer = document.querySelector<HTMLElement>('.js-hide-end-date');
 
                     const templateInputEdit = `
                         <input type="hidden" class="js-full-address" data-current-address="${currentAddress.value}" data-short-address="${currentShortAddress.value}" name="shipper_id" value="${currentID.value}">
@@ -877,10 +878,36 @@ const editShipperStopInit = () => {
                     dateEnd.value = currentEnd.value;
                     strict.checked = currentStrict.value === 'true';
 
+                    if (timeEndContainer && strict.checked) {
+                        timeEndContainer.classList.add('d-none');
+                    } else if (timeEndContainer && !strict.checked) {
+                        timeEndContainer.classList.remove('d-none');
+                    }
+
                     card.remove();
                 }
             });
         });
+};
+
+export const timeStrictChange = () => {
+    const strictCheckbox = document.querySelector<HTMLInputElement>('.js-shipper-time-strict');
+    const timeEndContainer = document.querySelector<HTMLElement>('.js-hide-end-date');
+    const timeEndInput = document.querySelector<HTMLInputElement>('.js-shipper-time-end');
+
+    // Если все элементы найдены, навешиваем обработчик события
+    if (strictCheckbox && timeEndContainer && timeEndInput) {
+        strictCheckbox.addEventListener('change', () => {
+            if (strictCheckbox.checked) {
+                // Если чекбокс выбран: добавляем класс d-none и очищаем значение инпута
+                timeEndContainer.classList.add('d-none');
+                timeEndInput.value = '';
+            } else {
+                // Если чекбокс снят: убираем класс d-none, чтобы отобразить контейнер
+                timeEndContainer.classList.remove('d-none');
+            }
+        });
+    }
 };
 
 export const addShipperPointInit = () => {
@@ -909,6 +936,8 @@ export const addShipperPointInit = () => {
                     const dateStart = form.querySelector('.js-shipper-time-start');
                     const dateEnd = form.querySelector('.js-shipper-time-end');
                     const dateStrict = form.querySelector('.js-shipper-time-strict');
+
+                    const timeEndContainer = document.querySelector<HTMLElement>('.js-hide-end-date');
 
                     if (!address) {
                         printMessage(`The address must be selected from the drop-down list`, 'danger', 5000);
@@ -1033,6 +1062,7 @@ export const addShipperPointInit = () => {
                     dateStart.value = '';
                     dateEnd.value = '';
                     dateStrict.checked = false;
+                    timeEndContainer && timeEndContainer.classList.remove('d-none');
 
                     const btnAdd = document.querySelector('.js-add-ship');
                     const btnEdit = document.querySelector('.js-end-edit-ship');

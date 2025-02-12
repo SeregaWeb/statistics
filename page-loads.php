@@ -8,24 +8,32 @@
 
 get_header();
 
-$reports = new TMSReports();
-$TMSUsers      = new TMSUsers();
+$reports  = new TMSReports();
+$TMSUsers = new TMSUsers();
 
 $args = array(
 	'status_post' => 'publish',
 );
 
-$office_dispatcher = get_field( 'work_location', 'user_'.get_current_user_id());
-$sellect_all_offices = $TMSUsers->check_user_role_access( array( 'dispatcher-tl', 'administrator', 'recruiter', 'recruiter-tl', 'moderator' ), true );
+$office_dispatcher   = get_field( 'work_location', 'user_' . get_current_user_id() );
+$sellect_all_offices = $TMSUsers->check_user_role_access( array(
+	'dispatcher-tl',
+	'administrator',
+	'recruiter',
+	'recruiter-tl',
+	'moderator'
+), true );
 
-if (!$office_dispatcher || $sellect_all_offices) {
-    $office_dispatcher = 'all';
+if ( ! $office_dispatcher || $sellect_all_offices ) {
+	$office_dispatcher = 'all';
 }
 
-$args = $reports->set_filter_params($args, $office_dispatcher);
-$items = $reports->get_table_items($args);
-$post_tp = 'dispatcher';
-$items['page_type'] = $post_tp;
+
+$args                 = $reports->set_filter_params( $args, $office_dispatcher );
+$items                = $reports->get_table_items( $args );
+$items[ 'office' ]    = $office_dispatcher;
+$post_tp              = 'dispatcher';
+$items[ 'page_type' ] = $post_tp;
 
 ?>
     <div class="container-fluid">
@@ -33,9 +41,9 @@ $items['page_type'] = $post_tp;
             <div class="container">
                 <div class="row">
                     <div class="col-12">
-
-                        <?php
-						echo esc_html( get_template_part( 'src/template-parts/report/report', 'filter', array('post_type' => $post_tp)) );
+						
+						<?php
+						echo esc_html( get_template_part( 'src/template-parts/report/report', 'filter', array( 'post_type' => $post_tp ) ) );
 						?>
 						
 						

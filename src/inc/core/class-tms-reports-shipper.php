@@ -164,7 +164,12 @@ class TMSReportsShipper extends TMSReportsHelper {
 			$result = $this->add_shipper( $MY_INPUT );
 			
 			if ( is_numeric( $result ) ) {
-				wp_send_json_success( [ 'message' => 'shipper successfully added', 'data' => $MY_INPUT ] );
+				
+				$short_address = $city . ' ' . $state;
+				$name          = $MY_INPUT[ "shipper_name" ];
+				$templ         = $this->print_list_shipper( $MY_INPUT[ "full_address" ], $result, $short_address, $name );
+				
+				wp_send_json_success( [ 'message' => 'shipper successfully added', 'tmpl' => $templ ] );
 			} else {
 				// Handle specific errors
 				if ( is_wp_error( $result ) ) {
@@ -315,21 +320,21 @@ class TMSReportsShipper extends TMSReportsHelper {
 		);
 		
 		$result = $wpdb->update( $table_name, $update_params, $where, array(
-				'%s', // shipper_name
-				'%s', // country
-				'%s', // address1
-				'%s', // address2
-				'%s', // city
-				'%s', // state
-				'%s', // zip_code
-				'%s', // contact_first_name
-				'%s', // contact_last_name
-				'%s', // phone_number
-				'%s', // email
-				'%d', // user_id_updated
-				'%s', // date_updated
-				'%s', // full_address
-			), array( '%d' ) // Data type for the 'id' column in the WHERE clause
+			'%s', // shipper_name
+			'%s', // country
+			'%s', // address1
+			'%s', // address2
+			'%s', // city
+			'%s', // state
+			'%s', // zip_code
+			'%s', // contact_first_name
+			'%s', // contact_last_name
+			'%s', // phone_number
+			'%s', // email
+			'%d', // user_id_updated
+			'%s', // date_updated
+			'%s', // full_address
+		), array( '%d' ) // Data type for the 'id' column in the WHERE clause
 		);
 		
 		// Check if the update was successful

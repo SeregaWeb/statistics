@@ -3616,6 +3616,7 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */   quickEditTrackingStatus: function() { return /* binding */ quickEditTrackingStatus; },
 /* harmony export */   removeOneFileInitial: function() { return /* binding */ removeOneFileInitial; },
 /* harmony export */   sendShipperFormInit: function() { return /* binding */ sendShipperFormInit; },
+/* harmony export */   timeStrictChange: function() { return /* binding */ timeStrictChange; },
 /* harmony export */   triggerDisableBtnInit: function() { return /* binding */ triggerDisableBtnInit; },
 /* harmony export */   updateAccountingReportInit: function() { return /* binding */ updateAccountingReportInit; },
 /* harmony export */   updateBillingReportInit: function() { return /* binding */ updateBillingReportInit; },
@@ -4180,6 +4181,7 @@ var editShipperStopInit = function editShipperStopInit() {
         var currentEnd = card.querySelector('.js-current-shipper_end');
         var currentStrict = card.querySelector('.js-current-shipper_strict');
         var currentShortAddress = card.querySelector('.js-current-shipper_short_address');
+        var timeEndContainer = document.querySelector('.js-hide-end-date');
         var templateInputEdit = "\n                        <input type=\"hidden\" class=\"js-full-address\" data-current-address=\"".concat(currentAddress.value, "\" data-short-address=\"").concat(currentShortAddress.value, "\" name=\"shipper_id\" value=\"").concat(currentID.value, "\">\n                    ");
         if (!resultSearch) return;
         resultSearch.innerHTML = templateInputEdit;
@@ -4191,10 +4193,30 @@ var editShipperStopInit = function editShipperStopInit() {
         dateStart.value = currentStart.value;
         dateEnd.value = currentEnd.value;
         strict.checked = currentStrict.value === 'true';
+        if (timeEndContainer && strict.checked) {
+          timeEndContainer.classList.add('d-none');
+        } else if (timeEndContainer && !strict.checked) {
+          timeEndContainer.classList.remove('d-none');
+        }
         card.remove();
       }
     });
   });
+};
+var timeStrictChange = function timeStrictChange() {
+  var strictCheckbox = document.querySelector('.js-shipper-time-strict');
+  var timeEndContainer = document.querySelector('.js-hide-end-date');
+  var timeEndInput = document.querySelector('.js-shipper-time-end');
+  if (strictCheckbox && timeEndContainer && timeEndInput) {
+    strictCheckbox.addEventListener('change', function () {
+      if (strictCheckbox.checked) {
+        timeEndContainer.classList.add('d-none');
+        timeEndInput.value = '';
+      } else {
+        timeEndContainer.classList.remove('d-none');
+      }
+    });
+  }
 };
 var addShipperPointInit = function addShipperPointInit() {
   var btnAddPoint = document.querySelectorAll('.js-add-point');
@@ -4215,6 +4237,7 @@ var addShipperPointInit = function addShipperPointInit() {
         var dateStart = form.querySelector('.js-shipper-time-start');
         var dateEnd = form.querySelector('.js-shipper-time-end');
         var dateStrict = form.querySelector('.js-shipper-time-strict');
+        var timeEndContainer = document.querySelector('.js-hide-end-date');
         if (!address) {
           (0,_info_messages__WEBPACK_IMPORTED_MODULE_1__.printMessage)("The address must be selected from the drop-down list", 'danger', 5000);
           return false;
@@ -4270,6 +4293,7 @@ var addShipperPointInit = function addShipperPointInit() {
         dateStart.value = '';
         dateEnd.value = '';
         dateStrict.checked = false;
+        timeEndContainer && timeEndContainer.classList.remove('d-none');
         var btnAdd = document.querySelector('.js-add-ship');
         var btnEdit = document.querySelector('.js-end-edit-ship');
         addActionsDeleteUniversalCard('.js-remove-ship', '.js-current-shipper');
@@ -4516,6 +4540,11 @@ var actionCreateShipperInit = function actionCreateShipperInit(ajaxUrl) {
           console.log('Shipper added successfully:', requestStatus.data);
           popupInstance.forceCloseAllPopup();
           (0,_info_messages__WEBPACK_IMPORTED_MODULE_1__.printMessage)(requestStatus.data.message, 'success', 8000);
+          var containAddres = document.querySelector('.js-fast-add-address');
+          console.log(containAddres, requestStatus.data.tmpl);
+          if (containAddres && requestStatus.data.tmpl) {
+            containAddres.innerHTML = requestStatus.data.tmpl;
+          }
         } else {
           (0,_info_messages__WEBPACK_IMPORTED_MODULE_1__.printMessage)("Error adding shipper: ".concat(requestStatus.data.message), 'danger', 8000);
         }
@@ -15756,6 +15785,7 @@ function ready() {
   (0,_components_set_status_paid__WEBPACK_IMPORTED_MODULE_22__.setStatusPaid)();
   (0,_components_tel_mask__WEBPACK_IMPORTED_MODULE_20__.telMaskInit)();
   (0,_components_tab_helper__WEBPACK_IMPORTED_MODULE_6__.tabUrlUpdeter)();
+  (0,_components_create_report__WEBPACK_IMPORTED_MODULE_3__.timeStrictChange)();
   var preloaders = document.querySelectorAll('.js-preloader');
   preloaders && preloaders.forEach(function (item) {
     item.remove();

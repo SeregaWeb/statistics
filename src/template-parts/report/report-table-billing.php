@@ -105,12 +105,7 @@ if ( ! empty( $results ) ) : ?>
 			$factoring_class = strtolower( $factoring_status_row );
 			$factoring_class = str_replace( ' ', '-', $factoring_class );
 			
-			$modify_booked_price       = get_field_value( $meta, 'modify_price' );
-			$modify_booked_price_class = '';
-			
-			if ( $modify_booked_price === '1' ) {
-				$modify_booked_price_class = 'modified-price';
-			}
+			$booked_price_class = $helper->get_modify_class( $meta, 'modify_price' );
 			
 			$bank_status       = get_field_value( $meta, 'bank_payment_status' );
 			$driver_pay_status = get_field_value( $meta, 'driver_pay_statuses' );
@@ -171,7 +166,7 @@ if ( ! empty( $results ) ) : ?>
 					<?php echo $pdlocations[ 'delivery_date' ] ?>
                 </td>
 
-                <td><span class="<?php echo $modify_booked_price_class; ?>"><?php echo $booked_rate; ?></span></td>
+                <td><span class="<?php echo $booked_price_class; ?>"><?php echo $booked_rate; ?></span></td>
                 <td class="<?php echo $status_class; ?>"><span><?php echo $status; ?></span></td>
                 <td class="<?php echo $invoice_raw ? 'invoiced' : 'not-invoiced'; ?> ?>"><span><?php echo $invoice_raw
 							? 'Invoiced' : 'Not invoiced'; ?></span></td>

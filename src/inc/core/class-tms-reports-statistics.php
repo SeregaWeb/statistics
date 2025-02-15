@@ -396,6 +396,7 @@ class  TMSStatistics extends TMSReportsHelper {
 		        SUM(CAST(IFNULL(booked_rate.meta_value, 0) AS DECIMAL(10,2))) AS total_booked_rate,
 		        SUM(CAST(IFNULL(profit.meta_value, 0) AS DECIMAL(10,2))) AS total_profit,
 		        SUM(CAST(IFNULL(driver_rate.meta_value, 0) AS DECIMAL(10,2))) AS total_driver_rate,
+		        SUM(CAST(IFNULL(second_driver_rate.meta_value, 0) AS DECIMAL(10,2))) AS total_second_driver_rate,
 		        SUM(CAST(IFNULL(true_profit.meta_value, 0) AS DECIMAL(10,2))) AS total_true_profit,
 		        SUM(CAST(IFNULL(processing_fees.meta_value, 0) AS DECIMAL(10,2))) AS total_processing_fees,
 		        SUM(CAST(IFNULL(percent_quick_pay_value.meta_value, 0) AS DECIMAL(10,2))) AS total_percent_quick_pay_value,
@@ -405,6 +406,7 @@ class  TMSStatistics extends TMSReportsHelper {
 		    LEFT JOIN $table_meta profit ON reports.id = profit.post_id AND profit.meta_key = 'profit'
 		    LEFT JOIN $table_meta booked_rate ON reports.id = booked_rate.post_id AND booked_rate.meta_key = 'booked_rate'
 		    LEFT JOIN $table_meta driver_rate ON reports.id = driver_rate.post_id AND driver_rate.meta_key = 'driver_rate'
+		    LEFT JOIN $table_meta second_driver_rate ON reports.id = second_driver_rate.post_id AND second_driver_rate.meta_key = 'second_driver_rate'
 		    LEFT JOIN $table_meta quick_pay_driver_amount ON reports.id = quick_pay_driver_amount.post_id AND quick_pay_driver_amount.meta_key = 'quick_pay_driver_amount'
 		    LEFT JOIN $table_meta percent_quick_pay_value ON reports.id = percent_quick_pay_value.post_id AND percent_quick_pay_value.meta_key = 'percent_quick_pay_value'
 		    LEFT JOIN $table_meta processing_fees ON reports.id = processing_fees.post_id AND processing_fees.meta_key = 'processing_fees'
@@ -431,6 +433,7 @@ class  TMSStatistics extends TMSReportsHelper {
 			'total_booked_rate'             => 0.00,
 			'total_profit'                  => 0.00,
 			'total_driver_rate'             => 0.00,
+			'total_second_driver_rate'      => 0.00,
 			'total_true_profit'             => 0.00,
 			'total_booked_rate_modify'      => 0.00,
 			'total_processing_fees'         => 0.00,
@@ -444,6 +447,7 @@ class  TMSStatistics extends TMSReportsHelper {
 			$monthly_stats[ 'total_booked_rate' ]             = $results[ 0 ][ 'total_booked_rate' ] ?? 0.00;
 			$monthly_stats[ 'total_profit' ]                  = $results[ 0 ][ 'total_profit' ] ?? 0.00;
 			$monthly_stats[ 'total_driver_rate' ]             = $results[ 0 ][ 'total_driver_rate' ] ?? 0.00;
+			$monthly_stats[ 'total_second_driver_rate' ]      = $results[ 0 ][ 'total_second_driver_rate' ] ?? 0.00;
 			$monthly_stats[ 'total_true_profit' ]             = $results[ 0 ][ 'total_true_profit' ] ?? 0.00;
 			$monthly_stats[ 'total_booked_rate_modify' ]      = $results[ 0 ][ 'total_booked_rate_modify' ] ?? 0.00;
 			$monthly_stats[ 'total_processing_fees' ]         = $results[ 0 ][ 'total_processing_fees' ] ?? 0.00;

@@ -177,9 +177,15 @@ if ( ! $active_item ) {
                                   // Prepare the data in Google Charts format
                                   const dataArray = [['Dispatcher', 'Post Count']]
                                   
-                                  dispatcherData.forEach((item, index) => {
+                                  dispatcherData.forEach((item) => {
+                                    // Parse post_count and if negative, set it to 0
+                                    let postCount = parseInt(item.post_count)
+                                    if (postCount < 0) {
+                                      postCount = 0
+                                    }
                                     dataArray.push([
-                                      `${ item.dispatcher_initials } \n${ item.post_count }`, parseInt(item.post_count)
+                                      `${ item.dispatcher_initials } \n${ item.post_count }`,
+                                      postCount
                                     ])
                                   })
                                   
@@ -200,27 +206,37 @@ if ( ! $active_item ) {
                                 
                                 function drawChartPrice () {
                                   // Prepare the data in Google Charts format
-                                  const dataArray = [['Dispatcher', 'Post Count']]
+                                  const dataArray = [['Dispatcher', 'Profit']]
                                   
                                   dispatcherData.forEach(item => {
-                                    let item_total = parseFloat(item?.total_profit).toFixed(2)  // Convert to number, then round
-                                    let item_average = parseFloat(item?.average_profit).toFixed(2)  // Convert to number, then round
+                                    // Parse total_profit and average_profit, rounding to two decimals as strings
+                                    // Then convert total_profit to a number for the chart
+                                    let item_total = parseFloat(item?.total_profit)
+                                    let item_average = parseFloat(item?.average_profit)
                                     
-                                    // Use item_total instead of item.item_total
+                                    // If total profit is negative, set it to 0
+                                    if (item_total < 0) {
+                                      item_total = 0
+                                    }
+                                    
+                                    // Format numbers to two decimals for display purposes
+                                    const formattedTotal = item_total.toFixed(2)
+                                    const formattedAverage = item_average.toFixed(2)
+                                    
                                     dataArray.push([
-                                      `${ item.dispatcher_initials }\n $${ item_total }\n $${ item_average }`,
-                                      parseInt(item_total)
+                                      `${ item.dispatcher_initials }\n $${ formattedTotal }\n $${ formattedAverage }`,
+                                      item_total
                                     ])
                                   })
                                   
                                   const data = google.visualization.arrayToDataTable(dataArray)
                                   
-                                  // Создаем форматтер для добавления доллара
+                                  // Create a formatter for dollar values
                                   const formatter = new google.visualization.NumberFormat({
                                     prefix: '$',
                                   })
                                   
-                                  // Применяем форматтер к колонке с числами (индекс 1)
+                                  // Apply the formatter to the numeric column (index 1)
                                   formatter.format(data, 1)
                                   
                                   const options = {
@@ -232,6 +248,7 @@ if ( ! $active_item ) {
                                   const chart = new google.visualization.PieChart(document.getElementById('mainChartPrise'))
                                   chart.draw(data, options)
                                 }
+                                
                               })
                             </script>
 						

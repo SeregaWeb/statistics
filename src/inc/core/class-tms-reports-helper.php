@@ -869,20 +869,36 @@ class TMSReportsHelper extends TMSReportsIcons {
 		return $week_dates;
 	}
 	
-	function merge_unique_dispatchers( $array1, $array2 ) {
+	function merge_unique_dispatchers( $array1, $array2, $exclude_ids = array() ) {
+		// Проверяем, что $exclude_ids — это массив
+		if ( ! is_array( $exclude_ids ) ) {
+			$exclude_ids = array();
+		}
+		
 		$merged = array_merge( $array1, $array2 );
 		$unique = [];
-		$ids    = [];
 		
 		foreach ( $merged as $dispatcher ) {
-			if ( ! in_array( $dispatcher[ 'id' ], $ids ) ) {
-				$ids[]    = $dispatcher[ 'id' ];
+			if ( in_array( $dispatcher[ 'id' ], $exclude_ids ) ) {
+				continue;
+			}
+			
+			$exists = false;
+			foreach ( $unique as $u ) {
+				if ( $u[ 'id' ] === $dispatcher[ 'id' ] ) {
+					$exists = true;
+					break;
+				}
+			}
+			
+			if ( ! $exists ) {
 				$unique[] = $dispatcher;
 			}
 		}
 		
 		return $unique;
 	}
+	
 	
 	function generateWeeks( $date_select = null ) {
 		$startDate = new DateTime( '2024-12-02' );
@@ -969,6 +985,9 @@ class TMSReportsHelper extends TMSReportsIcons {
 		$driver_phone     = esc_html( get_field_value( $meta, 'driver_phone' ) );
 		$macropoint_set   = get_field_value( $meta, 'macropoint_set' );
 		
+		$second_unit_number_name = esc_html( get_field_value( $meta, 'second_unit_number_name' ) );
+		$second_driver_phone     = esc_html( get_field_value( $meta, 'second_driver_phone' ) );
+		
 		ob_start();
 		?>
         <div class="d-flex flex-column">
@@ -979,6 +998,14 @@ class TMSReportsHelper extends TMSReportsIcons {
                                 <?php echo $driver_phone; ?>
                             </span>
 			<?php } ?>
+			<?php if ( $second_unit_number_name && $second_driver_phone ): ?>
+                <p class="m-0"><?php echo $second_unit_number_name; ?></p>
+				<?php if ( $second_driver_phone ) { ?>
+                    <span class="text-small relative">
+                                <?php echo $second_driver_phone; ?>
+                            </span>
+				<?php } ?>
+			<?php endif; ?>
         </div>
 		<?php
 		return ob_get_clean();
@@ -1125,6 +1152,26 @@ class TMSReportsHelper extends TMSReportsIcons {
 			'xml',
 			'xlsx',
 		);
+	}
+	
+	function get_empty_dispatcher() {
+		global $global_options;
+		
+		$empty_dispatcher = get_field_value( $global_options, 'empty_dispatcher' );
+		
+		$exclude_dispatchers = array();
+		
+		if ( $empty_dispatcher ) {
+			if ( is_array( $empty_dispatcher ) ) {
+				foreach ( $empty_dispatcher as $dispatcher ) {
+					$exclude_dispatchers[] = $dispatcher;
+				}
+			} else if ( is_numeric( $empty_dispatcher ) ) {
+				$exclude_dispatchers[] = $empty_dispatcher;
+			}
+		}
+		
+		return $exclude_dispatchers;
 	}
 }
 

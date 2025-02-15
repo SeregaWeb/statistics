@@ -91,6 +91,11 @@ if ( $report_object ) {
 		$shared_with_client  = get_field_value( $meta, 'shared_with_client' );
 		$macropoint_set      = get_field_value( $meta, 'macropoint_set' );
 		
+		$second_driver           = get_field_value( $meta, 'second_driver' );
+		$second_unit_number_name = get_field_value( $meta, 'second_unit_number_name' );
+		$second_driver_rate      = get_field_value( $meta, 'second_driver_rate' );
+		$second_driver_phone     = get_field_value( $meta, 'second_driver_phone' );
+		
 		$post_status = get_field_value( $main, 'status_post' );
 		
 		$factoring_status = get_field_value( $meta, 'factoring_status' );
@@ -415,6 +420,80 @@ $read_only = $TMSUsers->check_read_only( $post_status );
                 </div>
 			<?php endif; ?>
 
+            <div class="col-12"></div>
+
+            <div class="mb-2 col-12 col-md-6 col-xl-4">
+                <div class="form-check form-switch p-0 mt-1">
+                    <input disabled class="form-check-input ml-0 js-toggle"
+                           data-block-toggle="js-second-driver" <?php echo is_numeric( $second_driver ) ? 'checked'
+						: ''; ?>
+                           id="fake_second_driver" name="fake_second_driver"
+                           type="checkbox">
+                    <label class="form-check-label ml-2" for="fake_second_driver">Second driver
+                    </label>
+
+                    <input type="hidden" name="second_driver" value="<?php echo $second_driver; ?>">
+                </div>
+            </div>
+
+            <div class="col-12"></div>
+
+            <div class="col-12 border-1 border-primary border bg-light ml-2 pt-3 pb-3 mb-3 rounded js-second-driver <?php echo ( ! $second_driver )
+				? 'd-none' : ''; ?>">
+
+                <input type="hidden" name="second_unit_number_name"
+                       value="<?php echo stripslashes( $second_unit_number_name ); ?>"/>
+                <input type="hidden" name="second_driver_rate"
+                       value="<?php echo stripslashes( $second_driver_rate ); ?>"/>
+                <input type="hidden" name="second_driver_phone"
+                       value="<?php echo stripslashes( $second_driver_phone ); ?>"/>
+
+                <div class="row">
+                    <div class="col-12">
+                        <p class="h5">Second Driver </p>
+                    </div>
+                    <div class="mb-2 col-12 col-md-6 col-xl-4">
+                        <label for="unit_number_name" class="form-label">Second Unit Number & Name</label>
+                        <div class="d-flex gap-1 js-container-number">
+                            <input disabled type="text" name="fake_second_unit_number_name"
+                                   data-value="<?php echo $second_unit_number_name; ?>"
+                                   value="<?php echo stripslashes( $second_unit_number_name ); ?>" class="form-control"
+                            >
+                            <button class="btn btn-primary js-fill-driver" disabled
+                                    data-phone=".js-second-phone-driver">Fill
+                            </button>
+                        </div>
+                        <input type="hidden" name="old_second_unit_number_name"
+                               value="<?php echo $second_unit_number_name; ?>">
+                    </div>
+
+                    <div class="mb-2 col-12 col-md-6 col-xl-4">
+                        <label for="second_driver_rate" class="form-label">Second Driver Rate</label>
+                        <div class="input-group">
+                            <span class="input-group-text">$</span>
+                            <input disabled type="text" name="fake_second_driver_rate"
+                                   data-value="<?php echo $second_driver_rate; ?>"
+                                   value="<?php echo $tbd ? 0 : $second_driver_rate; ?>"
+                                   class="form-control js-money js-driver-second-value">
+
+                            <input type="hidden" class="js-old_value_second_driver_rate"
+                                   name="old_value_second_driver_rate"
+                                   value="<?php echo $second_driver_rate; ?>">
+                        </div>
+                    </div>
+
+                    <div class="col-12"></div>
+
+                    <div class="mb-2 col-12 col-md-6 col-xl-4">
+                        <label for="second_driver_phone" class="form-label ">Second Driver phone</label>
+                        <input disabled type="text" data-value="<?php echo $second_driver_phone; ?>"
+                               name="fake_second_driver_phone" value="<?php echo $second_driver_phone; ?>"
+                               class="form-control js-tel-mask js-second-phone-driver">
+                        <input type="hidden" name="old_second_driver_phone" value="<?php echo $second_driver_phone; ?>">
+                    </div>
+                </div>
+            </div>
+
 
             <div class="col-12"></div>
 
@@ -433,7 +512,7 @@ $read_only = $TMSUsers->check_read_only( $post_status );
                     <input type="text" name="unit_number_name" <?php echo $tbd ? 'readonly' : ''; ?>
                            data-value="<?php echo $unit_number_name; ?>"
                            value="<?php echo stripslashes( $unit_number_name ); ?>" class="form-control" required>
-                    <button class="btn btn-primary js-fill-driver">Fill</button>
+                    <button class="btn btn-primary js-fill-driver" data-phone=".js-phone-driver">Fill</button>
                 </div>
                 <input type="hidden" name="old_unit_number_name" value="<?php echo $unit_number_name; ?>">
             </div>
@@ -468,7 +547,6 @@ $read_only = $TMSUsers->check_read_only( $post_status );
                 </div>
             </div>
 
-
             <div class="col-12 col-md-6 col-xl-4">
                 <label for="profit" class="form-label">Profit</label>
                 <div class="input-group">
@@ -493,6 +571,68 @@ $read_only = $TMSUsers->check_read_only( $post_status );
 
 
             <div class="col-12"></div>
+
+            <div class="mb-2 col-12 col-md-6 col-xl-4">
+                <div class="form-check form-switch p-0 mt-1">
+                    <input class="form-check-input ml-0 js-toggle js-switch-and-clear"
+                           data-block-toggle="js-second-driver" <?php echo is_numeric( $second_driver ) ? 'checked'
+						: ''; ?>
+                           data-target="js-second-driver"
+                           id="second_driver" name="second_driver"
+                           type="checkbox">
+                    <label class="form-check-label ml-2" for="second_driver">Second driver
+                    </label>
+                </div>
+            </div>
+
+            <div class="col-12"></div>
+
+            <div class="col-12 border-1 border-primary border bg-light ml-2 pt-3 pb-3 mb-3 rounded js-second-driver <?php echo ( ! $second_driver )
+				? 'd-none' : ''; ?>">
+                <div class="row">
+                    <div class="col-12">
+                        <p class="h5">Second Driver </p>
+                    </div>
+                    <div class="mb-2 col-12 col-md-6 col-xl-4">
+                        <label for="unit_number_name" class="form-label">Second Unit Number & Name</label>
+                        <div class="d-flex gap-1 js-container-number">
+                            <input type="text" name="second_unit_number_name"
+                                   data-value="<?php echo $second_unit_number_name; ?>"
+                                   value="<?php echo stripslashes( $second_unit_number_name ); ?>" class="form-control"
+                            >
+                            <button class="btn btn-primary js-fill-driver" data-phone=".js-second-phone-driver">Fill
+                            </button>
+                        </div>
+                        <input type="hidden" name="old_second_unit_number_name"
+                               value="<?php echo $second_unit_number_name; ?>">
+                    </div>
+
+                    <div class="mb-2 col-12 col-md-6 col-xl-4">
+                        <label for="second_driver_rate" class="form-label">Second Driver Rate</label>
+                        <div class="input-group">
+                            <span class="input-group-text">$</span>
+                            <input type="text" name="second_driver_rate"
+                                   data-value="<?php echo $second_driver_rate; ?>"
+                                   value="<?php echo $tbd ? 0 : $second_driver_rate; ?>"
+                                   class="form-control js-money js-driver-second-value">
+
+                            <input type="hidden" class="js-old_value_second_driver_rate"
+                                   name="old_value_second_driver_rate"
+                                   value="<?php echo $second_driver_rate; ?>">
+                        </div>
+                    </div>
+
+                    <div class="col-12"></div>
+
+                    <div class="mb-2 col-12 col-md-6 col-xl-4">
+                        <label for="second_driver_phone" class="form-label ">Second Driver phone</label>
+                        <input type="text" data-value="<?php echo $second_driver_phone; ?>"
+                               name="second_driver_phone" value="<?php echo $second_driver_phone; ?>"
+                               class="form-control js-tel-mask js-second-phone-driver">
+                        <input type="hidden" name="old_second_driver_phone" value="<?php echo $second_driver_phone; ?>">
+                    </div>
+                </div>
+            </div>
 
 
             <div class="mb-2 col-12 col-md-6 col-xl-4">

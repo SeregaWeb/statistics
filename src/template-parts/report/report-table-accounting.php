@@ -79,19 +79,29 @@ if ( ! empty( $results ) ) : ?>
 			$date_booked     = esc_html( date( 'm/d/Y', strtotime( $date_booked_raw ) ) );
 			
 			$reference_number = esc_html( get_field_value( $meta, 'reference_number' ) );
-			$unit_number_name = esc_html( get_field_value( $meta, 'unit_number_name' ) );
+			
+			$unit_number_name        = esc_html( get_field_value( $meta, 'unit_number_name' ) );
+			$second_unit_number_name = esc_html( get_field_value( $meta, 'second_unit_number_name' ) );
 			
 			$booked_rate_raw = get_field_value( $meta, 'booked_rate' );
 			$booked_rate     = esc_html( '$' . $helper->format_currency( $booked_rate_raw ) );
 			
 			$driver_rate_raw         = get_field_value( $meta, 'driver_rate' );
+			$second_driver_rate_raw  = get_field_value( $meta, 'second_driver_rate' );
 			$quick_pay_driver_amount = get_field_value( $meta, 'quick_pay_driver_amount' );
-			
+			$second_driver_rate      = null;
 			if ( ! is_null( $quick_pay_driver_amount ) ) {
 				$driver_rate_raw = floatval( $driver_rate_raw ) - floatval( $quick_pay_driver_amount );
+				if ( ! is_null( $second_driver_rate_raw ) ) {
+					$second_driver_rate_raw = floatval( $second_driver_rate_raw ) - floatval( $quick_pay_driver_amount );
+				}
 			}
 			
 			$driver_rate = esc_html( '$' . $helper->format_currency( $driver_rate_raw ) );
+			
+			if ( ! is_null( $second_driver_rate_raw ) ) {
+				$second_driver_rate = esc_html( '$' . $helper->format_currency( $second_driver_rate_raw ) );
+			}
 			
 			$true_profit_raw = get_field_value( $meta, 'true_profit' );
 			$profit_class    = $true_profit_raw < 0 ? 'modified-price' : '';
@@ -122,6 +132,13 @@ if ( ! empty( $results ) ) : ?>
 				$quick_pay_show        = floatval( $driver_rate_raw ) - floatval( $quick_pay_driver_amount );
 				$quick_pay_show_method = $helper->get_quick_pay_methods_for_accounting( $quick_pay_method );
 				$component_quick_pay   = "<span class='text-small'>$" . $quick_pay_show . " - " . $quick_pay_show_method . "</span>";
+				
+				if ( $second_driver_rate_raw ) {
+					$second_quick_pay_show        = floatval( $second_driver_rate_raw ) - floatval( $quick_pay_driver_amount );
+					$second_quick_pay_show_method = $helper->get_quick_pay_methods_for_accounting( $quick_pay_method );
+					$second_component_quick_pay   = "<span class='text-small'>$" . $second_quick_pay_show . " - " . $second_quick_pay_show_method . "</span>";
+					
+				}
 			}
 			
 			$now_show = ( $factoring_status_row === 'paid' );
@@ -162,14 +179,23 @@ if ( ! empty( $results ) ) : ?>
                 <td>
                     <div class="d-flex flex-column">
                         <p class="m-0"><?php echo $unit_number_name; ?></p>
+						<?php if ( $second_unit_number_name ): ?>
+                            <p class="m-0"><?php echo $second_unit_number_name; ?></p>
+						<?php endif; ?>
                     </div>
                 </td>
 
                 <td>
                     <div class="d-flex flex-column gap-0">
-						<?php echo $driver_rate; ?>
+                        <span><?php echo $driver_rate; ?></span>
 						<?php if ( $quick_pay_method ):
 							echo $component_quick_pay;
+						endif; ?>
+						<?php if ( $second_driver_rate_raw ): ?>
+                            <span><?php echo $second_driver_rate; ?></span>
+							<?php if ( $quick_pay_method ):
+								echo $second_component_quick_pay;
+							endif;
 						endif; ?>
                     </div>
                 </td>

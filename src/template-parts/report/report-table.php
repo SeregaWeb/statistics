@@ -103,8 +103,17 @@ if ( ! empty( $results ) ) : ?>
 			
 			$driver_rate_raw = get_field_value( $meta, 'driver_rate' );
 			$driver_rate     = esc_html( '$' . $helper->format_currency( $driver_rate_raw ) );
-			$all_miles       = get_field_value( $meta, 'all_miles' );
-			$miles           = $helper->calculate_price_per_mile( $booked_rate_raw, $driver_rate_raw, $all_miles );
+			
+			$second_driver_rate_raw = get_field_value( $meta, 'second_driver_rate' );
+			$second_driver_rate     = esc_html( '$' . $helper->format_currency( $second_driver_rate_raw ) );
+			
+			if ( ! $second_driver_rate ):
+				$all_miles = get_field_value( $meta, 'all_miles' );
+				$miles     = $helper->calculate_price_per_mile( $booked_rate_raw, $driver_rate_raw, $all_miles );
+			else:
+				$all_miles = get_field_value( $meta, 'all_miles' );
+				$miles     = $helper->calculate_price_per_mile( $booked_rate_raw, $second_driver_rate_raw, $all_miles );
+			endif;
 			
 			$tbd = get_field_value( $meta, 'tbd' );
 			
@@ -192,7 +201,12 @@ if ( ! empty( $results ) ) : ?>
                 </td>
 
                 <td>
-                    <span class="<?php echo $modify_driver_price_class; ?>"><?php echo $driver_rate; ?></span>
+                    <span class=" <?php echo $modify_driver_price_class; ?>"><?php echo $driver_rate; ?></span>
+					<?php if ( $second_driver_rate_raw ): ?>
+                        <br>
+                        <br>
+                        <span class="<?php echo $modify_driver_price_class; ?>"><?php echo $second_driver_rate; ?></span>
+					<?php endif; ?>
 					<?php if ( $miles[ 'driver_rate_per_mile' ] != 0 && $miles[ 'driver_rate_per_mile' ] != '0' ): ?>
                         <p class="text-small mb-0 mt-1"><?php echo '$' . $miles[ 'driver_rate_per_mile' ] . ' per mile' ?></p>
 					<?php endif; ?>

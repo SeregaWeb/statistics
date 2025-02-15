@@ -65,11 +65,13 @@ if ( ! empty( $results ) ) : ?>
 			$status               = $load_status;
 			
 			$office_dispatcher = get_field_value( $meta, 'office_dispatcher' );
+			$tbd               = get_field_value( $meta, 'tbd' );
 			
 			$date_booked_raw = get_field_value( $row, 'date_booked' );
 			$date_booked     = esc_html( date( 'm/d/Y', strtotime( $date_booked_raw ) ) );
 			
-			$reference_number       = esc_html( get_field_value( $meta, 'reference_number' ) );
+			$reference_number = esc_html( get_field_value( $meta, 'reference_number' ) );
+			
 			$driver_with_macropoint = $helper->get_driver_tempate( $meta );
 			
 			$show_control = $TMSUsers->show_control_loads( $my_team, $current_user_id, $dispatcher_initials, $is_draft );
@@ -92,7 +94,7 @@ if ( ! empty( $results ) ) : ?>
 			$now_show = ( $factoring_status_row === 'paid' );
 			?>
 
-            <tr class="<?php echo 'status-tracking-' . $status; ?>">
+            <tr class="<?php echo 'status-tracking-' . $status; ?> <?php echo $tbd ? 'tbd' : ''; ?>">
 
                 <td>
                     <div class="d-flex gap-1 align-items-center">

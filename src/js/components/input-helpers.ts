@@ -26,6 +26,7 @@ export function initMoneyMask() {
 
     const allValueInput = document.querySelector('.js-all-value') as HTMLInputElement;
     const driverValueInput = document.querySelector('.js-driver-value') as HTMLInputElement;
+    const secondDriverValueInput = document.querySelector('.js-driver-second-value') as HTMLInputElement;
     const moneyTotalInput = document.querySelector('.js-money-total') as HTMLInputElement;
     const processingFeesInput = document.querySelector('.js-processing_fees') as HTMLInputElement;
     const typePayInput = document.querySelector('.js-type_pay') as HTMLInputElement;
@@ -62,13 +63,14 @@ export function initMoneyMask() {
 
             let allValue = parseNumber(allValueInput.value);
             const driverValue = parseNumber(driverValueInput.value);
+            const secondDriverValue = parseNumber(secondDriverValueInput.value) || 0;
 
             const processingFees = parseFloat(processingFeesInput.value) || 0;
             const typePay = typePayInput.value;
             const percentQuickPay = parseFloat(percentQuickPayInput.value) || 0;
             const processing = processingInput.value;
 
-            console.log('values', processingFees, typePay, percentQuickPay, processing);
+            console.log('values', processingFees, typePay, percentQuickPay, processing, secondDriverValue);
 
             // Step 1: Apply 'processing_fees' if processing is 'direct'
             if (processing === 'direct') {
@@ -91,7 +93,7 @@ export function initMoneyMask() {
             if (tbd.checked) {
                 moneyTotalMask.value = '0';
             } else {
-                const remaining = allValue - driverValue;
+                const remaining = allValue - (driverValue + secondDriverValue);
                 // @ts-ignore
                 moneyTotalMask.value = remaining.toString();
             }
@@ -100,6 +102,7 @@ export function initMoneyMask() {
         if (allValueInput && driverValueInput) {
             allValueInput.addEventListener('input', calculateRemaining);
             driverValueInput.addEventListener('input', calculateRemaining);
+            secondDriverValueInput.addEventListener('input', calculateRemaining);
 
             tbd &&
                 tbd.addEventListener('change', (event) => {
@@ -110,6 +113,10 @@ export function initMoneyMask() {
                     const inputDriver = document.querySelector('.js-container-number input') as HTMLInputElement;
                     const inputDriverPhone = document.querySelector('.js-phone-driver') as HTMLInputElement;
                     const inputDriverValue = document.querySelector('.js-driver-value') as HTMLInputElement;
+                    const secondInputDirverValue = document.querySelector(
+                        '.js-driver-second-value'
+                    ) as HTMLInputElement;
+
                     const inputTotal = document.querySelector('.js-money-total') as HTMLInputElement;
 
                     if (!inputDriver || !inputDriverPhone || !inputDriverValue) return;
@@ -120,11 +127,13 @@ export function initMoneyMask() {
                             inputDriver.value = 'TBD';
                             inputDriverPhone.value = 'TBD';
                             inputDriverValue.value = '0';
+                            secondInputDirverValue.value = '0';
                             inputTotal.value = '0';
 
                             inputDriver.setAttribute('readonly', 'readonly');
                             inputDriverPhone.setAttribute('readonly', 'readonly');
                             inputDriverValue.setAttribute('readonly', 'readonly');
+                            secondInputDirverValue.setAttribute('readonly', 'readonly');
                             inputTotal.setAttribute('readonly', 'readonly');
                         } else {
                             const driverVal = inputDriver.getAttribute('data-value');
@@ -137,17 +146,66 @@ export function initMoneyMask() {
                             // @ts-ignore
                             inputDriverValue.value = inputDriverValue.getAttribute('data-value');
                             // @ts-ignore
+                            secondInputDirverValue.value = secondInputDirverValue.getAttribute('data-value');
+                            // @ts-ignore
                             inputTotal.value = inputTotal.getAttribute('data-value');
 
                             inputDriver.removeAttribute('readonly');
                             inputDriverPhone.removeAttribute('readonly');
                             inputDriverValue.removeAttribute('readonly');
+                            secondInputDirverValue.removeAttribute('readonly');
 
                             calculateRemaining();
                         }
                     }
                 });
         }
+
+        const valueClear = () => {
+            const switches = document.querySelectorAll('.js-switch-and-clear');
+
+            switches.forEach((item) => {
+                item.addEventListener('change', (event: Event) => {
+                    const target = event.target as HTMLInputElement;
+                    const selectorTarget = target.getAttribute('data-target');
+                    if (!selectorTarget) return;
+
+                    const sections = document.querySelectorAll(`.${selectorTarget}`);
+
+                    if (!target.checked) {
+                        // When unchecked, save current values in data-old-value and then clear the inputs
+                        sections.forEach((section) => {
+                            const inputs = section.querySelectorAll('input');
+                            inputs.forEach((input) => {
+                                const htmlInput = input as HTMLInputElement;
+                                if (htmlInput.value.trim() !== '') {
+                                    htmlInput.setAttribute('data-old-value', htmlInput.value);
+                                }
+                                htmlInput.value = '';
+                            });
+                        });
+                    } else {
+                        // When checked, restore values from data-old-value if they exist
+                        sections.forEach((section) => {
+                            const inputs = section.querySelectorAll('input');
+                            inputs.forEach((input) => {
+                                const htmlInput = input as HTMLInputElement;
+                                const oldValue = htmlInput.getAttribute('data-old-value');
+                                if (oldValue !== null) {
+                                    htmlInput.value = oldValue;
+                                    // Optionally, remove the data attribute after restoring:
+                                    // htmlInput.removeAttribute('data-old-value');
+                                }
+                            });
+                        });
+                    }
+
+                    calculateRemaining();
+                });
+            });
+        };
+
+        valueClear();
     }
 }
 

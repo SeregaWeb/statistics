@@ -19,6 +19,14 @@ export const initGetInfoDriver = (urlAjax, ProjectsLinks) => {
                 const input = container.querySelector('input');
                 if (!input) return;
 
+                // @ts-ignore
+                const phoneSelector = target.getAttribute('data-phone');
+
+                if (!phoneSelector) {
+                    printMessage(`Phone selector not found`, 'danger', 8000);
+                    return;
+                }
+
                 const { value } = input; // Driver ID
                 if (!value) {
                     console.warn('Input value (Driver ID) is empty.');
@@ -57,7 +65,7 @@ export const initGetInfoDriver = (urlAjax, ProjectsLinks) => {
                             if (requestStatus.success) {
                                 const driver = requestStatus.data;
                                 if (!driver) return;
-                                const driverPhone = document.querySelector('.js-phone-driver');
+                                const driverPhone = document.querySelector(phoneSelector);
                                 if (driverPhone) {
                                     // @ts-ignore
                                     driverPhone.value = driver.phone;

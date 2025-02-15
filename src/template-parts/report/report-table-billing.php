@@ -81,19 +81,6 @@ if ( ! empty( $results ) ) : ?>
 			$booked_rate_raw = get_field_value( $meta, 'booked_rate' );
 			$booked_rate     = esc_html( '$' . $helper->format_currency( $booked_rate_raw ) );
 			
-			$driver_rate_raw         = get_field_value( $meta, 'driver_rate' );
-			$quick_pay_driver_amount = get_field_value( $meta, 'quick_pay_driver_amount' );
-			
-			if ( ! is_null( $quick_pay_driver_amount ) ) {
-				$driver_rate_raw = floatval( $driver_rate_raw ) - floatval( $quick_pay_driver_amount );
-			}
-			
-			$driver_rate = esc_html( '$' . $helper->format_currency( $driver_rate_raw ) );
-			
-			$true_profit_raw = get_field_value( $meta, 'true_profit' );
-			$profit_class    = $true_profit_raw < 0 ? 'modified-price' : '';
-			$true_profit     = esc_html( '$' . $helper->format_currency( $true_profit_raw ) );
-			
 			$factoring_status_row = get_field_value( $meta, 'factoring_status' );
 			$factoring_status     = esc_html( $helper->get_label_by_key( $factoring_status_row, 'factoring_status' ) );
 			
@@ -109,19 +96,11 @@ if ( ! empty( $results ) ) : ?>
 			
 			$bank_status       = get_field_value( $meta, 'bank_payment_status' );
 			$driver_pay_status = get_field_value( $meta, 'driver_pay_statuses' );
+			$tbd               = get_field_value( $meta, 'tbd' );
 			
 			
 			$bank_status       = $helper->get_label_by_key( $bank_status, 'bank_statuses' );
 			$driver_pay_status = $helper->get_label_by_key( $driver_pay_status, 'driver_payment_statuses' );
-			
-			$quick_pay_driver_amount = get_field_value( $meta, 'quick_pay_driver_amount' );
-			$quick_pay_method        = get_field_value( $meta, 'quick_pay_method' );
-			
-			if ( $quick_pay_driver_amount && $quick_pay_method ) {
-				$quick_pay_show        = floatval( $driver_rate_raw ) - floatval( $quick_pay_driver_amount );
-				$quick_pay_show_method = $helper->get_quick_pay_methods_for_accounting( $quick_pay_method );
-				$component_quick_pay   = "<span class='text-small'>$" . $quick_pay_show . " - " . $quick_pay_show_method . "</span>";
-			}
 			
 			$now_show = ( $factoring_status_row === 'paid' );
 			
@@ -131,7 +110,7 @@ if ( ! empty( $results ) ) : ?>
 			
 			?>
 
-            <tr class="">
+            <tr class="<?php echo $tbd ? 'tbd' : ''; ?>">
                 <td><input <?php echo $now_show ? 'disabled' : ''; ?> type="checkbox"
                                                                       id="load-<?php echo $row[ 'id' ]; ?>"
                                                                       class="checkbox-big js-select-load"

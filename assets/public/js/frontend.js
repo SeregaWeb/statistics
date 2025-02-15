@@ -4665,7 +4665,7 @@ var initGetInfoDriver = function initGetInfoDriver(urlAjax, ProjectsLinks) {
     btns.forEach(function (item) {
       item.addEventListener('click', function (event) {
         return __awaiter(void 0, void 0, void 0, /*#__PURE__*/_regeneratorRuntime().mark(function _callee() {
-          var target, container, input, value, useProject, valueProject, formData, options;
+          var target, container, input, phoneSelector, value, useProject, valueProject, formData, options;
           return _regeneratorRuntime().wrap(function _callee$(_context) {
             while (1) switch (_context.prev = _context.next) {
               case 0:
@@ -4691,22 +4691,30 @@ var initGetInfoDriver = function initGetInfoDriver(urlAjax, ProjectsLinks) {
                 }
                 return _context.abrupt("return");
               case 10:
+                phoneSelector = target.getAttribute('data-phone');
+                if (phoneSelector) {
+                  _context.next = 14;
+                  break;
+                }
+                (0,_info_messages__WEBPACK_IMPORTED_MODULE_0__.printMessage)("Phone selector not found", 'danger', 8000);
+                return _context.abrupt("return");
+              case 14:
                 value = input.value;
                 if (value) {
-                  _context.next = 14;
+                  _context.next = 18;
                   break;
                 }
                 console.warn('Input value (Driver ID) is empty.');
                 return _context.abrupt("return");
-              case 14:
+              case 18:
                 useProject = document.querySelector('.js-select-current-table');
                 if (useProject) {
-                  _context.next = 18;
+                  _context.next = 22;
                   break;
                 }
                 console.warn('Project selector not found.');
                 return _context.abrupt("return");
-              case 18:
+              case 22:
                 valueProject = useProject.value;
                 console.log('Fetching driver for ID:', value, 'and project:', valueProject);
                 try {
@@ -4724,7 +4732,7 @@ var initGetInfoDriver = function initGetInfoDriver(urlAjax, ProjectsLinks) {
                     if (requestStatus.success) {
                       var driver = requestStatus.data;
                       if (!driver) return;
-                      var driverPhone = document.querySelector('.js-phone-driver');
+                      var driverPhone = document.querySelector(phoneSelector);
                       if (driverPhone) {
                         driverPhone.value = driver.phone;
                       }
@@ -4740,7 +4748,7 @@ var initGetInfoDriver = function initGetInfoDriver(urlAjax, ProjectsLinks) {
                 } catch (error) {
                   console.error('Error occurred while fetching driver:', error);
                 }
-              case 21:
+              case 25:
               case "end":
                 return _context.stop();
             }
@@ -4904,6 +4912,7 @@ function initMoneyMask() {
   });
   var allValueInput = document.querySelector('.js-all-value');
   var driverValueInput = document.querySelector('.js-driver-value');
+  var secondDriverValueInput = document.querySelector('.js-driver-second-value');
   var moneyTotalInput = document.querySelector('.js-money-total');
   var processingFeesInput = document.querySelector('.js-processing_fees');
   var typePayInput = document.querySelector('.js-type_pay');
@@ -4934,11 +4943,12 @@ function initMoneyMask() {
       }
       var allValue = parseNumber(allValueInput.value);
       var driverValue = parseNumber(driverValueInput.value);
+      var secondDriverValue = parseNumber(secondDriverValueInput.value) || 0;
       var processingFees = parseFloat(processingFeesInput.value) || 0;
       var typePay = typePayInput.value;
       var percentQuickPay = parseFloat(percentQuickPayInput.value) || 0;
       var processing = processingInput.value;
-      console.log('values', processingFees, typePay, percentQuickPay, processing);
+      console.log('values', processingFees, typePay, percentQuickPay, processing, secondDriverValue);
       if (processing === 'direct') {
         if (typePay === 'quick-pay' && percentQuickPay > 0) {
           var quickPayDiscount = allValue * (percentQuickPay / 100);
@@ -4953,19 +4963,21 @@ function initMoneyMask() {
       if (tbd.checked) {
         moneyTotalMask.value = '0';
       } else {
-        var remaining = allValue - driverValue;
+        var remaining = allValue - (driverValue + secondDriverValue);
         moneyTotalMask.value = remaining.toString();
       }
     }
     if (allValueInput && driverValueInput) {
       allValueInput.addEventListener('input', calculateRemaining);
       driverValueInput.addEventListener('input', calculateRemaining);
+      secondDriverValueInput.addEventListener('input', calculateRemaining);
       tbd && tbd.addEventListener('change', function (event) {
         event.preventDefault();
         var target = event.target;
         var inputDriver = document.querySelector('.js-container-number input');
         var inputDriverPhone = document.querySelector('.js-phone-driver');
         var inputDriverValue = document.querySelector('.js-driver-value');
+        var secondInputDirverValue = document.querySelector('.js-driver-second-value');
         var inputTotal = document.querySelector('.js-money-total');
         if (!inputDriver || !inputDriverPhone || !inputDriverValue) return;
         if (target) {
@@ -4973,10 +4985,12 @@ function initMoneyMask() {
             inputDriver.value = 'TBD';
             inputDriverPhone.value = 'TBD';
             inputDriverValue.value = '0';
+            secondInputDirverValue.value = '0';
             inputTotal.value = '0';
             inputDriver.setAttribute('readonly', 'readonly');
             inputDriverPhone.setAttribute('readonly', 'readonly');
             inputDriverValue.setAttribute('readonly', 'readonly');
+            secondInputDirverValue.setAttribute('readonly', 'readonly');
             inputTotal.setAttribute('readonly', 'readonly');
           } else {
             var driverVal = inputDriver.getAttribute('data-value');
@@ -4984,15 +4998,53 @@ function initMoneyMask() {
             inputDriver.value = driverVal === 'TBD' ? '' : driverVal;
             inputDriverPhone.value = driverPhoneVal === 'TBD' ? '' : driverPhoneVal;
             inputDriverValue.value = inputDriverValue.getAttribute('data-value');
+            secondInputDirverValue.value = secondInputDirverValue.getAttribute('data-value');
             inputTotal.value = inputTotal.getAttribute('data-value');
             inputDriver.removeAttribute('readonly');
             inputDriverPhone.removeAttribute('readonly');
             inputDriverValue.removeAttribute('readonly');
+            secondInputDirverValue.removeAttribute('readonly');
             calculateRemaining();
           }
         }
       });
     }
+    var valueClear = function valueClear() {
+      var switches = document.querySelectorAll('.js-switch-and-clear');
+      switches.forEach(function (item) {
+        item.addEventListener('change', function (event) {
+          var target = event.target;
+          var selectorTarget = target.getAttribute('data-target');
+          if (!selectorTarget) return;
+          var sections = document.querySelectorAll(".".concat(selectorTarget));
+          if (!target.checked) {
+            sections.forEach(function (section) {
+              var inputs = section.querySelectorAll('input');
+              inputs.forEach(function (input) {
+                var htmlInput = input;
+                if (htmlInput.value.trim() !== '') {
+                  htmlInput.setAttribute('data-old-value', htmlInput.value);
+                }
+                htmlInput.value = '';
+              });
+            });
+          } else {
+            sections.forEach(function (section) {
+              var inputs = section.querySelectorAll('input');
+              inputs.forEach(function (input) {
+                var htmlInput = input;
+                var oldValue = htmlInput.getAttribute('data-old-value');
+                if (oldValue !== null) {
+                  htmlInput.value = oldValue;
+                }
+              });
+            });
+          }
+          calculateRemaining();
+        });
+      });
+    };
+    valueClear();
   }
 }
 function checboxesHelperInit() {
@@ -5663,8 +5715,10 @@ var toggleBlocksInit = function toggleBlocksInit() {
   var toggleElements = document.querySelectorAll('.js-toggle');
   toggleElements && toggleElements.forEach(function (item) {
     item.addEventListener('click', function (event) {
-      event.preventDefault();
       var target = event.target;
+      if (!(target instanceof HTMLInputElement && (target.type === 'checkbox' || target.type === 'radio'))) {
+        event.preventDefault();
+      }
       var toggleContainerSelector = target.getAttribute('data-block-toggle');
       var toggleContainer = document.querySelector(".".concat(toggleContainerSelector));
       if (!target || !toggleContainer) return;

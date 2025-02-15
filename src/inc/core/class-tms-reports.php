@@ -1480,6 +1480,7 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 				"log_file_isset"        => FILTER_SANITIZE_STRING,
 			] );
 			
+			
 			if ( ! $MY_INPUT[ 'ar-action' ] ) {
 				$MY_INPUT[ 'ar_status' ] = 'not-solved';
 			}
@@ -1967,49 +1968,54 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 		if ( defined( 'DOING_AJAX' ) && DOING_AJAX ) {
 			
 			$MY_INPUT = filter_var_array( $_POST, [
-				"date_booked"           => FILTER_SANITIZE_STRING,
-				"dispatcher_initials"   => FILTER_SANITIZE_STRING,
-				"reference_number"      => FILTER_SANITIZE_STRING,
-				"unit_number_name"      => FILTER_SANITIZE_STRING,
-				"old_unit_number_name"  => FILTER_SANITIZE_STRING,
-				"booked_rate"           => FILTER_SANITIZE_STRING,
-				"old_value_booked_rate" => FILTER_SANITIZE_STRING,
-				"processing_fees"       => FILTER_SANITIZE_STRING,
-				"type_pay"              => FILTER_SANITIZE_STRING,
-				"percent_quick_pay"     => FILTER_SANITIZE_STRING,
-				"processing"            => FILTER_SANITIZE_STRING,
-				"driver_rate"           => FILTER_SANITIZE_STRING,
-				"old_value_driver_rate" => FILTER_SANITIZE_STRING,
-				"driver_phone"          => FILTER_SANITIZE_STRING,
-				"shared_with_client"    => FILTER_VALIDATE_BOOLEAN,
-				"macropoint_set"        => FILTER_VALIDATE_BOOLEAN,
-				"old_driver_phone"      => FILTER_SANITIZE_STRING,
-				"profit"                => FILTER_SANITIZE_STRING,
-				"pick_up_date"          => FILTER_SANITIZE_STRING,
-				"old_pick_up_date"      => FILTER_SANITIZE_STRING,
-				"delivery_date"         => FILTER_SANITIZE_STRING,
-				"old_delivery_date"     => FILTER_SANITIZE_STRING,
-				"load_status"           => FILTER_SANITIZE_STRING,
-				"old_load_status"       => FILTER_SANITIZE_STRING,
-				"instructions"          => [ 'filter' => FILTER_SANITIZE_STRING, 'flags' => FILTER_REQUIRE_ARRAY ],
-				"old_instructions"      => FILTER_SANITIZE_STRING,
-				"source"                => FILTER_SANITIZE_STRING,
-				"load_type"             => FILTER_SANITIZE_STRING,
-				"commodity"             => FILTER_SANITIZE_STRING,
-				"weight"                => FILTER_SANITIZE_STRING,
-				"old_weight"            => FILTER_SANITIZE_STRING,
-				"notes"                 => FILTER_SANITIZE_STRING,
-				"post_id"               => FILTER_SANITIZE_STRING,
-				"post_status"           => FILTER_SANITIZE_STRING,
-				"read_only"             => FILTER_SANITIZE_STRING,
-				"tbd"                   => FILTER_VALIDATE_BOOLEAN,
-				"old_tbd"               => FILTER_VALIDATE_BOOLEAN,
+				"date_booked"             => FILTER_SANITIZE_STRING,
+				"dispatcher_initials"     => FILTER_SANITIZE_STRING,
+				"reference_number"        => FILTER_SANITIZE_STRING,
+				"unit_number_name"        => FILTER_SANITIZE_STRING,
+				"old_unit_number_name"    => FILTER_SANITIZE_STRING,
+				"booked_rate"             => FILTER_SANITIZE_STRING,
+				"old_value_booked_rate"   => FILTER_SANITIZE_STRING,
+				"processing_fees"         => FILTER_SANITIZE_STRING,
+				"type_pay"                => FILTER_SANITIZE_STRING,
+				"percent_quick_pay"       => FILTER_SANITIZE_STRING,
+				"processing"              => FILTER_SANITIZE_STRING,
+				"driver_rate"             => FILTER_SANITIZE_STRING,
+				"old_value_driver_rate"   => FILTER_SANITIZE_STRING,
+				"driver_phone"            => FILTER_SANITIZE_STRING,
+				"shared_with_client"      => FILTER_VALIDATE_BOOLEAN,
+				"macropoint_set"          => FILTER_VALIDATE_BOOLEAN,
+				"old_driver_phone"        => FILTER_SANITIZE_STRING,
+				"profit"                  => FILTER_SANITIZE_STRING,
+				"pick_up_date"            => FILTER_SANITIZE_STRING,
+				"old_pick_up_date"        => FILTER_SANITIZE_STRING,
+				"delivery_date"           => FILTER_SANITIZE_STRING,
+				"old_delivery_date"       => FILTER_SANITIZE_STRING,
+				"load_status"             => FILTER_SANITIZE_STRING,
+				"old_load_status"         => FILTER_SANITIZE_STRING,
+				"instructions"            => [ 'filter' => FILTER_SANITIZE_STRING, 'flags' => FILTER_REQUIRE_ARRAY ],
+				"old_instructions"        => FILTER_SANITIZE_STRING,
+				"source"                  => FILTER_SANITIZE_STRING,
+				"load_type"               => FILTER_SANITIZE_STRING,
+				"commodity"               => FILTER_SANITIZE_STRING,
+				"weight"                  => FILTER_SANITIZE_STRING,
+				"old_weight"              => FILTER_SANITIZE_STRING,
+				"notes"                   => FILTER_SANITIZE_STRING,
+				"post_id"                 => FILTER_SANITIZE_STRING,
+				"post_status"             => FILTER_SANITIZE_STRING,
+				"read_only"               => FILTER_SANITIZE_STRING,
+				"second_unit_number_name" => FILTER_SANITIZE_STRING,
+				"second_driver_rate"      => FILTER_SANITIZE_STRING,
+				"second_driver_phone"     => FILTER_SANITIZE_STRING,
+				"second_driver"           => FILTER_VALIDATE_BOOLEAN,
+				"tbd"                     => FILTER_VALIDATE_BOOLEAN,
+				"old_tbd"                 => FILTER_VALIDATE_BOOLEAN,
 			] );
 			
 			if ( $MY_INPUT[ 'load_status' ] === 'cancelled' ) {
-				$MY_INPUT[ "booked_rate" ] = '0.00';
-				$MY_INPUT[ "driver_rate" ] = '0.00';
-				$MY_INPUT[ "profit" ]      = '0.00';
+				$MY_INPUT[ "booked_rate" ]        = '0.00';
+				$MY_INPUT[ "driver_rate" ]        = '0.00';
+				$MY_INPUT[ "profit" ]             = '0.00';
+				$MY_INPUT[ "second_driver_rate" ] = '0.00';
 			} else {
 				$MY_INPUT = $this->count_all_sum( $MY_INPUT );
 			}
@@ -2029,9 +2035,14 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 	public function count_all_sum( $MY_INPUT ) {
 		
 		
-		$MY_INPUT[ "booked_rate" ] = $this->convert_to_number( $MY_INPUT[ "booked_rate" ] );
-		$MY_INPUT[ "driver_rate" ] = $this->convert_to_number( $MY_INPUT[ "driver_rate" ] );
-		$MY_INPUT[ "profit" ]      = $this->convert_to_number( $MY_INPUT[ "profit" ] );
+		$MY_INPUT[ "booked_rate" ]        = $this->convert_to_number( $MY_INPUT[ "booked_rate" ] );
+		$MY_INPUT[ "driver_rate" ]        = $this->convert_to_number( $MY_INPUT[ "driver_rate" ] );
+		$MY_INPUT[ "second_driver_rate" ] = $this->convert_to_number( $MY_INPUT[ "second_driver_rate" ] );
+		$MY_INPUT[ "profit" ]             = $this->convert_to_number( $MY_INPUT[ "profit" ] );
+		
+		if ( is_numeric( $MY_INPUT[ "second_driver_rate" ] ) && is_numeric( $MY_INPUT[ "driver_rate" ] ) ) {
+			$with_second_sum = $MY_INPUT[ "driver_rate" ] + $MY_INPUT[ "second_driver_rate" ];
+		}
 		
 		$booked_rait         = $MY_INPUT[ "booked_rate" ];
 		$processing_fees_val = $booked_rait;
@@ -2062,13 +2073,20 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 		$MY_INPUT[ 'percent_quick_pay_value' ] = $percent_value;
 		
 		$MY_INPUT[ 'percent_booked_rate' ] = $MY_INPUT[ "booked_rate_modify" ] * 0.02;
-		$MY_INPUT[ 'profit' ]              = $MY_INPUT[ "booked_rate_modify" ] - $MY_INPUT[ "driver_rate" ];
-		$MY_INPUT[ 'true_profit' ]         = $MY_INPUT[ "booked_rate_modify" ] - ( $MY_INPUT[ 'percent_booked_rate' ] + $MY_INPUT[ "driver_rate" ] );
+		if ( isset( $with_second_sum ) ) {
+			$MY_INPUT[ 'profit' ]      = $MY_INPUT[ "booked_rate_modify" ] - $with_second_sum;
+			$MY_INPUT[ 'true_profit' ] = $MY_INPUT[ "booked_rate_modify" ] - ( $MY_INPUT[ 'percent_booked_rate' ] + $with_second_sum );
+		} else {
+			$MY_INPUT[ 'profit' ]      = $MY_INPUT[ "booked_rate_modify" ] - $MY_INPUT[ "driver_rate" ];
+			$MY_INPUT[ 'true_profit' ] = $MY_INPUT[ "booked_rate_modify" ] - ( $MY_INPUT[ 'percent_booked_rate' ] + $MY_INPUT[ "driver_rate" ] );
+		}
+		
 		
 		if ( $MY_INPUT[ 'tbd' ] ) {
-			$MY_INPUT[ 'profit' ]      = 0;
-			$MY_INPUT[ 'true_profit' ] = 0;
-			$MY_INPUT[ "driver_rate" ] = 0;
+			$MY_INPUT[ 'profit' ]             = 0;
+			$MY_INPUT[ 'true_profit' ]        = 0;
+			$MY_INPUT[ "driver_rate" ]        = 0;
+			$MY_INPUT[ "second_driver_rate" ] = 0;
 			
 		}
 		
@@ -2753,9 +2771,10 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 		);
 		
 		if ( $data[ 'status' ] === 'cancelled' ) {
-			$post_meta[ 'booked_rate' ] = '0.00';
-			$post_meta[ 'driver_rate' ] = '0.00';
-			$post_meta[ 'profit' ]      = '0.00';
+			$post_meta[ 'booked_rate' ]        = '0.00';
+			$post_meta[ 'driver_rate' ]        = '0.00';
+			$post_meta[ 'profit' ]             = '0.00';
+			$post_meta[ 'second_driver_rate' ] = '0.00';
 		}
 		
 		// Specify the condition (WHERE clause)
@@ -3452,6 +3471,10 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 			'tbd'                     => $data[ 'tbd' ],
 			'shared_with_client'      => $data[ 'shared_with_client' ],
 			'macropoint_set'          => $data[ 'macropoint_set' ],
+			'second_unit_number_name' => $data[ 'second_unit_number_name' ],
+			'second_driver_rate'      => $data[ 'second_driver_rate' ],
+			'second_driver_phone'     => $data[ 'second_driver_phone' ],
+			'second_driver'           => $data[ 'second_driver' ],
 			'office_dispatcher'       => $office_dispatcher,
 		);
 		

@@ -4,8 +4,12 @@ export const toggleBlocksInit = () => {
     toggleElements &&
         toggleElements.forEach((item) => {
             item.addEventListener('click', (event) => {
-                event.preventDefault();
                 const { target } = event;
+
+                if (!(target instanceof HTMLInputElement && (target.type === 'checkbox' || target.type === 'radio'))) {
+                    event.preventDefault();
+                }
+
                 // @ts-ignore
                 const toggleContainerSelector = target.getAttribute('data-block-toggle');
                 const toggleContainer = document.querySelector(`.${toggleContainerSelector}`);

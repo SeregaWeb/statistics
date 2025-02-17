@@ -191,7 +191,7 @@ if ( ! empty( $results ) ) : ?>
 						<?php if ( $quick_pay_method ):
 							echo $component_quick_pay;
 						endif; ?>
-						<?php if ( $second_driver_rate_raw ): ?>
+						<?php if ( $second_driver_rate_raw && $second_driver_rate_raw !== '0' ): ?>
                             <span><?php echo $second_driver_rate; ?></span>
 							<?php if ( $quick_pay_method ):
 								echo $second_component_quick_pay;

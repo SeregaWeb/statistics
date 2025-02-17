@@ -16,6 +16,9 @@ define( 'LIBS_JS', THEME_URI . '/src/js/libs/' );
 
 // required files.
 require THEME_DIR . '/src/inc/class-wp-rock.php';
+require 'vendor/autoload.php';
+
+use Mpdf\Mpdf;
 
 require THEME_DIR . '/src/inc/core/class-tms-reports-icons.php';
 require THEME_DIR . '/src/inc/core/class-tms-reports-helper.php';
@@ -28,6 +31,7 @@ require THEME_DIR . '/src/inc/core/class-tms-reports-shipper.php';
 require THEME_DIR . '/src/inc/core/class-tms-emails.php';
 require THEME_DIR . '/src/inc/core/class-tms-logs.php';
 require THEME_DIR . '/src/inc/core/class-tms-performance.php';
+require THEME_DIR . '/src/inc/core/class-tms-generate-document.php';
 
 require THEME_DIR . '/src/inc/initial-setup.php';
 require THEME_DIR . '/src/inc/enqueue-scripts.php';

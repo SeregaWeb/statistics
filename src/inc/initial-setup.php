@@ -53,6 +53,9 @@ $reportsLogs->init();
 $reportsPerformance = new TMSReportsPerformance();
 $reportsPerformance->init();
 
+$createDocuments = new TMSGenerateDocument();
+$createDocuments->init();
+
 /**
  * Sanitize uploaded file name
  */

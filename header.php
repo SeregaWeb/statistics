@@ -76,15 +76,12 @@ Hello, it's Endurance Transport team.
 We will keep you updated during the whole process in this email thread. If you need to add any other email for the updates, please to do that.
 We will immediately let you know once the truck is on-site.
 ------------
-Добавить новое окно для загрузки файлов "Freight Pictures" - много картинок может быть
-добавить дополнительного водителя
+
 добавить криэйт инвойс как в тмс
 ------------
 сделать разбивку емаила для чейн на разные проекты
-------------
-Добавить switch "MacroPoint set" под "Shared with client" подобный ему же.
 
-Вывести маленькую иконку напротив номера телефона водителя в Tracking если switch включен.
+Если у груза статус "Waiting on RC" нужно чтобы подгрузка Rate confirmation & Dispatch message не была обязательная. Так же в Trip, не обязательно вводить информацию Shipper, Receiver.
 
 </pre>
 

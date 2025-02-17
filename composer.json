@@ -5,7 +5,8 @@
     "wp-coding-standards/wpcs": "^2.3"
   },
   "require": {
-    "php": ">7.2"
+    "php": ">7.2",
+    "mpdf/mpdf": "^8.2"
   },
   "authors": [
     {

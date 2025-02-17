@@ -47,6 +47,7 @@ import { changeStopType } from './components/stop-type';
 import { setStatusPaid } from './components/set-status-paid';
 import { sendEmailChain } from './components/send-email-chain';
 import { saveAllTracking } from './components/save-all-tracking';
+import { createDocumentInvoice, createDocumentInvoiceActions } from './components/document-create-money-check';
 
 function ready() {
     console.log('ready');
@@ -125,6 +126,9 @@ function ready() {
     telMaskInit();
     tabUrlUpdeter();
     timeStrictChange();
+
+    createDocumentInvoice();
+    createDocumentInvoiceActions(urlAjax);
 
     const preloaders = document.querySelectorAll('.js-preloader');
     preloaders &&

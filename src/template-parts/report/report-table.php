@@ -202,13 +202,15 @@ if ( ! empty( $results ) ) : ?>
 
                 <td>
                     <span class=" <?php echo $modify_driver_price_class; ?>"><?php echo $driver_rate; ?></span>
-					<?php if ( $second_driver_rate_raw ): ?>
-                        <br>
-                        <br>
-                        <span class="<?php echo $modify_driver_price_class; ?>"><?php echo $second_driver_rate; ?></span>
-					<?php endif; ?>
-					<?php if ( $miles[ 'driver_rate_per_mile' ] != 0 && $miles[ 'driver_rate_per_mile' ] != '0' ): ?>
-                        <p class="text-small mb-0 mt-1"><?php echo '$' . $miles[ 'driver_rate_per_mile' ] . ' per mile' ?></p>
+					<?php if ( $second_driver_rate !== '$0' ): ?>
+						<?php if ( $second_driver_rate_raw ): ?>
+                            <br>
+                            <br>
+                            <span class="<?php echo $modify_driver_price_class; ?>"><?php echo $second_driver_rate; ?></span>
+						<?php endif; ?>
+						<?php if ( $miles[ 'driver_rate_per_mile' ] != 0 && $miles[ 'driver_rate_per_mile' ] != '0' ): ?>
+                            <p class="text-small mb-0 mt-1"><?php echo '$' . $miles[ 'driver_rate_per_mile' ] . ' per mile' ?></p>
+						<?php endif; ?>
 					<?php endif; ?>
                 </td>
 

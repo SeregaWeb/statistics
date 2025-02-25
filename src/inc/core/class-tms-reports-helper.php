@@ -1173,5 +1173,9 @@ class TMSReportsHelper extends TMSReportsIcons {
 		
 		return $exclude_dispatchers;
 	}
+	
+	function hasUrlParams( array $params ): bool {
+		return ! empty( array_intersect_key( $_GET, array_flip( $params ) ) );
+	}
 }
 

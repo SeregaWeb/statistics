@@ -515,7 +515,7 @@
         },
         {
             "key": "field_672602a6fc9f9",
-            "label": "Emails",
+            "label": "Contacts main",
             "name": "",
             "aria-label": "",
             "type": "tab",
@@ -591,6 +591,26 @@
             "append": ""
         },
         {
+            "key": "field_67bdc7efe318f",
+            "label": "Odysseia phone",
+            "name": "odysseia_phone",
+            "aria-label": "",
+            "type": "text",
+            "instructions": "",
+            "required": 0,
+            "conditional_logic": 0,
+            "wrapper": {
+                "width": "",
+                "class": "",
+                "id": ""
+            },
+            "default_value": "",
+            "maxlength": "",
+            "placeholder": "",
+            "prepend": "",
+            "append": ""
+        },
+        {
             "key": "field_6797f96934aab",
             "label": "Martlet email",
             "name": "martlet_email",
@@ -611,9 +631,49 @@
             "append": ""
         },
         {
+            "key": "field_67bdc802e3190",
+            "label": "Martlet phone",
+            "name": "martlet_phone",
+            "aria-label": "",
+            "type": "text",
+            "instructions": "",
+            "required": 0,
+            "conditional_logic": 0,
+            "wrapper": {
+                "width": "",
+                "class": "",
+                "id": ""
+            },
+            "default_value": "",
+            "maxlength": "",
+            "placeholder": "",
+            "prepend": "",
+            "append": ""
+        },
+        {
             "key": "field_6797f97834aac",
             "label": "Endurance email",
             "name": "endurance_email",
+            "aria-label": "",
+            "type": "text",
+            "instructions": "",
+            "required": 0,
+            "conditional_logic": 0,
+            "wrapper": {
+                "width": "",
+                "class": "",
+                "id": ""
+            },
+            "default_value": "",
+            "maxlength": "",
+            "placeholder": "",
+            "prepend": "",
+            "append": ""
+        },
+        {
+            "key": "field_67bdc80fe3191",
+            "label": "Endurance phone",
+            "name": "endurance_phone",
             "aria-label": "",
             "type": "text",
             "instructions": "",
@@ -1086,5 +1146,5 @@
     "active": true,
     "description": "",
     "show_in_rest": 0,
-    "modified": 1739737392
+    "modified": 1740490816
 }

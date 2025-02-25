@@ -9,19 +9,38 @@
 get_header();
 
 $statistics = new TMSStatistics();
-
+$TMSUsers   = new TMSUsers();
 
 $current_year  = date( 'Y' ); // Returns the current year
 $current_month = date( 'm' ); // Returns the current month
 
 $year_param  = get_field_value( $_GET, 'year_param' );
 $mount_param = get_field_value( $_GET, 'mount_param' );
+$office      = get_field_value( $_GET, 'office' );
 
 if ( ! $year_param ) {
 	$year_param = $current_year;
 }
 if ( ! $mount_param ) {
 	$mount_param = $current_month;
+}
+
+$offices = $statistics->get_offices_from_acf();
+
+if ( ! $office ) {
+	$office = 'all';
+}
+
+$show_filter_by_office = $TMSUsers->check_user_role_access( array(
+	'dispatcher-tl',
+	'tracking-tl',
+	'administrator',
+	'recruiter-tl',
+	'moderator'
+), true );
+
+if ( ! $show_filter_by_office ) {
+	$office = get_field( 'work_location', "user_" . get_current_user_id() );
 }
 
 ?>
@@ -35,8 +54,22 @@ if ( ! $mount_param ) {
                     <div class="col-12">
 
                         <form action="" class="w-100">
-
                             <div class="d-flex gap-1">
+								<?php if ( $show_filter_by_office ): ?>
+                                    <select class="form-select w-auto" name="office"
+                                            aria-label=".form-select-sm example">
+                                        <option value="all">Office</option>
+										<?php if ( isset( $offices[ 'choices' ] ) && is_array( $offices[ 'choices' ] ) ): ?>
+											<?php foreach ( $offices[ 'choices' ] as $key => $val ): ?>
+                                                <option value="<?php echo $key; ?>" <?php echo $office === $key
+													? 'selected' : '' ?> >
+													<?php echo $val; ?>
+                                                </option>
+											<?php endforeach; ?>
+										<?php endif; ?>
+                                    </select>
+								<?php endif; ?>
+
                                 <select class="form-select w-auto" required name="year_param"
                                         aria-label=".form-select-sm example">
                                     <option value="">Year</option>
@@ -91,7 +124,7 @@ if ( ! $mount_param ) {
 
                             <div class="d-flex flex-column gap-1">
 								<?php
-								$data                = $statistics->get_monthly_fuctoring_stats( $year_param, $mount_param );
+								$data                = $statistics->get_monthly_fuctoring_stats( $year_param, $mount_param, $office );
 								$general_profit      = floatval( $data[ 'total_booked_rate' ] ) - floatval( $data[ 'total_driver_rate' ] );
 								$general_true_profit = floatval( $data[ 'total_true_profit' ] );
 								

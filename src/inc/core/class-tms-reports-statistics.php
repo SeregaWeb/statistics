@@ -36,7 +36,7 @@ class  TMSStatistics extends TMSReportsHelper {
 		return $weekdayCount;
 	}
 	
-	public function get_sources_statistics() {
+	public function get_sources_statistics( $office_dispatcher = 'all' ) {
 		global $wpdb;
 		$table_meta = $wpdb->prefix . $this->table_meta;
 		
@@ -44,16 +44,30 @@ class  TMSStatistics extends TMSReportsHelper {
 		$statistics = [];
 		
 		foreach ( $this->sources as $key => $label ) {
-			$query = $wpdb->prepare( "
-        SELECT COUNT(DISTINCT source_meta.post_id) as count,
-               SUM(CASE WHEN profit_meta.meta_key = 'profit' THEN profit_meta.meta_value ELSE 0 END) as profit
-        FROM $table_meta as source_meta
-        INNER JOIN $table_meta as profit_meta
-            ON source_meta.post_id = profit_meta.post_id
-            AND profit_meta.meta_key = 'profit'
-        WHERE source_meta.meta_key = 'source' AND source_meta.meta_value = %s
-        ", $key );
+			// Базовый SQL-запрос
+			$sql = "
+            SELECT COUNT(DISTINCT source_meta.post_id) as count,
+                   SUM(CASE WHEN profit_meta.meta_key = 'profit' THEN profit_meta.meta_value ELSE 0 END) as profit
+            FROM $table_meta as source_meta
+            INNER JOIN $table_meta as profit_meta
+                ON source_meta.post_id = profit_meta.post_id
+                AND profit_meta.meta_key = 'profit'
+            LEFT JOIN $table_meta as office_dispatcher
+                ON source_meta.post_id = office_dispatcher.post_id
+                AND office_dispatcher.meta_key = 'office_dispatcher'
+            WHERE source_meta.meta_key = 'source'
+                AND source_meta.meta_value = %s
+        ";
 			
+			// Добавляем фильтр по офису, если он задан
+			if ( $office_dispatcher !== 'all' ) {
+				$sql   .= " AND office_dispatcher.meta_value = %s";
+				$query = $wpdb->prepare( $sql, $key, $office_dispatcher );
+			} else {
+				$query = $wpdb->prepare( $sql, $key );
+			}
+			
+			// Выполняем запрос
 			$result = $wpdb->get_row( $query );
 			
 			$statistics[ $key ] = [
@@ -65,6 +79,7 @@ class  TMSStatistics extends TMSReportsHelper {
 		
 		return json_encode( $statistics );
 	}
+	
 	
 	public function get_dispatcher_statistics( $office_dispatcher_selected ) {
 		global $wpdb;
@@ -385,7 +400,7 @@ class  TMSStatistics extends TMSReportsHelper {
 	}
 	
 	
-	public function get_monthly_fuctoring_stats( $year, $month ) {
+	public function get_monthly_fuctoring_stats( $year, $month, $office = 'all' ) {
 		global $wpdb;
 		$table_reports = $wpdb->prefix . $this->table_main;
 		$table_meta    = $wpdb->prefix . $this->table_meta;
@@ -412,7 +427,9 @@ class  TMSStatistics extends TMSReportsHelper {
 		    LEFT JOIN $table_meta processing_fees ON reports.id = processing_fees.post_id AND processing_fees.meta_key = 'processing_fees'
 		    LEFT JOIN $table_meta true_profit ON reports.id = true_profit.post_id AND true_profit.meta_key = 'true_profit'
 		    LEFT JOIN $table_meta booked_rate_modify ON reports.id = booked_rate_modify.post_id AND booked_rate_modify.meta_key = 'booked_rate_modify'
+		     LEFT JOIN $table_meta office_dispatcher ON reports.id = office_dispatcher.post_id AND office_dispatcher.meta_key = 'office_dispatcher'
 		";
+		
 		
 		if ( $year === 'all' || $month === 'all' ) {
 			$sql .= "WHERE reports.status_post = 'publish'";
@@ -421,8 +438,13 @@ class  TMSStatistics extends TMSReportsHelper {
 		      AND MONTH(reports.date_booked) = %d
 		      AND reports.status_post = 'publish'";
 		}
+		
+		if ( $office !== 'all' ) {
+			$sql .= " AND office_dispatcher.meta_value = %s";
+		}
+		
 		// Prepare query with necessary joins for each meta field
-		$query = $wpdb->prepare( $sql, $year, $month );
+		$query = $wpdb->prepare( $sql, $year, $month, $office );
 		// Execute the query
 		$results = $wpdb->get_results( $query, ARRAY_A );
 		

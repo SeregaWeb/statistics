@@ -25,46 +25,47 @@ class TMSGenerateDocument extends TMSReports {
 	
 	public function __construct( $use_wordpress = true ) {
 		
-		global $global_options;
-		$user_id = get_current_user_id();
-		$project = get_field( 'current_select', 'user_' . $user_id );
-		$project = strtolower( $project );
-		
-		
-		$upload_dir = wp_get_upload_dir();
-		$upload_url = $upload_dir[ 'baseurl' ];
-		
-		if ( $project === 'odysseia' ) {
-			$extend_file = '.jpeg';
-		}
-		
-		if ( $project === 'endurance' || $project === 'martlet' ) {
-			$extend_file = '.jpg';
-		}
-		
-		$upload_url .= '/logos/' . $project . $extend_file;
-		
-		$this->logo                   = $upload_url;
-		$this->company_name           = get_field_value( $global_options, 'company_name_' . $project );
-		$this->company_phone          = get_field_value( $global_options, 'company_phone_' . $project );
-		$this->company_email          = get_field_value( $global_options, 'company_email_' . $project );
-		$this->company_address        = get_field_value( $global_options, 'company_address_' . $project );
-		$this->company_sity_state_zip = get_field_value( $global_options, 'company_sity_state_zip_' . $project );
-		$this->company_mc             = get_field_value( $global_options, 'company_mc_' . $project );
-		$this->company_dot            = get_field_value( $global_options, 'company_dot_' . $project );
-		
-		$this->use_wordpress = $use_wordpress;
-		
-		if ( $this->use_wordpress ) {
-			if ( is_user_logged_in() ) {
-				$this->prefix_file = get_current_user_id() . '_';
+		if ( is_user_logged_in() ):
+			global $global_options;
+			$user_id = get_current_user_id();
+			$project = get_field( 'current_select', 'user_' . $user_id );
+			$project = strtolower( $project );
+			
+			
+			$upload_dir = wp_get_upload_dir();
+			$upload_url = $upload_dir[ 'baseurl' ];
+			
+			if ( $project === 'odysseia' ) {
+				$extend_file = '.jpeg';
 			}
-		} else {
-			$this->prefix_file = $this->custom_get_user_id();
-		}
-		
-		$this->create_dir();
-		
+			
+			if ( $project === 'endurance' || $project === 'martlet' ) {
+				$extend_file = '.jpg';
+			}
+			
+			$upload_url .= '/logos/' . $project . $extend_file;
+			
+			$this->logo                   = $upload_url;
+			$this->company_name           = get_field_value( $global_options, 'company_name_' . $project );
+			$this->company_phone          = get_field_value( $global_options, 'company_phone_' . $project );
+			$this->company_email          = get_field_value( $global_options, 'company_email_' . $project );
+			$this->company_address        = get_field_value( $global_options, 'company_address_' . $project );
+			$this->company_sity_state_zip = get_field_value( $global_options, 'company_sity_state_zip_' . $project );
+			$this->company_mc             = get_field_value( $global_options, 'company_mc_' . $project );
+			$this->company_dot            = get_field_value( $global_options, 'company_dot_' . $project );
+			
+			$this->use_wordpress = $use_wordpress;
+			
+			if ( $this->use_wordpress ) {
+				if ( is_user_logged_in() ) {
+					$this->prefix_file = get_current_user_id() . '_';
+				}
+			} else {
+				$this->prefix_file = $this->custom_get_user_id();
+			}
+			
+			$this->create_dir();
+		endif;
 	}
 	
 	public function init() {

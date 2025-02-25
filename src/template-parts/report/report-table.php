@@ -143,27 +143,28 @@ if ( ! empty( $results ) ) : ?>
 			}
 			
 			$previous_date = $date_booked;
-			?>
 			
-			<?php if ( $show_separator || $index === 0 ):
-			$date_search = substr( $date_booked_raw, 0, 10 );
-			if ( $date_booked_raw && isset( $new_array_date[ $date_search ] ) && $date_search ) {
-				$profit_mod = esc_html( '$' . $helper->format_currency( $new_array_date[ $date_search ] ) );
-				$profit_mod = '<span style="text-transform: capitalize">Profit: <b>' . $profit_mod . '</b></span>';
+			$paramsToCheck = [ "fmonth", "fyear", "dispatcher", "load_status", "source" ];
+			
+			if ( $show_separator || $index === 0 ) {
+				$date_search = substr( $date_booked_raw, 0, 10 );
+				
+				$profit_mod = ''; // Значение по умолчанию
+				if ( $date_booked_raw && isset( $new_array_date[ $date_search ] ) && ! $helper->hasUrlParams( $paramsToCheck ) ) {
+					$formatted_profit = esc_html( '$' . $helper->format_currency( $new_array_date[ $date_search ] ) );
+					$profit_mod       = '<span style="text-transform: capitalize">Profit: <b>' . $formatted_profit . '</b></span>';
+				}
+				
+				$index = 1;
+				?>
+                <tr>
+                    <td colspan="14" class="separator-date">
+						<?php echo $date_booked . ' ' . $profit_mod; ?>
+                    </td>
+                </tr>
+				<?php
 			}
-			
-			if ( $profit_mod ) {
-			}
-			
-			$index = 1;
-			
 			?>
-            <tr>
-                <td colspan="14" class="separator-date"><?php echo $date_booked;
-					echo ' ' . $profit_mod; ?> </td>
-            </tr>
-		<?php
-		endif; ?>
 
             <tr class="load-status-<?php echo $load_status; ?> <?php echo $tbd ? 'tbd' : ''; ?>">
                 <td><label class="h-100 cursor-pointer"

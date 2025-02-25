@@ -2009,6 +2009,8 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 				"second_driver"           => FILTER_VALIDATE_BOOLEAN,
 				"tbd"                     => FILTER_VALIDATE_BOOLEAN,
 				"old_tbd"                 => FILTER_VALIDATE_BOOLEAN,
+				"additional_fees"         => FILTER_VALIDATE_BOOLEAN,
+				"additional_fees_val"     => FILTER_SANITIZE_STRING,
 			] );
 			
 			if ( $MY_INPUT[ 'load_status' ] === 'cancelled' ) {
@@ -2276,7 +2278,6 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 			
 			// Construct the API URL
 			$api_url = "{$project_url}/wp-json/wp/v2/driver-name/?driver-id={$driver_id}";
-			
 			// Initialize cURL
 			$ch = curl_init();
 			
@@ -2311,7 +2312,7 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 				if ( $response_data && isset( $response_data[ 'success' ] ) && $response_data[ 'success' ] ) {
 					wp_send_json_success( $response_data[ 'data' ] );
 				} else {
-					wp_send_json_error( [ 'message' => 'Failed to fetch driver details.' ] );
+					wp_send_json_error( [ 'message' => 'Failed to fetch driver details. Driver not found.' ] );
 				}
 			} else {
 				wp_send_json_error( [
@@ -3475,6 +3476,8 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 			'second_driver_rate'      => $data[ 'second_driver_rate' ],
 			'second_driver_phone'     => $data[ 'second_driver_phone' ],
 			'second_driver'           => $data[ 'second_driver' ],
+			'additional_fees'         => $data[ 'additional_fees' ],
+			'additional_fees_val'     => $data[ 'additional_fees_val' ],
 			'office_dispatcher'       => $office_dispatcher,
 		);
 		
@@ -3813,24 +3816,9 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 			add_action( "wp_ajax_{$ajax_action}", [ $this, $method ] );
 			add_action( "wp_ajax_nopriv_{$ajax_action}", [ $this, 'need_login' ] );
 		}
-
-//		add_action( 'wp_ajax_add_new_report', array( $this, 'add_new_report' ) );
-//		add_action( 'wp_ajax_add_new_draft_report', array( $this, 'add_new_report_draft' ) );
-//		add_action( 'wp_ajax_update_new_draft_report', array( $this, 'update_new_draft_report' ) );
-//		add_action( 'wp_ajax_update_billing_report', array( $this, 'update_billing_report' ) );
-//		add_action( 'wp_ajax_update_files_report', array( $this, 'update_files_report' ) );
-//		add_action( 'wp_ajax_delete_open_image', array( $this, 'delete_open_image' ) );
-//		add_action( 'wp_ajax_update_shipper_info', array( $this, 'update_shipper_info' ) );
-//		add_action( 'wp_ajax_send_email_chain', array( $this, 'send_email_chain' ) );
-//		add_action( 'wp_ajax_update_post_status', array( $this, 'update_post_status' ) );
-//		add_action( 'wp_ajax_rechange_status_load', array( $this, 'rechange_status_load' ) );
-//		add_action( 'wp_ajax_remove_one_load', array( $this, 'remove_one_load' ) );
-//		add_action( 'wp_ajax_get_driver_by_id', array( $this, 'get_driver_by_id' ) );
-//		add_action( 'wp_ajax_update_accounting_report', array( $this, 'update_accounting_report' ) );
-//		add_action( 'wp_ajax_quick_update_post', array( $this, 'quick_update_post' ) );
-//		add_action( 'wp_ajax_quick_update_post_ar', array( $this, 'quick_update_post_ar' ) );
-//		add_action( 'wp_ajax_quick_update_status', array( $this, 'quick_update_status' ) );
-//		add_action( 'wp_ajax_quick_update_status_all', array( $this, 'quick_update_status_all' ) );
+		
+		add_action( 'delete_user', array( $this, 'handle_dispatcher_deletion' ) );
+		
 	}
 	
 	public function need_login() {
@@ -3851,6 +3839,105 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 		
 		$this->ajax_actions();
 	}
+	
+	function handle_dispatcher_deletion( $user_id ) {
+		// Проверяем, является ли удаляемый пользователь диспетчером
+		$user = get_user_by( 'ID', $user_id );
+		if ( $user && in_array( 'dispatcher', $user->roles ) ) {
+			
+			// Выполняем перенос лодов на нового диспетчера
+			$result = $this->move_loads_for_new_dispatcher( $user_id );
+			
+			// Логируем результат для отладки
+			if ( is_wp_error( $result ) ) {
+				error_log( 'Ошибка переноса лодов: ' . $result->get_error_message() );
+			} else {
+				error_log( 'Успешный перенос лодов: ' . $result );
+			}
+		}
+	}
+	
+	function get_dispatcher_initials_records( $dispatcher_id ) {
+		global $wpdb;
+		$results = [];
+		
+		// Получаем список таблиц
+		$tables = $this->tms_tables;
+		foreach ( $tables as $val ) {
+			$table_meta_name = $wpdb->prefix . 'reportsmeta_' . strtolower( $val );
+			
+			// Выполняем запрос к каждой таблице
+			$query = $wpdb->prepare( "SELECT id FROM $table_meta_name
+            WHERE meta_key = %s AND meta_value = %s", 'dispatcher_initials', $dispatcher_id );
+			
+			$table_results = $wpdb->get_results( $query, ARRAY_A );
+			
+			// Добавляем результаты в общий массив с использованием имени таблицы в качестве ключа
+			if ( ! empty( $table_results ) ) {
+				$results[ $table_meta_name ] = $table_results;
+			} else {
+				$results[ $table_meta_name ] = []; // Добавляем пустой массив, если данных нет
+			}
+		}
+		
+		return $results;
+	}
+	
+	function update_dispatcher_initials_records( $records, $new_dispatcher_id ) {
+		global $wpdb;
+		
+		if ( empty( $records ) || ! is_array( $records ) || empty( $new_dispatcher_id ) ) {
+			return false;
+		}
+		
+		foreach ( $records as $table_name => $rows ) {
+			if ( ! empty( $rows ) ) {
+				$ids        = array_column( $rows, 'id' );
+				$table_name = esc_sql( $table_name );
+				$ids_string = implode( ',', array_map( 'intval', $ids ) );
+				$query      = "
+                UPDATE $table_name
+                SET meta_value = %s
+                WHERE id IN ($ids_string)
+            ";
+				
+				$wpdb->query( $wpdb->prepare( $query, $new_dispatcher_id ) );
+			}
+		}
+		
+		return true;
+	}
+	
+	function move_loads_for_new_dispatcher( $dispatcher_id_to_find ) {
+		global $global_options;
+		
+		// Получаем новый ID диспетчера из глобальных настроек
+		$new_dispatcher_id = get_field_value( $global_options, 'empty_dispatcher' );
+		
+		// Проверяем, что новый ID не равен ID удаляемого диспетчера
+		if ( $new_dispatcher_id === $dispatcher_id_to_find ) {
+			return new WP_Error( 'invalid_id', 'Новый ID диспетчера не может совпадать с удаляемым.' );
+		}
+		
+		// Получаем все записи, связанные с удаляемым диспетчером
+		$records = $this->get_dispatcher_initials_records( $dispatcher_id_to_find );
+		
+		// Проверяем, есть ли что обновлять
+		if ( empty( $records ) ) {
+			return new WP_Error( 'no_records', 'Записей для обновления не найдено.' );
+		}
+		
+		// Обновляем все записи на нового диспетчера
+		$update_result = $this->update_dispatcher_initials_records( $records, $new_dispatcher_id );
+		
+		// Проверяем результат
+		if ( $update_result ) {
+			return 'Записи успешно перенесены на нового диспетчера.';
+		} else {
+			return new WP_Error( 'update_failed', 'Не удалось обновить записи.' );
+		}
+	}
+	
 	
 	// CREATE TABLE AND UPDATE SQL END
 	

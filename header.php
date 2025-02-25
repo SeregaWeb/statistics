@@ -21,7 +21,6 @@ if(!is_user_logged_in()) {
 $page_class = '';
 $page_id    = get_queried_object_id();
 
-
 $user = get_userdata( get_current_user_id() );
 
 $role = '';
@@ -60,7 +59,6 @@ if ( function_exists( 'get_field' ) ) {
 
 Для Martlet Express & Endurance Transport нужно написать уникальный текст при автоматической отправке Tracking Chain через кнопку на грузе.
 
-
 MARTLET EXPRESS
 
 Hello,
@@ -77,12 +75,9 @@ We will keep you updated during the whole process in this email thread. If you n
 We will immediately let you know once the truck is on-site.
 ------------
 
-добавить криэйт инвойс как в тмс
-------------
 сделать разбивку емаила для чейн на разные проекты
 
 Если у груза статус "Waiting on RC" нужно чтобы подгрузка Rate confirmation & Dispatch message не была обязательная. Так же в Trip, не обязательно вводить информацию Shipper, Receiver.
-
 </pre>
 
 <body <?php body_class( $page_class ); ?>>
@@ -190,4 +185,4 @@ We will immediately let you know once the truck is on-site.
                 </svg>
             </button>
         </div>
-        <?php endif; ?>
+<?php endif; ?>

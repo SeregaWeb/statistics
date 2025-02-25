@@ -90,6 +90,8 @@ if ( $report_object ) {
 		$tbd                 = get_field_value( $meta, 'tbd' );
 		$shared_with_client  = get_field_value( $meta, 'shared_with_client' );
 		$macropoint_set      = get_field_value( $meta, 'macropoint_set' );
+		$additional_fees     = get_field_value( $meta, 'additional_fees' );
+		$additional_fees_val = get_field_value( $meta, 'additional_fees_val' );
 		
 		$second_driver           = get_field_value( $meta, 'second_driver' );
 		$second_unit_number_name = get_field_value( $meta, 'second_unit_number_name' );
@@ -355,6 +357,10 @@ $read_only = $TMSUsers->check_read_only( $post_status );
         <div class="col-12"></div>
 		
 		<?php if ( $full_view_only ): ?>
+
+            <input type="hidden" name="additional_fees_val" value="<?php echo $additional_fees_val; ?>">
+            <input type="hidden" name="additional_fees" value="<?php echo $additional_fees; ?>">
+
             <div class="mb-2 col-12 col-md-6 col-xl-4">
                 <label for="unit_number_name" class="form-label">Unit Number & Name</label>
                 <p class="m-0"><strong><?php echo $unit_number_name; ?></strong></p>
@@ -633,6 +639,47 @@ $read_only = $TMSUsers->check_read_only( $post_status );
                     </div>
                 </div>
             </div>
+			
+			
+			<?php if ( $TMSUsers->check_user_role_access( array( 'administrator', 'accounting' ), true ) ): ?>
+                <div class="col-12"></div>
+
+                <div class="mb-2 col-12 col-md-6 col-xl-4">
+                    <div class="form-check form-switch p-0 mt-1">
+                        <input class="form-check-input ml-0 js-toggle js-switch-and-clear"
+                               data-block-toggle="js-additional_fees" <?php echo is_numeric( $additional_fees )
+							? 'checked' : ''; ?>
+                               data-target="js-additional_fees"
+                               id="additional_fees" name="additional_fees"
+                               type="checkbox">
+                        <label class="form-check-label ml-2" for="additional_fees">Add Additional Fees
+                        </label>
+                    </div>
+                </div>
+
+                <div class="col-12"></div>
+
+                <div class="col-12 col-lg-8 border-1 border-primary border bg-light ml-2 pt-3 pb-3 mb-3 rounded js-additional_fees <?php echo ( ! $additional_fees )
+					? 'd-none' : ''; ?>">
+
+                    <div class="row">
+                        <div class="col-12 ">
+                            <label for="additional_fees_val" class="form-label">Additional Fees</label>
+                            <div class="input-group">
+                                <span class="input-group-text">$</span>
+                                <input type="text" name="additional_fees_val" <?php echo $tbd ? 'readonly' : ''; ?>
+                                       data-value="<?php echo $additional_fees_val; ?>"
+                                       value="<?php echo $tbd ? 0 : $additional_fees_val; ?>"
+                                       class="form-control js-money">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+			
+			<?php else: ?>
+                <input type="hidden" name="additional_fees_val" value="<?php echo $additional_fees_val; ?>">
+                <input type="hidden" name="additional_fees" value="<?php echo $additional_fees; ?>">
+			<?php endif; ?>
 
 
             <div class="mb-2 col-12 col-md-6 col-xl-4">
@@ -644,7 +691,6 @@ $read_only = $TMSUsers->check_read_only( $post_status );
 		
 		
 		<?php endif; ?>
-		
 		
 		
 		<?php if ( $full_view_only && ! $tracking_tl ): ?>

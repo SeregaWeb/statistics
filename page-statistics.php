@@ -16,6 +16,33 @@ $dispatchers_tl = $statistics->get_dispatchers_tl();
 
 $active_item = get_field_value( $_GET, 'active_state' );
 
+$office_dispatcher = get_field_value( $_GET, 'office' );
+
+$sellect_all_offices = $TMSUsers->check_user_role_access( array(
+	'dispatcher-tl',
+	'administrator',
+	'recruiter',
+	'recruiter-tl',
+	'moderator'
+), true );
+
+if ( $sellect_all_offices ) {
+	$office_dispatcher = $office_dispatcher ? $office_dispatcher : 'all';
+} else if ( ! $office_dispatcher ) {
+	$office_dispatcher = get_field( 'work_location', 'user_' . get_current_user_id() );
+}
+$offices = $helper->get_offices_from_acf();
+
+$show_filter_by_office = $TMSUsers->check_user_role_access( array(
+	'dispatcher-tl',
+	'administrator',
+	'recruiter',
+	'recruiter-tl',
+	'tracking',
+	'moderator'
+), true );
+
+
 if ( ! $active_item ) {
 	$active_item = 'finance';
 }
@@ -57,32 +84,9 @@ if ( ! $active_item ) {
 						
 						
 						<?php if ( $active_item === 'finance' ):
-							$office_dispatcher = get_field_value( $_GET, 'office' );
 							
-							$sellect_all_offices = $TMSUsers->check_user_role_access( array(
-								'dispatcher-tl',
-								'administrator',
-								'recruiter',
-								'recruiter-tl',
-								'moderator'
-							), true );
-							
-							if ( $sellect_all_offices ) {
-								$office_dispatcher = $office_dispatcher ? $office_dispatcher : 'all';
-							} else if ( ! $office_dispatcher ) {
-								$office_dispatcher = get_field( 'work_location', 'user_' . get_current_user_id() );
-							}
-							$offices               = $helper->get_offices_from_acf();
-							$dispatcher_json       = $statistics->get_dispatcher_statistics( $office_dispatcher );
-							$dispatcher_arr        = json_decode( $dispatcher_json, true );
-							$show_filter_by_office = $TMSUsers->check_user_role_access( array(
-								'dispatcher-tl',
-								'administrator',
-								'recruiter',
-								'recruiter-tl',
-								'tracking',
-								'moderator'
-							), true );
+							$dispatcher_json = $statistics->get_dispatcher_statistics( $office_dispatcher );
+							$dispatcher_arr  = json_decode( $dispatcher_json, true );
 						
 						if ( $show_filter_by_office ): ?>
                             <form class="w-100 d-flex gap-1">
@@ -642,12 +646,34 @@ if ( ! $active_item ) {
 							endif; ?>
 							
 							<?php if ( $active_item === 'source' ): ?>
+
+
                                 <div class="w-100 ">
                                     <div class="w-100 mb-2">
                                         <h2>Source</h2>
 										<?php
-										$dispatcher_json = $statistics->get_sources_statistics();
-										?>
+										$dispatcher_json = $statistics->get_sources_statistics( $office_dispatcher );
+										
+										if ( $show_filter_by_office ): ?>
+                                            <form class="w-100 d-flex gap-1">
+                                                <select class="form-select w-auto" name="office"
+                                                        aria-label=".form-select-sm example">
+                                                    <option value="all">Office</option>
+													<?php if ( isset( $offices[ 'choices' ] ) && is_array( $offices[ 'choices' ] ) ): ?>
+														<?php foreach ( $offices[ 'choices' ] as $key => $val ): ?>
+                                                            <option value="<?php echo $key; ?>" <?php echo $office_dispatcher === $key
+																? 'selected' : '' ?> >
+																<?php echo $val; ?>
+                                                            </option>
+														<?php endforeach; ?>
+													<?php endif; ?>
+                                                </select>
+                                                <input type="hidden" name="active_state"
+                                                       value="<?php echo $active_item; ?>">
+                                                <button class="btn btn-primary">Select Office</button>
+                                            </form>
+										<?php endif; ?>
+
                                         <div class="d-flex">
                                             <div id="sourcePostCountChart"
                                                  style="width:100%; max-width:50%; height:50vh;"></div>

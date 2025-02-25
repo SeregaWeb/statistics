@@ -36,8 +36,6 @@ $users->init();
 $emails = new TMSEmails();
 $emails->init();
 
-//var_dump($emails->get_all_emails());
-
 $usersAuth = new TMSAuth();
 $usersAuth->init();
 

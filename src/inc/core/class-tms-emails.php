@@ -247,6 +247,22 @@ class TMSEmails extends TMSUsers {
 		$reports       = new TMSReports();
 		$project_name  = $reports->project;
 		$project_email = get_field_value( $global_options, strtolower( $project_name ) . '_email' );
+		$project_phone = get_field_value( $global_options, strtolower( $project_name ) . '_phone' );
+		
+		
+		$upload_dir = wp_get_upload_dir();
+		$upload_url = $upload_dir[ 'baseurl' ];
+		
+		if ( strtolower( $project_name ) === 'odysseia' ) {
+			$extend_file = '.jpeg';
+		}
+		
+		if ( strtolower( $project_name ) === 'endurance' || strtolower( $project_name ) === 'martlet' ) {
+			$extend_file = '.jpg';
+		}
+		
+		$upload_url .= '/logos/' . strtolower( $project_name ) . $extend_file;
+		
 		// Проверка наличия post_id
 		if ( empty( $id_load ) ) {
 			return [ 'success' => false, 'message' => 'Missing post ID' ];
@@ -340,12 +356,14 @@ class TMSEmails extends TMSUsers {
 		if ( ! empty( $errors ) ) {
 			return [ 'success' => false, 'message' => implode( ', ', $errors ) ];
 		}
-		
 		// Формирование темы письма
-		$subject = sprintf( '#%s %s - %s / %s', $reference_number, implode( ', ', $template_p ), implode( ', ', $template_d ), $project_name );
+		$subject = sprintf( 'Tracking email chain: Load # %s %s - %s ', $reference_number, implode( ', ', $template_p ), implode( ', ', $template_d ) );
 		
 		// Формирование текста письма
-		$text = sprintf( "Hello, it's %s.<br>Our team will keep you updated throughout the whole process in this chain. If you need to add any other email for the updates, please feel free to do that.<br>We will immediately let you know once the truck is on-site.", $project_name );
+		$text = sprintf( "Thank you for running this load with %s.
+		<br>Our team will keep you updated during the whole process of transportation in this email thread.
+		<br>If you need to add any other email for the updates, please feel free to do that.
+		<br>We will immediately let you know once the truck is on-site.", $project_name );
 		
 		// Возврат собранных данных
 		return $this->send_email_for_brocker( [
@@ -358,8 +376,10 @@ class TMSEmails extends TMSUsers {
 			'tracking_email'    => $tracking,
 			'project_name'      => $project_name,
 			'project_email'     => $project_email,
+			'project_phone'     => $project_phone,
 			'dispatcher_email'  => $dispatcher_email,
 			'nightshift'        => $nightshift,
+			'logo'              => $upload_url,
 		] );
 	}
 	
@@ -369,19 +389,28 @@ class TMSEmails extends TMSUsers {
 			return [ 'success' => false, 'message' => 'Missing required data for email content' ];
 		}
 		
-		// Объединение всех email
 		$all_emails = array_merge( isset( $data[ 'emails' ] ) ? explode( ',', $data[ 'emails' ] )
 			: [], isset( $data[ 'nightshift' ] ) ? explode( ',', $data[ 'nightshift' ] )
+			: [], isset( $data[ 'team_leader_email' ] ) ? [ $data[ 'team_leader_email' ] ]
 			: [], isset( $data[ 'additional_emails' ] ) ? $data[ 'additional_emails' ]
 			: [], isset( $data[ 'email_main_broker' ] ) ? [ $data[ 'email_main_broker' ] ]
-			: [], isset( $data[ 'team_leader_email' ] ) ? [ $data[ 'team_leader_email' ] ]
 			: [], isset( $data[ 'tracking_email' ] ) ? [ $data[ 'tracking_email' ] ]
-			: [], isset( $data[ 'dispatcher_email' ] ) ? [ $data[ 'dispatcher_email' ] ] : [] );
+			: [], isset( $data[ 'dispatcher_email' ] ) ? [ $data[ 'dispatcher_email' ] ] : [], );
+
+//		$mails_bcc = array_merge( isset( $data[ 'emails' ] ) ? explode( ',', $data[ 'emails' ] )
+//			: [], isset( $data[ 'nightshift' ] ) ? explode( ',', $data[ 'nightshift' ] )
+//			: [], isset( $data[ 'team_leader_email' ] ) ? [ $data[ 'team_leader_email' ] ] : [] );
+//
+		// Объединение всех email
+		$email_project = ( isset( $data[ 'project_email' ] ) && $data[ 'project_email' ] )
+			? "<p class='text'>Email: <a href='" . $data[ 'project_email' ] . "'>" . $data[ 'project_email' ] . "</a></p>"
+			: "";
+		
+		$phone_project = ( isset( $data[ 'project_phone' ] ) && $data[ 'project_phone' ] )
+			? "<p class='text'>Phone: " . $data[ 'project_phone' ] . "</p>" : "";
 		
 		// Удаление дубликатов и пустых значений
-		$all_emails = array_filter( array_unique( $all_emails ) );
-//		var_dump($all_emails);die;
-		// Генерация HTML-содержимого
+		$all_emails   = array_filter( array_unique( $all_emails ) );
 		$html_content = "
     	<html>
     <head>
@@ -397,43 +426,68 @@ class TMSEmails extends TMSUsers {
                 max-width: 600px;
                 margin: 20px auto;
                 padding: 20px;
-                border-radius: 8px;
                 background-color: #f9f9f9;
+                text-align: center;
             }
             .email-header {
                 font-size: 20px;
                 font-weight: bold;
-                color: #555;
-                margin-bottom: 20px;
-                text-align: left;
+                color: #000000;
+                max-width: 600px;
+                margin: 20px auto;
+                text-align: center;
+                
             }
             .email-body {
                 font-size: 16px;
                 color: #444;
             }
             .email-footer {
+                max-width: 600px;
+                margin: 20px auto;
                 font-size: 14px;
                 color: #777;
-                margin-top: 20px;
                 text-align: left;
             }
+            
+            .email-logo {
+            	text-align: center;
+            }
+            
+            .email-logo-image {
+            	width: 180px;
+            	height: auto;
+            }
+            
+            .text {
+                color: #000000;
+            	margin: 0;
+            }
+            
         </style>
     </head>
     <body>
+    
+    	<div class='email-logo'>
+    		<img class='email-logo-image' src='" . $data[ 'logo' ] . "' alt='logo'>
+		</div>
+    
+        <div class='email-header'>{$data['subject']}</div>
+    
         <div class='email-container'>
-            <div class='email-header'>{$data['subject']}</div>
             <div class='email-body'>
                 <p>" . $data[ 'text' ] . "</p>
             </div>
-            <div class='email-footer'>
-            </div>
+        </div>
+      	<div class='email-footer'>
+            	" . $email_project . $phone_project . "
         </div>
     </body>
     </html>";
 		
 		return [
-			'html'   => $html_content,
-			'emails' => implode( ', ', $all_emails ),
+			'html'       => $html_content,
+			'all_emails' => implode( ', ', $all_emails ),
 		];
 	}
 	
@@ -448,13 +502,12 @@ class TMSEmails extends TMSUsers {
 		
 		// Получение HTML-контента и email-адресов
 		$html_body  = $email_content[ 'html' ];
-		$all_emails = $email_content[ 'emails' ];
+		$all_emails = $email_content[ 'all_emails' ];
 		
 		// Настройка заголовков для HTML email
-		
 		$headers = array(
 			'Content-Type: text/html; charset=UTF-8',
-			'From: Tracking chain <' . $data[ 'project_email' ] . '>' // Replace with your sender name and email
+			'From: Tracking chain <' . $data[ 'project_email' ] . '>'
 		);
 		
 		// Отправка письма с помощью wp_mail() (для WordPress) или mail()
@@ -468,10 +521,14 @@ class TMSEmails extends TMSUsers {
 		}
 		
 		if ( $result ) {
-			return [ 'success' => true, 'message' => 'Send email chains. for emails:' . $all_emails ];
+			return [
+				'success' => true,
+				'message' => 'Send email chains. for emails: ' . $all_emails
+			];
 		} else {
 			return [ 'success' => false, 'message' => 'Failed to send email for broker' ];
 		}
 	}
+	
 	
 }

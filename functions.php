@@ -52,4 +52,94 @@ function disable_canonical_redirect_for_paged( $redirect_url ) {
 	return $redirect_url;
 }
 
+function test_email() {
+	
+	$html_body = "<html>
+    <head>
+        <style>
+            body {
+                font-family: Arial, sans-serif;
+                line-height: 1.6;
+                color: #333;
+                margin: 0;
+                padding: 0;
+            }
+            .email-container {
+                max-width: 600px;
+                margin: 20px auto;
+                padding: 20px;
+                background-color: #f9f9f9;
+                text-align: center;
+            }
+            .email-header {
+                font-size: 20px;
+                font-weight: bold;
+                color: #000000;
+                max-width: 600px;
+                margin: 20px auto;
+                text-align: center;
+                
+            }
+            .email-body {
+                font-size: 16px;
+                color: #444;
+            }
+            .email-footer {
+                max-width: 600px;
+                margin: 20px auto;
+                font-size: 14px;
+                color: #777;
+                text-align: left;
+            }
+            
+            .email-logo {
+            	text-align: center;
+            }
+            
+            .email-logo-image {
+            	width: 180px;
+            	height: auto;
+            }
+            
+            .text {
+                color: #000000;
+            	margin: 0;
+            }
+            
+        </style>
+    </head>
+    <body>
+    
+    	<div class='email-logo'>
+    		<img class='email-logo-image' src='https://www.endurance-tms.com/wp-content/uploads/logos/odysseia.jpeg' alt='logo'>
+		</div>
+    
+        <div class='email-header'>Tracking email chain: Load # 848761 Nikolaev AL - Nikolaev AL </div>
+                                                        
+                                                        <div class='email-container'>
+            <div class='email-body'>
+                <p>Thank you for running this load with Odysseia.
+		<br>Our team will keep you updated during the whole process of transportation in this email thread.
+		<br>If you need to add any other email for the updates, please feel free to do that.
+		<br>We will immediately let you know once the truck is on-site.</p>
+            </div>
+        </div>
+      	<div class='email-footer'>
+            	<p class='text'>Email: <a href='mailto:tracking@odysseia.one'>tracking@odysseia.one</a></p><p class='text'>Phone: (667) 239-7805</p>
+        </div>
+    </body>
+    </html>";
+	
+	wp_mail( 'milchenko2k16@gmail.com', 'Tracking email chain: Load # 848761 Nikolaev AL - Nikolaev AL', $html_body, array(
+		'Content-Type: text/html; charset=UTF-8',
+		'From: Tracking chain <tracking@endurance-tms.com>'
+	) );
+}
+
+//add_action( 'init', function() {
+//	if ( is_user_logged_in() && current_user_can( 'manage_options' ) ) {
+//		test_email();
+//	}
+//} );
+
 add_filter( 'redirect_canonical', 'disable_canonical_redirect_for_paged' );

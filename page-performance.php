@@ -302,7 +302,12 @@ get_header();
                                                 <input type="hidden" name="date" value="<?php echo $date; ?>">
 
                                                 <td><?php echo $dispatcher[ 'fullname' ]; ?></td>
-                                                <td>
+												
+												<?php
+												$md_color = $print_date[ 'monday_date' ][ 'performance' ] >= 100
+													? '#d9facb' : ' #f4cccc' ?>
+
+                                                <td style="background-color: <?php echo $md_color; ?>">
 													<?php if ( $edit_access ): ?>
                                                         <input value="<?php echo $print_date[ 'monday_calls' ] === 0
 															? '' : $print_date[ 'monday_calls' ]; ?>" type="number"
@@ -313,11 +318,19 @@ get_header();
 													endif; ?>
 
                                                 </td>
-                                                <td><?php echo $print_date[ 'monday_date' ][ 'post_count' ]; ?></td>
-                                                <td>
+                                                <td style="background-color: <?php echo $md_color; ?>"><?php echo $print_date[ 'monday_date' ][ 'post_count' ]; ?></td>
+                                                <td style="background-color: <?php echo $md_color; ?>">
                                                     $<?php echo $helper->format_currency( $print_date[ 'monday_date' ][ 'profit' ] ); ?></td>
-                                                <td><?php echo $print_date[ 'monday_date' ][ 'performance' ]; ?>%</td>
-                                                <td>
+                                                <td style="background-color: <?php echo $md_color; ?>"><?php echo $print_date[ 'monday_date' ][ 'performance' ]; ?>
+                                                    %
+                                                </td>
+												
+												<?php
+												$tu_color = $print_date[ 'tuesday_date' ][ 'performance' ] >= 100
+													? '#d9facb' : ' #f4cccc' ?>
+
+
+                                                <td style="background-color: <?php echo $tu_color; ?>">
 													<?php if ( $edit_access ): ?>
 
                                                         <input value="<?php echo $print_date[ 'tuesday_calls' ] === 0
@@ -328,11 +341,18 @@ get_header();
 														echo $print_date[ 'tuesday_calls' ];
 													endif; ?>
                                                 </td>
-                                                <td><?php echo $print_date[ 'tuesday_date' ][ 'post_count' ]; ?></td>
-                                                <td>
+                                                <td style="background-color: <?php echo $tu_color; ?>"><?php echo $print_date[ 'tuesday_date' ][ 'post_count' ]; ?></td>
+                                                <td style="background-color: <?php echo $tu_color; ?>">
                                                     $<?php echo $helper->format_currency( $print_date[ 'tuesday_date' ][ 'profit' ] ); ?></td>
-                                                <td><?php echo $print_date[ 'tuesday_date' ][ 'performance' ]; ?>%</td>
-                                                <td>
+                                                <td style="background-color: <?php echo $tu_color; ?>"><?php echo $print_date[ 'tuesday_date' ][ 'performance' ]; ?>
+                                                    %
+                                                </td>
+												
+												<?php
+												$wd_color = $print_date[ 'wednesday_date' ][ 'performance' ] >= 100
+													? '#d9facb' : ' #f4cccc' ?>
+
+                                                <td style="background-color: <?php echo $wd_color; ?>">
 													<?php if ( $edit_access ): ?>
 
                                                         <input value="<?php echo $print_date[ 'wednesday_calls' ] === 0
@@ -343,12 +363,18 @@ get_header();
 														echo $print_date[ 'wednesday_calls' ];
 													endif; ?>
                                                 </td>
-                                                <td><?php echo $print_date[ 'wednesday_date' ][ 'post_count' ]; ?></td>
-                                                <td>
+                                                <td style="background-color: <?php echo $wd_color; ?>"><?php echo $print_date[ 'wednesday_date' ][ 'post_count' ]; ?></td>
+                                                <td style="background-color: <?php echo $wd_color; ?>">
                                                     $<?php echo $helper->format_currency( $print_date[ 'wednesday_date' ][ 'profit' ] ); ?></td>
-                                                <td><?php echo $print_date[ 'wednesday_date' ][ 'performance' ]; ?>%
+                                                <td style="background-color: <?php echo $wd_color; ?>"><?php echo $print_date[ 'wednesday_date' ][ 'performance' ]; ?>
+                                                    %
                                                 </td>
-                                                <td>
+												
+												<?php
+												$th_color = $print_date[ 'thursday_date' ][ 'performance' ] >= 100
+													? '#d9facb' : ' #f4cccc' ?>
+
+                                                <td style="background-color: <?php echo $th_color; ?>">
 													<?php if ( $edit_access ): ?>
 
                                                         <input value="<?php echo $print_date[ 'thursday_calls' ] === 0
@@ -359,11 +385,19 @@ get_header();
 														echo $print_date[ 'thursday_calls' ];
 													endif; ?>
                                                 </td>
-                                                <td><?php echo $print_date[ 'thursday_date' ][ 'post_count' ]; ?></td>
-                                                <td>
+                                                <td style="background-color: <?php echo $th_color; ?>"><?php echo $print_date[ 'thursday_date' ][ 'post_count' ]; ?></td>
+                                                <td style="background-color: <?php echo $th_color; ?>">
                                                     $<?php echo $helper->format_currency( $print_date[ 'thursday_date' ][ 'profit' ] ); ?></td>
-                                                <td><?php echo $print_date[ 'thursday_date' ][ 'performance' ]; ?>%</td>
-                                                <td>
+
+
+                                                <td style="background-color: <?php echo $th_color; ?>"><?php echo $print_date[ 'thursday_date' ][ 'performance' ]; ?>
+                                                    %
+                                                </td>
+												
+												<?php $fr_color = $print_date[ 'friday_date' ][ 'performance' ] >= 100
+													? '#d9facb' : ' #f4cccc' ?>
+
+                                                <td style="background-color: <?php echo $fr_color; ?>">
 													<?php if ( $edit_access ): ?>
 
                                                         <input value="<?php echo $print_date[ 'friday_calls' ] === 0
@@ -374,10 +408,13 @@ get_header();
 														echo $print_date[ 'friday_calls' ];
 													endif; ?>
                                                 </td>
-                                                <td><?php echo $print_date[ 'friday_date' ][ 'post_count' ]; ?></td>
-                                                <td>
+                                                <td style="background-color: <?php echo $fr_color; ?>"><?php echo $print_date[ 'friday_date' ][ 'post_count' ]; ?></td>
+                                                <td style="background-color: <?php echo $fr_color; ?>">
                                                     $<?php echo $helper->format_currency( $print_date[ 'friday_date' ][ 'profit' ] ); ?></td>
-                                                <td><?php echo $print_date[ 'friday_date' ][ 'performance' ]; ?>%</td>
+                                                <td style="background-color: <?php echo $fr_color; ?>"><?php echo $print_date[ 'friday_date' ][ 'performance' ]; ?>
+                                                    %
+                                                </td>
+
                                                 <td>
 													<?php if ( $edit_access ): ?>
 

@@ -86,10 +86,16 @@ if ( ! empty( $results ) ) : ?>
 			$booked_rate_raw = get_field_value( $meta, 'booked_rate' );
 			$booked_rate     = esc_html( '$' . $helper->format_currency( $booked_rate_raw ) );
 			
-			$driver_rate_raw         = get_field_value( $meta, 'driver_rate' );
+			$driver_rate_raw = get_field_value( $meta, 'driver_rate' );
+			
+			$additional_fees     = get_field_value( $meta, 'additional_fees' );
+			$additional_fees_val = get_field_value( $meta, 'additional_fees_val' );
+			
 			$second_driver_rate_raw  = get_field_value( $meta, 'second_driver_rate' );
+			$second_driver           = get_field_value( $meta, 'second_driver' );
 			$quick_pay_driver_amount = get_field_value( $meta, 'quick_pay_driver_amount' );
 			$second_driver_rate      = null;
+			
 			if ( ! is_null( $quick_pay_driver_amount ) ) {
 				$driver_rate_raw = floatval( $driver_rate_raw ) - floatval( $quick_pay_driver_amount );
 				if ( ! is_null( $second_driver_rate_raw ) ) {
@@ -97,9 +103,18 @@ if ( ! empty( $results ) ) : ?>
 				}
 			}
 			
+			if ( $additional_fees && ! $second_driver ) {
+				$driver_rate_raw -= $additional_fees_val;
+			}
+			
 			$driver_rate = esc_html( '$' . $helper->format_currency( $driver_rate_raw ) );
 			
-			if ( ! is_null( $second_driver_rate_raw ) ) {
+			if ( $second_driver ) {
+				
+				if ( $additional_fees ) {
+					$second_driver_rate_raw -= $additional_fees_val;
+				}
+				
 				$second_driver_rate = esc_html( '$' . $helper->format_currency( $second_driver_rate_raw ) );
 			}
 			

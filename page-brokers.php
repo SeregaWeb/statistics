@@ -26,7 +26,7 @@ $current_pages = get_field_value( $brokers_items, 'current_page' );
                         <h2>Brokers</h2>
 						
 						<?php
-						echo esc_html( get_template_part( 'src/template-parts/report/report', 'filter-company' ) );
+						echo esc_html( get_template_part( 'src/template-parts/report/filters/report', 'filter-company' ) );
 						
 						echo esc_html( get_template_part( 'src/template-parts/report/report-table', 'company', array(
 							'results'      => $results,

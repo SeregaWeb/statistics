@@ -76,7 +76,7 @@ function test_email() {
                 font-weight: bold;
                 color: #000000;
                 max-width: 600px;
-                margin: 20px auto;
+                margin: 0 auto 20px;
                 text-align: center;
                 
             }
@@ -111,7 +111,7 @@ function test_email() {
     <body>
     
     	<div class='email-logo'>
-    		<img class='email-logo-image' src='https://www.endurance-tms.com/wp-content/uploads/logos/odysseia.jpeg' alt='logo'>
+    		<img class='email-logo-image' src='https://www.endurance-tms.com/wp-content/uploads/logos/odysseia.png' alt='logo'>
 		</div>
     
         <div class='email-header'>Tracking email chain: Load # 848761 Nikolaev AL - Nikolaev AL </div>
@@ -136,9 +136,92 @@ function test_email() {
 	) );
 }
 
+function test_email_login() {
+	$html_body = "
+	<html>
+		<head>
+			<style>
+				body {
+					font-family: Arial, sans-serif;
+					line-height: 1.6;
+					color: #333;
+					padding: 0;
+					max-width: 600px;
+					margin: 0 auto;
+				}
+				.email-container {
+					max-width: 600px;
+					margin: 20px auto;
+					padding: 20px;
+					text-align: left;
+				}
+				.email-body {
+					font-size: 16px;
+					color: #444;
+				}
+				.email-footer {
+					max-width: 600px;
+					margin: 20px auto;
+					font-size: 14px;
+					color: #777;
+					text-align: left;
+				}
+				
+				.text-danger {
+					color: rgb(255,72,0);
+				}
+				
+				.email-body-text {
+					margin: 0;
+					line-height: 2;
+				}
+				.email-logo {
+					text-align: left;
+					padding: 0 20px;
+				}
+				.email-logo-image {
+					width: 180px;
+					height: auto;
+				}
+				.text {
+					color: #000000;
+					margin: 0;
+				}
+				
+				.separator {
+				margin-top: 20px;
+				margin-bottom: 20px;
+				}
+			</style>
+		</head>
+		<body>
+			<div class='email-logo'>
+				<img class='email-logo-image' src='https://www.endurance-tms.com/wp-content/uploads/logos/odysseia.png' alt='logo'>
+			</div>
+			
+			<hr class='separator'>
+			
+			<div class='email-container'>
+				<div class='email-body'>
+					<strong class='email-body-text'>Dear John Doe,</strong>
+					<p class='email-body-text'> To complete your login, enter the following verification code:</p>
+					<strong class='email-body-text'>123456</strong>
+					<p class='email-body-text'>This code will expire in 15 minutes.</p>
+					<p class='email-body-text'>If you were not expecting this code, <a class='text-danger' href='mailto:operations@odysseia.one'>contact</a> the administrator immediately.</p>
+					<br>
+					<p class='email-body-text'>Thank you.</p>
+				</div>
+			</div>
+		</body>
+	</html>";
+	
+	echo $html_body;
+}
+
 //add_action( 'init', function() {
 //	if ( is_user_logged_in() && current_user_can( 'manage_options' ) ) {
-//		test_email();
+////		test_email();
+//		test_email_login();
 //	}
 //} );
 

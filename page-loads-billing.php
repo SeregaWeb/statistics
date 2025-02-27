@@ -11,25 +11,25 @@ get_header();
 $reports = new TMSReports();
 
 $args = array(
-	'status_post' => 'publish',
-    'exclude_factoring_status' => array( 'paid' ),
-    'per_page_loads' => 100,
+	'status_post'              => 'publish',
+	'exclude_factoring_status' => array( 'paid' ),
+	'per_page_loads'           => 100,
 );
 
-$args = $reports->set_filter_params($args);
-$items = $reports->get_table_items_billing($args);
+$args  = $reports->set_filter_params( $args );
+$items = $reports->get_table_items_billing( $args );
 
-$post_tp = 'accounting';
-$items['page_type'] = $post_tp;
+$post_tp              = 'accounting';
+$items[ 'page_type' ] = $post_tp;
 ?>
     <div class="container-fluid">
         <div class="row">
             <div class="container">
                 <div class="row">
                     <div class="col-12">
-
-                        <?php
-						echo esc_html( get_template_part( 'src/template-parts/report/report', 'filter', array('post_type' => $post_tp) ) );
+						
+						<?php
+						echo esc_html( get_template_part( 'src/template-parts/report/filters/report', 'filter', array( 'post_type' => $post_tp ) ) );
 						?>
 						
 						

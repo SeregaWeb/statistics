@@ -43,7 +43,7 @@ $items[ 'page_type' ] = $post_tp;
                     <div class="col-12">
 						
 						<?php
-						echo esc_html( get_template_part( 'src/template-parts/report/report', 'filter', array( 'post_type' => $post_tp ) ) );
+						echo esc_html( get_template_part( 'src/template-parts/report/filters/report', 'filter', array( 'post_type' => $post_tp ) ) );
 						?>
 						
 						

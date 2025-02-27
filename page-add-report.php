@@ -34,7 +34,7 @@ if ( $post_id && is_numeric( $post_id ) ) {
 		exit;
 	}
 	
-	$message_arr    = $reports->check_empty_fields( $post_id );
+	$message_arr    = $reports->check_empty_fields( $post_id, $meta );
 	$print_status   = true;
 	$status_type    = $message_arr[ 'status' ];
 	$status_message = $message_arr[ 'message' ];
@@ -51,7 +51,7 @@ if ( $post_id && is_numeric( $post_id ) ) {
 	$factoring_status = get_field_value( $meta, 'factoring_status' );
 }
 
-$access = $TMSUsers->check_user_role_access( array( 'recruiter' ) );
+$access         = $TMSUsers->check_user_role_access( array( 'recruiter' ) );
 $full_only_view = false;
 
 
@@ -59,19 +59,19 @@ if ( $TMSUsers->check_user_role_access( array( 'dispatcher-tl', 'tracking' ), tr
 	$dispatcher_initials = get_field_value( $meta, 'dispatcher_initials' );
 	$user_id_added       = get_field_value( $main, 'user_id_added' );
 	$my_team             = $TMSUsers->check_group_access();
-	$current_user_id = get_current_user_id();
-
-
-    if ($current_user_id === intval($user_id_added) || intval( $dispatcher_initials ) === intval( $current_user_id )) {
-        $access = true;
-	    $full_only_view = false;
-    } else {
-        if ( $TMSUsers->check_user_in_my_group( $my_team, intval( $dispatcher_initials ) ) ) {
-            $access = true;
-        } else {
-            $access = false;
-        }
-    }
+	$current_user_id     = get_current_user_id();
+	
+	
+	if ( $current_user_id === intval( $user_id_added ) || intval( $dispatcher_initials ) === intval( $current_user_id ) ) {
+		$access         = true;
+		$full_only_view = false;
+	} else {
+		if ( $TMSUsers->check_user_in_my_group( $my_team, intval( $dispatcher_initials ) ) ) {
+			$access = true;
+		} else {
+			$access = false;
+		}
+	}
 }
 
 
@@ -126,34 +126,38 @@ $logshowcontent = isset( $_COOKIE[ 'logshow' ] ) && + $_COOKIE[ 'logshow' ] !== 
                         <div class="col-12 js-update-status mt-3">
 							
 							<?php
-                            
-                            if('Odysseia' === $reports->project) {
-                                $access_for_btn = $TMSUsers->check_user_role_access( array(
-                                    'administrator',
-                                    'dispatcher-tl',
-                                    'dispatcher',
-                                    'tracking',
-                                    'tracking-tl'
-                                ), true );
-                                if ( isset( $status_publish ) && $status_publish === 'publish' ) {
-								if ( ! isset( $send_mesaage ) || ! $send_mesaage ) {
-									?>
-                                    <form class="w-100 d-flex justify-content-end mb-3 js-send-email-chain">
-                                        <input type="hidden" name="load_id" value="<?php echo $post_id; ?>">
-                                        <button class="btn btn-warning">Create tracking chain</button>
-                                    </form>
-									<?php
-								} else {
-									?>
-                                    <div class="w-100 d-flex justify-content-end mb-3">
-                                        <button class="btn btn-success" disabled>Tracking chain created successful
-                                        </button>
-                                    </div>
-									<?php
+							
+							if ( 'Odysseia' === $reports->project ) {
+								$access_for_btn = $TMSUsers->check_user_role_access( array(
+									'administrator',
+									'dispatcher-tl',
+									'dispatcher',
+									'tracking',
+									'tracking-tl'
+								), true );
+								
+								$pick_up_location  = get_field_value( $meta, 'pick_up_location' );
+								$delivery_location = get_field_value( $meta, 'delivery_location' );
+								
+								if ( isset( $status_publish ) && $status_publish === 'publish' && ! empty( $pick_up_location ) && ! empty( $delivery_location ) ) {
+									if ( ! isset( $send_mesaage ) || ! $send_mesaage ) {
+										?>
+                                        <form class="w-100 d-flex justify-content-end mb-3 js-send-email-chain">
+                                            <input type="hidden" name="load_id" value="<?php echo $post_id; ?>">
+                                            <button class="btn btn-warning">Create tracking chain</button>
+                                        </form>
+										<?php
+									} else {
+										?>
+                                        <div class="w-100 d-flex justify-content-end mb-3">
+                                            <button class="btn btn-success" disabled>Tracking chain created successful
+                                            </button>
+                                        </div>
+										<?php
+									}
 								}
 							}
-                            }
-       
+							
 							if ( isset( $status_publish ) && $status_publish === 'draft' ) {
 								if ( $print_status ) {
 									if ( $status_type ) {

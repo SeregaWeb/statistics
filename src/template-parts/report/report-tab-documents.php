@@ -38,6 +38,7 @@ if ( $report_object ) {
 		$proof_of_delivery = get_field_value( $meta, 'proof_of_delivery' );
 		
 		$reference_number = get_field_value( $meta, 'reference_number' );
+		$load_status      = get_field_value( $meta, 'load_status' );
 		
 		$tbd = get_field_value( $meta, 'tbd' );
 		
@@ -388,11 +389,16 @@ if ( $report_object ) {
 		<?php if ( ! $required_file ): ?>
             <div class="js-add-new-report order-1">
                 <div class="p-0 mb-2 col-12">
-                    <p class="h5">Required file <span
-                                class="required-star text-danger">*</span></p>
+                    <p class="h5">Required file
+						<?php
+						if ( $load_status !== 'waiting-on-rc' ): ?>
+                            <span class="required-star text-danger">*</span>
+						<?php endif; ?>
+                    </p>
                     <label for="attached_file_required" class="form-label">Rate
                         Confirmation</label>
-                    <input type="file" <?php $required_file ? '' : 'required' ?>
+                    <input type="file" <?php echo ( $required_file || $load_status === 'waiting-on-rc' ) ? ''
+						: 'required' ?>
                            name="attached_file_required"
                            class="form-control js-control-uploads">
                 </div>
@@ -449,12 +455,12 @@ if ( $report_object ) {
                 <div class="p-0 mb-2 col-12">
                     <p class="h5">Dispatch message
 						
-						<?php if ( ! $tbd ): ?>
+						<?php if ( ! $tbd && $load_status !== 'waiting-on-rc' ): ?>
                             <span class="required-star text-danger">*</span>
 						<?php endif; ?>
                     </p>
                     <label for="screen_picture" class="form-label">screen picture</label>
-                    <input type="file" <?php echo ! $tbd ? 'required' : ''; ?>
+                    <input type="file" <?php echo ( ! $tbd && $load_status !== 'waiting-on-rc' ) ? 'required' : ''; ?>
                            name="screen_picture"
                            class="form-control js-control-uploads">
                 </div>

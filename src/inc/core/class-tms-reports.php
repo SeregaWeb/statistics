@@ -371,24 +371,13 @@ class TMSReports extends TMSReportsHelper {
 		
 		$join_builder = "
 			FROM $table_main AS main
-			LEFT JOIN $table_meta AS dispatcher
-				ON main.id = dispatcher.post_id
-				AND dispatcher.meta_key = 'dispatcher_initials'
-			LEFT JOIN $table_meta AS reference
-				ON main.id = reference.post_id
-				AND reference.meta_key = 'reference_number'
-			LEFT JOIN $table_meta AS unit_number
-				ON main.id = unit_number.post_id
-				AND unit_number.meta_key = 'unit_number_name'
-			LEFT JOIN $table_meta AS load_status
-				ON main.id = load_status.post_id
-				AND load_status.meta_key = 'load_status'
-			LEFT JOIN $table_meta AS invoiced_proof
-				ON main.id = invoiced_proof.post_id
-				AND invoiced_proof.meta_key = 'invoiced_proof'
-			LEFT JOIN $table_meta AS factoring_status
-				ON main.id = factoring_status.post_id
-				AND factoring_status.meta_key = 'factoring_status'
+			LEFT JOIN $table_meta AS dispatcher ON main.id = dispatcher.post_id AND dispatcher.meta_key = 'dispatcher_initials'
+			LEFT JOIN $table_meta AS reference ON main.id = reference.post_id AND reference.meta_key = 'reference_number'
+			LEFT JOIN $table_meta AS unit_number ON main.id = unit_number.post_id AND unit_number.meta_key = 'unit_number_name'
+			LEFT JOIN $table_meta AS load_status ON main.id = load_status.post_id AND load_status.meta_key = 'load_status'
+			LEFT JOIN $table_meta AS invoiced_proof ON main.id = invoiced_proof.post_id AND invoiced_proof.meta_key = 'invoiced_proof'
+			LEFT JOIN $table_meta AS factoring_status ON main.id = factoring_status.post_id AND factoring_status.meta_key = 'factoring_status'
+			LEFT JOIN $table_meta AS processing ON main.id = processing.post_id AND processing.meta_key = 'processing'
 			WHERE 1=1
 		";
 		
@@ -402,39 +391,48 @@ class TMSReports extends TMSReportsHelper {
 		$where_conditions = array();
 		$where_values     = array();
 		
+		
+		$processing_values = array(
+			'factoring-delayed-advance',
+			'factoring-wire-transfer',
+			'unapplied-payment',
+			'direct'
+		);
+		
+		$placeholders       = implode( ', ', array_fill( 0, count( $processing_values ), '%s' ) );
+		$where_conditions[] = "(processing.meta_value NOT IN ($placeholders) OR processing.meta_value IS NULL OR processing.meta_value = '')";
+		$where_values       = array_merge( $where_values, $processing_values );
+		
 		if ( ! empty( $args[ 'status_post' ] ) ) {
-			$where_conditions[] = "main.status_post = %s";
-			$where_values[]     = $args[ 'status_post' ];
+			$where_conditions[] = $wpdb->prepare( "main.status_post = %s", $args[ 'status_post' ] );
 		}
 		
 		// Фильтрация по dispatcher_initials
 		if ( ! empty( $args[ 'dispatcher' ] ) ) {
-			$where_conditions[] = "dispatcher.meta_value = %s";
-			$where_values[]     = $args[ 'dispatcher' ];
+			$where_conditions[] = $wpdb->prepare( "dispatcher.meta_value = %s", $args[ 'dispatcher' ] );
 		}
 		
 		if ( ! empty( $args[ 'load_status' ] ) ) {
-			$where_conditions[] = "load_status.meta_value = %s";
-			$where_values[]     = $args[ 'load_status' ];
+			$where_conditions[] = $wpdb->prepare( "load_status.meta_value = %s", $args[ 'load_status' ] );
 		}
 		
 		
-		if ( isset( $args[ 'exclude_factoring_status' ] ) && ! empty( $args[ 'exclude_factoring_status' ] ) ) {
-			$exclude_factoring_status = array_map( 'esc_sql', (array) $args[ 'exclude_factoring_status' ] );
+		if ( ! empty( $args[ 'exclude_factoring_status' ] ) ) {
+			$exclude_factoring_status = implode( "','", array_map( 'esc_sql', (array) $args[ 'exclude_factoring_status' ] ) );
 			$where_conditions[]       = "(
-        factoring_status.meta_value NOT IN ('" . implode( "','", $exclude_factoring_status ) . "')
-        OR factoring_status.meta_value IS NULL
-        OR factoring_status.meta_value = ''
-    )";
+				factoring_status.meta_value NOT IN ('$exclude_factoring_status')
+				OR factoring_status.meta_value IS NULL
+				OR factoring_status.meta_value = ''
+			)";
 		}
 		
-		if ( isset( $args[ 'include_factoring_status' ] ) && ! empty( $args[ 'include_factoring_status' ] ) ) {
-			$include_factoring_status = array_map( 'esc_sql', (array) $args[ 'include_factoring_status' ] );
+		if ( ! empty( $args[ 'include_factoring_status' ] ) ) {
+			$include_factoring_status = implode( "','", array_map( 'esc_sql', (array) $args[ 'include_factoring_status' ] ) );
 			$where_conditions[]       = "(
-        factoring_status.meta_value IN ('" . implode( "','", $include_factoring_status ) . "')
-        AND factoring_status.meta_value IS NOT NULL
-        AND factoring_status.meta_value != ''
-    )";
+				factoring_status.meta_value IN ('$include_factoring_status')
+				AND factoring_status.meta_value IS NOT NULL
+				AND factoring_status.meta_value != ''
+			)";
 		}
 		
 		if ( ! empty( $args[ 'invoice' ] ) ) {
@@ -1327,7 +1325,7 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 	 *
 	 * @return array
 	 */
-	public function check_empty_fields( $record_id ) {
+	public function check_empty_fields( $record_id, $meta = false ) {
 		global $wpdb;
 		
 		// Таблица мета-данных
@@ -1350,19 +1348,36 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 			'attached_file_required' => 'Attached File Required'
 		];
 		
+		if ( is_array( $meta ) ) {
+			$load_status = get_field_value( $meta, 'load_status' );
+			if ( $load_status == 'waiting-on-rc' ) {
+				$required_fields = array_diff_key( $required_fields, array_flip( [
+					'pick_up_location',
+					'delivery_location',
+					'attached_file_required'
+				] ) );
+			}
+		}
+		
+		// Формируем массив мета-ключей для проверки
+		$meta_keys    = array_keys( $required_fields );
+		$placeholders = implode( ',', array_fill( 0, count( $meta_keys ), '%s' ) );
+		
+		// Получаем все значения полей одним запросом
+		$query = $wpdb->prepare( "
+		SELECT meta_key, meta_value
+		FROM $table_meta_name
+		WHERE post_id = %d
+		  AND meta_key IN ($placeholders)
+	", array_merge( [ $record_id ], $meta_keys ) );
+		
+		$results = $wpdb->get_results( $query, OBJECT_K );
+		
 		$empty_fields = [];
 		
-		// Проходим по каждому обязательному полю
+		// Проверяем результаты на пустые значения или некорректные данные
 		foreach ( $required_fields as $meta_key => $label ) {
-			// Получаем значение для текущего поля из таблицы мета-данных
-			$meta_value = $wpdb->get_var( $wpdb->prepare( "
-			SELECT meta_value
-			FROM $table_meta_name
-			WHERE post_id = %d AND meta_key = %s
-		", $record_id, $meta_key ) );
-			
-			// Проверяем пустые значения или некорректные даты/числа
-			if ( empty( $meta_value ) || $meta_value === '0000-00-00' || ( $meta_value === '0.00' && $meta_key !== 'load_status' ) ) {
+			if ( ! isset( $results[ $meta_key ] ) || empty( $results[ $meta_key ]->meta_value ) || $results[ $meta_key ]->meta_value === '0000-00-00' || ( $results[ $meta_key ]->meta_value === '0.00' && $meta_key !== 'load_status' ) ) {
 				$empty_fields[] = '<strong>' . $label . '</strong>';
 			}
 		}
@@ -2699,7 +2714,6 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 				), array( '%d' ) );
 			}
 			
-			
 			if ( $result === false ) {
 				// Если обновление неудачно, возвращаем ошибку
 				return new WP_Error( 'db_error', 'Ошибка при обновлении отчета компании в базе данных: ' . $wpdb->last_error );
@@ -2732,13 +2746,11 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 			
 			$meta_string = implode( " ", $meta_descriptions );
 			
-			
 			$this->log_controller->create_one_log( array(
 				'user_id' => $user_id,
 				'post_id' => $post_id,
 				'message' => 'Quick edit:</br>' . $meta_string
 			) );
-			
 			
 			// Обновляем мета-данные, если они заданы
 			if ( ! empty( $post_meta ) ) {
@@ -3036,10 +3048,6 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 			if ( ! empty( $data[ 'old_pick_up_location' ] ) && $data[ 'old_delivery_location' ] ) {
 				$cleanedpick  = stripslashes( $data[ 'old_pick_up_location' ] );
 				$cleaneddeliv = stripslashes( $data[ 'old_delivery_location' ] );
-
-
-//				var_dump($cleanedpick, $data[ 'pick_up_location_json' ], $cleanedpick !== $data[ 'pick_up_location_json' ]);
-//				die;
 				
 				if ( $cleanedpick !== $data[ 'pick_up_location_json' ] ) {
 					$this->log_controller->create_one_log( array(
@@ -3083,7 +3091,6 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 						'message'      => $values . "\n" . ' load № ' . $data[ 'reference_number' ] . ' Link to: ' . $link,
 					) );
 				}
-				
 			}
 		}
 		
@@ -3207,7 +3214,6 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 			}
 		}
 		
-		
 		// Prepare the data to update
 		$update_params = array(
 			'user_id_updated' => $user_id,
@@ -3229,8 +3235,6 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 			$current_time_est                      = $date_est->format( 'Y-m-d H:i:s' );
 			$post_meta[ 'proof_of_delivery_time' ] = $current_time_est;
 		}
-		
-		// var_dump($proof_of_delivery_picture);
 		
 		// Specify the condition (WHERE clause)
 		$where = array( 'id' => $post_id );
@@ -3317,8 +3321,6 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 						'subtitle'     => 'User changed: ' . $user_name[ 'full_name' ],
 						'message'      => 'New value: ' . $data[ 'unit_number_name' ] . ' Old value: ' . $data[ 'old_unit_number_name' ] . 'Load № ' . $data[ 'reference_number' ] . ' Link to: ' . $link,
 					) );
-					
-					
 				}
 			}
 			
@@ -3420,7 +3422,6 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 						'team_leader_email',
 						'accounting_email',
 					) );
-					
 					
 					$this->email_helper->send_custom_email( $select_emails, array(
 						'subject'      => 'Changed Booked rate',
@@ -3850,9 +3851,9 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 			
 			// Логируем результат для отладки
 			if ( is_wp_error( $result ) ) {
-				error_log( 'Ошибка переноса лодов: ' . $result->get_error_message() );
+				error_log( 'Error transferring loads: ' . $result->get_error_message() );
 			} else {
-				error_log( 'Успешный перенос лодов: ' . $result );
+				error_log( 'Successful load transfer: ' . $result );
 			}
 		}
 	}
@@ -3937,9 +3938,5 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 			return new WP_Error( 'update_failed', 'Не удалось обновить записи.' );
 		}
 	}
-	
-	
 	// CREATE TABLE AND UPDATE SQL END
-	
-	
 }

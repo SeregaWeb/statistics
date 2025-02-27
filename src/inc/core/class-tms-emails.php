@@ -183,38 +183,11 @@ class TMSEmails extends TMSUsers {
 		} else {
 			$email_addresses = $emails;
 		}
+		$subject = ! empty( $texts[ 'subject' ] ) ? $texts[ 'subject' ] : 'No Subject';
 		
-		// Define the basic structure of the email template
-		$subject      = ! empty( $texts[ 'subject' ] ) ? $texts[ 'subject' ] : 'No Subject';
-		$project_name = ! empty( $texts[ 'project_name' ] ) ? $texts[ 'project_name' ] : '';
-		$subtitle     = ! empty( $texts[ 'subtitle' ] ) ? $texts[ 'subtitle' ] : '';
-		$message      = ! empty( $texts[ 'message' ] ) ? $texts[ 'message' ] : 'No message provided';
-		
-		// Construct the email template
-		$html_template = "
-	    <html>
-	        <head>
-	            <style>
-	                body { font-family: Arial, sans-serif; }
-	                .header { background-color: #f2f2f2; padding: 10px; text-align: center; }
-	                .content { padding: 20px; }
-	                .footer { background-color: #f2f2f2; padding: 10px; text-align: center; }
-	            </style>
-	        </head>
-	        <body>
-	            <div class='header'>
-	                <h2>{$subject}</h2>
-	            </div>
-	            <div class='content'>
-	                <h3>{$project_name}</h3>
-	                <h4>{$subtitle}</h4>
-	                <p>{$message}</p>
-	            </div>
-	            <div class='footer'>
-	                <p>Thank you for reading!</p>
-	            </div>
-	        </body>
-	    </html>";
+		ob_start();
+		echo esc_html( get_template_part( 'src/template-parts/report/emails/custom-email', null, $texts ) );
+		$html_template = ob_get_clean();
 		
 		$headers = array(
 			'Content-Type: text/html; charset=UTF-8',
@@ -230,6 +203,65 @@ class TMSEmails extends TMSUsers {
 		}
 	}
 	
+	function send_custom_email_login( $emails, $texts ) {
+		
+		if ( ! is_array( $emails ) ) {
+			$email_addresses = explode( ',', $emails );
+		} else {
+			$email_addresses = $emails;
+		}
+		
+		// Define the basic structure of the email template
+		$subject = ! empty( $texts[ 'subject' ] ) ? $texts[ 'subject' ] : 'No Subject';
+		$code    = ! empty( $texts[ 'code' ] ) ? $texts[ 'code' ] : '';
+		$name    = ! empty( $texts[ 'name' ] ) ? $texts[ 'name' ] : '';
+		
+		$upload_url = $this->get_logo_project_url( 'odysseia' );
+		
+		// Fetch the admin email from WordPress settings
+		$admin_email = get_option( 'admin_email' );
+		
+		// Construct the email template
+		ob_start();
+		echo esc_html( get_template_part( 'src/template-parts/report/emails/verification-code', null, [
+			'logo'    => $upload_url,
+			'name'    => $name,
+			'code'    => $code,
+			'contact' => $admin_email,
+		] ) );
+		$html_template = ob_get_clean();
+		
+		$headers = array(
+			'Content-Type: text/html; charset=UTF-8',
+			'From: TMS <no-reply@endurance-tms.com>' // Replace with your sender name and email
+		);
+		
+		// Send the email to each recipient
+		foreach ( $email_addresses as $email ) {
+			$trimmed_email = trim( $email );
+			if ( ! empty( $trimmed_email ) && filter_var( $trimmed_email, FILTER_VALIDATE_EMAIL ) ) {
+				wp_mail( $trimmed_email, $subject, $html_template, $headers );
+			}
+		}
+	}
+	
+	function get_logo_project_url( $project_name ) {
+		$upload_dir = wp_get_upload_dir();
+		$upload_url = $upload_dir[ 'baseurl' ];
+		
+		if ( strtolower( $project_name ) === 'odysseia' ) {
+			$extend_file = '.png';
+		}
+		
+		if ( strtolower( $project_name ) === 'endurance' || strtolower( $project_name ) === 'martlet' ) {
+			$extend_file = '.jpg';
+		}
+		
+		$upload_url .= '/logos/' . strtolower( $project_name ) . $extend_file;
+		
+		return $upload_url;
+	}
+	
 	function send_email_create_load( $id_load ) {
 		global $global_options;
 		// Получение пользователей для ответа
@@ -238,30 +270,11 @@ class TMSEmails extends TMSUsers {
 			$reply_users = []; // Убедимся, что это массив
 		}
 		
-		//TODO THIS NEED DELETE FOR PRODUCTION
-//		$check_tmp = $this->check_user_role_access(array('administrator'), true);
-//		if (!$check_tmp) {
-//			return ['success' => false, 'message' => 'No Send email chains'];
-//		}
-//
 		$reports       = new TMSReports();
 		$project_name  = $reports->project;
 		$project_email = get_field_value( $global_options, strtolower( $project_name ) . '_email' );
 		$project_phone = get_field_value( $global_options, strtolower( $project_name ) . '_phone' );
-		
-		
-		$upload_dir = wp_get_upload_dir();
-		$upload_url = $upload_dir[ 'baseurl' ];
-		
-		if ( strtolower( $project_name ) === 'odysseia' ) {
-			$extend_file = '.jpeg';
-		}
-		
-		if ( strtolower( $project_name ) === 'endurance' || strtolower( $project_name ) === 'martlet' ) {
-			$extend_file = '.jpg';
-		}
-		
-		$upload_url .= '/logos/' . strtolower( $project_name ) . $extend_file;
+		$upload_url    = $this->get_logo_project_url( $project_name );
 		
 		// Проверка наличия post_id
 		if ( empty( $id_load ) ) {
@@ -396,94 +409,13 @@ class TMSEmails extends TMSUsers {
 			: [], isset( $data[ 'email_main_broker' ] ) ? [ $data[ 'email_main_broker' ] ]
 			: [], isset( $data[ 'tracking_email' ] ) ? [ $data[ 'tracking_email' ] ]
 			: [], isset( $data[ 'dispatcher_email' ] ) ? [ $data[ 'dispatcher_email' ] ] : [], );
-
-//		$mails_bcc = array_merge( isset( $data[ 'emails' ] ) ? explode( ',', $data[ 'emails' ] )
-//			: [], isset( $data[ 'nightshift' ] ) ? explode( ',', $data[ 'nightshift' ] )
-//			: [], isset( $data[ 'team_leader_email' ] ) ? [ $data[ 'team_leader_email' ] ] : [] );
-//
-		// Объединение всех email
-		$email_project = ( isset( $data[ 'project_email' ] ) && $data[ 'project_email' ] )
-			? "<p class='text'>Email: <a href='" . $data[ 'project_email' ] . "'>" . $data[ 'project_email' ] . "</a></p>"
-			: "";
 		
-		$phone_project = ( isset( $data[ 'project_phone' ] ) && $data[ 'project_phone' ] )
-			? "<p class='text'>Phone: " . $data[ 'project_phone' ] . "</p>" : "";
 		
-		// Удаление дубликатов и пустых значений
-		$all_emails   = array_filter( array_unique( $all_emails ) );
-		$html_content = "
-    	<html>
-    <head>
-        <style>
-            body {
-                font-family: Arial, sans-serif;
-                line-height: 1.6;
-                color: #333;
-                margin: 0;
-                padding: 0;
-            }
-            .email-container {
-                max-width: 600px;
-                margin: 20px auto;
-                padding: 20px;
-                background-color: #f9f9f9;
-                text-align: center;
-            }
-            .email-header {
-                font-size: 20px;
-                font-weight: bold;
-                color: #000000;
-                max-width: 600px;
-                margin: 20px auto;
-                text-align: center;
-                
-            }
-            .email-body {
-                font-size: 16px;
-                color: #444;
-            }
-            .email-footer {
-                max-width: 600px;
-                margin: 20px auto;
-                font-size: 14px;
-                color: #777;
-                text-align: left;
-            }
-            
-            .email-logo {
-            	text-align: center;
-            }
-            
-            .email-logo-image {
-            	width: 180px;
-            	height: auto;
-            }
-            
-            .text {
-                color: #000000;
-            	margin: 0;
-            }
-            
-        </style>
-    </head>
-    <body>
-    
-    	<div class='email-logo'>
-    		<img class='email-logo-image' src='" . $data[ 'logo' ] . "' alt='logo'>
-		</div>
-    
-        <div class='email-header'>{$data['subject']}</div>
-    
-        <div class='email-container'>
-            <div class='email-body'>
-                <p>" . $data[ 'text' ] . "</p>
-            </div>
-        </div>
-      	<div class='email-footer'>
-            	" . $email_project . $phone_project . "
-        </div>
-    </body>
-    </html>";
+		ob_start();
+		echo esc_html( get_template_part( 'src/template-parts/report/emails/broker-email', null, $data ) );
+		$html_content = ob_get_clean();
+		
+		$all_emails = array_filter( array_unique( $all_emails ) );
 		
 		return [
 			'html'       => $html_content,

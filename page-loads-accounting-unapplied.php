@@ -12,19 +12,21 @@ global $report_data;
 $reports = new TMSReports();
 
 $args = array(
-	'status_post'    => 'publish',
-	'per_page_loads' => 1000,
-    'sort_by' => 'load_problem',
-    'sort_order' => 'asc',
-    'exclude_factoring_status' => array( 'processed' ),
+	'status_post'              => 'publish',
+	'per_page_loads'           => 1000,
+	'sort_by'                  => 'load_problem',
+	'sort_order'               => 'asc',
+	'exclude_factoring_status' => array( 'processed' ),
 );
 
 $args  = $reports->set_filter_unapplied( $args );
 $items = $reports->get_table_items_unapplied( $args );
 
-$post_tp               = 'accounting';
-$items[ 'page_type' ]  = $post_tp;
-$items[ 'ar_problem' ] = true;
+if ( is_array( $items ) && ! empty( $items ) ) {
+	$post_tp               = 'accounting';
+	$items[ 'page_type' ]  = $post_tp;
+	$items[ 'ar_problem' ] = true;
+}
 ?>
     <div class="container-fluid">
         <div class="row">
@@ -50,21 +52,21 @@ $items[ 'ar_problem' ] = true;
                             <div class="tab-pane fade show active" id="pills-info" role="tabpanel"
                                  aria-labelledby="pills-info-tab">
 								<?php
-								echo esc_html( get_template_part( 'src/template-parts/report/report', 'filter-unapplied' ) );
-								?>
+								$template_part_filter = get_template_part( 'src/template-parts/report/filters/report', 'filter-unapplied' );
+								if ( $template_part_filter ) {
+									echo esc_html( $template_part_filter );
+								}
 								
-								<?php
-								echo esc_html( get_template_part( 'src/template-parts/report/report', 'table-unapplied', $items ) );
-								
-								
+								$template_part_table = get_template_part( 'src/template-parts/report/report', 'table-unapplied', $items );
+								if ( $template_part_table ) {
+									echo esc_html( $template_part_table );
+								}
 								?>
                             </div>
 
                             <div class="tab-pane fade" id="pills-update" role="tabpanel"
                                  aria-labelledby="pills-update-tab">
-<!--                                <pre>-->
-<!--								    --><?php //var_dump( $report_data['all_paid_without_two_status'] ); ?>
-<!--                                </pre>-->
+
                                 <table class="table mb-5 mt-5 w-100">
                                     <thead>
                                     <tr>
@@ -75,72 +77,73 @@ $items[ 'ar_problem' ] = true;
                                     </thead>
 
                                     <tbody>
-		                            <?php
-		                            $total_overall = 0; // Общий итог по всем компаниям
-		                            $statuses_totals = [ // Инициализация итогов по статусам
-		                                                 'factoring-delayed-advance' => 0,
-		                                                 'unapplied-payment'         => 0,
-		                                                 'in-processing'             => 0,
-		                                                 'pending-to-tafs'           => 0,
-		                                                 'fraud'                     => 0,
-		                                                 'company-closed'            => 0,
-		                            ];
-		                            
-		                            if ( is_array( $report_data ) && ! empty( $report_data ) ):
-			                            foreach ( $report_data as $report ):
-				                            if ( ! empty( $report['statuses'] ) ):
-					                            $company_total = 0; // Итог для текущей компании
-					                            ?>
+									<?php
+									$total_overall   = 0;
+									$statuses_totals = [
+										'factoring-delayed-advance' => 0,
+										'unapplied-payment'         => 0,
+										'in-processing'             => 0,
+										'pending-to-tafs'           => 0,
+										'fraud'                     => 0,
+										'company-closed'            => 0,
+									];
+									
+									if ( is_array( $report_data ) && ! empty( $report_data ) ) :
+										foreach ( $report_data as $report ) :
+											if ( isset( $report[ 'statuses' ] ) && is_array( $report[ 'statuses' ] ) ) :
+												$company_total = 0;
+												?>
                                                 <tr>
                                                     <td>
-							                            <?php echo esc_html( $report['name'] ); ?><br>
-                                                        <span class="text-small"><?php echo esc_html( $report['mc'] ); ?></span>
+														<?php echo esc_html( $report[ 'name' ] ?? '' ); ?><br>
+                                                        <span class="text-small"><?php echo esc_html( $report[ 'mc' ] ?? '' ); ?></span>
                                                     </td>
                                                     <td>
-							                            <?php
-							                            $statuses_labels = [
-								                            'factoring-delayed-advance' => 'Delayed advance',
-								                            'unapplied-payment'         => 'Unapplied payments',
-								                            'in-processing'             => 'Processing',
-								                            'pending-to-tafs'           => 'Pending to factoring',
-								                            'fraud'                     => 'Fraud',
-								                            'company-closed'            => 'Company closed',
-							                            ];
-							                            
-							                            foreach ( $statuses_labels as $status_key => $label ) :
-								                            if ( isset( $report['statuses'][ $status_key ] ) ) :
-									                            $value = $report['statuses'][ $status_key ];
-									                            $formatted_value = $reports->format_currency( $value );
-									                            $company_total += $value; // Добавляем значение к итогу компании
-									                            $statuses_totals[ $status_key ] += $value; // Увеличиваем итог по статусу
-									                            ?>
-                                                                <span><?php echo esc_html( $label ); ?>: $<?php echo esc_html( $formatted_value ); ?></span><br>
-								                            <?php
-								                            endif;
-							                            endforeach;
-							                            ?>
+														<?php
+														$statuses_labels                        = [
+															'factoring-delayed-advance' => 'Delayed advance',
+															'unapplied-payment'         => 'Unapplied payments',
+															'in-processing'             => 'Processing',
+															'pending-to-tafs'           => 'Pending to factoring',
+															'fraud'                     => 'Fraud',
+															'company-closed'            => 'Company closed',
+														];
+														
+														foreach ( $statuses_labels as $status_key => $label ) :
+															if ( isset( $report[ 'statuses' ][ $status_key ] ) ) :
+																$value = $report[ 'statuses' ][ $status_key ];
+																$formatted_value                = $reports->format_currency( $value );
+																$company_total                  += $value;
+																$statuses_totals[ $status_key ] += $value;
+																?>
+                                                                <span><?php echo esc_html( $label ); ?>: $<?php echo esc_html( $formatted_value ); ?></span>
+                                                                <br>
+															<?php
+															endif;
+														endforeach;
+														?>
                                                     </td>
                                                     <td>
-							                            <?php
-							                            echo '$' . esc_html( $reports->format_currency( $company_total ) );
-							                            ?>
+														<?php
+														echo '$' . esc_html( $reports->format_currency( $company_total ) );
+														?>
                                                     </td>
                                                 </tr>
-					                            <?php
-					                            $total_overall += $company_total; // Добавляем итог компании к общему итогу
-				                            endif;
-			                            endforeach;
-		                            endif;
-		                            ?>
+												<?php
+												$total_overall += $company_total;
+											endif;
+										endforeach;
+									endif;
+									?>
                                     </tbody>
                                     <tfoot>
                                     <tr>
                                         <td colspan="2" style="text-align: right;"><strong>Total Overall:</strong></td>
                                         <td>
                                             <strong>
-					                            <?php
-					                            echo '$' . esc_html( $reports->format_currency( $total_overall ) );
-					                            ?>
+												<?php
+												echo '$' . esc_html( $reports->format_currency( $total_overall ) );
+												?>
                                             </strong>
                                         </td>
                                     </tr>
@@ -148,39 +151,35 @@ $items[ 'ar_problem' ] = true;
                                 </table>
 
                                 <div class="d-flex gap-3">
-                                    
-                                    <?php if (is_array($statuses_labels)): ?>
-                                        <!-- Итоговая таблица по статусам -->
+									
+									<?php if ( isset( $statuses_labels ) && is_array( $statuses_labels ) ): ?>
                                         <table class="table mb-5 mt-5 w-50">
-                                    <thead>
-                                    <tr>
-                                        <th>Status</th>
-                                        <th>Total</th>
-                                    </tr>
-                                    </thead>
-                                    <tbody>
-		                            <?php
-                                    foreach ( $statuses_labels as $status_key => $label ) :
-                                        if ($statuses_totals[ $status_key ] > 0) {
-                                        ?>
-                                        <tr>
-                                            <td><?php echo esc_html( $label ); ?></td>
-                                            <td>
-					                            <?php
-					                            echo '$' . esc_html( $reports->format_currency( $statuses_totals[ $status_key ] ) );
-					                            ?>
-                                            </td>
-                                        </tr>
-		                            <?php  }
-                                    endforeach; ?>
-                                    
-                                    
-                                    </tbody>
-                                </table>
-                                    <?php endif; ?>
-                                    
-                                    <?php if(isset($report_data['all_paid_without_two_status'])): ?>
-                                        <!-- Общая сумма без in-processing -->
+                                            <thead>
+                                            <tr>
+                                                <th>Status</th>
+                                                <th>Total</th>
+                                            </tr>
+                                            </thead>
+                                            <tbody>
+											<?php
+											foreach ( $statuses_labels as $status_key => $label ) :
+												if ( isset( $statuses_totals[ $status_key ] ) && $statuses_totals[ $status_key ] > 0 ) {
+													?>
+                                                    <tr>
+                                                        <td><?php echo esc_html( $label ); ?></td>
+                                                        <td>
+															<?php
+															echo '$' . esc_html( $reports->format_currency( $statuses_totals[ $status_key ] ) );
+															?>
+                                                        </td>
+                                                    </tr>
+												<?php }
+											endforeach; ?>
+                                            </tbody>
+                                        </table>
+									<?php endif; ?>
+									
+									<?php if ( isset( $report_data[ 'all_paid_without_two_status' ] ) ): ?>
                                         <table class="table mb-5 mt-5 w-50">
                                             <thead>
                                             <tr>
@@ -192,16 +191,16 @@ $items[ 'ar_problem' ] = true;
                                             <tr>
                                                 <td>Total without "Processing" and "Paid"</td>
                                                 <td>
-                                                    <?php
-                                                    echo '$' . esc_html( $reports->format_currency( $report_data['all_paid_without_two_status'] ) );
-                                                    ?>
+													<?php
+													echo '$' . esc_html( $reports->format_currency( $report_data[ 'all_paid_without_two_status' ] ) );
+													?>
                                                 </td>
                                             </tr>
                                             </tbody>
                                         </table>
-                                    <?php endif ?>
-                                </div>
+									<?php endif; ?>
 
+                                </div>
                             </div>
                         </div>
 
@@ -215,7 +214,6 @@ $items[ 'ar_problem' ] = true;
 do_action( 'wp_rock_before_page_content' );
 
 if ( have_posts() ) :
-	// Start the loop.
 	while ( have_posts() ) :
 		the_post();
 		the_content();
@@ -224,6 +222,9 @@ endif;
 
 do_action( 'wp_rock_after_page_content' );
 
-echo esc_html( get_template_part( 'src/template-parts/report/report', 'popup-add' ) );
+$template_part_popup = get_template_part( 'src/template-parts/report/report', 'popup-add' );
+if ( $template_part_popup ) {
+	echo esc_html( $template_part_popup );
+}
 
 get_footer();

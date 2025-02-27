@@ -56,6 +56,9 @@ class  TMSAuth {
 		if ( ! $user || ! wp_check_password( $password, $user->user_pass, $user->ID ) ) {
 			wp_send_json_error( [ 'message' => 'Invalid email or password' ] );
 		}
+		$first_name = get_user_meta( $user->ID, 'first_name', true );
+		$last_name  = get_user_meta( $user->ID, 'last_name', true );
+		$full_name  = trim( $first_name . ' ' . $last_name );
 		
 		// Генерация случайного 6-значного кода
 		$code = wp_rand( 100000, 999999 );
@@ -63,11 +66,10 @@ class  TMSAuth {
 		// Сохранение кода в транзиент на 15 минут
 		set_transient( 'auth_code_' . $user->ID, $code, 15 * MINUTE_IN_SECONDS );
 		
-		$emails_helper->send_custom_email( $email, array(
-			'subject'      => 'Verification code',
-			'project_name' => '',
-			'subtitle'     => '',
-			'message'      => 'Your verification code is: <strong style="font-size: 32px;">' . $code . '</strong>',
+		$emails_helper->send_custom_email_login( $email, array(
+			'subject' => 'Verification code',
+			'code'    => $code,
+			'name'    => $full_name,
 		) );
 		wp_send_json_success( [ 'message' => 'Verification code sent to your email' ] );
 	}

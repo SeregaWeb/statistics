@@ -28,6 +28,7 @@ if ( $report_object ) {
 		$delivery_location = get_field_value( $meta, 'delivery_location' );
 		$reference_number  = get_field_value( $meta, 'reference_number' );
 		$all_miles         = get_field_value( $meta, 'all_miles' );
+		$load_status       = get_field_value( $meta, 'load_status' );
 		
 		$post_status = get_field_value( $main, 'status_post' );
 		
@@ -341,8 +342,15 @@ if ( $report_object ) {
 			
 			<?php if ( ! $full_view_only ): ?>
                 <button type="submit" class="btn btn-primary js-submit-and-next-tab"
-                        data-tab-id="pills-documents-tab">Next
+                        data-tab-id="pills-documents-tab">Update
                 </button>
+				
+				<?php if ( $load_status === 'waiting-on-rc' ): ?>
+                    <button type="button" data-tab-id="pills-documents-tab"
+                            class="btn btn-warning js-next-tab">Skip
+                    </button>
+				<?php endif; ?>
+			
 			<?php else: ?>
                 <button type="button" data-tab-id="pills-documents-tab"
                         class="btn btn-primary js-next-tab">Next

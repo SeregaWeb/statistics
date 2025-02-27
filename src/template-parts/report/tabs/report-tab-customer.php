@@ -14,7 +14,7 @@ $value_company_name      = '';
 $template_select_company = '';
 $set_up_platform_val     = '';
 $set_up_val              = '';
-
+$value_contact_phone_ext = '';
 
 $report_object             = ! empty( $args[ 'report_object' ] ) ? $args[ 'report_object' ] : null;
 $post_id                   = ! empty( $args[ 'post_id' ] ) ? $args[ 'post_id' ] : null;
@@ -26,8 +26,8 @@ $full_view_only = false;
 
 if ( $report_object ) {
 	
-	$full_view_only = get_field_value($args, 'full_view_only');
- 
+	$full_view_only = get_field_value( $args, 'full_view_only' );
+	
 	$values = $report_object;
 	$meta   = get_field_value( $values, 'meta' );
 	$main   = get_field_value( $values, 'main' );
@@ -65,13 +65,13 @@ if ( $report_object ) {
 			$template_select_company = $company->print_list_customers( $name, $address, $mc, $dot, $contact, $phone, $email, $current_array_company->id );;
 		}
 	}
-	$read_only = $TMSUsers->check_read_only($post_status);
+	$read_only = $TMSUsers->check_read_only( $post_status );
 }
 
 ?>
 
 <h3 class="display-6 mb-4">Customer</h3>
-<form class="<?php echo !$full_view_only ? 'js-create-not-publish-report' : '' ; ?>">
+<form class="<?php echo ! $full_view_only ? 'js-create-not-publish-report' : ''; ?>">
 	
 	<?php if ( $read_only ): ?>
         <input type="hidden" name="read_only" value="true">
@@ -134,10 +134,10 @@ if ( $report_object ) {
 					
 					<?php if ( ! $read_only ): ?>
                         <div class="d-flex gap-1">
-                        <input id="contact-input-phone" required type="tel"
-                               name="contact_phone"
-                               value="<?php echo $value_contact_phone; ?>"
-                               placeholder="Phone" class="form-control js-tel-mask"/>
+                            <input id="contact-input-phone" required type="tel"
+                                   name="contact_phone"
+                                   value="<?php echo $value_contact_phone; ?>"
+                                   placeholder="Phone" class="form-control js-tel-mask"/>
 
                             <input id="contact-input-phone_ext" style="max-width: 120px;" type="number"
                                    name="contact_phone_ext"
@@ -145,7 +145,8 @@ if ( $report_object ) {
                                    placeholder="ext." class="form-control"/>
                         </div>
 					<?php else: ?>
-                        <p><strong><?php echo $value_contact_phone; ?></strong> ext:<strong><?php echo $value_contact_phone_ext ?></strong></p>
+                        <p><strong><?php echo $value_contact_phone; ?></strong>
+                            ext:<strong><?php echo $value_contact_phone_ext ?></strong></p>
 					<?php endif; ?>
                 </div>
 
@@ -254,9 +255,10 @@ if ( $report_object ) {
 											]
 										];
 										
-										foreach ($fields as $key => $attrs) {
-											$value = isset($contact_val[$key]) && !empty($contact_val[$key]) ? $contact_val[$key] : 'unset';
-											echo '<input type="text" name="' . esc_attr($attrs['name_attr']) . '" readonly value="' . esc_attr($value) . '" class="form-control ' . esc_attr($attrs['class']) . '">';
+										foreach ( $fields as $key => $attrs ) {
+											$value = isset( $contact_val[ $key ] ) && ! empty( $contact_val[ $key ] )
+												? $contact_val[ $key ] : 'unset';
+											echo '<input type="text" name="' . esc_attr( $attrs[ 'name_attr' ] ) . '" readonly value="' . esc_attr( $value ) . '" class="form-control ' . esc_attr( $attrs[ 'class' ] ) . '">';
 										}
 										?>
 
@@ -296,25 +298,25 @@ if ( $report_object ) {
                 <div class="justify-content-start gap-2">
                     <a type="button" href="<?php echo home_url(); ?>"
                        class="btn btn-dark">Cancel</a>
-                    
-                    <?php if ($full_view_only || $read_only): ?>
+					
+					<?php if ( $full_view_only || $read_only ): ?>
                         <button type="button" data-tab-id="pills-load-tab"
                                 class="btn btn-primary js-next-tab">Next
                         </button>
-                    <?php else: ?>
+					<?php else: ?>
                         <button type="submit" class="btn btn-primary js-submit-and-next-tab"
                                 data-tab-id="pills-load-tab">
-                            <?php echo ( ! isset( $post_id ) || ! is_numeric( $post_id ) ) ? 'Create' : 'Next'; ?>
+							<?php echo ( ! isset( $post_id ) || ! is_numeric( $post_id ) ) ? 'Create' : 'Next'; ?>
                         </button>
-                    <?php endif; ?>
+					<?php endif; ?>
                 </div>
             </div>
         </div>
     </div>
-    
+	
 	<?php if ( isset( $post_id ) && is_numeric( $post_id ) ): ?>
-        <input type="hidden" name="post_id" class="js-post-id" value="<?php echo $post_id; ?>" />
-        <input type="hidden" name="current_post_status" class="js-post-status" value="<?php echo $post_status; ?>" />
+        <input type="hidden" name="post_id" class="js-post-id" value="<?php echo $post_id; ?>"/>
+        <input type="hidden" name="current_post_status" class="js-post-status" value="<?php echo $post_status; ?>"/>
 	<?php endif; ?>
 
 </form>

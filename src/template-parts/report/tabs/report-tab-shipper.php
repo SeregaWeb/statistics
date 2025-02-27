@@ -11,6 +11,17 @@ $full_view_only = get_field_value( $args, 'full_view_only' );
 $pick_up_location_isset  = false;
 $delivery_location_isset = false;
 
+$pick_up_location        = '';
+$delivery_location       = '';
+$reference_number        = '';
+$all_miles               = '';
+$load_status             = '';
+$post_status             = '';
+$pick_up_date            = '';
+$delivery_date           = '';
+$pick_up_date_formatted  = '';
+$delivery_date_formatted = '';
+
 if ( $report_object ) {
 	$values = $report_object;
 	$meta   = get_field_value( $values, 'meta' );

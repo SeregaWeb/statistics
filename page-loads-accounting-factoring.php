@@ -87,20 +87,7 @@ if ( ! $show_filter_by_office ) {
                                 </select>
 								
 								<?php
-								$months = array(
-									1  => 'January',
-									2  => 'February',
-									3  => 'March',
-									4  => 'April',
-									5  => 'May',
-									6  => 'June',
-									7  => 'July',
-									8  => 'August',
-									9  => 'September',
-									10 => 'October',
-									11 => 'November',
-									12 => 'December',
-								);
+								$months = $statistics->get_months();
 								?>
                                 <select class="form-select w-auto" name="mount_param"
                                         aria-label=".form-select-sm example">
@@ -192,7 +179,5 @@ if ( have_posts() ) :
 endif;
 
 do_action( 'wp_rock_after_page_content' );
-
-echo esc_html( get_template_part( 'src/template-parts/report/report', 'popup-add' ) );
 
 get_footer();

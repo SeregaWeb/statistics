@@ -13,6 +13,17 @@ $billing_info = $TMSUsers->check_user_role_access( array( 'administrator', 'bill
 
 $required_file_for_user = $TMSUsers->check_user_role_access( array( 'billing', 'tracking' ), true );
 
+$required_file     = '';
+$others_files      = '';
+$freight_pictures  = '';
+$update_rate_conf  = '';
+$screen_picture    = '';
+$proof_of_delivery = '';
+$reference_number  = '';
+$load_status       = '';
+$tbd               = false;
+$full_view_only    = false;
+
 if ( $report_object ) {
 	$values = $report_object;
 	$meta   = get_field_value( $values, 'meta' );
@@ -36,9 +47,8 @@ if ( $report_object ) {
 		$update_rate_conf  = get_field_value( $meta, 'updated_rate_confirmation' );
 		$screen_picture    = get_field_value( $meta, 'screen_picture' );
 		$proof_of_delivery = get_field_value( $meta, 'proof_of_delivery' );
-		
-		$reference_number = get_field_value( $meta, 'reference_number' );
-		$load_status      = get_field_value( $meta, 'load_status' );
+		$reference_number  = get_field_value( $meta, 'reference_number' );
+		$load_status       = get_field_value( $meta, 'load_status' );
 		
 		$tbd = get_field_value( $meta, 'tbd' );
 		

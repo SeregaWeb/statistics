@@ -21,7 +21,7 @@ $TMSReports = new TMSReports();
                 <div class="row">
                     <div class="col-12">
 						<?php
-						echo esc_html( get_template_part( 'src/template-parts/report/files/create', 'invoice' ) );
+						echo esc_html( get_template_part( TEMPLATE_PATH . 'files/create', 'invoice' ) );
 						?>
                     </div>
                 </div>
@@ -41,7 +41,5 @@ if ( have_posts() ) :
 endif;
 
 do_action( 'wp_rock_after_page_content' );
-
-echo esc_html( get_template_part( 'src/template-parts/report/report', 'popup-add' ) );
 
 get_footer();

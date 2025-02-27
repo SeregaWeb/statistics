@@ -52,12 +52,12 @@ if ( is_array( $items ) && ! empty( $items ) ) {
                             <div class="tab-pane fade show active" id="pills-info" role="tabpanel"
                                  aria-labelledby="pills-info-tab">
 								<?php
-								$template_part_filter = get_template_part( 'src/template-parts/report/filters/report', 'filter-unapplied' );
+								$template_part_filter = get_template_part( TEMPLATE_PATH . 'filters/report', 'filter-unapplied' );
 								if ( $template_part_filter ) {
 									echo esc_html( $template_part_filter );
 								}
 								
-								$template_part_table = get_template_part( 'src/template-parts/report/report', 'table-unapplied', $items );
+								$template_part_table = get_template_part( TEMPLATE_PATH . 'tables/report', 'table-unapplied', $items );
 								if ( $template_part_table ) {
 									echo esc_html( $template_part_table );
 								}
@@ -221,10 +221,5 @@ if ( have_posts() ) :
 endif;
 
 do_action( 'wp_rock_after_page_content' );
-
-$template_part_popup = get_template_part( 'src/template-parts/report/report', 'popup-add' );
-if ( $template_part_popup ) {
-	echo esc_html( $template_part_popup );
-}
 
 get_footer();

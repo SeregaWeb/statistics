@@ -46,20 +46,7 @@ $show_filter_by_office = $TMSUsers->check_user_role_access( array(
             </div>
             <div class="d-flex gap-1">
 				<?php
-				$months = array(
-					1  => 'January',
-					2  => 'February',
-					3  => 'March',
-					4  => 'April',
-					5  => 'May',
-					6  => 'June',
-					7  => 'July',
-					8  => 'August',
-					9  => 'September',
-					10 => 'October',
-					11 => 'November',
-					12 => 'December',
-				);
+				$months = $helper->get_months();
 				?>
                 <select class="form-select w-auto" name="fmonth" aria-label=".form-select-sm example">
                     <option value="">Month</option>

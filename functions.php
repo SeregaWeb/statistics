@@ -13,6 +13,7 @@ define( 'STYLE_DIR', get_stylesheet_directory() );
 define( 'ASSETS_CSS', THEME_URI . '/assets/public/css/' );
 define( 'ASSETS_JS', THEME_URI . '/assets/public/js/' );
 define( 'LIBS_JS', THEME_URI . '/src/js/libs/' );
+define( 'TEMPLATE_PATH', 'src/template-parts/report/' );
 
 // required files.
 require THEME_DIR . '/src/inc/class-wp-rock.php';

@@ -1,6 +1,6 @@
 <?php
 /**
- * Template Name: Page shippers
+ * Template Name: Page Shippers
  *
  * @package WP-rock
  * @since 4.4.0
@@ -8,14 +8,12 @@
 
 get_header();
 
-
-$brokers = new TMSReportsShipper();
-
-
+$brokers       = new TMSReportsShipper();
 $brokers_items = $brokers->get_table_records();
-$results       = get_field_value( $brokers_items, 'results' );
-$total_pages   = get_field_value( $brokers_items, 'total_pages' );
-$current_page  = get_field_value( $brokers_items, 'current_page' );
+
+$results      = get_field_value( $brokers_items, 'results' );
+$total_pages  = get_field_value( $brokers_items, 'total_pages' );
+$current_page = get_field_value( $brokers_items, 'current_page' );
 ?>
     <div class="container-fluid">
         <div class="row">
@@ -25,14 +23,13 @@ $current_page  = get_field_value( $brokers_items, 'current_page' );
                         <h2>Shippers</h2>
 						
 						<?php
-						echo esc_html( get_template_part( 'src/template-parts/report/filters/report', 'filter-shipper' ) );
+						get_template_part( TEMPLATE_PATH . 'filters/report', 'filter-shipper' );
 						
-						echo esc_html( get_template_part( 'src/template-parts/report/report-table', 'shipper', array(
+						get_template_part( TEMPLATE_PATH . 'tables/report-table', 'shipper', array(
 							'results'      => $results,
 							'total_pages'  => $total_pages,
 							'current_page' => $current_page,
-						) ) );
-						
+						) );
 						?>
 
                     </div>
@@ -45,7 +42,6 @@ $current_page  = get_field_value( $brokers_items, 'current_page' );
 do_action( 'wp_rock_before_page_content' );
 
 if ( have_posts() ) :
-	// Start the loop.
 	while ( have_posts() ) :
 		the_post();
 		the_content();
@@ -53,7 +49,5 @@ if ( have_posts() ) :
 endif;
 
 do_action( 'wp_rock_after_page_content' );
-
-echo esc_html( get_template_part( 'src/template-parts/report/report', 'popup-add' ) );
 
 get_footer();

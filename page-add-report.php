@@ -127,7 +127,7 @@ $logshowcontent = isset( $_COOKIE[ 'logshow' ] ) && + $_COOKIE[ 'logshow' ] !== 
 							
 							<?php
 							
-							if ( 'Odysseia' === $reports->project ) {
+							if ( 'Odysseia' === $reports->project && isset( $meta ) ) {
 								$access_for_btn = $TMSUsers->check_user_role_access( array(
 									'administrator',
 									'dispatcher-tl',
@@ -237,7 +237,7 @@ $logshowcontent = isset( $_COOKIE[ 'logshow' ] ) && + $_COOKIE[ 'logshow' ] !== 
                                      id="pills-customer" role="tabpanel"
                                      aria-labelledby="pills-customer-tab">
 									<?php
-									echo esc_html( get_template_part( 'src/template-parts/report/report', 'tab-customer', array(
+									echo esc_html( get_template_part( TEMPLATE_PATH . 'tabs/report', 'tab-customer', array(
 										'full_view_only' => $full_only_view,
 										'report_object'  => $report_object,
 										'post_id'        => $post_id
@@ -248,7 +248,7 @@ $logshowcontent = isset( $_COOKIE[ 'logshow' ] ) && + $_COOKIE[ 'logshow' ] !== 
                                 <div class="tab-pane fade <?php echo $helper->change_active_tab( 'pills-load-tab', 'show' ); ?>"
                                      id="pills-load" role="tabpanel" aria-labelledby="pills-load-tab">
 									<?php
-									echo esc_html( get_template_part( 'src/template-parts/report/report', 'tab-load', array(
+									echo esc_html( get_template_part( TEMPLATE_PATH . 'tabs/report', 'tab-load', array(
 										'full_view_only' => $full_only_view,
 										'tracking_tl'    => $tracking_tl,
 										'report_object'  => $report_object,
@@ -260,7 +260,7 @@ $logshowcontent = isset( $_COOKIE[ 'logshow' ] ) && + $_COOKIE[ 'logshow' ] !== 
                                 <div class="tab-pane fade <?php echo $helper->change_active_tab( 'pills-trip-tab', 'show' ); ?>"
                                      id="pills-trip" role="tabpanel" aria-labelledby="pills-trip-tab">
 									<?php
-									echo esc_html( get_template_part( 'src/template-parts/report/report', 'tab-shipper', array(
+									echo esc_html( get_template_part( TEMPLATE_PATH . 'tabs/report', 'tab-shipper', array(
 										'full_view_only' => $full_only_view,
 										'report_object'  => $report_object,
 										'post_id'        => $post_id
@@ -273,7 +273,7 @@ $logshowcontent = isset( $_COOKIE[ 'logshow' ] ) && + $_COOKIE[ 'logshow' ] !== 
                                      aria-labelledby="pills-documents-tab">
 									
 									<?php
-									echo esc_html( get_template_part( 'src/template-parts/report/report', 'tab-documents', array(
+									echo esc_html( get_template_part( TEMPLATE_PATH . 'tabs/report', 'tab-documents', array(
 										'full_view_only' => $full_only_view,
 										'report_object'  => $report_object,
 										'post_id'        => $post_id,
@@ -289,7 +289,7 @@ $logshowcontent = isset( $_COOKIE[ 'logshow' ] ) && + $_COOKIE[ 'logshow' ] !== 
                                          aria-labelledby="pills-billing-tab">
 										
 										<?php
-										echo esc_html( get_template_part( 'src/template-parts/report/report', 'tab-billing', array(
+										echo esc_html( get_template_part( TEMPLATE_PATH . 'tabs/report', 'tab-billing', array(
 											'full_view_only' => $full_only_view,
 											'report_object'  => $report_object,
 											'post_id'        => $post_id
@@ -302,7 +302,7 @@ $logshowcontent = isset( $_COOKIE[ 'logshow' ] ) && + $_COOKIE[ 'logshow' ] !== 
                                          aria-labelledby="pills-accounting-tab">
 										
 										<?php
-										echo esc_html( get_template_part( 'src/template-parts/report/report', 'tab-accounting', array(
+										echo esc_html( get_template_part( TEMPLATE_PATH . 'tabs/report', 'tab-accounting', array(
 											'full_view_only' => $full_only_view,
 											'report_object'  => $report_object,
 											'post_id'        => $post_id
@@ -328,7 +328,7 @@ $logshowcontent = isset( $_COOKIE[ 'logshow' ] ) && + $_COOKIE[ 'logshow' ] !== 
 									<?php
 								}
 							} else {
-								echo esc_html( get_template_part( 'src/template-parts/report/report', 'logs', array(
+								echo esc_html( get_template_part( TEMPLATE_PATH . 'report', 'logs', array(
 									'post_id' => $post_id,
 									'user_id' => get_current_user_id(),
 								) ) );
@@ -360,7 +360,5 @@ if ( have_posts() ) :
 endif;
 
 do_action( 'wp_rock_after_page_content' );
-
-echo esc_html( get_template_part( 'src/template-parts/report/report', 'popup-add' ) );
 
 get_footer();

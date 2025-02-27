@@ -287,7 +287,7 @@ $remove_broker = $TMSUsers->check_user_role_access( array( 'administrator' ), tr
 												<?php if ( + $count !== 0 ): ?>
                                                     <div class="counters-status-card d-flex align-items-center justify-content-center flex-column">
                                                         <span><?php echo $key === 'Others' ? 'In Process'
-																: $key; ?></span>
+		                                                        : $key; ?></span>
                                                         <strong><?php echo $count; ?></strong>
                                                     </div>
 												<?php endif; ?>
@@ -658,7 +658,5 @@ if ( have_posts() ) :
 endif;
 
 do_action( 'wp_rock_after_page_content' );
-
-echo esc_html( get_template_part( 'src/template-parts/report/report', 'popup-add' ) );
 
 get_footer();

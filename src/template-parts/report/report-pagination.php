@@ -49,7 +49,7 @@
 	
 	echo paginate_links( array(
 		'base'      => esc_url( $base ),
-		'format'    => '', // base уже содержит ?paged=%#%
+		'format'    => '',
 		'total'     => $args[ 'total_pages' ],
 		'current'   => $args[ 'current_page' ],
 		'prev_text' => __( 'Prev' ),

@@ -38,8 +38,8 @@ $items[ 'page_type' ] = $post_tp;
                     <div class="col-12">
 						<?php
 						if ( is_array( $my_team ) ) {
-							echo esc_html( get_template_part( 'src/template-parts/report/filters/report', 'filter-tracking' ) );
-							echo esc_html( get_template_part( 'src/template-parts/report/report', 'table-tracking', $items ) );
+							echo esc_html( get_template_part( TEMPLATE_PATH . 'filters/report', 'filter-tracking' ) );
+							echo esc_html( get_template_part( TEMPLATE_PATH . 'tables/report', 'table-tracking', $items ) );
 						} else {
 							echo $reports->message_top( 'error', 'Team not found' );
 						}
@@ -62,7 +62,5 @@ if ( have_posts() ) :
 endif;
 
 do_action( 'wp_rock_after_page_content' );
-
-echo esc_html( get_template_part( 'src/template-parts/report/report', 'popup-add' ) );
 
 get_footer();

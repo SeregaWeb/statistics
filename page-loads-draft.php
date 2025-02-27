@@ -9,16 +9,16 @@
 get_header();
 
 $reports = new TMSReports();
-$args = array(
+$args    = array(
 	'status_post' => 'draft',
-    'user_id' => get_current_user_id(),
+	'user_id'     => get_current_user_id(),
 );
 
-$args = $reports->set_filter_params($args);
-$items = $reports->get_table_items($args);
-$post_tp = 'dispatcher';
-$items['page_type'] = $post_tp;
-$items['is_draft'] = true;
+$args                 = $reports->set_filter_params( $args );
+$items                = $reports->get_table_items( $args );
+$post_tp              = 'dispatcher';
+$items[ 'page_type' ] = $post_tp;
+$items[ 'is_draft' ]  = true;
 
 ?>
     <div class="container-fluid">
@@ -28,12 +28,12 @@ $items['is_draft'] = true;
                     <div class="col-12 pt-3 pb-3">
                         <h2><?php echo get_the_title(); ?></h2>
                         <p><?php echo get_the_excerpt(); ?></p>
-                        
+
                     </div>
                     <div class="col-12">
-
+						
 						<?php
-						echo esc_html( get_template_part( 'src/template-parts/report/report', 'table', $items ) );
+						echo esc_html( get_template_part( TEMPLATE_PATH . 'tables/report', 'table', $items ) );
 						?>
 
                     </div>
@@ -54,7 +54,5 @@ if ( have_posts() ) :
 endif;
 
 do_action( 'wp_rock_after_page_content' );
-
-echo esc_html( get_template_part( 'src/template-parts/report/report', 'popup-add' ) );
 
 get_footer();

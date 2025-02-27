@@ -1,4 +1,4 @@
-<div id="popup_add_company" class="popup popup-add-company">
+<div id="popup_quick_edit" class="popup popup-quick-edit">
     <div class="my_overlay js-popup-close"></div>
     <div class="popup__wrapper-inner js-video-container">
         <div class="popup-container">
@@ -9,7 +9,7 @@
                 </svg>
             </button>
 			<?php
-			echo esc_html( get_template_part( 'src/template-parts/report/report', 'form-add-company' ) );
+			echo esc_html( get_template_part( TEMPLATE_PATH . 'forms/report', 'form-quick-edit' ) );
 			?>
         </div>
     </div>

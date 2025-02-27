@@ -186,7 +186,7 @@ class TMSEmails extends TMSUsers {
 		$subject = ! empty( $texts[ 'subject' ] ) ? $texts[ 'subject' ] : 'No Subject';
 		
 		ob_start();
-		echo esc_html( get_template_part( 'src/template-parts/report/emails/custom-email', null, $texts ) );
+		echo esc_html( get_template_part( TEMPLATE_PATH . 'emails/custom-email', null, $texts ) );
 		$html_template = ob_get_clean();
 		
 		$headers = array(
@@ -223,7 +223,7 @@ class TMSEmails extends TMSUsers {
 		
 		// Construct the email template
 		ob_start();
-		echo esc_html( get_template_part( 'src/template-parts/report/emails/verification-code', null, [
+		echo esc_html( get_template_part( TEMPLATE_PATH . 'emails/verification-code', null, [
 			'logo'    => $upload_url,
 			'name'    => $name,
 			'code'    => $code,
@@ -412,7 +412,7 @@ class TMSEmails extends TMSUsers {
 		
 		
 		ob_start();
-		echo esc_html( get_template_part( 'src/template-parts/report/emails/broker-email', null, $data ) );
+		echo esc_html( get_template_part( TEMPLATE_PATH . 'emails/broker-email', null, $data ) );
 		$html_content = ob_get_clean();
 		
 		$all_emails = array_filter( array_unique( $all_emails ) );

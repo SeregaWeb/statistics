@@ -5,6 +5,7 @@ $add_new_load = get_field_value( $global_options, 'add_new_load' );
 
 $TMSUsers   = new TMSUsers();
 $TMSShipper = new TMSReportsShipper();
+$TMSBroker  = new TMSReportsCompany();
 
 $results       = get_field_value( $args, 'results' );
 $total_pages   = get_field_value( $args, 'total_pages' );
@@ -16,11 +17,6 @@ $page_type = get_field_value( $args, 'page_type' );
 
 $current_user_id = get_current_user_id();
 
-$billing_info              = $TMSUsers->check_user_role_access( array(
-	'administrator',
-	'billing',
-	'accounting'
-), true );
 $hide_billing_and_shipping = $TMSUsers->check_user_role_access( array(
 	'billing',
 	'accounting',
@@ -39,21 +35,19 @@ if ( ! empty( $results ) ) : ?>
             </button>
         </div>
 	<?php endif; ?>
-
     <table class="table mb-5 w-100">
         <thead>
         <tr>
             <th><input class="checkbox-big js-select-load-all" type="checkbox" name="select-all"></th>
             <th scope="col">Booked</th>
             <th scope="col" title="dispatcher">Disp.</th>
+            <th scope="col">Client</th>
             <th scope="col">Pick up</th>
             <th scope="col">Delivery</th>
-            <th scope="col">Unit & name</th>
-            <th scope="col">Driver rate</th>
-            <th scope="col">Delivery</th>
+            <th scope="col">Gross</th>
             <th scope="col">Load status</th>
-            <th scope="col">Bank</th>
-            <th scope="col">Payment</th>
+            <th scope="col">Invoice</th>
+            <th scope="col">Factoring status</th>
             <th scope="col"></th>
         </tr>
         </thead>
@@ -64,6 +58,7 @@ if ( ! empty( $results ) ) : ?>
 			
 			$pdlocations = $helper->get_locations_template( $row );
 			
+			
 			$dispatcher_initials = get_field_value( $meta, 'dispatcher_initials' );
 			
 			$dispatcher     = $helper->get_user_full_name_by_id( $dispatcher_initials );
@@ -71,6 +66,7 @@ if ( ! empty( $results ) ) : ?>
 			if ( ! $dispatcher ) {
 				$dispatcher = array( 'full_name' => 'User not found', 'initials' => 'NF' );
 			}
+			
 			$load_status  = get_field_value( $meta, 'load_status' );
 			$status_label = $helper->get_label_by_key( $load_status, 'statuses' );
 			$status       = esc_html( $status_label );
@@ -79,48 +75,11 @@ if ( ! empty( $results ) ) : ?>
 			$date_booked     = esc_html( date( 'm/d/Y', strtotime( $date_booked_raw ) ) );
 			
 			$reference_number = esc_html( get_field_value( $meta, 'reference_number' ) );
-			
-			$unit_number_name        = esc_html( get_field_value( $meta, 'unit_number_name' ) );
-			$second_unit_number_name = esc_html( get_field_value( $meta, 'second_unit_number_name' ) );
+			$unit_number_name = esc_html( get_field_value( $meta, 'unit_number_name' ) );
+			$driver_phone     = esc_html( get_field_value( $meta, 'driver_phone' ) );
 			
 			$booked_rate_raw = get_field_value( $meta, 'booked_rate' );
 			$booked_rate     = esc_html( '$' . $helper->format_currency( $booked_rate_raw ) );
-			
-			$driver_rate_raw = get_field_value( $meta, 'driver_rate' );
-			
-			$additional_fees     = get_field_value( $meta, 'additional_fees' );
-			$additional_fees_val = get_field_value( $meta, 'additional_fees_val' );
-			
-			$second_driver_rate_raw  = get_field_value( $meta, 'second_driver_rate' );
-			$second_driver           = get_field_value( $meta, 'second_driver' );
-			$quick_pay_driver_amount = get_field_value( $meta, 'quick_pay_driver_amount' );
-			$second_driver_rate      = null;
-			
-			if ( ! is_null( $quick_pay_driver_amount ) ) {
-				$driver_rate_raw = floatval( $driver_rate_raw ) - floatval( $quick_pay_driver_amount );
-				if ( ! is_null( $second_driver_rate_raw ) ) {
-					$second_driver_rate_raw = floatval( $second_driver_rate_raw ) - floatval( $quick_pay_driver_amount );
-				}
-			}
-			
-			if ( $additional_fees && ! $second_driver ) {
-				$driver_rate_raw -= $additional_fees_val;
-			}
-			
-			$driver_rate = esc_html( '$' . $helper->format_currency( $driver_rate_raw ) );
-			
-			if ( $second_driver ) {
-				
-				if ( $additional_fees ) {
-					$second_driver_rate_raw -= $additional_fees_val;
-				}
-				
-				$second_driver_rate = esc_html( '$' . $helper->format_currency( $second_driver_rate_raw ) );
-			}
-			
-			$true_profit_raw = get_field_value( $meta, 'true_profit' );
-			$profit_class    = $true_profit_raw < 0 ? 'modified-price' : '';
-			$true_profit     = esc_html( '$' . $helper->format_currency( $true_profit_raw ) );
 			
 			$factoring_status_row = get_field_value( $meta, 'factoring_status' );
 			$factoring_status     = esc_html( $helper->get_label_by_key( $factoring_status_row, 'factoring_status' ) );
@@ -133,35 +92,26 @@ if ( ! empty( $results ) ) : ?>
 			$factoring_class = strtolower( $factoring_status_row );
 			$factoring_class = str_replace( ' ', '-', $factoring_class );
 			
+			$booked_price_class = $helper->get_modify_class( $meta, 'modify_price' );
+			
 			$bank_status       = get_field_value( $meta, 'bank_payment_status' );
 			$driver_pay_status = get_field_value( $meta, 'driver_pay_statuses' );
+			$tbd               = get_field_value( $meta, 'tbd' );
 			
 			
 			$bank_status       = $helper->get_label_by_key( $bank_status, 'bank_statuses' );
 			$driver_pay_status = $helper->get_label_by_key( $driver_pay_status, 'driver_payment_statuses' );
 			
-			$quick_pay_driver_amount = get_field_value( $meta, 'quick_pay_driver_amount' );
-			$quick_pay_method        = get_field_value( $meta, 'quick_pay_method' );
-			
-			if ( $quick_pay_driver_amount && $quick_pay_method ) {
-				$quick_pay_show        = floatval( $driver_rate_raw ) - floatval( $quick_pay_driver_amount );
-				$quick_pay_show_method = $helper->get_quick_pay_methods_for_accounting( $quick_pay_method );
-				$component_quick_pay   = "<span class='text-small'>$" . $quick_pay_show . " - " . $quick_pay_show_method . "</span>";
-				
-				if ( $second_driver_rate_raw ) {
-					$second_quick_pay_show        = floatval( $second_driver_rate_raw ) - floatval( $quick_pay_driver_amount );
-					$second_quick_pay_show_method = $helper->get_quick_pay_methods_for_accounting( $quick_pay_method );
-					$second_component_quick_pay   = "<span class='text-small'>$" . $second_quick_pay_show . " - " . $second_quick_pay_show_method . "</span>";
-					
-				}
-			}
-			
 			$now_show = ( $factoring_status_row === 'paid' );
+			
+			$id_customer     = get_field_value( $meta, 'customer_id' );
+			$template_broker = $TMSBroker->get_broker_and_link_by_id( $id_customer );
+			
+			
 			?>
 
-            <tr class="">
-                <td>
-                    <input <?php echo $now_show ? 'disabled' : ''; ?> type="checkbox"
+            <tr class="<?php echo $tbd ? 'tbd' : ''; ?>">
+                <td><input <?php echo $now_show ? 'disabled' : ''; ?> type="checkbox"
                                                                       id="load-<?php echo $row[ 'id' ]; ?>"
                                                                       class="checkbox-big js-select-load"
                                                                       value="<?php echo $row[ 'id' ]; ?>"
@@ -183,56 +133,23 @@ if ( ! empty( $results ) ) : ?>
                 </td>
 
                 <td>
-					<?php echo $pdlocations[ 'pick_up_template' ]; ?>
-                </td>
-                <td>
-					<?php echo $pdlocations[ 'delivery_template' ]; ?>
-
-                </td>
-
-
-                <td>
-                    <div class="d-flex flex-column">
-                        <p class="m-0"><?php echo $unit_number_name; ?></p>
-						<?php if ( $second_unit_number_name ): ?>
-                            <p class="m-0"><?php echo $second_unit_number_name; ?></p>
-						<?php endif; ?>
-                    </div>
+					<?php echo $template_broker; ?>
                 </td>
 
                 <td>
-                    <div class="d-flex flex-column gap-0">
-                        <span><?php echo $driver_rate; ?></span>
-						<?php if ( $quick_pay_method ):
-							echo $component_quick_pay;
-						endif; ?>
-						<?php if ( $second_driver_rate_raw && $second_driver_rate_raw !== '0' ): ?>
-                            <span><?php echo $second_driver_rate; ?></span>
-							<?php if ( $quick_pay_method ):
-								echo $second_component_quick_pay;
-							endif;
-						endif; ?>
-                    </div>
+					<?php echo $pdlocations[ 'pick_up_template' ] ?>
+					<?php echo $pdlocations[ 'pick_up_date' ] ?>
                 </td>
-
-
                 <td>
-                    <span class="text-small">
-                        <?php echo $pdlocations[ 'delivery_date' ]; ?>
-                    </span></br>
-                    <span class="text-small">
-                        <?php echo $pdlocations[ 'proof_of_delivery_time' ]; ?>
-                    </span>
+					<?php echo $pdlocations[ 'delivery_template' ] ?>
+					<?php echo $pdlocations[ 'delivery_date' ] ?>
                 </td>
 
-
+                <td><span class="<?php echo $booked_price_class; ?>"><?php echo $booked_rate; ?></span></td>
                 <td class="<?php echo $status_class; ?>"><span><?php echo $status; ?></span></td>
-                <td>
-					<?php echo $bank_status; ?>
-                </td>
-                <td>
-					<?php echo $driver_pay_status; ?>
-                </td>
+                <td class="<?php echo $invoice_raw ? 'invoiced' : 'not-invoiced'; ?> ?>"><span><?php echo $invoice_raw
+							? 'Invoiced' : 'Not invoiced'; ?></span></td>
+                <td class="<?php echo $factoring_class; ?>"><span><?php echo $factoring_status; ?></span></td>
 
                 <td>
 					<?php if ( $show_control ): ?>
@@ -278,7 +195,7 @@ if ( ! empty( $results ) ) : ?>
 	<?php
 	
 	
-	echo esc_html( get_template_part( 'src/template-parts/report/report', 'pagination', array(
+	echo esc_html( get_template_part( TEMPLATE_PATH . 'report', 'pagination', array(
 		'total_pages'  => $total_pages,
 		'current_page' => $current_pages,
 	) ) );

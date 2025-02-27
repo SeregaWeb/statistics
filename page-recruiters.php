@@ -15,7 +15,7 @@ get_header();
                 <div class="row">
                     <div class="col-12 pt-15">
 						<?php
-						echo esc_html( get_template_part( 'src/template-parts/report/page', 'in-development' ) );
+						echo esc_html( get_template_part( TEMPLATE_PATH . 'page', 'in-development' ) );
 						?>
                     </div>
                 </div>
@@ -35,7 +35,5 @@ if ( have_posts() ) :
 endif;
 
 do_action( 'wp_rock_after_page_content' );
-
-echo esc_html( get_template_part( 'src/template-parts/report/report', 'popup-add' ) );
 
 get_footer();

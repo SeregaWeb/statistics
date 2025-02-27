@@ -8,7 +8,7 @@
 
 get_header();
 
-$reports = new TMSReports();
+$reports  = new TMSReports();
 $TMSUsers = new TMSUsers();
 
 $bookmarks = $TMSUsers->get_all_bookmarks();
@@ -17,7 +17,7 @@ $args = array(
 	'status_post' => 'publish',
 );
 
-$items = $reports->get_favorites($bookmarks, $args);
+$items = $reports->get_favorites( $bookmarks, $args );
 
 ?>
     <div class="container-fluid">
@@ -25,15 +25,15 @@ $items = $reports->get_favorites($bookmarks, $args);
             <div class="container">
                 <div class="row">
                     <div class="col-12">
-						<h2 class="mb-2 mt-3">Bookmarks</h2>
+                        <h2 class="mb-2 mt-3">Bookmarks</h2>
 						<?php
-						if($TMSUsers->check_user_role_access( array( 'billing', 'accounting' ), true )) {
-							echo esc_html( get_template_part( 'src/template-parts/report/report', 'table-accounting', $items ) );
-                        } else if ($TMSUsers->check_user_role_access( array( 'tracking' ), true )) {
-							echo esc_html( get_template_part( 'src/template-parts/report/report', 'table-tracking', $items ) );
-                        } else {
-							echo esc_html( get_template_part( 'src/template-parts/report/report', 'table', $items ) );
-                        }
+						if ( $TMSUsers->check_user_role_access( array( 'billing', 'accounting' ), true ) ) {
+							echo esc_html( get_template_part( TEMPLATE_PATH . 'tables/report', 'table-accounting', $items ) );
+						} else if ( $TMSUsers->check_user_role_access( array( 'tracking' ), true ) ) {
+							echo esc_html( get_template_part( TEMPLATE_PATH . 'tables/report', 'table-tracking', $items ) );
+						} else {
+							echo esc_html( get_template_part( TEMPLATE_PATH . 'tables/report', 'table', $items ) );
+						}
 						?>
                     </div>
                 </div>
@@ -53,7 +53,5 @@ if ( have_posts() ) :
 endif;
 
 do_action( 'wp_rock_after_page_content' );
-
-echo esc_html( get_template_part( 'src/template-parts/report/report', 'popup-add' ) );
 
 get_footer();

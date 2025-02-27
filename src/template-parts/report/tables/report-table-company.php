@@ -84,7 +84,7 @@ if ( ! empty( $results ) ) : ?>
 	
 	<?php
 	
-	echo esc_html( get_template_part( 'src/template-parts/report/report', 'pagination', array(
+	echo esc_html( get_template_part( TEMPLATE_PATH . 'report', 'pagination', array(
 		'total_pages'  => $total_pages,
 		'current_page' => $current_page,
 	) ) );

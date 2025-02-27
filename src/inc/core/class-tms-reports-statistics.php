@@ -182,20 +182,7 @@ class  TMSStatistics extends TMSReportsHelper {
 		$results = $wpdb->get_results( $query, ARRAY_A );
 		
 		// Create a mapping of month numbers to names
-		$months = [
-			1  => 'January',
-			2  => 'February',
-			3  => 'March',
-			4  => 'April',
-			5  => 'May',
-			6  => 'June',
-			7  => 'July',
-			8  => 'August',
-			9  => 'September',
-			10 => 'October',
-			11 => 'November',
-			12 => 'December'
-		];
+		$months = $this->get_months();
 		
 		// Initialize the result array with month names and 0 values
 		$monthly_stats = [];

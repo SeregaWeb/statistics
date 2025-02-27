@@ -8,14 +8,12 @@
 
 get_header();
 
-
 $brokers = new TMSReportsCompany();
 
-
 $brokers_items = $brokers->get_table_records_2();
-$results       = get_field_value( $brokers_items, 'results' );
-$total_pages   = get_field_value( $brokers_items, 'total_pages' );
-$current_pages = get_field_value( $brokers_items, 'current_page' );
+$results       = get_field_value( $brokers_items, 'results' ) ?? [];
+$total_pages   = get_field_value( $brokers_items, 'total_pages' ) ?? 0;
+$current_pages = get_field_value( $brokers_items, 'current_page' ) ?? 1;
 
 ?>
     <div class="container-fluid">
@@ -26,16 +24,14 @@ $current_pages = get_field_value( $brokers_items, 'current_page' );
                         <h2>Brokers</h2>
 						
 						<?php
-						echo esc_html( get_template_part( 'src/template-parts/report/filters/report', 'filter-company' ) );
+						get_template_part( TEMPLATE_PATH . 'filters/report', 'filter-company' );
 						
-						echo esc_html( get_template_part( 'src/template-parts/report/report-table', 'company', array(
+						get_template_part( TEMPLATE_PATH . 'tables/report-table', 'company', [
 							'results'      => $results,
 							'total_pages'  => $total_pages,
 							'current_page' => $current_pages,
-						) ) );
-						
+						] );
 						?>
-
                     </div>
                 </div>
             </div>
@@ -46,7 +42,6 @@ $current_pages = get_field_value( $brokers_items, 'current_page' );
 do_action( 'wp_rock_before_page_content' );
 
 if ( have_posts() ) :
-	// Start the loop.
 	while ( have_posts() ) :
 		the_post();
 		the_content();
@@ -54,7 +49,5 @@ if ( have_posts() ) :
 endif;
 
 do_action( 'wp_rock_after_page_content' );
-
-echo esc_html( get_template_part( 'src/template-parts/report/report', 'popup-add' ) );
 
 get_footer();

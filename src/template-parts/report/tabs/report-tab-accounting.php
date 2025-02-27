@@ -13,6 +13,8 @@ $bank_statuses       = $reports->get_bank_statuses();
 $driver_pay_statuses = $reports->get_driver_payment_statuses();
 $quick_pay_methods   = $reports->get_quick_pay_methods();
 
+$bank_payment_st = $driver_pay_st = $quick_pay_accounting = $quick_pay_method = $quick_pay_driver_amount = $driver_rate = null;
+
 if ( $report_object ) {
 	$values = $report_object;
 	$meta   = get_field_value( $values, 'meta' );

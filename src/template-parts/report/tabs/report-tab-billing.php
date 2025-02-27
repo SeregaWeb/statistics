@@ -18,14 +18,34 @@ $tbd         = false;
 
 $full_view_only = get_field_value( $args, 'full_view_only' );
 
+$values                 = '';
+$meta                   = '';
+$main                   = '';
+$percent_quick_pay      = '';
+$processing_fees        = '';
+$load_problem           = '';
+$load_problem_formatted = '';
+$factoring_status       = '';
+$short_pay              = '';
+$rc_proof               = false;
+$pod_proof              = false;
+$invoiced_proof         = false;
+$processing             = '';
+$type_pay               = '';
+$type_pay_method        = '';
+$booked_rate            = '';
+$driver_rate            = '';
+$profit                 = '';
+$tbd                    = false;
+$ar_status              = '';
+$log_file_isset         = '';
+$ar_action_field        = '';
+$ar_action              = false;
 
 if ( $report_object ) {
 	$values = $report_object;
 	$meta   = get_field_value( $values, 'meta' );
 	$main   = get_field_value( $values, 'main' );
-	
-	$percent_quick_pay = 0;
-	$processing_fees   = '';
 	
 	if ( is_array( $values ) && sizeof( $values ) > 0 ) {
 		
@@ -58,7 +78,6 @@ if ( $report_object ) {
 			$type_pay = 'delayed-advance';
 		}
 	}
-	
 }
 
 ?>

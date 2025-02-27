@@ -29,12 +29,12 @@ $items[ 'page_type' ] = $post_tp;
                     <div class="col-12">
 						
 						<?php
-						echo esc_html( get_template_part( 'src/template-parts/report/filters/report', 'filter', array( 'post_type' => $post_tp ) ) );
+						echo esc_html( get_template_part( TEMPLATE_PATH . 'filters/report', 'filter', array( 'post_type' => $post_tp ) ) );
 						?>
 						
 						
 						<?php
-						echo esc_html( get_template_part( 'src/template-parts/report/report', 'table-billing', $items ) );
+						echo esc_html( get_template_part( TEMPLATE_PATH . 'tables/report', 'table-billing', $items ) );
 						?>
 
                     </div>
@@ -55,7 +55,5 @@ if ( have_posts() ) :
 endif;
 
 do_action( 'wp_rock_after_page_content' );
-
-echo esc_html( get_template_part( 'src/template-parts/report/report', 'popup-add' ) );
 
 get_footer();

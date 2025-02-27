@@ -542,6 +542,4 @@ endif;
 
 do_action( 'wp_rock_after_page_content' );
 
-echo esc_html( get_template_part( 'src/template-parts/report/report', 'popup-add' ) );
-
 get_footer();

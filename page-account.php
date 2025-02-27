@@ -87,15 +87,15 @@ $USER_OBJECT = $TMSUser->get_account_info( $user_id );
 										$goal = $progress[ 0 ][ 'goal' ];
 										$post_count = $progress[ 0 ][ 'post_count' ];
 										$proc = 0;
-										$current_month_name = date('F');
+										$current_month_name = date( 'F' );
 										if ( is_numeric( $goal ) && $goal > 0 ) {
-											$proc      = ( $progress[ 0 ][ 'total_profit' ] / + $goal ) * 100;
+											$proc            = ( $progress[ 0 ][ 'total_profit' ] / + $goal ) * 100;
 											$goal_completion = number_format( $proc, 2 );
 										} else {
 											$goal_completion = 'N/A';
 										}
-                                        
-                                        ?>
+										
+										?>
                                         <div class="mt-4 mb-4">
                                             <h5 class="mb-2">Your goal for <?php echo $current_month_name; ?></h5>
                                             <div class="d-flex justify-content-between">
@@ -104,7 +104,8 @@ $USER_OBJECT = $TMSUser->get_account_info( $user_id );
                                                 <p>$<?php echo $progress[ 0 ][ 'goal' ]; ?></p>
                                             </div>
                                             <div class="progress">
-                                                <div class="progress-bar progress-bar-striped <?php echo $proc >= 100 ? 'bg-success': ''; ?>" role="progressbar"
+                                                <div class="progress-bar progress-bar-striped <?php echo $proc >= 100
+													? 'bg-success' : ''; ?>" role="progressbar"
                                                      style="width: <?php echo $proc; ?>%;"
                                                      aria-valuenow="<?php echo $goal_completion; ?>" aria-valuemin="0"
                                                      aria-valuemax="100"><?php echo $goal_completion; ?>%
@@ -174,7 +175,5 @@ if ( have_posts() ) :
 endif;
 
 do_action( 'wp_rock_after_page_content' );
-
-echo esc_html( get_template_part( 'src/template-parts/report/report', 'popup-add' ) );
 
 get_footer();

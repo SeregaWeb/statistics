@@ -79,7 +79,8 @@ if ( $access ) {
 	$full_only_view = $TMSUsers->check_user_role_access( array( 'billing', 'moderator' ), true );
 }
 
-$billing_info = $TMSUsers->check_user_role_access( array( 'administrator', 'billing', 'accounting' ), true );
+$billing_info    = $TMSUsers->check_user_role_access( array( 'administrator', 'billing', 'accounting' ), true );
+$accounting_info = $TMSUsers->check_user_role_access( array( 'administrator', 'billing', 'accounting' ), true );
 
 $tracking_tl = false;
 if ( $TMSUsers->check_user_role_access( array( 'tracking-tl' ), true ) && isset( $meta ) ) {
@@ -109,6 +110,15 @@ if ( $status_publish === 'draft' ) {
 if ( isset( $factoring_status ) && $factoring_status == 'paid' && ! $TMSUsers->check_user_role_access( array( 'administrator' ), true ) ) {
 	$full_only_view = true;
 }
+
+if ( $TMSUsers->check_user_role_access( array(
+		'recruiter-tl',
+		'recruiter'
+	), true ) && isset( $meta ) ) {
+	$full_only_view  = true;
+	$accounting_info = true;
+}
+
 
 get_header();
 
@@ -219,6 +229,9 @@ $logshowcontent = isset( $_COOKIE[ 'logshow' ] ) && + $_COOKIE[ 'logshow' ] !== 
                                                 aria-controls="pills-billing" aria-selected="false">Billing
                                         </button>
                                     </li>
+								<?php endif; ?>
+								
+								<?php if ( $accounting_info ): ?>
                                     <li class="nav-item js-change-url-tab flex-grow-1" role="presentation">
                                         <button class="nav-link w-100 <?php echo $disabled_tabs;
 										echo $helper->change_active_tab( 'pills-accounting-tab' ); ?> "
@@ -296,7 +309,9 @@ $logshowcontent = isset( $_COOKIE[ 'logshow' ] ) && + $_COOKIE[ 'logshow' ] !== 
 										) ) );
 										?>
                                     </div>
-
+								<?php endif; ?>
+								
+								<?php if ( $accounting_info ): ?>
                                     <div class="tab-pane fade <?php echo $helper->change_active_tab( 'pills-accounting-tab', 'show' ); ?>"
                                          id="pills-accounting" role="tabpanel"
                                          aria-labelledby="pills-accounting-tab">

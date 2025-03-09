@@ -33,6 +33,8 @@ require THEME_DIR . '/src/inc/core/class-tms-emails.php';
 require THEME_DIR . '/src/inc/core/class-tms-logs.php';
 require THEME_DIR . '/src/inc/core/class-tms-performance.php';
 require THEME_DIR . '/src/inc/core/class-tms-generate-document.php';
+require THEME_DIR . '/src/inc/core/class-tms-drivers-helper.php';
+require THEME_DIR . '/src/inc/core/class-tms-drivers.php';
 
 require THEME_DIR . '/src/inc/initial-setup.php';
 require THEME_DIR . '/src/inc/enqueue-scripts.php';

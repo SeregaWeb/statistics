@@ -920,7 +920,7 @@ class TMSReportsHelper extends TMSReportsIcons {
 	
 	
 	function generateWeeks( $date_select = null ) {
-		$startDate = new DateTime( '2024-12-02' );
+		$startDate = new DateTime( '2025-02-09' );
 		$startDate->modify( 'Monday this week' ); // Find the first Monday before or on the start date
 		$endDate = new DateTime();                // Current date
 		
@@ -1044,9 +1044,11 @@ class TMSReportsHelper extends TMSReportsIcons {
 		
 		// Декодируем JSON, если он не пуст
 		$delivery = ! empty( get_field_value( $meta, 'delivery_location' ) )
-			? json_decode( get_field_value( $meta, 'delivery_location' ), ARRAY_A ) : [];
+			? json_decode( str_replace( "\'", "'", stripslashes( get_field_value( $meta, 'delivery_location' ) ) ), ARRAY_A )
+			: [];
 		$pick_up  = ! empty( get_field_value( $meta, 'pick_up_location' ) )
-			? json_decode( get_field_value( $meta, 'pick_up_location' ), ARRAY_A ) : [];
+			? json_decode( str_replace( "\'", "'", stripslashes( get_field_value( $meta, 'pick_up_location' ) ) ), ARRAY_A )
+			: [];
 		
 		// Обработка времени подтверждения доставки
 		$proof_of_delivery_time = get_field_value( $meta, 'proof_of_delivery_time' );

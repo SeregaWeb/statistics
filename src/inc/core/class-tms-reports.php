@@ -163,8 +163,7 @@ class TMSReports extends TMSReportsHelper {
 			LEFT JOIN $table_meta AS factoring_status
 				ON main.id = factoring_status.post_id
 				AND factoring_status.meta_key = 'factoring_status'
-			WHERE 1=1
-		";
+			WHERE 1=1";
 		
 		// Основной запрос
 		$sql = "SELECT main.*,
@@ -215,8 +214,16 @@ class TMSReports extends TMSReportsHelper {
 		}
 		
 		if ( isset( $args[ 'exclude_status' ] ) && ! empty( $args[ 'exclude_status' ] ) ) {
-			$exclude_status     = array_map( 'esc_sql', (array) $args[ 'exclude_status' ] );
-			$where_conditions[] = "load_status.meta_value NOT IN ('" . implode( "','", $exclude_status ) . "')";
+			$exclude_status = array_map( 'esc_sql', (array) $args[ 'exclude_status' ] );
+			
+			if ( isset( $args[ 'load_status' ] ) && $args[ 'load_status' ] === 'cancelled' ) {
+				$exclude_status = implode( "','", array_diff( $exclude_status, array( 'cancelled' ) ) );
+			} else {
+				$exclude_status = implode( "','", $exclude_status );
+			}
+			if ( ! empty( $exclude_status ) ) {
+				$where_conditions[] = "load_status.meta_value NOT IN ('" . $exclude_status . "')";
+			}
 		}
 		
 		
@@ -3405,6 +3412,20 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 						'user_id' => $user_id,
 						'post_id' => $data[ 'post_id' ],
 						'message' => 'Changed Driver rate: ' . 'New value: ' . $data[ 'driver_rate' ] . ' Old value: $' . $data[ 'old_value_driver_rate' ]
+					) );
+					
+					$select_emails = $this->email_helper->get_selected_emails( $this->user_emails, array(
+						'admin_email',
+						'billing_email',
+						'team_leader_email',
+						'accounting_email',
+					) );
+					
+					$this->email_helper->send_custom_email( $select_emails, array(
+						'subject'      => 'Changed Driver rate',
+						'project_name' => 'Project: ' . $this->project,
+						'subtitle'     => 'User changed: ' . $user_name[ 'full_name' ],
+						'message'      => 'New value: $' . $data[ 'driver_rate' ] . ' Old value: $' . $data[ 'old_value_driver_rate' ] . 'Load № ' . $data[ 'reference_number' ] . ' Link to: ' . $link,
 					) );
 					
 					$data[ 'modify_driver_price' ] = '1';

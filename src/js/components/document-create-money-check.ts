@@ -122,3 +122,35 @@ export const createDocumentInvoiceActions = (urlAjax) => {
         });
     }
 };
+export const createDocumentBolActions = (urlAjax) => {
+    const formInv = document.querySelector('.js-generate-bol');
+
+    if (formInv) {
+        formInv.addEventListener('submit', (event) => {
+            event.preventDefault();
+            const action = 'generate_bol';
+            const form = event.target;
+
+            if (form) {
+                // @ts-ignore
+                const formData = new FormData(form);
+                formData.append('action', action);
+
+                const options = {
+                    method: 'POST',
+                    body: formData,
+                };
+
+                fetch(urlAjax, options)
+                    .then((res) => res.json())
+                    .then((requestStatus) => {
+                        if (requestStatus.success) {
+                            window.open(requestStatus.data, '_blank');
+                        } else {
+                            console.log('error');
+                        }
+                    });
+            }
+        });
+    }
+};

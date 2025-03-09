@@ -52,7 +52,7 @@ $contact = get_field_value( $args, 'contact' );
 		}
 
 		.email-logo-image {
-			width: 180px;
+			width: 120px;
 			height: auto;
 		}
 
@@ -88,9 +88,9 @@ $contact = get_field_value( $args, 'contact' );
         <p class='email-body-text'>This code will expire in 15 minutes.</p>
 		<?php if ( ! empty( $contact ) ): ?>
             <p class='email-body-text'>
-                If you were not expecting this code,
-                <a class='text-danger' href='mailto:<?php echo $contact; ?>'> contact </a>
-                the administrator immediately.</p>
+                If you were not expecting this code, <a class='text-danger'
+                                                        href='mailto:<?php echo $contact; ?>'>contact</a> the
+                administrator immediately.</p>
 		<?php endif; ?>
         <br>
         <p class='email-body-text'>Thank you.</p>

@@ -14,6 +14,7 @@ $args = array(
 	'status_post'    => 'publish',
 	'per_page_loads' => 100,
 	'exclude_paid'   => true,
+	'exclude_status' => array( 'cancelled' ),
 );
 
 $args  = $reports->set_filter_params( $args );

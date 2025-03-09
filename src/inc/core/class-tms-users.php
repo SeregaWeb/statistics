@@ -265,7 +265,9 @@ class  TMSUsers extends TMSReportsHelper {
 			'billing',
 			'accounting',
 			'moderator',
-			'tracking-tl'
+			'tracking-tl',
+			'recruiter-tl',
+			'recruiter'
 		), true );
 		
 		if ( $allowed_role || intval( $current_user_id ) === intval( $id_user ) || $is_draft ) {

@@ -126,6 +126,10 @@ export const actionCreateReportInit = (ajaxUrl) => {
                 event.preventDefault();
                 const { target } = event;
 
+                // @ts-ignore
+                const btnSubmit = target.querySelector('.js-submit-and-next-tab');
+                btnSubmit && btnSubmit.setAttribute('disabled', 'true');
+
                 const nextTargetTab = 'pills-trip-tab';
 
                 // @ts-ignore
@@ -152,14 +156,17 @@ export const actionCreateReportInit = (ajaxUrl) => {
                             printMessage(requestStatus.data.message, 'success', 8000);
 
                             setUpTabInUrl(nextTargetTab);
+                            btnSubmit && btnSubmit.removeAttribute('disabled');
                         } else {
                             // eslint-disable-next-line no-alert
                             printMessage(`Error adding Load:${requestStatus.data.message}`, 'danger', 8000);
+                            btnSubmit && btnSubmit.removeAttribute('disabled');
                         }
                     })
                     .catch((error) => {
                         printMessage(`Request failed: ${error}`, 'danger', 8000);
                         console.error('Request failed:', error);
+                        btnSubmit && btnSubmit.removeAttribute('disabled');
                     });
             });
         });
@@ -202,6 +209,9 @@ export const createDraftPosts = (ajaxUrl) => {
                 const nextTargetTab = 'pills-load-tab';
                 // const tab = new Tab(document.getElementById(nextTargetTab));
                 let action = 'add_new_draft_report';
+                // @ts-ignore
+                const btnSubmit = event.target.querySelector('.js-submit-and-next-tab');
+                btnSubmit && btnSubmit.setAttribute('disabled', 'true');
 
                 if (hasReportIdInUrl()) {
                     action = 'update_new_draft_report';
@@ -236,6 +246,7 @@ export const createDraftPosts = (ajaxUrl) => {
                     .then((res) => res.json())
                     .then((requestStatus) => {
                         if (requestStatus.success) {
+                            btnSubmit && btnSubmit.removeAttribute('disabled');
                             console.log('Report added successfully:', requestStatus.data);
                             if (!hasReportIdInUrl()) {
                                 console.log('1');
@@ -259,10 +270,12 @@ export const createDraftPosts = (ajaxUrl) => {
                             }
                         } else {
                             // eslint-disable-next-line no-alert
+                            btnSubmit && btnSubmit.removeAttribute('disabled');
                             printMessage(`Error adding report:${requestStatus.data.message}`, 'danger', 8000);
                         }
                     })
                     .catch((error) => {
+                        btnSubmit && btnSubmit.removeAttribute('disabled');
                         printMessage(`Request failed: ${error}`, 'danger', 8000);
                         console.error('Request failed:', error);
                     });
@@ -300,6 +313,9 @@ export const updateFilesReportInit = (ajaxUrl) => {
                 event.preventDefault();
                 const { target } = event;
                 // @ts-ignore
+                const btnSubmit = target.querySelector('.js-submit-and-next-tab');
+                btnSubmit && btnSubmit.setAttribute('disabled', 'true');
+                // @ts-ignore
                 const formData = new FormData(target);
                 formData.append('action', 'update_files_report');
 
@@ -314,14 +330,15 @@ export const updateFilesReportInit = (ajaxUrl) => {
                         if (requestStatus.success) {
                             console.log('upload files successfully:', requestStatus.data);
                             printMessage(requestStatus.data.message, 'success', 8000);
-
                             setUpTabInUrl('pills-documents-tab');
                         } else {
                             // eslint-disable-next-line no-alert
+                            btnSubmit && btnSubmit.removeAttribute('disabled');
                             printMessage(`Error upload files:${requestStatus.data.message}`, 'danger', 8000);
                         }
                     })
                     .catch((error) => {
+                        btnSubmit && btnSubmit.removeAttribute('disabled');
                         printMessage(`Request failed: ${error}`, 'danger', 8000);
                         console.error('Request failed:', error);
                     });
@@ -336,6 +353,10 @@ export const updateBillingReportInit = (ajaxUrl) => {
             item.addEventListener('submit', (event) => {
                 event.preventDefault();
                 const { target } = event;
+
+                // @ts-ignore
+                const btnSubmit = target.querySelector('.js-submit-and-next-tab');
+                btnSubmit && btnSubmit.setAttribute('disabled', 'true');
                 // @ts-ignore
                 const formData = new FormData(target);
                 formData.append('action', 'update_billing_report');
@@ -354,14 +375,15 @@ export const updateBillingReportInit = (ajaxUrl) => {
                             if (requestStatus.data.data?.read_only !== 'true') {
                                 updateStatusRechange(ajaxUrl);
                             }
-
                             setUpTabInUrl('pills-billing-tab');
                         } else {
+                            btnSubmit && btnSubmit.removeAttribute('disabled');
                             // eslint-disable-next-line no-alert
                             printMessage(`Error update:${requestStatus.data.message}`, 'danger', 8000);
                         }
                     })
                     .catch((error) => {
+                        btnSubmit && btnSubmit.removeAttribute('disabled');
                         printMessage(`Request failed: ${error}`, 'danger', 8000);
                         console.error('Request failed:', error);
                     });
@@ -376,6 +398,10 @@ export const updateAccountingReportInit = (ajaxUrl) => {
             item.addEventListener('submit', (event) => {
                 event.preventDefault();
                 const { target } = event;
+
+                // @ts-ignore
+                const btnSubmit = target.querySelector('.js-submit-and-next-tab');
+                btnSubmit && btnSubmit.setAttribute('disabled', 'true');
                 // @ts-ignore
                 const formData = new FormData(target);
                 formData.append('action', 'update_accounting_report');
@@ -394,10 +420,12 @@ export const updateAccountingReportInit = (ajaxUrl) => {
                             setUpTabInUrl('pills-accounting-tab');
                         } else {
                             // eslint-disable-next-line no-alert
+                            btnSubmit && btnSubmit.removeAttribute('disabled');
                             printMessage(`Error update:${requestStatus.data.message}`, 'danger', 8000);
                         }
                     })
                     .catch((error) => {
+                        btnSubmit && btnSubmit.removeAttribute('disabled');
                         printMessage(`Request failed: ${error}`, 'danger', 8000);
                         console.error('Request failed:', error);
                     });
@@ -1093,6 +1121,10 @@ export const sendShipperFormInit = (ajaxUrl) => {
             event.preventDefault();
             const { target } = event;
 
+            // @ts-ignore
+            const btnSubmit = target.querySelector('.js-submit-and-next-tab');
+            btnSubmit && btnSubmit.setAttribute('disabled', 'disabled');
+
             const nextTargetTab = 'pills-documents-tab';
             // @ts-ignore
             const formData = new FormData(target);
@@ -1113,13 +1145,15 @@ export const sendShipperFormInit = (ajaxUrl) => {
                         if (requestStatus.data.data?.read_only !== 'true') {
                             updateStatusRechange(ajaxUrl);
                         }
-
+                        btnSubmit && btnSubmit.removeAttribute('disabled');
                         setUpTabInUrl(nextTargetTab);
                     } else {
+                        btnSubmit && btnSubmit.removeAttribute('disabled');
                         printMessage(`Error adding shipper info:${requestStatus.data.message}`, 'danger', 8000);
                     }
                 })
                 .catch((error) => {
+                    btnSubmit && btnSubmit.removeAttribute('disabled');
                     printMessage(`Request failed: ${error}`, 'danger', 8000);
                     console.error('Request failed:', error);
                 });

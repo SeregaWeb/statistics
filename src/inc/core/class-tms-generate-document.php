@@ -74,11 +74,22 @@ class TMSGenerateDocument extends TMSReports {
 	
 	function init_ajax() {
 		add_action( 'wp_ajax_generate_invoice', array( $this, 'generate_invoice' ) );
+		add_action( 'wp_ajax_generate_bol', array( $this, 'generate_bol' ) );
 	}
 	
 	function generate_invoice() {
 		if ( defined( 'DOING_AJAX' ) && DOING_AJAX ) {
 			$url = $this->create_file( 'invoice' );
+			if ( $url ) {
+				wp_send_json_success( $url );
+			}
+			wp_send_json_error( 'Error create!' );
+		}
+	}
+	
+	function generate_bol() {
+		if ( defined( 'DOING_AJAX' ) && DOING_AJAX ) {
+			$url = $this->create_file();
 			if ( $url ) {
 				wp_send_json_success( $url );
 			}

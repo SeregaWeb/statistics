@@ -88,7 +88,6 @@
                 "id": ""
             },
             "choices": {
-                "ua": "Ukraine (Odessa)",
                 "pl": "Poland (Warsaw)",
                 "rm": "Remote"
             },
@@ -138,5 +137,5 @@
     "active": true,
     "description": "",
     "show_in_rest": 0,
-    "modified": 1738607309
+    "modified": 1741114959
 }

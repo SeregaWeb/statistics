@@ -127,34 +127,12 @@ if ( ! empty( $results ) ) : ?>
                 <td><?php echo $ar_status === 'solved' ? 'Solved' : 'Not solved'; ?></td>
                 <td>
 					
-					<?php if ( $show_control ): ?>
-
-                        <div class="dropdown">
-                            <button class="btn button-action" type="button" id="dropdownMenu2"
-                                    data-bs-toggle="dropdown"
-                                    aria-expanded="false">
-								<?php echo $helper->get_dropdown_load_icon(); ?>
-                            </button>
-                            <ul class="dropdown-menu" aria-labelledby="dropdownMenu2">
-								<?php if ( $TMSUsers->check_user_role_access( array( 'billing' ), true ) ) : ?>
-                                    <li><a href="<?php echo $add_new_load . '?post_id=' . $row[ 'id' ]; ?>"
-                                           class="dropdown-item">View</a></li>
-								<?php else: ?>
-                                    <li><a href="<?php echo $add_new_load . '?post_id=' . $row[ 'id' ]; ?>"
-                                           class="dropdown-item">Edit</a></li>
-								<?php endif; ?>
-								
-								<?php if ( $TMSUsers->check_user_role_access( array( 'administrator' ), true ) || $is_draft ): ?>
-                                    <li>
-                                        <button class="dropdown-item text-danger js-remove-load"
-                                                data-id="<?php echo $row[ 'id' ]; ?>" type="button">Delete
-                                        </button>
-                                    </li>
-								<?php endif; ?>
-                            </ul>
-                        </div>
-					
-					<?php endif; ?>
+					<?php if ( $show_control ):
+						echo esc_html( get_template_part( TEMPLATE_PATH . 'tables/control', 'dropdown', array(
+							'id'       => $row[ 'id' ],
+							'is_draft' => $is_draft,
+						) ) );
+					endif; ?>
                 </td>
             </tr>
 		

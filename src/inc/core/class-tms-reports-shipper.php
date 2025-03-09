@@ -474,14 +474,22 @@ class TMSReportsShipper extends TMSReportsHelper {
 	}
 	
 	public function get_shipper_by_id( $ID, $type_return = OBJECT ) {
+		static $cache = [];
+		
+		if ( isset( $cache[ $ID ] ) ) {
+			return $cache[ $ID ];
+		}
+		
 		global $wpdb;
 		$query = $wpdb->prepare( "
-        SELECT * FROM {$wpdb->prefix}{$this->table_main}
-        WHERE id = %d
-    	", $ID );
+		SELECT * FROM {$wpdb->prefix}{$this->table_main}
+		WHERE id = %d
+		", $ID );
 		
 		// Execute the query
 		$results = $wpdb->get_results( $query, $type_return );
+		
+		$cache[ $ID ] = $results;
 		
 		return $results;
 	}

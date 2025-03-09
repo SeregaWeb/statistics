@@ -8,13 +8,13 @@ if ( $user_roles === 'administrator' || $user_roles === 'accounting' || $user_ro
 	$bol = new TMSGenerateDocument();
 	if ( $bol->_is_mpdf_exists( false ) ) {
 		?>
-        <form class="js-generate-invoice">
+        <form class="js-generate-bol">
             <div class="generate-top">
-                <h2 class="generate-title">Create invoice</h2>
+                <h2 class="generate-title">Create bol</h2>
             </div>
 			
 			<?php
-			echo $bol->get_template_invoice( true );
+			echo $bol->get_template( true );
 			?>
             <div class="generate">
                 <div class="generate-submit">

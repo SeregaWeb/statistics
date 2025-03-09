@@ -1,6 +1,6 @@
 <?php
 /**
- * Template Name: Page create invoice
+ * Template Name: Page create bol
  *
  * @package WP-rock
  * @since 4.4.0
@@ -15,13 +15,13 @@ $account = get_field_value( $global_options, 'link_to_account' );
 $TMSReports = new TMSReports();
 
 ?>
-    <div class="container-fluid account">
+    <div class="container-fluid generate-bol">
         <div class="row">
             <div class="container">
                 <div class="row">
                     <div class="col-12" style="max-width: 1200px; margin: 0 auto;">
 						<?php
-						echo esc_html( get_template_part( TEMPLATE_PATH . 'files/create', 'invoice' ) );
+						echo esc_html( get_template_part( TEMPLATE_PATH . 'files/create', 'bol' ) );
 						?>
                     </div>
                 </div>

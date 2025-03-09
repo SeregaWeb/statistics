@@ -111,14 +111,16 @@ if ( ! $show_filter_by_office ) {
 
                             <div class="d-flex flex-column gap-1">
 								<?php
-								$data                = $statistics->get_monthly_fuctoring_stats( $year_param, $mount_param, $office );
-								$general_profit      = floatval( $data[ 'total_booked_rate' ] ) - floatval( $data[ 'total_driver_rate' ] );
-								$general_true_profit = floatval( $data[ 'total_true_profit' ] );
+								$data               = $statistics->get_monthly_fuctoring_stats( $year_param, $mount_param, $office );
+								$second_driver_rate = floatval( $data[ 'total_second_driver_rate' ] );
+								
+								$general_profit      = floatval( $data[ 'total_booked_rate' ] ) - floatval( $data[ 'total_driver_rate' ] ) - $second_driver_rate;
+								$general_true_profit = floatval( $data[ 'total_true_profit' ] ) - $second_driver_rate;
 								
 								$paid_to_factoring = $general_profit - $general_true_profit;
 								$after_factoring   = floatval( $data[ 'total_booked_rate' ] ) - $paid_to_factoring;
 								
-								$data[ 'total_driver_rate' ] = floatval( $data[ 'total_driver_rate' ] ) + floatval( $data[ 'total_second_driver_rate' ] );
+								$data[ 'total_driver_rate' ] = floatval( $data[ 'total_driver_rate' ] ) + $second_driver_rate;
 								
 								?>
 

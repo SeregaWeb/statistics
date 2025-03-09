@@ -1,7 +1,7 @@
 <?php
 
-$reports = new TMSReports();
-
+$reports  = new TMSReports();
+$TMSUsers = new TMSUsers();
 // tab 5
 
 $invoices           = $reports->get_invoices();
@@ -135,9 +135,18 @@ $full_view_only = get_field_value( $args, 'full_view_only' );
 
         <div class="col-12 mt-4 order-5" role="presentation">
             <div class="justify-content-start gap-2">
-                <button type="button" data-tab-id="pills-billing-tab"
+				
+				<?php
+				$previous_tab = $TMSUsers->check_user_role_access( array(
+					'recruiter-tl',
+					'recruiter'
+				), true ) && isset( $meta ) ? 'pills-documents-tab' : 'pills-billing-tab';
+				?>
+
+                <button type="button" data-tab-id="<?php echo $previous_tab; ?>"
                         class="btn btn-dark js-next-tab">Previous
                 </button>
+				
 				<?php if ( ! $full_view_only ): ?>
                     <button type="submit" class="btn btn-primary js-submit-and-next-tab">Update
                     </button>

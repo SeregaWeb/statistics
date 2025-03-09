@@ -43,10 +43,16 @@ if ( $report_object ) {
 		
 		$post_status = get_field_value( $main, 'status_post' );
 		
-		
 		if ( ! empty( $pick_up_location ) && ! empty( $delivery_location ) ) {
-			$pick_up_location_isset  = json_decode( $pick_up_location, ARRAY_A );
-			$delivery_location_isset = json_decode( $delivery_location, ARRAY_A );
+			
+			$clean_json             = stripslashes( $pick_up_location );
+			$clean_json             = str_replace( "\'", "'", $pick_up_location );
+			$pick_up_location_isset = json_decode( $clean_json, ARRAY_A );
+			
+			$clean_delivery_json     = stripslashes( $delivery_location );
+			$clean_delivery_json     = str_replace( "\'", "'", $delivery_location );
+			$delivery_location_isset = json_decode( $clean_delivery_json, ARRAY_A );
+			
 		}
 	}
 }

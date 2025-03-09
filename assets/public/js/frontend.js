@@ -3709,6 +3709,8 @@ var actionCreateReportInit = function actionCreateReportInit(ajaxUrl) {
     item.addEventListener('submit', function (event) {
       event.preventDefault();
       var target = event.target;
+      var btnSubmit = target.querySelector('.js-submit-and-next-tab');
+      btnSubmit && btnSubmit.setAttribute('disabled', 'true');
       var nextTargetTab = 'pills-trip-tab';
       var formData = new FormData(target);
       formData.append('action', 'add_new_report');
@@ -3729,12 +3731,15 @@ var actionCreateReportInit = function actionCreateReportInit(ajaxUrl) {
           }
           (0,_info_messages__WEBPACK_IMPORTED_MODULE_1__.printMessage)(requestStatus.data.message, 'success', 8000);
           setUpTabInUrl(nextTargetTab);
+          btnSubmit && btnSubmit.removeAttribute('disabled');
         } else {
           (0,_info_messages__WEBPACK_IMPORTED_MODULE_1__.printMessage)("Error adding Load:".concat(requestStatus.data.message), 'danger', 8000);
+          btnSubmit && btnSubmit.removeAttribute('disabled');
         }
       }).catch(function (error) {
         (0,_info_messages__WEBPACK_IMPORTED_MODULE_1__.printMessage)("Request failed: ".concat(error), 'danger', 8000);
         console.error('Request failed:', error);
+        btnSubmit && btnSubmit.removeAttribute('disabled');
       });
     });
   });
@@ -3757,6 +3762,8 @@ var createDraftPosts = function createDraftPosts(ajaxUrl) {
       event.preventDefault();
       var nextTargetTab = 'pills-load-tab';
       var action = 'add_new_draft_report';
+      var btnSubmit = event.target.querySelector('.js-submit-and-next-tab');
+      btnSubmit && btnSubmit.setAttribute('disabled', 'true');
       if (hasReportIdInUrl()) {
         action = 'update_new_draft_report';
       }
@@ -3781,6 +3788,7 @@ var createDraftPosts = function createDraftPosts(ajaxUrl) {
       }).then(function (requestStatus) {
         var _a, _b, _c;
         if (requestStatus.success) {
+          btnSubmit && btnSubmit.removeAttribute('disabled');
           console.log('Report added successfully:', requestStatus.data);
           if (!hasReportIdInUrl()) {
             console.log('1');
@@ -3800,9 +3808,11 @@ var createDraftPosts = function createDraftPosts(ajaxUrl) {
             setUpTabInUrl(nextTargetTab);
           }
         } else {
+          btnSubmit && btnSubmit.removeAttribute('disabled');
           (0,_info_messages__WEBPACK_IMPORTED_MODULE_1__.printMessage)("Error adding report:".concat(requestStatus.data.message), 'danger', 8000);
         }
       }).catch(function (error) {
+        btnSubmit && btnSubmit.removeAttribute('disabled');
         (0,_info_messages__WEBPACK_IMPORTED_MODULE_1__.printMessage)("Request failed: ".concat(error), 'danger', 8000);
         console.error('Request failed:', error);
       });
@@ -3824,6 +3834,8 @@ var updateFilesReportInit = function updateFilesReportInit(ajaxUrl) {
     item.addEventListener('submit', function (event) {
       event.preventDefault();
       var target = event.target;
+      var btnSubmit = target.querySelector('.js-submit-and-next-tab');
+      btnSubmit && btnSubmit.setAttribute('disabled', 'true');
       var formData = new FormData(target);
       formData.append('action', 'update_files_report');
       var options = {
@@ -3838,9 +3850,11 @@ var updateFilesReportInit = function updateFilesReportInit(ajaxUrl) {
           (0,_info_messages__WEBPACK_IMPORTED_MODULE_1__.printMessage)(requestStatus.data.message, 'success', 8000);
           setUpTabInUrl('pills-documents-tab');
         } else {
+          btnSubmit && btnSubmit.removeAttribute('disabled');
           (0,_info_messages__WEBPACK_IMPORTED_MODULE_1__.printMessage)("Error upload files:".concat(requestStatus.data.message), 'danger', 8000);
         }
       }).catch(function (error) {
+        btnSubmit && btnSubmit.removeAttribute('disabled');
         (0,_info_messages__WEBPACK_IMPORTED_MODULE_1__.printMessage)("Request failed: ".concat(error), 'danger', 8000);
         console.error('Request failed:', error);
       });
@@ -3853,6 +3867,8 @@ var updateBillingReportInit = function updateBillingReportInit(ajaxUrl) {
     item.addEventListener('submit', function (event) {
       event.preventDefault();
       var target = event.target;
+      var btnSubmit = target.querySelector('.js-submit-and-next-tab');
+      btnSubmit && btnSubmit.setAttribute('disabled', 'true');
       var formData = new FormData(target);
       formData.append('action', 'update_billing_report');
       var options = {
@@ -3871,9 +3887,11 @@ var updateBillingReportInit = function updateBillingReportInit(ajaxUrl) {
           }
           setUpTabInUrl('pills-billing-tab');
         } else {
+          btnSubmit && btnSubmit.removeAttribute('disabled');
           (0,_info_messages__WEBPACK_IMPORTED_MODULE_1__.printMessage)("Error update:".concat(requestStatus.data.message), 'danger', 8000);
         }
       }).catch(function (error) {
+        btnSubmit && btnSubmit.removeAttribute('disabled');
         (0,_info_messages__WEBPACK_IMPORTED_MODULE_1__.printMessage)("Request failed: ".concat(error), 'danger', 8000);
         console.error('Request failed:', error);
       });
@@ -3886,6 +3904,8 @@ var updateAccountingReportInit = function updateAccountingReportInit(ajaxUrl) {
     item.addEventListener('submit', function (event) {
       event.preventDefault();
       var target = event.target;
+      var btnSubmit = target.querySelector('.js-submit-and-next-tab');
+      btnSubmit && btnSubmit.setAttribute('disabled', 'true');
       var formData = new FormData(target);
       formData.append('action', 'update_accounting_report');
       var options = {
@@ -3900,9 +3920,11 @@ var updateAccountingReportInit = function updateAccountingReportInit(ajaxUrl) {
           (0,_info_messages__WEBPACK_IMPORTED_MODULE_1__.printMessage)(requestStatus.data.message, 'success', 8000);
           setUpTabInUrl('pills-accounting-tab');
         } else {
+          btnSubmit && btnSubmit.removeAttribute('disabled');
           (0,_info_messages__WEBPACK_IMPORTED_MODULE_1__.printMessage)("Error update:".concat(requestStatus.data.message), 'danger', 8000);
         }
       }).catch(function (error) {
+        btnSubmit && btnSubmit.removeAttribute('disabled');
         (0,_info_messages__WEBPACK_IMPORTED_MODULE_1__.printMessage)("Request failed: ".concat(error), 'danger', 8000);
         console.error('Request failed:', error);
       });
@@ -4315,6 +4337,8 @@ var sendShipperFormInit = function sendShipperFormInit(ajaxUrl) {
   shipperForm && shipperForm.addEventListener('submit', function (event) {
     event.preventDefault();
     var target = event.target;
+    var btnSubmit = target.querySelector('.js-submit-and-next-tab');
+    btnSubmit && btnSubmit.setAttribute('disabled', 'disabled');
     var nextTargetTab = 'pills-documents-tab';
     var formData = new FormData(target);
     var action = 'update_shipper_info';
@@ -4332,11 +4356,14 @@ var sendShipperFormInit = function sendShipperFormInit(ajaxUrl) {
         if (((_a = requestStatus.data.data) === null || _a === void 0 ? void 0 : _a.read_only) !== 'true') {
           updateStatusRechange(ajaxUrl);
         }
+        btnSubmit && btnSubmit.removeAttribute('disabled');
         setUpTabInUrl(nextTargetTab);
       } else {
+        btnSubmit && btnSubmit.removeAttribute('disabled');
         (0,_info_messages__WEBPACK_IMPORTED_MODULE_1__.printMessage)("Error adding shipper info:".concat(requestStatus.data.message), 'danger', 8000);
       }
     }).catch(function (error) {
+      btnSubmit && btnSubmit.removeAttribute('disabled');
       (0,_info_messages__WEBPACK_IMPORTED_MODULE_1__.printMessage)("Request failed: ".concat(error), 'danger', 8000);
       console.error('Request failed:', error);
     });
@@ -4626,6 +4653,7 @@ var ActionDeleteShipperInit = function ActionDeleteShipperInit(ajaxUrl) {
 "use strict";
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   createDocumentBolActions: function() { return /* binding */ createDocumentBolActions; },
 /* harmony export */   createDocumentInvoice: function() { return /* binding */ createDocumentInvoice; },
 /* harmony export */   createDocumentInvoiceActions: function() { return /* binding */ createDocumentInvoiceActions; }
 /* harmony export */ });
@@ -4699,6 +4727,33 @@ var createDocumentInvoiceActions = function createDocumentInvoiceActions(urlAjax
     formInv.addEventListener('submit', function (event) {
       event.preventDefault();
       var action = 'generate_invoice';
+      var form = event.target;
+      if (form) {
+        var formData = new FormData(form);
+        formData.append('action', action);
+        var options = {
+          method: 'POST',
+          body: formData
+        };
+        fetch(urlAjax, options).then(function (res) {
+          return res.json();
+        }).then(function (requestStatus) {
+          if (requestStatus.success) {
+            window.open(requestStatus.data, '_blank');
+          } else {
+            console.log('error');
+          }
+        });
+      }
+    });
+  }
+};
+var createDocumentBolActions = function createDocumentBolActions(urlAjax) {
+  var formInv = document.querySelector('.js-generate-bol');
+  if (formInv) {
+    formInv.addEventListener('submit', function (event) {
+      event.preventDefault();
+      var action = 'generate_bol';
       var form = event.target;
       if (form) {
         var formData = new FormData(form);
@@ -15950,6 +16005,7 @@ function ready() {
   (0,_components_create_report__WEBPACK_IMPORTED_MODULE_3__.timeStrictChange)();
   (0,_components_document_create_money_check__WEBPACK_IMPORTED_MODULE_25__.createDocumentInvoice)();
   (0,_components_document_create_money_check__WEBPACK_IMPORTED_MODULE_25__.createDocumentInvoiceActions)(urlAjax);
+  (0,_components_document_create_money_check__WEBPACK_IMPORTED_MODULE_25__.createDocumentBolActions)(urlAjax);
   var preloaders = document.querySelectorAll('.js-preloader');
   preloaders && preloaders.forEach(function (item) {
     item.remove();

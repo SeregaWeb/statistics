@@ -54,6 +54,9 @@ $reportsPerformance->init();
 $createDocuments = new TMSGenerateDocument();
 $createDocuments->init();
 
+$TMSDrivers = new TMSDrivers();
+$TMSDrivers->init();
+
 /**
  * Sanitize uploaded file name
  */

@@ -9,11 +9,14 @@ class TMSDrivers extends TMSDriversHelper {
 	
 	public function init() {
 		$this->ajax_actions();
+		$this->create_tables();
 	}
 	
 	public function ajax_actions() {
 		$actions = array(
 			'add_driver'             => 'add_driver',
+			'upload_driver_vehicle'  => 'upload_driver_vehicle',
+			'upload_driver_contact'  => 'upload_driver_document',
 			'upload_driver_document' => 'upload_driver_document',
 			'update_driver_info'     => 'update_driver_info',
 		);
@@ -28,12 +31,10 @@ class TMSDrivers extends TMSDriversHelper {
 		return false;
 	}
 	
-	public function add_driver() {
-	
-	}
+	public function add_driver() { }
 	
 	public function upload_driver_document() {
-	
+		
 	}
 	
 	public function update_driver_info() {
@@ -52,8 +53,49 @@ class TMSDrivers extends TMSDriversHelper {
 	}
 	
 	public function table_driver() {
-	
+		global $wpdb;
+		
+		$table_name = $wpdb->prefix . $this->table_main;;
+		
+		$charset_collate = $wpdb->get_charset_collate();
+		
+		$sql = "CREATE TABLE $table_name (
+			    id mediumint(9) NOT NULL AUTO_INCREMENT,
+			    user_id_added mediumint(9) NOT NULL,
+			    date_created datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+			    user_id_updated mediumint(9) NULL,
+			    date_updated datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+			    clean_check_date datetime NULL DEFAULT NULL,
+			    updated_zipcode datetime NULL DEFAULT NULL,
+			    date_available datetime NULL DEFAULT NULL,
+			    checked_from_brokersnapshot datetime NULL DEFAULT NULL,
+			    status_post varchar(50) NULL DEFAULT NULL,
+			    PRIMARY KEY (id),
+			    INDEX idx_date_created (date_created),
+			    INDEX idx_clean_check_date (clean_check_date),
+			    INDEX idx_checked_from_brokersnapshot (checked_from_brokersnapshot),
+			    INDEX idx_date_available (date_available)
+			) $charset_collate;";
+		
+		dbDelta( $sql );
 	}
 	
-	public function table_driver_meta() { }
+	public function table_driver_meta() {
+		global $wpdb;
+		$table_meta_name = $wpdb->prefix . $this->table_meta;
+		$charset_collate = $wpdb->get_charset_collate();
+		
+		$sql = "CREATE TABLE $table_meta_name (
+		        id mediumint(9) NOT NULL AUTO_INCREMENT,
+		        post_id mediumint(9) NOT NULL,
+		        meta_key longtext,
+		        meta_value longtext,
+		        PRIMARY KEY  (id),
+                INDEX idx_post_id (post_id),
+         		INDEX idx_meta_key (meta_key(191)),
+         		INDEX idx_meta_key_value (meta_key(191), meta_value(191))
+    		) $charset_collate;";
+		
+		dbDelta( $sql );
+	}
 }

@@ -442,6 +442,25 @@ class TMSReports extends TMSReportsHelper {
 			)";
 		}
 		
+		if ( isset( $args[ 'exclude_status' ] ) && ! empty( $args[ 'exclude_status' ] ) ) {
+			$exclude_status = array_map( 'esc_sql', (array) $args[ 'exclude_status' ] );
+			
+			if ( isset( $args[ 'load_status' ] ) && $args[ 'load_status' ] === 'cancelled' ) {
+				$exclude_status = implode( "','", array_diff( $exclude_status, array( 'cancelled' ) ) );
+			} else {
+				$exclude_status = implode( "','", $exclude_status );
+			}
+			if ( ! empty( $exclude_status ) ) {
+				$where_conditions[] = "load_status.meta_value NOT IN ('" . $exclude_status . "')";
+			}
+		}
+		
+		
+		if ( isset( $args[ 'include_status' ] ) && ! empty( $args[ 'include_status' ] ) ) {
+			$include_status     = array_map( 'esc_sql', (array) $args[ 'include_status' ] );
+			$where_conditions[] = "load_status.meta_value IN ('" . implode( "','", $include_status ) . "')";
+		}
+		
 		if ( ! empty( $args[ 'invoice' ] ) ) {
 			if ( $args[ 'invoice' ] === 'invoiced' ) {
 				$where_conditions[] = "invoiced_proof.meta_value = %s";

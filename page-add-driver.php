@@ -15,8 +15,8 @@ $disabled_tabs  = 'disabled';
 $driver_object  = '';
 $status_publish = 'draft';
 
-
-$post_id = isset( $_GET[ 'post_id' ] ) ? $_GET[ 'post_id' ] : false;
+$report_object = null;
+$post_id       = isset( $_GET[ 'post_id' ] ) ? $_GET[ 'post_id' ] : false;
 
 if ( $post_id && is_numeric( $post_id ) ) {
 	$driver_object = $dtiver->get_driver_by_id( $_GET[ 'post_id' ] );
@@ -57,29 +57,39 @@ $logshowcontent = isset( $_COOKIE[ 'logshow' ] ) && + $_COOKIE[ 'logshow' ] !== 
 
                             <ul class="nav nav-pills gap-2 mb-3" id="pills-tab" role="tablist">
                                 <li class="nav-item js-change-url-tab flex-grow-1" role="presentation">
-                                    <button class="nav-link w-100 <?php echo $helper->change_active_tab( 'pills-customer-tab' ); ?> "
-                                            id="pills-customer-tab" data-bs-toggle="pill"
-                                            data-bs-target="#pills-customer" type="button" role="tab"
-                                            aria-controls="pills-customer" aria-selected="true">Drivers
+                                    <button class="nav-link w-100 <?php echo $helper->change_active_tab( 'pills-driver-contact-tab' ); ?> "
+                                            id="pills-driver-contact-tab" data-bs-toggle="pill"
+                                            data-bs-target="#pills-driver-contact" type="button" role="tab"
+                                            aria-controls="pills-driver-contact" aria-selected="true">Drivers
                                     </button>
                                 </li>
                                 <li class="nav-item js-change-url-tab flex-grow-1" role="presentation">
-                                    <button class="nav-link w-100 <?php echo $disabled_tabs; ?> <?php echo $helper->change_active_tab( 'pills-load-tab' ); ?> "
-                                            id="pills-load-tab"
+                                    <button class="nav-link w-100 <?php echo $disabled_tabs; ?> <?php echo $helper->change_active_tab( 'pills-driver-vehicle-tab' ); ?> "
+                                            id="pills-driver-vehicle-tab"
                                             data-bs-toggle="pill"
-                                            data-bs-target="#pills-load" type="button" role="tab"
-                                            aria-controls="pills-load"
+                                            data-bs-target="#pills-driver-vehicle" type="button" role="tab"
+                                            aria-controls="pills-driver-vehicle"
                                             aria-selected="false">Inforamtion
                                     </button>
                                 </li>
 
                                 <li class="nav-item js-change-url-tab flex-grow-1" role="presentation">
                                     <button class="nav-link w-100 <?php echo $disabled_tabs;
-									echo $helper->change_active_tab( 'pills-documents-tab' ); ?> "
-                                            id="pills-documents-tab"
+									echo $helper->change_active_tab( 'pills-driver-finance-tab' ); ?> "
+                                            id="pills-driver-finance-tab"
                                             data-bs-toggle="pill"
-                                            data-bs-target="#pills-documents" type="button" role="tab"
-                                            aria-controls="pills-documents" aria-selected="false">Documents
+                                            data-bs-target="#pills-driver-finance" type="button" role="tab"
+                                            aria-controls="pills-driver-finance" aria-selected="false">Financial
+                                    </button>
+                                </li>
+
+                                <li class="nav-item js-change-url-tab flex-grow-1" role="presentation">
+                                    <button class="nav-link w-100 <?php echo $disabled_tabs;
+									echo $helper->change_active_tab( 'pills-driver-documents-tab' ); ?> "
+                                            id="pills-driver-documents-tab"
+                                            data-bs-toggle="pill"
+                                            data-bs-target="#pills-driver-documents" type="button" role="tab"
+                                            aria-controls="pills-driver-documents" aria-selected="false">Documents
                                     </button>
                                 </li>
 
@@ -87,21 +97,34 @@ $logshowcontent = isset( $_COOKIE[ 'logshow' ] ) && + $_COOKIE[ 'logshow' ] !== 
 
                             <div class="tab-content" id="pills-tabContent">
 
-                                <div class="tab-pane fade <?php echo $helper->change_active_tab( 'pills-customer-tab', 'show' ); ?>"
-                                     id="pills-customer" role="tabpanel"
-                                     aria-labelledby="pills-customer-tab">
+                                <div class="tab-pane fade <?php echo $helper->change_active_tab( 'pills-driver-contact-tab', 'show' ); ?>"
+                                     id="pills-driver-contact" role="tabpanel"
+                                     aria-labelledby="pills-driver-contact-tab">
+									<?php
+									echo esc_html( get_template_part( TEMPLATE_PATH . 'tabs/driver', 'tab-contact', array(
+										'full_view_only' => $full_only_view,
+										'report_object'  => $report_object,
+										'post_id'        => $post_id
+									) ) );
+									?>
+                                </div>
+
+                                <div class="tab-pane fade <?php echo $helper->change_active_tab( 'pills-driver-vehicle-tab', 'show' ); ?>"
+                                     id="pills-driver-vehicle" role="tabpanel"
+                                     aria-labelledby="pills-driver-vehicle-tab">
 
                                 </div>
 
-                                <div class="tab-pane fade <?php echo $helper->change_active_tab( 'pills-load-tab', 'show' ); ?>"
-                                     id="pills-load" role="tabpanel" aria-labelledby="pills-load-tab">
+                                <div class="tab-pane fade <?php echo $helper->change_active_tab( 'pills-driver-vehicle-tab', 'show' ); ?>"
+                                     id="pills-driver-vehicle" role="tabpanel"
+                                     aria-labelledby="pills-driver-vehicle-tab">
+
 
                                 </div>
 
-
-                                <div class="tab-pane fade <?php echo $helper->change_active_tab( 'pills-documents-tab', 'show' ); ?>"
-                                     id="pills-documents" role="tabpanel"
-                                     aria-labelledby="pills-documents-tab">
+                                <div class="tab-pane fade <?php echo $helper->change_active_tab( 'pills-driver-documents-tab', 'show' ); ?>"
+                                     id="pills-driver-documents" role="tabpanel"
+                                     aria-labelledby="pills-driver-documents-tab">
 
 
                                 </div>

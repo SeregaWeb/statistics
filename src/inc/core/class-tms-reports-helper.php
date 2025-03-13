@@ -1198,5 +1198,45 @@ class TMSReportsHelper extends TMSReportsIcons {
 	function hasUrlParams( array $params ): bool {
 		return ! empty( array_intersect_key( $_GET, array_flip( $params ) ) );
 	}
+	
+	function buildHeaderAddReport( $meta ) {
+		
+		if ( ! $meta ) {
+			return;
+		}
+		
+		$reference_number  = get_field_value( $meta, 'reference_number' );
+		$pick_up_location  = get_field_value( $meta, 'pick_up_location' );
+		$delivery_location = get_field_value( $meta, 'delivery_location' );
+		
+		$template_p = [];
+		$template_d = [];
+		
+		if ( ! empty( $pick_up_location ) ) {
+			$pick_up_location_array = json_decode( $pick_up_location, true );
+			if ( is_array( $pick_up_location_array ) ) {
+				foreach ( $pick_up_location_array as $pick_up ) {
+					if ( ! empty( $pick_up[ 'short_address' ] ) ) {
+						$template_p[] = $pick_up[ 'short_address' ];
+					}
+				}
+			}
+		}
+		
+		if ( ! empty( $delivery_location ) ) {
+			$delivery_location_array = json_decode( $delivery_location, true );
+			if ( is_array( $delivery_location_array ) ) {
+				foreach ( $delivery_location_array as $delivery ) {
+					if ( ! empty( $delivery[ 'short_address' ] ) ) {
+						$template_d[] = $delivery[ 'short_address' ];
+					}
+				}
+			}
+		}
+		
+		$subject = sprintf( 'Load number # %s %s - %s ', $reference_number, implode( ', ', $template_p ), implode( ', ', $template_d ) );
+		
+		return $subject;
+	}
 }
 

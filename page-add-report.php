@@ -18,8 +18,8 @@ $disabled_tabs = 'disabled';
 $report_object  = '';
 $status_publish = 'draft';
 $print_status   = false;
-
-$post_id = isset( $_GET[ 'post_id' ] ) ? $_GET[ 'post_id' ] : false;
+$head_message   = '';
+$post_id        = isset( $_GET[ 'post_id' ] ) ? $_GET[ 'post_id' ] : false;
 
 if ( $post_id && is_numeric( $post_id ) ) {
 	$report_object = $reports->get_report_by_id( $_GET[ 'post_id' ] );
@@ -33,6 +33,8 @@ if ( $post_id && is_numeric( $post_id ) ) {
 		wp_redirect( remove_query_arg( array_keys( $_GET ) ) );
 		exit;
 	}
+	
+	$head_message = $helper->buildHeaderAddReport( $meta );
 	
 	$message_arr    = $reports->check_empty_fields( $post_id, $meta );
 	$print_status   = true;
@@ -116,6 +118,7 @@ if ( $TMSUsers->check_user_role_access( array(
 		'recruiter'
 	), true ) && isset( $meta ) ) {
 	$full_only_view  = true;
+	$access          = true;
 	$accounting_info = true;
 }
 
@@ -149,7 +152,7 @@ $logshowcontent = isset( $_COOKIE[ 'logshow' ] ) && + $_COOKIE[ 'logshow' ] !== 
 								$pick_up_location  = get_field_value( $meta, 'pick_up_location' );
 								$delivery_location = get_field_value( $meta, 'delivery_location' );
 								
-								if ( isset( $status_publish ) && $status_publish === 'publish' && ! empty( $pick_up_location ) && ! empty( $delivery_location ) ) {
+								if ( $access_for_btn && isset( $status_publish ) && $status_publish === 'publish' && ! empty( $pick_up_location ) && ! empty( $delivery_location ) ) {
 									if ( ! isset( $send_mesaage ) || ! $send_mesaage ) {
 										?>
                                         <form class="w-100 d-flex justify-content-end mb-3 js-send-email-chain">
@@ -160,7 +163,7 @@ $logshowcontent = isset( $_COOKIE[ 'logshow' ] ) && + $_COOKIE[ 'logshow' ] !== 
 									} else {
 										?>
                                         <div class="w-100 d-flex justify-content-end mb-3">
-                                            <button class="btn btn-success" disabled>Tracking chain created successful
+                                            <button class="btn btn-success" disabled>Tracking chain created
                                             </button>
                                         </div>
 										<?php
@@ -179,6 +182,12 @@ $logshowcontent = isset( $_COOKIE[ 'logshow' ] ) && + $_COOKIE[ 'logshow' ] !== 
 							}
 							?>
 
+                        </div>
+
+                        <div class="col-12">
+                            <h5>
+								<?php echo $head_message; ?>
+                            </h5>
                         </div>
 
                         <div class="col-12 js-logs-content <?php echo $logshowcontent; ?>">

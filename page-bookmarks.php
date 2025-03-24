@@ -19,6 +19,8 @@ $args = array(
 
 $items = $reports->get_favorites( $bookmarks, $args );
 
+$items[ 'hide_total' ] = true;
+
 ?>
     <div class="container-fluid">
         <div class="row">

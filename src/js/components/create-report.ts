@@ -172,7 +172,7 @@ export const actionCreateReportInit = (ajaxUrl) => {
         });
 };
 
-function setUpTabInUrl(tab) {
+export function setUpTabInUrl(tab) {
     const url = new URL(window.location.href);
     // Set the 'post_id' parameter
     url.searchParams.set('tab', tab);

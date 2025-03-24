@@ -185,7 +185,7 @@ $logshowcontent = isset( $_COOKIE[ 'logshow' ] ) && + $_COOKIE[ 'logshow' ] !== 
                         </div>
 
                         <div class="col-12">
-                            <h5>
+                            <h5 class="text-primary">
 								<?php echo $head_message; ?>
                             </h5>
                         </div>

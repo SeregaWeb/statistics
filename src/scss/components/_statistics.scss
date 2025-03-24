@@ -215,3 +215,56 @@
 
     }
 }
+
+.tracking-statistics {
+    display: grid;
+    gap: 60px;
+    &__wrapper {
+        display: grid;
+        grid-template-columns: 1fr 1fr 1fr 1fr 1fr;
+        gap: 40px;
+        margin-top: 60px;
+        margin-bottom: 60px;
+    }
+
+
+
+    ul {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+        border-top: 2px solid #000000;
+        padding-top: 10px;
+    }
+}
+
+.card-tracking-stats {
+    max-width: 250px;
+    &__user {
+        width: 84px;
+        height: 84px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 28px;
+        font-weight: 700;
+        color: #ffffff;
+        margin: 0 auto 20px;
+    }
+
+    &__project {
+        font-size: 22px;
+        color: #000000;
+    }
+
+    ul {
+        li {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-size: 14px;
+            color: #838383;
+        }
+    }
+}

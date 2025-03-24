@@ -16,9 +16,11 @@ export const toggleBlocksInit = () => {
 
                 if (!target || !toggleContainer) return;
 
+                let classToggle = toggleContainer.getAttribute('data-class-toggle');
+                if (!classToggle) classToggle = 'd-none';
                 // @ts-ignore
                 target.classList.toggle('active');
-                toggleContainer.classList.toggle('d-none');
+                toggleContainer.classList.toggle(classToggle);
             });
         });
 };

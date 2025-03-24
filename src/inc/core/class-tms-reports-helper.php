@@ -955,11 +955,15 @@ class TMSReportsHelper extends TMSReportsIcons {
 		return $options;
 	}
 	
-	public function change_active_tab( $current_tab, $additional_class = '' ) {
+	public function change_active_tab( $current_tab, $additional_class = '', $default_tab = 'report' ) {
 		$active_tab = get_field_value( $_GET, 'tab' );
 		
 		if ( ! $active_tab ) {
-			$active_tab = 'pills-customer-tab';
+			if ( $default_tab === 'report' ) {
+				$active_tab = 'pills-customer-tab';
+			} else if ( $default_tab === 'drivers' ) {
+				$active_tab = 'pills-driver-contact-tab';
+			}
 		}
 		
 		if ( $current_tab === $active_tab ) {
@@ -1202,7 +1206,7 @@ class TMSReportsHelper extends TMSReportsIcons {
 	function buildHeaderAddReport( $meta ) {
 		
 		if ( ! $meta ) {
-			return;
+			return '';
 		}
 		
 		$reference_number  = get_field_value( $meta, 'reference_number' );
@@ -1234,9 +1238,10 @@ class TMSReportsHelper extends TMSReportsIcons {
 			}
 		}
 		
-		$subject = sprintf( 'Load number # %s %s - %s ', $reference_number, implode( ', ', $template_p ), implode( ', ', $template_d ) );
+		$subject = sprintf( '%s %s - %s ', $reference_number, implode( ', ', $template_p ), implode( ', ', $template_d ) );
 		
 		return $subject;
 	}
+	
 }
 

@@ -64,7 +64,7 @@ class TMSReports extends TMSReportsHelper {
 		// В данном запросе получаем сумму прибыли (meta с meta_key = 'profit') для каждой даты.
 		// Если задан офис (и он не 'all'), то добавляем LEFT JOIN для фильтрации по метаполю office_dispatcher.
 		$query = "
-        SELECT DATE(main.date_booked) AS date, SUM(profit.meta_value) AS total_profit
+        SELECT DATE(main.date_booked) AS date, AVG(profit.meta_value) AS average_profit, SUM(profit.meta_value) AS total_profit
         FROM $table_main AS main
         LEFT JOIN $table_meta AS profit ON main.id = profit.post_id AND profit.meta_key = 'profit'
     ";
@@ -106,7 +106,8 @@ class TMSReports extends TMSReportsHelper {
 		$profit_by_date = array();
 		foreach ( $results as $row ) {
 			if ( ! empty( $row[ 'date' ] ) ) {
-				$profit_by_date[ $row[ 'date' ] ] = (float) $row[ 'total_profit' ];
+				$profit_by_date[ $row[ 'date' ] ][ 'total' ]   = (float) $row[ 'total_profit' ];
+				$profit_by_date[ $row[ 'date' ] ][ 'average' ] = (float) $row[ 'average_profit' ];
 			}
 		}
 		
@@ -702,6 +703,185 @@ class TMSReports extends TMSReportsHelper {
 			'total_posts'   => $total_records,
 			'current_pages' => $current_page,
 		];
+	}
+	
+	public function get_table_items_tracking_statistics() {
+		global $wpdb;
+		
+		$table_main = $wpdb->prefix . $this->table_main;
+		$table_meta = $wpdb->prefix . $this->table_meta;
+		
+		$join_builder = "
+    FROM $table_main AS main
+    LEFT JOIN $table_meta AS dispatcher ON main.id = dispatcher.post_id AND dispatcher.meta_key = 'dispatcher_initials'
+    LEFT JOIN $table_meta AS load_status ON main.id = load_status.post_id AND load_status.meta_key = 'load_status'
+    WHERE 1=1
+";
+
+// Исключаем статусы
+		$exclude_status = [ 'delivered', 'tonu', 'cancelled', 'waiting-on-rc' ];
+		$include_status = [ 'waiting-on-pu-date', 'at-pu', 'loaded-enroute', 'at-del' ];
+		
+		$where_conditions = [];
+		
+		if ( ! empty( $exclude_status ) ) {
+			$exclude_status     = esc_sql( $exclude_status );
+			$where_conditions[] = "load_status.meta_value NOT IN ('" . implode( "','", $exclude_status ) . "')";
+		}
+
+// Фильтруем только нужные статусы
+		if ( ! empty( $include_status ) ) {
+			$include_status     = esc_sql( $include_status );
+			$where_conditions[] = "load_status.meta_value IN ('" . implode( "','", $include_status ) . "')";
+		}
+		
+		$sql = "SELECT
+    dispatcher.meta_value AS dispatcher_initials,
+    load_status.meta_value AS load_status,
+    COUNT(main.id) AS count_status
+    " . $join_builder;
+		
+		if ( $where_conditions ) {
+			$sql .= ' AND ' . implode( ' AND ', $where_conditions );
+		}
+
+// Группировка по диспетчеру и статусу
+		$sql .= " GROUP BY dispatcher.meta_value, load_status.meta_value";
+		
+		$results = $wpdb->get_results( $sql, ARRAY_A );
+
+// Формируем структуру результата
+		$dispatcher_data  = [];
+		$grand_total_data = [
+			'waiting-on-pu-date' => 0,
+			'at-pu'              => 0,
+			'loaded-enroute'     => 0,
+			'at-del'             => 0,
+			'total'              => 0,
+		];
+		
+		foreach ( $results as $row ) {
+			$dispatcher = $row[ 'dispatcher_initials' ] ?: 'Unknown';
+			$status     = $row[ 'load_status' ];
+			$count      = (int) $row[ 'count_status' ];
+			
+			// Инициализация данных для диспетчера, если его еще нет
+			if ( ! isset( $dispatcher_data[ 'user_' . $dispatcher ] ) ) {
+				$dispatcher_data[ 'user_' . $dispatcher ] = [
+					'waiting-on-pu-date' => 0,
+					'at-pu'              => 0,
+					'loaded-enroute'     => 0,
+					'at-del'             => 0,
+					'total'              => 0,
+				];
+			}
+			
+			// Если статус существует в массиве диспетчера — увеличиваем счетчик
+			if ( isset( $dispatcher_data[ 'user_' . $dispatcher ][ $status ] ) ) {
+				$dispatcher_data[ 'user_' . $dispatcher ][ $status ] += $count;
+				$dispatcher_data[ 'user_' . $dispatcher ][ 'total' ] += $count; // Добавляем в total диспетчера
+				
+				// Добавляем в общий подсчет (grand_total_data)
+				$grand_total_data[ $status ] += $count;
+				$grand_total_data[ 'total' ] += $count;
+			}
+		}
+		
+		return [
+			'dispatchers' => $dispatcher_data,
+			'grand_total' => $grand_total_data,
+		];
+		
+	}
+	
+	public function get_total_by_tracking_team( $user, $items ) {
+		$team_total = [
+			'waiting-on-pu-date' => 0,
+			'at-pu'              => 0,
+			'loaded-enroute'     => 0,
+			'at-del'             => 0,
+			'total'              => 0,
+		];
+		
+		if ( ! isset( $user[ 'my_team' ] ) || ! is_array( $user[ 'my_team' ] ) ) {
+			return $team_total;
+		}
+		
+		foreach ( $user[ 'my_team' ] as $team_member_id ) {
+			if ( empty( $team_member_id ) || ! is_numeric( $team_member_id ) ) {
+				continue;
+			}
+			
+			$key = "user_{$team_member_id}";
+			
+			if ( isset( $items[ 'dispatchers' ][ $key ] ) && is_array( $items[ 'dispatchers' ][ $key ] ) ) {
+				foreach ( $items[ 'dispatchers' ][ $key ] as $status => $count ) {
+					if ( isset( $team_total[ $status ] ) && is_numeric( $count ) ) {
+						$team_total[ $status ] += $count;
+					}
+				}
+			}
+		}
+		
+		return $team_total;
+	}
+	
+	public function get_tracking_users_for_statistics( $exclude ) {
+		
+		global $wpdb;
+		
+		$sql = "
+		SELECT u.ID, u.display_name,
+			   COALESCE(nightshift.meta_value, '0') AS nightshift,
+			   COALESCE(my_team.meta_value, '') AS my_team,
+			   COALESCE(initials_color.meta_value, '') AS initials_color,
+			   um_first.meta_value AS first_name,
+			   um_last.meta_value AS last_name
+		FROM {$wpdb->users} AS u
+		INNER JOIN {$wpdb->usermeta} AS ur ON u.ID = ur.user_id AND ur.meta_key = '{$wpdb->prefix}capabilities'
+		LEFT JOIN {$wpdb->usermeta} AS nightshift ON u.ID = nightshift.user_id AND nightshift.meta_key = %s
+		LEFT JOIN {$wpdb->usermeta} AS my_team ON u.ID = my_team.user_id AND my_team.meta_key = %s
+		LEFT JOIN {$wpdb->usermeta} AS initials_color ON u.ID = initials_color.user_id AND initials_color.meta_key = %s
+		LEFT JOIN {$wpdb->usermeta} AS um_first ON u.ID = um_first.user_id AND um_first.meta_key = 'first_name'
+		LEFT JOIN {$wpdb->usermeta} AS um_last ON u.ID = um_last.user_id AND um_last.meta_key = 'last_name'
+		WHERE (
+			ur.meta_value LIKE %s OR
+			ur.meta_value LIKE %s
+		)" . ( ! empty( $exclude ) ? " AND u.ID NOT IN (" . implode( ',', array_map( 'absint', $exclude ) ) . ") "
+				: "" );
+		
+		$results = $wpdb->get_results( $wpdb->prepare( $sql, 'nightshift', 'my_team', 'initials_color', '%"tracking"%', '%"tracking-tl"%' ), ARRAY_A );
+		
+		$tracking_data = [
+			'nightshift' => [],
+			'tracking'   => []
+		];
+		
+		foreach ( $results as $user ) {
+			$first_name     = trim( $user[ 'first_name' ] ?? '' );
+			$last_name      = trim( $user[ 'last_name' ] ?? '' );
+			$initials       = mb_strtoupper( mb_substr( $first_name, 0, 1 ) . mb_substr( $last_name, 0, 1 ) );
+			$initials_color = $user[ 'initials_color' ];
+			
+			$my_team = ! empty( $user[ 'my_team' ] ) ? unserialize( $user[ 'my_team' ] ) : [];
+			
+			$user_data = [
+				'id'             => $user[ 'ID' ],
+				'name'           => $user[ 'display_name' ],
+				'my_team'        => is_array( $my_team ) ? $my_team : [],
+				'initials'       => $initials,
+				'initials_color' => $initials_color,
+			];
+			
+			if ( $user[ 'nightshift' ] === '1' ) {
+				$tracking_data[ 'nightshift' ][] = $user_data;
+			} else {
+				$tracking_data[ 'tracking' ][] = $user_data;
+			}
+		}
+		
+		return $tracking_data;
+		
 	}
 	
 	
@@ -1738,7 +1918,7 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 			}
 			
 			if ( ! empty( $_FILES[ 'proof_of_delivery' ] ) ) {
-				$MY_INPUT[ 'proof_of_delivery' ] = $this->upload_one_file( $_FILES[ 'proof_of_delivery' ] );;
+				$MY_INPUT[ 'proof_of_delivery' ] = $this->upload_one_file( $_FILES[ 'proof_of_delivery' ] );
 			}
 			
 			if ( ! empty( $_FILES[ 'attached_files' ] ) ) {

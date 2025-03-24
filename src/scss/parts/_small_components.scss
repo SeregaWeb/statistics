@@ -227,6 +227,30 @@ ul.result-search-el {
         background-color: #9a9a9a;
     }
 
+    &.vehicle-label {
+        border-color: #e8d3fa;
+        .required-label {
+            background-color: #e8d3fa;
+            color: #0c0c0c;
+        }
+    }
+
+    &.registration-file {
+        border-color: #ff0749;
+        .required-label {
+            background-color: #ff0749;
+            color: #ffffff;
+        }
+    }
+
+    &.dimensions-pictures {
+        border-color: #078fff;
+        .required-label {
+            background-color: #078fff;
+            color: #ffffff;
+        }
+    }
+
     &.proof_of_delivery {
         border-color: #07ffab;
         .required-label {
@@ -235,6 +259,33 @@ ul.result-search-el {
         }
     }
 
+    &.e-tracks-file {
+
+        border-color: #d4ff0c;
+        .required-label {
+            background-color: #d4ff0c;
+            color: #0c0c0c;
+        }
+    }
+    &.pallet-jack-file {
+        border-color: #ff960c;
+        .required-label {
+            background-color: #ff960c;
+            color: #0c0c0c;
+        }
+    }
+    &.pallet-file {
+        border-color: #3fffee;
+        .required-label {
+            background-color: #3fffee;
+            color: #0c0c0c;
+        }
+    }
+    &.lift-gate-file {
+
+    }
+
+    &.ppe-file,
     &.screen-picture  {
         border-color: $--warning-color;
         .required-label {
@@ -242,6 +293,8 @@ ul.result-search-el {
             color: #0c0c0c;
         }
     }
+
+    &.ramp-file,
     &.updated {
         border-color: $--success-color;
         .required-label {
@@ -255,6 +308,8 @@ ul.result-search-el {
         }
     }
 
+
+    &.dolly-file,
     &.freight_pictures {
         border-color: #000000;
         .required-label {
@@ -554,4 +609,41 @@ ul.result-search-el {
             height: 20px;
         }
     }
+}
+
+
+.show-more-hide-desktop {
+    display: none;
+    @media screen and (max-width: 1540px) {
+        display: flex;
+    }
+}
+
+.change-text {
+
+    span {
+        pointer-events: none;
+    }
+
+    .active-text {
+        display: none;
+    }
+    .unactive-text {
+        display: block;
+    }
+
+    &.active {
+        .unactive-text {
+            display: none;
+        }
+        .active-text {
+            display: block;
+        }
+    }
+}
+
+.hide-upload-files {
+    width: 100%;
+    height: 200px;
+    overflow: hidden;
 }

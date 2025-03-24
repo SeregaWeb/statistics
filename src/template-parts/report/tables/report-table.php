@@ -13,6 +13,7 @@ $current_pages             = get_field_value( $args, 'current_pages' );
 $is_draft                  = get_field_value( $args, 'is_draft' );
 $is_ar_problev             = get_field_value( $args, 'ar_problem' );
 $office                    = get_field_value( $_GET, 'office' ) ?: get_field_value( $args, 'office' );
+$hide_total                = get_field_value( $args, 'hide_total' );
 $show_separator            = false;
 $page_type                 = get_field_value( $args, 'page_type' );
 $current_user_id           = get_current_user_id();
@@ -117,9 +118,10 @@ if ( ! empty( $results ) ) : ?>
 			
 			$show_control = $TMSUsers->show_control_loads( $my_team, $current_user_id, $dispatcher_initials, $is_draft );
 			
-			if ( $show_separator || $index === 0 ) {
+			if ( ( $show_separator || $index === 0 ) && ! $hide_total ) {
 				$date_search = substr( $date_booked_raw, 0, 10 );
 				$profit_mod  = '';
+				$average_mod = '';
 				
 				if ( $date_booked_raw && isset( $new_array_date[ $date_search ] ) && ! $helper->hasUrlParams( [
 						"fmonth",
@@ -128,8 +130,13 @@ if ( ! empty( $results ) ) : ?>
 						"load_status",
 						"source"
 					] ) ) {
-					$formatted_profit = esc_html( '$' . $helper->format_currency( $new_array_date[ $date_search ] ) );
-					$profit_mod       = '<span style="text-transform: capitalize">Profit: <b>' . $formatted_profit . '</b></span>';
+					
+					$formatted_profit = esc_html( '$' . $helper->format_currency( $new_array_date[ $date_search ][ 'total' ] ) );
+					$profit_mod       = '<span style="text-transform: capitalize; margin-left: 40px;">Profit: <b>' . $formatted_profit . '</b></span>';
+					
+					$formatted_average = esc_html( '$' . $helper->format_currency( $new_array_date[ $date_search ][ 'average' ] ) );
+					$average_mod       = '<span style="text-transform: capitalize; margin-left: 40px;">Average: <b>' . $formatted_average . '</b></span>';
+					
 				}
 				
 				$index          = 1;
@@ -137,7 +144,7 @@ if ( ! empty( $results ) ) : ?>
 				?>
                 <tr>
                     <td colspan="14" class="separator-date">
-						<?php echo $date_booked . ' ' . $profit_mod; ?>
+						<?php echo $date_booked . ' ' . $profit_mod . ' ' . $average_mod; ?>
                     </td>
                 </tr>
 				<?php

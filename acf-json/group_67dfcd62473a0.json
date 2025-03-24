@@ -1,0 +1,44 @@
+{
+    "key": "group_67dfcd62473a0",
+    "title": "Exclude users tracking statistics",
+    "fields": [
+        {
+            "key": "field_67dfcd62580c7",
+            "label": "Exclude",
+            "name": "exclude",
+            "aria-label": "",
+            "type": "user",
+            "instructions": "",
+            "required": 0,
+            "conditional_logic": 0,
+            "wrapper": {
+                "width": "",
+                "class": "",
+                "id": ""
+            },
+            "role": "",
+            "return_format": "id",
+            "multiple": 1,
+            "allow_null": 0
+        }
+    ],
+    "location": [
+        [
+            {
+                "param": "post_template",
+                "operator": "==",
+                "value": "page-statistics-tracking.php"
+            }
+        ]
+    ],
+    "menu_order": 0,
+    "position": "normal",
+    "style": "default",
+    "label_placement": "top",
+    "instruction_placement": "label",
+    "hide_on_screen": "",
+    "active": true,
+    "description": "",
+    "show_in_rest": 0,
+    "modified": 1742720423
+}

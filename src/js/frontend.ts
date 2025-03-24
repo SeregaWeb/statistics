@@ -52,6 +52,7 @@ import {
     createDocumentInvoice,
     createDocumentInvoiceActions,
 } from './components/document-create-money-check';
+import { createDriver, driversActions } from './components/driver-core';
 
 function ready() {
     console.log('ready');
@@ -104,6 +105,10 @@ function ready() {
     ActionDeleteShipperInit(urlAjax);
     // API request
     initGetInfoDriver(urlAjax, useServices);
+
+    // DRIVER START
+    driversActions(urlAjax);
+    // DRIVER END
 
     additionalContactsInit();
     addShipperPointInit();

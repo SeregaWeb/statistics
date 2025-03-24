@@ -21,11 +21,12 @@ class TMSDriversHelper {
 	);
 	
 	public $vehicle = array(
-		'sprinter'     => 'Sprinter',
-		'cargo_van'    => 'Cargo van',
-		'box_truck'    => 'Box truck',
-		'curtain_side' => 'Curtain side',
-		'hot_shot'     => 'Hot shot',
+		"cargo-van"    => "Cargo van",
+		"sprinter-van" => "Sprinter van",
+		"box-truck"    => "Box truck",
+		"pickup"       => "Pickup",
+		"reefer"       => "Reefer",
+		"dry-van"      => "Dry van",
 	);
 	
 	public $source = array(
@@ -42,6 +43,23 @@ class TMSDriversHelper {
 		'es' => 'Spanish',
 		'ua' => 'Ukrainian',
 		'ru' => 'Russian',
+		'fr' => 'French',
+		'pt' => 'Portuguese',
+		'ar' => 'Arabic'
+	);
+	
+	public $owner_type_options = array(
+		'wife'           => 'Wife',
+		'husband'        => 'Husband',
+		'other_relative' => 'Other Relative',
+	);
+	public $relation_options   = array(
+		'wife'           => 'Wife',
+		'husband'        => 'Husband',
+		'mother'         => 'Mother',
+		'father'         => 'Father',
+		'sibling'        => 'Sibling',
+		'other_relative' => 'Other Relative',
 	);
 	
 	public $labels = array(
@@ -81,7 +99,91 @@ class TMSDriversHelper {
 		'martlet'   => 'Martlet',
 		'endurance' => 'Endurance',
 	);
-	public $homeDriver       = array(); // states
-	public $recruiters       = array(); // recruiter ID
+	
+	public $registration_types = array(
+		'vehicle-registration' => 'Vehicle registration',
+		'bill-of-sale'         => 'Bill of sale',
+		'certificate-of-title' => 'Certificate of title'
+	);
+	
+	public $registration_status_options = array(
+		"Valid"     => "Valid",
+		"Temporary" => "Temporary",
+		"Expired"   => "Expired"
+	);
+	
+	public $homeDriver = array(); // states
+	public $recruiters = array(); // recruiter ID
+	
+	function get_user_full_name_by_id( $user_id ) {
+		$user = get_user_by( 'id', $user_id );
+		
+		if ( $user ) {
+			$first_name = $user->first_name;
+			$last_name  = $user->last_name;
+			
+			$full_name = $first_name . ' ' . $last_name;
+			$initials  = mb_strtoupper( mb_substr( $first_name, 0, 1 ) . mb_substr( $last_name, 0, 1 ) );
+			
+			return array(
+				'full_name' => $full_name,
+				'initials'  => $initials,
+			);
+		}
+		
+		return false;
+	}
+	
+	function process_file_attachment( $file_id ) {
+		if ( empty( $file_id ) ) {
+			return null;
+		}
+		
+		$attachment_url = wp_get_attachment_url( $file_id );
+		
+		if ( wp_attachment_is_image( $file_id ) ) {
+			return array(
+				'id'  => $file_id,
+				'url' => $attachment_url,
+			);
+		} else {
+			$file_name = basename( $attachment_url );
+			
+			return array(
+				'id'        => $file_id,
+				'url'       => $attachment_url,
+				'file_name' => $file_name,
+			);
+		}
+	}
+	
+	public function get_files( $files ) {
+		$array_ids_image = explode( ',', $files );
+		
+		if ( is_array( $array_ids_image ) ) {
+			foreach ( $array_ids_image as $id_image ) {
+				
+				$attachment_url = wp_get_attachment_url( $id_image );
+				if ( wp_attachment_is_image( $id_image ) ) {
+					$files_arr[] = array(
+						'id'  => $id_image,
+						'url' => $attachment_url,
+					);
+				} else {
+					$file_name = basename( $attachment_url );
+					
+					$files_arr[] = array(
+						'id'        => $id_image,
+						'url'       => $attachment_url,
+						'file_name' => $file_name,
+					);
+				}
+			}
+			
+			return $files_arr;
+		}
+		
+		return false;
+	}
 	
 }

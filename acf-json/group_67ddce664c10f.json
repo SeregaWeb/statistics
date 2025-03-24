@@ -1,0 +1,52 @@
+{
+    "key": "group_67ddce664c10f",
+    "title": "Nightshift settings",
+    "fields": [
+        {
+            "key": "field_67ddce6645a1a",
+            "label": "Nightshift",
+            "name": "nightshift",
+            "aria-label": "",
+            "type": "true_false",
+            "instructions": "",
+            "required": 0,
+            "conditional_logic": 0,
+            "wrapper": {
+                "width": "",
+                "class": "",
+                "id": ""
+            },
+            "message": "This field need for page Statistics tracking",
+            "default_value": 0,
+            "ui_on_text": "",
+            "ui_off_text": "",
+            "ui": 1
+        }
+    ],
+    "location": [
+        [
+            {
+                "param": "user_role",
+                "operator": "==",
+                "value": "tracking-tl"
+            }
+        ],
+        [
+            {
+                "param": "user_role",
+                "operator": "==",
+                "value": "tracking"
+            }
+        ]
+    ],
+    "menu_order": 0,
+    "position": "normal",
+    "style": "default",
+    "label_placement": "top",
+    "instruction_placement": "label",
+    "hide_on_screen": "",
+    "active": true,
+    "description": "",
+    "show_in_rest": 0,
+    "modified": 1742589706
+}

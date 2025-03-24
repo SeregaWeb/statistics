@@ -3616,6 +3616,7 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */   quickEditTrackingStatus: function() { return /* binding */ quickEditTrackingStatus; },
 /* harmony export */   removeOneFileInitial: function() { return /* binding */ removeOneFileInitial; },
 /* harmony export */   sendShipperFormInit: function() { return /* binding */ sendShipperFormInit; },
+/* harmony export */   setUpTabInUrl: function() { return /* binding */ setUpTabInUrl; },
 /* harmony export */   timeStrictChange: function() { return /* binding */ timeStrictChange; },
 /* harmony export */   triggerDisableBtnInit: function() { return /* binding */ triggerDisableBtnInit; },
 /* harmony export */   updateAccountingReportInit: function() { return /* binding */ updateAccountingReportInit; },
@@ -4644,6 +4645,27 @@ var ActionDeleteShipperInit = function ActionDeleteShipperInit(ajaxUrl) {
 
 /***/ }),
 
+/***/ "./src/js/components/disabled-btn-in-form.ts":
+/*!***************************************************!*\
+  !*** ./src/js/components/disabled-btn-in-form.ts ***!
+  \***************************************************/
+/***/ (function(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   disabledBtnInForm: function() { return /* binding */ disabledBtnInForm; }
+/* harmony export */ });
+var disabledBtnInForm = function disabledBtnInForm(form) {
+  var invertLogic = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : false;
+  var btns = form.querySelectorAll('button');
+  btns.forEach(function (btn) {
+    btn.disabled = !invertLogic;
+  });
+};
+
+/***/ }),
+
 /***/ "./src/js/components/document-create-money-check.ts":
 /*!**********************************************************!*\
   !*** ./src/js/components/document-create-money-check.ts ***!
@@ -4918,6 +4940,171 @@ var initGetInfoDriver = function initGetInfoDriver(urlAjax, ProjectsLinks) {
       });
     });
   }
+};
+
+/***/ }),
+
+/***/ "./src/js/components/driver-core.ts":
+/*!******************************************!*\
+  !*** ./src/js/components/driver-core.ts ***!
+  \******************************************/
+/***/ (function(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   createDriver: function() { return /* binding */ createDriver; },
+/* harmony export */   driversActions: function() { return /* binding */ driversActions; },
+/* harmony export */   removeOneFileInitial: function() { return /* binding */ removeOneFileInitial; },
+/* harmony export */   updateDriverContact: function() { return /* binding */ updateDriverContact; },
+/* harmony export */   updateDriverInformation: function() { return /* binding */ updateDriverInformation; }
+/* harmony export */ });
+/* harmony import */ var _info_messages__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./info-messages */ "./src/js/components/info-messages.ts");
+/* harmony import */ var _create_report__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./create-report */ "./src/js/components/create-report.ts");
+/* harmony import */ var _disabled_btn_in_form__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./disabled-btn-in-form */ "./src/js/components/disabled-btn-in-form.ts");
+
+
+
+var createDriver = function createDriver(urlAjax) {
+  var form = document.querySelector('.js-create-driver');
+  console.log('form', form);
+  if (!form) return;
+  form.addEventListener('submit', function (e) {
+    e.preventDefault();
+    console.log('form click');
+    var target = e.target;
+    (0,_disabled_btn_in_form__WEBPACK_IMPORTED_MODULE_2__.disabledBtnInForm)(target);
+    var formData = new FormData(target);
+    formData.append('action', 'add_driver');
+    var options = {
+      method: 'POST',
+      body: formData
+    };
+    fetch(urlAjax, options).then(function (res) {
+      return res.json();
+    }).then(function (requestStatus) {
+      if (requestStatus.success) {
+        var newUrl = new URL(window.location.href);
+        newUrl.searchParams.set('driver', requestStatus.data.id_driver);
+        window.location.href = newUrl.toString();
+        return true;
+      }
+      (0,_info_messages__WEBPACK_IMPORTED_MODULE_0__.printMessage)("".concat(requestStatus.data.message), 'danger', 8000);
+      (0,_disabled_btn_in_form__WEBPACK_IMPORTED_MODULE_2__.disabledBtnInForm)(target, true);
+      return false;
+    }).catch(function (error) {
+      (0,_info_messages__WEBPACK_IMPORTED_MODULE_0__.printMessage)("'Request failed' ".concat(error), 'danger', 8000);
+      (0,_disabled_btn_in_form__WEBPACK_IMPORTED_MODULE_2__.disabledBtnInForm)(target, true);
+      return false;
+    });
+  });
+};
+var updateDriverContact = function updateDriverContact(urlAjax) {
+  var form = document.querySelector('.js-update-driver');
+  console.log('form', form);
+  if (!form) return;
+  form.addEventListener('submit', function (e) {
+    e.preventDefault();
+    console.log('form click');
+    var target = e.target;
+    (0,_disabled_btn_in_form__WEBPACK_IMPORTED_MODULE_2__.disabledBtnInForm)(target);
+    var formData = new FormData(target);
+    formData.append('action', 'update_driver_contact');
+    var options = {
+      method: 'POST',
+      body: formData
+    };
+    var nextTargetTab = 'pills-driver-vehicle-tab';
+    fetch(urlAjax, options).then(function (res) {
+      return res.json();
+    }).then(function (requestStatus) {
+      if (requestStatus.success) {
+        (0,_create_report__WEBPACK_IMPORTED_MODULE_1__.setUpTabInUrl)(nextTargetTab);
+        (0,_disabled_btn_in_form__WEBPACK_IMPORTED_MODULE_2__.disabledBtnInForm)(target, true);
+        return true;
+      }
+      (0,_info_messages__WEBPACK_IMPORTED_MODULE_0__.printMessage)("".concat(requestStatus.data.message), 'danger', 8000);
+      (0,_disabled_btn_in_form__WEBPACK_IMPORTED_MODULE_2__.disabledBtnInForm)(target, true);
+      return false;
+    }).catch(function (error) {
+      (0,_disabled_btn_in_form__WEBPACK_IMPORTED_MODULE_2__.disabledBtnInForm)(target, true);
+      (0,_info_messages__WEBPACK_IMPORTED_MODULE_0__.printMessage)("'Request failed' ".concat(error), 'danger', 8000);
+      return false;
+    });
+  });
+};
+var updateDriverInformation = function updateDriverInformation(urlAjax) {
+  var form = document.querySelector('.js-update-driver-information');
+  console.log('form', form);
+  if (!form) return;
+  form.addEventListener('submit', function (e) {
+    e.preventDefault();
+    console.log('form click');
+    var target = e.target;
+    (0,_disabled_btn_in_form__WEBPACK_IMPORTED_MODULE_2__.disabledBtnInForm)(target);
+    var formData = new FormData(target);
+    formData.append('action', 'update_driver_information');
+    var options = {
+      method: 'POST',
+      body: formData
+    };
+    var nextTargetTab = 'pills-driver-finance-tab';
+    fetch(urlAjax, options).then(function (res) {
+      return res.json();
+    }).then(function (requestStatus) {
+      if (requestStatus.success) {
+        (0,_create_report__WEBPACK_IMPORTED_MODULE_1__.setUpTabInUrl)(nextTargetTab);
+        (0,_disabled_btn_in_form__WEBPACK_IMPORTED_MODULE_2__.disabledBtnInForm)(target, true);
+        return true;
+      }
+      (0,_info_messages__WEBPACK_IMPORTED_MODULE_0__.printMessage)("".concat(requestStatus.data.message), 'danger', 8000);
+      (0,_disabled_btn_in_form__WEBPACK_IMPORTED_MODULE_2__.disabledBtnInForm)(target, true);
+      return false;
+    }).catch(function (error) {
+      (0,_info_messages__WEBPACK_IMPORTED_MODULE_0__.printMessage)("'Request failed' ".concat(error), 'danger', 8000);
+      (0,_disabled_btn_in_form__WEBPACK_IMPORTED_MODULE_2__.disabledBtnInForm)(target, true);
+      return false;
+    });
+  });
+};
+var removeOneFileInitial = function removeOneFileInitial(ajaxUrl) {
+  var deleteForms = document.querySelectorAll('.js-remove-one-driver');
+  deleteForms && deleteForms.forEach(function (item) {
+    item.addEventListener('submit', function (event) {
+      event.preventDefault();
+      var target = event.target;
+      (0,_disabled_btn_in_form__WEBPACK_IMPORTED_MODULE_2__.disabledBtnInForm)(target);
+      var formData = new FormData(target);
+      var action = 'delete_open_image_driver';
+      formData.append('action', action);
+      var options = {
+        method: 'POST',
+        body: formData
+      };
+      fetch(ajaxUrl, options).then(function (res) {
+        return res.json();
+      }).then(function (requestStatus) {
+        if (requestStatus.success) {
+          (0,_info_messages__WEBPACK_IMPORTED_MODULE_0__.printMessage)(requestStatus.data.message, 'success', 8000);
+          (0,_disabled_btn_in_form__WEBPACK_IMPORTED_MODULE_2__.disabledBtnInForm)(target, true);
+          (0,_create_report__WEBPACK_IMPORTED_MODULE_1__.setUpTabInUrl)(target.dataset.tab);
+        } else {
+          (0,_disabled_btn_in_form__WEBPACK_IMPORTED_MODULE_2__.disabledBtnInForm)(target, true);
+          (0,_info_messages__WEBPACK_IMPORTED_MODULE_0__.printMessage)("Error adding report:".concat(requestStatus.data.message), 'danger', 8000);
+        }
+      }).catch(function (error) {
+        (0,_info_messages__WEBPACK_IMPORTED_MODULE_0__.printMessage)("Request failed: ".concat(error), 'danger', 8000);
+        (0,_disabled_btn_in_form__WEBPACK_IMPORTED_MODULE_2__.disabledBtnInForm)(target, true);
+        console.error('Request failed:', error);
+      });
+    });
+  });
+};
+var driversActions = function driversActions(urlAjax) {
+  createDriver(urlAjax);
+  updateDriverContact(urlAjax);
+  updateDriverInformation(urlAjax);
+  removeOneFileInitial(urlAjax);
 };
 
 /***/ }),
@@ -5883,8 +6070,10 @@ var toggleBlocksInit = function toggleBlocksInit() {
       var toggleContainerSelector = target.getAttribute('data-block-toggle');
       var toggleContainer = document.querySelector(".".concat(toggleContainerSelector));
       if (!target || !toggleContainer) return;
+      var classToggle = toggleContainer.getAttribute('data-class-toggle');
+      if (!classToggle) classToggle = 'd-none';
       target.classList.toggle('active');
-      toggleContainer.classList.toggle('d-none');
+      toggleContainer.classList.toggle(classToggle);
     });
   });
 };
@@ -15912,6 +16101,8 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _components_send_email_chain__WEBPACK_IMPORTED_MODULE_23__ = __webpack_require__(/*! ./components/send-email-chain */ "./src/js/components/send-email-chain.ts");
 /* harmony import */ var _components_save_all_tracking__WEBPACK_IMPORTED_MODULE_24__ = __webpack_require__(/*! ./components/save-all-tracking */ "./src/js/components/save-all-tracking.ts");
 /* harmony import */ var _components_document_create_money_check__WEBPACK_IMPORTED_MODULE_25__ = __webpack_require__(/*! ./components/document-create-money-check */ "./src/js/components/document-create-money-check.ts");
+/* harmony import */ var _components_driver_core__WEBPACK_IMPORTED_MODULE_26__ = __webpack_require__(/*! ./components/driver-core */ "./src/js/components/driver-core.ts");
+
 
 
 
@@ -15979,6 +16170,7 @@ function ready() {
   (0,_components_create_company__WEBPACK_IMPORTED_MODULE_4__.ActionDeleteCompanyInit)(urlAjax);
   (0,_components_create_shipper__WEBPACK_IMPORTED_MODULE_5__.ActionDeleteShipperInit)(urlAjax);
   (0,_components_driver_Info__WEBPACK_IMPORTED_MODULE_10__.initGetInfoDriver)(urlAjax, useServices);
+  (0,_components_driver_core__WEBPACK_IMPORTED_MODULE_26__.driversActions)(urlAjax);
   (0,_components_create_report__WEBPACK_IMPORTED_MODULE_3__.additionalContactsInit)();
   (0,_components_create_report__WEBPACK_IMPORTED_MODULE_3__.addShipperPointInit)();
   (0,_components_input_helpers__WEBPACK_IMPORTED_MODULE_2__.initMoneyMask)();

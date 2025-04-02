@@ -159,7 +159,7 @@ if ( ! empty( $results ) ) : ?>
 			$now_show = ( $factoring_status_row === 'paid' );
 			?>
 
-            <tr class="">
+            <tr class="load-status-accounting-<?php echo $driver_pay_status; ?>">
                 <td>
                     <input <?php echo $now_show ? 'disabled' : ''; ?> type="checkbox"
                                                                       id="load-<?php echo $row[ 'id' ]; ?>"
@@ -187,7 +187,6 @@ if ( ! empty( $results ) ) : ?>
                 </td>
                 <td>
 					<?php echo $pdlocations[ 'delivery_template' ]; ?>
-
                 </td>
 
 
@@ -226,7 +225,7 @@ if ( ! empty( $results ) ) : ?>
                 </td>
 
 
-                <td class="<?php echo $status_class; ?>"><span><?php echo $status; ?></span></td>
+                <td><span><?php echo $status; ?></span></td>
                 <td>
 					<?php echo $bank_status; ?>
                 </td>

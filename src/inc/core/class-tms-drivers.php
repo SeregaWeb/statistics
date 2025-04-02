@@ -17,7 +17,9 @@ class TMSDrivers extends TMSDriversHelper {
 			'add_driver'                => 'add_driver',
 			'update_driver_contact'     => 'update_driver_contact',
 			'update_driver_information' => 'update_driver_information',
+			'update_driver_finance'     => 'update_driver_finance',
 			'delete_open_image_driver'  => 'delete_open_image_driver',
+			'update_driver_document'    => 'update_driver_document',
 		);
 		
 		foreach ( $actions as $ajax_action => $method ) {
@@ -86,7 +88,12 @@ class TMSDrivers extends TMSDriversHelper {
 				'pallet_jack_file',
 				'lift_gate_file',
 				'dolly_file',
-				'ramp_file'
+				'ramp_file',
+				'payment_file',
+				'w9_file',
+				'ssn_file',
+				'ein_file',
+				'nec_file',
 			], true ) ) {
 				// Для полей attached_file_required и updated_rate_confirmation
 				if ( $current_value == $image_id ) {
@@ -499,6 +506,100 @@ class TMSDrivers extends TMSDriversHelper {
 		}
 	}
 	
+	public function update_driver_finance() {
+		if ( defined( 'DOING_AJAX' ) && DOING_AJAX ) {
+			// Sanitize incoming data
+			$data = array(
+				'driver_id'           => isset( $_POST[ 'driver_id' ] ) ? sanitize_text_field( $_POST[ 'driver_id' ] )
+					: '',
+				'account_type'        => isset( $_POST[ 'account_type' ] )
+					? sanitize_text_field( $_POST[ 'account_type' ] ) : '',
+				'account_name'        => isset( $_POST[ 'account_name' ] )
+					? sanitize_text_field( $_POST[ 'account_name' ] ) : '',
+				'payment_instruction' => isset( $_POST[ 'payment_instruction' ] )
+					? sanitize_text_field( $_POST[ 'payment_instruction' ] ) : '',
+				
+				'w9_classification' => isset( $_POST[ 'w9_classification' ] )
+					? sanitize_text_field( $_POST[ 'w9_classification' ] ) : '',
+				
+				'address'        => isset( $_POST[ 'address' ] ) ? sanitize_text_field( $_POST[ 'address' ] ) : '',
+				'city_state_zip' => isset( $_POST[ 'city_state_zip' ] )
+					? sanitize_text_field( $_POST[ 'city_state_zip' ] ) : '',
+				'ssn'            => isset( $_POST[ 'ssn' ] ) ? sanitize_text_field( $_POST[ 'ssn' ] ) : '',
+				'ssn_name'       => isset( $_POST[ 'ssn_name' ] ) ? sanitize_text_field( $_POST[ 'ssn_name' ] ) : '',
+				
+				'entity_name' => isset( $_POST[ 'entity_name' ] ) ? sanitize_text_field( $_POST[ 'entity_name' ] ) : '',
+				'ein'         => isset( $_POST[ 'ein' ] ) ? sanitize_text_field( $_POST[ 'ein' ] ) : '',
+				
+				'authorized_email' => isset( $_POST[ 'authorized_email' ] )
+					? sanitize_email( $_POST[ 'authorized_email' ] ) : '',
+				'ein_file_id'      => isset( $_POST[ 'ein_file_id' ] ) ? sanitize_text_field( $_POST[ 'ein_file_id' ] )
+					: '',
+				'ssn_file_id'      => isset( $_POST[ 'ssn_file_id' ] ) ? sanitize_text_field( $_POST[ 'ssn_file_id' ] )
+					: '',
+			);
+			// At this point, the data is sanitized and ready for further processing or saving to the database
+			
+			$keys_names = array(
+				'payment_file',
+				'w9_file',
+				'ssn_file',
+				'ein_file',
+				'nec_file',
+			);
+			
+			foreach ( $keys_names as $key_name ) {
+				if ( ! empty( $_FILES[ $key_name ] ) ) {
+					$id_uploaded       = $this->upload_one_file( $_FILES[ $key_name ] );
+					$data[ $key_name ] = is_numeric( $id_uploaded ) ? $id_uploaded : '';
+				}
+			}
+			
+			
+			if ( $data[ 'w9_classification' ] === 'business' ) {
+				if ( empty( $data[ 'entity_name' ] ) ) {
+					wp_send_json_error( [ 'message' => 'Please fill in the entity name.' ] );
+				}
+				if ( empty( $data[ 'ein' ] ) ) {
+					wp_send_json_error( [ 'message' => 'Please fill in the EIN.' ] );
+				}
+				
+				if ( ! preg_match( '/^\d{2}-\d{7}$/', $data[ 'ein' ] ) ) {
+					wp_send_json_error( [ 'message' => 'EIN format is incorrect. It should be XX-XXXXXXX.' ] );
+				}
+				
+				if ( $_FILES[ 'ein_file' ][ 'size' ] === 0 && ! $data[ 'ein_file_id' ] ) {
+					wp_send_json_error( [ 'message' => 'EIN file is required.' ] );
+				}
+				
+			}
+			if ( $data[ 'w9_classification' ] === 'individual' ) {
+				if ( empty( $data[ 'ssn' ] ) ) {
+					wp_send_json_error( [ 'message' => 'Please fill in the SSN.' ] );
+				}
+				
+				if ( ! preg_match( '/^\d{3}-\d{2}-\d{4}$/', $data[ 'ssn' ] ) ) {
+					wp_send_json_error( [ 'message' => 'SSN format is incorrect. It should be XXX-XX-XXXX.' ] );
+				}
+				
+				if ( empty( $data[ 'ssn_name' ] ) ) {
+					wp_send_json_error( [ 'message' => 'Please fill in the SSN name.' ] );
+				}
+				if ( $_FILES[ 'ssn_file' ][ 'size' ] === 0 && ! $data[ 'ssn_file_id' ] ) {
+					wp_send_json_error( [ 'message' => 'SSN file is required.' ] );
+				}
+			}
+			
+			$result = $this->update_driver_in_db( $data );
+			
+			if ( $result ) {
+				wp_send_json_success( [ 'message' => 'Driver successfully update', 'id_driver' => $result ] );
+			}
+			
+			wp_send_json_error( [ 'message' => 'Driver not update, error add in database' ] );
+		}
+	}
+	
 	public function update_driver_information() {
 		if ( defined( 'DOING_AJAX' ) && DOING_AJAX ) {
 			// Sanitize incoming data
@@ -529,6 +630,7 @@ class TMSDrivers extends TMSDriversHelper {
 				'printer'                 => sanitize_text_field( get_field_value( $_POST, 'printer' ) ),
 				'sleeper'                 => sanitize_text_field( get_field_value( $_POST, 'sleeper' ) ),
 			);
+			
 			
 			global $wpdb;
 			$table_meta_name = $wpdb->prefix . $this->table_meta;
@@ -563,6 +665,183 @@ class TMSDrivers extends TMSDriversHelper {
 			}
 			
 			
+			// At this point, the data is sanitized and ready for further processing or saving to the database
+			$result = $this->update_driver_in_db( $data );
+			
+			if ( $result ) {
+				wp_send_json_success( [ 'message' => 'Driver successfully added', 'id_driver' => $result ] );
+			}
+			
+			wp_send_json_error( [ 'message' => 'Driver not update, error add in database' ] );
+		}
+	}
+	
+	public function update_driver_document() {
+		if ( defined( 'DOING_AJAX' ) && DOING_AJAX ) {
+			// Sanitize incoming data
+			
+			$driver_id = isset( $_POST[ 'driver_id' ] ) ? sanitize_textarea_field( $_POST[ 'driver_id' ] ) : '';
+			
+			$record_notes        = isset( $_POST[ 'record_notes' ] )
+				? sanitize_textarea_field( $_POST[ 'record_notes' ] ) : '';
+			$driver_licence_type = isset( $_POST[ 'driver_licence_type' ] )
+				? sanitize_text_field( $_POST[ 'driver_licence_type' ] ) : '';
+			$real_id             = isset( $_POST[ 'real_id' ] ) ? sanitize_text_field( $_POST[ 'real_id' ] ) : '';
+			
+			$driver_licence_expiration = isset( $_POST[ 'driver_licence_expiration' ] )
+				? sanitize_text_field( $_POST[ 'driver_licence_expiration' ] ) : '';
+			$tanker_endorsement        = isset( $_POST[ 'tanker_endorsement' ] )
+				? sanitize_text_field( $_POST[ 'tanker_endorsement' ] ) : '';
+			$hazmat_endorsement        = isset( $_POST[ 'hazmat_endorsement' ] )
+				? sanitize_text_field( $_POST[ 'hazmat_endorsement' ] ) : '';
+			$hazmat_certificate        = isset( $_POST[ 'hazmat_certificate' ] )
+				? sanitize_text_field( $_POST[ 'hazmat_endorsement' ] ) : '';
+			$hazmat_expiration         = isset( $_POST[ 'hazmat_expiration' ] )
+				? sanitize_text_field( $_POST[ 'hazmat_expiration' ] ) : '';
+			$twic                      = isset( $_POST[ 'twic' ] ) ? sanitize_text_field( $_POST[ 'twic' ] ) : '';
+			$twic_expiration           = isset( $_POST[ 'twic_expiration' ] )
+				? sanitize_text_field( $_POST[ 'twic_expiration' ] ) : '';
+			$tsa_approved              = isset( $_POST[ 'tsa_approved' ] )
+				? sanitize_text_field( $_POST[ 'tsa_approved' ] ) : '';
+			$tsa_expiration            = isset( $_POST[ 'tsa_expiration' ] )
+				? sanitize_text_field( $_POST[ 'tsa_expiration' ] ) : '';
+			$legal_document_type       = isset( $_POST[ 'legal_document_type' ] )
+				? sanitize_text_field( $_POST[ 'legal_document_type' ] ) : '';
+			$legal_document            = isset( $_POST[ 'legal_document' ] )
+				? sanitize_file_name( $_POST[ 'legal_document' ] ) : '';
+			$nationality               = isset( $_POST[ 'nationality' ] )
+				? sanitize_text_field( $_POST[ 'nationality' ] ) : '';
+			$immigration_letter        = isset( $_POST[ 'immigration_letter' ] )
+				? sanitize_text_field( $_POST[ 'immigration_letter' ] ) : '';
+			$immigration_expiration    = isset( $_POST[ 'immigration_expiration' ] )
+				? sanitize_text_field( $_POST[ 'immigration_expiration' ] ) : '';
+			$background_check          = isset( $_POST[ 'background_check' ] )
+				? sanitize_text_field( $_POST[ 'background_check' ] ) : '';
+			$background_date           = isset( $_POST[ 'background_date' ] )
+				? sanitize_text_field( $_POST[ 'background_date' ] ) : '';
+			$canada_transition_proof   = isset( $_POST[ 'canada_transition_proof' ] )
+				? sanitize_text_field( $_POST[ 'canada_transition_proof' ] ) : '';
+			$canada_transition_date    = isset( $_POST[ 'canada_transition_date' ] )
+				? sanitize_text_field( $_POST[ 'canada_transition_date' ] ) : '';
+			$change_9_training         = isset( $_POST[ 'change_9_training' ] )
+				? sanitize_text_field( $_POST[ 'change_9_training' ] ) : '';
+			$change_9_date             = isset( $_POST[ 'change_9_date' ] )
+				? sanitize_text_field( $_POST[ 'change_9_date' ] ) : '';
+			$ic_agreement              = isset( $_POST[ 'ic_agreement' ] )
+				? sanitize_text_field( $_POST[ 'ic_agreement' ] ) : '';
+			$insured                   = isset( $_POST[ 'insured' ] ) ? sanitize_text_field( $_POST[ 'insured' ] ) : '';
+			$auto_liability_policy     = isset( $_POST[ 'auto_liability_policy' ] )
+				? sanitize_text_field( $_POST[ 'auto_liability_policy' ] ) : '';
+			$auto_liability_expiration = isset( $_POST[ 'auto_liability_expiration' ] )
+				? sanitize_text_field( $_POST[ 'auto_liability_expiration' ] ) : '';
+			$auto_liability_insurer    = isset( $_POST[ 'auto_liability_insurer' ] )
+				? sanitize_text_field( $_POST[ 'auto_liability_insurer' ] ) : '';
+			$auto_liability_coi        = isset( $_POST[ 'auto_liability_coi' ] )
+				? sanitize_text_field( $_POST[ 'auto_liability_coi' ] ) : '';
+			$motor_cargo_policy        = isset( $_POST[ 'motor_cargo_policy' ] )
+				? sanitize_text_field( $_POST[ 'motor_cargo_policy' ] ) : '';
+			$motor_cargo_expiration    = isset( $_POST[ 'motor_cargo_expiration' ] )
+				? sanitize_text_field( $_POST[ 'motor_cargo_expiration' ] ) : '';
+			$motor_cargo_insurer       = isset( $_POST[ 'motor_cargo_insurer' ] )
+				? sanitize_text_field( $_POST[ 'motor_cargo_insurer' ] ) : '';
+			$motor_cargo_coi           = isset( $_POST[ 'motor_cargo_coi' ] )
+				? sanitize_text_field( $_POST[ 'motor_cargo_coi' ] ) : '';
+			$status                    = isset( $_POST[ 'status' ] ) ? sanitize_text_field( $_POST[ 'status' ] ) : '';
+			$cancellation_date         = isset( $_POST[ 'cancellation_date' ] )
+				? sanitize_text_field( $_POST[ 'cancellation_date' ] ) : '';
+			$insurance_declaration     = isset( $_POST[ 'insurance_declaration' ] )
+				? sanitize_text_field( $_POST[ 'insurance_declaration' ] ) : '';
+			$notes                     = isset( $_POST[ 'notes' ] ) ? sanitize_textarea_field( $_POST[ 'notes' ] ) : '';
+			
+			
+			$hazmat_certificate = isset( $_POST[ 'hazmat_certificate' ] )
+				? sanitize_text_field( $_POST[ 'hazmat_certificate' ] ) : '';
+			
+			$driving_record = isset( $_POST[ 'driving_record' ] ) ? sanitize_text_field( $_POST[ 'driving_record' ] )
+				: '';
+			$driver_licence = isset( $_POST[ 'driver_licence' ] ) ? sanitize_text_field( $_POST[ 'driver_licence' ] )
+				: '';
+			$twic_file      = isset( $_POST[ 'twic_file' ] ) ? sanitize_text_field( $_POST[ 'twic_file' ] ) : '';
+			
+			$data = [
+				'driver_id'                 => $driver_id,
+				'record_notes'              => $record_notes,
+				'driver_licence_type'       => $driver_licence_type,
+				'real_id'                   => $real_id,
+				'driver_licence_expiration' => $driver_licence_expiration,
+				'tanker_endorsement'        => $tanker_endorsement,
+				'hazmat_endorsement'        => $hazmat_endorsement,
+				'hazmat_certificate'        => $hazmat_certificate,
+				'hazmat_expiration'         => $hazmat_expiration,
+				'twic'                      => $twic,
+				'twic_expiration'           => $twic_expiration,
+				'tsa_approved'              => $tsa_approved,
+				'tsa_expiration'            => $tsa_expiration,
+				'legal_document_type'       => $legal_document_type,
+				'legal_document'            => $legal_document,
+				'nationality'               => $nationality,
+				'immigration_letter'        => $immigration_letter,
+				'immigration_expiration'    => $immigration_expiration,
+				'background_check'          => $background_check,
+				'background_date'           => $background_date,
+				'canada_transition_proof'   => $canada_transition_proof,
+				'canada_transition_date'    => $canada_transition_date,
+				'change_9_training'         => $change_9_training,
+				'change_9_date'             => $change_9_date,
+				'ic_agreement'              => $ic_agreement,
+				'insured'                   => $insured,
+				'auto_liability_policy'     => $auto_liability_policy,
+				'auto_liability_expiration' => $auto_liability_expiration,
+				'auto_liability_insurer'    => $auto_liability_insurer,
+				'auto_liability_coi'        => $auto_liability_coi,
+				'motor_cargo_policy'        => $motor_cargo_policy,
+				'motor_cargo_expiration'    => $motor_cargo_expiration,
+				'motor_cargo_insurer'       => $motor_cargo_insurer,
+				'motor_cargo_coi'           => $motor_cargo_coi,
+				'status'                    => $status,
+				'cancellation_date'         => $cancellation_date,
+				'insurance_declaration'     => $insurance_declaration,
+				'notes'                     => $notes,
+				'hazmat_certificate'        => $hazmat_certificate,
+				'driving_record'            => $driving_record,
+				'driver_licence'            => $driver_licence,
+				'twic_file'                 => $twic_file
+			];
+
+
+//			global $wpdb;
+//			$table_meta_name = $wpdb->prefix . $this->table_meta;
+//			$meta_data       = $wpdb->get_results( $wpdb->prepare( "SELECT meta_key, meta_value FROM {$table_meta_name} WHERE post_id = %d", $data[ 'driver_id' ] ), ARRAY_A );
+//			$current_data    = array_column( $meta_data, 'meta_value', 'meta_key' );
+//
+//
+//			if ( ! empty( $_FILES[ 'vehicle_pictures' ] ) ) {
+//				$data[ 'vehicle_pictures' ] = $this->process_uploaded_files( 'vehicle_pictures', $current_data[ 'vehicle_pictures' ] );
+//			}
+//
+//			if ( ! empty( $_FILES[ 'dimensions_pictures' ] ) ) {
+//				$data[ 'dimensions_pictures' ] = $this->process_uploaded_files( 'dimensions_pictures', $current_data[ 'dimensions_pictures' ] );
+//			}
+//
+//
+//			$keys_names = array(
+//				'registration_file',
+//				'ppe_file',
+//				'e_tracks_file',
+//				'pallet_jack_file',
+//				'lift_gate_file',
+//				'dolly_file',
+//				'ramp_file'
+//			);
+//
+//			foreach ( $keys_names as $key_name ) {
+//				if ( ! empty( $_FILES[ $key_name ] ) ) {
+//					$id_uploaded       = $this->upload_one_file( $_FILES[ $key_name ] );
+//					$data[ $key_name ] = is_numeric( $id_uploaded ) ? $id_uploaded : '';
+//				}
+//			}
+			
+			var_dump( $data );
 			// At this point, the data is sanitized and ready for further processing or saving to the database
 			$result = $this->update_driver_in_db( $data );
 			
@@ -675,14 +954,6 @@ class TMSDrivers extends TMSDriversHelper {
 		}
 		
 		return true;
-	}
-	
-	public function upload_driver_document() {
-		
-	}
-	
-	public function update_driver_info() {
-	
 	}
 	
 	public function need_login() {

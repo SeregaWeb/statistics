@@ -8,8 +8,11 @@
 
 get_header();
 
-global $report_data;
+global $global_options, $report_data;
 $reports = new TMSReports();
+
+$link_broker = get_field_value( $global_options, 'single_page_broker' ) ?? '';
+
 
 $args = array(
 	'status_post'              => 'publish',
@@ -78,8 +81,8 @@ if ( is_array( $items ) && ! empty( $items ) ) {
 
                                     <tbody>
 									<?php
-									$total_overall   = 0;
-									$statuses_totals = [
+									$total_overall         = 0;
+									$statuses_totals       = [
 										'factoring-delayed-advance' => 0,
 										'unapplied-payment'         => 0,
 										'in-processing'             => 0,
@@ -89,13 +92,16 @@ if ( is_array( $items ) && ! empty( $items ) ) {
 									];
 									
 									if ( is_array( $report_data ) && ! empty( $report_data ) ) :
-										foreach ( $report_data as $report ) :
+										foreach ( $report_data as $key => $report ) :
 											if ( isset( $report[ 'statuses' ] ) && is_array( $report[ 'statuses' ] ) ) :
 												$company_total = 0;
+												$id_broker = str_replace( 'broker_name_', '', $key );
+												
 												?>
                                                 <tr>
                                                     <td>
-														<?php echo esc_html( $report[ 'name' ] ?? '' ); ?><br>
+                                                        <a href="<?php echo $link_broker . '?broker_id=' . $id_broker; ?>"><?php echo esc_html( $report[ 'name' ] ?? '' ); ?></a>
+                                                        <br>
                                                         <span class="text-small"><?php echo esc_html( $report[ 'mc' ] ?? '' ); ?></span>
                                                     </td>
                                                     <td>

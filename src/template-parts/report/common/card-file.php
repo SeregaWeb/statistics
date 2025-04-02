@@ -7,9 +7,11 @@ $class_name     = $args[ 'class_name' ];
 $field_name     = $args[ 'field_name' ];
 $field_label    = $args[ 'field_label' ];
 $delete_action  = $args[ 'delete_action' ];
+$active_tab     = $args[ 'active_tab' ];
 ?>
 
-<form class="<?php echo $delete_action; ?> card-upload <?php echo $class_name; ?>">
+<form class="<?php echo $delete_action; ?> card-upload <?php echo $class_name; ?>"
+      data-tab="<?php echo $active_tab; ?>">
     <a class="view-document" target="_blank"
        href="<?php echo $array_file[ 'url' ]; ?>"><?php echo $reports->get_icon_view( 'view' ); ?></a>
     <span class="required-label"><?php echo $field_label; ?></span>

@@ -283,13 +283,10 @@ if ( $report_object ) {
 								<?php endif ?>
                             </select>
                         </div>
-
-
                     </div>
                 </div>
             </div>
         </div>
-
 
         <div class="col-12 mt-4 order-5" role="presentation">
             <div class="justify-content-start gap-2">

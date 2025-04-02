@@ -13,26 +13,161 @@ $meta = get_field_value( $object_driver, 'meta' );
 $account_type        = get_field_value( $meta, 'account_type' );
 $account_name        = get_field_value( $meta, 'account_name' );
 $payment_instruction = get_field_value( $meta, 'payment_instruction' );
-$payment_file        = get_field_value( $meta, 'payment_file' );
 $w9_classification   = get_field_value( $meta, 'w9_classification' );
-$w9_file             = get_field_value( $meta, 'w9_file' );
 $address             = get_field_value( $meta, 'address' );
 $city_state_zip      = get_field_value( $meta, 'city_state_zip' );
 $ssn                 = get_field_value( $meta, 'ssn' );
 $ssn_name            = get_field_value( $meta, 'ssn_name' );
-$ssn_file            = get_field_value( $meta, 'ssn_file' );
 $entity_name         = get_field_value( $meta, 'entity_name' );
 $ein                 = get_field_value( $meta, 'ein' );
-$ein_file            = get_field_value( $meta, 'ein_file' );
-$nec_file            = get_field_value( $meta, 'nec_file' );
 $authorized_email    = get_field_value( $meta, 'authorized_email' );
+
+$payment_file = get_field_value( $meta, 'payment_file' );
+$w9_file      = get_field_value( $meta, 'w9_file' );
+$ssn_file     = get_field_value( $meta, 'ssn_file' );
+$ein_file     = get_field_value( $meta, 'ein_file' );
+$nec_file     = get_field_value( $meta, 'nec_file' );
+$total_images = 0;
+
+$payment_file_arr = $driver->process_file_attachment( $payment_file );
+$w9_file_arr      = $driver->process_file_attachment( $w9_file );
+$ssn_file_arr     = $driver->process_file_attachment( $ssn_file );
+$ein_file_arr     = $driver->process_file_attachment( $ein_file );
+$nec_file_arr     = $driver->process_file_attachment( $nec_file );
+
+$total_images = 0;
+
+$files_check = array(
+	$payment_file_arr,
+	$w9_file_arr,
+	$ssn_file_arr,
+	$ein_file_arr,
+	$nec_file_arr,
+);
+
+foreach ( $files_check as $file ) {
+	if ( ! empty( $file ) ) {
+		$total_images ++;
+	}
+}
+
+$files = array(
+	array(
+		'file_arr'       => $payment_file_arr,
+		'file'           => $payment_file,
+		'full_only_view' => $full_only_view,
+		'post_id'        => $post_id,
+		'class_name'     => 'payment-file',
+		'field_name'     => 'payment_file',
+		'field_label'    => 'Payment file',
+		'delete_action'  => 'js-remove-one-driver',
+		'active_tab'     => 'pills-driver-finance-tab',
+	),
+	array(
+		'file_arr'       => $w9_file_arr,
+		'file'           => $w9_file,
+		'full_only_view' => $full_only_view,
+		'post_id'        => $post_id,
+		'class_name'     => 'w9-file',
+		'field_name'     => 'w9_file',
+		'field_label'    => 'W9 file',
+		'delete_action'  => 'js-remove-one-driver',
+		'active_tab'     => 'pills-driver-documents-tab',
+	),
+	array(
+		'file_arr'       => $ssn_file_arr,
+		'file'           => $ssn_file,
+		'full_only_view' => $full_only_view,
+		'post_id'        => $post_id,
+		'class_name'     => 'ssn-file',
+		'field_name'     => 'ssn_file',
+		'field_label'    => 'SSN file',
+		'delete_action'  => 'js-remove-one-driver',
+		'active_tab'     => 'pills-driver-documents-tab',
+	),
+	array(
+		'file_arr'       => $ein_file_arr,
+		'file'           => $ein_file,
+		'full_only_view' => $full_only_view,
+		'post_id'        => $post_id,
+		'class_name'     => 'ein-file',
+		'field_name'     => 'ein_file',
+		'field_label'    => 'EIN file',
+		'delete_action'  => 'js-remove-one-driver',
+		'active_tab'     => 'pills-driver-documents-tab',
+	),
+	array(
+		'file_arr'       => $nec_file_arr,
+		'file'           => $nec_file,
+		'full_only_view' => $full_only_view,
+		'post_id'        => $post_id,
+		'class_name'     => 'nec-file',
+		'field_name'     => 'nec_file',
+		'field_label'    => 'NEC file',
+		'delete_action'  => 'js-remove-one-driver',
+		'active_tab'     => 'pills-driver-documents-tab',
+	),
+);
+
 
 ?>
 
 <div class="container mt-4 pb-5">
-    <form>
+
+    <div class="mb-3 d-flex justify-content-between align-items-center">
+        <h2>Finance</h2>
+		<?php if ( $total_images > 2 ): ?>
+            <div class=" <?php echo ( $total_images === 3 ) ? 'show-more-hide-desktop' : 'd-flex '; ?>">
+                <button class="js-toggle btn btn-primary change-text"
+                        data-block-toggle="js-hide-upload-finance-container">
+                    <span class="unactive-text">Show more images</span>
+                    <span class="active-text">Show less images</span>
+                </button>
+            </div>
+		<?php endif; ?>
+    </div>
+	
+	<?php if ( $total_images > 0 ): ?>
+
+        <div class="js-hide-upload-finance-container hide-upload-files mb-3" data-class-toggle="hide-upload-files">
+            <div class="container-uploads <?php echo $full_only_view ? "read-only" : '' ?>">
+				
+				<?php
+				
+				foreach ( $files as $file ):
+					if ( isset( $file[ 'file_arr' ] ) && $file[ 'file' ] ):
+						echo esc_html( get_template_part( TEMPLATE_PATH . 'common/card', 'file', array(
+							'file_arr'       => $file[ 'file_arr' ],
+							'file'           => $file[ 'file' ],
+							'full_only_view' => $file[ 'full_only_view' ],
+							'post_id'        => $file[ 'post_id' ],
+							'class_name'     => $file[ 'class_name' ],
+							'field_name'     => $file[ 'field_name' ],
+							'field_label'    => $file[ 'field_label' ],
+							'delete_action'  => $file[ 'delete_action' ],
+							'active_tab'     => $file[ 'active_tab' ],
+						) ) );
+					endif;
+				endforeach; ?>
+
+
+            </div>
+        </div>
+	
+	<?php endif; ?>
+
+    <form class="js-driver-finance-form">
+		
+		<?php if ( $post_id ): ?>
+
+
+            <input type="hidden" name="driver_id" value="<?php echo $post_id; ?>">
+            <input type="hidden" name="ein_file_id" value="<?php echo $ein_file; ?>">
+            <input type="hidden" name="ssn_file_id" value="<?php echo $ssn_file; ?>">
+		<?php endif; ?>
+
         <div class="row">
-            <div class="col-md-4 mb-3">
+            <div class="col-6 mb-3">
                 <label class="form-label">Account Type<span class="required-star text-danger">*</span></label>
                 <select name="account_type" required class="form-control form-select">
                     <option value="Business" <?php echo $account_type === 'Business' ? 'selected' : ''; ?>>Business
@@ -43,13 +178,15 @@ $authorized_email    = get_field_value( $meta, 'authorized_email' );
                 </select>
             </div>
 
-            <div class="col-md-4 mb-3">
+            <div class="col-6 mb-3">
                 <label class="form-label">Account Name<span class="required-star text-danger">*</span></label>
                 <input type="text" class="form-control" name="account_name" required
                        value="<?php echo $account_name; ?>">
             </div>
 
-            <div class="col-md-4 mb-3">
+            <div class="col-12"></div>
+
+            <div class="col-6 mb-3">
                 <label class="form-label">Payment Instruction<span class="required-star text-danger">*</span></label>
                 <select name="payment_instruction" required class="form-control form-select">
                     <option value="Void check" <?php echo $payment_instruction === 'Void check' ? 'selected' : ''; ?>>
@@ -64,86 +201,202 @@ $authorized_email    = get_field_value( $meta, 'authorized_email' );
                 </select>
             </div>
 
-            <div class="col-md-4 mb-3">
-                <label class="form-label">File</label>
-                <input type="file" class="form-control" name="payment_file" value="<?php echo $payment_file; ?>">
+            <div class="col-12 js-add-new-report">
+                <div class="row">
+                    <div class="col-12 mb-3">
+                        <label class="form-label d-flex align-items-center gap-1">Payment File <?php echo $payment_file
+								? $reports->get_icon_uploaded_file() : ''; ?></label>
+						<?php if ( ! $payment_file ): ?>
+                            <input type="file" class="form-control js-control-uploads" name="payment_file"
+                                   value="<?php echo $payment_file; ?>">
+						<?php endif; ?>
+                    </div>
+
+                    <div class="col-12 mb-1 mt-1 preview-photo js-preview-photo-upload">
+
+                    </div>
+                </div>
             </div>
 
-            <div class="col-md-4 mb-3">
+            <div class="col-12"></div>
+
+            <div class="col-12 mb-3">
                 <label class="form-label">W-9 Classification<span class="required-star text-danger">*</span></label>
-                <select name="w9_classification" id="w9_classification" required class="form-control form-select">
-                    <option value="Business" <?php echo $w9_classification === 'Business' ? 'selected' : ''; ?>>
-                        Business
-                    </option>
-                    <option value="Individual" <?php echo $w9_classification === 'Individual' ? 'selected' : ''; ?>>
-                        Individual
-                    </option>
-                </select>
+				
+				<?php if ( ! $w9_classification ):
+					$w9_classification = 'business';
+				endif; ?>
+
+                <div class="d-flex flex-wrap gap-2">
+                    <div class="form-check">
+                        <input class="form-check-input js-toggle-radio" data-target="js-classifications" type="radio"
+                               name="w9_classification"
+                               id="w9_classification_business"
+                               value="business" <?php echo $w9_classification === 'business' ? 'checked' : ''; ?> >
+                        <label class="form-check-label" for="w9_classification_business">
+                            Business
+                        </label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input js-toggle-radio" data-target="js-classifications" type="radio"
+                               name="w9_classification"
+                               id="w9_classification_individual"
+                               value="individual" <?php echo $w9_classification === 'individual' ? 'checked' : ''; ?>
+                        >
+                        <label class="form-check-label" for="w9_classification_individual">
+                            Individual
+                        </label>
+                    </div>
+                </div>
             </div>
 
-            <div class="col-md-4 mb-3">
-                <label class="form-label">File</label>
-                <input type="file" class="form-control" name="w9_file" value="<?php echo $w9_file; ?>">
+
+            <div class="col-12 js-add-new-report">
+                <div class="row">
+                    <div class="col-12 mb-3">
+                        <label class="form-label d-flex align-items-center gap-1">W9 File <?php echo $w9_file
+								? $reports->get_icon_uploaded_file() : ''; ?></label>
+						<?php if ( ! $w9_file ): ?>
+                            <input type="file" class="form-control js-control-uploads" name="w9_file"
+                                   value="<?php echo $w9_file; ?>">
+						<?php endif; ?>
+                    </div>
+
+                    <div class="col-12 mb-1 mt-1 preview-photo js-preview-photo-upload">
+
+                    </div>
+                </div>
             </div>
 
-            <div class="col-md-4 mb-3">
+            <div class="col-6 mb-3">
                 <label class="form-label">Address</label>
                 <input type="text" class="form-control" name="address" value="<?php echo $address; ?>">
             </div>
 
-            <div class="col-md-4 mb-3">
+            <div class="col-6 mb-3">
                 <label class="form-label">City, State, ZIP</label>
                 <input type="text" class="form-control" name="city_state_zip" value="<?php echo $city_state_zip; ?>">
             </div>
         </div>
 
-        <div id="individual_fields" class="row">
-            <div class="col-md-4 mb-3">
-                <label class="form-label">SSN<span class="required-star text-danger">*</span></label>
-                <input type="text" class="form-control" name="ssn" value="<?php echo $ssn; ?>" required>
-            </div>
+        <div id="individual_fields"
+             class="col-12 js-classifications js-classifications-individual <?php echo $w9_classification === 'individual'
+			     ? '' : 'd-none'; ?>">
+            <div class="row border-1 border-primary border bg-light pt-3 pb-3 mb-3 rounded">
 
-            <div class="col-md-4 mb-3">
-                <label class="form-label">SSN Name<span class="required-star text-danger">*</span></label>
-                <input type="text" class="form-control" name="ssn_name" value="<?php echo $ssn_name; ?>" required>
-            </div>
+                <div class="col-6 mb-3">
+                    <label class="form-label">SSN<span class="required-star text-danger">*</span></label>
+                    <input type="text" class="form-control js-ssn-mask" name="ssn" value="<?php echo $ssn; ?>">
+                </div>
 
-            <div class="col-md-4 mb-3">
-                <label class="form-label">File<span class="required-star text-danger">*</span></label>
-                <input type="file" class="form-control" name="ssn_file" value="<?php echo $ssn_file; ?>" required>
+                <div class="col-6 mb-3">
+                    <label class="form-label">SSN Name<span class="required-star text-danger">*</span></label>
+                    <input type="text" class="form-control" name="ssn_name" value="<?php echo $ssn_name; ?>">
+                </div>
+
+                <div class="col-12 js-add-new-report">
+                    <div class="row">
+                        <div class="col-12 mb-3">
+                            <label class="form-label d-flex align-items-center gap-1"><span>File<span
+                                            class="required-star text-danger">*</span></span> <?php echo $ssn_file
+									? $reports->get_icon_uploaded_file() : ''; ?></label>
+							<?php if ( ! $ssn_file ): ?>
+
+                                <input type="file" class="form-control js-control-uploads" name="ssn_file"
+                                       value="<?php echo $ssn_file; ?>">
+							
+							<?php endif; ?>
+
+                        </div>
+
+                        <div class="col-12 mb-1 mt-1 preview-photo js-preview-photo-upload">
+
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
 
-        <div id="business_fields" class="row">
-            <div class="col-md-4 mb-3">
-                <label class="form-label">Entity Name<span class="required-star text-danger">*</span></label>
-                <input type="text" class="form-control" name="entity_name" value="<?php echo $entity_name; ?>" required>
-            </div>
+        <div id="business_fields"
+             class="col-12  js-classifications js-classifications-business  <?php echo $w9_classification === 'business'
+			     ? '' : 'd-none'; ?>">
 
-            <div class="col-md-4 mb-3">
-                <label class="form-label">EIN<span class="required-star text-danger">*</span></label>
-                <input type="text" class="form-control" name="ein" value="<?php echo $ein; ?>" required>
-            </div>
+            <div class="row border-1 border-primary border bg-light pt-3 pb-3 mb-3 rounded">
+                <div class="col-6 mb-3">
+                    <label class="form-label">Entity Name<span class="required-star text-danger">*</span></label>
+                    <input type="text" class="form-control" name="entity_name" value="<?php echo $entity_name; ?>">
+                </div>
 
-            <div class="col-md-4 mb-3">
-                <label class="form-label">EIN Form<span class="required-star text-danger">*</span></label>
-                <input type="file" class="form-control" name="ein_file" value="<?php echo $ein_file; ?>" required>
+                <div class="col-6 mb-3">
+                    <label class="form-label">EIN<span class="required-star text-danger">*</span></label>
+                    <input type="text" class="form-control js-ein-mask" name="ein" value="<?php echo $ein; ?>">
+                </div>
+
+                <div class="col-12 js-add-new-report">
+                    <div class="row">
+                        <div class="col-12 mb-3">
+                            <label class="form-label d-flex align-items-center gap-1">
+                                <span>EIN Form<span
+                                            class="required-star text-danger">*</span></span> <?php echo $ein_file
+									? $reports->get_icon_uploaded_file() : ''; ?></label>
+							
+							<?php if ( ! $ein_file ): ?>
+                                <input type="file" class="form-control js-control-uploads" name="ein_file"
+                                       value="<?php echo $ein_file; ?>">
+							<?php endif; ?>
+
+                        </div>
+                        <div class="col-12 mb-1 mt-1 preview-photo js-preview-photo-upload">
+
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
 
         <div class="row">
-            <div class="col-md-4 mb-3">
-                <label class="form-label">1099-NEC File</label>
-                <input type="file" class="form-control" name="nec_file" value="<?php echo $nec_file; ?>">
+
+            <div class="col-12 js-add-new-report">
+                <div class="row">
+                    <div class="col-12 mb-3">
+                        <label class="form-label d-flex align-items-center gap-1">1099-NEC File <?php echo $nec_file
+								? $reports->get_icon_uploaded_file() : ''; ?></label>
+						<?php if ( ! $nec_file ): ?>
+                            <input type="file" class="form-control js-control-uploads" name="nec_file"
+                                   value="<?php echo $nec_file; ?>">
+						<?php endif; ?>
+                    </div>
+                    <div class="col-12 mb-1 mt-1 preview-photo js-preview-photo-upload">
+
+                    </div>
+                </div>
             </div>
 
-            <div class="col-md-4 mb-3">
+            <div class="col-6 mb-3">
                 <label class="form-label">Authorized Email</label>
                 <input type="email" class="form-control" name="authorized_email"
                        value="<?php echo $authorized_email; ?>">
             </div>
         </div>
+        <div class="row">
 
-        <button type="submit" class="btn btn-primary">Submit</button>
+            <div class="col-12" role="presentation">
+                <div class="justify-content-start gap-2">
+                    <button type="button" data-tab-id="pills-driver-vehicle-tab"
+                            class="btn btn-dark js-next-tab">Previous
+                    </button>
+					<?php if ( $full_only_view ): ?>
+                        <button type="button" data-tab-id="pills-driver-documents-tab"
+                                class="btn btn-primary js-next-tab">Next
+                        </button>
+					<?php else: ?>
+                        <button type="submit" class="btn btn-primary js-submit-and-next-tab"
+                                data-tab-id="pills-driver-documents-tab">
+                            Next
+                        </button>
+					<?php endif; ?>
+                </div>
+            </div>
+        </div>
     </form>
 </div>

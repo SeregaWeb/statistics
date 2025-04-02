@@ -4957,6 +4957,8 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */   driversActions: function() { return /* binding */ driversActions; },
 /* harmony export */   removeOneFileInitial: function() { return /* binding */ removeOneFileInitial; },
 /* harmony export */   updateDriverContact: function() { return /* binding */ updateDriverContact; },
+/* harmony export */   updateDriverDocument: function() { return /* binding */ updateDriverDocument; },
+/* harmony export */   updateDriverFinance: function() { return /* binding */ updateDriverFinance; },
 /* harmony export */   updateDriverInformation: function() { return /* binding */ updateDriverInformation; }
 /* harmony export */ });
 /* harmony import */ var _info_messages__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./info-messages */ "./src/js/components/info-messages.ts");
@@ -5067,6 +5069,74 @@ var updateDriverInformation = function updateDriverInformation(urlAjax) {
     });
   });
 };
+var updateDriverFinance = function updateDriverFinance(urlAjax) {
+  var form = document.querySelector('.js-driver-finance-form');
+  console.log('form', form);
+  if (!form) return;
+  form.addEventListener('submit', function (e) {
+    e.preventDefault();
+    console.log('form click');
+    var target = e.target;
+    (0,_disabled_btn_in_form__WEBPACK_IMPORTED_MODULE_2__.disabledBtnInForm)(target);
+    var formData = new FormData(target);
+    formData.append('action', 'update_driver_finance');
+    var options = {
+      method: 'POST',
+      body: formData
+    };
+    var nextTargetTab = 'pills-driver-finance-tab';
+    fetch(urlAjax, options).then(function (res) {
+      return res.json();
+    }).then(function (requestStatus) {
+      if (requestStatus.success) {
+        (0,_create_report__WEBPACK_IMPORTED_MODULE_1__.setUpTabInUrl)(nextTargetTab);
+        (0,_disabled_btn_in_form__WEBPACK_IMPORTED_MODULE_2__.disabledBtnInForm)(target, true);
+        return true;
+      }
+      (0,_info_messages__WEBPACK_IMPORTED_MODULE_0__.printMessage)("".concat(requestStatus.data.message), 'danger', 8000);
+      (0,_disabled_btn_in_form__WEBPACK_IMPORTED_MODULE_2__.disabledBtnInForm)(target, true);
+      return false;
+    }).catch(function (error) {
+      (0,_info_messages__WEBPACK_IMPORTED_MODULE_0__.printMessage)("'Request failed' ".concat(error), 'danger', 8000);
+      (0,_disabled_btn_in_form__WEBPACK_IMPORTED_MODULE_2__.disabledBtnInForm)(target, true);
+      return false;
+    });
+  });
+};
+var updateDriverDocument = function updateDriverDocument(urlAjax) {
+  var form = document.querySelector('.js-driver-document-form');
+  console.log('form', form);
+  if (!form) return;
+  form.addEventListener('submit', function (e) {
+    e.preventDefault();
+    console.log('form click');
+    var target = e.target;
+    (0,_disabled_btn_in_form__WEBPACK_IMPORTED_MODULE_2__.disabledBtnInForm)(target);
+    var formData = new FormData(target);
+    formData.append('action', 'update_driver_document');
+    var options = {
+      method: 'POST',
+      body: formData
+    };
+    var nextTargetTab = 'pills-driver-document-tab';
+    fetch(urlAjax, options).then(function (res) {
+      return res.json();
+    }).then(function (requestStatus) {
+      if (requestStatus.success) {
+        (0,_create_report__WEBPACK_IMPORTED_MODULE_1__.setUpTabInUrl)(nextTargetTab);
+        (0,_disabled_btn_in_form__WEBPACK_IMPORTED_MODULE_2__.disabledBtnInForm)(target, true);
+        return true;
+      }
+      (0,_info_messages__WEBPACK_IMPORTED_MODULE_0__.printMessage)("".concat(requestStatus.data.message), 'danger', 8000);
+      (0,_disabled_btn_in_form__WEBPACK_IMPORTED_MODULE_2__.disabledBtnInForm)(target, true);
+      return false;
+    }).catch(function (error) {
+      (0,_info_messages__WEBPACK_IMPORTED_MODULE_0__.printMessage)("'Request failed' ".concat(error), 'danger', 8000);
+      (0,_disabled_btn_in_form__WEBPACK_IMPORTED_MODULE_2__.disabledBtnInForm)(target, true);
+      return false;
+    });
+  });
+};
 var removeOneFileInitial = function removeOneFileInitial(ajaxUrl) {
   var deleteForms = document.querySelectorAll('.js-remove-one-driver');
   deleteForms && deleteForms.forEach(function (item) {
@@ -5104,6 +5174,8 @@ var driversActions = function driversActions(urlAjax) {
   createDriver(urlAjax);
   updateDriverContact(urlAjax);
   updateDriverInformation(urlAjax);
+  updateDriverFinance(urlAjax);
+  updateDriverDocument(urlAjax);
   removeOneFileInitial(urlAjax);
 };
 
@@ -6020,8 +6092,11 @@ var tabUrlUpdeter = function tabUrlUpdeter() {
 "use strict";
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   masksAllSite: function() { return /* binding */ masksAllSite; },
 /* harmony export */   telMaskInit: function() { return /* binding */ telMaskInit; }
 /* harmony export */ });
+/* harmony import */ var imask__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! imask */ "./node_modules/imask/esm/index.js");
+
 var maskTel = function maskTel(target) {
   var x1 = target.value.replace(/\D/g, '').match(/(\d{3})/);
   var x2 = target.value.replace(/\D/g, '').match(/(\d{3})(\d{3})/);
@@ -6044,6 +6119,24 @@ var telMaskInit = function telMaskInit() {
     });
   });
 };
+var masksAllSite = function masksAllSite() {
+  var ssnInputs = document.querySelectorAll('.js-ssn-mask');
+  if (ssnInputs.length) {
+    ssnInputs.forEach(function (input) {
+      (0,imask__WEBPACK_IMPORTED_MODULE_0__["default"])(input, {
+        mask: '000-00-0000'
+      });
+    });
+  }
+  var einInputs = document.querySelectorAll('.js-ein-mask');
+  if (einInputs.length) {
+    einInputs.forEach(function (input) {
+      (0,imask__WEBPACK_IMPORTED_MODULE_0__["default"])(input, {
+        mask: '00-0000000'
+      });
+    });
+  }
+};
 
 /***/ }),
 
@@ -6057,6 +6150,7 @@ var telMaskInit = function telMaskInit() {
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   toggleBlocksInit: function() { return /* binding */ toggleBlocksInit; },
+/* harmony export */   toggleBlocksRadio: function() { return /* binding */ toggleBlocksRadio; },
 /* harmony export */   toggleCheckboxInit: function() { return /* binding */ toggleCheckboxInit; }
 /* harmony export */ });
 var toggleBlocksInit = function toggleBlocksInit() {
@@ -6074,6 +6168,26 @@ var toggleBlocksInit = function toggleBlocksInit() {
       if (!classToggle) classToggle = 'd-none';
       target.classList.toggle('active');
       toggleContainer.classList.toggle(classToggle);
+    });
+  });
+};
+var toggleBlocksRadio = function toggleBlocksRadio() {
+  var toggleElements = document.querySelectorAll('.js-toggle-radio');
+  toggleElements && toggleElements.forEach(function (item) {
+    item.addEventListener('change', function (event) {
+      var target = event.target;
+      event.preventDefault();
+      var toggleContainerSelectors = target.getAttribute('data-target');
+      var toggleContainer = document.querySelectorAll(".".concat(toggleContainerSelectors));
+      if (!target || !toggleContainer) return;
+      toggleContainer.forEach(function (item) {
+        item.classList.add('d-none');
+      });
+      console.log('toggleContainer', toggleContainer, toggleContainerSelectors);
+      var activeContainer = document.querySelectorAll(".".concat(toggleContainerSelectors, "-").concat(target.value));
+      activeContainer.forEach(function (item) {
+        item.classList.remove('d-none');
+      });
     });
   });
 };
@@ -16193,8 +16307,10 @@ function ready() {
   (0,_components_stop_type__WEBPACK_IMPORTED_MODULE_21__.changeStopType)();
   (0,_components_set_status_paid__WEBPACK_IMPORTED_MODULE_22__.setStatusPaid)();
   (0,_components_tel_mask__WEBPACK_IMPORTED_MODULE_20__.telMaskInit)();
+  (0,_components_tel_mask__WEBPACK_IMPORTED_MODULE_20__.masksAllSite)();
   (0,_components_tab_helper__WEBPACK_IMPORTED_MODULE_6__.tabUrlUpdeter)();
   (0,_components_create_report__WEBPACK_IMPORTED_MODULE_3__.timeStrictChange)();
+  (0,_components_toggle_blocks_init__WEBPACK_IMPORTED_MODULE_8__.toggleBlocksRadio)();
   (0,_components_document_create_money_check__WEBPACK_IMPORTED_MODULE_25__.createDocumentInvoice)();
   (0,_components_document_create_money_check__WEBPACK_IMPORTED_MODULE_25__.createDocumentInvoiceActions)(urlAjax);
   (0,_components_document_create_money_check__WEBPACK_IMPORTED_MODULE_25__.createDocumentBolActions)(urlAjax);

@@ -9,15 +9,27 @@
 get_header();
 
 
-$brokers = new TMSReportsCompany();
-$loads   = new TMSReports();
-
+$brokers  = new TMSReportsCompany();
+$loads    = new TMSReports();
+$TMSUsers = new TMSUsers();
 
 $id_broker   = get_field_value( $_GET, 'broker_id' );
 $broker      = $brokers->get_company_by_id( $id_broker, ARRAY_A );
 $broker_meta = $brokers->get_all_meta_by_post_id( $id_broker );
 
 if ( ! empty( $broker ) ) {
+	
+	$args = array(
+		'status_post'    => 'publish',
+		'customer_id'    => $id_broker,
+		'per_page_loads' => 25,
+	);
+	
+	$office_dispatcher     = 'all';
+	$args                  = $loads->set_filter_params( $args, $office_dispatcher );
+	$items                 = $loads->get_table_items( $args );
+	$items[ 'office' ]     = $office_dispatcher;
+	$items[ 'hide_total' ] = true;
 	
 	$get_counters_broker = $loads->get_counters_broker( $id_broker );
 	$get_profit_broker   = $loads->get_profit_broker( $id_broker );
@@ -65,6 +77,7 @@ if ( ! empty( $broker ) ) {
 
 $TMSUsers      = new TMSUsers();
 $add_broker    = $TMSUsers->check_user_role_access( array(
+	'accounting',
 	'dispatcher',
 	'dispatcher-tl',
 	'administrator',
@@ -72,8 +85,21 @@ $add_broker    = $TMSUsers->check_user_role_access( array(
 ), true );
 $remove_broker = $TMSUsers->check_user_role_access( array( 'administrator' ), true );
 
+$red_lvl = $TMSUsers->check_user_role_access( array(
+	'accounting',
+	'administrator',
+	'dispatcher-tl',
+	'billing'
+), true );
+
+$orange_lvl = $TMSUsers->check_user_role_access( array(
+	'accounting',
+	'administrator',
+	'billing'
+), true );
+
 ?>
-    <div class="container-fluid">
+    <div class="container-fluid pb-3">
         <div class="row">
             <div class="container">
                 <div class="row">
@@ -81,7 +107,8 @@ $remove_broker = $TMSUsers->check_user_role_access( array( 'administrator' ), tr
                         <div class="col-12 mt-2">
                             <ul class="nav nav-pills mb-2" id="pills-tab" role="tablist">
                                 <li class="nav-item w-25" role="presentation">
-                                    <button class="nav-link w-100 active" id="pills-info-tab" data-bs-toggle="pill"
+                                    <button class="nav-link w-100 <?php echo ! isset( $_GET[ 'paged' ] ) ? 'active'
+										: ''; ?>" id="pills-info-tab" data-bs-toggle="pill"
                                             data-bs-target="#pills-info" type="button" role="tab"
                                             aria-controls="pills-info"
                                             aria-selected="true">Info
@@ -95,11 +122,19 @@ $remove_broker = $TMSUsers->check_user_role_access( array( 'administrator' ), tr
                                         </button>
                                     </li>
 								<?php endif; ?>
-
+                                <li class="nav-item w-25" role="presentation">
+                                    <button class="nav-link w-100 <?php echo isset( $_GET[ 'paged' ] ) ? 'active'
+										: ''; ?>" id="pills-loads-tab" data-bs-toggle="pill"
+                                            data-bs-target="#pills-loads" type="button" role="tab"
+                                            aria-controls="pills-loads"
+                                            aria-selected="true">Loads
+                                    </button>
+                                </li>
                             </ul>
                         </div>
                         <div class="tab-content" id="pills-tabContent">
-                            <div class="tab-pane fade show active" id="pills-info" role="tabpanel"
+                            <div class="tab-pane <?php echo ! isset( $_GET[ 'paged' ] ) ? 'show active' : 'fade'; ?>"
+                                 id="pills-info" role="tabpanel"
                                  aria-labelledby="pills-info-tab">
                                 <div class="mt-3 mb-3" style="max-width: 944px;">
 									<?php
@@ -338,18 +373,28 @@ $remove_broker = $TMSUsers->check_user_role_access( array( 'administrator' ), tr
                                             </div>
 
                                             <div class="form-group mt-3 ">
-                                                <label for="company_status" class="form-label">Company status</label>
-                                                <select name="company_status" class="form-control form-select">
-                                                    <option value="">Select Company status</option>
-													<?php if ( is_array( $brokers->company_status ) ): ?>
-														<?php foreach ( $brokers->company_status as $key => $val ): ?>
-                                                            <option value="<?php echo $key; ?>" <?php echo fill_field( 'company_status', $broker_meta ) === $key
-																? 'selected' : ''; ?>>
-																<?php echo $val; ?>
-                                                            </option>
-														<?php endforeach; ?>
-													<?php endif ?>
-                                                </select>
+												<?php if ( $red_lvl ): ?>
+                                                    <label for="company_status" class="form-label">Company
+                                                        status</label>
+                                                    <select name="company_status" class="form-control form-select">
+                                                        <option value="">Select Company status</option>
+														<?php if ( is_array( $brokers->company_status ) ): ?>
+															<?php foreach ( $brokers->company_status as $key => $val ): ?>
+                                                                <option value="<?php echo $key; ?>" <?php echo fill_field( 'company_status', $broker_meta ) === $key
+																	? 'selected' : ''; ?>>
+																	<?php echo $val; ?>
+                                                                </option>
+															<?php endforeach; ?>
+														<?php endif ?>
+                                                    </select>
+												<?php else: ?>
+                                                    <div class="status-list__item d-flex gap-1">
+                                                        <span class="status-list__label">Company status:</span>
+                                                        <span class="status-list__value"><?php echo $company_status_label; ?></span>
+                                                        <input type="hidden" name="company_status"
+                                                               value="<?php echo $company_status; ?>">
+                                                    </div>
+												<?php endif; ?>
                                             </div>
 
                                             <div class="form-group mt-3">
@@ -452,11 +497,21 @@ $remove_broker = $TMSUsers->check_user_role_access( array( 'administrator' ), tr
                                             </div>
 
                                             <div class="form-group mt-3 col-6">
-                                                <label for="input-mcnumber" class="form-label">MC Number <span
-                                                            class="required-star text-danger">*</span></label>
-                                                <input id="input-mcnumber" required type="text" name="MotorCarrNo"
-                                                       placeholder="MC Number" class="form-control"
-                                                       value="<?php echo fill_field( 'mc_number', $broker_data ); ?>">
+												<?php if ( $red_lvl ): ?>
+                                                    <label for="input-mcnumber" class="form-label">MC Number <span
+                                                                class="required-star text-danger">*</span></label>
+                                                    <input id="input-mcnumber" required type="text" name="MotorCarrNo"
+                                                           placeholder="MC Number" class="form-control"
+                                                           value="<?php echo fill_field( 'mc_number', $broker_data ); ?>">
+												<?php else: ?>
+                                                    <div class="d-flex gap-1">
+                                                        <label for="input-mcnumber" class="form-label">MC
+                                                            Number:</label>
+														<?php echo fill_field( 'mc_number', $broker_data ); ?>
+                                                        <input type="hidden" name="MotorCarrNo"
+                                                               value="<?php echo fill_field( 'mc_number', $broker_data ); ?>">
+                                                    </div>
+												<?php endif; ?>
                                             </div>
 
                                             <div class="form-group mt-3 col-6">
@@ -544,51 +599,103 @@ $remove_broker = $TMSUsers->check_user_role_access( array( 'administrator' ), tr
                                                        class="form-control"
                                                        value="<?php echo fill_field( 'accounting_email', $broker_meta ); ?>">
                                             </div>
-
-                                            <div class="form-group mt-3 col-6">
-                                                <label for="days-to-pay" class="form-label">Days to pay</label>
-                                                <input id="days-to-pay" type="number" name="days_to_pay"
-                                                       placeholder="Days to pay"
-                                                       class="form-control"
-                                                       value="<?php echo fill_field( 'days_to_pay', $broker_meta ); ?>">
-                                            </div>
-
-                                            <div class="col-12"></div>
-                                            <div class="mb-2 col-12 col-md-6 col-xl-4 mt-3">
-                                                <div class="form-check form-switch">
-                                                    <input class="form-check-input js-switch-toggle"
-                                                           data-toggle="js-quick-actions" <?php echo is_checked( 'quick_pay_option', $broker_meta ); ?>
-                                                           name="quick_pay_option" type="checkbox"
-                                                           id="quick_pay_option">
-                                                    <label class="form-check-label" for="quick_pay_option">Quick Pay
-                                                        option?</label>
+											
+											<?php if ( $orange_lvl ): ?>
+                                                <div class="form-group mt-3 col-6 ">
+                                                    <label for="days-to-pay" class="form-label">Days to pay</label>
+                                                    <input id="days-to-pay" type="number" name="days_to_pay"
+                                                           placeholder="Days to pay"
+                                                           class="form-control"
+                                                           value="<?php echo fill_field( 'days_to_pay', $broker_meta ); ?>">
                                                 </div>
-                                            </div>
 
-                                            <div class="col-12 js-quick-actions <?php echo isset( $broker_meta[ 'quick_pay_option' ] ) && $broker_meta[ 'quick_pay_option' ]
-												? '' : 'd-none'; ?>">
-                                                <div class="row">
-                                                    <div class="form-group mt-3 col-6">
-                                                        <label for="quick_pay_percent" class="form-label">Quick pay
-                                                            percent</label>
-                                                        <div class="input-group mt-3">
-                                                            <span class="input-group-text">%</span>
-                                                            <input id="quick_pay_percent" type="number"
-                                                                   name="quick_pay_percent" step="0.1"
-                                                                   placeholder=""
-                                                                   class="form-control"
-                                                                   value="<?php echo fill_field( 'quick_pay_percent', $broker_meta ); ?>">
+
+                                                <div class="col-12"></div>
+                                                <div class="mb-2 col-12 col-md-6 col-xl-4 mt-3">
+                                                    <div class="form-check form-switch">
+                                                        <input class="form-check-input js-switch-toggle"
+                                                               data-toggle="js-quick-actions" <?php echo is_checked( 'quick_pay_option', $broker_meta ); ?>
+                                                               name="quick_pay_option" type="checkbox"
+                                                               id="quick_pay_option">
+                                                        <label class="form-check-label" for="quick_pay_option">Quick Pay
+                                                            option?</label>
+                                                    </div>
+                                                </div>
+
+                                                <div class="col-12 js-quick-actions <?php echo isset( $broker_meta[ 'quick_pay_option' ] ) && $broker_meta[ 'quick_pay_option' ]
+													? '' : 'd-none'; ?>">
+                                                    <div class="row">
+                                                        <div class="form-group mt-3 col-6">
+                                                            <label for="quick_pay_percent" class="form-label">Quick pay
+                                                                percent</label>
+                                                            <div class="input-group mt-3">
+                                                                <span class="input-group-text">%</span>
+                                                                <input id="quick_pay_percent" type="number"
+                                                                       name="quick_pay_percent" step="0.1"
+                                                                       placeholder=""
+                                                                       class="form-control"
+                                                                       value="<?php echo fill_field( 'quick_pay_percent', $broker_meta ); ?>">
+                                                            </div>
                                                         </div>
                                                     </div>
                                                 </div>
-                                            </div>
+											
+											<?php else: ?>
+                                                <div class="form-group mt-3 col-6 d-flex align-items-center">
+                                                    <label for="days-to-pay" class="form-label mb-0 mt-3">Days to
+                                                        pay: <?php echo fill_field( 'days_to_pay', $broker_meta ); ?></label>
+                                                    <input id="days-to-pay" type="hidden" name="days_to_pay"
+                                                           placeholder="Days to pay"
+                                                           class="form-control"
+                                                           value="<?php echo fill_field( 'days_to_pay', $broker_meta ); ?>">
+                                                </div>
+
+
+                                                <div class="col-12"></div>
+                                                <div class="mb-2 col-12 col-md-6 col-xl-4 mt-3">
+                                                    <div class="form-check form-switch">
+                                                        <input class="form-check-input js-switch-toggle"
+                                                               data-toggle="js-quick-actions"
+                                                               value="<?php echo isset( $broker_meta[ 'quick_pay_option' ] )
+															       ? $broker_meta[ 'quick_pay_option' ] : ''; ?>"
+                                                               name="quick_pay_option" type="hidden"
+                                                               id="quick_pay_option">
+                                                        <input class="form-check-input js-switch-toggle"
+                                                               data-toggle="js-quick-actions" <?php echo is_checked( 'quick_pay_option', $broker_meta ); ?>
+                                                               name="quick_pay_option_false" disabled type="checkbox"
+                                                               id="quick_pay_option">
+                                                        <label class="form-check-label" for="quick_pay_option">Quick Pay
+                                                            option?</label>
+                                                    </div>
+                                                </div>
+
+                                                <div class="col-12 js-quick-actions <?php echo isset( $broker_meta[ 'quick_pay_option' ] ) && $broker_meta[ 'quick_pay_option' ]
+													? '' : 'd-none'; ?>">
+                                                    <div class="row">
+                                                        <div class="form-group col-6">
+                                                            <label for="quick_pay_percent" class="form-label">Quick pay
+                                                                percent:
+                                                                %<?php echo fill_field( 'quick_pay_percent', $broker_meta ); ?></label>
+                                                            <div class="input-group mt-3 d-none">
+                                                                <span class="input-group-text">%</span>
+                                                                <input id="quick_pay_percent" type="hidden"
+                                                                       name="quick_pay_percent" step="0.1"
+                                                                       placeholder=""
+                                                                       class="form-control"
+                                                                       value="<?php echo fill_field( 'quick_pay_percent', $broker_meta ); ?>">
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+											<?php endif; ?>
+
 
                                         </div>
 
                                         <div class="input-group mt-3">
                                             <span class="input-group-text">Notes</span>
                                             <textarea class="form-control" aria-label="With textarea"
-                                                      name="notes"><?php echo fill_field( 'notes', $broker_meta ); ?></textarea>
+                                                      name="notes"><?php echo str_replace( "\\", '', fill_field( 'notes', $broker_meta ) ); ?></textarea>
                                         </div>
 
                                         <div class="form-group d-flex gap-2 mt-3">
@@ -623,7 +730,16 @@ $remove_broker = $TMSUsers->check_user_role_access( array( 'administrator' ), tr
                                 </div>
 							<?php endif; ?>
 
+                            <div class="tab-pane  <?php echo ( isset( $_GET[ 'paged' ] ) ) ? 'show active'
+								: 'fade'; ?> " id="pills-loads" role="tabpanel"
+                                 aria-labelledby="pills-loads-tab">
+								<?php
+								echo esc_html( get_template_part( TEMPLATE_PATH . 'tables/report', 'table', $items ) );
+								?>
+                            </div>
+
                         </div>
+						
 						
 						<?php if ( $remove_broker ): ?>
                             <div class="col-12 d-flex justify-content-end">
@@ -635,6 +751,7 @@ $remove_broker = $TMSUsers->check_user_role_access( array( 'administrator' ), tr
                                 </form>
                             </div>
 						<?php endif; ?>
+					
 					
 					<?php } else { ?>
                         <div class="col-12">

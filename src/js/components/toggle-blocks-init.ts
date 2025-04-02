@@ -25,6 +25,35 @@ export const toggleBlocksInit = () => {
         });
 };
 
+export const toggleBlocksRadio = () => {
+    const toggleElements = document.querySelectorAll('.js-toggle-radio');
+    toggleElements &&
+        toggleElements.forEach((item) => {
+            item.addEventListener('change', (event) => {
+                const { target } = event;
+                event.preventDefault();
+
+                // @ts-ignore
+                const toggleContainerSelectors = target.getAttribute('data-target');
+                const toggleContainer = document.querySelectorAll(`.${toggleContainerSelectors}`);
+                if (!target || !toggleContainer) return;
+
+                // eslint-disable-next-line no-shadow
+                toggleContainer.forEach((item) => {
+                    item.classList.add('d-none');
+                });
+                console.log('toggleContainer', toggleContainer, toggleContainerSelectors);
+
+                // @ts-ignore
+                const activeContainer = document.querySelectorAll(`.${toggleContainerSelectors}-${target.value}`);
+                // eslint-disable-next-line no-shadow
+                activeContainer.forEach((item) => {
+                    item.classList.remove('d-none');
+                });
+            });
+        });
+};
+
 export const toggleCheckboxInit = () => {
     const toggleElements = document.querySelectorAll('.js-switch-toggle');
     toggleElements &&

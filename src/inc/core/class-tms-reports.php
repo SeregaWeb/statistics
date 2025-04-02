@@ -134,7 +134,6 @@ class TMSReports extends TMSReportsHelper {
 		$sort_order   = ! empty( $args[ 'sort_order' ] ) && strtolower( $args[ 'sort_order' ] ) == 'asc' ? 'ASC'
 			: 'DESC';
 		
-		
 		$join_builder = "
 			FROM $table_main AS main
 			LEFT JOIN $table_meta AS dispatcher
@@ -158,6 +157,9 @@ class TMSReports extends TMSReportsHelper {
 			LEFT JOIN $table_meta AS office_dispatcher
 				ON main.id = office_dispatcher.post_id
 				AND office_dispatcher.meta_key = 'office_dispatcher'
+			LEFT JOIN $table_meta AS customer_id
+				ON main.id = customer_id.post_id
+				AND customer_id.meta_key = 'customer_id'
 			LEFT JOIN $table_meta AS driver_pay_statuses
 				ON main.id = driver_pay_statuses.post_id
 				AND driver_pay_statuses.meta_key = 'driver_pay_statuses'
@@ -176,6 +178,11 @@ class TMSReports extends TMSReportsHelper {
 		$where_conditions = array();
 		$where_values     = array();
 		
+		// Фильтрация по статусу
+		if ( ! empty( $args[ 'customer_id' ] ) && $args[ 'customer_id' ] !== 'all' ) {
+			$where_conditions[] = "customer_id.meta_value = %s";
+			$where_values[]     = $args[ 'customer_id' ];
+		}
 		// Фильтрация по статусу
 		if ( ! empty( $args[ 'office' ] ) && $args[ 'office' ] !== 'all' ) {
 			$where_conditions[] = "office_dispatcher.meta_value = %s";
@@ -1287,19 +1294,23 @@ class TMSReports extends TMSReportsHelper {
 		
 		// Запрос для подсчета сумм booked_rate по диапазонам
 		$sql = "
-        SELECT
-            SUM(CASE WHEN DATEDIFF(NOW(), main.load_problem) BETWEEN 31 AND 61 THEN meta_booked_rate.meta_value END) AS sum_range_31_61,
-            SUM(CASE WHEN DATEDIFF(NOW(), main.load_problem) BETWEEN 62 AND 90 THEN meta_booked_rate.meta_value END) AS sum_range_62_90,
-            SUM(CASE WHEN DATEDIFF(NOW(), main.load_problem) BETWEEN 91 AND 121 THEN meta_booked_rate.meta_value END) AS sum_range_91_121,
-            SUM(CASE WHEN DATEDIFF(NOW(), main.load_problem) > 121 THEN meta_booked_rate.meta_value END) AS sum_range_121_plus
-	        FROM $table_main AS main
-	        LEFT JOIN $table_meta AS meta_booked_rate
-	            ON main.id = meta_booked_rate.post_id
-	            AND meta_booked_rate.meta_key = 'booked_rate'
-	        WHERE main.load_problem IS NOT NULL
-	          AND main.status_post = 'publish'
-	    ";
-		
+		    SELECT
+		        SUM(CASE WHEN DATEDIFF(NOW(), main.load_problem) BETWEEN 31 AND 61 THEN meta_booked_rate.meta_value END) AS sum_range_31_61,
+		        SUM(CASE WHEN DATEDIFF(NOW(), main.load_problem) BETWEEN 62 AND 90 THEN meta_booked_rate.meta_value END) AS sum_range_62_90,
+		        SUM(CASE WHEN DATEDIFF(NOW(), main.load_problem) BETWEEN 91 AND 121 THEN meta_booked_rate.meta_value END) AS sum_range_91_121,
+		        SUM(CASE WHEN DATEDIFF(NOW(), main.load_problem) > 121 THEN meta_booked_rate.meta_value END) AS sum_range_121_plus
+		    FROM $table_main AS main
+		    LEFT JOIN $table_meta AS meta_booked_rate
+		        ON main.id = meta_booked_rate.post_id
+		        AND meta_booked_rate.meta_key = 'booked_rate'
+		    LEFT JOIN $table_meta AS ar_status
+		        ON main.id = ar_status.post_id
+		        AND ar_status.meta_key = 'ar_status'
+		    WHERE main.load_problem IS NOT NULL
+		        AND main.load_problem != ''
+		        AND ar_status.meta_value IS NOT NULL
+		        AND main.status_post = 'publish'
+		";
 		// Выполнение запроса
 		$result = $wpdb->get_row( $sql, ARRAY_A );
 		
@@ -1392,6 +1403,35 @@ class TMSReports extends TMSReportsHelper {
 	}
 	
 	public function get_counters_broker( $broker_id ) {
+		global $wpdb;
+		
+		if ( ! is_numeric( $broker_id ) ) {
+			return false;
+		}
+		
+		$table_meta = "{$wpdb->prefix}{$this->table_meta}";
+		
+		// SQL-запрос для подсчёта статусов
+		$sql = "
+		SELECT
+		    COUNT(CASE WHEN meta_status.meta_value = 'delivered' THEN 1 END) AS Delivered,
+		    COUNT(CASE WHEN meta_status.meta_value = 'cancelled' THEN 1 END) AS Cancelled,
+		    COUNT(CASE WHEN meta_status.meta_value = 'tonu' THEN 1 END) AS TONU,
+		    COUNT(CASE WHEN meta_status.meta_value NOT IN ('delivered', 'cancelled', 'tonu') THEN 1 END) AS Others
+		FROM $table_meta AS meta_broker
+		INNER JOIN $table_meta AS meta_status
+		    ON meta_broker.post_id = meta_status.post_id
+		WHERE meta_broker.meta_key = 'customer_id'
+		  AND meta_broker.meta_value = %s
+		  AND meta_status.meta_key = 'load_status'
+		";
+		
+		$results = $wpdb->get_row( $wpdb->prepare( $sql, $broker_id ), ARRAY_A );
+		
+		return $results;
+	}
+	
+	public function get_broker_loads( $broker_id ) {
 		global $wpdb;
 		
 		if ( ! is_numeric( $broker_id ) ) {

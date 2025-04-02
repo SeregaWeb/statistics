@@ -30,7 +30,7 @@ import { actionCreateCompanyInit, ActionDeleteCompanyInit, ActionUpdateCompanyIn
 import { actionCreateShipperInit, ActionDeleteShipperInit, actionUpdateShipperInit } from './components/create-shipper';
 import { nextTabTrigger, tabUrlUpdeter } from './components/tab-helper';
 import { addSearchAction } from './components/search-action';
-import { toggleBlocksInit, toggleCheckboxInit } from './components/toggle-blocks-init';
+import { toggleBlocksInit, toggleBlocksRadio, toggleCheckboxInit } from './components/toggle-blocks-init';
 import { changeTableInit } from './components/change-table';
 import { initGetInfoDriver } from './components/driver-Info';
 import { updateTooltip } from './components/tooltip-start';
@@ -42,7 +42,7 @@ import { disabledValuesInSelectInit, showHiddenValueInit } from './components/ch
 import { logsInit } from './components/logs';
 import { bookmarkInit } from './components/bookmark';
 import { sendUpdatePerformance } from './components/performance';
-import { telMaskInit } from './components/tel-mask';
+import { masksAllSite, telMaskInit } from './components/tel-mask';
 import { changeStopType } from './components/stop-type';
 import { setStatusPaid } from './components/set-status-paid';
 import { sendEmailChain } from './components/send-email-chain';
@@ -133,8 +133,10 @@ function ready() {
     changeStopType();
     setStatusPaid();
     telMaskInit();
+    masksAllSite();
     tabUrlUpdeter();
     timeStrictChange();
+    toggleBlocksRadio();
 
     createDocumentInvoice();
     createDocumentInvoiceActions(urlAjax);

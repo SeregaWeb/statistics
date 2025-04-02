@@ -288,26 +288,37 @@ class  TMSStatistics extends TMSReportsHelper {
 	public function get_all_users_statistics() {
 		global $wpdb;
 		
+		$exclude_users = get_field( 'exclude_users', get_the_ID() );
 		$table_reports = $wpdb->prefix . $this->table_main;
 		$table_meta    = $wpdb->prefix . $this->table_meta;
 		
 		// Основная часть запроса
 		$query = "
-    SELECT
-        dispatcher_meta.meta_value AS dispatcher_initials,
-        COUNT(reports.id) AS post_count,
-        SUM(CAST(profit_meta.meta_value AS DECIMAL(10,2))) AS total_profit
-    FROM {$table_reports} reports
-    INNER JOIN {$table_meta} dispatcher_meta
-        ON reports.id = dispatcher_meta.post_id
-    INNER JOIN {$table_meta} profit_meta
-        ON reports.id = profit_meta.post_id
-    WHERE dispatcher_meta.meta_key = 'dispatcher_initials'
-    AND profit_meta.meta_key = 'profit'
-    AND reports.status_post = 'publish'
-    GROUP BY dispatcher_meta.meta_value
-    ORDER BY total_profit DESC
-    ";
+			SELECT
+				dispatcher_meta.meta_value AS dispatcher_initials,
+				COUNT(reports.id) AS post_count,
+				SUM(CAST(profit_meta.meta_value AS DECIMAL(10,2))) AS total_profit
+			FROM {$table_reports} reports
+			INNER JOIN {$table_meta} dispatcher_meta
+				ON reports.id = dispatcher_meta.post_id
+			INNER JOIN {$table_meta} profit_meta
+				ON reports.id = profit_meta.post_id
+			WHERE dispatcher_meta.meta_key = 'dispatcher_initials'
+			AND profit_meta.meta_key = 'profit'
+			AND reports.status_post = 'publish'
+		";
+		
+		// Исключение пользователей из exclude_users
+		if ( ! empty( $exclude_users ) && is_array( $exclude_users ) ) {
+			$placeholders = implode( ',', array_fill( 0, count( $exclude_users ), '%s' ) );
+			$query        .= " AND dispatcher_meta.meta_value NOT IN ($placeholders)";
+		}
+		
+		$query .= " GROUP BY dispatcher_meta.meta_value
+			ORDER BY total_profit DESC";
+		
+		// Подготовка запроса с исключенными пользователями
+		$query = $wpdb->prepare( $query, ...$exclude_users );
 		
 		// Выполняем запрос и получаем результат
 		$dispatcher_stats = $wpdb->get_results( $query, ARRAY_A );

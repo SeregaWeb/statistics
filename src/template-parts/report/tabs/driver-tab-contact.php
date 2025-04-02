@@ -281,21 +281,24 @@ $emergency_contact_relation = get_field_value( $meta, 'emergency_contact_relatio
             </div>
         </div>
 
-        <div class="col-12" role="presentation">
-            <div class="justify-content-start gap-2">
-                <button type="button" data-tab-id="pills-customer-tab"
-                        class="btn btn-dark js-next-tab">Previous
-                </button>
-				<?php if ( $full_only_view ): ?>
-                    <button type="button" data-tab-id="pills-driver-vehicle-tab"
-                            class="btn btn-primary js-next-tab">Next
+        <div class="row">
+
+            <div class="col-12" role="presentation">
+                <div class="justify-content-start gap-2">
+                    <button type="button" data-tab-id="pills-customer-tab"
+                            class="btn btn-dark js-next-tab">Previous
                     </button>
-				<?php else: ?>
-                    <button type="submit" class="btn btn-primary js-submit-and-next-tab"
-                            data-tab-id="pills-driver-vehicle-tab">
-                        Next
-                    </button>
-				<?php endif; ?>
+					<?php if ( $full_only_view ): ?>
+                        <button type="button" data-tab-id="pills-driver-vehicle-tab"
+                                class="btn btn-primary js-next-tab">Next
+                        </button>
+					<?php else: ?>
+                        <button type="submit" class="btn btn-primary js-submit-and-next-tab"
+                                data-tab-id="pills-driver-vehicle-tab">
+                            Next
+                        </button>
+					<?php endif; ?>
+                </div>
             </div>
         </div>
     </form>

@@ -20,8 +20,7 @@ $args = array(
 $args  = $reports->set_filter_params_arr( $args );
 $items = $reports->get_table_items_ar( $args );
 
-$get_statistics = $reports->get_problem_statistics_with_sums();
-
+$get_statistics        = $reports->get_problem_statistics_with_sums();
 $post_tp               = 'accounting';
 $items[ 'page_type' ]  = $post_tp;
 $items[ 'ar_problem' ] = true;

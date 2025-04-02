@@ -274,6 +274,7 @@ ul.result-search-el {
             color: #0c0c0c;
         }
     }
+    &.nec-file,
     &.pallet-file {
         border-color: #3fffee;
         .required-label {
@@ -281,10 +282,8 @@ ul.result-search-el {
             color: #0c0c0c;
         }
     }
-    &.lift-gate-file {
 
-    }
-
+    &.payment-file,
     &.ppe-file,
     &.screen-picture  {
         border-color: $--warning-color;
@@ -294,6 +293,7 @@ ul.result-search-el {
         }
     }
 
+    &.w9-file,
     &.ramp-file,
     &.updated {
         border-color: $--success-color;
@@ -301,6 +301,7 @@ ul.result-search-el {
             background-color: $--success-color;
         }
     }
+    &.ssn-file,
     &.required {
         border-color: $--primary-color;
         .required-label {
@@ -309,6 +310,7 @@ ul.result-search-el {
     }
 
 
+    &.ein-file,
     &.dolly-file,
     &.freight_pictures {
         border-color: #000000;
@@ -646,4 +648,13 @@ ul.result-search-el {
     width: 100%;
     height: 200px;
     overflow: hidden;
+}
+
+.form-switch .form-check-input.disabled {
+    pointer-events: none;
+    opacity: 0.5;
+    & + label {
+        pointer-events: none;
+        color: $primary;
+    }
 }

@@ -8,6 +8,37 @@ $color_accounting_processed: #b7e1cd;
 $color_accounting_unsubmitted: #ffff00;
 $color_accounting_others: #ff0000;
 
+.load-status-accounting-Processing td {
+    background-color: #fff7df;
+}
+.load-status-accounting-Paid td {
+    background-color: $color_status_loaded;
+}
+
+.factoring-color-unsubmitted td ,
+.factoring-color-in-processing td ,
+.factoring-color-pending-to-tafs td {
+    background-color: #fff7df;
+}
+
+
+.factoring-color-processed td {
+    background-color: #f6fff3;
+}
+
+.factoring-color-paid td {
+    background-color: #effee9;
+}
+
+.factoring-color-requires-attention td ,
+.factoring-color-in-dispute td ,
+.factoring-color-charge-back td ,
+.factoring-color-short-pay td ,
+.factoring-color-fraud td ,
+.factoring-color-company-closed td {
+    background-color: #ffdcdc;
+}
+
 .load-status-tonu,
 .load-status-cancelled {
     background-color: #ffdcdc;

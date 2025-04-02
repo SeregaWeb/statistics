@@ -57,6 +57,22 @@ $dolly_file        = get_field_value( $meta, 'dolly_file' );
 $ramp_file         = get_field_value( $meta, 'ramp_file' );
 $total_images      = 0;
 
+$files_check = array(
+	$registration_file,
+	$ppe_file,
+	$e_tracks_file,
+	$pallet_jack_file,
+	$lift_gate_file,
+	$dolly_file,
+	$ramp_file,
+);
+
+foreach ( $files_check as $file ) {
+	if ( ! empty( $file ) ) {
+		$total_images ++;
+	}
+}
+
 
 if ( ! empty( $vehicle_pictures ) ) {
 	$vehicle_pictures_arr = $driver->get_files( $vehicle_pictures );
@@ -89,6 +105,7 @@ $files = array(
 		'field_name'     => 'registration_file',
 		'field_label'    => 'Registration file',
 		'delete_action'  => 'js-remove-one-driver',
+		'active_tab'     => 'pills-driver-vehicle-tab',
 	),
 	array(
 		'file_arr'       => $ppe_file_arr,
@@ -99,6 +116,7 @@ $files = array(
 		'field_name'     => 'ppe_file',
 		'field_label'    => 'PPE file',
 		'delete_action'  => 'js-remove-one-driver',
+		'active_tab'     => 'pills-driver-vehicle-tab',
 	),
 	array(
 		'file_arr'       => $e_tracks_file_arr,
@@ -109,6 +127,7 @@ $files = array(
 		'field_name'     => 'e_tracks_file',
 		'field_label'    => 'E-Tracks file',
 		'delete_action'  => 'js-remove-one-driver',
+		'active_tab'     => 'pills-driver-vehicle-tab',
 	),
 	array(
 		'file_arr'       => $pallet_jack_file_arr,
@@ -119,6 +138,7 @@ $files = array(
 		'field_name'     => 'pallet_jack_file',
 		'field_label'    => 'Pallet Jack file',
 		'delete_action'  => 'js-remove-one-driver',
+		'active_tab'     => 'pills-driver-vehicle-tab',
 	),
 	array(
 		'file_arr'       => $lift_gate_file_arr,
@@ -129,6 +149,7 @@ $files = array(
 		'field_name'     => 'lift_gate_file',
 		'field_label'    => 'Lift Gate file',
 		'delete_action'  => 'js-remove-one-driver',
+		'active_tab'     => 'pills-driver-vehicle-tab',
 	),
 	array(
 		'file_arr'       => $dolly_file_arr,
@@ -139,6 +160,7 @@ $files = array(
 		'field_name'     => 'dolly_file',
 		'field_label'    => 'Dolly file',
 		'delete_action'  => 'js-remove-one-driver',
+		'active_tab'     => 'pills-driver-vehicle-tab',
 	),
 	array(
 		'file_arr'       => $ramp_file_arr,
@@ -149,6 +171,7 @@ $files = array(
 		'field_name'     => 'ramp_file',
 		'field_label'    => 'Ramp file',
 		'delete_action'  => 'js-remove-one-driver',
+		'active_tab'     => 'pills-driver-vehicle-tab',
 	)
 );
 
@@ -167,107 +190,110 @@ $files = array(
             </div>
 		<?php endif; ?>
     </div>
+	
+	<?php if ( $total_images > 0 ): ?>
+        <div class="js-hide-upload-files-container hide-upload-files mb-3" data-class-toggle="hide-upload-files">
+            <div class="container-uploads <?php echo $full_only_view ? "read-only" : '' ?>">
+				
+				<?php if ( ( $vehicle_pictures ) && isset( $post_id ) ): ?>
+					<?php
+					if ( isset( $vehicle_pictures_arr ) && is_array( $vehicle_pictures_arr ) ):
+						foreach ( $vehicle_pictures_arr as $value ):?>
+                            <form class="js-remove-one-driver card-upload vehicle-label"
+                                  data-tab="pills-driver-vehicle-tab">
+                                <a class="view-document" target="_blank"
+                                   href="<?php echo $value[ 'url' ]; ?>"><?php echo $reports->get_icon_view( 'view' ); ?></a>
+                                <span class="required-label ">Other files</span>
+                                <figure class="card-upload__figure">
+									<?php
+									if ( ! isset( $value[ 'file_name' ] ) ) : ?>
+                                        <img class="card-upload__img" src="<?php echo $value[ 'url' ] ?>" alt="img">
+									<?php else: ?>
+										<?php echo $reports->get_file_icon(); ?>
+                                        <p><?php echo $value[ 'file_name' ]; ?></p>
+									<?php endif; ?>
 
-    <div class="js-hide-upload-files-container hide-upload-files mb-3" data-class-toggle="hide-upload-files">
-        <div class="container-uploads <?php echo $full_only_view ? "read-only" : '' ?>">
-			
-			<?php if ( ( $vehicle_pictures ) && isset( $post_id ) ): ?>
-				<?php
-				if ( isset( $vehicle_pictures_arr ) && is_array( $vehicle_pictures_arr ) ):
-					foreach ( $vehicle_pictures_arr as $value ):?>
-                        <form class="js-remove-one-driver card-upload vehicle-label"
-                              data-tab="pills-driver-vehicle-tab">
-                            <a class="view-document" target="_blank"
-                               href="<?php echo $value[ 'url' ]; ?>"><?php echo $reports->get_icon_view( 'view' ); ?></a>
-                            <span class="required-label ">Other files</span>
-                            <figure class="card-upload__figure">
-								<?php
-								if ( ! isset( $value[ 'file_name' ] ) ) : ?>
-                                    <img class="card-upload__img" src="<?php echo $value[ 'url' ] ?>" alt="img">
-								<?php else: ?>
-									<?php echo $reports->get_file_icon(); ?>
-                                    <p><?php echo $value[ 'file_name' ]; ?></p>
+                                </figure>
+                                <input type="hidden" name="image-id"
+                                       value="<?php echo $value[ 'id' ]; ?>">
+                                <input type="hidden" name="image-fields" value="vehicle_pictures">
+                                <input type="hidden" name="post_id" value="<?php echo $post_id; ?>">
+								<?php if ( ! $full_only_view ): ?>
+                                    <button class="card-upload__btn card-upload__btn--remove" type="submit">
+										<?php echo $reports->get_close_icon(); ?>
+                                    </button>
 								<?php endif; ?>
+                                <a class="card-upload__btn card-upload__btn--download" download
+                                   href="<?php echo $value[ 'url' ]; ?>">
+									<?php echo $reports->get_download_icon(); ?>
+                                </a>
+                            </form>
+						<?php endforeach;
+					endif;
+					?>
+				<?php endif; ?>
+				
+				<?php if ( ( $dimensions_pictures ) && isset( $post_id ) ): ?>
+					<?php
+					if ( isset( $dimensions_pictures_arr ) && is_array( $dimensions_pictures_arr ) ):
+						foreach ( $dimensions_pictures_arr as $value ):?>
+                            <form class="js-remove-one-driver card-upload dimensions-pictures"
+                                  data-tab="pills-driver-vehicle-tab">
+                                <a class="view-document" target="_blank"
+                                   href="<?php echo $value[ 'url' ]; ?>"><?php echo $reports->get_icon_view( 'view' ); ?></a>
+                                <span class="required-label ">Dimensions picture</span>
+                                <figure class="card-upload__figure">
+									<?php
+									if ( ! isset( $value[ 'file_name' ] ) ) : ?>
+                                        <img class="card-upload__img" src="<?php echo $value[ 'url' ] ?>" alt="img">
+									<?php else: ?>
+										<?php echo $reports->get_file_icon(); ?>
+                                        <p><?php echo $value[ 'file_name' ]; ?></p>
+									<?php endif; ?>
 
-                            </figure>
-                            <input type="hidden" name="image-id"
-                                   value="<?php echo $value[ 'id' ]; ?>">
-                            <input type="hidden" name="image-fields" value="vehicle_pictures">
-                            <input type="hidden" name="post_id" value="<?php echo $post_id; ?>">
-							<?php if ( ! $full_only_view ): ?>
-                                <button class="card-upload__btn card-upload__btn--remove" type="submit">
-									<?php echo $reports->get_close_icon(); ?>
-                                </button>
-							<?php endif; ?>
-                            <a class="card-upload__btn card-upload__btn--download" download
-                               href="<?php echo $value[ 'url' ]; ?>">
-								<?php echo $reports->get_download_icon(); ?>
-                            </a>
-                        </form>
-					<?php endforeach;
-				endif;
-				?>
-			<?php endif; ?>
-			
-			<?php if ( ( $dimensions_pictures ) && isset( $post_id ) ): ?>
-				<?php
-				if ( isset( $dimensions_pictures_arr ) && is_array( $dimensions_pictures_arr ) ):
-					foreach ( $dimensions_pictures_arr as $value ):?>
-                        <form class="js-remove-one-driver card-upload dimensions-pictures"
-                              data-tab="pills-driver-vehicle-tab">
-                            <a class="view-document" target="_blank"
-                               href="<?php echo $value[ 'url' ]; ?>"><?php echo $reports->get_icon_view( 'view' ); ?></a>
-                            <span class="required-label ">Dimensions picture</span>
-                            <figure class="card-upload__figure">
-								<?php
-								if ( ! isset( $value[ 'file_name' ] ) ) : ?>
-                                    <img class="card-upload__img" src="<?php echo $value[ 'url' ] ?>" alt="img">
-								<?php else: ?>
-									<?php echo $reports->get_file_icon(); ?>
-                                    <p><?php echo $value[ 'file_name' ]; ?></p>
+                                </figure>
+                                <input type="hidden" name="image-id"
+                                       value="<?php echo $value[ 'id' ]; ?>">
+                                <input type="hidden" name="image-fields" value="dimensions_pictures">
+                                <input type="hidden" name="post_id" value="<?php echo $post_id; ?>">
+								<?php if ( ! $full_only_view ): ?>
+                                    <button class="card-upload__btn card-upload__btn--remove" type="submit">
+										<?php echo $reports->get_close_icon(); ?>
+                                    </button>
 								<?php endif; ?>
+                                <a class="card-upload__btn card-upload__btn--download" download
+                                   href="<?php echo $value[ 'url' ]; ?>">
+									<?php echo $reports->get_download_icon(); ?>
+                                </a>
+                            </form>
+						<?php endforeach;
+					endif;
+					?>
+				<?php endif; ?>
+				
+				<?php
+				
+				foreach ( $files as $file ):
+					if ( isset( $file[ 'file_arr' ] ) && $file[ 'file' ] ):
+						echo esc_html( get_template_part( TEMPLATE_PATH . 'common/card', 'file', array(
+							'file_arr'       => $file[ 'file_arr' ],
+							'file'           => $file[ 'file' ],
+							'full_only_view' => $file[ 'full_only_view' ],
+							'post_id'        => $file[ 'post_id' ],
+							'class_name'     => $file[ 'class_name' ],
+							'field_name'     => $file[ 'field_name' ],
+							'field_label'    => $file[ 'field_label' ],
+							'delete_action'  => $file[ 'delete_action' ],
+							'active_tab'     => $file[ 'active_tab' ],
+						) ) );
+					endif;
+				endforeach; ?>
 
-                            </figure>
-                            <input type="hidden" name="image-id"
-                                   value="<?php echo $value[ 'id' ]; ?>">
-                            <input type="hidden" name="image-fields" value="dimensions_pictures">
-                            <input type="hidden" name="post_id" value="<?php echo $post_id; ?>">
-							<?php if ( ! $full_only_view ): ?>
-                                <button class="card-upload__btn card-upload__btn--remove" type="submit">
-									<?php echo $reports->get_close_icon(); ?>
-                                </button>
-							<?php endif; ?>
-                            <a class="card-upload__btn card-upload__btn--download" download
-                               href="<?php echo $value[ 'url' ]; ?>">
-								<?php echo $reports->get_download_icon(); ?>
-                            </a>
-                        </form>
-					<?php endforeach;
-				endif;
-				?>
-			<?php endif; ?>
-			
-			<?php
-			
-			foreach ( $files as $file ):
-				if ( isset( $file[ 'file_arr' ] ) && $file[ 'file' ] ):
-					echo esc_html( get_template_part( TEMPLATE_PATH . 'common/card', 'file', array(
-						'file_arr'       => $file[ 'file_arr' ],
-						'file'           => $file[ 'file' ],
-						'full_only_view' => $file[ 'full_only_view' ],
-						'post_id'        => $file[ 'post_id' ],
-						'class_name'     => $file[ 'class_name' ],
-						'field_name'     => $file[ 'field_name' ],
-						'field_label'    => $file[ 'field_label' ],
-						'delete_action'  => $file[ 'delete_action' ],
-					) ) );
-				endif;
-			endforeach; ?>
 
+            </div>
 
         </div>
-
-    </div>
+	<?php endif; ?>
 
     <form class="js-update-driver-information">
 		<?php if ( $post_id ): ?>
@@ -309,14 +335,21 @@ $files = array(
                     <input type="text" class="form-control" name="gvwr" value="<?php echo $gvwr; ?>">
                 </div>
 
-                <div class="col-12 mb-3">
-                    <label class="form-label">GVWR Placard (Optional)</label>
-                    <input type="file" class="form-control" name="gvwr_placard">
+                <div class="col-12 js-add-new-report">
+                    <div class="row">
+                        <div class="col-12">
+                            <label class="form-label">GVWR Placard (Optional)</label>
+                            <input type="file" class="form-control js-control-uploads" name="gvwr_placard">
+                        </div>
+
+                        <div class="col-12 mb-1 mt-1 preview-photo js-preview-photo-upload">
+
+                        </div>
+                    </div>
                 </div>
 			<?php endif; ?>
 
             <div class="col-12"></div>
-
 
             <div class="col-md-4 mb-3">
                 <label class="form-label">Payload<span class="required-star text-danger">*</span></label>
@@ -334,7 +367,6 @@ $files = array(
                            value="<?php echo $dimensions_3; ?>">
                 </div>
             </div>
-
 
             <div class="col-md-4 mb-3">
                 <label class="form-label">VIN<span class="required-star text-danger">*</span></label>
@@ -428,7 +460,6 @@ $files = array(
 
             <div class="col-12"></div>
 
-
             <div class="col-12">
                 <div class="js-add-new-report w-100">
                     <div class="p-0 mb-2 col-12">
@@ -459,156 +490,201 @@ $files = array(
                 </div>
             </div>
 
-            <div class="col-12 mb-3">
-                <label class="form-label">File</label>
-				<?php if ( ! $registration_file ): ?>
-                    <input type="file" class="form-control" name="registration_file">
-				<?php else: ?>
-                    <br><strong class="text-primary">Uploaded!</strong>
-				<?php endif; ?>
-            </div>
-
-            <div class="col-12 mb-3">
-                <div class="form-check form-switch">
-                    <input class="form-check-input js-toggle"
-                           data-block-toggle="js-ppe-driver" <?php echo $ppe_file ? 'disabled' : ''; ?> type="checkbox"
-                           name="ppe" id="ppe" <?php echo $ppe ? 'checked' : ''; ?>>
-                    <label class="form-check-label" for="ppe">PPE</label>
-                </div>
-				
-				<?php if ( ! $ppe_file ): ?>
-                    <div class="js-ppe-driver <?php echo $ppe ? '' : 'd-none'; ?>">
-                        <input type="file" class="form-control" name="ppe_file">
+            <div class="col-12 js-add-new-report">
+                <div class="row">
+                    <div class="col-12">
+                        <span style="position: relative; top: -2px;"><?php if ( $registration_file ): echo $reports->get_icon_uploaded_file(); endif; ?></span
+                        <label class="form-label">File
+                        </label>
+						<?php if ( ! $registration_file ): ?>
+                            <input type="file" class="form-control js-control-uploads" name="registration_file">
+						<?php endif; ?>
                     </div>
-				<?php else: ?>
-                    <br><strong class="text-primary">Uploaded!</strong>
-				<?php endif; ?>
 
+                    <div class="col-12 mb-3 mt-1 preview-photo js-preview-photo-upload">
 
-            </div>
-
-            <div class="col-12 mb-3">
-                <div class="form-check form-switch">
-                    <input class="form-check-input js-toggle"
-                           data-block-toggle="js-e-tracks-driver" <?php echo $e_tracks_file ? 'disabled' : ''; ?>
-                           type="checkbox" name="e_tracks"
-                           id="e_tracks" <?php echo $e_tracks ? 'checked' : ''; ?>>
-                    <label class="form-check-label" for="e_tracks">
-                        E-Tracks
-                    </label>
-                </div>
-				
-				<?php if ( ! $e_tracks_file ): ?>
-                    <div class="js-e-tracks-driver <?php echo $e_tracks ? '' : 'd-none'; ?>">
-                        <input type="file" class="form-control" name="e_tracks_file">
                     </div>
-				<?php else: ?>
-                    <br><strong class="text-primary">Uploaded!</strong>
-				<?php endif; ?>
-
-            </div>
-
-            <div class="col-12 mb-3">
-                <div class="form-check form-switch">
-                    <input class="form-check-input js-toggle"
-                           data-block-toggle="js-pallet-jack-driver" <?php echo $pallet_jack_file ? 'disabled' : ''; ?>
-                           type="checkbox" name="pallet_jack"
-                           id="pallet_jack" <?php echo $pallet_jack ? 'checked' : ''; ?>>
-                    <label class="form-check-label" for="pallet_jack">
-                        Pallet Jack
-                    </label>
                 </div>
-				
-				<?php if ( ! $pallet_jack_file ): ?>
-                    <div class="js-pallet-jack-driver <?php echo $pallet_jack ? '' : 'd-none'; ?>">
-                        <input type="file" class="form-control" name="pallet_jack_file">
-                    </div>
-				<?php else: ?>
-                    <br><strong class="text-primary">Uploaded!</strong>
-				<?php endif; ?>
-
-
             </div>
 
-            <div class="col-12 mb-3">
-                <div class="form-check form-switch">
-                    <input class="form-check-input  js-toggle"
-                           data-block-toggle="js-lift-gate-driver" <?php echo $lift_gate_file ? 'disabled' : ''; ?>
-                           type="checkbox" name="lift_gate"
-                           id="lift_gate" <?php echo $lift_gate ? 'checked' : ''; ?>>
-                    <label class="form-check-label" for="lift_gate">Lift Gate
-                    </label>
+            <div class="col-12 mb-3 js-add-new-report">
+                <div class="row">
+                    <div class="col-12">
+                        <div class="form-check form-switch">
+                            <span style="position: relative; top: -2px;"><?php if ( $ppe_file ): echo $reports->get_icon_uploaded_file(); endif; ?></span>
+                            <input class="form-check-input js-toggle <?php echo $ppe_file ? 'disabled' : ''; ?>"
+                                   data-block-toggle="js-ppe-driver" type="checkbox"
+                                   name="ppe" id="ppe" <?php echo $ppe ? 'checked' : ''; ?>>
+                            <label class="form-check-label"
+                                   for="ppe">PPE </label>
+                        </div>
+						
+						<?php if ( ! $ppe_file ): ?>
+                            <div class="js-ppe-driver <?php echo $ppe ? '' : 'd-none'; ?>">
+                                <input type="file" class="form-control js-control-uploads" name="ppe_file">
+                            </div>
+						<?php endif; ?>
+                    </div>
+                    <div class="col-12 mb-1 mt-1 preview-photo js-preview-photo-upload">
+
+                    </div>
                 </div>
-				
-				<?php if ( ! $lift_gate_file ): ?>
-                    <div class="js-lift-gate-driver <?php echo $lift_gate ? '' : 'd-none'; ?>">
-                        <input type="file" class="form-control" name="lift_gate_file">
-                    </div>
-				<?php else: ?>
-                    <br><strong class="text-primary">Uploaded!</strong>
-				<?php endif; ?>
-
-
             </div>
+            <div class="col-12 mb-3 js-add-new-report">
+                <div class="row">
+                    <div class="col-12">
+                        <div class="form-check form-switch">
+                            <span style="position: relative; top: -2px;"><?php if ( $e_tracks_file ): echo $reports->get_icon_uploaded_file(); endif; ?></span>
+                            <input class="form-check-input js-toggle <?php echo $e_tracks_file ? 'disabled' : ''; ?>"
+                                   data-block-toggle="js-e-tracks-driver"
+                                   type="checkbox" name="e_tracks"
+                                   id="e_tracks" <?php echo $e_tracks ? 'checked' : ''; ?>>
+                            <label class="form-check-label" for="e_tracks">
+                                E-Tracks
+                            </label>
+                        </div>
+						
+						<?php if ( ! $e_tracks_file ): ?>
+                            <div class="js-e-tracks-driver <?php echo $e_tracks ? '' : 'd-none'; ?>">
+                                <input type="file" class="form-control js-control-uploads" name="e_tracks_file">
+                            </div>
+						<?php endif; ?>
 
-            <div class="col-12 mb-3">
-                <div class="form-check form-switch">
-                    <input class="form-check-input  js-toggle"
-                           data-block-toggle="js-dolly-driver" <?php echo $dolly_file ? 'disabled' : ''; ?>
-                           type="checkbox" name="dolly" id="dolly" <?php echo $dolly ? 'checked' : ''; ?>>
-                    <label class="form-check-label" for="dolly">
-                        Dolly
-                    </label>
+                    </div>
+                    <div class="col-12 mb-1 mt-1 preview-photo js-preview-photo-upload">
+
+                    </div>
                 </div>
-				
-				<?php if ( ! $dolly_file ): ?>
-                    <div class="js-dolly-driver <?php echo $dolly ? '' : 'd-none'; ?>">
-                        <input type="file" class="form-control" name="dolly_file">
-                    </div>
-				<?php else: ?>
-                    <br><strong class="text-primary">Uploaded!</strong>
-				<?php endif; ?>
-
-
             </div>
+            <div class="col-12 mb-3 js-add-new-report">
+                <div class="row">
+                    <div class="col-12">
+                        <div class="form-check form-switch">
+                            <span style="position: relative; top: -2px;"><?php if ( $pallet_jack_file ): echo $reports->get_icon_uploaded_file(); endif; ?></span>
+                            <input class="form-check-input js-toggle <?php echo $pallet_jack_file ? 'disabled' : ''; ?>"
+                                   data-block-toggle="js-pallet-jack-driver"
+                                   type="checkbox" name="pallet_jack"
+                                   id="pallet_jack" <?php echo $pallet_jack ? 'checked' : ''; ?>>
+                            <label class="form-check-label" for="pallet_jack">
+                                Pallet Jack
+                            </label>
+                        </div>
+						
+						<?php if ( ! $pallet_jack_file ): ?>
+                            <div class="js-pallet-jack-driver <?php echo $pallet_jack ? '' : 'd-none'; ?>">
+                                <input type="file" class="form-control js-control-uploads" name="pallet_jack_file">
+                            </div>
+						<?php endif; ?>
 
-            <div class="col-12 mb-3">
-                <div class="form-check form-switch">
-                    <input class="form-check-input js-toggle"
-                           data-block-toggle="js-ramp-driver" <?php echo $ramp_file ? 'disabled' : ''; ?>
-                           type="checkbox" name="ramp" id="ramp" <?php echo $ramp ? 'checked' : ''; ?>>
-                    <label class="form-check-label" for="ramp">
-                        Ramp
-                    </label>
+
+                    </div>
+                    <div class="col-12 mb-1 mt-1 preview-photo js-preview-photo-upload">
+
+                    </div>
                 </div>
-				
-				<?php if ( ! $ramp_file ): ?>
-                    <div class="js-ramp-driver <?php echo $ramp ? '' : 'd-none'; ?>">
-                        <input type="file" class="form-control" name="ramp_file">
-                    </div>
-				<?php else: ?>
-                    <br><strong class="text-primary">Uploaded!</strong>
-				<?php endif; ?>
-
             </div>
+            <div class="col-12 mb-3 js-add-new-report">
+                <div class="row">
+                    <div class="col-12">
+                        <div class="form-check form-switch">
+                            <span style="position: relative; top: -2px;"><?php if ( $lift_gate_file ): echo $reports->get_icon_uploaded_file(); endif; ?></span>
+                            <input class="form-check-input  js-toggle  <?php echo $lift_gate_file ? 'disabled' : ''; ?>"
+                                   data-block-toggle="js-lift-gate-driver"
+                                   type="checkbox" name="lift_gate"
+                                   id="lift_gate" <?php echo $lift_gate ? 'checked' : ''; ?>>
+                            <label class="form-check-label"
+                                   for="lift_gate">
+                                Lift
+                                Gate
+                            </label>
+                        </div>
+						
+						<?php if ( ! $lift_gate_file ): ?>
+                            <div class="js-lift-gate-driver <?php echo $lift_gate ? '' : 'd-none'; ?>">
+                                <input type="file" class="form-control js-control-uploads" name="lift_gate_file">
+                            </div>
+						<?php endif; ?>
 
-            <div class="col-12" role="presentation">
-                <div class="justify-content-start gap-2">
-                    <button type="button" data-tab-id="pills-customer-tab"
-                            class="btn btn-dark js-next-tab">Previous
-                    </button>
-					<?php if ( $full_only_view ): ?>
-                        <button type="button" data-tab-id="pills-driver-vehicle-tab"
-                                class="btn btn-primary js-next-tab">Next
+
+                    </div>
+                    <div class="col-12 mb-1 mt-1 preview-photo js-preview-photo-upload">
+
+                    </div>
+                </div>
+            </div>
+            <div class="col-12 mb-3 js-add-new-report">
+                <div class="row">
+                    <div class="col-12">
+                        <div class="form-check form-switch">
+                            <span style="position: relative; top: -2px;"><?php if ( $dolly_file ): echo $reports->get_icon_uploaded_file(); endif; ?></span>
+                            <input class="form-check-input  js-toggle <?php echo $dolly_file ? 'disabled' : ''; ?>"
+                                   data-block-toggle="js-dolly-driver"
+                                   type="checkbox" name="dolly" id="dolly" <?php echo $dolly ? 'checked' : ''; ?>>
+                            <label class="form-check-label"
+                                   for="dolly">
+                                Dolly
+                            </label>
+                        </div>
+						
+						<?php if ( ! $dolly_file ): ?>
+                            <div class="js-dolly-driver <?php echo $dolly ? '' : 'd-none'; ?>">
+                                <input type="file" class="form-control js-control-uploads" name="dolly_file">
+                            </div>
+						<?php endif; ?>
+
+
+                    </div>
+                    <div class="col-12 mb-1 mt-1 preview-photo js-preview-photo-upload">
+
+                    </div>
+                </div>
+            </div>
+            <div class="col-12 mb-3 js-add-new-report">
+                <div class="row">
+                    <div class="col-12">
+                        <div class="form-check form-switch">
+                            <span style="position: relative; top: -2px;"><?php if ( $ramp_file ): echo $reports->get_icon_uploaded_file(); endif; ?></span>
+                            <input class="form-check-input js-toggle <?php echo $ramp_file ? 'disabled' : ''; ?>"
+                                   data-block-toggle="js-ramp-driver"
+                                   type="checkbox" name="ramp" id="ramp" <?php echo $ramp ? 'checked' : ''; ?>>
+                            <label class="form-check-label" for="ramp">
+                                Ramp
+                            </label>
+                        </div>
+						
+						<?php if ( ! $ramp_file ): ?>
+                            <div class="js-ramp-driver <?php echo $ramp ? '' : 'd-none'; ?>">
+                                <input type="file" class="form-control js-control-uploads" name="ramp_file">
+                            </div>
+						<?php endif; ?>
+
+                    </div>
+                    <div class="col-12 mb-1 mt-1 preview-photo js-preview-photo-upload">
+
+                    </div>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-12" role="presentation">
+                    <div class="justify-content-start gap-2">
+                        <button type="button" data-tab-id="pills-driver-contact-tab"
+                                class="btn btn-dark js-next-tab">Previous
                         </button>
-					<?php else: ?>
-                        <button type="submit" class="btn btn-primary js-submit-and-next-tab"
-                                data-tab-id="pills-driver-vehicle-tab">
-                            Next
-                        </button>
-					<?php endif; ?>
+						<?php if ( $full_only_view ): ?>
+                            <button type="button" data-tab-id="pills-driver-vehicle-tab"
+                                    class="btn btn-primary js-next-tab">Next
+                            </button>
+						<?php else: ?>
+                            <button type="submit" class="btn btn-primary js-submit-and-next-tab"
+                                    data-tab-id="pills-driver-vehicle-tab">
+                                Next
+                            </button>
+						<?php endif; ?>
+                    </div>
                 </div>
             </div>
         </div>
+
+
     </form>
 </div>

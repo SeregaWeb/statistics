@@ -767,15 +767,15 @@ class TMSReportsHelper extends TMSReportsIcons {
 	}
 	
 	function set_filter_params( $args, $default_office = false ) {
-		$dispatcher_filter = get_field_value( $_GET, 'dispatcher' );
-		$my_search         = get_field_value( $_GET, 'my_search' );
-		$year              = get_field_value( $_GET, 'fyear' );
-		$month             = get_field_value( $_GET, 'fmonth' );
-		$load_status       = get_field_value( $_GET, 'load_status' );
-		$source            = get_field_value( $_GET, 'source' );
-		$factoring         = get_field_value( $_GET, 'factoring' );
-		$invoice           = get_field_value( $_GET, 'invoice' );
-		$office            = get_field_value( $_GET, 'office' );
+		$dispatcher_filter = trim( get_field_value( $_GET, 'dispatcher' ) );
+		$my_search         = trim( get_field_value( $_GET, 'my_search' ) );
+		$year              = trim( get_field_value( $_GET, 'fyear' ) );
+		$month             = trim( get_field_value( $_GET, 'fmonth' ) );
+		$load_status       = trim( get_field_value( $_GET, 'load_status' ) );
+		$source            = trim( get_field_value( $_GET, 'source' ) );
+		$factoring         = trim( get_field_value( $_GET, 'factoring' ) );
+		$invoice           = trim( get_field_value( $_GET, 'invoice' ) );
+		$office            = trim( get_field_value( $_GET, 'office' ) );
 		
 		if ( $default_office ) {
 			$args[ 'office' ] = $default_office;
@@ -821,8 +821,8 @@ class TMSReportsHelper extends TMSReportsIcons {
 	}
 	
 	function set_filter_params_arr( $args ) {
-		$my_search = get_field_value( $_GET, 'my_search' );
-		$status    = get_field_value( $_GET, 'status' );
+		$my_search = trim( get_field_value( $_GET, 'my_search' ) );
+		$status    = trim( get_field_value( $_GET, 'status' ) );
 		
 		if ( ! $status ) {
 			$status = 'not-solved';
@@ -840,8 +840,8 @@ class TMSReportsHelper extends TMSReportsIcons {
 	}
 	
 	function set_filter_unapplied( $args ) {
-		$my_search = get_field_value( $_GET, 'my_search' );
-		$status    = get_field_value( $_GET, 'status' );
+		$my_search = trim( get_field_value( $_GET, 'my_search' ) );
+		$status    = trim( get_field_value( $_GET, 'status' ) );
 		
 		if ( ! $status ) {
 			$status = 'all';

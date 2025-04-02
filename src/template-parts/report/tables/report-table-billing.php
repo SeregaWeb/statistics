@@ -52,7 +52,8 @@ if ( ! empty( $results ) ) : ?>
         </tr>
         </thead>
         <tbody>
-		<?php foreach ( $results as $row ) :
+		<?php
+		foreach ( $results as $row ) :
 			$meta = get_field_value( $row, 'meta_data' );
 			$main = get_field_value( $row, 'main' );
 			
@@ -88,7 +89,6 @@ if ( ! empty( $results ) ) : ?>
 			
 			$show_control = $TMSUsers->show_control_loads( $my_team, $current_user_id, $dispatcher_initials, $is_draft );
 			
-			$status_class    = $load_status;
 			$factoring_class = strtolower( $factoring_status_row );
 			$factoring_class = str_replace( ' ', '-', $factoring_class );
 			
@@ -106,11 +106,9 @@ if ( ! empty( $results ) ) : ?>
 			
 			$id_customer     = get_field_value( $meta, 'customer_id' );
 			$template_broker = $TMSBroker->get_broker_and_link_by_id( $id_customer );
-			
-			
 			?>
 
-            <tr class="<?php echo $tbd ? 'tbd' : ''; ?>">
+            <tr class="factoring-color-<?php echo $factoring_class; ?> <?php echo $tbd ? 'tbd' : ''; ?>">
                 <td><input <?php echo $now_show ? 'disabled' : ''; ?> type="checkbox"
                                                                       id="load-<?php echo $row[ 'id' ]; ?>"
                                                                       class="checkbox-big js-select-load"
@@ -145,11 +143,26 @@ if ( ! empty( $results ) ) : ?>
 					<?php echo $pdlocations[ 'delivery_date' ] ?>
                 </td>
 
-                <td><span class="<?php echo $booked_price_class; ?>"><?php echo $booked_rate; ?></span></td>
-                <td class="<?php echo $status_class; ?>"><span><?php echo $status; ?></span></td>
-                <td class="<?php echo $invoice_raw ? 'invoiced' : 'not-invoiced'; ?> ?>"><span><?php echo $invoice_raw
-							? 'Invoiced' : 'Not invoiced'; ?></span></td>
-                <td class="<?php echo $factoring_class; ?>"><span><?php echo $factoring_status; ?></span></td>
+                <td>
+                    <span class="<?php echo $booked_price_class; ?>">
+                        <?php echo $booked_rate; ?>
+                    </span>
+                </td>
+                <td>
+                    <span>
+                        <?php echo $status; ?>
+                    </span>
+                </td>
+                <td>
+                    <span>
+                        <?php echo $invoice_raw ? 'Invoiced' : 'Not invoiced'; ?>
+                    </span>
+                </td>
+                <td>
+                    <span>
+                        <?php echo $factoring_status; ?>
+                    </span>
+                </td>
 
                 <td>
 					<?php if ( $show_control ): ?>
@@ -176,8 +189,6 @@ if ( ! empty( $results ) ) : ?>
     </table>
 	
 	<?php
-	
-	
 	echo esc_html( get_template_part( TEMPLATE_PATH . 'report', 'pagination', array(
 		'total_pages'  => $total_pages,
 		'current_page' => $current_pages,

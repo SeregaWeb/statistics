@@ -130,6 +130,91 @@ export const updateDriverInformation = (urlAjax) => {
             });
     });
 };
+export const updateDriverFinance = (urlAjax) => {
+    const form = document.querySelector('.js-driver-finance-form');
+    console.log('form', form);
+    if (!form) return;
+
+    form.addEventListener('submit', (e: Event) => {
+        e.preventDefault();
+        console.log('form click');
+
+        const target = e.target as HTMLFormElement;
+        disabledBtnInForm(target);
+
+        const formData = new FormData(target);
+        formData.append('action', 'update_driver_finance');
+
+        const options = {
+            method: 'POST',
+            body: formData,
+        };
+
+        const nextTargetTab = 'pills-driver-finance-tab';
+
+        fetch(urlAjax, options)
+            .then((res) => res.json())
+            .then((requestStatus) => {
+                if (requestStatus.success) {
+                    setUpTabInUrl(nextTargetTab);
+                    disabledBtnInForm(target, true);
+                    return true;
+                }
+                printMessage(`${requestStatus.data.message}`, 'danger', 8000);
+                disabledBtnInForm(target, true);
+                // eslint-disable-next-line consistent-return
+                return false;
+            })
+            .catch((error) => {
+                printMessage(`'Request failed' ${error}`, 'danger', 8000);
+                disabledBtnInForm(target, true);
+                return false;
+            });
+    });
+};
+
+export const updateDriverDocument = (urlAjax) => {
+    const form = document.querySelector('.js-driver-document-form');
+    console.log('form', form);
+    if (!form) return;
+
+    form.addEventListener('submit', (e: Event) => {
+        e.preventDefault();
+        console.log('form click');
+
+        const target = e.target as HTMLFormElement;
+        disabledBtnInForm(target);
+
+        const formData = new FormData(target);
+        formData.append('action', 'update_driver_document');
+
+        const options = {
+            method: 'POST',
+            body: formData,
+        };
+
+        const nextTargetTab = 'pills-driver-document-tab';
+
+        fetch(urlAjax, options)
+            .then((res) => res.json())
+            .then((requestStatus) => {
+                if (requestStatus.success) {
+                    setUpTabInUrl(nextTargetTab);
+                    disabledBtnInForm(target, true);
+                    return true;
+                }
+                printMessage(`${requestStatus.data.message}`, 'danger', 8000);
+                disabledBtnInForm(target, true);
+                // eslint-disable-next-line consistent-return
+                return false;
+            })
+            .catch((error) => {
+                printMessage(`'Request failed' ${error}`, 'danger', 8000);
+                disabledBtnInForm(target, true);
+                return false;
+            });
+    });
+};
 
 export const removeOneFileInitial = (ajaxUrl) => {
     const deleteForms = document.querySelectorAll('.js-remove-one-driver');
@@ -181,5 +266,7 @@ export const driversActions = (urlAjax) => {
     createDriver(urlAjax);
     updateDriverContact(urlAjax);
     updateDriverInformation(urlAjax);
+    updateDriverFinance(urlAjax);
+    updateDriverDocument(urlAjax);
     removeOneFileInitial(urlAjax);
 };

@@ -1,3 +1,5 @@
+import IMask from 'imask';
+
 const maskTel = (target) => {
     const x1 = target.value.replace(/\D/g, '').match(/(\d{3})/);
     const x2 = target.value.replace(/\D/g, '').match(/(\d{3})(\d{3})/);
@@ -26,4 +28,28 @@ export const telMaskInit = () => {
                 maskTel(event.target);
             });
         });
+};
+
+export const masksAllSite = () => {
+    // Маска для SSN (000-00-0000)
+    const ssnInputs = document.querySelectorAll('.js-ssn-mask');
+    if (ssnInputs.length) {
+        ssnInputs.forEach((input) => {
+            // @ts-ignore
+            IMask(input, {
+                mask: '000-00-0000',
+            });
+        });
+    }
+
+    // Маска для EIN (00-0000000)
+    const einInputs = document.querySelectorAll('.js-ein-mask');
+    if (einInputs.length) {
+        einInputs.forEach((input) => {
+            // @ts-ignore
+            IMask(input, {
+                mask: '00-0000000',
+            });
+        });
+    }
 };

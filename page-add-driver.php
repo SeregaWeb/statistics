@@ -136,7 +136,7 @@ Printer: [Switch] (Опционально)
 
 Sleeper: [Switch] (Опционально)
                     </pre>
-                    <pre class="col-12 ">
+                    <pre class="col-12 d-none">
 Financial:
 
 Account type: (drop-down menu: Business / Individual)
@@ -167,7 +167,7 @@ EIN form: [upload box] Обязательное поле которое откр
 1099-NEC [upload box]
 Authorized email: (text)
                     </pre>
-                    <pre class="col-12 d-none">
+                    <pre class="col-12 ">
 Documents:
 
 Driving record: [upload box]
@@ -337,8 +337,14 @@ Notes: (text)
                                 <div class="tab-pane fade <?php echo $helper->change_active_tab( 'pills-driver-documents-tab', 'show' ); ?>"
                                      id="pills-driver-documents" role="tabpanel"
                                      aria-labelledby="pills-driver-documents-tab">
-
-
+									
+									<?php
+									echo esc_html( get_template_part( TEMPLATE_PATH . 'tabs/driver', 'tab-document', array(
+										'full_view_only' => $full_only_view,
+										'report_object'  => $driver_object,
+										'post_id'        => $post_id
+									) ) );
+									?>
                                 </div>
 
                             </div>

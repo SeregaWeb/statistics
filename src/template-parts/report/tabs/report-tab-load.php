@@ -51,6 +51,7 @@ $second_driver_rate      = '';
 $second_driver_phone     = '';
 $additional_fees         = '';
 $additional_fees_val     = '';
+$additional_fees_driver  = '';
 $pick_up_date_formatted  = '';
 $delivery_date_formatted = '';
 $instructions_str        = '';
@@ -80,32 +81,33 @@ if ( $report_object ) {
 		$delivery_date           = get_field_value( $main, 'delivery_date' );
 		$delivery_date_formatted = date( 'Y-m-d', strtotime( $delivery_date ) );
 		
-		$dispatcher_initials = get_field_value( $meta, 'dispatcher_initials' );
-		$reference_number    = get_field_value( $meta, 'reference_number' );
-		$unit_number_name    = get_field_value( $meta, 'unit_number_name' );
-		$booked_rate         = get_field_value( $meta, 'booked_rate' );
-		$driver_rate         = get_field_value( $meta, 'driver_rate' );
-		$driver_phone        = get_field_value( $meta, 'driver_phone' );
-		$profit              = get_field_value( $meta, 'profit' );
-		$load_status         = get_field_value( $meta, 'load_status' );
-		$instructions_str    = str_replace( ' ', '', get_field_value( $meta, 'instructions' ) );
-		$instructions_val    = explode( ',', $instructions_str );
-		$source_val          = get_field_value( $meta, 'source' );
-		$load_type           = get_field_value( $meta, 'load_type' );
-		$commodity           = get_field_value( $meta, 'commodity' );
-		$weight              = get_field_value( $meta, 'weight' );
-		$notes               = get_field_value( $meta, 'notes' );
-		$modifi_price        = get_field_value( $meta, 'booked_rate_modify' );
-		$proof_of_delivery   = get_field_value( $meta, 'proof_of_delivery' );
-		$processing_fees     = get_field_value( $meta, 'processing_fees' );
-		$type_pay_method     = get_field_value( $meta, 'type_pay' );
-		$percent_quick_pay   = get_field_value( $meta, 'percent_quick_pay' );
-		$processing          = get_field_value( $meta, 'processing' );
-		$tbd                 = get_field_value( $meta, 'tbd' );
-		$shared_with_client  = get_field_value( $meta, 'shared_with_client' );
-		$macropoint_set      = get_field_value( $meta, 'macropoint_set' );
-		$additional_fees     = get_field_value( $meta, 'additional_fees' );
-		$additional_fees_val = get_field_value( $meta, 'additional_fees_val' );
+		$dispatcher_initials    = get_field_value( $meta, 'dispatcher_initials' );
+		$reference_number       = get_field_value( $meta, 'reference_number' );
+		$unit_number_name       = get_field_value( $meta, 'unit_number_name' );
+		$booked_rate            = get_field_value( $meta, 'booked_rate' );
+		$driver_rate            = get_field_value( $meta, 'driver_rate' );
+		$driver_phone           = get_field_value( $meta, 'driver_phone' );
+		$profit                 = get_field_value( $meta, 'profit' );
+		$load_status            = get_field_value( $meta, 'load_status' );
+		$instructions_str       = str_replace( ' ', '', get_field_value( $meta, 'instructions' ) );
+		$instructions_val       = explode( ',', $instructions_str );
+		$source_val             = get_field_value( $meta, 'source' );
+		$load_type              = get_field_value( $meta, 'load_type' );
+		$commodity              = get_field_value( $meta, 'commodity' );
+		$weight                 = get_field_value( $meta, 'weight' );
+		$notes                  = get_field_value( $meta, 'notes' );
+		$modifi_price           = get_field_value( $meta, 'booked_rate_modify' );
+		$proof_of_delivery      = get_field_value( $meta, 'proof_of_delivery' );
+		$processing_fees        = get_field_value( $meta, 'processing_fees' );
+		$type_pay_method        = get_field_value( $meta, 'type_pay' );
+		$percent_quick_pay      = get_field_value( $meta, 'percent_quick_pay' );
+		$processing             = get_field_value( $meta, 'processing' );
+		$tbd                    = get_field_value( $meta, 'tbd' );
+		$shared_with_client     = get_field_value( $meta, 'shared_with_client' );
+		$macropoint_set         = get_field_value( $meta, 'macropoint_set' );
+		$additional_fees        = get_field_value( $meta, 'additional_fees' );
+		$additional_fees_val    = get_field_value( $meta, 'additional_fees_val' );
+		$additional_fees_driver = get_field_value( $meta, 'additional_fees_driver' );
 		
 		$second_driver           = get_field_value( $meta, 'second_driver' );
 		$second_unit_number_name = get_field_value( $meta, 'second_unit_number_name' );
@@ -374,6 +376,7 @@ $read_only = $TMSUsers->check_read_only( $post_status );
 
             <input type="hidden" name="additional_fees_val" value="<?php echo $additional_fees_val; ?>">
             <input type="hidden" name="additional_fees" value="<?php echo $additional_fees; ?>">
+            <input type="hidden" name="additional_fees_driver" value="<?php echo $additional_fees_driver; ?>">
 
             <div class="mb-2 col-12 col-md-6 col-xl-4">
                 <label for="unit_number_name" class="form-label">Unit Number & Name</label>
@@ -677,7 +680,7 @@ $read_only = $TMSUsers->check_read_only( $post_status );
 					? 'd-none' : ''; ?>">
 
                     <div class="row">
-                        <div class="col-12 ">
+                        <div class="col-12 col-md-6 ">
                             <label for="additional_fees_val" class="form-label">Additional Fees</label>
                             <div class="input-group">
                                 <span class="input-group-text">$</span>
@@ -685,6 +688,20 @@ $read_only = $TMSUsers->check_read_only( $post_status );
                                        data-value="<?php echo $additional_fees_val; ?>"
                                        value="<?php echo $tbd ? 0 : $additional_fees_val; ?>"
                                        class="form-control js-money">
+                            </div>
+                        </div>
+
+                        <div class="col-12 col-md-6  d-flex align-items-center js-second-driver <?php echo ( ! $second_driver )
+							? 'd-none' : ''; ?>">
+                            <div class="form-check form-switch p-0 mt-4 ">
+                                <input class="form-check-input ml-0"
+                                       data-block-toggle="js-additional_fees_driver" <?php echo is_numeric( $additional_fees_driver )
+									? 'checked' : ''; ?>
+                                       id="additional_fees_driver" name="additional_fees_driver"
+                                       type="checkbox">
+                                <label class="form-check-label ml-2" for="additional_fees_driver">First or Second
+                                    driver
+                                </label>
                             </div>
                         </div>
                     </div>

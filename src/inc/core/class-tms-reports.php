@@ -499,27 +499,22 @@ class TMSReports extends TMSReportsHelper {
 			$where_values[]     = $args[ 'month' ];
 		}
 		
-		// Фильтрация по только году
 		if ( ! empty( $args[ 'year' ] ) && empty( $args[ 'month' ] ) ) {
 			$where_conditions[] = "date_booked IS NOT NULL
         AND YEAR(date_booked) = %d";
 			$where_values[]     = $args[ 'year' ];
 		}
 		
-		// Фильтрация по только месяцу
 		if ( ! empty( $args[ 'month' ] ) && empty( $args[ 'year' ] ) ) {
 			$where_conditions[] = "date_booked IS NOT NULL
         AND MONTH(date_booked) = %d";
 			$where_values[]     = $args[ 'month' ];
 		}
 		
-		// Применяем фильтры к запросу
 		if ( ! empty( $where_conditions ) ) {
 			$sql .= ' AND ' . implode( ' AND ', $where_conditions );
 		}
 		
-		
-		// Подсчёт общего количества записей с учётом фильтров
 		$total_records_sql = "SELECT COUNT(*)" . $join_builder;
 		if ( ! empty( $where_conditions ) ) {
 			$total_records_sql .= ' AND ' . implode( ' AND ', $where_conditions );
@@ -527,14 +522,20 @@ class TMSReports extends TMSReportsHelper {
 		
 		$total_records = $wpdb->get_var( $wpdb->prepare( $total_records_sql, ...$where_values ) );
 		
-		// Вычисляем количество страниц
 		$total_pages = ceil( $total_records / $per_page );
 		
-		// Смещение для текущей страницы
 		$offset = ( $current_page - 1 ) * $per_page;
 		
-		// Добавляем сортировку и лимит для текущей страницы
-		$sql            .= " ORDER BY main.$sort_by $sort_order LIMIT %d, %d";
+		$sql .= "
+		    ORDER BY
+		        CASE
+		            WHEN LOWER(load_status.meta_value) = 'delivered' THEN 1
+		            WHEN LOWER(load_status.meta_value) = 'tonu' THEN 2
+		            ELSE 3
+		        END,
+		        main.$sort_by $sort_order LIMIT %d, %d
+		";
+		
 		$where_values[] = $offset;
 		$where_values[] = $per_page;
 		
@@ -2272,6 +2273,7 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 				"old_tbd"                 => FILTER_VALIDATE_BOOLEAN,
 				"additional_fees"         => FILTER_VALIDATE_BOOLEAN,
 				"additional_fees_val"     => FILTER_SANITIZE_STRING,
+				"additional_fees_driver"  => FILTER_VALIDATE_BOOLEAN,
 			] );
 			
 			if ( $MY_INPUT[ 'load_status' ] === 'cancelled' ) {
@@ -3477,8 +3479,8 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 		
 		if ( ! empty( $data[ 'proof_of_delivery' ] ) ) {
 			
-			$date_est                              = new DateTime( 'now', new DateTimeZone( 'America/New_York' ) ); // Указываем временную зону EST
-			$current_time_est                      = $date_est->format( 'Y-m-d H:i:s' );
+			$current_time_est = $this->getCurrentTimeForAmerica();
+			
 			$post_meta[ 'proof_of_delivery_time' ] = $current_time_est;
 		}
 		
@@ -3739,6 +3741,7 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 			'second_driver'           => $data[ 'second_driver' ],
 			'additional_fees'         => $data[ 'additional_fees' ],
 			'additional_fees_val'     => $data[ 'additional_fees_val' ],
+			'additional_fees_driver'  => $data[ 'additional_fees_driver' ],
 			'office_dispatcher'       => $office_dispatcher,
 		);
 		

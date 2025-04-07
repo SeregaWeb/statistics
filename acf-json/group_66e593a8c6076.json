@@ -332,6 +332,22 @@
             "return_format": "url"
         },
         {
+            "key": "field_67f4311fa9f0a",
+            "label": "Add new driver",
+            "name": "add_new_driver",
+            "aria-label": "",
+            "type": "link",
+            "instructions": "this link need for loads draft edit",
+            "required": 1,
+            "conditional_logic": 0,
+            "wrapper": {
+                "width": "",
+                "class": "",
+                "id": ""
+            },
+            "return_format": "url"
+        },
+        {
             "key": "field_66f016f0ad535",
             "label": "Link web service Odysseia",
             "name": "link_web_service_odysseia",
@@ -1146,5 +1162,5 @@
     "active": true,
     "description": "",
     "show_in_rest": 0,
-    "modified": 1740490816
+    "modified": 1744056621
 }

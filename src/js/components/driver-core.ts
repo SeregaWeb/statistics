@@ -262,6 +262,69 @@ export const removeOneFileInitial = (ajaxUrl) => {
         });
 };
 
+export const updateStatusDriver = (ajaxUrl) => {
+    const btns = document.querySelectorAll('.js-update-driver-status');
+    btns &&
+        btns.forEach((btn) => {
+            btn.addEventListener('click', (event) => {
+                event.preventDefault();
+
+                const { target } = event;
+
+                // @ts-ignore
+                const formData = new FormData();
+                const action = 'update_driver_status';
+
+                const postId = document.querySelector('.js-post-id');
+
+                if (!postId) {
+                    printMessage('Driver id not found', 'danger', 8000);
+                    return;
+                }
+
+                formData.append('action', action);
+                // @ts-ignore
+                formData.append('post_id', postId.value);
+
+                const options = {
+                    method: 'POST',
+                    body: formData,
+                };
+
+                // @ts-ignore
+                fetch(ajaxUrl, options)
+                    .then((res) => res.json())
+                    .then((requestStatus) => {
+                        if (requestStatus.success) {
+                            printMessage(requestStatus.data.message, 'success', 8000);
+                            if (requestStatus.data.send_email?.success) {
+                                console.log(requestStatus.data);
+                                printMessage(requestStatus.data.send_email?.message, 'success', 8000);
+                                setTimeout(() => {
+                                    window.location.reload();
+                                }, 4000);
+                            } else {
+                                printMessage(requestStatus.data.send_email?.message, 'danger', 8000);
+                            }
+
+                            const container = document.querySelector('.js-update-status');
+
+                            if (!container) return;
+                            container.innerHTML = '';
+
+                            setUpTabInUrl('pills-driver-contact-tab');
+                        } else {
+                            printMessage(requestStatus.data.message, 'danger', 8000);
+                        }
+                    })
+                    .catch((error) => {
+                        printMessage(`Request failed: ${error}`, 'danger', 8000);
+                        console.error('Request failed:', error);
+                    });
+            });
+        });
+};
+
 export const driversActions = (urlAjax) => {
     createDriver(urlAjax);
     updateDriverContact(urlAjax);
@@ -269,4 +332,5 @@ export const driversActions = (urlAjax) => {
     updateDriverFinance(urlAjax);
     updateDriverDocument(urlAjax);
     removeOneFileInitial(urlAjax);
+    updateStatusDriver(urlAjax);
 };

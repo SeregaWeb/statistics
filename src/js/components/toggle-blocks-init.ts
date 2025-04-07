@@ -12,15 +12,16 @@ export const toggleBlocksInit = () => {
 
                 // @ts-ignore
                 const toggleContainerSelector = target.getAttribute('data-block-toggle');
-                const toggleContainer = document.querySelector(`.${toggleContainerSelector}`);
+                const toggleContainers = document.querySelectorAll(`.${toggleContainerSelector}`);
 
-                if (!target || !toggleContainer) return;
+                if (!target || !toggleContainers.length) return;
 
-                let classToggle = toggleContainer.getAttribute('data-class-toggle');
-                if (!classToggle) classToggle = 'd-none';
-                // @ts-ignore
-                target.classList.toggle('active');
-                toggleContainer.classList.toggle(classToggle);
+                toggleContainers.forEach((container) => {
+                    const classToggle = container.getAttribute('data-class-toggle') || 'd-none';
+                    // @ts-ignore
+                    target.classList.toggle('active');
+                    container.classList.toggle(classToggle);
+                });
             });
         });
 };

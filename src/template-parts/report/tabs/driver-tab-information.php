@@ -49,6 +49,7 @@ $dimensions_pictures     = get_field_value( $meta, 'dimensions_pictures' );
 $dimensions_pictures_arr = false;
 
 $registration_file = get_field_value( $meta, 'registration_file' );
+$gvwr_placard      = get_field_value( $meta, 'gvwr_placard' );
 $ppe_file          = get_field_value( $meta, 'ppe_file' );
 $e_tracks_file     = get_field_value( $meta, 'e_tracks_file' );
 $pallet_jack_file  = get_field_value( $meta, 'pallet_jack_file' );
@@ -65,6 +66,7 @@ $files_check = array(
 	$lift_gate_file,
 	$dolly_file,
 	$ramp_file,
+	$gvwr_placard,
 );
 
 foreach ( $files_check as $file ) {
@@ -86,6 +88,7 @@ if ( ! empty( $dimensions_pictures ) ) {
 }
 
 
+$gvwr_placard_arr      = $driver->process_file_attachment( $gvwr_placard );
 $registration_file_arr = $driver->process_file_attachment( $registration_file );
 $ppe_file_arr          = $driver->process_file_attachment( $ppe_file );
 $e_tracks_file_arr     = $driver->process_file_attachment( $e_tracks_file );
@@ -96,6 +99,17 @@ $ramp_file_arr         = $driver->process_file_attachment( $ramp_file );
 
 
 $files = array(
+	array(
+		'file_arr'       => $gvwr_placard_arr,
+		'file'           => $gvwr_placard,
+		'full_only_view' => $full_only_view,
+		'post_id'        => $post_id,
+		'class_name'     => 'gvwr-placard',
+		'field_name'     => 'gvwr_placard',
+		'field_label'    => 'GVWR file',
+		'delete_action'  => 'js-remove-one-driver',
+		'active_tab'     => 'pills-driver-vehicle-tab',
+	),
 	array(
 		'file_arr'       => $registration_file_arr,
 		'file'           => $registration_file,
@@ -338,8 +352,13 @@ $files = array(
                 <div class="col-12 js-add-new-report">
                     <div class="row">
                         <div class="col-12">
-                            <label class="form-label">GVWR Placard (Optional)</label>
-                            <input type="file" class="form-control js-control-uploads" name="gvwr_placard">
+                            <label class="form-label"><span
+                                        style="position: relative; top: -2px;"><?php if ( $gvwr_placard ): echo $reports->get_icon_uploaded_file(); endif; ?></span>
+                                GVWR Placard
+                                (Optional) </label>
+							<?php if ( ! $gvwr_placard ): ?>
+                                <input type="file" class="form-control js-control-uploads" name="gvwr_placard">
+							<?php endif; ?>
                         </div>
 
                         <div class="col-12 mb-1 mt-1 preview-photo js-preview-photo-upload">

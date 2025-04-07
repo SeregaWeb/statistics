@@ -1243,5 +1243,14 @@ class TMSReportsHelper extends TMSReportsIcons {
 		return $subject;
 	}
 	
+	/**
+	 * @throws DateMalformedStringException
+	 */
+	function getCurrentTimeForAmerica() {
+		$date_est = new DateTime( 'now', new DateTimeZone( 'America/New_York' ) );
+		
+		return $date_est->format( 'Y-m-d H:i:s' );
+	}
+	
 }
 

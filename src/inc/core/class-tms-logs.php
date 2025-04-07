@@ -67,14 +67,15 @@ class TMSLogs extends TMSReports {
 			
 			// Получение данных из POST
 			$MY_INPUT = filter_var_array( $_POST, [
-				"user_id"  => FILTER_SANITIZE_NUMBER_INT,
-				"post_id"  => FILTER_SANITIZE_NUMBER_INT,
-				"message"  => FILTER_SANITIZE_STRING,
-				"priority" => FILTER_SANITIZE_NUMBER_INT,
+				"user_id"   => FILTER_SANITIZE_NUMBER_INT,
+				"post_id"   => FILTER_SANITIZE_NUMBER_INT,
+				"post_type" => FILTER_SANITIZE_STRING,
+				"message"   => FILTER_SANITIZE_STRING,
+				"priority"  => FILTER_SANITIZE_NUMBER_INT,
 			] );
 			
 			// Проверка необходимых данных
-			if ( ! $MY_INPUT[ 'user_id' ] || ! $MY_INPUT[ 'post_id' ] || ! $MY_INPUT[ 'message' ] ) {
+			if ( ! $MY_INPUT[ 'user_id' ] || ! $MY_INPUT[ 'post_id' ] || ! $MY_INPUT[ 'post_type' ] || ! $MY_INPUT[ 'message' ] ) {
 				wp_send_json_error( [ 'message' => 'Missing data' ] );
 			}
 			
@@ -102,10 +103,13 @@ class TMSLogs extends TMSReports {
 		
 		global $wpdb;
 		
-		// Получение информации о пользователе
 		$user_info = get_userdata( $array_data[ 'user_id' ] );
 		if ( ! $user_info ) {
 			wp_send_json_error( [ 'message' => 'User not found.' ] );
+		}
+		
+		if ( ! isset( $array_data[ 'post_type' ] ) ) {
+			$array_data[ 'post_type' ] = 'report';
 		}
 		
 		$user_name    = $user_info->display_name;
@@ -113,21 +117,20 @@ class TMSLogs extends TMSReports {
 		$log_priority = $array_data[ 'priority' ] ?? 0;
 		
 		// Имя таблицы
-		$table_name = $wpdb->prefix . 'reports_logs_' . $this->use_project;
-		
+		$table_name       = $this->get_table_by_post_type( $array_data[ 'post_type' ] );
 		$date_est         = new DateTime( 'now', new DateTimeZone( 'America/New_York' ) ); // Указываем временную зону EST
 		$current_time_est = $date_est->format( 'Y-m-d H:i:s' );
 		
 		// Добавление записи в таблицу
 		$result = $wpdb->insert( $table_name, [
-				'id_load'      => $array_data[ 'post_id' ],
-				'id_user'      => $array_data[ 'user_id' ],
-				'user_name'    => $user_name,
-				'user_role'    => $user_role,
-				'log_priority' => $log_priority,
-				'log_date'     => $current_time_est,
-				'log_text'     => $array_data[ 'message' ],
-			], [ '%d', '%d', '%s', '%s', '%d', '%s', '%s' ] );
+			'id_load'      => $array_data[ 'post_id' ],
+			'id_user'      => $array_data[ 'user_id' ],
+			'user_name'    => $user_name,
+			'user_role'    => $user_role,
+			'log_priority' => $log_priority,
+			'log_date'     => $current_time_est,
+			'log_text'     => $array_data[ 'message' ],
+		], [ '%d', '%d', '%s', '%s', '%d', '%s', '%s' ] );
 		
 		return array(
 			'insert'    => $result,
@@ -177,10 +180,10 @@ class TMSLogs extends TMSReports {
 		return $result; // Возвращаем количество удаленных записей
 	}
 	
-	public function get_all_logs( $post_id ) {
+	public function get_all_logs( $post_id, $post_type = 'report' ) {
 		global $wpdb;
 		
-		$logs_table = $wpdb->prefix . 'reports_logs_' . strtolower( $this->use_project );
+		$logs_table = $this->get_table_by_post_type( $post_type );
 		
 		if ( $wpdb->get_var( "SHOW TABLES LIKE '$logs_table'" ) !== $logs_table ) {
 			return false;
@@ -217,11 +220,25 @@ class TMSLogs extends TMSReports {
 		return $output;
 	}
 	
-	public function get_user_logs_by_post( $post_id, $user_id ) {
+	public function get_table_by_post_type( $post_type = 'report' ) {
+		global $wpdb;
+		
+		if ( $post_type === 'report' ) {
+			$logs_table = $wpdb->prefix . 'reports_logs_' . strtolower( $this->use_project );
+		}
+		
+		if ( $post_type === 'driver' ) {
+			$logs_table = $wpdb->prefix . 'drivers_logs';
+		}
+		
+		return $logs_table;
+	}
+	
+	public function get_user_logs_by_post( $post_id, $user_id, $post_type = 'report' ) {
 		global $wpdb;
 		
 		// Определяем таблицу логов для текущего проекта
-		$logs_table = $wpdb->prefix . 'reports_logs_' . strtolower( $this->use_project );
+		$logs_table = $this->get_table_by_post_type( $post_type );
 		
 		// Проверяем, существует ли таблица
 		if ( $wpdb->get_var( "SHOW TABLES LIKE '$logs_table'" ) !== $logs_table ) {
@@ -297,5 +314,26 @@ class TMSLogs extends TMSReports {
 			
 			dbDelta( $sql );
 		}
+		
+		$log_table_name  = $wpdb->prefix . 'drivers_logs';
+		$charset_collate = $wpdb->get_charset_collate();
+		
+		$sql = "CREATE TABLE $log_table_name (
+            id mediumint(9) NOT NULL AUTO_INCREMENT,
+            id_load mediumint(9) NOT NULL, -- ID загрузки
+            id_user mediumint(9) NOT NULL, -- ID пользователя, который добавил запись
+            user_name varchar(255) NOT NULL, -- Имя пользователя
+            user_role varchar(100) NOT NULL, -- Роль пользователя
+            log_priority smallint(5) NOT NULL DEFAULT 0, -- Приоритет записи, по умолчанию 0
+            log_date datetime NOT NULL DEFAULT CURRENT_TIMESTAMP, -- Дата и время добавления записи
+            log_text longtext NOT NULL, -- Текст лога (включая HTML)
+            PRIMARY KEY (id),
+            INDEX idx_id_load (id_load),
+            INDEX idx_id_user (id_user),
+            INDEX idx_log_priority (log_priority),
+            INDEX idx_log_date (log_date)
+        ) $charset_collate;";
+		
+		dbDelta( $sql );
 	}
 }

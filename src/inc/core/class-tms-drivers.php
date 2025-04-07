@@ -7,6 +7,12 @@ class TMSDrivers extends TMSDriversHelper {
 	public $per_page_loads = 100;
 	public $hold_time      = 15;
 	
+	public $log_controller = false;
+	
+	public function __construct() {
+		$this->log_controller = new TMSLogs();
+	}
+	
 	public function init() {
 		$this->ajax_actions();
 		$this->create_tables();
@@ -20,11 +26,214 @@ class TMSDrivers extends TMSDriversHelper {
 			'update_driver_finance'     => 'update_driver_finance',
 			'delete_open_image_driver'  => 'delete_open_image_driver',
 			'update_driver_document'    => 'update_driver_document',
+			'update_driver_status'      => 'update_driver_status',
 		);
 		
 		foreach ( $actions as $ajax_action => $method ) {
 			add_action( "wp_ajax_{$ajax_action}", [ $this, $method ] );
 			add_action( "wp_ajax_nopriv_{$ajax_action}", [ $this, 'need_login' ] );
+		}
+	}
+	
+	public function set_filter_params( $args ) {
+		$my_search = trim( get_field_value( $_GET, 'my_search' ) );
+		
+		if ( $my_search ) {
+			$args[ 'my_search' ] = $my_search;
+		}
+		
+		return $args;
+	}
+	
+	public function get_table_items( $args = array() ) {
+		global $wpdb;
+		
+		$table_main   = $wpdb->prefix . $this->table_main;
+		$table_meta   = $wpdb->prefix . $this->table_meta;
+		$per_page     = isset( $args[ 'per_page_loads' ] ) ? $args[ 'per_page_loads' ] : $this->per_page_loads;
+		$current_page = isset( $_GET[ 'paged' ] ) ? absint( $_GET[ 'paged' ] ) : 1;
+		$sort_by      = ! empty( $args[ 'sort_by' ] ) ? $args[ 'sort_by' ] : 'id';
+		$sort_order   = ! empty( $args[ 'sort_order' ] ) && strtolower( $args[ 'sort_order' ] ) == 'asc' ? 'ASC'
+			: 'DESC';
+		
+		$join_builder = "
+			FROM $table_main AS main
+			LEFT JOIN $table_meta AS driver_name
+    ON main.id = driver_name.post_id
+    AND driver_name.meta_key = 'driver_name'
+LEFT JOIN $table_meta AS driver_phone
+    ON main.id = driver_phone.post_id
+    AND driver_phone.meta_key = 'driver_phone'
+LEFT JOIN $table_meta AS driver_email
+    ON main.id = driver_email.post_id
+    AND driver_email.meta_key = 'driver_email'
+LEFT JOIN $table_meta AS team_driver_name
+    ON main.id = team_driver_name.post_id
+    AND team_driver_name.meta_key = 'team_driver_name'
+LEFT JOIN $table_meta AS team_driver_phone
+    ON main.id = team_driver_phone.post_id
+    AND team_driver_phone.meta_key = 'team_driver_phone'
+LEFT JOIN $table_meta AS team_driver_email
+    ON main.id = team_driver_email.post_id
+    AND team_driver_email.meta_key = 'team_driver_email'
+LEFT JOIN $table_meta AS owner_name
+    ON main.id = owner_name.post_id
+    AND owner_name.meta_key = 'owner_name'
+LEFT JOIN $table_meta AS owner_phone
+    ON main.id = owner_phone.post_id
+    AND owner_phone.meta_key = 'owner_phone'
+LEFT JOIN $table_meta AS owner_email
+    ON main.id = owner_email.post_id
+    AND owner_email.meta_key = 'owner_email'
+LEFT JOIN $table_meta AS vin
+    ON main.id = vin.post_id
+    AND vin.meta_key = 'vin'
+LEFT JOIN $table_meta AS ssn
+    ON main.id = ssn.post_id
+    AND ssn.meta_key = 'ssn'
+LEFT JOIN $table_meta AS ein
+    ON main.id = ein.post_id
+    AND ein.meta_key = 'ein'
+LEFT JOIN $table_meta AS authorized_email
+    ON main.id = authorized_email.post_id
+    AND authorized_email.meta_key = 'authorized_email'
+			WHERE 1=1";
+		
+		// Основной запрос
+		$sql = "SELECT main.*" . $join_builder;
+		
+		$where_conditions = array();
+		$where_values     = array();
+		
+		
+		if ( ! empty( $args[ 'status_post' ] ) ) {
+			$where_conditions[] = "main.status_post = %s";
+			$where_values[]     = $args[ 'status_post' ];
+		}
+		
+		
+		// Фильтрация по reference_number
+		if ( ! empty( $args[ 'my_search' ] ) ) {
+			$where_conditions[] = "(" . "reference.meta_value LIKE %s OR " . "unit_number.meta_value LIKE %s OR " . "driver_name.meta_value LIKE %s OR " . "driver_phone.meta_value LIKE %s OR " . "driver_email.meta_value LIKE %s OR " . "team_driver_name.meta_value LIKE %s OR " . "team_driver_phone.meta_value LIKE %s OR " . "team_driver_email.meta_value LIKE %s OR " . "owner_name.meta_value LIKE %s OR " . "owner_phone.meta_value LIKE %s OR " . "owner_email.meta_value LIKE %s OR " . "vin.meta_value LIKE %s OR " . "ssn.meta_value LIKE %s OR " . "ein.meta_value LIKE %s OR " . "authorized_email.meta_value LIKE %s" . ")";
+			
+			$search_value = '%' . $wpdb->esc_like( $args[ 'my_search' ] ) . '%';
+			for ( $i = 0; $i < 15; $i ++ ) {
+				$where_values[] = $search_value;
+			}
+		}
+		
+		
+		// Применяем фильтры к запросу
+		if ( ! empty( $where_conditions ) ) {
+			$sql .= ' AND ' . implode( ' AND ', $where_conditions );
+		}
+		
+		// Подсчёт общего количества записей с учётом фильтров
+		$total_records_sql = "SELECT COUNT(*)" . $join_builder;
+		if ( ! empty( $where_conditions ) ) {
+			$total_records_sql .= ' AND ' . implode( ' AND ', $where_conditions );
+		}
+		
+		$total_records = $wpdb->get_var( $wpdb->prepare( $total_records_sql, ...$where_values ) );
+		
+		// Вычисляем количество страниц
+		$total_pages = ceil( $total_records / $per_page );
+		
+		// Смещение для текущей страницы
+		$offset = ( $current_page - 1 ) * $per_page;
+		
+		// Добавляем сортировку и лимит для текущей страницы
+		$sql            .= " ORDER BY main.$sort_by $sort_order LIMIT %d, %d";
+		$where_values[] = $offset;
+		$where_values[] = $per_page;
+		
+		// Выполняем запрос
+		$main_results = $wpdb->get_results( $wpdb->prepare( $sql, ...$where_values ), ARRAY_A );
+		// Собираем все ID записей для получения дополнительных метаданных
+		$post_ids = wp_list_pluck( $main_results, 'id' );
+		
+		// Если есть записи, получаем метаданные
+		$meta_data = array();
+		if ( ! empty( $post_ids ) ) {
+			$meta_sql     = "SELECT post_id, meta_key, meta_value
+					 FROM $table_meta
+					 WHERE post_id IN (" . implode( ',', array_map( 'absint', $post_ids ) ) . ")";
+			$meta_results = $wpdb->get_results( $meta_sql, ARRAY_A );
+			
+			// Преобразуем метаданные в ассоциативный массив по post_id
+			foreach ( $meta_results as $meta_row ) {
+				$post_id = $meta_row[ 'post_id' ];
+				if ( ! isset( $meta_data[ $post_id ] ) ) {
+					$meta_data[ $post_id ] = array();
+				}
+				$meta_data[ $post_id ][ $meta_row[ 'meta_key' ] ] = $meta_row[ 'meta_value' ];
+			}
+		}
+		
+		if ( is_array( $main_results ) && ! empty( $main_results ) ) {
+			// Объединяем основную таблицу с метаданными
+			foreach ( $main_results as &$result ) {
+				$post_id               = $result[ 'id' ];
+				$result[ 'meta_data' ] = isset( $meta_data[ $post_id ] ) ? $meta_data[ $post_id ] : array();
+			}
+		}
+		
+		return array(
+			'results'       => $main_results,
+			'total_pages'   => $total_pages,
+			'total_posts'   => $total_records,
+			'current_pages' => $current_page,
+		);
+	}
+	
+	public function update_driver_status() {
+		if ( defined( 'DOING_AJAX' ) && DOING_AJAX ) {
+			
+			$MY_INPUT = filter_var_array( $_POST, [
+				"post_id" => FILTER_SANITIZE_STRING,
+			] );
+			
+			$MY_INPUT[ 'post_status' ] = 'publish';
+			
+			$result = $this->update_driver_status_in_db( $MY_INPUT );
+			
+			if ( $result ) {
+				wp_send_json_success( [ 'message' => 'Published', 'data' => $MY_INPUT ] );
+			}
+			
+			wp_send_json_error( [ 'message' => 'Error update status in database' ] );
+		} else {
+			wp_send_json_error( [ 'message' => 'Invalid request' ] );
+		}
+	}
+	
+	public function update_driver_status_in_db( $data ) {
+		global $wpdb;
+		
+		$table_name = $wpdb->prefix . $this->table_main;
+		$user_id    = get_current_user_id();
+		
+		$update_params = array(
+			'user_id_updated' => $user_id,
+			'date_updated'    => current_time( 'mysql' ),
+			'status_post'     => $data[ 'post_status' ],
+		);
+		
+		// Specify the condition (WHERE clause) - assuming post_id is passed in the data array
+		$where = array( 'id' => $data[ 'post_id' ] );
+		// Perform the update
+		$result = $wpdb->update( $table_name, $update_params, $where, array(
+			'%d',  // user_id_updated
+			'%s',  // date_updated
+			'%s',  // post_status
+		), array( '%d' ) // The data type of the where clause (id is an integer)
+		);
+		
+		// Check if the update was successful
+		if ( $result !== false ) {
+			return true; // Update was successful
+		} else {
+			return false; // Error occurred during the update
 		}
 	}
 	
@@ -84,6 +293,7 @@ class TMSDrivers extends TMSDriversHelper {
 			} elseif ( in_array( $image_field, [
 				'registration_file',
 				'ppe_file',
+				'gvwr_placard',
 				'e_tracks_file',
 				'pallet_jack_file',
 				'lift_gate_file',
@@ -94,6 +304,19 @@ class TMSDrivers extends TMSDriversHelper {
 				'ssn_file',
 				'ein_file',
 				'nec_file',
+				'hazmat_certificate_file',
+				'driving_record',
+				'driver_licence',
+				'legal_document',
+				'twic_file',
+				'tsa_file',
+				'motor_cargo_coi',
+				'auto_liability_coi',
+				'ic_agreement',
+				'change_9_file',
+				'canada_transition_file',
+				'immigration_file',
+				'background_file',
 			], true ) ) {
 				// Для полей attached_file_required и updated_rate_confirmation
 				if ( $current_value == $image_id ) {
@@ -122,6 +345,19 @@ class TMSDrivers extends TMSDriversHelper {
 			
 			// Проверяем результат обновления в базе данных
 			if ( $result !== false ) {
+				
+				$changes = '<strong>' . $this->format_field_name( $image_field ) . '</strong> <span style="color:red">removed</span>';
+				
+				if ( ! empty( $changes ) ) {
+					$user_id = get_current_user_id();
+					$this->log_controller->create_one_log( array(
+						'user_id'   => $user_id,
+						'post_id'   => $post_id,
+						'message'   => $changes,
+						'post_type' => 'driver',
+					) );
+				}
+				
 				return true; // Успешное обновление
 			} else {
 				return new WP_Error( 'db_update_failed', 'Failed to update the database.' );
@@ -318,7 +554,9 @@ class TMSDrivers extends TMSDriversHelper {
 		return false;
 	}
 	
-	public function get_drivers() { }
+	public function get_drivers( $args ) {
+	
+	}
 	
 	public function get_driver_by_id( $ID ) {
 		global $wpdb;
@@ -426,6 +664,15 @@ class TMSDrivers extends TMSDriversHelper {
 			$result = $this->add_driver_in_db( $data );
 			
 			if ( $result ) {
+				
+				$user_id = get_current_user_id();
+				$this->log_controller->create_one_log( array(
+					'user_id'   => $user_id,
+					'post_id'   => $data[ 'driver_id' ],
+					'message'   => "<strong>Driver's profile has been created</div>",
+					'post_type' => 'driver',
+				) );
+				
 				wp_send_json_success( [ 'message' => 'Driver successfully added', 'id_driver' => $result ] );
 			}
 			
@@ -495,10 +742,48 @@ class TMSDrivers extends TMSDriversHelper {
 					? sanitize_text_field( $_POST[ 'emergency_contact_relation' ] ) : '',
 			);
 			
+			
+			$driver_object = $this->get_driver_by_id( $data[ 'driver_id' ] );
+			$meta          = get_field_value( $driver_object, 'meta' );
+			
+			
+			$array_track = array(
+				'driver_name',
+				'driver_phone',
+				'driver_email',
+				'home_location',
+				'dob',
+				'languages',
+				'team_driver_name',
+				'team_driver_phone',
+				'team_driver_email',
+				'team_driver_dob',
+				'owner_name',
+				'owner_phone',
+				'owner_email',
+				'owner_dob',
+				'emergency_contact_name',
+				'emergency_contact_phone'
+			);
+			
+			// Переменная для хранения результатов изменений
+			$changes = $this->get_log_template( $array_track, $meta, $data );
+			
 			// At this point, the data is sanitized and ready for further processing or saving to the database
 			$result = $this->update_driver_in_db( $data );
 			
 			if ( $result ) {
+				
+				if ( ! empty( $changes ) ) {
+					$user_id = get_current_user_id();
+					$this->log_controller->create_one_log( array(
+						'user_id'   => $user_id,
+						'post_id'   => $data[ 'driver_id' ],
+						'message'   => $changes,
+						'post_type' => 'driver',
+					) );
+				}
+				
 				wp_send_json_success( [ 'message' => 'Driver successfully added', 'id_driver' => $result ] );
 			}
 			
@@ -540,6 +825,28 @@ class TMSDrivers extends TMSDriversHelper {
 			);
 			// At this point, the data is sanitized and ready for further processing or saving to the database
 			
+			$driver_object = $this->get_driver_by_id( $data[ 'driver_id' ] );
+			$meta          = get_field_value( $driver_object, 'meta' );
+			
+			
+			$array_track = array(
+				'account_type',
+				'account_name',
+				'payment_instruction',
+				'w9_classification',
+				'address',
+				'city_state_zip',
+				'ssn',
+				'ssn_name',
+				'entity_name',
+				'ein',
+				'authorized_email',
+			);
+			
+			// Переменная для хранения результатов изменений
+			$changes = $this->get_log_template( $array_track, $meta, $data );
+			
+			
 			$keys_names = array(
 				'payment_file',
 				'w9_file',
@@ -549,9 +856,11 @@ class TMSDrivers extends TMSDriversHelper {
 			);
 			
 			foreach ( $keys_names as $key_name ) {
-				if ( ! empty( $_FILES[ $key_name ] ) ) {
+				if ( ! empty( $_FILES[ $key_name ] && $_FILES[ $key_name ][ 'size' ] > 0 ) ) {
 					$id_uploaded       = $this->upload_one_file( $_FILES[ $key_name ] );
 					$data[ $key_name ] = is_numeric( $id_uploaded ) ? $id_uploaded : '';
+					
+					$changes .= '<strong>Uploaded ' . $this->format_field_name( $key_name ) . ' </strong><br><br>';
 				}
 			}
 			
@@ -593,6 +902,17 @@ class TMSDrivers extends TMSDriversHelper {
 			$result = $this->update_driver_in_db( $data );
 			
 			if ( $result ) {
+				
+				if ( ! empty( $changes ) ) {
+					$user_id = get_current_user_id();
+					$this->log_controller->create_one_log( array(
+						'user_id'   => $user_id,
+						'post_id'   => $data[ 'driver_id' ],
+						'message'   => $changes,
+						'post_type' => 'driver',
+					) );
+				}
+				
 				wp_send_json_success( [ 'message' => 'Driver successfully update', 'id_driver' => $result ] );
 			}
 			
@@ -631,25 +951,61 @@ class TMSDrivers extends TMSDriversHelper {
 				'sleeper'                 => sanitize_text_field( get_field_value( $_POST, 'sleeper' ) ),
 			);
 			
+			$driver_object = $this->get_driver_by_id( $data[ 'driver_id' ] );
+			$meta          = get_field_value( $driver_object, 'meta' );
+			
+			
+			$array_track = array(
+				'vehicle_type',
+				'vehicle_make',
+				'vehicle_model',
+				'vehicle_year',
+				'gvwr',
+				'payload',
+				'dimensions',
+				'vin',
+				'registration_type',
+				'registration_status',
+				'registration_expiration',
+				'plates',
+				'plates_status',
+				'plates_expiration',
+				'ppe',
+				'e_tracks',
+				'pallet_jack',
+				'dolly',
+				'ramp',
+				'printer',
+				'sleeper',
+				'load_bars',
+			);
+			
+			// Переменная для хранения результатов изменений
+			$changes = $this->get_log_template( $array_track, $meta, $data );
 			
 			global $wpdb;
 			$table_meta_name = $wpdb->prefix . $this->table_meta;
 			$meta_data       = $wpdb->get_results( $wpdb->prepare( "SELECT meta_key, meta_value FROM {$table_meta_name} WHERE post_id = %d", $data[ 'driver_id' ] ), ARRAY_A );
 			$current_data    = array_column( $meta_data, 'meta_value', 'meta_key' );
 			
-			
-			if ( ! empty( $_FILES[ 'vehicle_pictures' ] ) ) {
+			if ( ! empty( $_FILES[ 'vehicle_pictures' ] ) && $_FILES[ 'vehicle_pictures' ][ 'size' ][ 0 ] > 0 ) {
 				$data[ 'vehicle_pictures' ] = $this->process_uploaded_files( 'vehicle_pictures', $current_data[ 'vehicle_pictures' ] );
+				
+				$changes .= '<strong>Uploaded vehicle pictures</strong><br><br>';
 			}
 			
-			if ( ! empty( $_FILES[ 'dimensions_pictures' ] ) ) {
+			if ( ! empty( $_FILES[ 'dimensions_pictures' ] ) && $_FILES[ 'dimensions_pictures' ][ 'size' ][ 0 ] > 0 ) {
 				$data[ 'dimensions_pictures' ] = $this->process_uploaded_files( 'dimensions_pictures', $current_data[ 'dimensions_pictures' ] );
+				
+				$changes .= '<strong>Uploaded dimensions pictures</strong><br><br>';
+				
 			}
 			
 			
 			$keys_names = array(
 				'registration_file',
 				'ppe_file',
+				'gvwr_placard',
 				'e_tracks_file',
 				'pallet_jack_file',
 				'lift_gate_file',
@@ -658,9 +1014,16 @@ class TMSDrivers extends TMSDriversHelper {
 			);
 			
 			foreach ( $keys_names as $key_name ) {
-				if ( ! empty( $_FILES[ $key_name ] ) ) {
+				if ( ! empty( $_FILES[ $key_name ] && $_FILES[ $key_name ][ 'size' ] > 0 ) ) {
 					$id_uploaded       = $this->upload_one_file( $_FILES[ $key_name ] );
 					$data[ $key_name ] = is_numeric( $id_uploaded ) ? $id_uploaded : '';
+					
+					if ( $key_name == 'gvwr_placard' ) {
+						$changes .= '<strong>Uploaded GVWR placard </strong><br><br>';
+					}
+					if ( $key_name == 'registration_file' ) {
+						$changes .= '<strong>Uploaded Registration file</strong><br><br>';
+					}
 				}
 			}
 			
@@ -669,6 +1032,16 @@ class TMSDrivers extends TMSDriversHelper {
 			$result = $this->update_driver_in_db( $data );
 			
 			if ( $result ) {
+				
+				if ( ! empty( $changes ) ) {
+					$user_id = get_current_user_id();
+					$this->log_controller->create_one_log( array(
+						'user_id'   => $user_id,
+						'post_id'   => $data[ 'driver_id' ],
+						'message'   => $changes,
+						'post_type' => 'driver',
+					) );
+				}
 				wp_send_json_success( [ 'message' => 'Driver successfully added', 'id_driver' => $result ] );
 			}
 			
@@ -707,28 +1080,26 @@ class TMSDrivers extends TMSDriversHelper {
 				? sanitize_text_field( $_POST[ 'tsa_expiration' ] ) : '';
 			$legal_document_type       = isset( $_POST[ 'legal_document_type' ] )
 				? sanitize_text_field( $_POST[ 'legal_document_type' ] ) : '';
-			$legal_document            = isset( $_POST[ 'legal_document' ] )
-				? sanitize_file_name( $_POST[ 'legal_document' ] ) : '';
-			$nationality               = isset( $_POST[ 'nationality' ] )
-				? sanitize_text_field( $_POST[ 'nationality' ] ) : '';
-			$immigration_letter        = isset( $_POST[ 'immigration_letter' ] )
+			
+			$nationality             = isset( $_POST[ 'nationality' ] ) ? sanitize_text_field( $_POST[ 'nationality' ] )
+				: '';
+			$immigration_letter      = isset( $_POST[ 'immigration_letter' ] )
 				? sanitize_text_field( $_POST[ 'immigration_letter' ] ) : '';
-			$immigration_expiration    = isset( $_POST[ 'immigration_expiration' ] )
+			$immigration_expiration  = isset( $_POST[ 'immigration_expiration' ] )
 				? sanitize_text_field( $_POST[ 'immigration_expiration' ] ) : '';
-			$background_check          = isset( $_POST[ 'background_check' ] )
+			$background_check        = isset( $_POST[ 'background_check' ] )
 				? sanitize_text_field( $_POST[ 'background_check' ] ) : '';
-			$background_date           = isset( $_POST[ 'background_date' ] )
+			$background_date         = isset( $_POST[ 'background_date' ] )
 				? sanitize_text_field( $_POST[ 'background_date' ] ) : '';
-			$canada_transition_proof   = isset( $_POST[ 'canada_transition_proof' ] )
+			$canada_transition_proof = isset( $_POST[ 'canada_transition_proof' ] )
 				? sanitize_text_field( $_POST[ 'canada_transition_proof' ] ) : '';
-			$canada_transition_date    = isset( $_POST[ 'canada_transition_date' ] )
+			$canada_transition_date  = isset( $_POST[ 'canada_transition_date' ] )
 				? sanitize_text_field( $_POST[ 'canada_transition_date' ] ) : '';
-			$change_9_training         = isset( $_POST[ 'change_9_training' ] )
+			$change_9_training       = isset( $_POST[ 'change_9_training' ] )
 				? sanitize_text_field( $_POST[ 'change_9_training' ] ) : '';
-			$change_9_date             = isset( $_POST[ 'change_9_date' ] )
+			$change_9_date           = isset( $_POST[ 'change_9_date' ] )
 				? sanitize_text_field( $_POST[ 'change_9_date' ] ) : '';
-			$ic_agreement              = isset( $_POST[ 'ic_agreement' ] )
-				? sanitize_text_field( $_POST[ 'ic_agreement' ] ) : '';
+			
 			$insured                   = isset( $_POST[ 'insured' ] ) ? sanitize_text_field( $_POST[ 'insured' ] ) : '';
 			$auto_liability_policy     = isset( $_POST[ 'auto_liability_policy' ] )
 				? sanitize_text_field( $_POST[ 'auto_liability_policy' ] ) : '';
@@ -736,32 +1107,20 @@ class TMSDrivers extends TMSDriversHelper {
 				? sanitize_text_field( $_POST[ 'auto_liability_expiration' ] ) : '';
 			$auto_liability_insurer    = isset( $_POST[ 'auto_liability_insurer' ] )
 				? sanitize_text_field( $_POST[ 'auto_liability_insurer' ] ) : '';
-			$auto_liability_coi        = isset( $_POST[ 'auto_liability_coi' ] )
-				? sanitize_text_field( $_POST[ 'auto_liability_coi' ] ) : '';
-			$motor_cargo_policy        = isset( $_POST[ 'motor_cargo_policy' ] )
+			
+			$motor_cargo_policy     = isset( $_POST[ 'motor_cargo_policy' ] )
 				? sanitize_text_field( $_POST[ 'motor_cargo_policy' ] ) : '';
-			$motor_cargo_expiration    = isset( $_POST[ 'motor_cargo_expiration' ] )
+			$motor_cargo_expiration = isset( $_POST[ 'motor_cargo_expiration' ] )
 				? sanitize_text_field( $_POST[ 'motor_cargo_expiration' ] ) : '';
-			$motor_cargo_insurer       = isset( $_POST[ 'motor_cargo_insurer' ] )
+			$motor_cargo_insurer    = isset( $_POST[ 'motor_cargo_insurer' ] )
 				? sanitize_text_field( $_POST[ 'motor_cargo_insurer' ] ) : '';
-			$motor_cargo_coi           = isset( $_POST[ 'motor_cargo_coi' ] )
-				? sanitize_text_field( $_POST[ 'motor_cargo_coi' ] ) : '';
-			$status                    = isset( $_POST[ 'status' ] ) ? sanitize_text_field( $_POST[ 'status' ] ) : '';
-			$cancellation_date         = isset( $_POST[ 'cancellation_date' ] )
+			
+			$status                = isset( $_POST[ 'status' ] ) ? sanitize_text_field( $_POST[ 'status' ] ) : '';
+			$cancellation_date     = isset( $_POST[ 'cancellation_date' ] )
 				? sanitize_text_field( $_POST[ 'cancellation_date' ] ) : '';
-			$insurance_declaration     = isset( $_POST[ 'insurance_declaration' ] )
+			$insurance_declaration = isset( $_POST[ 'insurance_declaration' ] )
 				? sanitize_text_field( $_POST[ 'insurance_declaration' ] ) : '';
-			$notes                     = isset( $_POST[ 'notes' ] ) ? sanitize_textarea_field( $_POST[ 'notes' ] ) : '';
-			
-			
-			$hazmat_certificate = isset( $_POST[ 'hazmat_certificate' ] )
-				? sanitize_text_field( $_POST[ 'hazmat_certificate' ] ) : '';
-			
-			$driving_record = isset( $_POST[ 'driving_record' ] ) ? sanitize_text_field( $_POST[ 'driving_record' ] )
-				: '';
-			$driver_licence = isset( $_POST[ 'driver_licence' ] ) ? sanitize_text_field( $_POST[ 'driver_licence' ] )
-				: '';
-			$twic_file      = isset( $_POST[ 'twic_file' ] ) ? sanitize_text_field( $_POST[ 'twic_file' ] ) : '';
+			$notes                 = isset( $_POST[ 'notes' ] ) ? sanitize_textarea_field( $_POST[ 'notes' ] ) : '';
 			
 			$data = [
 				'driver_id'                 => $driver_id,
@@ -778,7 +1137,6 @@ class TMSDrivers extends TMSDriversHelper {
 				'tsa_approved'              => $tsa_approved,
 				'tsa_expiration'            => $tsa_expiration,
 				'legal_document_type'       => $legal_document_type,
-				'legal_document'            => $legal_document,
 				'nationality'               => $nationality,
 				'immigration_letter'        => $immigration_letter,
 				'immigration_expiration'    => $immigration_expiration,
@@ -788,64 +1146,103 @@ class TMSDrivers extends TMSDriversHelper {
 				'canada_transition_date'    => $canada_transition_date,
 				'change_9_training'         => $change_9_training,
 				'change_9_date'             => $change_9_date,
-				'ic_agreement'              => $ic_agreement,
 				'insured'                   => $insured,
 				'auto_liability_policy'     => $auto_liability_policy,
 				'auto_liability_expiration' => $auto_liability_expiration,
 				'auto_liability_insurer'    => $auto_liability_insurer,
-				'auto_liability_coi'        => $auto_liability_coi,
 				'motor_cargo_policy'        => $motor_cargo_policy,
 				'motor_cargo_expiration'    => $motor_cargo_expiration,
 				'motor_cargo_insurer'       => $motor_cargo_insurer,
-				'motor_cargo_coi'           => $motor_cargo_coi,
 				'status'                    => $status,
 				'cancellation_date'         => $cancellation_date,
 				'insurance_declaration'     => $insurance_declaration,
 				'notes'                     => $notes,
-				'hazmat_certificate'        => $hazmat_certificate,
-				'driving_record'            => $driving_record,
-				'driver_licence'            => $driver_licence,
-				'twic_file'                 => $twic_file
 			];
-
-
-//			global $wpdb;
-//			$table_meta_name = $wpdb->prefix . $this->table_meta;
-//			$meta_data       = $wpdb->get_results( $wpdb->prepare( "SELECT meta_key, meta_value FROM {$table_meta_name} WHERE post_id = %d", $data[ 'driver_id' ] ), ARRAY_A );
-//			$current_data    = array_column( $meta_data, 'meta_value', 'meta_key' );
-//
-//
-//			if ( ! empty( $_FILES[ 'vehicle_pictures' ] ) ) {
-//				$data[ 'vehicle_pictures' ] = $this->process_uploaded_files( 'vehicle_pictures', $current_data[ 'vehicle_pictures' ] );
-//			}
-//
-//			if ( ! empty( $_FILES[ 'dimensions_pictures' ] ) ) {
-//				$data[ 'dimensions_pictures' ] = $this->process_uploaded_files( 'dimensions_pictures', $current_data[ 'dimensions_pictures' ] );
-//			}
-//
-//
-//			$keys_names = array(
-//				'registration_file',
-//				'ppe_file',
-//				'e_tracks_file',
-//				'pallet_jack_file',
-//				'lift_gate_file',
-//				'dolly_file',
-//				'ramp_file'
-//			);
-//
-//			foreach ( $keys_names as $key_name ) {
-//				if ( ! empty( $_FILES[ $key_name ] ) ) {
-//					$id_uploaded       = $this->upload_one_file( $_FILES[ $key_name ] );
-//					$data[ $key_name ] = is_numeric( $id_uploaded ) ? $id_uploaded : '';
-//				}
-//			}
 			
-			var_dump( $data );
+			$driver_object = $this->get_driver_by_id( $data[ 'driver_id' ] );
+			$meta          = get_field_value( $driver_object, 'meta' );
+			
+			
+			$array_track = array(
+				'record_notes',
+				'driver_licence_type',
+				'real_id',
+				'driver_licence_expiration',
+				'tanker_endorsement',
+				'hazmat_endorsement',
+				'hazmat_certificate',
+				'hazmat_expiration',
+				'twic',
+				'twic_expiration',
+				'tsa_approved',
+				'tsa_expiration',
+				'legal_document_type',
+				'nationality',
+				'immigration_letter',
+				'immigration_expiration',
+				'background_check',
+				'background_date',
+				'canada_transition_proof',
+				'canada_transition_date',
+				'change_9_training',
+				'change_9_date',
+				'insured',
+				'auto_liability_policy',
+				'auto_liability_expiration',
+				'auto_liability_insurer',
+				'motor_cargo_policy',
+				'motor_cargo_expiration',
+				'motor_cargo_insurer',
+				'status',
+				'cancellation_date',
+				'insurance_declaration',
+			);
+			
+			// Переменная для хранения результатов изменений
+			$changes = $this->get_log_template( $array_track, $meta, $data );
+			
+			
+			$keys_names = array(
+				'hazmat_certificate_file',
+				'driving_record',
+				'driver_licence',
+				'legal_document',
+				'twic_file',
+				'tsa_file',
+				'motor_cargo_coi',
+				'auto_liability_coi',
+				'ic_agreement',
+				'change_9_file',
+				'canada_transition_file',
+				'immigration_file',
+				'background_file',
+			);
+			
+			foreach ( $keys_names as $key_name ) {
+				if ( ! empty( $_FILES[ $key_name ] && $_FILES[ $key_name ][ 'size' ] > 0 ) ) {
+					$id_uploaded       = $this->upload_one_file( $_FILES[ $key_name ] );
+					$data[ $key_name ] = is_numeric( $id_uploaded ) ? $id_uploaded : '';
+					
+					$changes .= '<strong>Uploaded ' . $this->format_field_name( $key_name ) . ' </strong><br><br>';
+				}
+			}
+			
 			// At this point, the data is sanitized and ready for further processing or saving to the database
 			$result = $this->update_driver_in_db( $data );
 			
 			if ( $result ) {
+				
+				if ( ! empty( $changes ) ) {
+					$user_id = get_current_user_id();
+					$this->log_controller->create_one_log( array(
+						'user_id'   => $user_id,
+						'post_id'   => $data[ 'driver_id' ],
+						'message'   => $changes,
+						'post_type' => 'driver',
+					) );
+					
+				}
+				
 				wp_send_json_success( [ 'message' => 'Driver successfully added', 'id_driver' => $result ] );
 			}
 			
@@ -923,7 +1320,6 @@ class TMSDrivers extends TMSDriversHelper {
 		
 		return false;
 	}
-	
 	
 	function update_post_meta_data( $post_id, $meta_data ) {
 		global $wpdb;

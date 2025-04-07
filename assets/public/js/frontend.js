@@ -3525,6 +3525,12 @@ var actionCreateCompanyInit = function actionCreateCompanyInit(ajaxUrl) {
         if (requestStatus.success) {
           console.log('Company added successfully:', requestStatus.data);
           popupInstance.forceCloseAllPopup();
+          var list = document.querySelector('.js-result-search');
+          var name = document.querySelector('.js-search-company');
+          if (list && name) {
+            list.innerHTML = requestStatus.data.tmpl;
+            name.value = requestStatus.data.name;
+          }
           (0,_info_messages__WEBPACK_IMPORTED_MODULE_1__.printMessage)(requestStatus.data.message, 'success', 8000);
         } else {
           (0,_info_messages__WEBPACK_IMPORTED_MODULE_1__.printMessage)("Error adding company: ".concat(requestStatus.data.message), 'danger', 8000);
@@ -4959,7 +4965,8 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */   updateDriverContact: function() { return /* binding */ updateDriverContact; },
 /* harmony export */   updateDriverDocument: function() { return /* binding */ updateDriverDocument; },
 /* harmony export */   updateDriverFinance: function() { return /* binding */ updateDriverFinance; },
-/* harmony export */   updateDriverInformation: function() { return /* binding */ updateDriverInformation; }
+/* harmony export */   updateDriverInformation: function() { return /* binding */ updateDriverInformation; },
+/* harmony export */   updateStatusDriver: function() { return /* binding */ updateStatusDriver; }
 /* harmony export */ });
 /* harmony import */ var _info_messages__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./info-messages */ "./src/js/components/info-messages.ts");
 /* harmony import */ var _create_report__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./create-report */ "./src/js/components/create-report.ts");
@@ -5170,6 +5177,54 @@ var removeOneFileInitial = function removeOneFileInitial(ajaxUrl) {
     });
   });
 };
+var updateStatusDriver = function updateStatusDriver(ajaxUrl) {
+  var btns = document.querySelectorAll('.js-update-driver-status');
+  btns && btns.forEach(function (btn) {
+    btn.addEventListener('click', function (event) {
+      event.preventDefault();
+      var target = event.target;
+      var formData = new FormData();
+      var action = 'update_driver_status';
+      var postId = document.querySelector('.js-post-id');
+      if (!postId) {
+        (0,_info_messages__WEBPACK_IMPORTED_MODULE_0__.printMessage)('Driver id not found', 'danger', 8000);
+        return;
+      }
+      formData.append('action', action);
+      formData.append('post_id', postId.value);
+      var options = {
+        method: 'POST',
+        body: formData
+      };
+      fetch(ajaxUrl, options).then(function (res) {
+        return res.json();
+      }).then(function (requestStatus) {
+        var _a, _b, _c;
+        if (requestStatus.success) {
+          (0,_info_messages__WEBPACK_IMPORTED_MODULE_0__.printMessage)(requestStatus.data.message, 'success', 8000);
+          if ((_a = requestStatus.data.send_email) === null || _a === void 0 ? void 0 : _a.success) {
+            console.log(requestStatus.data);
+            (0,_info_messages__WEBPACK_IMPORTED_MODULE_0__.printMessage)((_b = requestStatus.data.send_email) === null || _b === void 0 ? void 0 : _b.message, 'success', 8000);
+            setTimeout(function () {
+              window.location.reload();
+            }, 4000);
+          } else {
+            (0,_info_messages__WEBPACK_IMPORTED_MODULE_0__.printMessage)((_c = requestStatus.data.send_email) === null || _c === void 0 ? void 0 : _c.message, 'danger', 8000);
+          }
+          var container = document.querySelector('.js-update-status');
+          if (!container) return;
+          container.innerHTML = '';
+          (0,_create_report__WEBPACK_IMPORTED_MODULE_1__.setUpTabInUrl)('pills-driver-contact-tab');
+        } else {
+          (0,_info_messages__WEBPACK_IMPORTED_MODULE_0__.printMessage)(requestStatus.data.message, 'danger', 8000);
+        }
+      }).catch(function (error) {
+        (0,_info_messages__WEBPACK_IMPORTED_MODULE_0__.printMessage)("Request failed: ".concat(error), 'danger', 8000);
+        console.error('Request failed:', error);
+      });
+    });
+  });
+};
 var driversActions = function driversActions(urlAjax) {
   createDriver(urlAjax);
   updateDriverContact(urlAjax);
@@ -5177,6 +5232,7 @@ var driversActions = function driversActions(urlAjax) {
   updateDriverFinance(urlAjax);
   updateDriverDocument(urlAjax);
   removeOneFileInitial(urlAjax);
+  updateStatusDriver(urlAjax);
 };
 
 /***/ }),
@@ -6063,7 +6119,7 @@ var nextTabTrigger = function nextTabTrigger() {
       if (!container) return;
       var nextTargetTab = target.getAttribute('data-tab-id');
       if (!nextTargetTab) return;
-      console.log('nextTargetTab', nextTargetTab, document.getElementById(nextTargetTab));
+      console.log('nextTargetTab', container, nextTargetTab, document.getElementById(nextTargetTab));
       var tab = new bootstrap__WEBPACK_IMPORTED_MODULE_0__.Tab(document.getElementById(nextTargetTab));
       tab.show();
     });
@@ -6162,12 +6218,13 @@ var toggleBlocksInit = function toggleBlocksInit() {
         event.preventDefault();
       }
       var toggleContainerSelector = target.getAttribute('data-block-toggle');
-      var toggleContainer = document.querySelector(".".concat(toggleContainerSelector));
-      if (!target || !toggleContainer) return;
-      var classToggle = toggleContainer.getAttribute('data-class-toggle');
-      if (!classToggle) classToggle = 'd-none';
-      target.classList.toggle('active');
-      toggleContainer.classList.toggle(classToggle);
+      var toggleContainers = document.querySelectorAll(".".concat(toggleContainerSelector));
+      if (!target || !toggleContainers.length) return;
+      toggleContainers.forEach(function (container) {
+        var classToggle = container.getAttribute('data-class-toggle') || 'd-none';
+        target.classList.toggle('active');
+        container.classList.toggle(classToggle);
+      });
     });
   });
 };

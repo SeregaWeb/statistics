@@ -293,7 +293,22 @@ class TMSReportsCompany extends TMSReportsHelper {
 				
 				$this->update_post_meta_data( $result, $post_meta );
 				
-				wp_send_json_success( [ 'message' => 'Company successfully added', 'data' => $MY_INPUT ] );
+				$contact = $MY_INPUT[ 'FirstName' ] . ' ' . $MY_INPUT[ 'LastName' ];
+				$phone   = $MY_INPUT[ 'Phone' ];
+				$email   = $MY_INPUT[ 'Email' ];
+				$name    = $MY_INPUT[ 'company_name' ];
+				$address = $MY_INPUT[ 'Addr1' ] . ', ' . $this->get_label_by_key( $MY_INPUT[ 'State' ] ) . ' ' . $MY_INPUT[ 'ZipCode' ] . ', ' . $MY_INPUT[ 'country' ];
+				$dot     = $MY_INPUT[ 'DotNo' ];
+				$mc      = $MY_INPUT[ 'MotorCarrNo' ];
+				
+				$template_select_company = $this->print_list_customers( $name, $address, $mc, $dot, $contact, $phone, $email, $result );
+				
+				wp_send_json_success( [
+					'message' => 'Company successfully added',
+					'data'    => $MY_INPUT,
+					'tmpl'    => $template_select_company,
+					'name'    => $name
+				] );
 			} else {
 				// Handle specific errors
 				if ( is_wp_error( $result ) ) {

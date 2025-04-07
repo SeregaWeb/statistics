@@ -8,7 +8,6 @@ export const nextTabTrigger = () => {
     nextSelectors.forEach((item) => {
         item.addEventListener('click', (event) => {
             const { target } = event;
-
             if (!target) return;
 
             // @ts-ignore
@@ -20,7 +19,7 @@ export const nextTabTrigger = () => {
             const nextTargetTab = target.getAttribute('data-tab-id');
 
             if (!nextTargetTab) return;
-            console.log('nextTargetTab', nextTargetTab, document.getElementById(nextTargetTab));
+            console.log('nextTargetTab', container, nextTargetTab, document.getElementById(nextTargetTab));
             // @ts-ignore
             const tab = new Tab(document.getElementById(nextTargetTab));
             tab.show();

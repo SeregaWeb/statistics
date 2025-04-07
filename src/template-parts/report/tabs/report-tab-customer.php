@@ -62,7 +62,7 @@ if ( $report_object ) {
 			$dot     = $current_array_company->dot_number;
 			$mc      = $current_array_company->mc_number;
 			
-			$template_select_company = $company->print_list_customers( $name, $address, $mc, $dot, $contact, $phone, $email, $current_array_company->id );;
+			$template_select_company = $company->print_list_customers( $name, $address, $mc, $dot, $contact, $phone, $email, $current_array_company->id );
 		}
 	}
 	$read_only = $TMSUsers->check_read_only( $post_status );

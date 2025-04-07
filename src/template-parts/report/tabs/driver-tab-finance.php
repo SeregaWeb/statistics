@@ -72,7 +72,7 @@ $files = array(
 		'field_name'     => 'w9_file',
 		'field_label'    => 'W9 file',
 		'delete_action'  => 'js-remove-one-driver',
-		'active_tab'     => 'pills-driver-documents-tab',
+		'active_tab'     => 'pills-driver-finance-tab',
 	),
 	array(
 		'file_arr'       => $ssn_file_arr,
@@ -83,7 +83,7 @@ $files = array(
 		'field_name'     => 'ssn_file',
 		'field_label'    => 'SSN file',
 		'delete_action'  => 'js-remove-one-driver',
-		'active_tab'     => 'pills-driver-documents-tab',
+		'active_tab'     => 'pills-driver-finance-tab',
 	),
 	array(
 		'file_arr'       => $ein_file_arr,
@@ -94,7 +94,7 @@ $files = array(
 		'field_name'     => 'ein_file',
 		'field_label'    => 'EIN file',
 		'delete_action'  => 'js-remove-one-driver',
-		'active_tab'     => 'pills-driver-documents-tab',
+		'active_tab'     => 'pills-driver-finance-tab',
 	),
 	array(
 		'file_arr'       => $nec_file_arr,
@@ -105,7 +105,7 @@ $files = array(
 		'field_name'     => 'nec_file',
 		'field_label'    => 'NEC file',
 		'delete_action'  => 'js-remove-one-driver',
-		'active_tab'     => 'pills-driver-documents-tab',
+		'active_tab'     => 'pills-driver-finance-tab',
 	),
 );
 

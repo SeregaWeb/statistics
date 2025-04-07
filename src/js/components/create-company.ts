@@ -37,6 +37,16 @@ export const actionCreateCompanyInit = (ajaxUrl) => {
                         if (requestStatus.success) {
                             console.log('Company added successfully:', requestStatus.data);
                             popupInstance.forceCloseAllPopup();
+
+                            const list = document.querySelector('.js-result-search');
+                            const name = document.querySelector('.js-search-company');
+
+                            if (list && name) {
+                                list.innerHTML = requestStatus.data.tmpl;
+                                // @ts-ignore
+                                name.value = requestStatus.data.name;
+                            }
+
                             printMessage(requestStatus.data.message, 'success', 8000);
                         } else {
                             // eslint-disable-next-line no-alert

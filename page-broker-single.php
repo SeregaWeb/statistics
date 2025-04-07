@@ -99,7 +99,7 @@ $orange_lvl = $TMSUsers->check_user_role_access( array(
 ), true );
 
 ?>
-    <div class="container-fluid pb-3">
+    <div class="container-fluid pb-3 js-section-tab">
         <div class="row">
             <div class="container">
                 <div class="row">
@@ -114,14 +114,6 @@ $orange_lvl = $TMSUsers->check_user_role_access( array(
                                             aria-selected="true">Info
                                     </button>
                                 </li>
-								<?php if ( $add_broker ): ?>
-                                    <li class="nav-item w-25" role="presentation">
-                                        <button class="nav-link w-100" id="pills-update-tab" data-bs-toggle="pill"
-                                                data-bs-target="#pills-update" type="button" role="tab"
-                                                aria-controls="pills-update" aria-selected="false">Edit
-                                        </button>
-                                    </li>
-								<?php endif; ?>
                                 <li class="nav-item w-25" role="presentation">
                                     <button class="nav-link w-100 <?php echo isset( $_GET[ 'paged' ] ) ? 'active'
 										: ''; ?>" id="pills-loads-tab" data-bs-toggle="pill"
@@ -130,6 +122,18 @@ $orange_lvl = $TMSUsers->check_user_role_access( array(
                                             aria-selected="true">Loads
                                     </button>
                                 </li>
+								
+								<?php if ( $add_broker ): ?>
+                                    <li class="nav-item w-100 d-flex align-items-center justify-content-end"
+                                        role="presentation">
+                                        <button class="btn btn-primary" style="min-width: 120px;"
+                                                id="pills-update-tab"
+                                                data-bs-toggle="pill"
+                                                data-bs-target="#pills-update" type="button" role="tab"
+                                                aria-controls="pills-update" aria-selected="false">Edit
+                                        </button>
+                                    </li>
+								<?php endif; ?>
                             </ul>
                         </div>
                         <div class="tab-content" id="pills-tabContent">
@@ -739,18 +743,20 @@ $orange_lvl = $TMSUsers->check_user_role_access( array(
                             </div>
 
                         </div>
-						
-						
-						<?php if ( $remove_broker ): ?>
-                            <div class="col-12 d-flex justify-content-end">
+
+                        <div class="col-12 d-flex justify-content-end flex-wrap gap-2" role="presentation">
+							<?php if ( $remove_broker ): ?>
                                 <form class="js-delete-broker text-end">
                                     <input type="hidden" name="id" value="<?php echo $id_broker; ?>">
                                     <button class="btn btn-danger mb-1" type="submit">Remove this broker</button>
-                                    <p class="text-small">the broker will be permanently deleted, it will not be
+                                    <p class="text-small w-100 text-right">the broker will be permanently deleted, it
+                                        will not
+                                        be
                                         possible to return it</p>
                                 </form>
-                            </div>
-						<?php endif; ?>
+							<?php endif; ?>
+
+                        </div>
 					
 					
 					<?php } else { ?>

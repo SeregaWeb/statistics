@@ -87,26 +87,30 @@ class  TMSStatistics extends TMSReportsHelper {
 		$table_reports = $wpdb->prefix . $this->table_main;
 		$table_meta    = $wpdb->prefix . $this->table_meta;
 		
-		$query = "
-	        SELECT
-	            dispatcher_meta.meta_value AS dispatcher_initials,
-	            COUNT(reports.id) AS post_count,
-	            SUM(CAST(profit_meta.meta_value AS DECIMAL(10,2))) AS total_profit,
-	            AVG(CAST(profit_meta.meta_value AS DECIMAL(10,2))) AS average_profit
-	        FROM {$table_reports} reports
-	        INNER JOIN {$table_meta} dispatcher_meta
-	            ON reports.id = dispatcher_meta.post_id
-	        INNER JOIN {$table_meta} profit_meta
-	            ON reports.id = profit_meta.post_id
-	        WHERE dispatcher_meta.meta_key = 'dispatcher_initials'
-	        AND profit_meta.meta_key = 'profit'
-	        AND reports.status_post = 'publish'
-	        GROUP BY dispatcher_meta.meta_value
-	    ";
+		$sql = "
+		    SELECT
+		        dispatcher_meta.meta_value AS dispatcher_initials,
+		        COUNT(reports.id) AS post_count,
+		        SUM(CAST(profit_meta.meta_value AS DECIMAL(10,2))) AS total_profit,
+		        AVG(CASE WHEN load_status.meta_value != 'tonu' THEN CAST(profit_meta.meta_value AS DECIMAL(10,2)) ELSE 0 END) AS average_profit
+		    FROM $table_reports AS reports
+		    INNER JOIN $table_meta AS dispatcher_meta
+		        ON reports.id = dispatcher_meta.post_id
+		        AND dispatcher_meta.meta_key = 'dispatcher_initials'
+		    INNER JOIN $table_meta AS profit_meta
+		        ON reports.id = profit_meta.post_id
+		        AND profit_meta.meta_key = 'profit'
+		    INNER JOIN $table_meta AS load_status
+		        ON reports.id = load_status.post_id
+		        AND load_status.meta_key = 'load_status'
+		    WHERE
+		       load_status.meta_value != 'cancelled'
+		      AND reports.status_post = 'publish'
+		    GROUP BY dispatcher_meta.meta_value
+		";
 		
 		// Выполняем запрос и получаем результаты
-		$dispatcher_stats = $wpdb->get_results( $query, ARRAY_A );
-		
+		$dispatcher_stats = $wpdb->get_results( $sql, ARRAY_A );
 		if ( is_array( $dispatcher_stats ) ) {
 			foreach ( $dispatcher_stats as $key => $disp ) {
 				$names             = $this->get_user_full_name_by_id( $disp[ 'dispatcher_initials' ] );
@@ -161,22 +165,29 @@ class  TMSStatistics extends TMSReportsHelper {
 		
 		// Adjusting the query to use %s for string comparison
 		$query = $wpdb->prepare( "
-			SELECT
-			    MONTH(reports.date_booked) AS month,
-			    COUNT(reports.id) AS post_count,
-			    SUM(CAST(profit.meta_value AS DECIMAL(10,2))) AS total_profit,
-			    AVG(CAST(profit.meta_value AS DECIMAL(10,2))) AS average_profit
-			FROM $table_reports reports
-			INNER JOIN $table_meta meta ON reports.id = meta.post_id
-			INNER JOIN $table_meta profit ON reports.id = profit.post_id
-			WHERE meta.meta_key = 'dispatcher_initials'
-			  AND meta.meta_value = %d  -- Change as needed
-			  AND profit.meta_key = 'profit'
-			  AND YEAR(reports.date_booked) = %d
-			  AND reports.status_post = 'publish'
-			GROUP BY month
-			ORDER BY month
-			", $dispatcher_initials, $year );
+		    SELECT
+		        MONTH(reports.date_booked) AS month,
+		        COUNT(reports.id) AS post_count,
+		        SUM(CAST(profit.meta_value AS DECIMAL(10,2))) AS total_profit,
+		        AVG(CASE WHEN load_status.meta_value != 'tonu' THEN CAST(profit.meta_value AS DECIMAL(10,2)) ELSE 0 END) AS average_profit
+		    FROM $table_reports reports
+		    INNER JOIN $table_meta meta
+		        ON reports.id = meta.post_id
+		        AND meta.meta_key = 'dispatcher_initials'
+		    INNER JOIN $table_meta profit
+		        ON reports.id = profit.post_id
+		        AND profit.meta_key = 'profit'
+		    INNER JOIN $table_meta load_status
+		        ON reports.id = load_status.post_id
+		        AND load_status.meta_key = 'load_status'
+		    WHERE meta.meta_value = %s
+		      AND load_status.meta_value != 'cancelled'
+		      AND YEAR(reports.date_booked) = %d
+		      AND reports.status_post = 'publish'
+		    GROUP BY month
+		    ORDER BY month
+		", $dispatcher_initials, $year );
+		
 		
 		// Execute the query
 		$results = $wpdb->get_results( $query, ARRAY_A );
@@ -229,15 +240,19 @@ class  TMSStatistics extends TMSReportsHelper {
             dispatcher_meta.meta_value AS dispatcher_initials,
             COUNT(reports.id) AS post_count,
             SUM(CAST(profit_meta.meta_value AS DECIMAL(10,2))) AS total_profit,
-            AVG(CAST(profit_meta.meta_value AS DECIMAL(10,2))) AS average_profit
+            AVG(CASE WHEN load_status.meta_value != 'tonu' THEN CAST(profit_meta.meta_value AS DECIMAL(10,2)) ELSE 0 END) AS average_profit
         FROM {$table_reports} reports
         INNER JOIN {$table_meta} dispatcher_meta
             ON reports.id = dispatcher_meta.post_id
+		    AND dispatcher_meta.meta_key = 'dispatcher_initials'
         INNER JOIN {$table_meta} profit_meta
             ON reports.id = profit_meta.post_id
-        WHERE dispatcher_meta.meta_key = 'dispatcher_initials'
-        AND profit_meta.meta_key = 'profit'
+        INNER JOIN {$table_meta} load_status
+            ON reports.id = load_status.post_id
+        WHERE profit_meta.meta_key = 'profit'
         AND reports.status_post = 'publish'
+                  AND load_status.meta_key = 'load_status'
+	          AND load_status.meta_value != 'cancelled'
         AND YEAR(reports.date_booked) = %d
         AND MONTH(reports.date_booked) = %d
     ";

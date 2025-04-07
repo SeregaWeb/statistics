@@ -8,15 +8,34 @@
 
 get_header();
 
+$Drivers  = new TMSDrivers();
+$TMSUsers = new TMSUsers();
+$helper   = new TMSReportsHelper();
+$args     = array(
+	'status_post' => 'publish',
+);
+
+$args  = $Drivers->set_filter_params( $args );
+$items = $Drivers->get_table_items( $args );
+
+$access = $TMSUsers->check_user_role_access( [ 'administrator', 'recruiter', 'recruiter-tl' ], true );
+
 ?>
     <div class="container-fluid">
         <div class="row">
             <div class="container">
                 <div class="row">
-                    <div class="col-12 pt-15">
-						<?php
-						echo esc_html( get_template_part( TEMPLATE_PATH . 'page', 'in-development' ) );
-						?>
+
+                    <div class="col-12 pt-3">
+                        <h2>Drivers</h2>
+                    </div>
+
+                    <div class="col-12 pt-3 pb-3">
+						<?php if ( ! $access ) :
+							echo $helper->message_top( 'error', 'Access only Administrator, recruiters and recruiters team leader have access to this page.' );
+						else:
+							echo esc_html( get_template_part( TEMPLATE_PATH . 'tables/driver', 'table', $items ) );
+						endif; ?>
                     </div>
                 </div>
             </div>

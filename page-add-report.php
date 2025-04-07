@@ -13,8 +13,7 @@ $TMSUsers = new TMSUsers();
 
 $states = $helper->get_states();
 
-$disabled_tabs = 'disabled';
-
+$disabled_tabs  = 'disabled';
 $report_object  = '';
 $status_publish = 'draft';
 $print_status   = false;

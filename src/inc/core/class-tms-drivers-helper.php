@@ -186,4 +186,30 @@ class TMSDriversHelper {
 		return false;
 	}
 	
+	function format_field_name( $field ) {
+		return ucwords( str_replace( '_', ' ', $field ) );
+	}
+	
+	function get_log_template( $array_track, $meta, $data ) {
+		$changes = '';
+		
+		if ( is_array( $array_track ) ) {
+			foreach ( $array_track as $field ) {
+				// Старое значение
+				$old_value = isset( $meta[ $field ] ) ? $meta[ $field ] : '';
+				
+				// Новое значение из массива данных
+				$new_value = isset( $data[ $field ] ) ? $data[ $field ] : '';
+				
+				// Сравниваем старое и новое значение
+				if ( $old_value != '' && $old_value != $new_value ) {
+					$changes .= '<strong>' . $this->format_field_name( $field ) . '</strong> - Value changed<br>';
+					$changes .= '<strong>New meaning</strong>: <span style="color: green">' . $new_value . '</span><br>';
+					$changes .= '<strong>Old meaning</strong>: <span style="color: red">' . $old_value . '</span><br><br>';
+				}
+			}
+		}
+		
+		return $changes;
+	}
 }

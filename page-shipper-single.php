@@ -51,8 +51,11 @@ $remove_shipper = $TMSUsers->check_user_role_access( array( 'administrator' ), t
                             </button>
                         </li>
 						<?php if ( $add_shipper ): ?>
-                            <li class="nav-item w-25" role="presentation">
-                                <button class="nav-link w-100" id="pills-update-tab" data-bs-toggle="pill"
+                            <li class="nav-item w-100 d-flex align-items-center justify-content-end"
+                                role="presentation">
+                                <button class="btn btn-primary" style="min-width: 120px;"
+                                        id="pills-update-tab"
+                                        data-bs-toggle="pill"
                                         data-bs-target="#pills-update" type="button" role="tab"
                                         aria-controls="pills-update" aria-selected="false">Edit
                                 </button>
@@ -254,7 +257,7 @@ $remove_shipper = $TMSUsers->check_user_role_access( array( 'administrator' ), t
                                 </div>
 
                                 <div class="modal-footer justify-content-start gap-2">
-                                    <button type="submit" class="btn btn-outline-primary">End edit <span
+                                    <button type="submit" class="btn btn-primary">End edit <span
                                                 class="spinner-border spinner-border-sm ms-2"
                                                 style="display: none;"></span></button>
                                 </div>

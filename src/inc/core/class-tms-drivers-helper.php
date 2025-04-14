@@ -112,6 +112,35 @@ class TMSDriversHelper {
 		"Expired"   => "Expired"
 	);
 	
+	public $driverLicenceTypes = array(
+		'regular'  => 'Regular',
+		'cdl'      => 'CDL',
+		'enhanced' => 'Enhanced'
+	);
+	
+	
+	public $legalDocumentTypes = array(
+		"no-document"                     => "No document",
+		"us-passport"                     => "US passport",
+		"permanent-residency"             => "Permanent residentship",
+		"work-authorization"              => "Work authorization",
+		"certificate-of-naturalization"   => "Certificate of naturalization",
+		"enhanced-driver-licence-real-id" => "Enhanced driver licence Real ID"
+	);
+	
+	public $insuredOptions = array(
+		"business"   => "Business",
+		"individual" => "Individual"
+	);
+	
+	public $statusOptions = array(
+		"additional-insured" => "Additional insured",
+		"company-not-listed" => "Company not listed",
+		"cancelled"          => "Cancelled",
+		"hold"               => "Hold"
+	);
+	
+	
 	public $homeDriver = array(); // states
 	public $recruiters = array(); // recruiter ID
 	

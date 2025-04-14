@@ -25,6 +25,7 @@ if ( ! empty( $results ) ) : ?>
             <th scope="col">Gross</th>
             <th scope="col">Profit</th>
         </tr>
+
         </thead>
         <tbody>
 		<?php foreach ( $results as $row ) :

@@ -786,4 +786,156 @@ class TMSReportsIcons {
 		<svg xmlns="http://www.w3.org/2000/svg" fill="green" width="18px" height="18px" viewBox="0 0 14 14"><path d="M0 7a7 7 0 1 1 14 0A7 7 0 0 1 0 7z M6.278 7.697L5.045 6.464a.296.296 0 0 0-.42-.002l-.613.614a.298.298 0 0 0 .002.42l1.91 1.909a.5.5 0 0 0 .703.005l.265-.265L9.997 6.04a.291.291 0 0 0-.009-.408l-.614-.614a.29.29 0 0 0-.408-.009L6.278 7.697z" fill-rule="evenodd"/></svg>
 		';
 	}
+	
+	public function get_flags( $str_flag ) {
+		$flugs      = explode( ',', $str_flag );
+		$flugs_tags = '';
+		
+		if ( is_array( $flugs ) ) {
+			$icons_map = array(
+				'en' => 'icon_fl_en',
+				'es' => 'icon_fl_sp',
+				'ua' => 'icon_fl_ua',
+				'ru' => 'icon_fl_ru',
+				'fr' => 'icon_fl_fr',
+				'pt' => 'icon_fl_pt',
+				'ar' => 'icon_fl_ar',
+			);
+			
+			foreach ( $flugs as $flug ) {
+				if ( isset( $icons_map[ $flug ] ) && method_exists( $this, $icons_map[ $flug ] ) ) {
+					$flugs_tags .= $this->{$icons_map[ $flug ]}();
+				}
+			}
+		}
+		
+		return $flugs_tags;
+	}
+	
+	public function icon_fl_sp() {
+		return '
+		<svg width="14px" height="14px" viewBox="0 0 36 36" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" aria-hidden="true" role="img" class="iconify iconify--twemoji" preserveAspectRatio="xMidYMid meet"><path fill="#C60A1D" d="M36 27a4 4 0 0 1-4 4H4a4 4 0 0 1-4-4V9a4 4 0 0 1 4-4h28a4 4 0 0 1 4 4v18z"></path><path fill="#FFC400" d="M0 12h36v12H0z"></path><path fill="#EA596E" d="M9 17v3a3 3 0 1 0 6 0v-3H9z"></path><path fill="#F4A2B2" d="M12 16h3v3h-3z"></path><path fill="#DD2E44" d="M9 16h3v3H9z"></path><ellipse fill="#EA596E" cx="12" cy="14.5" rx="3" ry="1.5"></ellipse><ellipse fill="#FFAC33" cx="12" cy="13.75" rx="3" ry=".75"></ellipse><path fill="#99AAB5" d="M7 16h1v7H7zm9 0h1v7h-1z"></path><path fill="#66757F" d="M6 22h3v1H6zm9 0h3v1h-3zm-8-7h1v1H7zm9 0h1v1h-1z"></path></svg>
+		';
+	}
+	
+	public function icon_fl_ar() {
+		return '
+		<svg height="14px" width="14px" version="1.1" id="Layer_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
+	 viewBox="0 0 512 512" xml:space="preserve">
+		<path style="fill:#73AF00;" d="M38.345,423.724H256V88.276H38.345C17.167,88.276,0,105.443,0,126.621V385.38
+			C0,406.557,17.167,423.724,38.345,423.724z"/>
+		<path style="fill:#F5F5F5;" d="M473.655,423.724c21.177,0,38.345-17.167,38.345-38.345V126.621
+			c0-21.177-17.167-38.345-38.345-38.345H256v335.448H473.655z"/>
+		<g>
+			<path style="fill:#FF4B55;" d="M298.609,223.906l-15.305,20.021l-23.897-7.999c-1.336-0.447-2.473,1.064-1.673,2.223l14.312,20.743
+				l-14.993,20.256c-0.839,1.132,0.247,2.68,1.598,2.278l24.15-7.202l14.632,20.519c0.818,1.148,2.626,0.593,2.66-0.815l0.613-25.194
+				l24.035-7.575c1.344-0.424,1.375-2.314,0.046-2.782l-23.77-8.369l0.223-25.201C301.252,223.401,299.464,222.786,298.609,223.906z"
+				/>
+			<path style="fill:#FF4B55;" d="M271.866,316.63c-33.459,0-60.6-27.142-60.6-60.631c0-33.428,27.142-60.63,60.6-60.63
+				c12.448,0,23.928,3.829,33.495,10.308c1.465,0.992,3.137-0.932,1.91-2.208c-14.298-14.866-34.535-23.934-56.971-23.168
+				c-38.548,1.315-70.46,32.222-72.922,70.713c-2.822,44.089,32.089,80.728,75.554,80.728c21.41,0,40.652-8.951,54.393-23.262
+				c1.214-1.265-0.462-3.16-1.912-2.177C295.836,312.797,284.337,316.63,271.866,316.63z"/>
+		</g>
+		</svg>
+		';
+	}
+	
+	public function icon_fl_en() {
+		return '
+		<svg width="14px" height="14px" viewBox="0 -4 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+		<g clip-path="url(#clip0_503_2952)">
+		<rect width="28" height="20" rx="2" fill="white"/>
+		<mask id="mask0_503_2952" style="mask-type:alpha" maskUnits="userSpaceOnUse" x="0" y="0" width="28" height="20">
+		<rect width="28" height="20" rx="2" fill="white"/>
+		</mask>
+		<g mask="url(#mask0_503_2952)">
+		<rect width="28" height="20" fill="#0A17A7"/>
+		<path fill-rule="evenodd" clip-rule="evenodd" d="M-1.28244 -1.91644L10.6667 6.14335V-1.33333H17.3334V6.14335L29.2825 -1.91644L30.7737 0.294324L21.3263 6.66667H28V13.3333H21.3263L30.7737 19.7057L29.2825 21.9165L17.3334 13.8567V21.3333H10.6667V13.8567L-1.28244 21.9165L-2.77362 19.7057L6.67377 13.3333H2.95639e-05V6.66667H6.67377L-2.77362 0.294324L-1.28244 -1.91644Z" fill="white"/>
+		<path d="M18.668 6.33219L31.3333 -2" stroke="#DB1F35" stroke-width="0.666667" stroke-linecap="round"/>
+		<path d="M20.0128 13.6975L31.3666 21.3503" stroke="#DB1F35" stroke-width="0.666667" stroke-linecap="round"/>
+		<path d="M8.00555 6.31046L-3.83746 -1.67099" stroke="#DB1F35" stroke-width="0.666667" stroke-linecap="round"/>
+		<path d="M9.29006 13.6049L-3.83746 22.3105" stroke="#DB1F35" stroke-width="0.666667" stroke-linecap="round"/>
+		<path fill-rule="evenodd" clip-rule="evenodd" d="M0 12H12V20H16V12H28V8H16V0H12V8H0V12Z" fill="#E6273E"/>
+		</g>
+		</g>
+		<defs>
+		<clipPath id="clip0_503_2952">
+		<rect width="28" height="20" rx="2" fill="white"/>
+		</clipPath>
+		</defs>
+		</svg>
+		';
+	}
+	
+	public function icon_fl_ua() {
+		return '
+		<svg width="14px" height="14px" viewBox="0 0 36 36" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" aria-hidden="true" role="img" class="iconify iconify--twemoji" preserveAspectRatio="xMidYMid meet"><path fill="#005BBB" d="M32 5H4a4 4 0 0 0-4 4v9h36V9a4 4 0 0 0-4-4z"></path><path fill="#FFD500" d="M36 27a4 4 0 0 1-4 4H4a4 4 0 0 1-4-4v-9h36v9z"></path></svg>
+		';
+	}
+	
+	public function icon_fl_pt() {
+		return '
+		<svg width="14px" height="14px" viewBox="0 0 36 36" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" aria-hidden="true" role="img" class="iconify iconify--twemoji" preserveAspectRatio="xMidYMid meet"><path fill="#060" d="M36 27a4 4 0 0 1-4 4H4a4 4 0 0 1-4-4V9a4 4 0 0 1 4-4h28a4 4 0 0 1 4 4v18z"></path><path fill="#D52B1E" d="M32 5H15v26h17a4 4 0 0 0 4-4V9a4 4 0 0 0-4-4z"></path><path fill="#FFCC4D" d="M15 10a8 8 0 0 0-8 8a8 8 0 1 0 16 0a8 8 0 0 0-8-8zm-6.113 4.594l1.602 1.602l-2.46 1.23a6.95 6.95 0 0 1 .858-2.832zm-.858 3.979l4.4 2.207l-2.706 1.804l.014.021a6.963 6.963 0 0 1-1.708-4.032zM14 24.92a6.945 6.945 0 0 1-2.592-.92H14v.92zM14 23h-3.099L14 20.934V23zm0-3.268l-.607.405L9.118 18l2.116-1.058L14 19.707v.025zm0-1.439l-3.543-3.543l3.543.59v2.953zm0-3.992l-4.432-.713A6.983 6.983 0 0 1 14 11.08v3.221zm7.113.293a6.95 6.95 0 0 1 .858 2.833l-2.46-1.23l1.602-1.603zM16 11.08a6.987 6.987 0 0 1 4.432 2.508L16 14.301V11.08zm0 4.26l3.543-.591L16 18.293V15.34zm0 4.367l2.765-2.765L20.882 18l-4.274 2.137l-.608-.405v-.025zm0 5.213V24h2.592a6.945 6.945 0 0 1-2.592.92zM16 23v-2.066L19.099 23H16zm4.264-.395l.014-.021l-2.706-1.804l4.4-2.207a6.976 6.976 0 0 1-1.708 4.032z"></path><path fill="#D52B1E" d="M11 13v7a4 4 0 0 0 8 0v-7h-8z"></path><path fill="#FFF" d="M12 14v6a3 3 0 0 0 6 0v-6h-6z"></path><path fill="#829ACD" d="M13 17h4v2h-4z"></path><path fill="#829ACD" d="M14 16h2v4h-2z"></path><path fill="#039" d="M12 17h1v2h-1zm2 0h2v2h-2zm3 0h1v2h-1zm-3 3h2v2h-2zm0-6h2v2h-2z"></path></svg>
+		';
+	}
+	
+	public function icon_fl_fr() {
+		return '
+		<svg version="1.1" id="Layer_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
+	 viewBox="0 0 496 496" width="14px" height="14px" xml:space="preserve">
+		<rect x="160" y="80" style="fill:#FFFFFF;" width="176" height="336"/>
+		<path style="fill:#3757A6;" d="M160,80H48C21.6,80,0,99.2,0,126.4v243.2C0,396.8,21.6,416,48,416h112V80z"/>
+		<path style="fill:#EF4F4E;" d="M448,80H336v336h112c26.4,0,48-19.2,48-46.4V126.4C496,99.2,474.4,80,448,80z"/>
+		<path style="fill:#DD4545;" d="M448,80H336v240.8L446.4,416c26.4,0,49.6-19.2,49.6-46.4V126.4C496,99.2,474.4,80,448,80z"/>
+		<polygon style="fill:#E2F2F1;" points="336,320.8 336,80 160,80 160,175.2 "/>
+		<polygon style="fill:#2A4D93;" points="160,80 48,80 160,175.2 "/>
+		<path style="fill:#CC3E3E;" d="M336,416h112c26.4,0,48-16,48-48H336V416z"/>
+		<rect x="160" y="368" style="fill:#D6EAE8;" width="176" height="48"/>
+		<path style="fill:#133970;" d="M0,368c0,32,21.6,48,48,48h112v-48H0z"/>
+		<path style="fill:#CC3E3E;" d="M448,80H336v84.8l160,49.6v-88C496,99.2,474.4,80,448,80z"/>
+		<polygon style="fill:#D6EAE8;" points="336,164.8 336,80 160,80 160,112.8 "/>
+		<polygon style="fill:#133970;" points="160,80 48,80 160,112.8 "/>
+		</svg>
+		';
+	}
+	
+	public function icon_fl_ru() {
+		return '
+		<svg width="14px" height="14px" viewBox="0 -4 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+			<g clip-path="url(#clip0_503_2726)">
+				<rect x="0.25" y="0.25" width="27.5" height="19.5" rx="1.75" fill="white" stroke="#F5F5F5" stroke-width="0.5"/>
+				<mask id="mask0_503_2726" style="mask-type:alpha" maskUnits="userSpaceOnUse" x="0" y="0" width="28" height="20">
+				<rect x="0.25" y="0.25" width="27.5" height="19.5" rx="1.75" fill="white" stroke="white" stroke-width="0.5"/>
+				</mask>
+				<g mask="url(#mask0_503_2726)">
+					<path fill-rule="evenodd" clip-rule="evenodd" d="M0 13.3333H28V6.66667H0V13.3333Z" fill="#0C47B7"/>
+					<path fill-rule="evenodd" clip-rule="evenodd" d="M0 20H28V13.3333H0V20Z" fill="#E53B35"/>
+				</g>
+			</g>
+			<defs>
+				<clipPath id="clip0_503_2726">
+					<rect width="28" height="20" rx="2" fill="white"/>
+				</clipPath>
+			</defs>
+		</svg>
+		';
+	}
+	
+	public function get_capabilities( $capabilities ) {
+		$capa_urls = array();
+		
+		$upload_dir = wp_get_upload_dir();
+		$upload_url = $upload_dir[ 'baseurl' ];
+		$upload_url .= '/additional/';
+		
+		if ( is_array( $capabilities ) ):
+			foreach ( $capabilities as $key => $val ):
+				if ( ! empty( $val ) && ! is_null( $val ) ):
+					$capa_urls[] = $upload_url . $key;
+				endif;
+			endforeach;
+		endif;
+		
+		return $capa_urls;
+	}
 }

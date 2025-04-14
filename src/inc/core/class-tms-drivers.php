@@ -36,11 +36,35 @@ class TMSDrivers extends TMSDriversHelper {
 	}
 	
 	public function set_filter_params( $args ) {
-		$my_search = trim( get_field_value( $_GET, 'my_search' ) );
+		$my_search  = trim( get_field_value( $_GET, 'my_search' ) );
+		$recruiter  = trim( get_field_value( $_GET, 'recruiter' ) );
+		$year       = trim( get_field_value( $_GET, 'fyear' ) );
+		$month      = trim( get_field_value( $_GET, 'fmonth' ) );
+		$source     = trim( get_field_value( $_GET, 'source' ) );
+		$additional = trim( get_field_value( $_GET, 'additional' ) );
 		
 		if ( $my_search ) {
 			$args[ 'my_search' ] = $my_search;
 		}
+		
+		if ( $recruiter ) {
+			$args[ 'recruiter' ] = $recruiter;
+		}
+		if ( $additional ) {
+			$args[ 'additional' ] = $additional;
+		}
+		if ( $year ) {
+			$args[ 'year' ] = $year;
+		}
+		
+		if ( $month ) {
+			$args[ 'month' ] = $month;
+		}
+		
+		if ( $source ) {
+			$args[ 'source' ] = $source;
+		}
+		
 		
 		return $args;
 	}
@@ -612,6 +636,8 @@ LEFT JOIN $table_meta AS authorized_email
 					? sanitize_email( $_POST[ 'driver_email' ] ) : '',
 				'home_location'              => isset( $_POST[ 'home_location' ] )
 					? sanitize_text_field( $_POST[ 'home_location' ] ) : '',
+				'city'                       => isset( $_POST[ 'city' ] ) ? sanitize_text_field( $_POST[ 'city' ] )
+					: '',
 				'dob'                        => isset( $_POST[ 'dob' ] ) ? sanitize_text_field( $_POST[ 'dob' ] ) : '',
 				// Additional date validation might be required
 				'macro_point'                => isset( $_POST[ 'macro_point' ] )
@@ -637,6 +663,12 @@ LEFT JOIN $table_meta AS authorized_email
 				// Additional date validation might be required
 				'owner_enabled'              => isset( $_POST[ 'owner_enabled' ] )
 					? sanitize_text_field( $_POST[ 'owner_enabled' ] ) : '',
+				'mc_enabled'                 => isset( $_POST[ 'mc_enabled' ] )
+					? sanitize_text_field( $_POST[ 'mc_enabled' ] ) : '',
+				'mc'                         => isset( $_POST[ 'mc' ] ) ? sanitize_text_field( $_POST[ 'mc' ] ) : '',
+				'dot_enabled'                => isset( $_POST[ 'dot_enabled' ] )
+					? sanitize_text_field( $_POST[ 'dot_enabled' ] ) : '',
+				'dot'                        => isset( $_POST[ 'dot' ] ) ? sanitize_text_field( $_POST[ 'dot' ] ) : '',
 				'owner_name'                 => isset( $_POST[ 'owner_name' ] )
 					? sanitize_text_field( $_POST[ 'owner_name' ] ) : '',
 				'owner_phone'                => isset( $_POST[ 'owner_phone' ] )
@@ -694,6 +726,8 @@ LEFT JOIN $table_meta AS authorized_email
 					? sanitize_email( $_POST[ 'driver_email' ] ) : '',
 				'home_location'              => isset( $_POST[ 'home_location' ] )
 					? sanitize_text_field( $_POST[ 'home_location' ] ) : '',
+				'city'                       => isset( $_POST[ 'city' ] ) ? sanitize_text_field( $_POST[ 'city' ] )
+					: '',
 				'dob'                        => isset( $_POST[ 'dob' ] ) ? sanitize_text_field( $_POST[ 'dob' ] ) : '',
 				// Additional date validation might be required
 				'macro_point'                => isset( $_POST[ 'macro_point' ] )
@@ -717,6 +751,12 @@ LEFT JOIN $table_meta AS authorized_email
 				'team_driver_trucker_tools'  => isset( $_POST[ 'team_driver_trucker_tools' ] )
 					? sanitize_text_field( $_POST[ 'team_driver_trucker_tools' ] ) : '',
 				// Additional date validation might be required
+				'mc_enabled'                 => isset( $_POST[ 'mc_enabled' ] )
+					? sanitize_text_field( $_POST[ 'mc_enabled' ] ) : '',
+				'mc'                         => isset( $_POST[ 'mc' ] ) ? sanitize_text_field( $_POST[ 'mc' ] ) : '',
+				'dot_enabled'                => isset( $_POST[ 'dot_enabled' ] )
+					? sanitize_text_field( $_POST[ 'dot_enabled' ] ) : '',
+				'dot'                        => isset( $_POST[ 'dot' ] ) ? sanitize_text_field( $_POST[ 'dot' ] ) : '',
 				'owner_enabled'              => isset( $_POST[ 'owner_enabled' ] )
 					? sanitize_text_field( $_POST[ 'owner_enabled' ] ) : '',
 				'owner_name'                 => isset( $_POST[ 'owner_name' ] )
@@ -752,6 +792,7 @@ LEFT JOIN $table_meta AS authorized_email
 				'driver_phone',
 				'driver_email',
 				'home_location',
+				'city',
 				'dob',
 				'languages',
 				'team_driver_name',
@@ -763,7 +804,9 @@ LEFT JOIN $table_meta AS authorized_email
 				'owner_email',
 				'owner_dob',
 				'emergency_contact_name',
-				'emergency_contact_phone'
+				'emergency_contact_phone',
+				'mc',
+				'dot',
 			);
 			
 			// Переменная для хранения результатов изменений
@@ -1065,20 +1108,23 @@ LEFT JOIN $table_meta AS authorized_email
 				? sanitize_text_field( $_POST[ 'driver_licence_expiration' ] ) : '';
 			$tanker_endorsement        = isset( $_POST[ 'tanker_endorsement' ] )
 				? sanitize_text_field( $_POST[ 'tanker_endorsement' ] ) : '';
-			$hazmat_endorsement        = isset( $_POST[ 'hazmat_endorsement' ] )
+			
+			$hazmat_endorsement = isset( $_POST[ 'hazmat_endorsement' ] )
 				? sanitize_text_field( $_POST[ 'hazmat_endorsement' ] ) : '';
-			$hazmat_certificate        = isset( $_POST[ 'hazmat_certificate' ] )
-				? sanitize_text_field( $_POST[ 'hazmat_endorsement' ] ) : '';
-			$hazmat_expiration         = isset( $_POST[ 'hazmat_expiration' ] )
+			
+			$hazmat_certificate = isset( $_POST[ 'hazmat_certificate' ] )
+				? sanitize_text_field( $_POST[ 'hazmat_certificate' ] ) : '';
+			
+			$hazmat_expiration   = isset( $_POST[ 'hazmat_expiration' ] )
 				? sanitize_text_field( $_POST[ 'hazmat_expiration' ] ) : '';
-			$twic                      = isset( $_POST[ 'twic' ] ) ? sanitize_text_field( $_POST[ 'twic' ] ) : '';
-			$twic_expiration           = isset( $_POST[ 'twic_expiration' ] )
+			$twic                = isset( $_POST[ 'twic' ] ) ? sanitize_text_field( $_POST[ 'twic' ] ) : '';
+			$twic_expiration     = isset( $_POST[ 'twic_expiration' ] )
 				? sanitize_text_field( $_POST[ 'twic_expiration' ] ) : '';
-			$tsa_approved              = isset( $_POST[ 'tsa_approved' ] )
-				? sanitize_text_field( $_POST[ 'tsa_approved' ] ) : '';
-			$tsa_expiration            = isset( $_POST[ 'tsa_expiration' ] )
+			$tsa_approved        = isset( $_POST[ 'tsa_approved' ] ) ? sanitize_text_field( $_POST[ 'tsa_approved' ] )
+				: '';
+			$tsa_expiration      = isset( $_POST[ 'tsa_expiration' ] )
 				? sanitize_text_field( $_POST[ 'tsa_expiration' ] ) : '';
-			$legal_document_type       = isset( $_POST[ 'legal_document_type' ] )
+			$legal_document_type = isset( $_POST[ 'legal_document_type' ] )
 				? sanitize_text_field( $_POST[ 'legal_document_type' ] ) : '';
 			
 			$nationality             = isset( $_POST[ 'nationality' ] ) ? sanitize_text_field( $_POST[ 'nationality' ] )

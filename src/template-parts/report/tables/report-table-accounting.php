@@ -105,7 +105,9 @@ if ( ! empty( $results ) ) : ?>
 			}
 			
 			if ( $additional_fees && is_null( $additional_fees_driver ) ) {
-				$driver_rate_raw -= $additional_fees_val;
+				$cleaned_value   = str_replace( ',', '', $additional_fees_val );
+				$float_value     = floatval( $cleaned_value );
+				$driver_rate_raw = floatval( $driver_rate_raw ) - $float_value;
 			}
 			
 			$driver_rate = esc_html( '$' . $helper->format_currency( $driver_rate_raw ) );
@@ -113,7 +115,9 @@ if ( ! empty( $results ) ) : ?>
 			if ( $second_driver ) {
 				
 				if ( $additional_fees && $additional_fees_driver ) {
-					$second_driver_rate_raw -= $additional_fees_val;
+					$cleaned_value          = str_replace( ',', '', $additional_fees_val );
+					$float_value            = floatval( $cleaned_value );
+					$second_driver_rate_raw = floatval( $second_driver_rate_raw ) - $float_value;
 				}
 				
 				$second_driver_rate = esc_html( '$' . $helper->format_currency( $second_driver_rate_raw ) );

@@ -20,6 +20,7 @@ $driver_name     = get_field_value( $meta, 'driver_name' );
 $driver_phone    = get_field_value( $meta, 'driver_phone' );
 $driver_email    = get_field_value( $meta, 'driver_email' );
 $home_location   = get_field_value( $meta, 'home_location' );
+$city            = get_field_value( $meta, 'city' );
 $dob             = get_field_value( $meta, 'dob' );
 $language_str    = get_field_value( $meta, 'languages' );
 $languages_array = $language_str ? explode( ',', $language_str ) : [];
@@ -44,6 +45,12 @@ $owner_trucker_tools        = get_field_value( $meta, 'owner_trucker_tools' );
 $emergency_contact_name     = get_field_value( $meta, 'emergency_contact_name' );
 $emergency_contact_phone    = get_field_value( $meta, 'emergency_contact_phone' );
 $emergency_contact_relation = get_field_value( $meta, 'emergency_contact_relation' );
+
+
+$mc_enabled  = get_field_value( $meta, 'mc_enabled' );
+$mc          = get_field_value( $meta, 'mc' );
+$dot_enabled = get_field_value( $meta, 'dot_enabled' );
+$dot         = get_field_value( $meta, 'dot' );
 ?>
 
 <div class="container mt-4 pb-5">
@@ -73,8 +80,8 @@ $emergency_contact_relation = get_field_value( $meta, 'emergency_contact_relatio
 
 
         <div class="row">
-            <div class="col-md-6 mb-3">
-                <label class="form-label">Home Location (City, State)<span
+            <div class="col-md-4 mb-3">
+                <label class="form-label">State<span
                             class="required-star text-danger">*</span></label>
                 <select name="home_location" required class="form-control form-select js-state">
                     <option value="" disabled selected>Select State</option>
@@ -89,7 +96,11 @@ $emergency_contact_relation = get_field_value( $meta, 'emergency_contact_relatio
 					<?php endif ?>
                 </select>
             </div>
-            <div class="col-md-6 mb-3">
+            <div class="col-md-4 mb-3">
+                <label class="form-label">City<span class="required-star text-danger">*</span></label>
+                <input required type="text" class="form-control" name="city" value="<?php echo $city; ?>">
+            </div>
+            <div class="col-md-4 mb-3">
                 <label class="form-label">Date of Birth<span class="required-star text-danger">*</span></label>
                 <input required type="date" class="form-control" name="dob" value="<?php echo $dob; ?>">
             </div>
@@ -277,6 +288,47 @@ $emergency_contact_relation = get_field_value( $meta, 'emergency_contact_relatio
                             </option>
 						<?php endforeach; ?>
                     </select>
+                </div>
+            </div>
+        </div>
+
+
+        <div class="row">
+            <div class="col-12 mb-3">
+                <div class="form-check form-switch">
+                    <input class="form-check-input js-toggle"
+                           data-block-toggle="js-mc-enabled" type="checkbox" id="mcSwitch" name="mc_enabled"
+						<?php echo $mc_enabled ? 'checked' : ''; ?>>
+                    <label class="form-check-label" for="mcSwitch">MC enabled</label>
+                </div>
+            </div>
+
+            <div class="col-12 js-mc-enabled <?php echo $mc_enabled ? '' : 'd-none'; ?> ">
+                <div class="row">
+                    <div class="col-md-4 mb-3 ">
+                        <label class="form-label">MC Number</label>
+                        <input type="text" class="form-control" name="mc" value="<?php echo $mc; ?>">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-12 mb-2">
+                <div class="form-check form-switch">
+                    <input class="form-check-input js-toggle"
+                           data-block-toggle="js-dot-enabled" type="checkbox" id="dotSwitch" name="dot_enabled"
+						<?php echo $dot_enabled ? 'checked' : ''; ?>>
+                    <label class="form-check-label" for="dotSwitch">DOT enabled</label>
+                </div>
+            </div>
+
+            <div class="col-12 js-dot-enabled <?php echo $dot_enabled ? '' : 'd-none'; ?> ">
+                <div class="row">
+                    <div class="col-md-4 mb-3 ">
+                        <label class="form-label">DOT Number</label>
+                        <input type="text" class="form-control" name="dot" value="<?php echo $dot; ?>">
+                    </div>
                 </div>
             </div>
         </div>

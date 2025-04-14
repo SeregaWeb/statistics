@@ -85,3 +85,34 @@ export const cleanUrlByFilterPlatform = () => {
         });
     }
 };
+
+export const cleanUrlByFilterDriver = () => {
+    const form = document.getElementById('navbarNavDriver') as HTMLFormElement | null;
+
+    if (form) {
+        form.addEventListener('submit', function (event) {
+            event.preventDefault();
+
+            const params = new URLSearchParams();
+
+            // Получаем значения всех полей безопасно
+            const fmonth = form.elements.namedItem('fmonth') as HTMLInputElement | null;
+            const fyear = form.elements.namedItem('fyear') as HTMLInputElement | null;
+            const recruiter = form.elements.namedItem('recruiter') as HTMLInputElement | null;
+            const mySearch = form.elements.namedItem('my_search') as HTMLInputElement | null;
+            const source = form.elements.namedItem('source') as HTMLInputElement | null;
+            const additional = form.elements.namedItem('additional') as HTMLInputElement | null;
+
+            // Проверяем и добавляем параметры только если элементы существуют и не пусты
+            if (recruiter?.value) params.append('recruiter', recruiter.value);
+            if (fmonth?.value) params.append('fmonth', fmonth.value);
+            if (fyear?.value) params.append('fyear', fyear.value);
+            if (additional?.value) params.append('additional', additional.value);
+            if (mySearch?.value) params.append('my_search', mySearch.value);
+            if (source?.value) params.append('source', source.value);
+
+            // Перенаправляем на URL с параметрами
+            window.location.href = `?${params.toString()}`;
+        });
+    }
+};

@@ -42,20 +42,19 @@ $insured                   = get_field_value( $meta, 'insured' );
 $status                    = get_field_value( $meta, 'status' );
 $cancellation_date         = get_field_value( $meta, 'cancellation_date' );
 $notes                     = get_field_value( $meta, 'notes' );
-
-$hazmat_certificate_file = get_field_value( $meta, 'hazmat_certificate_file' );
-$driving_record          = get_field_value( $meta, 'driving_record' );
-$driver_licence          = get_field_value( $meta, 'driver_licence' );
-$legal_document          = get_field_value( $meta, 'legal_document' );
-$twic_file               = get_field_value( $meta, 'twic_file' );
-$tsa_file                = get_field_value( $meta, 'tsa_file' );
-$motor_cargo_coi         = get_field_value( $meta, 'motor_cargo_coi' );
-$auto_liability_coi      = get_field_value( $meta, 'auto_liability_coi' );
-$ic_agreement            = get_field_value( $meta, 'ic_agreement' );
-$change_9_file           = get_field_value( $meta, 'change_9_file' );
-$canada_transition_file  = get_field_value( $meta, 'canada_transition_file' );
-$immigration_file        = get_field_value( $meta, 'immigration_file' );
-$background_file         = get_field_value( $meta, 'background_file' );
+$hazmat_certificate_file   = get_field_value( $meta, 'hazmat_certificate_file' );
+$driving_record            = get_field_value( $meta, 'driving_record' );
+$driver_licence            = get_field_value( $meta, 'driver_licence' );
+$legal_document            = get_field_value( $meta, 'legal_document' );
+$twic_file                 = get_field_value( $meta, 'twic_file' );
+$tsa_file                  = get_field_value( $meta, 'tsa_file' );
+$motor_cargo_coi           = get_field_value( $meta, 'motor_cargo_coi' );
+$auto_liability_coi        = get_field_value( $meta, 'auto_liability_coi' );
+$ic_agreement              = get_field_value( $meta, 'ic_agreement' );
+$change_9_file             = get_field_value( $meta, 'change_9_file' );
+$canada_transition_file    = get_field_value( $meta, 'canada_transition_file' );
+$immigration_file          = get_field_value( $meta, 'immigration_file' );
+$background_file           = get_field_value( $meta, 'background_file' );
 
 // Initialize total images count
 $total_images = 0;
@@ -246,32 +245,10 @@ $files = array(
 	),
 );
 
-$driverLicenceTypes = [
-	'regular'  => 'Regular',
-	'cdl'      => 'CDL',
-	'enhanced' => 'Enhanced'
-];
-
-$legalDocumentTypes = [
-	"no-document"                     => "No document",
-	"us-passport"                     => "US passport",
-	"permanent-residency"             => "Permanent residentship",
-	"work-authorization"              => "Work authorization",
-	"certificate-of-naturalization"   => "Certificate of naturalization",
-	"enhanced-driver-licence-real-id" => "Enhanced driver licence Real ID"
-];
-
-$insuredOptions = [
-	"business"   => "Business",
-	"individual" => "Individual"
-];
-
-$statusOptions = [
-	"additional-insured" => "Additional insured",
-	"company-not-listed" => "Company not listed",
-	"cancelled"          => "Cancelled",
-	"hold"               => "Hold"
-];
+$driverLicenceTypes = $driver->driverLicenceTypes;
+$legalDocumentTypes = $driver->legalDocumentTypes;
+$insuredOptions     = $driver->insuredOptions;
+$statusOptions      = $driver->statusOptions;
 
 ?>
 
@@ -418,7 +395,7 @@ $statusOptions = [
                 </div>
             </div>
 
-            <div class="col-12  mb-3 js-hazmat-certificate <?php echo $hazmat_endorsement ? '' : 'd-none'; ?>">
+            <div class="col-12  mb-3 js-hazmat-certificate">
 
                 <div class="row">
                     <div class="col-12  mb-3">

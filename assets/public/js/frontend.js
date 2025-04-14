@@ -5091,7 +5091,7 @@ var updateDriverFinance = function updateDriverFinance(urlAjax) {
       method: 'POST',
       body: formData
     };
-    var nextTargetTab = 'pills-driver-finance-tab';
+    var nextTargetTab = 'pills-driver-documents-tab';
     fetch(urlAjax, options).then(function (res) {
       return res.json();
     }).then(function (requestStatus) {
@@ -5248,6 +5248,7 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   cleanUrlByFilter: function() { return /* binding */ cleanUrlByFilter; },
 /* harmony export */   cleanUrlByFilterAr: function() { return /* binding */ cleanUrlByFilterAr; },
+/* harmony export */   cleanUrlByFilterDriver: function() { return /* binding */ cleanUrlByFilterDriver; },
 /* harmony export */   cleanUrlByFilterPlatform: function() { return /* binding */ cleanUrlByFilterPlatform; }
 /* harmony export */ });
 var cleanUrlByFilter = function cleanUrlByFilter() {
@@ -5308,6 +5309,28 @@ var cleanUrlByFilterPlatform = function cleanUrlByFilterPlatform() {
       if (factoringStatus === null || factoringStatus === void 0 ? void 0 : factoringStatus.value) params.append('factoring_status', factoringStatus.value);
       if (setupStatus === null || setupStatus === void 0 ? void 0 : setupStatus.value) params.append('setup_status', setupStatus.value);
       if (companyStatus === null || companyStatus === void 0 ? void 0 : companyStatus.value) params.append('company_status', companyStatus.value);
+      window.location.href = "?".concat(params.toString());
+    });
+  }
+};
+var cleanUrlByFilterDriver = function cleanUrlByFilterDriver() {
+  var form = document.getElementById('navbarNavDriver');
+  if (form) {
+    form.addEventListener('submit', function (event) {
+      event.preventDefault();
+      var params = new URLSearchParams();
+      var fmonth = form.elements.namedItem('fmonth');
+      var fyear = form.elements.namedItem('fyear');
+      var recruiter = form.elements.namedItem('recruiter');
+      var mySearch = form.elements.namedItem('my_search');
+      var source = form.elements.namedItem('source');
+      var additional = form.elements.namedItem('additional');
+      if (recruiter === null || recruiter === void 0 ? void 0 : recruiter.value) params.append('recruiter', recruiter.value);
+      if (fmonth === null || fmonth === void 0 ? void 0 : fmonth.value) params.append('fmonth', fmonth.value);
+      if (fyear === null || fyear === void 0 ? void 0 : fyear.value) params.append('fyear', fyear.value);
+      if (additional === null || additional === void 0 ? void 0 : additional.value) params.append('additional', additional.value);
+      if (mySearch === null || mySearch === void 0 ? void 0 : mySearch.value) params.append('my_search', mySearch.value);
+      if (source === null || source === void 0 ? void 0 : source.value) params.append('source', source.value);
       window.location.href = "?".concat(params.toString());
     });
   }
@@ -16342,6 +16365,7 @@ function ready() {
   (0,_components_create_shipper__WEBPACK_IMPORTED_MODULE_5__.ActionDeleteShipperInit)(urlAjax);
   (0,_components_driver_Info__WEBPACK_IMPORTED_MODULE_10__.initGetInfoDriver)(urlAjax, useServices);
   (0,_components_driver_core__WEBPACK_IMPORTED_MODULE_26__.driversActions)(urlAjax);
+  (0,_components_filter_clean__WEBPACK_IMPORTED_MODULE_15__.cleanUrlByFilterDriver)();
   (0,_components_create_report__WEBPACK_IMPORTED_MODULE_3__.additionalContactsInit)();
   (0,_components_create_report__WEBPACK_IMPORTED_MODULE_3__.addShipperPointInit)();
   (0,_components_input_helpers__WEBPACK_IMPORTED_MODULE_2__.initMoneyMask)();

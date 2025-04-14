@@ -1101,7 +1101,22 @@ class TMSReports extends TMSReportsHelper {
 		$offset = ( $current_page - 1 ) * $per_page;
 		
 		// Добавляем сортировку и лимит для текущей страницы
-		$sql            .= " ORDER BY main.$sort_by $sort_order LIMIT %d, %d";
+		$sql            .= " ORDER BY
+		    CASE
+		        WHEN LOWER(factoring_status.meta_value) = 'unsubmitted' THEN 1
+		        WHEN LOWER(factoring_status.meta_value) = 'in-processing' THEN 2
+		        WHEN LOWER(factoring_status.meta_value) = 'pending-to-tafs' THEN 3
+		        WHEN LOWER(factoring_status.meta_value) = 'requires-attention' THEN 4
+		        WHEN LOWER(factoring_status.meta_value) = 'in-dispute' THEN 5
+		        WHEN LOWER(factoring_status.meta_value) = 'charge-back' THEN 6
+		        WHEN LOWER(factoring_status.meta_value) = 'short-pay' THEN 7
+		        WHEN LOWER(factoring_status.meta_value) = 'fraud' THEN 8
+		        WHEN LOWER(factoring_status.meta_value) = 'processed' THEN 9
+		        WHEN LOWER(factoring_status.meta_value) = 'paid' THEN 10
+		        WHEN LOWER(factoring_status.meta_value) = 'company-closed' THEN 11
+		        ELSE 12
+		    END $sort_order
+		    LIMIT %d, %d";
 		$where_values[] = $offset;
 		$where_values[] = $per_page;
 		
@@ -3478,10 +3493,10 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 		);
 		
 		if ( ! empty( $data[ 'proof_of_delivery' ] ) ) {
-			
 			$current_time_est = $this->getCurrentTimeForAmerica();
 			
 			$post_meta[ 'proof_of_delivery_time' ] = $current_time_est;
+			$update_params[ 'delivery_date' ]      = $current_time_est;
 		}
 		
 		// Specify the condition (WHERE clause)
@@ -3490,6 +3505,7 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 		// Update the record in the database
 		$result = $wpdb->update( $table_name, $update_params, $where, array(
 			'%d',  // user_id_updated
+			'%s',  // date_updated
 			'%s',  // date_updated
 		), array( '%d' ) );
 		

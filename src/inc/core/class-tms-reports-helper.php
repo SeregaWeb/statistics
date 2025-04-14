@@ -273,6 +273,37 @@ class TMSReportsHelper extends TMSReportsIcons {
 		}
 	}
 	
+	function get_recruiters() {
+		// Аргументы для получения пользователей с ролью 'recruiter'
+		$args = array(
+			'role__in' => array( 'recruiter', 'recruiter-tl' ),
+			'orderby'  => 'display_name',
+			'order'    => 'ASC',
+		);
+		
+		// Получаем пользователей с заданной ролью
+		$users = get_users( $args );
+		
+		// Массив для хранения информации о пользователях
+		$dispatchers = array();
+		
+		// Перебираем каждого пользователя
+		foreach ( $users as $user ) {
+			// Получаем имя и фамилию пользователя
+			$first_name = get_user_meta( $user->ID, 'first_name', true );
+			$last_name  = get_user_meta( $user->ID, 'last_name', true );
+			$office     = get_field( 'work_location', "user_" . $user->ID );
+			// Собираем массив с ID и полным именем
+			$dispatchers[] = array(
+				'id'       => $user->ID,
+				'fullname' => trim( $first_name . ' ' . $last_name ),
+				'office'   => $office,
+			);
+		}
+		
+		return $dispatchers;
+	}
+	
 	function get_dispatchers() {
 		// Аргументы для получения пользователей с ролью 'dispatcher'
 		$args = array(

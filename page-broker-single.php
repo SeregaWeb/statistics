@@ -31,8 +31,29 @@ if ( ! empty( $broker ) ) {
 	$items[ 'office' ]     = $office_dispatcher;
 	$items[ 'hide_total' ] = true;
 	
-	$get_counters_broker = $loads->get_counters_broker( $id_broker );
-	$get_profit_broker   = $loads->get_profit_broker( $id_broker );
+	
+	$broker_id = (int) $id_broker;
+	
+	// Уникальные ключи для кэша
+	$transient_counters_key = 'counters_broker_' . $broker_id;
+	$transient_profit_key   = 'profit_broker_' . $broker_id;
+	
+	// Попробовать получить данные из кэша
+	$get_counters_broker = get_transient( $transient_counters_key );
+	$get_profit_broker   = get_transient( $transient_profit_key );
+	
+	// Если нет в кэше — получаем из БД и записываем
+	if ( false === $get_counters_broker ) {
+		$get_counters_broker = $loads->get_counters_broker( $broker_id );
+		set_transient( $transient_counters_key, $get_counters_broker, HOUR_IN_SECONDS ); // или другой срок
+	}
+	
+	if ( false === $get_profit_broker ) {
+		$get_profit_broker = $loads->get_profit_broker( $broker_id );
+		set_transient( $transient_profit_key, $get_profit_broker, HOUR_IN_SECONDS ); // можно менять срок
+	}
+	
+	
 	if ( isset( $broker[ 0 ] ) ) {
 		$broker = $broker[ 0 ];
 	}
@@ -288,52 +309,6 @@ $orange_lvl = $TMSUsers->check_user_role_access( array(
 
                                 </div>
 
-                                <div class="mt-3 mb-3" style="max-width: 944px;">
-									<?php
-									?>
-                                    <div class="counters-status d-flex gap-2">
-										<?php if ( is_array( $get_profit_broker ) ): ?>
-											<?php foreach ( $get_profit_broker as $key => $count ):
-												
-												$name = '';
-												$value = '';
-												if ( $key === 'total_profit' ) {
-													$name  = 'Total Profit';
-													$value = esc_html( '$' . $loads->format_currency( $count ) );
-												}
-												
-												if ( $key === 'total_booked_rate' ) {
-													$name  = 'Total Gross';
-													$value = esc_html( '$' . $loads->format_currency( $count ) );
-												}
-												
-												if ( $key === 'post_count' ) {
-													$name  = 'Total Loads';
-													$value = $count;
-												}
-												
-												?>
-												<?php if ( + $count !== 0 ): ?>
-                                                <div class="counters-status-card d-flex align-items-center justify-content-center flex-column">
-                                                    <span><?php echo $name; ?></span>
-                                                    <strong><?php echo $value; ?></strong>
-                                                </div>
-											<?php endif; ?>
-											<?php endforeach; ?>
-										<?php endif; ?>
-										<?php if ( is_array( $get_counters_broker ) ): ?>
-											<?php foreach ( $get_counters_broker as $key => $count ): ?>
-												<?php if ( + $count !== 0 ): ?>
-                                                    <div class="counters-status-card d-flex align-items-center justify-content-center flex-column">
-                                                        <span><?php echo $key === 'Others' ? 'In Process'
-		                                                        : $key; ?></span>
-                                                        <strong><?php echo $count; ?></strong>
-                                                    </div>
-												<?php endif; ?>
-											<?php endforeach; ?>
-										<?php endif; ?>
-                                    </div>
-                                </div>
                             </div>
 							
 							<?php if ( $add_broker ): ?>
@@ -737,6 +712,55 @@ $orange_lvl = $TMSUsers->check_user_role_access( array(
                             <div class="tab-pane  <?php echo ( isset( $_GET[ 'paged' ] ) ) ? 'show active'
 								: 'fade'; ?> " id="pills-loads" role="tabpanel"
                                  aria-labelledby="pills-loads-tab">
+
+                                <div class="mt-3 mb-3" style="max-width: 944px;">
+									<?php
+									?>
+                                    <div class="counters-status d-flex gap-2">
+										<?php if ( is_array( $get_profit_broker ) ): ?>
+											<?php foreach ( $get_profit_broker as $key => $count ):
+												
+												$name = '';
+												$value = '';
+												if ( $key === 'total_profit' ) {
+													$name  = 'Total Profit';
+													$value = esc_html( '$' . $loads->format_currency( $count ) );
+												}
+												
+												if ( $key === 'total_booked_rate' ) {
+													$name  = 'Total Gross';
+													$value = esc_html( '$' . $loads->format_currency( $count ) );
+												}
+												
+												if ( $key === 'post_count' ) {
+													$name  = 'Total Loads';
+													$value = $count;
+												}
+												
+												?>
+												<?php if ( + $count !== 0 ): ?>
+                                                <div class="counters-status-card d-flex align-items-center justify-content-center flex-column">
+                                                    <span><?php echo $name; ?></span>
+                                                    <strong><?php echo $value; ?></strong>
+                                                </div>
+											<?php endif; ?>
+											<?php endforeach; ?>
+										<?php endif; ?>
+										<?php if ( is_array( $get_counters_broker ) ): ?>
+											<?php foreach ( $get_counters_broker as $key => $count ): ?>
+												<?php if ( + $count !== 0 ): ?>
+                                                    <div class="counters-status-card d-flex align-items-center justify-content-center flex-column">
+                                                        <span><?php echo $key === 'Others' ? 'In Process'
+		                                                        : $key; ?></span>
+                                                        <strong><?php echo $count; ?></strong>
+                                                    </div>
+												<?php endif; ?>
+											<?php endforeach; ?>
+										<?php endif; ?>
+                                    </div>
+                                </div>
+								
+								
 								<?php
 								echo esc_html( get_template_part( TEMPLATE_PATH . 'tables/report', 'table', $items ) );
 								?>

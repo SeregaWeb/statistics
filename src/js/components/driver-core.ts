@@ -150,7 +150,7 @@ export const updateDriverFinance = (urlAjax) => {
             body: formData,
         };
 
-        const nextTargetTab = 'pills-driver-finance-tab';
+        const nextTargetTab = 'pills-driver-documents-tab';
 
         fetch(urlAjax, options)
             .then((res) => res.json())

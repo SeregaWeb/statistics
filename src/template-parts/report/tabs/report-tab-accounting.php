@@ -55,7 +55,7 @@ $full_view_only = get_field_value( $args, 'full_view_only' );
         </div>
 
         <div class="mb-2 col-12 col-md-6 col-xl-4">
-            <label for="driver_pay_statuses" class="form-label">Driver pay status</label>
+            <label for="driver_pay_statuses" class="form-label">Payment status</label>
             <select name="driver_pay_statuses" class="form-control form-select">
                 <option value="">Select status</option>
 				<?php if ( is_array( $driver_pay_statuses ) ): ?>

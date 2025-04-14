@@ -37,7 +37,12 @@ import { updateTooltip } from './components/tooltip-start';
 import { toggleSidebarInit } from './components/sidebar-init';
 import { autoFillAddress } from './components/auto-fill-address';
 import { AuthUsersInit } from './components/auth-users';
-import { cleanUrlByFilter, cleanUrlByFilterAr, cleanUrlByFilterPlatform } from './components/filter-clean';
+import {
+    cleanUrlByFilter,
+    cleanUrlByFilterAr,
+    cleanUrlByFilterDriver,
+    cleanUrlByFilterPlatform,
+} from './components/filter-clean';
 import { disabledValuesInSelectInit, showHiddenValueInit } from './components/chow-hidden-value';
 import { logsInit } from './components/logs';
 import { bookmarkInit } from './components/bookmark';
@@ -108,6 +113,7 @@ function ready() {
 
     // DRIVER START
     driversActions(urlAjax);
+    cleanUrlByFilterDriver();
     // DRIVER END
 
     additionalContactsInit();

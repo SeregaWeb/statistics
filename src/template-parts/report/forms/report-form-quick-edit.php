@@ -62,7 +62,7 @@ $include_statuses = array( 'unsubmitted', 'in-processing', 'processed' );
         </div>
 
         <div class="w-100 mt-3 mb-3">
-            <label for="driver_pay_statuses" class="form-label">Driver pay status</label>
+            <label for="driver_pay_statuses" class="form-label">Payment status</label>
             <select name="driver_pay_statuses" class="form-control form-select">
                 <option value="">Select status</option>
 				<?php if ( is_array( $driver_pay_statuses ) ): ?>

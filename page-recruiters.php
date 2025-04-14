@@ -25,15 +25,13 @@ $access = $TMSUsers->check_user_role_access( [ 'administrator', 'recruiter', 're
         <div class="row">
             <div class="container">
                 <div class="row">
-
-                    <div class="col-12 pt-3">
-                        <h2>Drivers</h2>
-                    </div>
-
                     <div class="col-12 pt-3 pb-3">
 						<?php if ( ! $access ) :
 							echo $helper->message_top( 'error', 'Access only Administrator, recruiters and recruiters team leader have access to this page.' );
 						else:
+							
+							echo esc_html( get_template_part( TEMPLATE_PATH . 'filters/driver', 'filter' ) );
+							
 							echo esc_html( get_template_part( TEMPLATE_PATH . 'tables/driver', 'table', $items ) );
 						endif; ?>
                     </div>

@@ -126,8 +126,13 @@ We will immediately let you know once the truck is on-site.
                         <ul class="left-sidebar__menu js-menu-block_<?php echo $key; ?>">
                         <?php
                          foreach ($block['menu'] as $menu):
-                         $current_page = get_the_permalink() === $menu['link']['url'] ? 'current-page' : '';
+                            $current_url = get_the_permalink();
+                            $menu_url = $menu['link']['url'];
+                            $current_url_base = strtok($current_url, '?');
+                            $menu_url_base = strtok($menu_url, '?');
+                            $current_page = $current_url_base === $menu_url_base ? 'current-page' : '';
                             $exclude = array_search($role, $menu['exclude_role']);
+                            
                              if (!is_numeric($exclude)) :
                              
                              $popup_use = $menu['popup_use'];

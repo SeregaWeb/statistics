@@ -61,13 +61,8 @@ $logshowcontent = isset( $_COOKIE[ 'logshow' ] ) && + $_COOKIE[ 'logshow' ] !== 
             <div class="container js-section-tab">
                 <div class="row js-logs-wrap">
 					
-					<?php if ( $access ):
-						
-						?>
-
-
+					<?php if ( $access ): ?>
                         <div class="col-12 js-logs-content <?php echo $logshowcontent; ?>">
-							
 							<?php
 							
 							if ( isset( $status_publish ) && $status_publish === 'draft' ) {
@@ -75,7 +70,6 @@ $logshowcontent = isset( $_COOKIE[ 'logshow' ] ) && + $_COOKIE[ 'logshow' ] !== 
 									echo $helper->message_top( 'success', 'Publish this driver ?', 'js-update-driver-status', 'Publish' );
 								}
 							}
-							
 							?>
 
                             <ul class="nav nav-pills gap-2 mb-3" id="pills-tab" role="tablist">
@@ -92,7 +86,7 @@ $logshowcontent = isset( $_COOKIE[ 'logshow' ] ) && + $_COOKIE[ 'logshow' ] !== 
                                             data-bs-toggle="pill"
                                             data-bs-target="#pills-driver-vehicle" type="button" role="tab"
                                             aria-controls="pills-driver-vehicle"
-                                            aria-selected="false">Inforamtion
+                                            aria-selected="false">Vehicle
                                     </button>
                                 </li>
 

@@ -17,7 +17,8 @@ $args = array(
 	'exclude_status'           => array( 'cancelled' ),
 );
 
-$args  = $reports->set_filter_params( $args );
+$args = $reports->set_filter_params( $args );
+
 $items = $reports->get_table_items_billing( $args );
 
 $post_tp              = 'accounting';

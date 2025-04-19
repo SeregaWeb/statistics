@@ -260,8 +260,8 @@ $statusOptions      = $driver->statusOptions;
             <div class=" <?php echo ( $total_images === 3 ) ? 'show-more-hide-desktop' : 'd-flex '; ?>">
                 <button class="js-toggle btn btn-primary change-text"
                         data-block-toggle="js-hide-upload-doc-container">
-                    <span class="unactive-text">Show more images</span>
-                    <span class="active-text">Show less images</span>
+                    <span class="unactive-text">Show more images (<?php echo $total_images; ?>)</span>
+                    <span class="active-text">Show less images (<?php echo $total_images; ?>)</span>
                 </button>
             </div>
 		<?php endif; ?>
@@ -296,7 +296,7 @@ $statusOptions      = $driver->statusOptions;
 	
 	<?php endif; ?>
 
-    <form class="js-driver-document-form">
+    <form class="<?php echo $full_only_view ? '' : 'js-driver-document-form'; ?>">
 		
 		<?php if ( $post_id ): ?>
             <input type="hidden" name="driver_id" value="<?php echo $post_id; ?>">
@@ -369,7 +369,7 @@ $statusOptions      = $driver->statusOptions;
 
             <div class="col-12 mb-3">
                 <label class="form-label">Expiration date</label>
-                <input type="date" class="form-control" name="driver_licence_expiration"
+                <input type="text" class="form-control js-new-format-date" name="driver_licence_expiration"
                        value="<?php echo $driver_licence_expiration; ?>">
             </div>
 
@@ -430,7 +430,7 @@ $statusOptions      = $driver->statusOptions;
                     </div>
                     <div class="col-12 col-md-6 ">
                         <label class="form-label ">Expiration date</label>
-                        <input type="date" class="form-control" name="hazmat_expiration"
+                        <input type="text" class="form-control js-new-format-date" name="hazmat_expiration"
                                value="<?php echo $hazmat_expiration; ?>">
                     </div>
                 </div>
@@ -466,7 +466,7 @@ $statusOptions      = $driver->statusOptions;
                     </div>
                     <div class="col-12 col-md-6 ">
                         <label class="form-label">Expiration date</label>
-                        <input type="date" class="form-control" name="twic_expiration"
+                        <input type="text" class="form-control js-new-format-date" name="twic_expiration"
                                value="<?php echo $twic_expiration; ?>">
                     </div>
                 </div>
@@ -502,7 +502,7 @@ $statusOptions      = $driver->statusOptions;
                     </div>
                     <div class="col-12 col-md-6 ">
                         <label class="form-label">Expiration date</label>
-                        <input type="date" class="form-control" name="tsa_expiration"
+                        <input type="text" class="form-control js-new-format-date" name="tsa_expiration"
                                value="<?php echo $tsa_expiration; ?>">
                     </div>
                 </div>
@@ -580,7 +580,7 @@ $statusOptions      = $driver->statusOptions;
                     </div>
                     <div class="col-12 col-md-6 ">
                         <label class="form-label">Expiration date</label>
-                        <input type="date" class="form-control" name="immigration_expiration"
+                        <input type="text" class="form-control js-new-format-date" name="immigration_expiration"
                                value="<?php echo $immigration_expiration; ?>">
                     </div>
                 </div>
@@ -616,7 +616,7 @@ $statusOptions      = $driver->statusOptions;
                     </div>
                     <div class="col-12 col-md-6 ">
                         <label class="form-label">date</label>
-                        <input type="date" class="form-control" name="background_date"
+                        <input type="text" class="form-control js-new-format-date" name="background_date"
                                value="<?php echo $background_date; ?>">
                     </div>
                 </div>
@@ -652,7 +652,7 @@ $statusOptions      = $driver->statusOptions;
                     </div>
                     <div class="col-12 col-md-6 ">
                         <label class="form-label">date</label>
-                        <input type="date" class="form-control" name="canada_transition_date"
+                        <input type="text" class="form-control js-new-format-date" name="canada_transition_date"
                                value="<?php echo $canada_transition_date; ?>">
                     </div>
                 </div>
@@ -688,7 +688,7 @@ $statusOptions      = $driver->statusOptions;
                     </div>
                     <div class="col-12 col-md-6 ">
                         <label class="form-label">date</label>
-                        <input type="date" class="form-control" name="change_9_date"
+                        <input type="text" class="form-control js-new-format-date" name="change_9_date"
                                value="<?php echo $change_9_date; ?>">
                     </div>
                 </div>
@@ -733,7 +733,7 @@ $statusOptions      = $driver->statusOptions;
                     </div>
                     <div class="col-12 col-md-6 mb-2">
                         <label class="form-label">Expiration date</label>
-                        <input type="date" class="form-control" name="auto_liability_expiration"
+                        <input type="text" class="form-control js-new-format-date" name="auto_liability_expiration"
                                value="<?php echo $auto_liability_expiration; ?>">
                     </div>
 
@@ -774,7 +774,7 @@ $statusOptions      = $driver->statusOptions;
                     </div>
                     <div class="col-12 col-md-6 mb-2">
                         <label class="form-label">Expiration date</label>
-                        <input type="date" class="form-control" name="motor_cargo_expiration"
+                        <input type="text" class="form-control js-new-format-date" name="motor_cargo_expiration"
                                value="<?php echo $motor_cargo_expiration; ?>">
                     </div>
                     <div class="col-12 col-md-6 mb-2">
@@ -814,7 +814,7 @@ $statusOptions      = $driver->statusOptions;
             </div>
             <div class="col-6 mb-3 js-cancellation-date ">
                 <label class="form-label">Cancellation date</label>
-                <input type="date" class="form-control" value="<?php echo $cancellation_date; ?>"
+                <input type="text" class="form-control js-new-format-date" value="<?php echo $cancellation_date; ?>"
                        name="cancellation_date">
             </div>
 
@@ -829,17 +829,15 @@ $statusOptions      = $driver->statusOptions;
 
             <div class="col-12" role="presentation">
                 <div class="justify-content-start gap-2">
-                    <button type="button" data-tab-id="pills-driver-vehicle-tab"
+                    <button type="button" data-tab-id="pills-driver-finance-tab"
                             class="btn btn-dark js-next-tab">Previous
                     </button>
 					<?php if ( $full_only_view ): ?>
-                        <button type="button" data-tab-id="pills-driver-documents-tab"
-                                class="btn btn-primary js-next-tab">Next
-                        </button>
+					
 					<?php else: ?>
                         <button type="submit" class="btn btn-primary js-submit-and-next-tab"
                                 data-tab-id="pills-driver-documents-tab">
-                            Next
+                            update
                         </button>
 					<?php endif; ?>
                 </div>

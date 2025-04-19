@@ -3,6 +3,79 @@ import { Tab } from 'bootstrap';
 import Popup from '../parts/popup-window';
 import { printMessage } from './info-messages';
 
+export function setUpTabInUrl(tab) {
+    const url = new URL(window.location.href);
+    // Set the 'post_id' parameter
+    url.searchParams.set('tab', tab);
+    // Update the URL without reloading the page
+    window.history.pushState({}, '', url);
+    window.location.href = <string>url?.href;
+}
+
+export const updateStatusPost = (ajaxUrl) => {
+    const btns = document.querySelectorAll('.js-update-post-status');
+    btns &&
+        btns.forEach((btn) => {
+            btn.addEventListener('click', (event) => {
+                event.preventDefault();
+
+                const { target } = event;
+
+                // @ts-ignore
+                const formData = new FormData();
+                const action = 'update_post_status';
+
+                const postId = document.querySelector('.js-post-id');
+
+                if (!postId) {
+                    printMessage('Post id not found', 'danger', 8000);
+                    return;
+                }
+
+                formData.append('action', action);
+                // @ts-ignore
+                formData.append('post_id', postId.value);
+
+                const options = {
+                    method: 'POST',
+                    body: formData,
+                };
+
+                // @ts-ignore
+                fetch(ajaxUrl, options)
+                    .then((res) => res.json())
+                    .then((requestStatus) => {
+                        if (requestStatus.success) {
+                            printMessage(requestStatus.data.message, 'success', 8000);
+                            if (requestStatus.data.send_email?.success) {
+                                console.log(requestStatus.data);
+                                printMessage(requestStatus.data.send_email?.message, 'success', 8000);
+                                setTimeout(() => {
+                                    window.location.reload();
+                                }, 4000);
+                            } else {
+                                printMessage(requestStatus.data.send_email?.message, 'danger', 8000);
+                            }
+
+                            const container = document.querySelector('.js-update-status');
+
+                            if (!container) return;
+                            container.innerHTML = '';
+
+                            // eslint-disable-next-line no-use-before-define
+                            setUpTabInUrl('pills-customer-tab');
+                        } else {
+                            printMessage(requestStatus.data.message, 'danger', 8000);
+                        }
+                    })
+                    .catch((error) => {
+                        printMessage(`Request failed: ${error}`, 'danger', 8000);
+                        console.error('Request failed:', error);
+                    });
+            });
+        });
+};
+
 const updateStatusRechange = (ajaxUrl) => {
     const container = document.querySelector('.js-update-status');
     if (!container) return;
@@ -60,7 +133,9 @@ export const fullRemovePost = (ajaxUrl) => {
 
                 const { target } = event;
 
-                const question = confirm(
+                // @ts-ignore
+                // eslint-disable-next-line no-alert,no-restricted-globals
+                const question = window.confirm(
                     'Are you sure you want to delete this load? \nIf you agree it will be deleted permanently'
                 );
 
@@ -171,15 +246,6 @@ export const actionCreateReportInit = (ajaxUrl) => {
             });
         });
 };
-
-export function setUpTabInUrl(tab) {
-    const url = new URL(window.location.href);
-    // Set the 'post_id' parameter
-    url.searchParams.set('tab', tab);
-    // Update the URL without reloading the page
-    window.history.pushState({}, '', url);
-    window.location.href = <string>url?.href;
-}
 
 /**
  * check isset post use param in url address
@@ -479,63 +545,55 @@ export const removeOneFileInitial = (ajaxUrl) => {
         });
 };
 
-/**
- * preview image after upload on page
- */
-export const previewFileUpload = () => {
-    const controlUploads = document.querySelectorAll('.js-control-uploads');
+export function uploadFilePreview(target) {
+    if (!target || !target.files) return;
 
-    controlUploads &&
-        controlUploads.forEach((control) => {
-            control.addEventListener('change', function (event) {
-                const target = event.target as HTMLInputElement;
-                if (!target || !target.files) return;
+    // Create an array to store all selected files
+    const allFiles: File[] = [];
 
-                // Create an array to store all selected files
-                const allFiles: File[] = [];
+    const container = target.closest('.js-add-new-report');
+    const previewContainer = container?.querySelector('.js-preview-photo-upload');
 
-                const container = target.closest('.js-add-new-report');
-                const previewContainer = container?.querySelector('.js-preview-photo-upload');
+    if (!previewContainer) return;
 
-                if (!previewContainer) return;
+    // Add new files to the allFiles array
+    Array.from(target.files).forEach((file) => {
+        // @ts-ignore
+        allFiles.push(file);
+    });
+    console.log(target, allFiles);
+    updateFileInput(target, allFiles); // Update input with combined files
 
-                // Add new files to the allFiles array
-                Array.from(target.files).forEach((file) => {
-                    allFiles.push(file);
-                });
-                console.log(target, allFiles);
-                updateFileInput(target, allFiles); // Update input with combined files
+    // Clear previous previews and render new ones
+    previewContainer.innerHTML = '';
+    allFiles.forEach((file, index) => {
+        const fileReader = new FileReader();
+        const fileWrapper = document.createElement('div');
+        fileWrapper.classList.add('file-preview');
 
-                // Clear previous previews and render new ones
-                previewContainer.innerHTML = '';
-                allFiles.forEach((file, index) => {
-                    const fileReader = new FileReader();
-                    const fileWrapper = document.createElement('div');
-                    fileWrapper.classList.add('file-preview');
+        // Add delete button
+        const deleteButton = document.createElement('button');
+        deleteButton.innerHTML = `<svg width="32px" height="32px" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" clip-rule="evenodd" d="M12 22C7.28595 22 4.92893 22 3.46447 20.5355C2 19.0711 2 16.714 2 12C2 7.28595 2 4.92893 3.46447 3.46447C4.92893 2 7.28595 2 12 2C16.714 2 19.0711 2 20.5355 3.46447C22 4.92893 22 7.28595 22 12C22 16.714 22 19.0711 20.5355 20.5355C19.0711 22 16.714 22 12 22ZM8.96965 8.96967C9.26254 8.67678 9.73742 8.67678 10.0303 8.96967L12 10.9394L13.9696 8.96969C14.2625 8.6768 14.7374 8.6768 15.0303 8.96969C15.3232 9.26258 15.3232 9.73746 15.0303 10.0303L13.0606 12L15.0303 13.9697C15.3232 14.2625 15.3232 14.7374 15.0303 15.0303C14.7374 15.3232 14.2625 15.3232 13.9696 15.0303L12 13.0607L10.0303 15.0303C9.73744 15.3232 9.26256 15.3232 8.96967 15.0303C8.67678 14.7374 8.67678 14.2626 8.96967 13.9697L10.9393 12L8.96965 10.0303C8.67676 9.73744 8.67676 9.26256 8.96965 8.96967Z" fill="#1C274C"/></svg>`;
+        deleteButton.type = 'button';
+        deleteButton.classList.add('file-delete-btn');
 
-                    // Add delete button
-                    const deleteButton = document.createElement('button');
-                    deleteButton.innerHTML = `<svg width="32px" height="32px" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" clip-rule="evenodd" d="M12 22C7.28595 22 4.92893 22 3.46447 20.5355C2 19.0711 2 16.714 2 12C2 7.28595 2 4.92893 3.46447 3.46447C4.92893 2 7.28595 2 12 2C16.714 2 19.0711 2 20.5355 3.46447C22 4.92893 22 7.28595 22 12C22 16.714 22 19.0711 20.5355 20.5355C19.0711 22 16.714 22 12 22ZM8.96965 8.96967C9.26254 8.67678 9.73742 8.67678 10.0303 8.96967L12 10.9394L13.9696 8.96969C14.2625 8.6768 14.7374 8.6768 15.0303 8.96969C15.3232 9.26258 15.3232 9.73746 15.0303 10.0303L13.0606 12L15.0303 13.9697C15.3232 14.2625 15.3232 14.7374 15.0303 15.0303C14.7374 15.3232 14.2625 15.3232 13.9696 15.0303L12 13.0607L10.0303 15.0303C9.73744 15.3232 9.26256 15.3232 8.96967 15.0303C8.67678 14.7374 8.67678 14.2626 8.96967 13.9697L10.9393 12L8.96965 10.0303C8.67676 9.73744 8.67676 9.26256 8.96965 8.96967Z" fill="#1C274C"/></svg>`;
-                    deleteButton.type = 'button';
-                    deleteButton.classList.add('file-delete-btn');
+        deleteButton.addEventListener('click', () => {
+            allFiles.splice(index, 1);
+            updateFileInput(target, allFiles); // Update input again after deletion
+            fileWrapper.remove(); // Remove the file preview
+        });
 
-                    deleteButton.addEventListener('click', () => {
-                        allFiles.splice(index, 1);
-                        updateFileInput(target, allFiles); // Update input again after deletion
-                        fileWrapper.remove(); // Remove the file preview
-                    });
-
-                    if (file.type.startsWith('image/')) {
-                        fileReader.onload = function (e) {
-                            const img = document.createElement('img');
-                            img.src = e.target?.result as string;
-                            img.alt = file.name;
-                            fileWrapper.appendChild(img);
-                        };
-                        fileReader.readAsDataURL(file);
-                    } else {
-                        const icon = document.createElement('div');
-                        icon.innerHTML = `
+        if (file.type.startsWith('image/')) {
+            fileReader.onload = function (e) {
+                const img = document.createElement('img');
+                img.src = e.target?.result as string;
+                img.alt = file.name;
+                fileWrapper.appendChild(img);
+            };
+            fileReader.readAsDataURL(file);
+        } else {
+            const icon = document.createElement('div');
+            icon.innerHTML = `
                             <svg version="1.0" id="Layer_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
                              width="80px" height="80px" viewBox="0 0 64 64" enable-background="new 0 0 64 64" xml:space="preserve">
                             <g>
@@ -552,16 +610,29 @@ export const previewFileUpload = () => {
                             </svg>
                             <p>${file.name}</p>
                         `;
-                        icon.classList.add('file-name');
-                        fileWrapper.appendChild(icon);
-                    }
+            icon.classList.add('file-name');
+            fileWrapper.appendChild(icon);
+        }
 
-                    fileWrapper.appendChild(deleteButton);
-                    previewContainer.appendChild(fileWrapper);
-                });
+        fileWrapper.appendChild(deleteButton);
+        previewContainer.appendChild(fileWrapper);
+    });
 
-                // After processing the files, we reset the input so it doesn't show "No file chosen"
-                updateFileInput(target, allFiles);
+    // After processing the files, we reset the input so it doesn't show "No file chosen"
+    updateFileInput(target, allFiles);
+}
+
+/**
+ * preview image after upload on page
+ */
+export const previewFileUpload = () => {
+    const controlUploads = document.querySelectorAll('.js-control-uploads');
+
+    controlUploads &&
+        controlUploads.forEach((control) => {
+            control.addEventListener('change', function (event) {
+                const target = event.target as HTMLInputElement;
+                uploadFilePreview(target);
             });
         });
 };
@@ -1157,69 +1228,6 @@ export const sendShipperFormInit = (ajaxUrl) => {
                     printMessage(`Request failed: ${error}`, 'danger', 8000);
                     console.error('Request failed:', error);
                 });
-        });
-};
-
-export const updateStatusPost = (ajaxUrl) => {
-    const btns = document.querySelectorAll('.js-update-post-status');
-    btns &&
-        btns.forEach((btn) => {
-            btn.addEventListener('click', (event) => {
-                event.preventDefault();
-
-                const { target } = event;
-
-                // @ts-ignore
-                const formData = new FormData();
-                const action = 'update_post_status';
-
-                const postId = document.querySelector('.js-post-id');
-
-                if (!postId) {
-                    printMessage('Post id not found', 'danger', 8000);
-                    return;
-                }
-
-                formData.append('action', action);
-                // @ts-ignore
-                formData.append('post_id', postId.value);
-
-                const options = {
-                    method: 'POST',
-                    body: formData,
-                };
-
-                // @ts-ignore
-                fetch(ajaxUrl, options)
-                    .then((res) => res.json())
-                    .then((requestStatus) => {
-                        if (requestStatus.success) {
-                            printMessage(requestStatus.data.message, 'success', 8000);
-                            if (requestStatus.data.send_email?.success) {
-                                console.log(requestStatus.data);
-                                printMessage(requestStatus.data.send_email?.message, 'success', 8000);
-                                setTimeout(() => {
-                                    window.location.reload();
-                                }, 4000);
-                            } else {
-                                printMessage(requestStatus.data.send_email?.message, 'danger', 8000);
-                            }
-
-                            const container = document.querySelector('.js-update-status');
-
-                            if (!container) return;
-                            container.innerHTML = '';
-
-                            setUpTabInUrl('pills-customer-tab');
-                        } else {
-                            printMessage(requestStatus.data.message, 'danger', 8000);
-                        }
-                    })
-                    .catch((error) => {
-                        printMessage(`Request failed: ${error}`, 'danger', 8000);
-                        console.error('Request failed:', error);
-                    });
-            });
         });
 };
 

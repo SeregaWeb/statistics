@@ -16,6 +16,7 @@ $disabled_tabs  = 'disabled';
 $driver_object  = '';
 $status_publish = 'draft';
 $access_publish = false;
+$full_only_view = true;
 
 $report_object = null;
 $post_id       = isset( $_GET[ 'driver' ] ) ? $_GET[ 'driver' ] : false;
@@ -26,10 +27,11 @@ if ( $post_id && is_numeric( $post_id ) ) {
 	$meta            = get_field_value( $driver_object, 'meta' );
 	$user_id_added   = get_field_value( $main, 'user_id_added' );
 	$current_user_id = get_current_user_id();
-	$access_publish  = ( $user_id_added === $current_user_id ) || $TMSUsers->check_user_role_access( array(
+	$access_publish  = ( + $user_id_added === + $current_user_id ) || $TMSUsers->check_user_role_access( array(
 			'administrator',
 		), true );
 	
+	$full_only_view = ( $user_id_added !== $current_user_id );
 	
 	if ( is_array( $driver_object ) && sizeof( $driver_object ) > 0 ) {
 		$disabled_tabs  = '';
@@ -39,10 +41,14 @@ if ( $post_id && is_numeric( $post_id ) ) {
 		exit;
 	}
 	
+	if ( $TMSUsers->check_user_role_access( array(
+		'administrator',
+		'recruiter-tl',
+	), true ) ) {
+		$full_only_view = false;
+	}
+	
 }
-$access         = true;
-$full_only_view = false;
-
 
 if ( $status_publish === 'draft' ) {
 	$full_only_view = false;
@@ -52,6 +58,9 @@ get_header();
 
 $logshow        = isset( $_COOKIE[ 'logshow' ] ) && + $_COOKIE[ 'logshow' ] !== 0 ? 'hidden-logs col-lg-1' : 'col-lg-3';
 $logshowcontent = isset( $_COOKIE[ 'logshow' ] ) && + $_COOKIE[ 'logshow' ] !== 0 ? 'col-lg-11' : 'col-lg-9';
+
+
+$access = $TMSUsers->check_user_role_access( [ 'administrator', 'recruiter', 'recruiter-tl' ], true );
 
 ?>
     <div class="container-fluid">

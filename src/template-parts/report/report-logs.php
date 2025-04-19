@@ -13,7 +13,7 @@ $logs          = new TMSLogs();
 $logs_messages = $logs->get_user_logs_by_post( $post_id, $user_id, $post_type );
 ?>
 
-<div class="w-100">
+<div class="w-100 sticky-top">
     <h4 class="mb-2 log-title-container">
         <span>Logs</span>
         <button class="js-hide-logs">

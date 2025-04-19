@@ -56,6 +56,7 @@ $pallet_jack_file  = get_field_value( $meta, 'pallet_jack_file' );
 $lift_gate_file    = get_field_value( $meta, 'lift_gate_file' );
 $dolly_file        = get_field_value( $meta, 'dolly_file' );
 $ramp_file         = get_field_value( $meta, 'ramp_file' );
+$plates_file       = get_field_value( $meta, 'plates_file' );
 $total_images      = 0;
 
 $files_check = array(
@@ -67,6 +68,7 @@ $files_check = array(
 	$dolly_file,
 	$ramp_file,
 	$gvwr_placard,
+	$plates_file,
 );
 
 foreach ( $files_check as $file ) {
@@ -96,9 +98,21 @@ $pallet_jack_file_arr  = $driver->process_file_attachment( $pallet_jack_file );
 $lift_gate_file_arr    = $driver->process_file_attachment( $lift_gate_file );
 $dolly_file_arr        = $driver->process_file_attachment( $dolly_file );
 $ramp_file_arr         = $driver->process_file_attachment( $ramp_file );
+$plates_file_arr       = $driver->process_file_attachment( $plates_file );
 
 
 $files = array(
+	array(
+		'file_arr'       => $plates_file_arr,
+		'file'           => $plates_file,
+		'full_only_view' => $full_only_view,
+		'post_id'        => $post_id,
+		'class_name'     => 'plates-file',
+		'field_name'     => 'plates_file',
+		'field_label'    => 'Plates file',
+		'delete_action'  => 'js-remove-one-driver',
+		'active_tab'     => 'pills-driver-vehicle-tab',
+	),
 	array(
 		'file_arr'       => $gvwr_placard_arr,
 		'file'           => $gvwr_placard,
@@ -198,8 +212,8 @@ $files = array(
             <div class=" <?php echo ( $total_images === 3 ) ? 'show-more-hide-desktop' : 'd-flex '; ?>">
                 <button class="js-toggle btn btn-primary change-text"
                         data-block-toggle="js-hide-upload-files-container">
-                    <span class="unactive-text">Show more images</span>
-                    <span class="active-text">Show less images</span>
+                    <span class="unactive-text">Show more images (<?php echo $total_images; ?>)</span>
+                    <span class="active-text">Show less images (<?php echo $total_images; ?>)</span>
                 </button>
             </div>
 		<?php endif; ?>
@@ -309,7 +323,7 @@ $files = array(
         </div>
 	<?php endif; ?>
 
-    <form class="js-update-driver-information">
+    <form class="<?php echo $full_only_view ? '' : 'js-update-driver-information'; ?>">
 		<?php if ( $post_id ): ?>
             <input type="hidden" name="driver_id" value="<?php echo $post_id; ?>">
 		<?php endif; ?>
@@ -420,9 +434,9 @@ $files = array(
             </div>
 
             <div class="col-md-4 mb-3">
-                <label class="form-label">Registration Expiration Date<span
+                <label class="form-label">Registration Expiration Date <span
                             class="required-star text-danger">*</span></label>
-                <input required type="date" class="form-control" name="registration_expiration"
+                <input required type="text" class="form-control js-new-format-date" name="registration_expiration"
                        value="<?php echo $registration_expiration; ?>">
             </div>
 
@@ -446,8 +460,9 @@ $files = array(
             </div>
 
             <div class="col-md-4 mb-3">
-                <label class="form-label">Plates Expiration Date<span class="required-star text-danger">*</span></label>
-                <input required type="date" class="form-control" name="plates_expiration"
+                <label class="form-label">Plates Expiration Date <span
+                            class="required-star text-danger">*</span></label>
+                <input required type="text" class="form-control js-new-format-date" name="plates_expiration"
                        value="<?php echo $plates_expiration; ?>">
             </div>
 
@@ -512,8 +527,25 @@ $files = array(
             <div class="col-12 js-add-new-report">
                 <div class="row">
                     <div class="col-12">
+                        <span style="position: relative; top: -2px;"><?php if ( $plates_file ): echo $reports->get_icon_uploaded_file(); endif; ?></span
+                        <label class="form-label">Plates
+                        </label>
+						<?php if ( ! $plates_file ): ?>
+                            <input type="file" class="form-control js-control-uploads" name="plates_file">
+						<?php endif; ?>
+                    </div>
+
+                    <div class="col-12 mb-3 mt-1 preview-photo js-preview-photo-upload">
+
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-12 js-add-new-report">
+                <div class="row">
+                    <div class="col-12">
                         <span style="position: relative; top: -2px;"><?php if ( $registration_file ): echo $reports->get_icon_uploaded_file(); endif; ?></span
-                        <label class="form-label">File
+                        <label class="form-label">Vehicle Registration
                         </label>
 						<?php if ( ! $registration_file ): ?>
                             <input type="file" class="form-control js-control-uploads" name="registration_file">
@@ -674,6 +706,11 @@ $files = array(
 						<?php if ( ! $ramp_file ): ?>
                             <div class="js-ramp-driver <?php echo $ramp ? '' : 'd-none'; ?>">
                                 <input type="file" class="form-control js-control-uploads" name="ramp_file">
+
+                                <button data-href="#popup_upload_ramp_file"
+                                        class="btn btn-success js-open-popup-activator">
+                                    Upload file
+                                </button>
                             </div>
 						<?php endif; ?>
 
@@ -690,12 +727,12 @@ $files = array(
                                 class="btn btn-dark js-next-tab">Previous
                         </button>
 						<?php if ( $full_only_view ): ?>
-                            <button type="button" data-tab-id="pills-driver-vehicle-tab"
+                            <button type="button" data-tab-id="pills-driver-finance-tab"
                                     class="btn btn-primary js-next-tab">Next
                             </button>
 						<?php else: ?>
                             <button type="submit" class="btn btn-primary js-submit-and-next-tab"
-                                    data-tab-id="pills-driver-vehicle-tab">
+                                    data-tab-id="pills-driver-finance-tab">
                                 Next
                             </button>
 						<?php endif; ?>
@@ -703,7 +740,21 @@ $files = array(
                 </div>
             </div>
         </div>
-
-
     </form>
+	
+	<?php
+	
+	$popups_upload = array(
+		array(
+			'title'     => 'Upload Ramp File',
+			'file_name' => 'ramp_file',
+			'multiply'  => false,
+			'driver_id' => $post_id,
+		)
+	);
+	
+	foreach ( $popups_upload as $popup ):
+		echo esc_html( get_template_part( TEMPLATE_PATH . 'popups/upload', 'file', $popup ) );
+	endforeach;
+	?>
 </div>

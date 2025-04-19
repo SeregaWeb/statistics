@@ -33,10 +33,13 @@ if ( ! empty( $results ) ) : ?>
 			$driver_email = get_field_value( $meta, 'driver_email' );
 			$driver_phone = get_field_value( $meta, 'driver_phone' );
 			$home_location = get_field_value( $meta, 'home_location' );
+			$city = get_field_value( $meta, 'city' );
 			$vehicle_type = get_field_value( $meta, 'vehicle_type' );
 			$vehicle_year = get_field_value( $meta, 'vehicle_year' );
 			$dimensions = get_field_value( $meta, 'dimensions' );
 			$payload = get_field_value( $meta, 'payload' );
+			$preferred_distance = get_field_value( $meta, 'preferred_distance' );
+			$selected_distances = array_map( 'trim', explode( ',', $preferred_distance ) );
 			
 			$driver_capabilities = array(
 				'twic.svg'               => get_field_value( $meta, 'twic' ),
@@ -57,7 +60,15 @@ if ( ! empty( $results ) ) : ?>
 				'load-bars.svg'          => get_field_value( $meta, 'load_bars' ),
 				'mc.svg'                 => get_field_value( $meta, 'mc' ),
 				'dot.svg'                => get_field_value( $meta, 'dot' ),
+				'real_id.svg'            => get_field_value( $meta, 'real_id' ),
+				'macropoint.png'         => get_field_value( $meta, 'macro_point' ),
+				'tucker-tools.png'       => get_field_value( $meta, 'trucker_tools' ),
+				'any.svg'                => is_numeric( array_search( 'any', $selected_distances ) ),
+				'otr.svg'                => is_numeric( array_search( 'otr', $selected_distances ) ),
+				'local.svg'              => is_numeric( array_search( 'local', $selected_distances ) ),
+				'regional.svg'           => is_numeric( array_search( 'regional', $selected_distances ) ),
 			);
+			
 			
 			$date_hired    = get_field_value( $row, 'date_created' );
 			$user_id_added = get_field_value( $row, 'user_id_added' );
@@ -100,7 +111,7 @@ if ( ! empty( $results ) ) : ?>
                         <span class="text-small"><?php echo $vehicle_year; ?></span>
                     </div>
                 </td>
-                <td><?php echo $home_location; ?></td>
+                <td><?php echo $city . ', ' . $home_location; ?></td>
 
                 <td>
                     <div class="table-tags d-flex gap-1 flex-wrap">

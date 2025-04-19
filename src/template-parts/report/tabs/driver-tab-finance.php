@@ -119,8 +119,8 @@ $files = array(
             <div class=" <?php echo ( $total_images === 3 ) ? 'show-more-hide-desktop' : 'd-flex '; ?>">
                 <button class="js-toggle btn btn-primary change-text"
                         data-block-toggle="js-hide-upload-finance-container">
-                    <span class="unactive-text">Show more images</span>
-                    <span class="active-text">Show less images</span>
+                    <span class="unactive-text">Show more images (<?php echo $total_images; ?>)</span>
+                    <span class="active-text">Show less images (<?php echo $total_images; ?>)</span>
                 </button>
             </div>
 		<?php endif; ?>
@@ -155,7 +155,7 @@ $files = array(
 	
 	<?php endif; ?>
 
-    <form class="js-driver-finance-form">
+    <form class="<?php echo $full_only_view ? '' : 'js-driver-finance-form'; ?>">
 		
 		<?php if ( $post_id ): ?>
 

@@ -1,4 +1,5 @@
 // eslint-disable-next-line import/prefer-default-export
+import * as url from 'node:url';
 import { printMessage } from './info-messages';
 import { setUpTabInUrl } from './create-report';
 import { disabledBtnInForm } from './disabled-btn-in-form';
@@ -193,7 +194,7 @@ export const updateDriverDocument = (urlAjax) => {
             body: formData,
         };
 
-        const nextTargetTab = 'pills-driver-document-tab';
+        const nextTargetTab = 'pills-driver-documents-tab';
 
         fetch(urlAjax, options)
             .then((res) => res.json())
@@ -325,12 +326,141 @@ export const updateStatusDriver = (ajaxUrl) => {
         });
 };
 
+export const helperDisabledChecbox = () => {
+    const checkboxes = document.querySelectorAll('.js-disable-with-logic');
+
+    checkboxes.forEach((item) => {
+        item.addEventListener('change', (evt) => {
+            const { target } = evt as Event & { target: HTMLInputElement };
+            const container = target.closest('.js-container-checkboxes');
+
+            if (!container) return;
+
+            const allCheckboxes = container.querySelectorAll<HTMLInputElement>('input[type="checkbox"]');
+            const mainCheckbox = Array.from(allCheckboxes).find((cb) => cb.value === cb.getAttribute('data-value'));
+            console.log('mainCheckbox', mainCheckbox);
+            if (!mainCheckbox) return;
+
+            // Если главный чекбокс выбран
+            if (mainCheckbox.checked) {
+                // Дизейблим все кроме главного
+                allCheckboxes.forEach((cb) => {
+                    if (cb !== mainCheckbox) {
+                        // eslint-disable-next-line no-param-reassign
+                        cb.disabled = true;
+                        // eslint-disable-next-line no-param-reassign
+                        cb.checked = true;
+                    }
+                });
+            } else {
+                allCheckboxes.forEach((cb) => {
+                    if (cb !== mainCheckbox) {
+                        // eslint-disable-next-line no-param-reassign
+                        cb.disabled = false;
+                    }
+                });
+            }
+
+            if (target !== mainCheckbox) {
+                const others = Array.from(allCheckboxes).filter((cb) => cb !== mainCheckbox);
+                const allOthersChecked = others.every((cb) => cb.checked);
+
+                if (allOthersChecked) {
+                    mainCheckbox.checked = true;
+                    allCheckboxes.forEach((cb) => {
+                        if (cb !== mainCheckbox) {
+                            // eslint-disable-next-line no-param-reassign
+                            cb.checked = true;
+                            // eslint-disable-next-line no-param-reassign
+                            cb.disabled = true;
+                        }
+                    });
+                }
+            }
+        });
+    });
+};
+
+export const removeFullDriver = (ajaxUrl) => {
+    const btnsRemove = document.querySelectorAll('.js-remove-driver');
+
+    btnsRemove &&
+        btnsRemove.forEach((item) => {
+            item.addEventListener('click', (event) => {
+                event.preventDefault();
+
+                const { target } = event;
+
+                const question = confirm(
+                    'Are you sure you want to delete this driver? \nIf you agree it will be deleted permanently'
+                );
+
+                if (target instanceof HTMLElement && question) {
+                    const idLoad = target.getAttribute('data-id');
+
+                    if (!idLoad) {
+                        printMessage(`Error remove Load: reload this page and try again`, 'danger', 8000);
+                        return;
+                    }
+
+                    const action = 'remove_one_driver';
+
+                    const formData = new FormData();
+
+                    formData.append('action', action);
+                    formData.append('id_driver', idLoad);
+
+                    const options = {
+                        method: 'POST',
+                        body: formData,
+                    };
+
+                    fetch(ajaxUrl, options)
+                        .then((res) => res.json())
+                        .then((requestStatus) => {
+                            if (requestStatus.success) {
+                                console.log('Driver remove successfully:', requestStatus.data);
+                                const contain = target.closest('tr');
+
+                                if (contain) {
+                                    contain.remove();
+                                }
+                                printMessage(requestStatus.data.message, 'success', 8000);
+                            } else {
+                                // eslint-disable-next-line no-alert
+                                printMessage(`Error remove Driver:${requestStatus.data.message}`, 'danger', 8000);
+                            }
+                        })
+                        .catch((error) => {
+                            printMessage(`Request failed: ${error}`, 'danger', 8000);
+                            console.error('Request failed:', error);
+                        });
+                }
+            });
+        });
+};
+
+export const uploadFileDriver = (ajaxUrl) => {
+    const forms = document.querySelectorAll('.js-upload-driver-helper');
+
+    forms.forEach((form) => {
+        form.addEventListener('submit', (e) => {
+            e.preventDefault();
+
+            const action = 'upload_driver_helper';
+        });
+    });
+};
 export const driversActions = (urlAjax) => {
     createDriver(urlAjax);
+    removeFullDriver(urlAjax);
     updateDriverContact(urlAjax);
     updateDriverInformation(urlAjax);
     updateDriverFinance(urlAjax);
     updateDriverDocument(urlAjax);
     removeOneFileInitial(urlAjax);
     updateStatusDriver(urlAjax);
+    uploadFileDriver(urlAjax);
+
+    helperDisabledChecbox();
 };

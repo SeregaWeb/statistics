@@ -1283,5 +1283,42 @@ class TMSReportsHelper extends TMSReportsIcons {
 		return $date_est->format( 'Y-m-d H:i:s' );
 	}
 	
+	/**
+	 * Преобразует строку с датой из разных возможных форматов в Y-m-d (формат для input[type="date"])
+	 *
+	 * @param string $date_string
+	 *
+	 * @return string|null
+	 */
+	public function convert_date_for_input( $date_string ) {
+		if ( empty( $date_string ) ) {
+			return null;
+		}
+		
+		$formats_to_try = array(
+			'Y-m-d', // 2025-03-27
+			'm/d/Y', // 03/27/2025
+			'd/m/Y', // 27/03/2025
+			'Y/m/d', // 2025/03/27
+			'd-m-Y', // 27-03-2025
+			'm-d-Y', // 03-27-2025
+			'd.m.Y', // 27.03.2025
+		);
+		
+		foreach ( $formats_to_try as $format ) {
+			$date = DateTime::createFromFormat( $format, $date_string );
+			if ( $date && $date->format( $format ) === $date_string ) {
+				return $date->format( 'Y-m-d' );
+			}
+		}
+		
+		$timestamp = strtotime( $date_string );
+		if ( $timestamp ) {
+			return date( 'Y-m-d', $timestamp );
+		}
+		
+		return null;
+	}
+	
 }
 

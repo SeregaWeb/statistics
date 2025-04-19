@@ -26,7 +26,7 @@ $TMSUsers     = new TMSUsers();
 		
 		<?php if ( $TMSUsers->check_user_role_access( array( 'administrator' ), true ) || $is_draft ): ?>
             <li>
-                <button class="dropdown-item text-danger js-remove-load"
+                <button class="dropdown-item text-danger js-remove-driver"
                         data-id="<?php echo $id; ?>" type="button">Delete
                 </button>
             </li>

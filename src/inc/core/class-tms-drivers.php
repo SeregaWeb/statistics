@@ -27,11 +27,85 @@ class TMSDrivers extends TMSDriversHelper {
 			'delete_open_image_driver'  => 'delete_open_image_driver',
 			'update_driver_document'    => 'update_driver_document',
 			'update_driver_status'      => 'update_driver_status',
+			'remove_one_driver'         => 'remove_one_driver',
+			'upload_driver_helper'      => 'upload_driver_helper',
 		);
 		
 		foreach ( $actions as $ajax_action => $method ) {
 			add_action( "wp_ajax_{$ajax_action}", [ $this, $method ] );
 			add_action( "wp_ajax_nopriv_{$ajax_action}", [ $this, 'need_login' ] );
+		}
+	}
+	
+	public function remove_one_driver() {
+		if ( defined( 'DOING_AJAX' ) && DOING_AJAX ) {
+			global $wpdb;
+			
+			// Получаем данные запроса
+			$MY_INPUT = filter_var_array( $_POST, [
+				"id_driver" => FILTER_SANITIZE_STRING,
+			] );
+			
+			$id_load    = $MY_INPUT[ "id_driver" ];
+			$table_name = $wpdb->prefix . $this->table_main;
+			$table_meta = $wpdb->prefix . $this->table_meta;
+			
+			// Получаем метаданные
+			$meta_data = $wpdb->get_results( $wpdb->prepare( "SELECT meta_key, meta_value FROM {$table_meta} WHERE post_id = %d", $id_load ), ARRAY_A );
+			
+			// Удаляем файлы из метаданных
+			foreach ( $meta_data as $meta ) {
+				if ( in_array( $meta[ 'meta_key' ], [
+					'plates_file',
+					'vehicle_pictures',
+					'dimensions_pictures',
+					'registration_file',
+					'ppe_file',
+					'gvwr_placard',
+					'e_tracks_file',
+					'pallet_jack_file',
+					'lift_gate_file',
+					'dolly_file',
+					'ramp_file',
+					'payment_file',
+					'w9_file',
+					'ssn_file',
+					'ein_file',
+					'nec_file',
+					'hazmat_certificate_file',
+					'driving_record',
+					'driver_licence',
+					'legal_document',
+					'twic_file',
+					'tsa_file',
+					'motor_cargo_coi',
+					'auto_liability_coi',
+					'ic_agreement',
+					'change_9_file',
+					'canada_transition_file',
+					'immigration_file',
+					'background_file',
+				] ) ) {
+					// Если это множественные файлы (attached_files), разбиваем на массив
+					$files = explode( ',', $meta[ 'meta_value' ] );
+					foreach ( $files as $file_id ) {
+						if ( ! empty( $file_id ) ) {
+							// Удаляем вложение по его ID
+							wp_delete_attachment( $file_id, true );
+						}
+					}
+				}
+			}
+			
+			// Удаляем метаданные
+			$wpdb->delete( $table_meta, [ 'post_id' => $id_load ] );
+			
+			// Удаляем запись из основной таблицы
+			$wpdb->delete( $table_name, [ 'id' => $id_load ] );
+			
+			wp_send_json_success( [ 'message' => 'Load and associated files removed successfully' ] );
+		} else {
+			wp_send_json_error( [ 'message' => 'Invalid request' ] );
 		}
 	}
 	
@@ -81,53 +155,48 @@ class TMSDrivers extends TMSDriversHelper {
 			: 'DESC';
 		
 		$join_builder = "
-			FROM $table_main AS main
-			LEFT JOIN $table_meta AS driver_name
-    ON main.id = driver_name.post_id
-    AND driver_name.meta_key = 'driver_name'
-LEFT JOIN $table_meta AS driver_phone
-    ON main.id = driver_phone.post_id
-    AND driver_phone.meta_key = 'driver_phone'
-LEFT JOIN $table_meta AS driver_email
-    ON main.id = driver_email.post_id
-    AND driver_email.meta_key = 'driver_email'
-LEFT JOIN $table_meta AS team_driver_name
-    ON main.id = team_driver_name.post_id
-    AND team_driver_name.meta_key = 'team_driver_name'
-LEFT JOIN $table_meta AS team_driver_phone
-    ON main.id = team_driver_phone.post_id
-    AND team_driver_phone.meta_key = 'team_driver_phone'
-LEFT JOIN $table_meta AS team_driver_email
-    ON main.id = team_driver_email.post_id
-    AND team_driver_email.meta_key = 'team_driver_email'
-LEFT JOIN $table_meta AS owner_name
-    ON main.id = owner_name.post_id
-    AND owner_name.meta_key = 'owner_name'
-LEFT JOIN $table_meta AS owner_phone
-    ON main.id = owner_phone.post_id
-    AND owner_phone.meta_key = 'owner_phone'
-LEFT JOIN $table_meta AS owner_email
-    ON main.id = owner_email.post_id
-    AND owner_email.meta_key = 'owner_email'
-LEFT JOIN $table_meta AS vin
-    ON main.id = vin.post_id
-    AND vin.meta_key = 'vin'
-LEFT JOIN $table_meta AS ssn
-    ON main.id = ssn.post_id
-    AND ssn.meta_key = 'ssn'
-LEFT JOIN $table_meta AS ein
-    ON main.id = ein.post_id
-    AND ein.meta_key = 'ein'
-LEFT JOIN $table_meta AS authorized_email
-    ON main.id = authorized_email.post_id
-    AND authorized_email.meta_key = 'authorized_email'
-			WHERE 1=1";
-		
-		// Основной запрос
-		$sql = "SELECT main.*" . $join_builder;
+	FROM $table_main AS main
+	LEFT JOIN $table_meta AS driver_name
+		ON main.id = driver_name.post_id AND driver_name.meta_key = 'driver_name'
+	LEFT JOIN $table_meta AS driver_phone
+		ON main.id = driver_phone.post_id AND driver_phone.meta_key = 'driver_phone'
+	LEFT JOIN $table_meta AS driver_email
+		ON main.id = driver_email.post_id AND driver_email.meta_key = 'driver_email'
+	LEFT JOIN $table_meta AS plates
+		ON main.id = plates.post_id AND plates.meta_key = 'plates'
+	LEFT JOIN $table_meta AS entity_name
+		ON main.id = entity_name.post_id AND entity_name.meta_key = 'entity_name'
+	LEFT JOIN $table_meta AS vin
+		ON main.id = vin.post_id AND vin.meta_key = 'vin'
+	LEFT JOIN $table_meta AS auto_liability_insurer
+		ON main.id = auto_liability_insurer.post_id AND auto_liability_insurer.meta_key = 'auto_liability_insurer'
+	LEFT JOIN $table_meta AS motor_cargo_insurer
+		ON main.id = motor_cargo_insurer.post_id AND motor_cargo_insurer.meta_key = 'motor_cargo_insurer'
+	LEFT JOIN $table_meta AS source
+		ON main.id = source.post_id AND source.meta_key = 'source'
+";
 		
 		$where_conditions = array();
 		$where_values     = array();
+		
+		// Дополнительный LEFT JOIN по переданному полю
+		if ( ! empty( $args[ 'additional' ] ) ) {
+			$additional_key   = sanitize_key( $args[ 'additional' ] );
+			$additional_alias = 'add_' . $additional_key;
+			
+			// Добавляем JOIN прямо в $join_builder
+			$join_builder       .= "
+		LEFT JOIN $table_meta AS {$additional_alias}
+			ON main.id = {$additional_alias}.post_id
+			AND {$additional_alias}.meta_key = %s
+	";
+			$where_conditions[] = "({$additional_alias}.meta_value IS NOT NULL AND {$additional_alias}.meta_value != '')";
+			$where_values[]     = $additional_key;
+		}
+		
+		
+		// Основной запрос
+		$sql = "SELECT main.*" . $join_builder . " WHERE 1=1";
 		
 		
 		if ( ! empty( $args[ 'status_post' ] ) ) {
@@ -135,15 +204,48 @@ LEFT JOIN $table_meta AS authorized_email
 			$where_values[]     = $args[ 'status_post' ];
 		}
 		
+		if ( ! empty( $args[ 'recruiter' ] ) ) {
+			$where_conditions[] = "main.user_id_added = %s";
+			$where_values[]     = $args[ 'recruiter' ];
+		}
+		
+		if ( ! empty( $args[ 'source' ] ) ) {
+			$where_conditions[] = "source.meta_value = %s";
+			$where_values[]     = $args[ 'source' ];
+		}
+		
 		
 		// Фильтрация по reference_number
+		//		motor_cargo_insurer auto_liability_insurer entity_name plates
 		if ( ! empty( $args[ 'my_search' ] ) ) {
-			$where_conditions[] = "(" . "reference.meta_value LIKE %s OR " . "unit_number.meta_value LIKE %s OR " . "driver_name.meta_value LIKE %s OR " . "driver_phone.meta_value LIKE %s OR " . "driver_email.meta_value LIKE %s OR " . "team_driver_name.meta_value LIKE %s OR " . "team_driver_phone.meta_value LIKE %s OR " . "team_driver_email.meta_value LIKE %s OR " . "owner_name.meta_value LIKE %s OR " . "owner_phone.meta_value LIKE %s OR " . "owner_email.meta_value LIKE %s OR " . "vin.meta_value LIKE %s OR " . "ssn.meta_value LIKE %s OR " . "ein.meta_value LIKE %s OR " . "authorized_email.meta_value LIKE %s" . ")";
+			$where_conditions[] = "(" . "main.id LIKE %s OR " . "driver_name.meta_value LIKE %s OR " . "driver_phone.meta_value LIKE %s OR " . "driver_email.meta_value LIKE %s OR " . "motor_cargo_insurer.meta_value LIKE %s OR " . "auto_liability_insurer.meta_value LIKE %s OR " . "entity_name.meta_value LIKE %s OR " . "plates.meta_value LIKE %s OR " . "vin.meta_value LIKE %s " . ")";
 			
 			$search_value = '%' . $wpdb->esc_like( $args[ 'my_search' ] ) . '%';
-			for ( $i = 0; $i < 15; $i ++ ) {
+			for ( $i = 0; $i < 9; $i ++ ) {
 				$where_values[] = $search_value;
 			}
+		}
+		
+		if ( ! empty( $args[ 'month' ] ) && ! empty( $args[ 'year' ] ) ) {
+			$where_conditions[] = "main.date_created IS NOT NULL
+        AND YEAR(main.date_created) = %d
+        AND MONTH(main.date_created) = %d";
+			$where_values[]     = $args[ 'year' ];
+			$where_values[]     = $args[ 'month' ];
+		}
+		
+		// Фильтрация по только году
+		if ( ! empty( $args[ 'year' ] ) && empty( $args[ 'month' ] ) ) {
+			$where_conditions[] = "main.date_created IS NOT NULL
+        AND YEAR(main.date_created) = %d";
+			$where_values[]     = $args[ 'year' ];
+		}
+		
+		// Фильтрация по только месяцу
+		if ( ! empty( $args[ 'month' ] ) && empty( $args[ 'year' ] ) ) {
+			$where_conditions[] = "main.date_created IS NOT NULL
+        AND MONTH(main.date_created) = %d";
+			$where_values[]     = $args[ 'month' ];
 		}
 		
 		
@@ -157,6 +259,7 @@ LEFT JOIN $table_meta AS authorized_email
 		if ( ! empty( $where_conditions ) ) {
 			$total_records_sql .= ' AND ' . implode( ' AND ', $where_conditions );
 		}
+		
 		
 		$total_records = $wpdb->get_var( $wpdb->prepare( $total_records_sql, ...$where_values ) );
 		
@@ -315,6 +418,7 @@ LEFT JOIN $table_meta AS authorized_email
 				$new_ids   = array_diff( $ids, array( $image_id ) );
 				$new_value = implode( ',', $new_ids );
 			} elseif ( in_array( $image_field, [
+				'plates_file',
 				'registration_file',
 				'ppe_file',
 				'gvwr_placard',
@@ -578,10 +682,6 @@ LEFT JOIN $table_meta AS authorized_email
 		return false;
 	}
 	
-	public function get_drivers( $args ) {
-	
-	}
-	
 	public function get_driver_by_id( $ID ) {
 		global $wpdb;
 		
@@ -682,6 +782,12 @@ LEFT JOIN $table_meta AS authorized_email
 				'owner_trucker_tools'        => isset( $_POST[ 'owner_trucker_tools' ] )
 					? sanitize_text_field( $_POST[ 'owner_trucker_tools' ] ) : '',
 				// Additional date validation might be required
+				'source'                     => isset( $_POST[ 'source' ] ) ? sanitize_text_field( $_POST[ 'source' ] )
+					: '',
+				'recruiter_add'              => isset( $_POST[ 'recruiter_add' ] )
+					? sanitize_text_field( $_POST[ 'recruiter_add' ] ) : '',
+				'preferred_distance'         => isset( $_POST[ 'preferred_distance' ] ) && is_array( $_POST[ 'preferred_distance' ] )
+					? implode( ',', array_map( 'sanitize_text_field', $_POST[ 'preferred_distance' ] ) ) : '',
 				'owner_type'                 => isset( $_POST[ 'owner_type' ] )
 					? sanitize_text_field( $_POST[ 'owner_type' ] ) : '',
 				'emergency_contact_name'     => isset( $_POST[ 'emergency_contact_name' ] )
@@ -724,6 +830,8 @@ LEFT JOIN $table_meta AS authorized_email
 					? sanitize_text_field( $_POST[ 'driver_phone' ] ) : '',
 				'driver_email'               => isset( $_POST[ 'driver_email' ] )
 					? sanitize_email( $_POST[ 'driver_email' ] ) : '',
+				'preferred_distance'         => isset( $_POST[ 'preferred_distance' ] ) && is_array( $_POST[ 'preferred_distance' ] )
+					? implode( ',', array_map( 'sanitize_text_field', $_POST[ 'preferred_distance' ] ) ) : '',
 				'home_location'              => isset( $_POST[ 'home_location' ] )
 					? sanitize_text_field( $_POST[ 'home_location' ] ) : '',
 				'city'                       => isset( $_POST[ 'city' ] ) ? sanitize_text_field( $_POST[ 'city' ] )
@@ -751,6 +859,8 @@ LEFT JOIN $table_meta AS authorized_email
 				'team_driver_trucker_tools'  => isset( $_POST[ 'team_driver_trucker_tools' ] )
 					? sanitize_text_field( $_POST[ 'team_driver_trucker_tools' ] ) : '',
 				// Additional date validation might be required
+				'recruiter_add'              => isset( $_POST[ 'recruiter_add' ] )
+					? sanitize_text_field( $_POST[ 'recruiter_add' ] ) : '',
 				'mc_enabled'                 => isset( $_POST[ 'mc_enabled' ] )
 					? sanitize_text_field( $_POST[ 'mc_enabled' ] ) : '',
 				'mc'                         => isset( $_POST[ 'mc' ] ) ? sanitize_text_field( $_POST[ 'mc' ] ) : '',
@@ -772,6 +882,8 @@ LEFT JOIN $table_meta AS authorized_email
 				'owner_trucker_tools'        => isset( $_POST[ 'owner_trucker_tools' ] )
 					? sanitize_text_field( $_POST[ 'owner_trucker_tools' ] ) : '',
 				// Additional date validation might be required
+				'source'                     => isset( $_POST[ 'source' ] ) ? sanitize_text_field( $_POST[ 'source' ] )
+					: '',
 				'owner_type'                 => isset( $_POST[ 'owner_type' ] )
 					? sanitize_text_field( $_POST[ 'owner_type' ] ) : '',
 				'emergency_contact_name'     => isset( $_POST[ 'emergency_contact_name' ] )
@@ -785,7 +897,8 @@ LEFT JOIN $table_meta AS authorized_email
 			
 			$driver_object = $this->get_driver_by_id( $data[ 'driver_id' ] );
 			$meta          = get_field_value( $driver_object, 'meta' );
-			
+			$main          = get_field_value( $driver_object, 'main' );
+			$post_status   = $main[ 'status_post' ];
 			
 			$array_track = array(
 				'driver_name',
@@ -807,17 +920,20 @@ LEFT JOIN $table_meta AS authorized_email
 				'emergency_contact_phone',
 				'mc',
 				'dot',
+				'macro_point',
+				'trucker_tools',
+				'source',
 			);
 			
-			// Переменная для хранения результатов изменений
-			$changes = $this->get_log_template( $array_track, $meta, $data );
-			
+			if ( $post_status === 'publish' ) {
+				$changes = $this->get_log_template( $array_track, $meta, $data );
+			}
 			// At this point, the data is sanitized and ready for further processing or saving to the database
 			$result = $this->update_driver_in_db( $data );
 			
 			if ( $result ) {
 				
-				if ( ! empty( $changes ) ) {
+				if ( ! empty( $changes ) && $post_status === 'publish' ) {
 					$user_id = get_current_user_id();
 					$this->log_controller->create_one_log( array(
 						'user_id'   => $user_id,
@@ -871,6 +987,9 @@ LEFT JOIN $table_meta AS authorized_email
 			$driver_object = $this->get_driver_by_id( $data[ 'driver_id' ] );
 			$meta          = get_field_value( $driver_object, 'meta' );
 			
+			$main        = get_field_value( $driver_object, 'main' );
+			$post_status = $main[ 'status_post' ];
+			
 			
 			$array_track = array(
 				'account_type',
@@ -886,9 +1005,10 @@ LEFT JOIN $table_meta AS authorized_email
 				'authorized_email',
 			);
 			
-			// Переменная для хранения результатов изменений
-			$changes = $this->get_log_template( $array_track, $meta, $data );
-			
+			if ( $post_status === 'publish' ) {
+				// Переменная для хранения результатов изменений
+				$changes = $this->get_log_template( $array_track, $meta, $data );
+			}
 			
 			$keys_names = array(
 				'payment_file',
@@ -902,8 +1022,9 @@ LEFT JOIN $table_meta AS authorized_email
 				if ( ! empty( $_FILES[ $key_name ] && $_FILES[ $key_name ][ 'size' ] > 0 ) ) {
 					$id_uploaded       = $this->upload_one_file( $_FILES[ $key_name ] );
 					$data[ $key_name ] = is_numeric( $id_uploaded ) ? $id_uploaded : '';
-					
-					$changes .= '<strong>Uploaded ' . $this->format_field_name( $key_name ) . ' </strong><br><br>';
+					if ( $post_status === 'publish' ) {
+						$changes .= '<strong>Uploaded ' . $this->format_field_name( $key_name ) . ' </strong><br><br>';
+					}
 				}
 			}
 			
@@ -946,7 +1067,7 @@ LEFT JOIN $table_meta AS authorized_email
 			
 			if ( $result ) {
 				
-				if ( ! empty( $changes ) ) {
+				if ( ! empty( $changes ) && $post_status === 'publish' ) {
 					$user_id = get_current_user_id();
 					$this->log_controller->create_one_log( array(
 						'user_id'   => $user_id,
@@ -996,7 +1117,8 @@ LEFT JOIN $table_meta AS authorized_email
 			
 			$driver_object = $this->get_driver_by_id( $data[ 'driver_id' ] );
 			$meta          = get_field_value( $driver_object, 'meta' );
-			
+			$main          = get_field_value( $driver_object, 'main' );
+			$post_status   = $main[ 'status_post' ];
 			
 			$array_track = array(
 				'vehicle_type',
@@ -1023,29 +1145,32 @@ LEFT JOIN $table_meta AS authorized_email
 				'load_bars',
 			);
 			
-			// Переменная для хранения результатов изменений
-			$changes = $this->get_log_template( $array_track, $meta, $data );
+			if ( $post_status === 'publish' ) {
+				// Переменная для хранения результатов изменений
+				$changes = $this->get_log_template( $array_track, $meta, $data );
+			}
 			
 			global $wpdb;
 			$table_meta_name = $wpdb->prefix . $this->table_meta;
 			$meta_data       = $wpdb->get_results( $wpdb->prepare( "SELECT meta_key, meta_value FROM {$table_meta_name} WHERE post_id = %d", $data[ 'driver_id' ] ), ARRAY_A );
 			$current_data    = array_column( $meta_data, 'meta_value', 'meta_key' );
 			
-			if ( ! empty( $_FILES[ 'vehicle_pictures' ] ) && $_FILES[ 'vehicle_pictures' ][ 'size' ][ 0 ] > 0 ) {
-				$data[ 'vehicle_pictures' ] = $this->process_uploaded_files( 'vehicle_pictures', $current_data[ 'vehicle_pictures' ] );
-				
-				$changes .= '<strong>Uploaded vehicle pictures</strong><br><br>';
-			}
+			$picture_fields = [
+				'vehicle_pictures'    => 'Uploaded vehicle pictures',
+				'dimensions_pictures' => 'Uploaded dimensions pictures'
+			];
 			
-			if ( ! empty( $_FILES[ 'dimensions_pictures' ] ) && $_FILES[ 'dimensions_pictures' ][ 'size' ][ 0 ] > 0 ) {
-				$data[ 'dimensions_pictures' ] = $this->process_uploaded_files( 'dimensions_pictures', $current_data[ 'dimensions_pictures' ] );
-				
-				$changes .= '<strong>Uploaded dimensions pictures</strong><br><br>';
-				
+			foreach ( $picture_fields as $field => $message ) {
+				if ( ! empty( $_FILES[ $field ] ) && $_FILES[ $field ][ 'size' ][ 0 ] > 0 ) {
+					$data[ $field ] = $this->process_uploaded_files( $field, $current_data[ $field ] );
+					if ( $post_status === 'publish' ) {
+						$changes .= "<strong>$message</strong><br><br>";
+					}
+				}
 			}
-			
 			
 			$keys_names = array(
+				'plates_file',
 				'registration_file',
 				'ppe_file',
 				'gvwr_placard',
@@ -1061,11 +1186,14 @@ LEFT JOIN $table_meta AS authorized_email
 					$id_uploaded       = $this->upload_one_file( $_FILES[ $key_name ] );
 					$data[ $key_name ] = is_numeric( $id_uploaded ) ? $id_uploaded : '';
 					
-					if ( $key_name == 'gvwr_placard' ) {
-						$changes .= '<strong>Uploaded GVWR placard </strong><br><br>';
-					}
-					if ( $key_name == 'registration_file' ) {
-						$changes .= '<strong>Uploaded Registration file</strong><br><br>';
+					if ( $post_status === 'publish' ) {
+						
+						if ( $key_name == 'gvwr_placard' ) {
+							$changes .= '<strong>Uploaded GVWR placard </strong><br><br>';
+						}
+						if ( $key_name == 'registration_file' ) {
+							$changes .= '<strong>Uploaded Registration file</strong><br><br>';
+						}
 					}
 				}
 			}
@@ -1076,7 +1204,7 @@ LEFT JOIN $table_meta AS authorized_email
 			
 			if ( $result ) {
 				
-				if ( ! empty( $changes ) ) {
+				if ( ! empty( $changes ) && $post_status === 'publish' ) {
 					$user_id = get_current_user_id();
 					$this->log_controller->create_one_log( array(
 						'user_id'   => $user_id,
@@ -1207,7 +1335,8 @@ LEFT JOIN $table_meta AS authorized_email
 			
 			$driver_object = $this->get_driver_by_id( $data[ 'driver_id' ] );
 			$meta          = get_field_value( $driver_object, 'meta' );
-			
+			$main          = get_field_value( $driver_object, 'main' );
+			$post_status   = $main[ 'status_post' ];
 			
 			$array_track = array(
 				'record_notes',
@@ -1244,9 +1373,10 @@ LEFT JOIN $table_meta AS authorized_email
 				'insurance_declaration',
 			);
 			
-			// Переменная для хранения результатов изменений
-			$changes = $this->get_log_template( $array_track, $meta, $data );
-			
+			if ( $post_status === 'publish' ) {
+				// Переменная для хранения результатов изменений
+				$changes = $this->get_log_template( $array_track, $meta, $data );
+			}
 			
 			$keys_names = array(
 				'hazmat_certificate_file',
@@ -1268,8 +1398,9 @@ LEFT JOIN $table_meta AS authorized_email
 				if ( ! empty( $_FILES[ $key_name ] && $_FILES[ $key_name ][ 'size' ] > 0 ) ) {
 					$id_uploaded       = $this->upload_one_file( $_FILES[ $key_name ] );
 					$data[ $key_name ] = is_numeric( $id_uploaded ) ? $id_uploaded : '';
-					
-					$changes .= '<strong>Uploaded ' . $this->format_field_name( $key_name ) . ' </strong><br><br>';
+					if ( $post_status === 'publish' ) {
+						$changes .= '<strong>Uploaded ' . $this->format_field_name( $key_name ) . ' </strong><br><br>';
+					}
 				}
 			}
 			
@@ -1278,7 +1409,7 @@ LEFT JOIN $table_meta AS authorized_email
 			
 			if ( $result ) {
 				
-				if ( ! empty( $changes ) ) {
+				if ( ! empty( $changes ) && $post_status === 'publish' ) {
 					$user_id = get_current_user_id();
 					$this->log_controller->create_one_log( array(
 						'user_id'   => $user_id,
@@ -1293,6 +1424,12 @@ LEFT JOIN $table_meta AS authorized_email
 			}
 			
 			wp_send_json_error( [ 'message' => 'Driver not update, error add in database' ] );
+		}
+	}
+	
+	public function upload_driver_helper( $data ) {
+		if ( defined( 'DOING_AJAX' ) && DOING_AJAX ) {
+			$driver_id = isset( $_POST[ 'driver_id' ] ) ? sanitize_textarea_field( $_POST[ 'driver_id' ] ) : '';
 		}
 	}
 	
@@ -1316,7 +1453,7 @@ LEFT JOIN $table_meta AS authorized_email
 		
 		$user_id = get_current_user_id();
 		
-		$data_main[ 'user_id_added' ]   = $user_id;
+		$data_main[ 'user_id_added' ]   = $data[ 'recruiter_add' ];
 		$data_main[ 'date_created' ]    = current_time( 'mysql' );
 		$data_main[ 'user_id_updated' ] = $user_id;
 		$data_main[ 'date_updated' ]    = current_time( 'mysql' );
@@ -1352,6 +1489,10 @@ LEFT JOIN $table_meta AS authorized_email
 		$table_name = $wpdb->prefix . $this->table_main;
 		
 		$user_id = get_current_user_id();
+		
+		if ( ! empty( $data[ 'recruiter_add' ] ) ) {
+			$data_main[ 'user_id_added' ] = $data[ 'recruiter_add' ];
+		}
 		
 		$data_main[ 'user_id_updated' ] = $user_id;
 		$data_main[ 'date_updated' ]    = current_time( 'mysql' );

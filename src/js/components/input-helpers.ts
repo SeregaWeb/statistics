@@ -1,5 +1,6 @@
 // eslint-disable-next-line import/no-extraneous-dependencies
 import IMask from 'imask';
+import { uploadFilePreview } from './create-report';
 
 // eslint-disable-next-line import/prefer-default-export
 export function initMoneyMask() {
@@ -225,7 +226,7 @@ export function checboxesHelperInit() {
 }
 
 // eslint-disable-next-line camelcase
-export function quick_pay_method() {
+export function quickPayMethod() {
     const selectMethod = document.querySelector('.js-quick-pay-method');
 
     selectMethod &&
@@ -264,7 +265,8 @@ export function quick_pay_method() {
         });
 }
 
-export function trigger_current_time() {
+// eslint-disable-next-line camelcase
+export function triggerCurrentTime() {
     const trigger = document.querySelector('.js-trigger-set-date');
 
     // Убедиться, что чекбокс найден
@@ -289,4 +291,57 @@ export function trigger_current_time() {
             }
         });
     }
+}
+
+export function dragAnDropInit() {
+    const uploadAreas = document.querySelectorAll('.upload-area');
+
+    uploadAreas.forEach((area) => {
+        const fileInput = area.querySelector('.file-input');
+
+        // Клик по области
+        // @ts-ignore
+        // Наведение файла
+        area.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            area.classList.add('dragover');
+        });
+
+        // Увод курсора
+        area.addEventListener('dragleave', () => {
+            area.classList.remove('dragover');
+        });
+
+        // Сброс файла
+        area.addEventListener('drop', (e) => {
+            e.preventDefault();
+            area.classList.remove('dragover');
+
+            // @ts-ignore
+            const { files } = e.dataTransfer;
+            // @ts-ignore
+            const isMultipleAllowed = fileInput.hasAttribute('multiple');
+
+            if (!isMultipleAllowed && files.length > 1) {
+                // eslint-disable-next-line no-alert
+                alert('Only one file can be uploaded here.');
+                return;
+            }
+
+            // Устанавливаем файлы в input
+            const dataTransfer = new DataTransfer();
+            if (isMultipleAllowed) {
+                for (let i = 0; i < files.length; i++) {
+                    dataTransfer.items.add(files[i]);
+                }
+            } else {
+                dataTransfer.items.add(files[0]);
+            }
+            // @ts-ignore
+            fileInput.files = dataTransfer.files;
+            // @ts-ignore
+            console.log('Файлы загружены:', fileInput.files);
+            uploadFilePreview(fileInput);
+        });
+    });
 }

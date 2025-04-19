@@ -1,4 +1,5 @@
 import IMask from 'imask';
+import flatpickr from 'flatpickr';
 
 const maskTel = (target) => {
     const x1 = target.value.replace(/\D/g, '').match(/(\d{3})/);
@@ -28,6 +29,13 @@ export const telMaskInit = () => {
                 maskTel(event.target);
             });
         });
+};
+
+export const dateMaskInit = () => {
+    flatpickr('.js-new-format-date', {
+        dateFormat: 'm/d/Y', // Американский формат
+        allowInput: true,
+    });
 };
 
 export const masksAllSite = () => {

@@ -7,7 +7,13 @@ import '../scss/frontend.scss';
  */
 import Popup from './parts/popup-window';
 // eslint-disable-next-line camelcase
-import { checboxesHelperInit, initMoneyMask, quick_pay_method, trigger_current_time } from './components/input-helpers';
+import {
+    checboxesHelperInit,
+    dragAnDropInit,
+    initMoneyMask,
+    quickPayMethod,
+    triggerCurrentTime,
+} from './components/input-helpers';
 import {
     actionCreateReportInit,
     additionalContactsInit,
@@ -47,7 +53,7 @@ import { disabledValuesInSelectInit, showHiddenValueInit } from './components/ch
 import { logsInit } from './components/logs';
 import { bookmarkInit } from './components/bookmark';
 import { sendUpdatePerformance } from './components/performance';
-import { masksAllSite, telMaskInit } from './components/tel-mask';
+import { dateMaskInit, masksAllSite, telMaskInit } from './components/tel-mask';
 import { changeStopType } from './components/stop-type';
 import { setStatusPaid } from './components/set-status-paid';
 import { sendEmailChain } from './components/send-email-chain';
@@ -133,8 +139,8 @@ function ready() {
     toggleBlocksInit();
     toggleCheckboxInit();
     disabledValuesInSelectInit();
-    quick_pay_method();
-    trigger_current_time();
+    quickPayMethod();
+    triggerCurrentTime();
     triggerDisableBtnInit();
     changeStopType();
     setStatusPaid();
@@ -143,6 +149,8 @@ function ready() {
     tabUrlUpdeter();
     timeStrictChange();
     toggleBlocksRadio();
+    dateMaskInit();
+    dragAnDropInit();
 
     createDocumentInvoice();
     createDocumentInvoiceActions(urlAjax);

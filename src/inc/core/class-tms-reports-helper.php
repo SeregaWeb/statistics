@@ -558,6 +558,191 @@ class TMSReportsHelper extends TMSReportsIcons {
 		return $this->features;
 	}
 	
+	function get_locations_plain_text( $json_string, $type = 'Shipper' ) {
+		
+		$shipper   = new TMSReportsShipper();
+		$locations = json_decode( str_replace( "\'", "'", stripslashes( $json_string ) ), ARRAY_A ) ?: [];
+		
+		if ( ! is_array( $locations ) ) {
+			return "Invalid location data\n";
+		}
+		
+		$output = '';
+		
+		foreach ( $locations as $index => $location ) {
+			$title = $type . ( $index > 0 ? ' #' . ( $index + 1 ) : '' );
+			
+			$address_id  = $location[ 'address_id' ] ?? '';
+			$shipper_obj = $shipper->get_shipper_by_id( $address_id, ARRAY_A );
+			
+			if ( ! empty( $shipper_obj ) ) {
+				
+				if ( isset( $shipper_obj[ 0 ] ) ) {
+					$shipper_obj = $shipper_obj[ 0 ];
+				}
+			}
+			$shipper_name = $shipper_obj[ 'shipper_name' ] ?? $type;
+			
+			$address_parts  = explode( ',', $location[ 'address' ] );
+			$address_line   = trim( $address_parts[ 0 ] ?? '' );
+			$city_state_zip = trim( implode( ',', array_slice( $address_parts, 1 ) ) );
+			
+			if ( ! empty( $location[ 'date' ] ) ) {
+				// Пробуем с форматом Y-m-d\TH:i
+				$datetime = DateTime::createFromFormat( 'Y-m-d\TH:i', $location[ 'date' ] );
+				
+				if ( ! $datetime ) {
+					// Если не получилось, пробуем с форматом Y-m-d
+					$datetime = DateTime::createFromFormat( 'Y-m-d', $location[ 'date' ] );
+				}
+				
+				if ( $datetime ) {
+					$date = esc_html( $datetime->format( 'm/d/Y' ) );
+				}
+			}
+			
+			$time = trim( $location[ 'time_start' ] . ( $location[ 'time_end' ] ? ' - ' . $location[ 'time_end' ]
+					: '' ) );
+			
+			$output .= $title . ": $shipper_name:\n";
+			$output .= "Address: $address_line\n";
+			$output .= "$city_state_zip\n";
+			$output .= "Date & time: $date" . ( $time ? " | $time" : '' ) . "\n\n";
+		}
+		
+		return $output;
+	}
+	
+	function find_user_by_emails( $emails_string, $exclude_user_id = null ) {
+		$emails = array_map( 'trim', explode( ',', $emails_string ) );
+		
+		foreach ( $emails as $email ) {
+			$user = get_user_by( 'email', $email );
+			if ( $user && $user->ID !== $exclude_user_id ) {
+				return $user;
+			}
+		}
+		
+		return null;
+	}
+	
+	function get_tracking_message( $tracking_email, $nightshift_email ) {
+		// Сначала ищем nightshift
+		$nightshift_user = $this->find_user_by_emails( $nightshift_email );
+		
+		// Теперь ищем tracking, исключая nightshift_user
+		$tracking_user = $this->find_user_by_emails( $tracking_email, $nightshift_user ? $nightshift_user->ID : null );
+		
+		
+		// Проверяем, что пользователи найдены
+		if ( ! $tracking_user ) {
+			return 'Tracking user not found.';
+		}
+		if ( ! $nightshift_user ) {
+			return 'Nightshift user not found.';
+		}
+		
+		$tracking_text = $tracking_user
+			? sprintf( "%s %s", get_field( 'phone_number', 'user_' . $tracking_user->ID ), $tracking_user->first_name )
+			: '';
+		
+		$nightshift_text = $nightshift_user
+			? sprintf( "%s %s", get_field( 'phone_number', 'user_' . $nightshift_user->ID ), $nightshift_user->first_name )
+			: '';
+		
+		$text_parts = [];
+		
+		if ( $tracking_text ) {
+			$text_parts[] = 'Our tracking team will be reaching out to you: ' . $tracking_text;
+		}
+		
+		if ( $nightshift_text ) {
+			$text_parts[] = 'Afterhours contact: ' . $nightshift_text;
+		}
+		
+		$text = implode( '. ', $text_parts ) . '.';
+		
+		
+		return $text;
+	}
+	
+	function create_message_dispatch( $meta ) {
+		$emails = new TMSEmails();
+		global $global_options;
+		
+		$user_id             = get_current_user_id();
+		$project             = get_field( 'current_select', 'user_' . $user_id );
+		$project             = strtolower( $project );
+		$commodity           = get_field_value( $meta, 'commodity' );
+		$weight              = get_field_value( $meta, 'weight' );
+		$instructions        = get_field_value( $meta, 'instructions' );
+		$notes               = get_field_value( $meta, 'notes' );
+		$driver_rate_raw     = get_field_value( $meta, 'driver_rate' );
+		$pick_up_location    = get_field_value( $meta, 'pick_up_location' );
+		$delivery_location   = get_field_value( $meta, 'delivery_location' );
+		$dispatcher_initials = get_field_value( $meta, 'dispatcher_initials' );
+		$nightshift          = get_field( 'nightshift_tracking', 'user_' . $dispatcher_initials );
+		$tracking            = $emails->get_tracking_email( $dispatcher_initials );
+		$last_message        = $this->get_tracking_message( $tracking, $nightshift );
+		
+		$driver_rate             = esc_html( '$' . $this->format_currency( $driver_rate_raw ) );
+		$get_instructions_values = $this->get_instructions_values( $instructions );
+		
+		$text = '';
+		$text .= $this->get_locations_plain_text( $pick_up_location, 'Shipper' );
+		$text .= $this->get_locations_plain_text( $delivery_location, 'Receiver' );
+		
+		$company_name = $this->company_name = get_field_value( $global_options, 'company_name_' . $project );
+		$company_mc   = $this->company_mc = get_field_value( $global_options, 'company_mc_' . $project );
+		$company_dot  = $this->company_dot = get_field_value( $global_options, 'company_dot_' . $project );
+		
+		$text .= "Commodity: {$commodity}\n";
+		$text .= "Weight: {$weight} lbs\n";
+		
+		if ( $instructions ) {
+			$text .= "Instructions: {$get_instructions_values}\n";
+		}
+		
+		$text .= "Rate: {$driver_rate}\n";
+		
+		if ( $notes ) {
+			$text .= "Notes: {$notes}\n";
+		}
+		
+		$text .= "\n{$last_message}\n\n";
+		
+		$text .= trim( "You're working under {$company_name}. authority: MC# {$company_mc}, DOT# {$company_dot}.\n
+Must be confirmed if you happen to contact shipper, receiver or broker.\n
+Please make sure to send pictures of the freight and a clear photo of the Bill of Lading (BOL) both once the freight is loaded and after it has been delivered.\n
+Safe travels, and we hope you have a smooth trip!\n
+Kindly confirm once you've received this message." ) . "\n";
+		
+		return preg_replace( '/[\x{2028}\x{2029}\x{0085}\x{000B}\x{000C}\x{000D}\x{2424}]/u', ' ', $text );
+	}
+	
+	function get_instructions_values( $instructions ) {
+		if ( empty( $instructions ) ) {
+			return false;
+		}
+		
+		$instructions_label = $this->get_instructions();
+		
+		// Return early if instructions labels are empty
+		if ( empty( $instructions_label ) ) {
+			return false;
+		}
+		
+		// Safely handle different input formats
+		$instruction_keys = is_array( $instructions ) ? $instructions
+			: array_map( 'trim', explode( ',', $instructions ) );
+		
+		$labels = array_filter( array_map( function( $key ) use ( $instructions_label ) {
+			return isset( $instructions_label[ $key ] ) ? $instructions_label[ $key ] : null;
+		}, $instruction_keys ) );
+		
+		return empty( $labels ) ? false : implode( ', ', $labels );
+	}
+	
 	function get_label_by_key( $key = null, $search_list = null ) {
 		
 		if ( is_null( $key ) || is_null( $search_list ) ) {

@@ -55,7 +55,11 @@ class  TMSStatistics extends TMSReportsHelper {
             LEFT JOIN $table_meta as office_dispatcher
                 ON source_meta.post_id = office_dispatcher.post_id
                 AND office_dispatcher.meta_key = 'office_dispatcher'
+            LEFT JOIN $table_meta as load_status
+                ON source_meta.post_id = load_status.post_id
+                AND load_status.meta_key = 'load_status'
             WHERE source_meta.meta_key = 'source'
+                AND load_status.meta_value != 'cancelled'
                 AND source_meta.meta_value = %s
         ";
 			
@@ -316,9 +320,13 @@ class  TMSStatistics extends TMSReportsHelper {
 			FROM {$table_reports} reports
 			INNER JOIN {$table_meta} dispatcher_meta
 				ON reports.id = dispatcher_meta.post_id
+		    INNER JOIN {$table_meta} load_status
+				ON reports.id = load_status.post_id
 			INNER JOIN {$table_meta} profit_meta
 				ON reports.id = profit_meta.post_id
 			WHERE dispatcher_meta.meta_key = 'dispatcher_initials'
+			  AND load_status.meta_key = 'load_status'
+			  AND load_status.meta_value != 'cancelled'
 			AND profit_meta.meta_key = 'profit'
 			AND reports.status_post = 'publish'
 		";

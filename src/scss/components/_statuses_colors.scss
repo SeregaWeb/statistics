@@ -8,6 +8,35 @@ $color_accounting_processed: #b7e1cd;
 $color_accounting_unsubmitted: #ffff00;
 $color_accounting_others: #ff0000;
 
+$color_direct_1: #effee9;
+$color_direct_2: #fff7df;
+$color_direct_3: #ffdcdc;
+
+.direct_invoicing {
+    &_paid {
+        td {
+            background-color: $color_direct_1;
+        }
+    }
+    &_unsubmitted ,
+    &_in-processing {
+        td {
+            background-color: $color_direct_2;
+        }
+    }
+
+    &_requires-attention ,
+    &_in-dispute ,
+    &_charge-back ,
+    &_short-pay ,
+    &_fraud ,
+    &_company-closed {
+        td {
+            background-color: $color_direct_3;
+        }
+    }
+}
+
 .load-status-accounting-Processing td {
     background-color: #fff7df;
 }

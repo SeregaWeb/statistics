@@ -977,21 +977,16 @@ class TMSDrivers extends TMSDriversHelper {
 				
 				'authorized_email' => isset( $_POST[ 'authorized_email' ] )
 					? sanitize_email( $_POST[ 'authorized_email' ] ) : '',
-				'ein_file_id'      => isset( $_POST[ 'ein_file_id' ] ) ? sanitize_text_field( $_POST[ 'ein_file_id' ] )
-					: '',
-				'ssn_file_id'      => isset( $_POST[ 'ssn_file_id' ] ) ? sanitize_text_field( $_POST[ 'ssn_file_id' ] )
-					: '',
 			);
 			// At this point, the data is sanitized and ready for further processing or saving to the database
 			
 			$driver_object = $this->get_driver_by_id( $data[ 'driver_id' ] );
 			$meta          = get_field_value( $driver_object, 'meta' );
-			
-			$main        = get_field_value( $driver_object, 'main' );
-			$post_status = $main[ 'status_post' ];
-			
-			
-			$array_track = array(
+			$main          = get_field_value( $driver_object, 'main' );
+			$post_status   = $main[ 'status_post' ];
+			$file_EIN      = get_field_value( $meta, 'ein_file' );
+			$file_SSN      = get_field_value( $meta, 'ssn_file' );
+			$array_track   = array(
 				'account_type',
 				'account_name',
 				'payment_instruction',
@@ -1010,25 +1005,6 @@ class TMSDrivers extends TMSDriversHelper {
 				$changes = $this->get_log_template( $array_track, $meta, $data );
 			}
 			
-			$keys_names = array(
-				'payment_file',
-				'w9_file',
-				'ssn_file',
-				'ein_file',
-				'nec_file',
-			);
-			
-			foreach ( $keys_names as $key_name ) {
-				if ( ! empty( $_FILES[ $key_name ] && $_FILES[ $key_name ][ 'size' ] > 0 ) ) {
-					$id_uploaded       = $this->upload_one_file( $_FILES[ $key_name ] );
-					$data[ $key_name ] = is_numeric( $id_uploaded ) ? $id_uploaded : '';
-					if ( $post_status === 'publish' ) {
-						$changes .= '<strong>Uploaded ' . $this->format_field_name( $key_name ) . ' </strong><br><br>';
-					}
-				}
-			}
-			
-			
 			if ( $data[ 'w9_classification' ] === 'business' ) {
 				if ( empty( $data[ 'entity_name' ] ) ) {
 					wp_send_json_error( [ 'message' => 'Please fill in the entity name.' ] );
@@ -1041,7 +1017,7 @@ class TMSDrivers extends TMSDriversHelper {
 					wp_send_json_error( [ 'message' => 'EIN format is incorrect. It should be XX-XXXXXXX.' ] );
 				}
 				
-				if ( $_FILES[ 'ein_file' ][ 'size' ] === 0 && ! $data[ 'ein_file_id' ] ) {
+				if ( ! is_numeric( $file_EIN ) ) {
 					wp_send_json_error( [ 'message' => 'EIN file is required.' ] );
 				}
 				
@@ -1058,7 +1034,8 @@ class TMSDrivers extends TMSDriversHelper {
 				if ( empty( $data[ 'ssn_name' ] ) ) {
 					wp_send_json_error( [ 'message' => 'Please fill in the SSN name.' ] );
 				}
-				if ( $_FILES[ 'ssn_file' ][ 'size' ] === 0 && ! $data[ 'ssn_file_id' ] ) {
+				
+				if ( ! is_numeric( $file_SSN ) ) {
 					wp_send_json_error( [ 'message' => 'SSN file is required.' ] );
 				}
 			}
@@ -1149,55 +1126,6 @@ class TMSDrivers extends TMSDriversHelper {
 				// Переменная для хранения результатов изменений
 				$changes = $this->get_log_template( $array_track, $meta, $data );
 			}
-			
-			global $wpdb;
-			$table_meta_name = $wpdb->prefix . $this->table_meta;
-			$meta_data       = $wpdb->get_results( $wpdb->prepare( "SELECT meta_key, meta_value FROM {$table_meta_name} WHERE post_id = %d", $data[ 'driver_id' ] ), ARRAY_A );
-			$current_data    = array_column( $meta_data, 'meta_value', 'meta_key' );
-			
-			$picture_fields = [
-				'vehicle_pictures'    => 'Uploaded vehicle pictures',
-				'dimensions_pictures' => 'Uploaded dimensions pictures'
-			];
-			
-			foreach ( $picture_fields as $field => $message ) {
-				if ( ! empty( $_FILES[ $field ] ) && $_FILES[ $field ][ 'size' ][ 0 ] > 0 ) {
-					$data[ $field ] = $this->process_uploaded_files( $field, $current_data[ $field ] );
-					if ( $post_status === 'publish' ) {
-						$changes .= "<strong>$message</strong><br><br>";
-					}
-				}
-			}
-			
-			$keys_names = array(
-				'plates_file',
-				'registration_file',
-				'ppe_file',
-				'gvwr_placard',
-				'e_tracks_file',
-				'pallet_jack_file',
-				'lift_gate_file',
-				'dolly_file',
-				'ramp_file'
-			);
-			
-			foreach ( $keys_names as $key_name ) {
-				if ( ! empty( $_FILES[ $key_name ] && $_FILES[ $key_name ][ 'size' ] > 0 ) ) {
-					$id_uploaded       = $this->upload_one_file( $_FILES[ $key_name ] );
-					$data[ $key_name ] = is_numeric( $id_uploaded ) ? $id_uploaded : '';
-					
-					if ( $post_status === 'publish' ) {
-						
-						if ( $key_name == 'gvwr_placard' ) {
-							$changes .= '<strong>Uploaded GVWR placard </strong><br><br>';
-						}
-						if ( $key_name == 'registration_file' ) {
-							$changes .= '<strong>Uploaded Registration file</strong><br><br>';
-						}
-					}
-				}
-			}
-			
 			
 			// At this point, the data is sanitized and ready for further processing or saving to the database
 			$result = $this->update_driver_in_db( $data );
@@ -1378,32 +1306,6 @@ class TMSDrivers extends TMSDriversHelper {
 				$changes = $this->get_log_template( $array_track, $meta, $data );
 			}
 			
-			$keys_names = array(
-				'hazmat_certificate_file',
-				'driving_record',
-				'driver_licence',
-				'legal_document',
-				'twic_file',
-				'tsa_file',
-				'motor_cargo_coi',
-				'auto_liability_coi',
-				'ic_agreement',
-				'change_9_file',
-				'canada_transition_file',
-				'immigration_file',
-				'background_file',
-			);
-			
-			foreach ( $keys_names as $key_name ) {
-				if ( ! empty( $_FILES[ $key_name ] && $_FILES[ $key_name ][ 'size' ] > 0 ) ) {
-					$id_uploaded       = $this->upload_one_file( $_FILES[ $key_name ] );
-					$data[ $key_name ] = is_numeric( $id_uploaded ) ? $id_uploaded : '';
-					if ( $post_status === 'publish' ) {
-						$changes .= '<strong>Uploaded ' . $this->format_field_name( $key_name ) . ' </strong><br><br>';
-					}
-				}
-			}
-			
 			// At this point, the data is sanitized and ready for further processing or saving to the database
 			$result = $this->update_driver_in_db( $data );
 			
@@ -1429,7 +1331,99 @@ class TMSDrivers extends TMSDriversHelper {
 	
 	public function upload_driver_helper( $data ) {
 		if ( defined( 'DOING_AJAX' ) && DOING_AJAX ) {
-			$driver_id = isset( $_POST[ 'driver_id' ] ) ? sanitize_textarea_field( $_POST[ 'driver_id' ] ) : '';
+			$data = array(
+				'driver_id' => isset( $_POST[ 'driver_id' ] ) ? sanitize_textarea_field( $_POST[ 'driver_id' ] ) : '',
+			);
+			
+			$need_check = isset( $_POST[ 'need_check' ] ) ? sanitize_textarea_field( $_POST[ 'need_check' ] ) : false;
+			
+			if ( $need_check ) {
+				$data[ $need_check ] = 'on';
+			}
+			
+			$driver_object = $this->get_driver_by_id( $data[ 'driver_id' ] );
+			$meta          = get_field_value( $driver_object, 'meta' );
+			$main          = get_field_value( $driver_object, 'main' );
+			$post_status   = $main[ 'status_post' ];
+			$changes       = '';
+			
+			$picture_fields = [
+				'vehicle_pictures'    => 'Uploaded vehicle pictures',
+				'dimensions_pictures' => 'Uploaded dimensions pictures'
+			];
+			
+			foreach ( $picture_fields as $field => $message ) {
+				if ( ! empty( $_FILES[ $field ] ) && $_FILES[ $field ][ 'size' ][ 0 ] > 0 ) {
+					$data[ $field ] = $this->process_uploaded_files( $field, $meta[ $field ] );
+					if ( $post_status === 'publish' ) {
+						$changes .= "<strong>$message</strong><br><br>";
+					}
+				}
+			}
+			
+			$keys_names = array(
+				'plates_file',
+				'registration_file',
+				'ppe_file',
+				'gvwr_placard',
+				'e_tracks_file',
+				'pallet_jack_file',
+				'lift_gate_file',
+				'dolly_file',
+				'ramp_file',
+				'payment_file',
+				'w9_file',
+				'ssn_file',
+				'ein_file',
+				'nec_file',
+				'hazmat_certificate_file',
+				'driving_record',
+				'driver_licence',
+				'legal_document',
+				'twic_file',
+				'tsa_file',
+				'motor_cargo_coi',
+				'auto_liability_coi',
+				'ic_agreement',
+				'change_9_file',
+				'canada_transition_file',
+				'immigration_file',
+				'background_file',
+			);
+			
+			foreach ( $keys_names as $key_name ) {
+				if ( ! empty( $_FILES[ $key_name ] && $_FILES[ $key_name ][ 'size' ] > 0 ) ) {
+					$id_uploaded       = $this->upload_one_file( $_FILES[ $key_name ] );
+					$data[ $key_name ] = is_numeric( $id_uploaded ) ? $id_uploaded : '';
+					
+					if ( $post_status === 'publish' ) {
+						if ( $key_name == 'gvwr_placard' ) {
+							$changes .= '<strong>Uploaded GVWR placard </strong><br><br>';
+						}
+						if ( $key_name == 'registration_file' ) {
+							$changes .= '<strong>Uploaded Registration file</strong><br><br>';
+						}
+					}
+				}
+			}
+			
+			$result = $this->update_driver_in_db( $data );
+			
+			if ( $result ) {
+				
+				if ( ! empty( $changes ) && $post_status === 'publish' ) {
+					$user_id = get_current_user_id();
+					$this->log_controller->create_one_log( array(
+						'user_id'   => $user_id,
+						'post_id'   => $data[ 'driver_id' ],
+						'message'   => $changes,
+						'post_type' => 'driver',
+					) );
+				}
+				wp_send_json_success( [ 'message' => 'successfully upload', 'id_driver' => $result ] );
+			}
+			
+			wp_send_json_error( [ 'message' => 'Upload error' ] );
 		}
 	}
 	

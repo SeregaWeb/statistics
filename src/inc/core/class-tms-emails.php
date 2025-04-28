@@ -133,7 +133,14 @@ class TMSEmails extends TMSUsers {
 	}
 	
 	function get_tracking_email( $user_id = null, $project = null ) {
-		$current_select  = $project ?? get_field_value( $this->user_fields, 'current_select' );
+		
+		$user_fields = $user_id ? get_fields( 'user_' . $user_id ) : $this->user_fields;
+		
+		if ( $user_id ) {
+		
+		}
+		
+		$current_select  = $project ?? get_field_value( $user_fields, 'current_select' );
 		$current_user_id = $user_id ? intval( $user_id ) : get_current_user_id(); // Get the current user ID
 		
 		$args = array(

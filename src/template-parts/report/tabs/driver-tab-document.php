@@ -312,12 +312,14 @@ $statusOptions      = $driver->statusOptions;
 							<?php echo $driving_record ? $reports->get_icon_uploaded_file() : ''; ?>
                         </label>
 						<?php if ( ! $driving_record ): ?>
-                            <input type="file" class="form-control js-control-uploads" name="driving_record"
-                                   value="<?php echo $driving_record; ?>">
+                            <button data-href="#popup_upload_driving_record"
+                                    class="btn btn-success js-open-popup-activator mt-1">
+                                Upload file
+                            </button>
 						<?php endif; ?>
                     </div>
 
-                    <div class="col-12 mb-1 mt-1 preview-photo js-preview-photo-upload"></div>
+
                 </div>
             </div>
             <div class="col-12 mb-3">
@@ -358,12 +360,14 @@ $statusOptions      = $driver->statusOptions;
 							<?php echo $driver_licence ? $reports->get_icon_uploaded_file() : ''; ?>
                         </label>
 						<?php if ( ! $driver_licence ): ?>
-                            <input type="file" class="form-control js-control-uploads" name="driver_licence"
-                                   value="<?php echo $driver_licence; ?>">
+                            <button data-href="#popup_upload_driver_licence"
+                                    class="btn btn-success js-open-popup-activator mt-1">
+                                Upload file
+                            </button>
 						<?php endif; ?>
                     </div>
 
-                    <div class="col-12 mb-1 mt-1 preview-photo js-preview-photo-upload"></div>
+
                 </div>
             </div>
 
@@ -419,13 +423,14 @@ $statusOptions      = $driver->statusOptions;
 									<?php echo $hazmat_certificate_file ? $reports->get_icon_uploaded_file() : ''; ?>
                                 </label>
 								<?php if ( ! $hazmat_certificate_file ): ?>
-                                    <input type="file" class="form-control js-control-uploads"
-                                           name="hazmat_certificate_file"
-                                           value="<?php echo $hazmat_certificate_file; ?>">
+                                    <button data-href="#popup_upload_hazmat_certificate_file"
+                                            class="btn btn-success js-open-popup-activator mt-1">
+                                        Upload file
+                                    </button>
 								<?php endif; ?>
                             </div>
 
-                            <div class="col-12 mb-1 mt-1 preview-photo js-preview-photo-upload"></div>
+
                         </div>
                     </div>
                     <div class="col-12 col-md-6 ">
@@ -456,12 +461,14 @@ $statusOptions      = $driver->statusOptions;
 									<?php echo $twic_file ? $reports->get_icon_uploaded_file() : ''; ?>
                                 </label>
 								<?php if ( ! $twic_file ): ?>
-                                    <input type="file" class="form-control js-control-uploads" name="twic_file"
-                                           value="<?php echo $twic_file; ?>">
+                                    <button data-href="#popup_upload_twic_file"
+                                            class="btn btn-success js-open-popup-activator mt-1">
+                                        Upload file
+                                    </button>
 								<?php endif; ?>
                             </div>
 
-                            <div class="col-12 mb-1 mt-1 preview-photo js-preview-photo-upload"></div>
+
                         </div>
                     </div>
                     <div class="col-12 col-md-6 ">
@@ -492,12 +499,14 @@ $statusOptions      = $driver->statusOptions;
 									<?php echo $tsa_file ? $reports->get_icon_uploaded_file() : ''; ?>
                                 </label>
 								<?php if ( ! $tsa_file ): ?>
-                                    <input type="file" class="form-control js-control-uploads" name="tsa_file"
-                                           value="<?php echo $tsa_file; ?>">
+                                    <button data-href="#popup_upload_tsa_file"
+                                            class="btn btn-success js-open-popup-activator mt-1">
+                                        Upload file
+                                    </button>
 								<?php endif; ?>
                             </div>
 
-                            <div class="col-12 mb-1 mt-1 preview-photo js-preview-photo-upload"></div>
+
                         </div>
                     </div>
                     <div class="col-12 col-md-6 ">
@@ -535,12 +544,14 @@ $statusOptions      = $driver->statusOptions;
 									<?php echo $legal_document ? $reports->get_icon_uploaded_file() : ''; ?>
                                 </label>
 								<?php if ( ! $legal_document ): ?>
-                                    <input type="file" class="form-control js-control-uploads" name="legal_document"
-                                           value="<?php echo $legal_document; ?>">
+                                    <button data-href="#popup_upload_legal_document"
+                                            class="btn btn-success js-open-popup-activator mt-1">
+                                        Upload file
+                                    </button>
 								<?php endif; ?>
                             </div>
 
-                            <div class="col-12 mb-1 mt-1 preview-photo js-preview-photo-upload"></div>
+
                         </div>
                     </div>
                     <div class="col-12 col-md-6  ">
@@ -570,12 +581,14 @@ $statusOptions      = $driver->statusOptions;
 									<?php echo $immigration_file ? $reports->get_icon_uploaded_file() : ''; ?>
                                 </label>
 								<?php if ( ! $immigration_file ): ?>
-                                    <input type="file" class="form-control js-control-uploads" name="immigration_file"
-                                           value="<?php echo $immigration_file; ?>">
+                                    <button data-href="#popup_upload_immigration_file"
+                                            class="btn btn-success js-open-popup-activator mt-1">
+                                        Upload file
+                                    </button>
 								<?php endif; ?>
                             </div>
 
-                            <div class="col-12 mb-1 mt-1 preview-photo js-preview-photo-upload"></div>
+
                         </div>
                     </div>
                     <div class="col-12 col-md-6 ">
@@ -606,12 +619,16 @@ $statusOptions      = $driver->statusOptions;
 									<?php echo $background_file ? $reports->get_icon_uploaded_file() : ''; ?>
                                 </label>
 								<?php if ( ! $background_file ): ?>
-                                    <input type="file" class="form-control js-control-uploads" name="background_file"
-                                           value="<?php echo $background_file; ?>">
+
+                                    <button data-href="#popup_upload_background_file"
+                                            class="btn btn-success js-open-popup-activator mt-1">
+                                        Upload file
+                                    </button>
+								
 								<?php endif; ?>
                             </div>
 
-                            <div class="col-12 mb-1 mt-1 preview-photo js-preview-photo-upload"></div>
+
                         </div>
                     </div>
                     <div class="col-12 col-md-6 ">
@@ -642,12 +659,15 @@ $statusOptions      = $driver->statusOptions;
 									<?php echo $canada_transition_file ? $reports->get_icon_uploaded_file() : ''; ?>
                                 </label>
 								<?php if ( ! $canada_transition_file ): ?>
-                                    <input type="file" class="form-control js-control-uploads"
-                                           name="canada_transition_file" value="<?php echo $canada_transition_file; ?>">
+                                    <button data-href="#popup_upload_canada_transition_file"
+                                            class="btn btn-success js-open-popup-activator mt-1">
+                                        Upload file
+                                    </button>
+								
 								<?php endif; ?>
                             </div>
 
-                            <div class="col-12 mb-1 mt-1 preview-photo js-preview-photo-upload"></div>
+
                         </div>
                     </div>
                     <div class="col-12 col-md-6 ">
@@ -678,12 +698,15 @@ $statusOptions      = $driver->statusOptions;
 									<?php echo $change_9_file ? $reports->get_icon_uploaded_file() : ''; ?>
                                 </label>
 								<?php if ( ! $change_9_file ): ?>
-                                    <input type="file" class="form-control js-control-uploads" name="change_9_file"
-                                           value="<?php echo $change_9_file; ?>">
+                                    <button data-href="#popup_upload_change_9_file"
+                                            class="btn btn-success js-open-popup-activator mt-1">
+                                        Upload file
+                                    </button>
+								
 								<?php endif; ?>
                             </div>
 
-                            <div class="col-12 mb-1 mt-1 preview-photo js-preview-photo-upload"></div>
+
                         </div>
                     </div>
                     <div class="col-12 col-md-6 ">
@@ -702,12 +725,15 @@ $statusOptions      = $driver->statusOptions;
 							<?php echo $ic_agreement ? $reports->get_icon_uploaded_file() : ''; ?>
                         </label>
 						<?php if ( ! $ic_agreement ): ?>
-                            <input type="file" class="form-control js-control-uploads" name="ic_agreement"
-                                   value="<?php echo $ic_agreement; ?>">
+                            <button data-href="#popup_upload_ic_agreement"
+                                    class="btn btn-success js-open-popup-activator mt-1">
+                                Upload file
+                            </button>
+						
 						<?php endif; ?>
                     </div>
 
-                    <div class="col-12 mb-1 mt-1 preview-photo js-preview-photo-upload"></div>
+
                 </div>
             </div>
 
@@ -751,12 +777,15 @@ $statusOptions      = $driver->statusOptions;
 									<?php echo $auto_liability_coi ? $reports->get_icon_uploaded_file() : ''; ?>
                                 </label>
 								<?php if ( ! $auto_liability_coi ): ?>
-                                    <input type="file" class="form-control js-control-uploads" name="auto_liability_coi"
-                                           value="<?php echo $auto_liability_coi; ?>">
+                                    <button data-href="#popup_upload_auto_liability_coi"
+                                            class="btn btn-success js-open-popup-activator mt-1">
+                                        Upload file
+                                    </button>
+								
 								<?php endif; ?>
                             </div>
 
-                            <div class="col-12 mb-1 mt-1 preview-photo js-preview-photo-upload"></div>
+
                         </div>
                     </div>
 
@@ -790,12 +819,14 @@ $statusOptions      = $driver->statusOptions;
 									<?php echo $motor_cargo_coi ? $reports->get_icon_uploaded_file() : ''; ?>
                                 </label>
 								<?php if ( ! $motor_cargo_coi ): ?>
-                                    <input type="file" class="form-control js-control-uploads" name="motor_cargo_coi"
-                                           value="<?php echo $motor_cargo_coi; ?>">
+                                    <button data-href="#popup_upload_motor_cargo_coi"
+                                            class="btn btn-success js-open-popup-activator mt-1">
+                                        Upload file
+                                    </button>
 								<?php endif; ?>
                             </div>
 
-                            <div class="col-12 mb-1 mt-1 preview-photo js-preview-photo-upload"></div>
+
                         </div>
                     </div>
                 </div>
@@ -844,4 +875,92 @@ $statusOptions      = $driver->statusOptions;
             </div>
         </div>
     </form>
+	
+	<?php
+	$popups_upload = array(
+		array(
+			'title'     => 'Upload Hazmat Certificate File',
+			'file_name' => 'hazmat_certificate_file',
+			'multiply'  => false,
+			'driver_id' => $post_id,
+		),
+		array(
+			'title'     => 'Upload Driving record',
+			'file_name' => 'driving_record',
+			'multiply'  => false,
+			'driver_id' => $post_id,
+		),
+		array(
+			'title'     => 'Upload Driving licence',
+			'file_name' => 'driver_licence',
+			'multiply'  => false,
+			'driver_id' => $post_id,
+		),
+		array(
+			'title'     => 'Upload Legal document',
+			'file_name' => 'legal_document',
+			'multiply'  => false,
+			'driver_id' => $post_id,
+		),
+		array(
+			'title'     => 'Upload TWIC file',
+			'file_name' => 'twic_file',
+			'multiply'  => false,
+			'driver_id' => $post_id,
+		),
+		array(
+			'title'     => 'Upload TSA file',
+			'file_name' => 'tsa_file',
+			'multiply'  => false,
+			'driver_id' => $post_id,
+		),
+		array(
+			'title'     => 'Upload Motor cargo COI',
+			'file_name' => 'motor_cargo_coi',
+			'multiply'  => false,
+			'driver_id' => $post_id,
+		),
+		array(
+			'title'     => 'Upload Auto liability coi',
+			'file_name' => 'auto_liability_coi',
+			'multiply'  => false,
+			'driver_id' => $post_id,
+		),
+		array(
+			'title'     => 'Upload IC agreement',
+			'file_name' => 'ic_agreement',
+			'multiply'  => false,
+			'driver_id' => $post_id,
+		),
+		array(
+			'title'     => 'Upload change 9 file',
+			'file_name' => 'change_9_file',
+			'multiply'  => false,
+			'driver_id' => $post_id,
+		),
+		array(
+			'title'     => 'Upload Canada transition file',
+			'file_name' => 'canada_transition_file',
+			'multiply'  => false,
+			'driver_id' => $post_id,
+		),
+		array(
+			'title'     => 'Upload Immigration file',
+			'file_name' => 'immigration_file',
+			'multiply'  => false,
+			'driver_id' => $post_id,
+		),
+		array(
+			'title'     => 'Upload Background file',
+			'file_name' => 'background_file',
+			'multiply'  => false,
+			'driver_id' => $post_id,
+		),
+	
+	);
+	
+	foreach ( $popups_upload as $popup ):
+		echo esc_html( get_template_part( TEMPLATE_PATH . 'popups/upload', 'file', $popup ) );
+	endforeach;
+	?>
 </div>

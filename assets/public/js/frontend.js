@@ -4963,6 +4963,7 @@ var initGetInfoDriver = function initGetInfoDriver(urlAjax, ProjectsLinks) {
 "use strict";
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   copyText: function() { return /* binding */ copyText; },
 /* harmony export */   createDriver: function() { return /* binding */ createDriver; },
 /* harmony export */   driversActions: function() { return /* binding */ driversActions; },
 /* harmony export */   helperDisabledChecbox: function() { return /* binding */ helperDisabledChecbox; },
@@ -4978,6 +4979,8 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _info_messages__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./info-messages */ "./src/js/components/info-messages.ts");
 /* harmony import */ var _create_report__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./create-report */ "./src/js/components/create-report.ts");
 /* harmony import */ var _disabled_btn_in_form__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./disabled-btn-in-form */ "./src/js/components/disabled-btn-in-form.ts");
+/* harmony import */ var _parts_popup_window__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ../parts/popup-window */ "./src/js/parts/popup-window.js");
+
 
 
 
@@ -5326,7 +5329,63 @@ var uploadFileDriver = function uploadFileDriver(ajaxUrl) {
   forms.forEach(function (form) {
     form.addEventListener('submit', function (e) {
       e.preventDefault();
+      e.stopPropagation();
       var action = 'upload_driver_helper';
+      var popupInstance = new _parts_popup_window__WEBPACK_IMPORTED_MODULE_3__["default"]();
+      var formData = new FormData(e.target);
+      formData.append('action', action);
+      var options = {
+        method: 'POST',
+        body: formData
+      };
+      fetch(ajaxUrl, options).then(function (res) {
+        return res.json();
+      }).then(function (requestStatus) {
+        if (requestStatus.success) {
+          (0,_info_messages__WEBPACK_IMPORTED_MODULE_0__.printMessage)(requestStatus.data.message, 'success', 8000);
+          var mainPopup = e.target.closest('.js-upload-popup');
+          if (mainPopup) {
+            var id = mainPopup.id;
+            var searchBtn = document.querySelector("button[data-href=\"#".concat(id, "\"]"));
+            if (searchBtn) {
+              searchBtn.textContent = 'Uploaded!';
+              searchBtn.disabled = true;
+            }
+          }
+          popupInstance.forceCloseAllPopup();
+        } else {
+          (0,_info_messages__WEBPACK_IMPORTED_MODULE_0__.printMessage)("Error remove Driver:".concat(requestStatus.data.message), 'danger', 8000);
+        }
+      }).catch(function (error) {
+        (0,_info_messages__WEBPACK_IMPORTED_MODULE_0__.printMessage)("Request failed: ".concat(error), 'danger', 8000);
+        console.error('Request failed:', error);
+      });
+    });
+  });
+};
+var copyText = function copyText() {
+  var buttons = document.querySelectorAll('.js-copy-text');
+  buttons.forEach(function (button) {
+    button.addEventListener('click', function (e) {
+      e.preventDefault();
+      var target = e.target;
+      var textToCopy = target.getAttribute('data-text');
+      if (!textToCopy) return;
+      navigator.clipboard.writeText(textToCopy).then(function () {
+        (0,_info_messages__WEBPACK_IMPORTED_MODULE_0__.printMessage)('Text copied to clipboard!', 'success', 3000);
+        target.textContent = 'Copied!';
+        target.classList.add('btn-success');
+        target.classList.remove('btn-outline-primary');
+        target.setAttribute('disabled', 'disabled');
+        setTimeout(function () {
+          target.textContent = 'Copy';
+          target.classList.add('btn-outline-primary');
+          target.classList.remove('btn-success');
+          target.removeAttribute('disabled');
+        }, 3000);
+      }).catch(function (err) {
+        (0,_info_messages__WEBPACK_IMPORTED_MODULE_0__.printMessage)("Failed to copy text: ".concat(err), 'danger', 3000);
+      });
     });
   });
 };
@@ -5340,6 +5399,7 @@ var driversActions = function driversActions(urlAjax) {
   removeOneFileInitial(urlAjax);
   updateStatusDriver(urlAjax);
   uploadFileDriver(urlAjax);
+  copyText();
   helperDisabledChecbox();
 };
 

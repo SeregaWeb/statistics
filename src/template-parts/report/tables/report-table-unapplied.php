@@ -158,7 +158,7 @@ if ( ! empty( $results ) ) :?>
 			
 			?>
 
-            <tr class="">
+            <tr class="direct_invoicing_<?php echo $invoice_status; ?>">
                 <td>
                     <div class="d-flex gap-1 flex-column">
                         <p class="m-0">

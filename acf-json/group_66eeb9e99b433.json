@@ -117,6 +117,26 @@
             "placeholder": "",
             "prepend": "",
             "append": ""
+        },
+        {
+            "key": "field_680956cb3be68",
+            "label": "Phone number",
+            "name": "phone_number",
+            "aria-label": "",
+            "type": "text",
+            "instructions": "",
+            "required": 0,
+            "conditional_logic": 0,
+            "wrapper": {
+                "width": "",
+                "class": "",
+                "id": ""
+            },
+            "default_value": "",
+            "maxlength": "",
+            "placeholder": "",
+            "prepend": "",
+            "append": ""
         }
     ],
     "location": [
@@ -137,5 +157,5 @@
     "active": true,
     "description": "",
     "show_in_rest": 0,
-    "modified": 1741114959
+    "modified": 1745442534
 }

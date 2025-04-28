@@ -148,8 +148,6 @@ $files = array(
 						) ) );
 					endif;
 				endforeach; ?>
-
-
             </div>
         </div>
 	
@@ -158,11 +156,7 @@ $files = array(
     <form class="<?php echo $full_only_view ? '' : 'js-driver-finance-form'; ?>">
 		
 		<?php if ( $post_id ): ?>
-
-
             <input type="hidden" name="driver_id" value="<?php echo $post_id; ?>">
-            <input type="hidden" name="ein_file_id" value="<?php echo $ein_file; ?>">
-            <input type="hidden" name="ssn_file_id" value="<?php echo $ssn_file; ?>">
 		<?php endif; ?>
 
         <div class="row">
@@ -200,19 +194,18 @@ $files = array(
                 </select>
             </div>
 
-            <div class="col-12 js-add-new-report">
+            <div class="col-12">
                 <div class="row">
                     <div class="col-12 mb-3">
                         <label class="form-label d-flex align-items-center gap-1">Payment File <?php echo $payment_file
 								? $reports->get_icon_uploaded_file() : ''; ?></label>
 						<?php if ( ! $payment_file ): ?>
-                            <input type="file" class="form-control js-control-uploads" name="payment_file"
-                                   value="<?php echo $payment_file; ?>">
+
+                            <button data-href="#popup_upload_payment_file"
+                                    class="btn btn-success js-open-popup-activator mt-1">
+                                Upload file
+                            </button>
 						<?php endif; ?>
-                    </div>
-
-                    <div class="col-12 mb-1 mt-1 preview-photo js-preview-photo-upload">
-
                     </div>
                 </div>
             </div>
@@ -250,19 +243,17 @@ $files = array(
             </div>
 
 
-            <div class="col-12 js-add-new-report">
+            <div class="col-12 ">
                 <div class="row">
                     <div class="col-12 mb-3">
                         <label class="form-label d-flex align-items-center gap-1">W9 File <?php echo $w9_file
 								? $reports->get_icon_uploaded_file() : ''; ?></label>
 						<?php if ( ! $w9_file ): ?>
-                            <input type="file" class="form-control js-control-uploads" name="w9_file"
-                                   value="<?php echo $w9_file; ?>">
+                            <button data-href="#popup_upload_w9_file"
+                                    class="btn btn-success js-open-popup-activator mt-1">
+                                Upload file
+                            </button>
 						<?php endif; ?>
-                    </div>
-
-                    <div class="col-12 mb-1 mt-1 preview-photo js-preview-photo-upload">
-
                     </div>
                 </div>
             </div>
@@ -293,7 +284,7 @@ $files = array(
                     <input type="text" class="form-control" name="ssn_name" value="<?php echo $ssn_name; ?>">
                 </div>
 
-                <div class="col-12 js-add-new-report">
+                <div class="col-12 ">
                     <div class="row">
                         <div class="col-12 mb-3">
                             <label class="form-label d-flex align-items-center gap-1"><span>File<span
@@ -301,16 +292,14 @@ $files = array(
 									? $reports->get_icon_uploaded_file() : ''; ?></label>
 							<?php if ( ! $ssn_file ): ?>
 
-                                <input type="file" class="form-control js-control-uploads" name="ssn_file"
-                                       value="<?php echo $ssn_file; ?>">
-							
+                                <button data-href="#popup_upload_ssn_file"
+                                        class="btn btn-success js-open-popup-activator mt-1">
+                                    Upload file
+                                </button>
 							<?php endif; ?>
 
                         </div>
 
-                        <div class="col-12 mb-1 mt-1 preview-photo js-preview-photo-upload">
-
-                        </div>
                     </div>
                 </div>
             </div>
@@ -331,7 +320,7 @@ $files = array(
                     <input type="text" class="form-control js-ein-mask" name="ein" value="<?php echo $ein; ?>">
                 </div>
 
-                <div class="col-12 js-add-new-report">
+                <div class="col-12 ">
                     <div class="row">
                         <div class="col-12 mb-3">
                             <label class="form-label d-flex align-items-center gap-1">
@@ -340,14 +329,14 @@ $files = array(
 									? $reports->get_icon_uploaded_file() : ''; ?></label>
 							
 							<?php if ( ! $ein_file ): ?>
-                                <input type="file" class="form-control js-control-uploads" name="ein_file"
-                                       value="<?php echo $ein_file; ?>">
+                                <button data-href="#popup_upload_ein_file"
+                                        class="btn btn-success js-open-popup-activator mt-1">
+                                    Upload file
+                                </button>
 							<?php endif; ?>
 
                         </div>
-                        <div class="col-12 mb-1 mt-1 preview-photo js-preview-photo-upload">
 
-                        </div>
                     </div>
                 </div>
             </div>
@@ -355,14 +344,16 @@ $files = array(
 
         <div class="row">
 
-            <div class="col-12 js-add-new-report">
+            <div class="col-12 ">
                 <div class="row">
                     <div class="col-12 mb-3">
                         <label class="form-label d-flex align-items-center gap-1">1099-NEC File <?php echo $nec_file
 								? $reports->get_icon_uploaded_file() : ''; ?></label>
 						<?php if ( ! $nec_file ): ?>
-                            <input type="file" class="form-control js-control-uploads" name="nec_file"
-                                   value="<?php echo $nec_file; ?>">
+                            <button data-href="#popup_upload_nec_file"
+                                    class="btn btn-success js-open-popup-activator mt-1">
+                                Upload file
+                            </button>
 						<?php endif; ?>
                     </div>
                     <div class="col-12 mb-1 mt-1 preview-photo js-preview-photo-upload">
@@ -398,4 +389,45 @@ $files = array(
             </div>
         </div>
     </form>
+	
+	
+	<?php
+	
+	$popups_upload = array(
+		array(
+			'title'     => 'Upload Payment File',
+			'file_name' => 'payment_file',
+			'multiply'  => false,
+			'driver_id' => $post_id,
+		),
+		array(
+			'title'     => 'Upload W9 File',
+			'file_name' => 'w9_file',
+			'multiply'  => false,
+			'driver_id' => $post_id,
+		),
+		array(
+			'title'     => 'Upload SSN File',
+			'file_name' => 'ssn_file',
+			'multiply'  => false,
+			'driver_id' => $post_id,
+		),
+		array(
+			'title'     => 'Upload EIN File',
+			'file_name' => 'ein_file',
+			'multiply'  => false,
+			'driver_id' => $post_id,
+		),
+		array(
+			'title'     => 'Upload 1099-NEC File',
+			'file_name' => 'nec_file',
+			'multiply'  => false,
+			'driver_id' => $post_id,
+		),
+	);
+	
+	foreach ( $popups_upload as $popup ):
+		echo esc_html( get_template_part( TEMPLATE_PATH . 'popups/upload', 'file', $popup ) );
+	endforeach;
+	?>
 </div>

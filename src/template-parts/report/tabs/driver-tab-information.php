@@ -494,71 +494,70 @@ $files = array(
 
             <div class="col-12"></div>
 
-            <div class="col-12">
+            <div class="col-12 col-md-4">
                 <div class="js-add-new-report w-100">
                     <div class="p-0 mb-2 col-12">
                         <p class="h5">Pictures of Vehicle</p>
-                        <label for="vehicle_pictures" class="form-label">Attached Files</label>
-                        <input type="file" name="vehicle_pictures[]"
-                               class="form-control js-control-uploads" multiple>
-                    </div>
-
-                    <div class="p-0 col-12 mb-3 mt-3 preview-photo js-preview-photo-upload">
-
+                        <button data-href="#popup_upload_vehicle_pictures"
+                                class="btn btn-success js-open-popup-activator ">
+                            Upload files
+                        </button>
                     </div>
                 </div>
             </div>
 
-            <div class="col-12">
+            <div class="col-12 col-md-4">
                 <div class="js-add-new-report w-100">
                     <div class="p-0 mb-2 col-12">
                         <p class="h5">Dimensions Pictures</p>
-                        <label for="dimensions_pictures" class="form-label">Attached Files</label>
-                        <input type="file" name="dimensions_pictures[]"
-                               class="form-control js-control-uploads" multiple>
-                    </div>
 
-                    <div class="p-0 col-12 mb-3 mt-3 preview-photo js-preview-photo-upload">
-
+                        <button data-href="#popup_upload_dimensions_pictures"
+                                class="btn btn-success js-open-popup-activator ">
+                            Upload files
+                        </button>
                     </div>
                 </div>
             </div>
 
-            <div class="col-12 js-add-new-report">
+
+            <div class="col-12"></div>
+            <div class="col-12 col-md-4">
                 <div class="row">
                     <div class="col-12">
-                        <span style="position: relative; top: -2px;"><?php if ( $plates_file ): echo $reports->get_icon_uploaded_file(); endif; ?></span
-                        <label class="form-label">Plates
-                        </label>
+
+                        <p class="h5"><span
+                                    style="position: relative; top: -2px;"><?php if ( $plates_file ): echo $reports->get_icon_uploaded_file(); endif; ?></span>Plates
+                        </p>
 						<?php if ( ! $plates_file ): ?>
-                            <input type="file" class="form-control js-control-uploads" name="plates_file">
+                            <button data-href="#popup_upload_plates_file"
+                                    class="btn btn-success js-open-popup-activator ">
+                                Upload file
+                            </button>
 						<?php endif; ?>
                     </div>
 
-                    <div class="col-12 mb-3 mt-1 preview-photo js-preview-photo-upload">
-
-                    </div>
                 </div>
             </div>
-
-            <div class="col-12 js-add-new-report">
+            <div class="col-12 col-md-4">
                 <div class="row">
-                    <div class="col-12">
-                        <span style="position: relative; top: -2px;"><?php if ( $registration_file ): echo $reports->get_icon_uploaded_file(); endif; ?></span
-                        <label class="form-label">Vehicle Registration
-                        </label>
+                    <div class="col-12 ">
+
+                        <p class="h5">
+                            <span style="position: relative; top: -2px;"><?php if ( $registration_file ): echo $reports->get_icon_uploaded_file(); endif; ?></span>
+                            Vehicle Registration
+                        </p>
 						<?php if ( ! $registration_file ): ?>
-                            <input type="file" class="form-control js-control-uploads" name="registration_file">
+                            <button data-href="#popup_upload_registration_file"
+                                    class="btn btn-success js-open-popup-activator ">
+                                Upload file
+                            </button>
 						<?php endif; ?>
                     </div>
 
-                    <div class="col-12 mb-3 mt-1 preview-photo js-preview-photo-upload">
-
-                    </div>
                 </div>
             </div>
-
-            <div class="col-12 mb-3 js-add-new-report">
+            <div class="col-12 mb-3"></div>
+            <div class="col-12 col-md-4 mb-3">
                 <div class="row">
                     <div class="col-12">
                         <div class="form-check form-switch">
@@ -572,16 +571,17 @@ $files = array(
 						
 						<?php if ( ! $ppe_file ): ?>
                             <div class="js-ppe-driver <?php echo $ppe ? '' : 'd-none'; ?>">
-                                <input type="file" class="form-control js-control-uploads" name="ppe_file">
+                                <button data-href="#popup_upload_ppe_file"
+                                        class="btn btn-success js-open-popup-activator mt-1">
+                                    Upload file
+                                </button>
                             </div>
 						<?php endif; ?>
                     </div>
-                    <div class="col-12 mb-1 mt-1 preview-photo js-preview-photo-upload">
 
-                    </div>
                 </div>
             </div>
-            <div class="col-12 mb-3 js-add-new-report">
+            <div class="col-12 col-md-4 mb-3">
                 <div class="row">
                     <div class="col-12">
                         <div class="form-check form-switch">
@@ -597,17 +597,19 @@ $files = array(
 						
 						<?php if ( ! $e_tracks_file ): ?>
                             <div class="js-e-tracks-driver <?php echo $e_tracks ? '' : 'd-none'; ?>">
-                                <input type="file" class="form-control js-control-uploads" name="e_tracks_file">
+                                <button data-href="#popup_upload_e_tracks_file"
+                                        class="btn btn-success js-open-popup-activator mt-1">
+                                    Upload file
+                                </button>
                             </div>
 						<?php endif; ?>
 
                     </div>
-                    <div class="col-12 mb-1 mt-1 preview-photo js-preview-photo-upload">
 
-                    </div>
                 </div>
             </div>
-            <div class="col-12 mb-3 js-add-new-report">
+            <div class="col-12"></div>
+            <div class="col-12 col-md-4 mb-3">
                 <div class="row">
                     <div class="col-12">
                         <div class="form-check form-switch">
@@ -623,18 +625,19 @@ $files = array(
 						
 						<?php if ( ! $pallet_jack_file ): ?>
                             <div class="js-pallet-jack-driver <?php echo $pallet_jack ? '' : 'd-none'; ?>">
-                                <input type="file" class="form-control js-control-uploads" name="pallet_jack_file">
+
+                                <button data-href="#popup_upload_pallet_jack_file"
+                                        class="btn btn-success js-open-popup-activator mt-1">
+                                    Upload file
+                                </button>
                             </div>
 						<?php endif; ?>
 
 
                     </div>
-                    <div class="col-12 mb-1 mt-1 preview-photo js-preview-photo-upload">
-
-                    </div>
                 </div>
             </div>
-            <div class="col-12 mb-3 js-add-new-report">
+            <div class="col-12 col-md-4 mb-3">
                 <div class="row">
                     <div class="col-12">
                         <div class="form-check form-switch">
@@ -652,18 +655,19 @@ $files = array(
 						
 						<?php if ( ! $lift_gate_file ): ?>
                             <div class="js-lift-gate-driver <?php echo $lift_gate ? '' : 'd-none'; ?>">
-                                <input type="file" class="form-control js-control-uploads" name="lift_gate_file">
+                                <button data-href="#popup_upload_lift_gate_file"
+                                        class="btn btn-success js-open-popup-activator mt-1">
+                                    Upload file
+                                </button>
                             </div>
 						<?php endif; ?>
 
 
                     </div>
-                    <div class="col-12 mb-1 mt-1 preview-photo js-preview-photo-upload">
-
-                    </div>
                 </div>
             </div>
-            <div class="col-12 mb-3 js-add-new-report">
+            <div class="col-12"></div>
+            <div class="col-12 col-md-4 mb-3">
                 <div class="row">
                     <div class="col-12">
                         <div class="form-check form-switch">
@@ -679,18 +683,19 @@ $files = array(
 						
 						<?php if ( ! $dolly_file ): ?>
                             <div class="js-dolly-driver <?php echo $dolly ? '' : 'd-none'; ?>">
-                                <input type="file" class="form-control js-control-uploads" name="dolly_file">
+                                <button data-href="#popup_upload_dolly_file"
+                                        class="btn btn-success js-open-popup-activator mt-1">
+                                    Upload file
+                                </button>
                             </div>
 						<?php endif; ?>
 
 
                     </div>
-                    <div class="col-12 mb-1 mt-1 preview-photo js-preview-photo-upload">
 
-                    </div>
                 </div>
             </div>
-            <div class="col-12 mb-3 js-add-new-report">
+            <div class="col-12 col-md-4 mb-3">
                 <div class="row">
                     <div class="col-12">
                         <div class="form-check form-switch">
@@ -705,21 +710,19 @@ $files = array(
 						
 						<?php if ( ! $ramp_file ): ?>
                             <div class="js-ramp-driver <?php echo $ramp ? '' : 'd-none'; ?>">
-                                <input type="file" class="form-control js-control-uploads" name="ramp_file">
-
                                 <button data-href="#popup_upload_ramp_file"
-                                        class="btn btn-success js-open-popup-activator">
+                                        class="btn btn-success js-open-popup-activator mt-1">
                                     Upload file
                                 </button>
                             </div>
 						<?php endif; ?>
 
                     </div>
-                    <div class="col-12 mb-1 mt-1 preview-photo js-preview-photo-upload">
 
-                    </div>
                 </div>
             </div>
+
+
             <div class="row">
                 <div class="col-12" role="presentation">
                     <div class="justify-content-start gap-2">
@@ -746,9 +749,69 @@ $files = array(
 	
 	$popups_upload = array(
 		array(
-			'title'     => 'Upload Ramp File',
-			'file_name' => 'ramp_file',
+			'title'      => 'Upload Ramp File',
+			'file_name'  => 'ramp_file',
+			'multiply'   => false,
+			'driver_id'  => $post_id,
+			'need_check' => 'ramp',
+		),
+		array(
+			'title'      => 'Upload Dolly File',
+			'file_name'  => 'dolly_file',
+			'multiply'   => false,
+			'driver_id'  => $post_id,
+			'need_check' => 'dolly',
+		),
+		array(
+			'title'      => 'Upload Lift Gate File',
+			'file_name'  => 'lift_gate_file',
+			'multiply'   => false,
+			'driver_id'  => $post_id,
+			'need_check' => 'lift_gate',
+		),
+		array(
+			'title'      => 'Upload Pallet jack File',
+			'file_name'  => 'pallet_jack_file',
+			'multiply'   => false,
+			'driver_id'  => $post_id,
+			'need_check' => 'pallet_jack',
+		),
+		array(
+			'title'      => 'Upload E-Tracks File',
+			'file_name'  => 'e_tracks_file',
+			'multiply'   => false,
+			'driver_id'  => $post_id,
+			'need_check' => 'e_tracks',
+		),
+		array(
+			'title'      => 'Upload PPE File',
+			'file_name'  => 'ppe_file',
+			'multiply'   => false,
+			'driver_id'  => $post_id,
+			'need_check' => 'ppe',
+		),
+		array(
+			'title'     => 'Upload Vehicle Registration File',
+			'file_name' => 'registration_file',
 			'multiply'  => false,
+			'driver_id' => $post_id,
+		),
+		array(
+			'title'     => 'Upload Plates File',
+			'file_name' => 'plates_file',
+			'multiply'  => false,
+			'driver_id' => $post_id,
+		),
+		array(
+			'title'     => 'Upload Dimensions Pictures',
+			'file_name' => 'dimensions_pictures',
+			'multiply'  => true,
+			'driver_id' => $post_id,
+		),
+		array(
+			'title'     => 'Upload Vehicle Pictures',
+			'file_name' => 'vehicle_pictures',
+			'multiply'  => true,
 			'driver_id' => $post_id,
 		)
 	);

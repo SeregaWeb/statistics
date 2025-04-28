@@ -23,6 +23,15 @@ $hide_billing_and_shipping = $TMSUsers->check_user_role_access( [ 'billing', 'ac
 $my_team                   = $TMSUsers->check_group_access();
 $helper                    = $TMSUsers;
 
+$trigger_keys = [ 'dispatcher', 'my_search', 'load_status', 'source' ];
+
+foreach ( $trigger_keys as $key ) {
+	if ( isset( $_GET[ $key ] ) && $_GET[ $key ] !== '' ) {
+		$hide_total = true;
+		break;
+	}
+}
+
 if ( ! empty( $results ) ) : ?>
 
     <table class="table mb-5 w-100">
@@ -117,6 +126,7 @@ if ( ! empty( $results ) ) : ?>
 			$previous_date = $date_booked;
 			
 			$show_control = $TMSUsers->show_control_loads( $my_team, $current_user_id, $dispatcher_initials, $is_draft );
+			
 			
 			if ( ( $show_separator || $index === 0 ) && ! $hide_total ) {
 				$date_search = substr( $date_booked_raw, 0, 10 );

@@ -460,8 +460,37 @@ if ( $report_object ) {
             </div>
 		<?php endif; ?>
 		
-		<?php if ( ! $screen_picture ): ?>
-            <div class="js-add-new-report order-4">
+		<?php if ( ! $screen_picture ):
+			
+			
+			$text = $reports->create_message_dispatch( $meta );
+			?>
+
+
+            <div class="col-12 p-0 mb-2 order-4">
+                <button class="btn btn-outline-primary js-toggle" data-block-toggle="js-show-generate">Create dispatch
+                    message
+                </button>
+
+                <div class="js-show-generate border-1 d-none border-primary border bg-light py-3 px-3 mb-3 mt-3 rounded">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <p class="h5 text-danger">
+                            Be sure to check the message
+                        </p>
+                        <button class="btn btn-outline-primary js-copy-text"
+                                data-text="<?php echo $text; ?>">
+                            Copy
+                        </button>
+                    </div>
+
+                    <hr class="mb-2">
+
+                    <div style="white-space: pre-wrap;"><?php echo htmlspecialchars( $text ); ?></div>
+                </div>
+            </div>
+
+            <div class=" js-add-new-report order-4
+                ">
                 <div class="p-0 mb-2 col-12">
                     <p class="h5">Dispatch message
 						
@@ -502,7 +531,7 @@ if ( $report_object ) {
             </div>
 		<?php endif; ?>
 
-        <div class="col-12 pl-0 order-5" role="presentation">
+        <div class="col-12 pl-0 mb-3 order-5" role="presentation">
             <div class="justify-content-start gap-2">
                 <button type="button" data-tab-id="pills-trip-tab"
                         class="btn btn-dark js-next-tab">Previous
@@ -518,7 +547,7 @@ if ( $report_object ) {
     </form>
 <?php else: ?>
 
-    <div class="col-12 pl-0 order-5" role="presentation">
+    <div class="col-12 pl-0 order-5 mb-3" role="presentation">
         <div class="justify-content-start gap-2">
             <button type="button" data-tab-id="pills-trip-tab"
                     class="btn btn-dark js-next-tab">Previous

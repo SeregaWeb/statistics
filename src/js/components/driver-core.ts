@@ -3,6 +3,7 @@ import * as url from 'node:url';
 import { printMessage } from './info-messages';
 import { setUpTabInUrl } from './create-report';
 import { disabledBtnInForm } from './disabled-btn-in-form';
+import Popup from '../parts/popup-window';
 
 export const createDriver = (urlAjax) => {
     const form = document.querySelector('.js-create-driver');
@@ -446,11 +447,86 @@ export const uploadFileDriver = (ajaxUrl) => {
     forms.forEach((form) => {
         form.addEventListener('submit', (e) => {
             e.preventDefault();
+            e.stopPropagation();
 
             const action = 'upload_driver_helper';
+            const popupInstance = new Popup();
+            const formData = new FormData(e.target as HTMLFormElement);
+
+            formData.append('action', action);
+
+            const options = {
+                method: 'POST',
+                body: formData,
+            };
+
+            fetch(ajaxUrl, options)
+                .then((res) => res.json())
+                .then((requestStatus) => {
+                    if (requestStatus.success) {
+                        printMessage(requestStatus.data.message, 'success', 8000);
+
+                        // @ts-ignore
+                        const mainPopup = e.target.closest('.js-upload-popup');
+
+                        if (mainPopup) {
+                            const { id } = mainPopup;
+                            const searchBtn = document.querySelector<HTMLButtonElement>(`button[data-href="#${id}"]`);
+
+                            if (searchBtn) {
+                                searchBtn.textContent = 'Uploaded!';
+                                searchBtn.disabled = true;
+                            }
+                        }
+
+                        popupInstance.forceCloseAllPopup();
+                    } else {
+                        // eslint-disable-next-line no-alert
+                        printMessage(`Error remove Driver:${requestStatus.data.message}`, 'danger', 8000);
+                    }
+                })
+                .catch((error) => {
+                    printMessage(`Request failed: ${error}`, 'danger', 8000);
+                    console.error('Request failed:', error);
+                });
         });
     });
 };
+
+export const copyText = () => {
+    const buttons = document.querySelectorAll('.js-copy-text');
+
+    buttons.forEach((button) => {
+        button.addEventListener('click', (e) => {
+            e.preventDefault();
+            const target = e.target as HTMLElement;
+            const textToCopy = target.getAttribute('data-text');
+
+            if (!textToCopy) return;
+
+            navigator.clipboard
+                .writeText(textToCopy)
+                .then(() => {
+                    printMessage('Text copied to clipboard!', 'success', 3000);
+                    target.textContent = 'Copied!';
+                    target.classList.add('btn-success');
+                    target.classList.remove('btn-outline-primary');
+                    target.setAttribute('disabled', 'disabled');
+
+                    setTimeout(() => {
+                        target.textContent = 'Copy';
+                        target.classList.add('btn-outline-primary');
+                        target.classList.remove('btn-success');
+                        target.removeAttribute('disabled');
+                    }, 3000);
+                })
+                .catch((err) => {
+                    printMessage(`Failed to copy text: ${err}`, 'danger', 3000);
+                });
+        });
+    });
+};
+
 export const driversActions = (urlAjax) => {
     createDriver(urlAjax);
     removeFullDriver(urlAjax);
@@ -461,6 +537,7 @@ export const driversActions = (urlAjax) => {
     removeOneFileInitial(urlAjax);
     updateStatusDriver(urlAjax);
     uploadFileDriver(urlAjax);
+    copyText();
 
     helperDisabledChecbox();
 };

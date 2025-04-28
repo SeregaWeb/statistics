@@ -77,9 +77,6 @@ if ( ! empty( $results ) ) : ?>
 			$user_recruiter = $helper->get_user_full_name_by_id( $user_id_added );
 			$color_initials = $user_recruiter ? get_field( 'initials_color', 'user_' . $user_id_added ) : '#030303';
 			$user_recruiter = $user_recruiter ?: [ 'full_name' => 'User not found', 'initials' => 'NF' ];
-			
-			$home_location = isset( $helper->select[ $home_location ] ) ? $helper->select[ $home_location ]
-				: $home_location;
 			?>
 
             <tr>

@@ -63,7 +63,8 @@ import {
     createDocumentInvoice,
     createDocumentInvoiceActions,
 } from './components/document-create-money-check';
-import { createDriver, driversActions } from './components/driver-core';
+import { driversActions } from './components/driver-core';
+import { initContactsHandler } from './components/contacts/contacts-init';
 
 function ready() {
     console.log('ready');
@@ -155,6 +156,8 @@ function ready() {
     createDocumentInvoice();
     createDocumentInvoiceActions(urlAjax);
     createDocumentBolActions(urlAjax);
+
+    initContactsHandler(urlAjax);
 
     const preloaders = document.querySelectorAll('.js-preloader');
     preloaders &&

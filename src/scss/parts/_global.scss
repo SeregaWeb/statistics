@@ -169,11 +169,37 @@ iframe {
 
 .generate-bol {
     padding-bottom: 100px;
-     input[type=text], textarea {
+    input[type=text], textarea {
         width: 100%;
     }
 }
 
 .sticky-top {
     top: 20px;
+}
+
+#popup_add_company {
+    z-index: 5001;
+}
+
+.btn {
+    .active-state {
+        display: block;
+    }
+
+    .disabled-state {
+        display: none;
+    }
+
+    &.loading {
+        .active-state {
+            display: none;
+        }
+
+        .disabled-state {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+    }
 }

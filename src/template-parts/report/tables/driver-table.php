@@ -36,6 +36,8 @@ if ( ! empty( $results ) ) : ?>
 			$city = get_field_value( $meta, 'city' );
 			$vehicle_type = get_field_value( $meta, 'vehicle_type' );
 			$vehicle_year = get_field_value( $meta, 'vehicle_year' );
+			$vehicle_model = get_field_value( $meta, 'vehicle_model' );
+			$vehicle_make = get_field_value( $meta, 'vehicle_make' );
 			$dimensions = get_field_value( $meta, 'dimensions' );
 			$payload = get_field_value( $meta, 'payload' );
 			$preferred_distance = get_field_value( $meta, 'preferred_distance' );
@@ -105,7 +107,13 @@ if ( ! empty( $results ) ) : ?>
                 <td>
                     <div class="d-flex  flex-column">
 						<?php echo $driverHelper->vehicle[ $vehicle_type ] ?? ''; ?>
-                        <span class="text-small"><?php echo $vehicle_year; ?></span>
+                        <span class="text-small">
+                            <?php
+                            echo $vehicle_model;
+                            echo ' ' . $vehicle_make;
+                            echo ' ' . $vehicle_year;
+                            ?>
+                        </span>
                     </div>
                 </td>
                 <td><?php echo $city . ', ' . $home_location; ?></td>

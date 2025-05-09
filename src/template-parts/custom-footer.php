@@ -31,6 +31,7 @@ if ( $add_shipper ):
 	echo esc_html( get_template_part( TEMPLATE_PATH . 'popups/report', 'popup-add-shipper' ) );
 endif;
 
+echo esc_html( get_template_part( TEMPLATE_PATH . 'popups/report', 'popup-add-contact' ) );
 echo esc_html( get_template_part( TEMPLATE_PATH . 'popups/report', 'popup-quick-edit' ) );
 echo esc_html( get_template_part( TEMPLATE_PATH . 'popups/report', 'popup-quick-edit-ar' ) );
 ?>

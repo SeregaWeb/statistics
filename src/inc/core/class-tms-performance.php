@@ -69,26 +69,26 @@ class TMSReportsPerformance extends TMSReportsHelper {
 		
 		// Update the record
 		$updated = $wpdb->update( $table_name, [
-				'monday_calls'      => $MY_INPUT[ 'monday_calls' ],
-				'tuesday_calls'     => $MY_INPUT[ 'tuesday_calls' ],
-				'wednesday_calls'   => $MY_INPUT[ 'wednesday_calls' ],
-				'thursday_calls'    => $MY_INPUT[ 'thursday_calls' ],
-				'friday_calls'      => $MY_INPUT[ 'friday_calls' ],
-				'saturday_calls'    => $MY_INPUT[ 'saturday_calls' ],
-				'sunday_calls'      => $MY_INPUT[ 'sunday_calls' ],
-				'bonus'             => $MY_INPUT[ 'bonus' ],
-				'user_last_updated' => $current_user_id,
-			], [ 'id' => $existing_record[ 'id' ] ], [
-				'%d',
-				'%d',
-				'%d',
-				'%d',
-				'%d',
-				'%d',
-				'%d',
-				'%f',
-				'%d'
-			], [ '%d' ] );
+			'monday_calls'      => $MY_INPUT[ 'monday_calls' ],
+			'tuesday_calls'     => $MY_INPUT[ 'tuesday_calls' ],
+			'wednesday_calls'   => $MY_INPUT[ 'wednesday_calls' ],
+			'thursday_calls'    => $MY_INPUT[ 'thursday_calls' ],
+			'friday_calls'      => $MY_INPUT[ 'friday_calls' ],
+			'saturday_calls'    => $MY_INPUT[ 'saturday_calls' ],
+			'sunday_calls'      => $MY_INPUT[ 'sunday_calls' ],
+			'bonus'             => $MY_INPUT[ 'bonus' ],
+			'user_last_updated' => $current_user_id,
+		], [ 'id' => $existing_record[ 'id' ] ], [
+			'%d',
+			'%d',
+			'%d',
+			'%d',
+			'%d',
+			'%d',
+			'%d',
+			'%f',
+			'%d'
+		], [ '%d' ] );
 		
 		if ( $updated === false ) {
 			wp_send_json_error( [ 'message' => 'Failed to update the record' ] );
@@ -143,17 +143,17 @@ class TMSReportsPerformance extends TMSReportsHelper {
 		}
 		
 		$inserted = $wpdb->insert( $table_name, [
-				'user_id'         => $user_id,
-				'date'            => $date,
-				'monday_calls'    => 0,
-				'tuesday_calls'   => 0,
-				'wednesday_calls' => 0,
-				'thursday_calls'  => 0,
-				'friday_calls'    => 0,
-				'saturday_calls'  => 0,
-				'sunday_calls'    => 0,
-				'bonus'           => 0.00
-			] );
+			'user_id'         => $user_id,
+			'date'            => $date,
+			'monday_calls'    => 0,
+			'tuesday_calls'   => 0,
+			'wednesday_calls' => 0,
+			'thursday_calls'  => 0,
+			'friday_calls'    => 0,
+			'saturday_calls'  => 0,
+			'sunday_calls'    => 0,
+			'bonus'           => 0.00
+		] );
 		
 		if ( $inserted ) {
 			return $wpdb->insert_id;
@@ -211,8 +211,12 @@ class TMSReportsPerformance extends TMSReportsHelper {
                  INNER JOIN $table_meta profit_meta
                     ON reports.id = profit_meta.post_id
                     AND profit_meta.meta_key = 'profit'
+                 INNER JOIN $table_meta AS load_status
+			        ON reports.id = load_status.post_id
+			        AND load_status.meta_key = 'load_status'
                  WHERE DATE(reports.date_booked) = %s
                    AND dispatcher_meta.meta_value = %d
+                   AND load_status.meta_value NOT IN ('waiting-on-rc', 'cancelled')
                    AND reports.status_post = 'publish'", $date, $dispatcher_id );
 				
 				$result = $wpdb->get_row( $query );

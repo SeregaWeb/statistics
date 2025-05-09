@@ -36,7 +36,7 @@ export const actionCreateCompanyInit = (ajaxUrl) => {
                     .then((requestStatus) => {
                         if (requestStatus.success) {
                             console.log('Company added successfully:', requestStatus.data);
-                            popupInstance.forceCloseAllPopup();
+                            popupInstance.closeSecondPopup('#popup_add_company');
 
                             const list = document.querySelector('.js-result-search');
                             const name = document.querySelector('.js-search-company');

@@ -9,8 +9,11 @@ class TMSDrivers extends TMSDriversHelper {
 	
 	public $log_controller = false;
 	
+	public $helper = false;
+	
 	public function __construct() {
 		$this->log_controller = new TMSLogs();
+		$this->helper         = new TMSCommonHelper();
 	}
 	
 	public function init() {
@@ -33,7 +36,7 @@ class TMSDrivers extends TMSDriversHelper {
 		
 		foreach ( $actions as $ajax_action => $method ) {
 			add_action( "wp_ajax_{$ajax_action}", [ $this, $method ] );
-			add_action( "wp_ajax_nopriv_{$ajax_action}", [ $this, 'need_login' ] );
+			add_action( "wp_ajax_nopriv_{$ajax_action}", [ $this->helper, 'need_login' ] );
 		}
 	}
 	
@@ -978,6 +981,14 @@ class TMSDrivers extends TMSDriversHelper {
 				'authorized_email' => isset( $_POST[ 'authorized_email' ] )
 					? sanitize_email( $_POST[ 'authorized_email' ] ) : '',
 			);
+			
+			$MY_INPUT = filter_var_array( $_POST, [
+				"bank_payees" => [ 'filter' => FILTER_SANITIZE_STRING, 'flags' => FILTER_REQUIRE_ARRAY ]
+			] );
+			
+			$bank_payees = ! empty( $MY_INPUT[ 'bank_payees' ] ) ? implode( ',', $MY_INPUT[ 'bank_payees' ] ) : null;
+			
+			$data[ 'bank_payees' ] = $bank_payees;
 			// At this point, the data is sanitized and ready for further processing or saving to the database
 			
 			$driver_object = $this->get_driver_by_id( $data[ 'driver_id' ] );
@@ -998,6 +1009,7 @@ class TMSDrivers extends TMSDriversHelper {
 				'entity_name',
 				'ein',
 				'authorized_email',
+				'bank_payees',
 			);
 			
 			if ( $post_status === 'publish' ) {
@@ -1531,12 +1543,6 @@ class TMSDrivers extends TMSDriversHelper {
 		}
 		
 		return true;
-	}
-	
-	public function need_login() {
-		if ( defined( 'DOING_AJAX' ) && DOING_AJAX ) {
-			wp_send_json_error( [ 'message' => 'You need to log in to perform this action.' ] );
-		}
 	}
 	
 	public function create_tables() {

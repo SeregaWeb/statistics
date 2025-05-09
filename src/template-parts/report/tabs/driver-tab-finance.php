@@ -10,6 +10,8 @@ $driver  = new TMSDrivers();
 $main = get_field_value( $object_driver, 'main' );
 $meta = get_field_value( $object_driver, 'meta' );
 
+$bank_payees = $driver->bank_payees;
+
 $account_type        = get_field_value( $meta, 'account_type' );
 $account_name        = get_field_value( $meta, 'account_name' );
 $payment_instruction = get_field_value( $meta, 'payment_instruction' );
@@ -21,6 +23,9 @@ $ssn_name            = get_field_value( $meta, 'ssn_name' );
 $entity_name         = get_field_value( $meta, 'entity_name' );
 $ein                 = get_field_value( $meta, 'ein' );
 $authorized_email    = get_field_value( $meta, 'authorized_email' );
+
+$bank_payees_str = str_replace( ' ', '', get_field_value( $meta, 'bank_payees' ) );
+$bank_payees_val = explode( ',', $bank_payees_str );
 
 $payment_file = get_field_value( $meta, 'payment_file' );
 $w9_file      = get_field_value( $meta, 'w9_file' );
@@ -192,6 +197,28 @@ $files = array(
 						: ''; ?>>Bank statement
                     </option>
                 </select>
+            </div>
+
+            <div class="col-12 mb-3">
+                <label class="form-label">Bank payee</label>
+
+                <div class="d-flex flex-wrap gap-4">
+					<?php
+					if ( is_array( $bank_payees ) ): ?>
+						<?php foreach ( $bank_payees as $key => $item ):
+							$checked = array_search( $key, $bank_payees_val );
+							?>
+                            <div class="form-check form-switch p-0">
+                                <input class="form-check-input ml-0" <?php echo is_numeric( $checked ) ? 'checked'
+									: ''; ?> name="bank_payees[]" value="<?php echo $key; ?>"
+                                       type="checkbox" id="flexSwitchCheckDefault_<?php echo $key; ?>">
+                                <label class="form-check-label ml-2"
+                                       for="flexSwitchCheckDefault_<?php echo $key; ?>"><?php echo $item; ?>
+                                </label>
+                            </div>
+						<?php endforeach; ?>
+					<?php endif ?>
+                </div>
             </div>
 
             <div class="col-12">

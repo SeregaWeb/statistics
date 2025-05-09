@@ -57,6 +57,8 @@ $createDocuments->init();
 $TMSDrivers = new TMSDrivers();
 $TMSDrivers->init();
 
+$TMSContact = new TMSContacts();
+$TMSContact->init();
 /**
  * Sanitize uploaded file name
  */

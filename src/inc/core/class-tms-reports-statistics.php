@@ -55,11 +55,16 @@ class  TMSStatistics extends TMSReportsHelper {
             LEFT JOIN $table_meta as office_dispatcher
                 ON source_meta.post_id = office_dispatcher.post_id
                 AND office_dispatcher.meta_key = 'office_dispatcher'
+            LEFT JOIN $table_meta AS tbd
+				ON source_meta.id = tbd.post_id
+				AND tbd.meta_key = 'tbd'
             LEFT JOIN $table_meta as load_status
                 ON source_meta.post_id = load_status.post_id
                 AND load_status.meta_key = 'load_status'
+            
             WHERE source_meta.meta_key = 'source'
-                AND load_status.meta_value != 'cancelled'
+                AND load_status.meta_value NOT IN ( 'cancelled', 'waiting-on-rc' )
+            	AND (tbd.meta_value IS NULL OR tbd.meta_value = '')
                 AND source_meta.meta_value = %s
         ";
 			
@@ -107,8 +112,11 @@ class  TMSStatistics extends TMSReportsHelper {
 		    INNER JOIN $table_meta AS load_status
 		        ON reports.id = load_status.post_id
 		        AND load_status.meta_key = 'load_status'
+			LEFT JOIN $table_meta AS tbd
+				ON reports.id = tbd.post_id
+				AND tbd.meta_key = 'tbd'
 		    WHERE
-		       load_status.meta_value != 'cancelled'
+		       load_status.meta_value NOT IN ( 'cancelled', 'waiting-on-rc' ) AND (tbd.meta_value IS NULL OR tbd.meta_value = '')
 		      AND reports.status_post = 'publish'
 		    GROUP BY dispatcher_meta.meta_value
 		";
@@ -151,7 +159,13 @@ class  TMSStatistics extends TMSReportsHelper {
 			INNER JOIN $table_meta profit_meta
 			    ON reports.id = profit_meta.post_id
 			    AND profit_meta.meta_key = 'profit'
-			WHERE reports.status_post = 'publish'
+	     	INNER JOIN $table_meta AS load_status
+		        ON reports.id = load_status.post_id
+		        AND load_status.meta_key = 'load_status'
+			LEFT JOIN $table_meta AS tbd
+				ON reports.id = tbd.post_id
+				AND tbd.meta_key = 'tbd'
+			WHERE load_status.meta_value NOT IN ( 'cancelled', 'waiting-on-rc' ) AND (tbd.meta_value IS NULL OR tbd.meta_value = '') AND reports.status_post = 'publish'
 			ORDER BY CAST(profit_meta.meta_value AS DECIMAL(10,2)) DESC
 			LIMIT 3
 		";
@@ -184,8 +198,11 @@ class  TMSStatistics extends TMSReportsHelper {
 		    INNER JOIN $table_meta load_status
 		        ON reports.id = load_status.post_id
 		        AND load_status.meta_key = 'load_status'
+	        LEFT JOIN $table_meta AS tbd
+				ON reports.id = tbd.post_id
+				AND tbd.meta_key = 'tbd'
 		    WHERE meta.meta_value = %s
-		      AND load_status.meta_value != 'cancelled'
+		      AND load_status.meta_value NOT IN ( 'cancelled', 'waiting-on-rc' ) AND (tbd.meta_value IS NULL OR tbd.meta_value = '')
 		      AND YEAR(reports.date_booked) = %d
 		      AND reports.status_post = 'publish'
 		    GROUP BY month
@@ -253,10 +270,13 @@ class  TMSStatistics extends TMSReportsHelper {
             ON reports.id = profit_meta.post_id
         INNER JOIN {$table_meta} load_status
             ON reports.id = load_status.post_id
+        LEFT JOIN $table_meta AS tbd
+				ON reports.id = tbd.post_id
+				AND tbd.meta_key = 'tbd'
         WHERE profit_meta.meta_key = 'profit'
         AND reports.status_post = 'publish'
                   AND load_status.meta_key = 'load_status'
-	          AND load_status.meta_value != 'cancelled'
+	          AND load_status.meta_value NOT IN ( 'cancelled', 'waiting-on-rc' ) AND (tbd.meta_value IS NULL OR tbd.meta_value = '')
         AND YEAR(reports.date_booked) = %d
         AND MONTH(reports.date_booked) = %d
     ";
@@ -324,9 +344,12 @@ class  TMSStatistics extends TMSReportsHelper {
 				ON reports.id = load_status.post_id
 			INNER JOIN {$table_meta} profit_meta
 				ON reports.id = profit_meta.post_id
+			LEFT JOIN $table_meta AS tbd
+				ON reports.id = tbd.post_id
+				AND tbd.meta_key = 'tbd'
 			WHERE dispatcher_meta.meta_key = 'dispatcher_initials'
 			  AND load_status.meta_key = 'load_status'
-			  AND load_status.meta_value != 'cancelled'
+			  AND load_status.meta_value NOT IN ( 'cancelled', 'waiting-on-rc' ) AND (tbd.meta_value IS NULL OR tbd.meta_value = '')
 			AND profit_meta.meta_key = 'profit'
 			AND reports.status_post = 'publish'
 		";

@@ -140,6 +140,12 @@ class TMSDriversHelper {
 		"hold"               => "Hold"
 	);
 	
+	public $bank_payees = array(
+		'odysseia'            => 'Odysseia',
+		'martlet_express'     => 'Martlet Express',
+		'endurance_transport' => 'Endurance Transport'
+	);
+	
 	
 	public $homeDriver = array(); // states
 	public $recruiters = array(); // recruiter ID

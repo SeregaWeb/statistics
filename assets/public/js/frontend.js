@@ -3481,6 +3481,129 @@ var disabledValuesInSelectInit = function disabledValuesInSelectInit() {
 
 /***/ }),
 
+/***/ "./src/js/components/common/loading-btn.ts":
+/*!*************************************************!*\
+  !*** ./src/js/components/common/loading-btn.ts ***!
+  \*************************************************/
+/***/ (function(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   LoadingBtn: function() { return /* binding */ LoadingBtn; }
+/* harmony export */ });
+function LoadingBtn(btn, state) {
+  if (!btn) return;
+  var buttonClasses = ['disabled', 'loading'];
+  if (state) {
+    var _btn$classList;
+    btn.setAttribute('disabled', 'disabled');
+    (_btn$classList = btn.classList).add.apply(_btn$classList, buttonClasses);
+  } else {
+    var _btn$classList2;
+    btn.removeAttribute('disabled');
+    (_btn$classList2 = btn.classList).remove.apply(_btn$classList2, buttonClasses);
+  }
+}
+/* harmony default export */ __webpack_exports__["default"] = (LoadingBtn);
+
+/***/ }),
+
+/***/ "./src/js/components/contacts/contacts-init.ts":
+/*!*****************************************************!*\
+  !*** ./src/js/components/contacts/contacts-init.ts ***!
+  \*****************************************************/
+/***/ (function(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   initAdditionalContactHandler: function() { return /* binding */ initAdditionalContactHandler; },
+/* harmony export */   initContactsHandler: function() { return /* binding */ initContactsHandler; }
+/* harmony export */ });
+/* harmony import */ var _info_messages__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ../info-messages */ "./src/js/components/info-messages.ts");
+/* harmony import */ var _common_loading_btn__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ../common/loading-btn */ "./src/js/components/common/loading-btn.ts");
+
+
+function addAdditionalContact(container) {
+  var row = document.createElement('div');
+  row.className = 'additional-contact row g-1 mt-2';
+  row.innerHTML = "\n    <div class=\"col\">\n      <input type=\"text\" name=\"\" class=\"form-control\" placeholder=\"Name\">\n    </div>\n    <div class=\"col\">\n      <input type=\"text\" name=\"\" class=\"form-control\" placeholder=\"Phone\">\n    </div>\n    <div class=\"col\">\n      <input type=\"email\" name=\"\" class=\"form-control\" placeholder=\"Email\">\n    </div>\n    <div class=\"col-md-1 d-flex align-items-center\">\n      <button type=\"button\" class=\"btn btn-outline-danger btn-sm js-remove-contact\" title=\"Remove\">\n        &times;\n      </button>\n    </div>\n  ";
+  container.appendChild(row);
+}
+function reindexAdditionalContacts(container) {
+  var rows = container.querySelectorAll('.additional-contact');
+  rows.forEach(function (row, index) {
+    var inputs = row.querySelectorAll('input');
+    if (inputs.length === 3) {
+      inputs[0].name = "additional_contacts[".concat(index, "][name]");
+      inputs[1].name = "additional_contacts[".concat(index, "][phone]");
+      inputs[2].name = "additional_contacts[".concat(index, "][email]");
+    }
+  });
+}
+function initAdditionalContactHandler() {
+  var formSelector = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : '.js-add-new-contact';
+  var form = document.querySelector(formSelector);
+  if (!form) return;
+  var addBtn = form.querySelector('.js-add-contact-btn');
+  var container = form.querySelector('.js-additional-contacts');
+  if (!addBtn || !container) return;
+  addBtn.addEventListener('click', function () {
+    addAdditionalContact(container);
+    reindexAdditionalContacts(container);
+  });
+  container.addEventListener('click', function (e) {
+    var target = e.target;
+    if (!target) return;
+    if (target.classList.contains('js-remove-contact')) {
+      var contactRow = target.closest('.additional-contact');
+      if (contactRow) {
+        contactRow.remove();
+        reindexAdditionalContacts(container);
+      }
+    }
+  });
+}
+function addNewContact(ajaxUrl) {
+  var form = document.querySelector('.js-add-new-contact');
+  if (!form) return;
+  var addBtn = form.querySelector('button[type="submit"]');
+  form.addEventListener('submit', function (e) {
+    e.preventDefault();
+    (0,_common_loading_btn__WEBPACK_IMPORTED_MODULE_1__.LoadingBtn)(addBtn, true);
+    var target = e.target;
+    var formData = new FormData(target);
+    formData.append('action', 'add_new_contact');
+    var options = {
+      method: 'POST',
+      body: formData
+    };
+    fetch(ajaxUrl, options).then(function (res) {
+      return res.json();
+    }).then(function (requestStatus) {
+      if (requestStatus.success) {
+        console.log('update successfully:', requestStatus.data);
+        (0,_info_messages__WEBPACK_IMPORTED_MODULE_0__.printMessage)(requestStatus.data.message, 'success', 8000);
+        (0,_common_loading_btn__WEBPACK_IMPORTED_MODULE_1__.LoadingBtn)(addBtn, false);
+      } else {
+        (0,_common_loading_btn__WEBPACK_IMPORTED_MODULE_1__.LoadingBtn)(addBtn, false);
+        (0,_info_messages__WEBPACK_IMPORTED_MODULE_0__.printMessage)("Error update:".concat(requestStatus.data.message), 'danger', 8000);
+      }
+    }).catch(function (error) {
+      (0,_common_loading_btn__WEBPACK_IMPORTED_MODULE_1__.LoadingBtn)(addBtn, false);
+      (0,_info_messages__WEBPACK_IMPORTED_MODULE_0__.printMessage)("Request failed: ".concat(error), 'danger', 8000);
+      console.error('Request failed:', error);
+    });
+  });
+}
+function initContactsHandler(ajaxUrl) {
+  initAdditionalContactHandler();
+  addNewContact(ajaxUrl);
+}
+
+/***/ }),
+
 /***/ "./src/js/components/create-company.ts":
 /*!*********************************************!*\
   !*** ./src/js/components/create-company.ts ***!
@@ -3524,7 +3647,7 @@ var actionCreateCompanyInit = function actionCreateCompanyInit(ajaxUrl) {
       }).then(function (requestStatus) {
         if (requestStatus.success) {
           console.log('Company added successfully:', requestStatus.data);
-          popupInstance.forceCloseAllPopup();
+          popupInstance.closeSecondPopup('#popup_add_company');
           var list = document.querySelector('.js-result-search');
           var name = document.querySelector('.js-search-company');
           if (list && name) {
@@ -14630,8 +14753,29 @@ class Popup {
             }
         });
 
+        const domElements = document.querySelectorAll('.popup-active');
+
+        domElements &&
+            domElements.forEach((item) => {
+                item.classList.remove('popup-active');
+            });
+
         this.body.classList.remove('popup-opened');
         this.html.classList.remove('popup-opened');
+    }
+
+    closeSecondPopup(selector) {
+        const secondPopup = document.querySelector(selector);
+        if (secondPopup) {
+            (0,_helpers__WEBPACK_IMPORTED_MODULE_0__.fadeOut)(secondPopup);
+            secondPopup.classList.add('popup-active');
+
+            const checkAnotherPopup = document.querySelector('.popup-active');
+            if (!checkAnotherPopup) {
+                this.body.classList.remove('popup-opened');
+                this.html.classList.remove('popup-opened');
+            }
+        }
     }
 
     /**
@@ -14669,6 +14813,10 @@ class Popup {
 
             this.body.classList.add('popup-opened');
             this.html.classList.add('popup-opened');
+
+            const domElement = document.querySelector(elHref);
+            domElement.classList.add('popup-active');
+
             (0,_helpers__WEBPACK_IMPORTED_MODULE_0__.fadeIn)(elHref);
             return true;
         });
@@ -19226,6 +19374,8 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _components_save_all_tracking__WEBPACK_IMPORTED_MODULE_24__ = __webpack_require__(/*! ./components/save-all-tracking */ "./src/js/components/save-all-tracking.ts");
 /* harmony import */ var _components_document_create_money_check__WEBPACK_IMPORTED_MODULE_25__ = __webpack_require__(/*! ./components/document-create-money-check */ "./src/js/components/document-create-money-check.ts");
 /* harmony import */ var _components_driver_core__WEBPACK_IMPORTED_MODULE_26__ = __webpack_require__(/*! ./components/driver-core */ "./src/js/components/driver-core.ts");
+/* harmony import */ var _components_contacts_contacts_init__WEBPACK_IMPORTED_MODULE_27__ = __webpack_require__(/*! ./components/contacts/contacts-init */ "./src/js/components/contacts/contacts-init.ts");
+
 
 
 
@@ -19327,6 +19477,7 @@ function ready() {
   (0,_components_document_create_money_check__WEBPACK_IMPORTED_MODULE_25__.createDocumentInvoice)();
   (0,_components_document_create_money_check__WEBPACK_IMPORTED_MODULE_25__.createDocumentInvoiceActions)(urlAjax);
   (0,_components_document_create_money_check__WEBPACK_IMPORTED_MODULE_25__.createDocumentBolActions)(urlAjax);
+  (0,_components_contacts_contacts_init__WEBPACK_IMPORTED_MODULE_27__.initContactsHandler)(urlAjax);
   var preloaders = document.querySelectorAll('.js-preloader');
   preloaders && preloaders.forEach(function (item) {
     item.remove();

@@ -10,6 +10,7 @@ class TMSReports extends TMSReportsHelper {
 	public $email_helper   = false;
 	public $project        = '';
 	public $log_controller = false;
+	public $helper         = false;
 	
 	public function __construct() {
 		$user_id = get_current_user_id();
@@ -19,8 +20,8 @@ class TMSReports extends TMSReportsHelper {
 		$this->user_emails = $this->email_helper->get_all_emails();
 		
 		$this->log_controller = new TMSLogs();
-		
-		$curent_tables = get_field( 'current_select', 'user_' . $user_id );
+		$this->helper         = new TMSCommonHelper();
+		$curent_tables        = get_field( 'current_select', 'user_' . $user_id );
 		if ( $curent_tables ) {
 			$this->project    = $curent_tables;
 			$this->table_main = 'reports_' . strtolower( $curent_tables );
@@ -67,6 +68,7 @@ class TMSReports extends TMSReportsHelper {
         SELECT DATE(main.date_booked) AS date, AVG(profit.meta_value) AS average_profit, SUM(profit.meta_value) AS total_profit
         FROM $table_main AS main
         LEFT JOIN $table_meta AS profit ON main.id = profit.post_id AND profit.meta_key = 'profit'
+     	INNER JOIN $table_meta AS load_status ON main.id = load_status.post_id AND load_status.meta_key = 'load_status'
     ";
 		
 		// Массив параметров для плейсхолдеров. Сначала передаем даты.
@@ -79,7 +81,7 @@ class TMSReports extends TMSReportsHelper {
 		
 		// Формируем WHERE часть запроса
 		$query .= " WHERE DATE(main.date_booked) IN ($date_placeholders)
-                AND main.status_post = 'publish' ";
+                AND main.status_post = 'publish' AND load_status.meta_value NOT IN ('waiting-on-rc', 'cancelled') ";
 		
 		if ( ! empty( $office ) && $office !== 'all' ) {
 			$query    .= " AND office_meta.meta_value = %s ";
@@ -1494,8 +1496,11 @@ class TMSReports extends TMSReportsHelper {
 		FROM $table_meta AS meta_broker
 		INNER JOIN $table_meta AS meta_status
 		    ON meta_broker.post_id = meta_status.post_id
+		INNER JOIN $table_meta AS load_status
+		        ON meta_broker.post_id = load_status.post_id
+		        AND load_status.meta_key = 'load_status'
 		WHERE meta_broker.meta_key = 'customer_id'
-		  AND meta_broker.meta_value = %s
+		  AND meta_broker.meta_value = %s AND load_status.meta_value NOT IN ('waiting-on-rc', 'cancelled')
 		";
 		
 		$results = $wpdb->get_row( $wpdb->prepare( $sql, $broker_id ), ARRAY_A );
@@ -4094,17 +4099,11 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 		
 		foreach ( $actions as $ajax_action => $method ) {
 			add_action( "wp_ajax_{$ajax_action}", [ $this, $method ] );
-			add_action( "wp_ajax_nopriv_{$ajax_action}", [ $this, 'need_login' ] );
+			add_action( "wp_ajax_nopriv_{$ajax_action}", [ $this->helper, 'need_login' ] );
 		}
 		
 		add_action( 'delete_user', array( $this, 'handle_dispatcher_deletion' ) );
 		
-	}
-	
-	public function need_login() {
-		if ( defined( 'DOING_AJAX' ) && DOING_AJAX ) {
-			wp_send_json_error( [ 'message' => 'You need to log in to perform this action.' ] );
-		}
 	}
 	
 	/**

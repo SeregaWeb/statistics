@@ -199,7 +199,9 @@ class TMSReportsHelper extends TMSReportsIcons {
 		'mexico'              => 'Mexico',
 		'military-base'       => 'Military base',
 		'blind-shipment'      => 'Blind shipment',
-		'partial'             => 'Partial'
+		'partial'             => 'Partial',
+		'white-glove-service' => 'White glove service',
+		'high-value-freight'  => 'High value freight'
 	);
 	
 	public $types = array(
@@ -670,27 +672,28 @@ class TMSReportsHelper extends TMSReportsIcons {
 		$emails = new TMSEmails();
 		global $global_options;
 		
-		$user_id             = get_current_user_id();
-		$project             = get_field( 'current_select', 'user_' . $user_id );
-		$project             = strtolower( $project );
-		$commodity           = get_field_value( $meta, 'commodity' );
-		$weight              = get_field_value( $meta, 'weight' );
-		$instructions        = get_field_value( $meta, 'instructions' );
-		$notes               = get_field_value( $meta, 'notes' );
-		$driver_rate_raw     = get_field_value( $meta, 'driver_rate' );
-		$pick_up_location    = get_field_value( $meta, 'pick_up_location' );
-		$delivery_location   = get_field_value( $meta, 'delivery_location' );
-		$dispatcher_initials = get_field_value( $meta, 'dispatcher_initials' );
-		$nightshift          = get_field( 'nightshift_tracking', 'user_' . $dispatcher_initials );
-		$tracking            = $emails->get_tracking_email( $dispatcher_initials );
-		$last_message        = $this->get_tracking_message( $tracking, $nightshift );
+		$user_id                = get_current_user_id();
+		$project                = get_field( 'current_select', 'user_' . $user_id );
+		$project_without_format = $project;
+		$project                = strtolower( $project );
+		$commodity              = get_field_value( $meta, 'commodity' );
+		$weight                 = get_field_value( $meta, 'weight' );
+		$instructions           = get_field_value( $meta, 'instructions' );
+		$notes                  = get_field_value( $meta, 'notes' );
+		$driver_rate_raw        = get_field_value( $meta, 'driver_rate' );
+		$pick_up_location       = get_field_value( $meta, 'pick_up_location' );
+		$delivery_location      = get_field_value( $meta, 'delivery_location' );
+		$dispatcher_initials    = get_field_value( $meta, 'dispatcher_initials' );
+		$nightshift             = get_field( 'nightshift_tracking', 'user_' . $dispatcher_initials );
+		$tracking               = $emails->get_tracking_email( $dispatcher_initials );
+		$last_message           = $this->get_tracking_message( $tracking, $nightshift );
 		
 		$driver_rate             = esc_html( '$' . $this->format_currency( $driver_rate_raw ) );
 		$get_instructions_values = $this->get_instructions_values( $instructions );
-		
-		$text = '';
-		$text .= $this->get_locations_plain_text( $pick_up_location, 'Shipper' );
-		$text .= $this->get_locations_plain_text( $delivery_location, 'Receiver' );
+		$user                    = get_user_by( 'id', $dispatcher_initials );
+		$text                    = "Hello, it's {$user->first_name} from {$project_without_format}.\n\n";
+		$text                    .= $this->get_locations_plain_text( $pick_up_location, 'Shipper' );
+		$text                    .= $this->get_locations_plain_text( $delivery_location, 'Receiver' );
 		
 		$company_name = $this->company_name = get_field_value( $global_options, 'company_name_' . $project );
 		$company_mc   = $this->company_mc = get_field_value( $global_options, 'company_mc_' . $project );
@@ -865,6 +868,12 @@ Kindly confirm once you've received this message." ) . "\n";
 					break;
 				case 'partial':
 					$icons[] = $this->get_icon_partial( $tooltip ); // new
+					break;
+				case 'white-glove-service':
+					$icons[] = $this->get_icon_glove( $tooltip ); // new
+					break;
+				case 'high-value-freight':
+					$icons[] = $this->get_icon_diamond( $tooltip ); // new
 					break;
 				default:
 					break;

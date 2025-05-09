@@ -60,7 +60,7 @@ $logshow        = isset( $_COOKIE[ 'logshow' ] ) && + $_COOKIE[ 'logshow' ] !== 
 $logshowcontent = isset( $_COOKIE[ 'logshow' ] ) && + $_COOKIE[ 'logshow' ] !== 0 ? 'col-lg-11' : 'col-lg-9';
 
 
-$access = $TMSUsers->check_user_role_access( [ 'administrator', 'recruiter', 'recruiter-tl' ], true );
+$access = $TMSUsers->check_user_role_access( [ 'administrator', 'recruiter', 'recruiter-tl', 'accounting' ], true );
 
 ?>
     <div class="container-fluid">
@@ -151,8 +151,15 @@ $access = $TMSUsers->check_user_role_access( [ 'administrator', 'recruiter', 're
                                      id="pills-driver-finance" role="tabpanel"
                                      aria-labelledby="pills-driver-finance-tab">
 									<?php
+									
+									$not_access_for_finance = $full_only_view;
+									
+									if ( $TMSUsers->check_user_role_access( array( 'accounting' ), true ) ) {
+										$not_access_for_finance = false;
+									}
+									
 									echo esc_html( get_template_part( TEMPLATE_PATH . 'tabs/driver', 'tab-finance', array(
-										'full_view_only' => $full_only_view,
+										'full_view_only' => $not_access_for_finance,
 										'report_object'  => $driver_object,
 										'post_id'        => $post_id
 									) ) );

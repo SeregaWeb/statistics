@@ -15,7 +15,7 @@ $args = array(
 	'status_post'    => 'publish',
 	'user_id'        => get_current_user_id(),
 	'sort_by'        => 'pick_up_date',
-	'exclude_status' => array( 'delivered', 'tonu', 'cancelled', 'waiting-on-rc' ),
+	'exclude_status' => array( 'delivered', 'tonu', 'cancelled' ),
 );
 
 $office_dispatcher   = get_field( 'work_location', 'user_' . get_current_user_id() );

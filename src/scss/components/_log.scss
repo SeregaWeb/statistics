@@ -31,8 +31,10 @@
         &__message {
             font-size: 12px;
             margin-top: 8px;
+            overflow-wrap: break-word;
             span {
                 font-weight: 700;
+                overflow-wrap: break-word;
             }
         }
 

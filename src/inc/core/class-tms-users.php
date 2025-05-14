@@ -70,60 +70,32 @@ class  TMSUsers extends TMSReportsHelper {
 	}
 	
 	public function add_custom_roles() {
-		add_role( 'dispatcher', 'Dispatcher', [
+		$roles = [
+			'dispatcher'          => 'Dispatcher',
+			'dispatcher-tl'       => 'Dispatcher Team Leader',
+			'tracking'            => 'Tracking',
+			'tracking-tl'         => 'Tracking Team Leader',
+			'billing'             => 'Billing',
+			'recruiter'           => 'Recruiter',
+			'recruiter-tl'        => 'Recruiter Team Leader',
+			'accounting'          => 'Accounting',
+			'moderator'           => 'Moderator',
+			'morning_tracking'    => 'Morning Tracking',
+			'nightshift_tracking' => 'Nightshift Tracking',
+			'expedite_manager'    => 'Expedite Manager',
+			'hr_manager'          => 'HR Manager',
+			'driver_updates'      => 'Driver Updates',
+		];
+		
+		$capabilities = [
 			'read'         => true,
 			'edit_posts'   => true,
 			'upload_files' => true,
-		] );
+		];
 		
-		add_role( 'dispatcher-tl', 'Dispatcher Team Leader', [
-			'read'         => true,
-			'edit_posts'   => true,
-			'upload_files' => true,
-		] );
-		
-		add_role( 'tracking', 'Tracking', [
-			'read'         => true,
-			'edit_posts'   => true,
-			'upload_files' => true,
-		] );
-		
-		add_role( 'tracking-tl', 'Tracking Team Leader', [
-			'read'         => true,
-			'edit_posts'   => true,
-			'upload_files' => true,
-		] );
-		
-		
-		add_role( 'billing', 'Billing', [
-			'read'         => true,
-			'edit_posts'   => true,
-			'upload_files' => true,
-		] );
-		
-		add_role( 'recruiter', 'Recruiter', [
-			'read'         => true,
-			'edit_posts'   => true,
-			'upload_files' => true,
-		] );
-		
-		add_role( 'recruiter-tl', 'Recruiter Team Leader', [
-			'read'         => true,
-			'edit_posts'   => true,
-			'upload_files' => true,
-		] );
-		
-		add_role( 'accounting', 'Accounting', [
-			'read'         => true,
-			'edit_posts'   => true,
-			'upload_files' => true,
-		] );
-		add_role( 'moderator', 'Moderator', [
-			'read'         => true,
-			'edit_posts'   => true,
-			'upload_files' => true,
-		] );
-		
+		foreach ( $roles as $key => $name ) {
+			add_role( $key, $name, $capabilities );
+		}
 	}
 	
 	public function get_region( $key ) {
@@ -138,16 +110,21 @@ class  TMSUsers extends TMSReportsHelper {
 	
 	public function get_role_label( $key ) {
 		$array_labels = array(
-			'dispatcher'    => 'Dispatcher',
-			'dispatcher-tl' => 'Dispatcher Team Leader',
-			'tracking'      => 'Tracking',
-			'tracking-tl'   => 'Tracking Team Leader',
-			'billing'       => 'Billing',
-			'recruiter'     => 'Recruiter',
-			'recruiter-tl'  => 'Recruiter Team Leader',
-			'administrator' => 'Administrator',
-			'accounting'    => 'Accounting',
-			'moderator'     => 'Moderator',
+			'dispatcher'          => 'Dispatcher',
+			'dispatcher-tl'       => 'Dispatcher Team Leader',
+			'tracking'            => 'Tracking',
+			'tracking-tl'         => 'Tracking Team Leader',
+			'billing'             => 'Billing',
+			'recruiter'           => 'Recruiter',
+			'recruiter-tl'        => 'Recruiter Team Leader',
+			'administrator'       => 'Administrator',
+			'accounting'          => 'Accounting',
+			'moderator'           => 'Moderator',
+			'morning_tracking'    => 'Morning Tracking',
+			'nightshift_tracking' => 'Nightshift Tracking',
+			'expedite_manager'    => 'Expedite Manager',
+			'hr_manager'          => 'HR Manager',
+			'driver_updates'      => 'Driver Updates',
 		);
 		
 		return $array_labels[ $key ];
@@ -238,7 +215,14 @@ class  TMSUsers extends TMSReportsHelper {
 	}
 	
 	public function check_group_access() {
-		$check_group = $this->check_user_role_access( array( 'tracking-tl', 'dispatcher-tl', 'tracking' ), true );
+		$check_group = $this->check_user_role_access( array(
+			'tracking-tl',
+			'dispatcher-tl',
+			'tracking',
+			'expedite_manager',
+			'morning_tracking',
+			'nightshift_tracking'
+		), true );
 		$my_team     = null;
 		if ( $check_group ) {
 			$current_user_id = get_current_user_id();
@@ -267,6 +251,7 @@ class  TMSUsers extends TMSReportsHelper {
 			'moderator',
 			'tracking-tl',
 			'recruiter-tl',
+			'driver_updates',
 			'recruiter'
 		), true );
 		
@@ -295,6 +280,7 @@ class  TMSUsers extends TMSReportsHelper {
 		
 		if ( $this->check_user_role_access( array(
 				'dispatcher',
+				'expedite_manager',
 				'dispatcher-tl'
 			), true ) && $post_status === 'publish' ) {
 			$read_only = false;

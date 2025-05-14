@@ -80,6 +80,7 @@ $USER_OBJECT = $TMSUser->get_account_info( $user_id );
 								
 								<?php if ( $TMSUser->check_user_role_access( array(
 									'dispatcher',
+									'expedite_manager',
 									'dispatcher-tl'
 								), true ) ) :
 									if ( is_array( $progress ) && isset( $progress[ 0 ] ) ):

@@ -5,7 +5,6 @@
     max-height: calc(100vh - 420px);
     overflow: auto;
 
-
     &-card {
         background: #f7f7f7;
         border-radius: 12px;
@@ -58,6 +57,37 @@
         &.dispatcher {
             .log-card__role {
                 background-color: $label-color-dispatcher ;
+            }
+        }
+
+        &.moderator {
+            .log-card__role {
+                background-color: $label-color-moderator ;
+            }
+        }
+        &.morning_tracking {
+            .log-card__role {
+                background-color: $label-color-morning_tracking ;
+            }
+        }
+        &.nightshift_tracking {
+            .log-card__role {
+                background-color: $label-color-nightshift_tracking ;
+            }
+        }
+        &.expedite_manager {
+            .log-card__role {
+                background-color: $label-color-expedite_manager ;
+            }
+        }
+        &.hr_manager {
+            .log-card__role {
+                background-color: $label-color-hr_manager ;
+            }
+        }
+        &.driver_updates {
+            .log-card__role {
+                background-color: $label-color-driver_updates ;
             }
         }
         &.dispatcher-tl {

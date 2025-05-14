@@ -13,12 +13,14 @@ $TMSUsers  = new TMSUsers();
 $add_broker  = $TMSUsers->check_user_role_access( array(
 	'dispatcher',
 	'dispatcher-tl',
+	'expedite_manager',
 	'administrator',
 	'billing'
 ), true );
 $add_shipper = $TMSUsers->check_user_role_access( array(
 	'dispatcher',
 	'dispatcher-tl',
+	'expedite_manager',
 	'administrator',
 	'tracking'
 ), true );

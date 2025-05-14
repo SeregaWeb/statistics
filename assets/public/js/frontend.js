@@ -5670,6 +5670,7 @@ function printMessage() {
 "use strict";
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   applyZipCodeMask: function() { return /* binding */ applyZipCodeMask; },
 /* harmony export */   checboxesHelperInit: function() { return /* binding */ checboxesHelperInit; },
 /* harmony export */   dragAnDropInit: function() { return /* binding */ dragAnDropInit; },
 /* harmony export */   initMoneyMask: function() { return /* binding */ initMoneyMask; },
@@ -5678,6 +5679,7 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */ });
 /* harmony import */ var imask__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! imask */ "./node_modules/imask/esm/index.js");
 /* harmony import */ var _create_report__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./create-report */ "./src/js/components/create-report.ts");
+function _createForOfIteratorHelper(r, e) { var t = "undefined" != typeof Symbol && r[Symbol.iterator] || r["@@iterator"]; if (!t) { if (Array.isArray(r) || (t = _unsupportedIterableToArray(r)) || e && r && "number" == typeof r.length) { t && (r = t); var _n = 0, F = function F() {}; return { s: F, n: function n() { return _n >= r.length ? { done: !0 } : { done: !1, value: r[_n++] }; }, e: function e(r) { throw r; }, f: F }; } throw new TypeError("Invalid attempt to iterate non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method."); } var o, a = !0, u = !1; return { s: function s() { t = t.call(r); }, n: function n() { var r = t.next(); return a = r.done, r; }, e: function e(r) { u = !0, o = r; }, f: function f() { try { a || null == t.return || t.return(); } finally { if (u) throw o; } } }; }
 function _slicedToArray(r, e) { return _arrayWithHoles(r) || _iterableToArrayLimit(r, e) || _unsupportedIterableToArray(r, e) || _nonIterableRest(); }
 function _nonIterableRest() { throw new TypeError("Invalid attempt to destructure non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method."); }
 function _unsupportedIterableToArray(r, a) { if (r) { if ("string" == typeof r) return _arrayLikeToArray(r, a); var t = {}.toString.call(r).slice(8, -1); return "Object" === t && r.constructor && (t = r.constructor.name), "Map" === t || "Set" === t ? Array.from(r) : "Arguments" === t || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(t) ? _arrayLikeToArray(r, a) : void 0; } }
@@ -5924,6 +5926,55 @@ function dragAnDropInit() {
       fileInput.files = dataTransfer.files;
       console.log('Файлы загружены:', fileInput.files);
       (0,_create_report__WEBPACK_IMPORTED_MODULE_1__.uploadFilePreview)(fileInput);
+    });
+  });
+}
+function applyZipCodeMask(selector) {
+  var countrySelector = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : '.js-country';
+  function restrictToFiveDigits() {
+    this.value = this.value.replace(/\D/g, '').slice(0, 5);
+  }
+  document.querySelectorAll(selector).forEach(function (input) {
+    var form = input.closest('form');
+    if (!form) return;
+    var countryFields = Array.from(form.querySelectorAll(countrySelector));
+    if (!countryFields.length) return;
+    function getCountry() {
+      var _iterator = _createForOfIteratorHelper(countryFields),
+        _step;
+      try {
+        for (_iterator.s(); !(_step = _iterator.n()).done;) {
+          var el = _step.value;
+          if (el.type === 'radio') {
+            if (el.checked) return el.value;
+          } else {
+            return el.value;
+          }
+        }
+      } catch (err) {
+        _iterator.e(err);
+      } finally {
+        _iterator.f();
+      }
+      return null;
+    }
+    function configure() {
+      var country = getCountry();
+      input.value = '';
+      input.removeAttribute('maxlength');
+      input.removeAttribute('pattern');
+      input.removeEventListener('input', restrictToFiveDigits);
+      if (country === 'Canada') {
+        input.setAttribute('maxlength', '7');
+      } else {
+        input.setAttribute('maxlength', '5');
+        input.setAttribute('pattern', '\\d{5}');
+        input.addEventListener('input', restrictToFiveDigits);
+      }
+    }
+    configure();
+    countryFields.forEach(function (el) {
+      el.addEventListener('change', configure);
     });
   });
 }
@@ -19478,6 +19529,7 @@ function ready() {
   (0,_components_document_create_money_check__WEBPACK_IMPORTED_MODULE_25__.createDocumentInvoiceActions)(urlAjax);
   (0,_components_document_create_money_check__WEBPACK_IMPORTED_MODULE_25__.createDocumentBolActions)(urlAjax);
   (0,_components_contacts_contacts_init__WEBPACK_IMPORTED_MODULE_27__.initContactsHandler)(urlAjax);
+  (0,_components_input_helpers__WEBPACK_IMPORTED_MODULE_2__.applyZipCodeMask)('.js-zip-code-mask');
   var preloaders = document.querySelectorAll('.js-preloader');
   preloaders && preloaders.forEach(function (item) {
     item.remove();

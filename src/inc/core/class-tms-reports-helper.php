@@ -306,7 +306,7 @@ class TMSReportsHelper extends TMSReportsIcons {
 		return $dispatchers;
 	}
 	
-	function get_dispatchers() {
+	function get_dispatchers( $office_user = null ) {
 		// Аргументы для получения пользователей с ролью 'dispatcher'
 		$args = array(
 			'role__in' => array( 'dispatcher', 'dispatcher-tl' ),
@@ -327,11 +327,21 @@ class TMSReportsHelper extends TMSReportsIcons {
 			$last_name  = get_user_meta( $user->ID, 'last_name', true );
 			$office     = get_field( 'work_location', "user_" . $user->ID );
 			// Собираем массив с ID и полным именем
-			$dispatchers[] = array(
-				'id'       => $user->ID,
-				'fullname' => trim( $first_name . ' ' . $last_name ),
-				'office'   => $office,
-			);
+			if ( is_null( $office_user ) ):
+				$dispatchers[] = array(
+					'id'       => $user->ID,
+					'fullname' => trim( $first_name . ' ' . $last_name ),
+					'office'   => $office,
+				);
+			else:
+				if ( $office_user === $office ):
+					$dispatchers[] = array(
+						'id'       => $user->ID,
+						'fullname' => trim( $first_name . ' ' . $last_name ),
+						'office'   => $office,
+					);
+				endif;
+			endif;
 		}
 		
 		return $dispatchers;
@@ -367,7 +377,7 @@ class TMSReportsHelper extends TMSReportsIcons {
 		return $dispatchers;
 	}
 	
-	function get_dispatchers_tl() {
+	function get_dispatchers_tl( $office_user = null ) {
 		// Аргументы для получения пользователей с ролью 'dispatcher'
 		$args = array(
 			'role__in' => array( 'dispatcher-tl' ),
@@ -388,15 +398,61 @@ class TMSReportsHelper extends TMSReportsIcons {
 			$last_name  = get_user_meta( $user->ID, 'last_name', true );
 			$office     = get_field( 'work_location', "user_" . $user->ID );
 			
-			// Собираем массив с ID и полным именем
-			$dispatchers[] = array(
-				'id'       => $user->ID,
-				'fullname' => trim( $first_name . ' ' . $last_name ),
-				'office'   => $office,
-			);
+			if ( is_null( $office_user ) ):
+				$dispatchers[] = array(
+					'id'       => $user->ID,
+					'fullname' => trim( $first_name . ' ' . $last_name ),
+					'office'   => $office,
+				);
+			else:
+				if ( $office_user === $office ):
+					$dispatchers[] = array(
+						'id'       => $user->ID,
+						'fullname' => trim( $first_name . ' ' . $last_name ),
+						'office'   => $office,
+					);
+				endif;
+			endif;
 		}
 		
 		return $dispatchers;
+	}
+	
+	function get_my_team_leader( $user_id = null, $project = null ) {
+		$current_user_id = $user_id ? intval( $user_id ) : get_current_user_id(); // Get the current user ID
+		$current_select  = $project ?? get_field( 'current_select', 'user_' . $current_user_id );
+		
+		$args = array(
+			'role'       => 'dispatcher-tl',
+			'meta_query' => array(
+				'relation' => 'AND',
+				array(
+					'key'     => 'my_team',
+					'value'   => '"' . $current_user_id . '"',
+					// Ensure the ID is treated as a whole number in serialized arrays
+					'compare' => 'LIKE'
+				),
+				array(
+					'key'     => 'permission_view',
+					'value'   => '"' . $current_select . '"',
+					// Encapsulate in quotes to match serialized array elements
+					'compare' => 'LIKE'
+				)
+			)
+		);
+		
+		
+		$query        = new WP_User_Query( $args );
+		$team_leaders = $query->get_results();
+		$ids          = array();
+		
+		if ( ! empty( $team_leaders ) ) {
+			foreach ( $team_leaders as $leader ) {
+				$ids[] = $leader->ID;
+			}
+		}
+		
+		return $ids;
 	}
 	
 	function compare_pick_up_locations( $originalJson, $modifiedJson ) {
@@ -957,14 +1013,19 @@ Kindly confirm once you've received this message." ) . "\n";
 	}
 	
 	function get_user_full_name_by_id( $user_id ) {
-		$user = get_user_by( 'id', $user_id );
+		$user           = get_user_by( 'id', $user_id );
+		$duplicate_name = get_field( 'duplicate_name', 'user_' . $user_id );
 		
 		if ( $user ) {
 			$first_name = $user->first_name;
 			$last_name  = $user->last_name;
 			
 			$full_name = $first_name . ' ' . $last_name;
-			$initials  = mb_strtoupper( mb_substr( $first_name, 0, 1 ) . mb_substr( $last_name, 0, 1 ) );
+			if ( $duplicate_name ) {
+				$initials = mb_strtoupper( mb_substr( $first_name, 0, 1 ) . mb_substr( $last_name, 0, 1 ) ) . mb_substr( $last_name, 1, 1 );
+			} else {
+				$initials = mb_strtoupper( mb_substr( $first_name, 0, 1 ) . mb_substr( $last_name, 0, 1 ) );
+			}
 			
 			return array(
 				'full_name' => $full_name,
@@ -1088,10 +1149,13 @@ Kindly confirm once you've received this message." ) . "\n";
 	}
 	
 	function format_currency( $value ) {
-		// Преобразуем значение в float и форматируем число
-		$formatted = number_format( (float) $value, 2, '.', ',' );
+		$cleaned   = str_replace( ',', '', $value );
+		$formatted = number_format( (float) $cleaned, 2, '.', ',' );
+		if ( str_ends_with( $formatted, '.00' ) ) {
+			return substr( $formatted, 0, - 3 );
+		}
 		
-		return str_ends_with( $formatted, '.00' ) ? str_replace( '.00', '', $formatted ) : $formatted;
+		return $formatted;
 	}
 	
 	function get_week_dates_from_monday( $date = null ) {

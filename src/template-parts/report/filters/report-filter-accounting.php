@@ -21,6 +21,7 @@ $offices = $helper->get_offices_from_acf();
 
 $show_filter_by_office = $TMSUsers->check_user_role_access( array(
 	'dispatcher-tl',
+	'expedite_manager',
 	'administrator',
 	'recruiter'
 ), true );

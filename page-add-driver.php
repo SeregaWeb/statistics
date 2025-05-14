@@ -60,7 +60,13 @@ $logshow        = isset( $_COOKIE[ 'logshow' ] ) && + $_COOKIE[ 'logshow' ] !== 
 $logshowcontent = isset( $_COOKIE[ 'logshow' ] ) && + $_COOKIE[ 'logshow' ] !== 0 ? 'col-lg-11' : 'col-lg-9';
 
 
-$access = $TMSUsers->check_user_role_access( [ 'administrator', 'recruiter', 'recruiter-tl', 'accounting' ], true );
+$access = $TMSUsers->check_user_role_access( [
+	'administrator',
+	'recruiter',
+	'recruiter-tl',
+	'accounting',
+	'driver_updates'
+], true );
 
 ?>
     <div class="container-fluid">

@@ -20,6 +20,8 @@ $current_user_id = get_current_user_id();
 $my_team      = $TMSUsers->check_group_access();
 $all_statuses = $helper->get_statuses();
 
+$blocked_update = $TMSUsers->check_user_role_access( array( 'driver_updates' ) );
+
 
 if ( ! empty( $results ) ) : ?>
 
@@ -92,6 +94,8 @@ if ( ! empty( $results ) ) : ?>
 			$tmpl = $logs->get_last_log_by_post( $row[ 'id' ] );
 			
 			$now_show = ( $factoring_status_row === 'paid' );
+			
+			
 			?>
 
             <tr class="<?php echo 'status-tracking-' . $status; ?> <?php echo $tbd ? 'tbd' : ''; ?>">
@@ -126,7 +130,7 @@ if ( ! empty( $results ) ) : ?>
                 </td>
 
                 <td class="">
-					<?php if ( ! $archive && $show_control && ! $now_show ): ?>
+					<?php if ( ! $archive && $show_control && ! $now_show && $blocked_update ): ?>
                         <form class="js-save-status d-flex gap-1 align-items-center form-quick-tracking">
                             <input type="hidden" name="id_load" value="<?php echo $row[ 'id' ]; ?>">
 							<?php if ( is_array( $all_statuses ) ) { ?>

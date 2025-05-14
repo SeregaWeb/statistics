@@ -9,6 +9,7 @@ $office_dispatcher = get_field_value( $_GET, 'office' );
 
 $select_all_offices = $TMSUsers->check_user_role_access( array(
 	'dispatcher-tl',
+	'expedite_manager',
 	'administrator',
 	'recruiter',
 	'recruiter-tl',
@@ -24,6 +25,7 @@ $offices = $helper->get_offices_from_acf();
 
 $show_filter_by_office = $TMSUsers->check_user_role_access( array(
 	'dispatcher-tl',
+	'expedite_manager',
 	'administrator',
 	'recruiter',
 	'recruiter-tl',

@@ -92,7 +92,6 @@ class  TMSStatistics extends TMSReportsHelper {
 	
 	public function get_dispatcher_statistics( $office_dispatcher_selected ) {
 		global $wpdb;
-		
 		$table_reports = $wpdb->prefix . $this->table_main;
 		$table_meta    = $wpdb->prefix . $this->table_meta;
 		
@@ -139,6 +138,57 @@ class  TMSStatistics extends TMSReportsHelper {
 		$dispatcher_stats = array_values( $dispatcher_stats );
 		
 		return json_encode( $dispatcher_stats );
+	}
+	
+	public function get_profit_by_office_stats( $office ) {
+		global $wpdb;
+		$table_main = $wpdb->prefix . $this->table_main;
+		$table_meta = $wpdb->prefix . $this->table_meta;
+		
+		$params = array();
+		
+		$query = "
+		SELECT
+			DATE(main.date_booked) AS date,
+			SUM(CAST(profit.meta_value AS DECIMAL(10,2))) AS total_profit,
+			MAX(CAST(profit.meta_value AS DECIMAL(10,2))) AS max_profit
+		FROM $table_main AS main
+		LEFT JOIN $table_meta AS profit ON main.id = profit.post_id AND profit.meta_key = 'profit'
+		LEFT JOIN $table_meta AS office_meta ON main.id = office_meta.post_id AND office_meta.meta_key = 'office_dispatcher'
+		INNER JOIN $table_meta AS load_status ON main.id = load_status.post_id AND load_status.meta_key = 'load_status'
+		WHERE main.status_post = 'publish'
+			AND load_status.meta_value NOT IN ('waiting-on-rc', 'cancelled')
+	";
+		
+		if ( ! empty( $office ) && $office !== 'all' ) {
+			$query    .= " AND office_meta.meta_value = %s ";
+			$params[] = $office;
+		}
+		
+		$query .= "
+		GROUP BY DATE(main.date_booked)
+		ORDER BY total_profit DESC
+		LIMIT 1
+	";
+		
+		$query  = $wpdb->prepare( $query, ...$params );
+		$result = $wpdb->get_row( $query, ARRAY_A );
+		
+		if ( ! $result ) {
+			return array(
+				'date'    => null,
+				'date_us' => null,
+				'total'   => 0,
+				'max'     => 0,
+			);
+		}
+		
+		return array(
+			'date'    => $result[ 'date' ], // исходная дата
+			'date_us' => date( 'm/d/Y', strtotime( $result[ 'date' ] ) ), // форматированная
+			'total'   => (float) $result[ 'total_profit' ],
+			'max'     => (float) $result[ 'max_profit' ],
+		);
 	}
 	
 	public function get_table_top_3_loads() {

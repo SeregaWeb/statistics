@@ -52,8 +52,6 @@ $second_driver_phone     = '';
 $additional_fees         = '';
 $additional_fees_val     = '';
 $additional_fees_driver  = '';
-$pick_up_date_formatted  = '';
-$delivery_date_formatted = '';
 $instructions_str        = '';
 
 
@@ -74,12 +72,6 @@ if ( $report_object ) {
 		} else {
 			$date_booked_formatted = date( 'Y-m-d', strtotime( $date_booked ) );
 		}
-		
-		$pick_up_date           = get_field_value( $main, 'pick_up_date' );
-		$pick_up_date_formatted = date( 'Y-m-d', strtotime( $pick_up_date ) );
-		
-		$delivery_date           = get_field_value( $main, 'delivery_date' );
-		$delivery_date_formatted = date( 'Y-m-d', strtotime( $delivery_date ) );
 		
 		$dispatcher_initials    = get_field_value( $meta, 'dispatcher_initials' );
 		$reference_number       = get_field_value( $meta, 'reference_number' );
@@ -281,7 +273,7 @@ $read_only = $TMSUsers->check_read_only( $post_status );
                        required>
 			<?php else:
 				
-				if ( current_user_can( 'dispatcher' ) || current_user_can( 'dispatcher-tl' ) ) {
+				if ( current_user_can( 'dispatcher' ) || current_user_can( 'dispatcher-tl' ) || current_user_can( 'expedite_manager' ) ) {
 					if ( ! $dispatcher_initials ) {
 						$dispatcher_initials = get_current_user_id();
 						$user_name           = $helper->get_user_full_name_by_id( $dispatcher_initials );
@@ -519,12 +511,6 @@ $read_only = $TMSUsers->check_read_only( $post_status );
 
 
             <div class="col-12"></div>
-
-            <div class="mb-2 col-12 col-md-6 col-xl-4">
-                <label for="pick_up_date" class="form-label">Pick Up Date</label>
-                <p class="m-0"><strong><?php echo $pick_up_date_formatted; ?></strong></p>
-                <input type="hidden" name="pick_up_date" value="<?php echo $pick_up_date_formatted; ?>">
-            </div>
 		
 		
 		<?php else: ?>
@@ -711,34 +697,8 @@ $read_only = $TMSUsers->check_read_only( $post_status );
                 <input type="hidden" name="additional_fees_val" value="<?php echo $additional_fees_val; ?>">
                 <input type="hidden" name="additional_fees" value="<?php echo $additional_fees; ?>">
 			<?php endif; ?>
-
-
-            <div class="mb-2 col-12 col-md-6 col-xl-4">
-                <label for="pick_up_date" class="form-label">Pick Up Date</label>
-                <input type="date" name="pick_up_date" value="<?php echo $pick_up_date_formatted; ?>"
-                       class="form-control" required>
-                <input type="hidden" name="old_pick_up_date" value="<?php echo $pick_up_date_formatted; ?>">
-            </div>
 		
 		
-		<?php endif; ?>
-		
-		
-		<?php if ( $full_view_only && ! $tracking_tl ): ?>
-            <div class="mb-2 col-12 col-md-6 col-xl-4">
-                <label for="delivery_date" class="form-label">Delivery Date</label>
-                <p class="m-0"><strong><?php echo $delivery_date_formatted; ?></strong></p>
-                <input type="hidden" name="delivery_date" value="<?php echo $delivery_date_formatted; ?>">
-            </div>
-		<?php else: ?>
-            <div class="mb-2 col-12 col-md-6 col-xl-4">
-                <label for="pick_up_date" class="form-label">Delivery Date</label>
-                <input type="date" name="delivery_date" value="<?php echo $delivery_date_formatted; ?>"
-                       class="form-control" required>
-                <input type="hidden" name="old_delivery_date" value="<?php echo $delivery_date_formatted; ?>"
-                       class="form-control" required>
-
-            </div>
 		<?php endif; ?>
 
 

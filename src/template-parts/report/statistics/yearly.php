@@ -1,11 +1,20 @@
 <?php
 
-$statistics          = new TMSStatistics();
-$helper              = new TMSReportsHelper();
+$statistics = new TMSStatistics();
+$helper     = new TMSReportsHelper();
+$TMSUsers   = new TMSUsers();
+
 $current_year        = date( 'Y' );
 $year_param          = get_field_value( $_GET, 'fyear' );
 $dispatcher_initials = get_field_value( $_GET, 'dispatcher' );
-$dispatchers         = $statistics->get_dispatchers();
+
+$need_office = $TMSUsers->check_user_role_access( array(
+	'dispatcher',
+), true );
+
+$office_dispatcher = get_field( 'work_location', 'user_' . get_current_user_id() );
+
+$dispatchers = $statistics->get_dispatchers( $need_office ? $office_dispatcher : null );
 
 if ( ! is_numeric( $dispatcher_initials ) ) {
 	$dispatcher_initials = $dispatchers[ 0 ][ 'id' ];

@@ -101,6 +101,7 @@ $add_broker    = $TMSUsers->check_user_role_access( array(
 	'accounting',
 	'dispatcher',
 	'dispatcher-tl',
+	'expedite_manager',
 	'administrator',
 	'billing'
 ), true );
@@ -110,6 +111,7 @@ $red_lvl = $TMSUsers->check_user_role_access( array(
 	'accounting',
 	'administrator',
 	'dispatcher-tl',
+	'expedite_manager',
 	'billing'
 ), true );
 
@@ -442,7 +444,7 @@ $orange_lvl = $TMSUsers->check_user_role_access( array(
                                                 <input id="input-zip" type="text" required name="ZipCode"
                                                        placeholder="Zip Code"
                                                        value="<?php echo fill_field( 'zip_code', $broker_data ); ?>"
-                                                       class="form-control">
+                                                       class="form-control js-zip-code-mask">
                                             </div>
 
                                             <div class="form-group mt-3 col-6">

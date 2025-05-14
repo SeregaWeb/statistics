@@ -2,13 +2,34 @@
 
 
 $statistics = new TMSStatistics();
+$TMSUsers   = new TMSUsers();
 
 $dispatcher_tl_initials = get_field_value( $_GET, 'team-lead' );
-$dispatchers_tl         = $statistics->get_dispatchers_tl();
-$dispatchers            = $statistics->get_dispatchers();
+
+$hide_filter = $TMSUsers->check_user_role_access( array(
+	'dispatcher',
+) );
+
+$show_only_my_office = $TMSUsers->check_user_role_access( array(
+	'dispatcher',
+	'recruiter',
+), true );
+
+$office_dispatcher = get_field( 'work_location', 'user_' . get_current_user_id() );
+
+$dispatchers_tl = $statistics->get_dispatchers_tl( $show_only_my_office ? $office_dispatcher : null );
+$dispatchers    = $statistics->get_dispatchers( $show_only_my_office ? $office_dispatcher : null );
+
 
 if ( ! $dispatcher_tl_initials ) {
 	$dispatcher_tl_initials = $dispatchers_tl[ 0 ][ 'id' ];
+}
+
+if ( ! $hide_filter ) {
+	$my_teamlead = $statistics->get_my_team_leader();
+	if ( ! empty( $my_teamlead ) && is_array( $my_teamlead ) && count( $my_teamlead ) > 0 ) {
+		$dispatcher_tl_initials = $my_teamlead[ 0 ];
+	}
 }
 
 $my_team        = get_field( 'my_team', 'user_' . $dispatcher_tl_initials );
@@ -28,9 +49,8 @@ $total_team_average  = 0;
 $total_team_left     = 0;
 $total_team_complete = 0;
 
-
-?>
-
+if ( $hide_filter ):
+	?>
     <form class="w-100">
         <div class="d-flex gap-1">
             <input type="hidden" name="active_state" value="goal">
@@ -50,6 +70,7 @@ $total_team_complete = 0;
         </div>
     </form>
 <?php
+endif;
 // HTML код для отображения таблицы
 echo '<table class="table-stat" border="1" cellpadding="5" cellspacing="0">';
 echo '<tr class="text-center">';

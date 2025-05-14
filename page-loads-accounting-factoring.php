@@ -33,6 +33,7 @@ if ( ! $office ) {
 
 $show_filter_by_office = $TMSUsers->check_user_role_access( array(
 	'dispatcher-tl',
+	'expedite_manager',
 	'tracking-tl',
 	'administrator',
 	'recruiter-tl',

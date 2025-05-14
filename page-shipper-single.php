@@ -29,6 +29,7 @@ $TMSUsers = new TMSUsers();
 $add_shipper = $TMSUsers->check_user_role_access( array(
 	'dispatcher',
 	'dispatcher-tl',
+	'expedite_manager',
 	'administrator',
 	'tracking'
 ), true );
@@ -222,7 +223,7 @@ $remove_shipper = $TMSUsers->check_user_role_access( array( 'administrator' ), t
                                         <label for="input-zip" class="form-label">Zip Code <span
                                                     class="required-star text-danger">*</span></label>
                                         <input id="input-zip" type="text" required name="ZipCode" placeholder="Zip Code"
-                                               class="form-control"
+                                               class="form-control js-zip-code-mask"
                                                value="<?php echo htmlspecialchars( $shipper_fields[ 'zip_code' ] ); ?>">
                                     </div>
 

@@ -8,6 +8,7 @@ import '../scss/frontend.scss';
 import Popup from './parts/popup-window';
 // eslint-disable-next-line camelcase
 import {
+    applyZipCodeMask,
     checboxesHelperInit,
     dragAnDropInit,
     initMoneyMask,
@@ -158,6 +159,8 @@ function ready() {
     createDocumentBolActions(urlAjax);
 
     initContactsHandler(urlAjax);
+
+    applyZipCodeMask('.js-zip-code-mask');
 
     const preloaders = document.querySelectorAll('.js-preloader');
     preloaders &&

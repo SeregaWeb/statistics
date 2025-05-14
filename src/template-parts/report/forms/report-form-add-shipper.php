@@ -70,7 +70,8 @@ $states = $helper->get_states();
         <div class="form-group mt-3 col-6 js-zip">
             <label for="input-zip" class="form-label">Zip Code <span class="required-star text-danger">*</span></label>
             <div class="d-flex gap-1">
-                <input id="input-zip" type="text" required name="ZipCode" placeholder="Zip Code" class="form-control">
+                <input id="input-zip" type="text" required name="ZipCode" placeholder="Zip Code"
+                       class="form-control js-zip-code-mask">
                 <button class="btn btn-primary js-fill-auto">
                     Fill
                 </button>

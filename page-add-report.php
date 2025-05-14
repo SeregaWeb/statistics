@@ -56,7 +56,11 @@ $access         = $TMSUsers->check_user_role_access( array( 'recruiter' ) );
 $full_only_view = false;
 
 
-if ( $TMSUsers->check_user_role_access( array( 'dispatcher-tl', 'tracking' ), true ) && isset( $meta ) ) {
+if ( $TMSUsers->check_user_role_access( array(
+		'dispatcher-tl',
+		'expedite_manager',
+		'tracking'
+	), true ) && isset( $meta ) ) {
 	$dispatcher_initials = get_field_value( $meta, 'dispatcher_initials' );
 	$user_id_added       = get_field_value( $main, 'user_id_added' );
 	$my_team             = $TMSUsers->check_group_access();
@@ -121,6 +125,11 @@ if ( $TMSUsers->check_user_role_access( array(
 	$accounting_info = true;
 }
 
+if ( $TMSUsers->check_user_role_access( array( 'driver_updates' ), true ) && isset( $meta ) ) {
+	$full_only_view = true;
+	$access         = true;
+}
+
 
 get_header();
 
@@ -143,6 +152,7 @@ $logshowcontent = isset( $_COOKIE[ 'logshow' ] ) && + $_COOKIE[ 'logshow' ] !== 
 								$access_for_btn = $TMSUsers->check_user_role_access( array(
 									'administrator',
 									'dispatcher-tl',
+									'expedite_manager',
 									'dispatcher',
 									'tracking',
 									'tracking-tl'

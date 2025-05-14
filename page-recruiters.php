@@ -18,7 +18,13 @@ $args     = array(
 $args  = $Drivers->set_filter_params( $args );
 $items = $Drivers->get_table_items( $args );
 
-$access = $TMSUsers->check_user_role_access( [ 'administrator', 'recruiter', 'recruiter-tl', 'accounting' ], true );
+$access = $TMSUsers->check_user_role_access( [
+	'administrator',
+	'recruiter',
+	'recruiter-tl',
+	'accounting',
+	'driver_updates'
+], true );
 
 ?>
     <div class="container-fluid">

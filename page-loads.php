@@ -18,10 +18,12 @@ $args = array(
 $office_dispatcher   = get_field( 'work_location', 'user_' . get_current_user_id() );
 $sellect_all_offices = $TMSUsers->check_user_role_access( array(
 	'dispatcher-tl',
+	'expedite_manager',
 	'administrator',
 	'recruiter',
 	'recruiter-tl',
-	'moderator'
+	'moderator',
+	'driver_updates'
 ), true );
 
 if ( ! $office_dispatcher || $sellect_all_offices ) {

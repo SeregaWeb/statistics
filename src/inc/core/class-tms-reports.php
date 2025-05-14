@@ -60,7 +60,6 @@ class TMSReports extends TMSReportsHelper {
 		
 		// Создаем строку плейсхолдеров для дат
 		$date_placeholders = implode( ',', array_fill( 0, count( $array_dates ), '%s' ) );
-		
 		// Формируем базовый SQL-запрос.
 		// В данном запросе получаем сумму прибыли (meta с meta_key = 'profit') для каждой даты.
 		// Если задан офис (и он не 'all'), то добавляем LEFT JOIN для фильтрации по метаполю office_dispatcher.
@@ -540,7 +539,200 @@ class TMSReports extends TMSReportsHelper {
 		
 		$where_values[] = $offset;
 		$where_values[] = $per_page;
+		// Выполняем запрос
+		$main_results = $wpdb->get_results( $wpdb->prepare( $sql, ...$where_values ), ARRAY_A );
 		
+		// Собираем все ID записей для получения дополнительных метаданных
+		$post_ids = wp_list_pluck( $main_results, 'id' );
+		
+		// Если есть записи, получаем метаданные
+		$meta_data = array();
+		if ( ! empty( $post_ids ) ) {
+			$meta_sql     = "SELECT post_id, meta_key, meta_value
+					 FROM $table_meta
+					 WHERE post_id IN (" . implode( ',', array_map( 'absint', $post_ids ) ) . ")";
+			$meta_results = $wpdb->get_results( $meta_sql, ARRAY_A );
+			
+			// Преобразуем метаданные в ассоциативный массив по post_id
+			foreach ( $meta_results as $meta_row ) {
+				$post_id = $meta_row[ 'post_id' ];
+				if ( ! isset( $meta_data[ $post_id ] ) ) {
+					$meta_data[ $post_id ] = array();
+				}
+				$meta_data[ $post_id ][ $meta_row[ 'meta_key' ] ] = $meta_row[ 'meta_value' ];
+			}
+		}
+		
+		if ( is_array( $main_results ) && ! empty( $main_results ) ) {
+			// Объединяем основную таблицу с метаданными
+			foreach ( $main_results as &$result ) {
+				$post_id               = $result[ 'id' ];
+				$result[ 'meta_data' ] = isset( $meta_data[ $post_id ] ) ? $meta_data[ $post_id ] : array();
+			}
+		}
+		
+		return array(
+			'results'       => $main_results,
+			'total_pages'   => $total_pages,
+			'total_posts'   => $total_records,
+			'current_pages' => $current_page,
+		);
+	}
+	
+	public function get_table_items_billing_shortpay( $args = array() ) {
+		global $wpdb;
+		
+		$table_main   = $wpdb->prefix . $this->table_main;
+		$table_meta   = $wpdb->prefix . $this->table_meta;
+		$per_page     = isset( $args[ 'per_page_loads' ] ) ? $args[ 'per_page_loads' ] : $this->per_page_loads;
+		$current_page = isset( $_GET[ 'paged' ] ) ? absint( $_GET[ 'paged' ] ) : 1;
+		$sort_by      = ! empty( $args[ 'sort_by' ] ) ? $args[ 'sort_by' ] : 'date_booked';
+		$sort_order   = ! empty( $args[ 'sort_order' ] ) && strtolower( $args[ 'sort_order' ] ) == 'asc' ? 'ASC'
+			: 'DESC';
+		
+		$join_builder = "
+			FROM $table_main AS main
+			LEFT JOIN $table_meta AS dispatcher ON main.id = dispatcher.post_id AND dispatcher.meta_key = 'dispatcher_initials'
+			LEFT JOIN $table_meta AS reference ON main.id = reference.post_id AND reference.meta_key = 'reference_number'
+			LEFT JOIN $table_meta AS unit_number ON main.id = unit_number.post_id AND unit_number.meta_key = 'unit_number_name'
+			LEFT JOIN $table_meta AS load_status ON main.id = load_status.post_id AND load_status.meta_key = 'load_status'
+			LEFT JOIN $table_meta AS invoiced_proof ON main.id = invoiced_proof.post_id AND invoiced_proof.meta_key = 'invoiced_proof'
+			LEFT JOIN $table_meta AS factoring_status ON main.id = factoring_status.post_id AND factoring_status.meta_key = 'factoring_status'
+			LEFT JOIN $table_meta AS processing ON main.id = processing.post_id AND processing.meta_key = 'processing'
+			WHERE 1=1
+		";
+		
+		// Основной запрос
+		$sql = "SELECT main.*,
+			dispatcher.meta_value AS dispatcher_initials_value,
+			reference.meta_value AS reference_number_value,
+			unit_number.meta_value AS unit_number_value
+	" . $join_builder;
+		
+		$where_conditions = array();
+		$where_values     = array();
+		
+		
+		if ( ! empty( $args[ 'status_post' ] ) ) {
+			$where_conditions[] = $wpdb->prepare( "main.status_post = %s", $args[ 'status_post' ] );
+		}
+		
+		// Фильтрация по dispatcher_initials
+		if ( ! empty( $args[ 'dispatcher' ] ) ) {
+			$where_conditions[] = $wpdb->prepare( "dispatcher.meta_value = %s", $args[ 'dispatcher' ] );
+		}
+		
+		if ( ! empty( $args[ 'load_status' ] ) ) {
+			$where_conditions[] = $wpdb->prepare( "load_status.meta_value = %s", $args[ 'load_status' ] );
+		}
+		
+		
+		if ( ! empty( $args[ 'exclude_factoring_status' ] ) ) {
+			$exclude_factoring_status = implode( "','", array_map( 'esc_sql', (array) $args[ 'exclude_factoring_status' ] ) );
+			$where_conditions[]       = "(
+				factoring_status.meta_value NOT IN ('$exclude_factoring_status')
+				OR factoring_status.meta_value IS NULL
+				OR factoring_status.meta_value = ''
+			)";
+		}
+		
+		if ( ! empty( $args[ 'include_factoring_status' ] ) ) {
+			$include_factoring_status = implode( "','", array_map( 'esc_sql', (array) $args[ 'include_factoring_status' ] ) );
+			$where_conditions[]       = "(
+				factoring_status.meta_value IN ('$include_factoring_status')
+				AND factoring_status.meta_value IS NOT NULL
+				AND factoring_status.meta_value != ''
+			)";
+		}
+		
+		if ( isset( $args[ 'exclude_status' ] ) && ! empty( $args[ 'exclude_status' ] ) ) {
+			$exclude_status = array_map( 'esc_sql', (array) $args[ 'exclude_status' ] );
+			
+			if ( isset( $args[ 'load_status' ] ) && $args[ 'load_status' ] === 'cancelled' ) {
+				$exclude_status = implode( "','", array_diff( $exclude_status, array( 'cancelled' ) ) );
+			} else {
+				$exclude_status = implode( "','", $exclude_status );
+			}
+			if ( ! empty( $exclude_status ) ) {
+				$where_conditions[] = "load_status.meta_value NOT IN ('" . $exclude_status . "')";
+			}
+		}
+		
+		
+		if ( isset( $args[ 'include_status' ] ) && ! empty( $args[ 'include_status' ] ) ) {
+			$include_status     = array_map( 'esc_sql', (array) $args[ 'include_status' ] );
+			$where_conditions[] = "load_status.meta_value IN ('" . implode( "','", $include_status ) . "')";
+		}
+		
+		if ( ! empty( $args[ 'invoice' ] ) ) {
+			if ( $args[ 'invoice' ] === 'invoiced' ) {
+				$where_conditions[] = "invoiced_proof.meta_value = %s";
+				$where_values[]     = '1';
+			} else {
+				$where_conditions[] = "(invoiced_proof.meta_value = %s OR invoiced_proof.meta_value IS NULL)";
+				$where_values[]     = '0';
+			}
+		}
+		
+		if ( ! empty( $args[ 'factoring' ] ) ) {
+			$where_conditions[] = "factoring_status.meta_value = %s";
+			$where_values[]     = $args[ 'factoring' ];
+		}
+		
+		if ( ! empty( $args[ 'my_search' ] ) ) {
+			$where_conditions[] = "(reference.meta_value LIKE %s OR unit_number.meta_value LIKE %s)";
+			$search_value       = '%' . $wpdb->esc_like( $args[ 'my_search' ] ) . '%';
+			$where_values[]     = $search_value;
+			$where_values[]     = $search_value;
+		}
+		
+		if ( ! empty( $args[ 'month' ] ) && ! empty( $args[ 'year' ] ) ) {
+			$where_conditions[] = "date_booked IS NOT NULL
+        AND YEAR(date_booked) = %d
+        AND MONTH(date_booked) = %d";
+			$where_values[]     = $args[ 'year' ];
+			$where_values[]     = $args[ 'month' ];
+		}
+		
+		if ( ! empty( $args[ 'year' ] ) && empty( $args[ 'month' ] ) ) {
+			$where_conditions[] = "date_booked IS NOT NULL
+        AND YEAR(date_booked) = %d";
+			$where_values[]     = $args[ 'year' ];
+		}
+		
+		if ( ! empty( $args[ 'month' ] ) && empty( $args[ 'year' ] ) ) {
+			$where_conditions[] = "date_booked IS NOT NULL
+        AND MONTH(date_booked) = %d";
+			$where_values[]     = $args[ 'month' ];
+		}
+		
+		if ( ! empty( $where_conditions ) ) {
+			$sql .= ' AND ' . implode( ' AND ', $where_conditions );
+		}
+		
+		$total_records_sql = "SELECT COUNT(*)" . $join_builder;
+		if ( ! empty( $where_conditions ) ) {
+			$total_records_sql .= ' AND ' . implode( ' AND ', $where_conditions );
+		}
+		
+		$total_records = $wpdb->get_var( $wpdb->prepare( $total_records_sql, ...$where_values ) );
+		
+		$total_pages = ceil( $total_records / $per_page );
+		
+		$offset = ( $current_page - 1 ) * $per_page;
+		
+		$sql .= "
+		    ORDER BY
+		        CASE
+		            WHEN LOWER(load_status.meta_value) = 'delivered' THEN 1
+		            WHEN LOWER(load_status.meta_value) = 'tonu' THEN 2
+		            ELSE 3
+		        END,
+		        main.$sort_by $sort_order LIMIT %d, %d
+		";
+		
+		$where_values[] = $offset;
+		$where_values[] = $per_page;
 		// Выполняем запрос
 		$main_results = $wpdb->get_results( $wpdb->prepare( $sql, ...$where_values ), ARRAY_A );
 		
@@ -2191,45 +2383,61 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 			
 			$pick_up_location  = [];
 			$delivery_location = [];
+			$earliest_date     = null;
+			$latest_date       = null;
 			
 			for ( $i = 0; $i < count( $data[ 'pick_up_location_address_id' ] ); $i ++ ) {
+				$current_date = $data[ 'pick_up_location_date' ][ $i ];
+				
 				$pick_up_location[] = [
 					'address_id'    => $data[ 'pick_up_location_address_id' ][ $i ],
 					'address'       => $data[ 'pick_up_location_address' ][ $i ],
 					'short_address' => $data[ 'pick_up_location_short_address' ][ $i ],
 					'contact'       => $data[ 'pick_up_location_contact' ][ $i ],
-					'date'          => $data[ 'pick_up_location_date' ][ $i ],
+					'date'          => $current_date,
 					'info'          => $data[ 'pick_up_location_info' ][ $i ],
 					'type'          => $data[ 'pick_up_location_type' ][ $i ],
 					'time_start'    => $data[ 'pick_up_location_start' ][ $i ],
 					'time_end'      => $data[ 'pick_up_location_end' ][ $i ],
 					'strict_time'   => $data[ 'pick_up_location_strict' ][ $i ]
 				];
+				
+				// Сравнение даты
+				if ( $current_date && ( $earliest_date === null || strtotime( $current_date ) < strtotime( $earliest_date ) ) ) {
+					$earliest_date = $current_date;
+				}
 			}
 			
 			for ( $i = 0; $i < count( $data[ 'delivery_location_address_id' ] ); $i ++ ) {
+				$current_date = $data[ 'delivery_location_date' ][ $i ];
+				
 				$delivery_location[] = [
 					'address_id'    => $data[ 'delivery_location_address_id' ][ $i ],
 					'address'       => $data[ 'delivery_location_address' ][ $i ],
 					'short_address' => $data[ 'delivery_location_short_address' ][ $i ],
 					'contact'       => $data[ 'delivery_location_contact' ][ $i ],
-					'date'          => $data[ 'delivery_location_date' ][ $i ],
+					'date'          => $current_date,
 					'info'          => $data[ 'delivery_location_info' ][ $i ],
 					'type'          => $data[ 'delivery_location_type' ][ $i ],
 					'time_start'    => $data[ 'delivery_location_start' ][ $i ],
 					'time_end'      => $data[ 'delivery_location_end' ][ $i ],
 					'strict_time'   => $data[ 'delivery_location_strict' ][ $i ]
 				];
+				
+				// Сравнение даты
+				if ( $current_date && ( $latest_date === null || strtotime( $current_date ) > strtotime( $latest_date ) ) ) {
+					$latest_date = $current_date;
+				}
 			}
-			
 			
 			$pick_up_location_json  = json_encode( $pick_up_location, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES );
 			$delivery_location_json = json_encode( $delivery_location, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES );
 			
 			$data[ 'pick_up_location_json' ]  = $pick_up_location_json;
 			$data[ 'delivery_location_json' ] = $delivery_location_json;
-			
-			$result = $this->add_new_shipper_info( $data );
+			$data[ 'pick_up_date' ]           = $earliest_date;
+			$data[ 'delivery_date' ]          = $latest_date;
+			$result                           = $this->add_new_shipper_info( $data );
 			
 			if ( $result ) {
 				wp_send_json_success( [ 'message' => 'Shipper info successfully update', 'data' => $data ] );
@@ -2268,10 +2476,6 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 				"macropoint_set"          => FILTER_VALIDATE_BOOLEAN,
 				"old_driver_phone"        => FILTER_SANITIZE_STRING,
 				"profit"                  => FILTER_SANITIZE_STRING,
-				"pick_up_date"            => FILTER_SANITIZE_STRING,
-				"old_pick_up_date"        => FILTER_SANITIZE_STRING,
-				"delivery_date"           => FILTER_SANITIZE_STRING,
-				"old_delivery_date"       => FILTER_SANITIZE_STRING,
 				"load_status"             => FILTER_SANITIZE_STRING,
 				"old_load_status"         => FILTER_SANITIZE_STRING,
 				"instructions"            => [ 'filter' => FILTER_SANITIZE_STRING, 'flags' => FILTER_REQUIRE_ARRAY ],
@@ -3310,6 +3514,8 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 		$update_params = array(
 			'user_id_updated' => $user_id,
 			'date_updated'    => current_time( 'mysql' ),
+			'pick_up_date'    => $data[ 'pick_up_date' ],
+			'delivery_date'   => $data[ 'delivery_date' ],
 		);
 		
 		if ( $data[ 'post_status' ] === 'publish' ) {
@@ -3613,18 +3819,6 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 				}
 			}
 			
-			if ( $data[ 'old_pick_up_date' ] && ! empty( $data[ 'old_pick_up_date' ] ) ) {
-				if ( $data[ 'pick_up_date' ] !== $data[ 'old_pick_up_date' ] ) {
-					$select_emails = $this->email_helper->get_selected_emails( $this->user_emails, array( 'tracking_email' ) );
-					
-					$this->email_helper->send_custom_email( $select_emails, array(
-						'subject'      => 'Changed pick up date',
-						'project_name' => 'Project: ' . $this->project,
-						'subtitle'     => 'User changed: ' . $user_name[ 'full_name' ],
-						'message'      => 'New value: ' . $data[ 'pick_up_date' ] . ' Old value: ' . $data[ 'old_pick_up_date' ] . 'Load № ' . $data[ 'reference_number' ] . ' Link to: ' . $link,
-					) );
-				}
-			}
 			
 			if ( $data[ 'old_load_status' ] && ! empty( $data[ 'old_load_status' ] ) ) {
 				$array_chacked = array( 'delivered', 'tonu', 'cancelled' );
@@ -3654,16 +3848,6 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 						'user_id' => $user_id,
 						'post_id' => $data[ 'post_id' ],
 						'message' => 'Changed Load status: ' . 'New value: ' . $new_status_label . ' Old value: ' . $old_status_label
-					) );
-				}
-			}
-			
-			if ( $data[ 'old_delivery_date' ] && ! empty( $data[ 'old_delivery_date' ] ) ) {
-				if ( $data[ 'delivery_date' ] !== $data[ 'old_delivery_date' ] ) {
-					$this->log_controller->create_one_log( array(
-						'user_id' => $user_id,
-						'post_id' => $data[ 'post_id' ],
-						'message' => 'Changed Delivery date: ' . 'New value: ' . $data[ 'delivery_date' ] . ' Old value: ' . $data[ 'old_delivery_date' ]
 					) );
 				}
 			}
@@ -3727,8 +3911,6 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 		$update_params = array(
 			'user_id_updated' => $user_id,
 			'date_updated'    => current_time( 'mysql' ),
-			'pick_up_date'    => $data[ 'pick_up_date' ],
-			'delivery_date'   => $data[ 'delivery_date' ],
 			'date_booked'     => $data[ 'date_booked' ],
 		);
 		

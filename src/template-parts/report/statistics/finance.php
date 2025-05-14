@@ -7,6 +7,7 @@ $active_item        = get_field_value( $_GET, 'active_state' );
 $offices            = $helper->get_offices_from_acf();
 $select_all_offices = $TMSUsers->check_user_role_access( array(
 	'dispatcher-tl',
+	'expedite_manager',
 	'administrator',
 	'recruiter',
 	'recruiter-tl',
@@ -21,6 +22,7 @@ if ( $select_all_offices ) {
 
 $show_filter_by_office = $TMSUsers->check_user_role_access( array(
 	'dispatcher-tl',
+	'expedite_manager',
 	'administrator',
 	'recruiter',
 	'recruiter-tl',
@@ -83,15 +85,15 @@ if ( ! empty( $dispatcher_arr ) ) {
 		echo '<td>$' . number_format( $dispatcher[ 'average_profit' ], 2 ) . '</td>';
 		echo '</tr>';
 		
-		$total_loads          += $dispatcher[ 'post_count' ];
-		$total_total_profit   += $dispatcher[ 'total_profit' ];
-		$total_average_profit += $dispatcher[ 'average_profit' ];
+		$total_loads        += $dispatcher[ 'post_count' ];
+		$total_total_profit += $dispatcher[ 'total_profit' ];
 	}
 	
 	echo '</tbody>';
 	echo '</table>';
 	
 	if ( isset( $total_loads ) && isset( $total_total_profit ) && isset( $total_average_profit ) ):
+		$total_average_profit = $total_total_profit / $total_loads;
 		
 		echo '<h2>Total</h2>';
 		

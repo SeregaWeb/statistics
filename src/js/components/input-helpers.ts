@@ -345,3 +345,62 @@ export function dragAnDropInit() {
         });
     });
 }
+
+export function applyZipCodeMask(selector: string, countrySelector = '.js-country') {
+    // Функция для очистки не-цифр и обрезки до 5 символов
+    function restrictToFiveDigits(this: HTMLInputElement) {
+        this.value = this.value.replace(/\D/g, '').slice(0, 5);
+    }
+
+    document.querySelectorAll<HTMLInputElement>(selector).forEach((input) => {
+        const form = input.closest('form');
+        if (!form) return;
+
+        // Список полей country (select или radio)
+        const countryFields = Array.from(form.querySelectorAll<HTMLInputElement>(countrySelector));
+        if (!countryFields.length) return;
+
+        // Определяет текущую страну
+        function getCountry(): string | null {
+            // eslint-disable-next-line no-restricted-syntax
+            for (const el of countryFields) {
+                if (el.type === 'radio') {
+                    if (el.checked) return el.value;
+                } else {
+                    return el.value;
+                }
+            }
+            return null;
+        }
+
+        // Применяем нужные атрибуты к инпуту
+        function configure() {
+            const country = getCountry();
+            // сбрасываем текущее значение
+            // eslint-disable-next-line no-param-reassign
+            input.value = '';
+            // убираем старые ограничители
+            input.removeAttribute('maxlength');
+            input.removeAttribute('pattern');
+            input.removeEventListener('input', restrictToFiveDigits);
+
+            if (country === 'Canada') {
+                // для Канады: только длина до 7 символов
+                input.setAttribute('maxlength', '7');
+            } else {
+                // для США/Мексики: только 5 цифр
+                input.setAttribute('maxlength', '5');
+                input.setAttribute('pattern', '\\d{5}');
+                input.addEventListener('input', restrictToFiveDigits);
+            }
+        }
+
+        // инициализируем сразу
+        configure();
+
+        // и при каждом change в country поля
+        countryFields.forEach((el) => {
+            el.addEventListener('change', configure);
+        });
+    });
+}

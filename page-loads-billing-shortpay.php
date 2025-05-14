@@ -18,7 +18,7 @@ $args = array(
 );
 
 $args  = $reports->set_filter_params( $args );
-$items = $reports->get_table_items_billing( $args );
+$items = $reports->get_table_items_billing_shortpay( $args );
 
 $post_tp              = 'accounting';
 $items[ 'page_type' ] = $post_tp;
@@ -35,7 +35,7 @@ $items[ 'page_type' ] = $post_tp;
 						
 						
 						<?php
-						echo esc_html( get_template_part( TEMPLATE_PATH . 'tables/report', 'table-billing', $items ) );
+						echo esc_html( get_template_part( TEMPLATE_PATH . 'tables/report', 'table-billing-shortpay', $items ) );
 						?>
 
                     </div>

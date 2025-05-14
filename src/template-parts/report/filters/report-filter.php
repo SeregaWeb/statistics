@@ -22,6 +22,7 @@ $post_tp = get_field_value( $args, 'post_type' );
 
 $show_filter_by_office = $TMSUsers->check_user_role_access( array(
 	'dispatcher-tl',
+	'expedite_manager',
 	'administrator',
 	'recruiter',
 	'recruiter-tl',

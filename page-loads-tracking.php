@@ -22,6 +22,7 @@ $office_dispatcher   = get_field( 'work_location', 'user_' . get_current_user_id
 $sellect_all_offices = $TMSUsers->check_user_role_access( array(
 	'tracking-tl',
 	'dispatcher-tl',
+	'expedite_manager',
 	'administrator',
 	'recruiter',
 	'recruiter-tl',

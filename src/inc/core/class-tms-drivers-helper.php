@@ -87,6 +87,10 @@ class TMSDriversHelper {
 		'printer'            => 'Printer',
 	);
 	
+	public $labels_border   = array(
+		'canada' => 'Canada',
+		'mexico' => 'Mexico',
+	);
 	public $labels_distance = array(
 		'otr'      => 'OTR',
 		'regional' => 'Regional',

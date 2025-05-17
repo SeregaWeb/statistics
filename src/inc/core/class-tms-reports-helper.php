@@ -662,6 +662,11 @@ class TMSReportsHelper extends TMSReportsIcons {
 			$time = trim( $location[ 'time_start' ] . ( $location[ 'time_end' ] ? ' - ' . $location[ 'time_end' ]
 					: '' ) );
 			
+			$address_line   = preg_replace( '/[\x{2028}\x{2029}]/u', '', $address_line );
+			$title          = preg_replace( '/[\x{2028}\x{2029}]/u', '', $title );
+			$shipper_name   = preg_replace( '/[\x{2028}\x{2029}]/u', '', $shipper_name );
+			$city_state_zip = preg_replace( '/[\x{2028}\x{2029}]/u', '', $city_state_zip );
+			
 			$output .= $title . ": $shipper_name:\n";
 			$output .= "Address: $address_line\n";
 			$output .= "$city_state_zip\n";

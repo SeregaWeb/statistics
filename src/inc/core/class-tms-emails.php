@@ -190,7 +190,8 @@ class TMSEmails extends TMSUsers {
 		} else {
 			$email_addresses = $emails;
 		}
-		$subject = ! empty( $texts[ 'subject' ] ) ? $texts[ 'subject' ] : 'No Subject';
+		$subject         = ! empty( $texts[ 'subject' ] ) ? $texts[ 'subject' ] : 'No Subject';
+		$texts[ 'logo' ] = $this->get_logo_project_url( strtolower( $texts[ 'project_name' ] ) );
 		
 		ob_start();
 		echo esc_html( get_template_part( TEMPLATE_PATH . 'emails/custom-email', null, $texts ) );

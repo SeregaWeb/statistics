@@ -8,19 +8,15 @@
 
 get_header();
 
-$reports  = new TMSReports();
-$TMSUsers = new TMSUsers();
+$reports     = new TMSReports();
+$TMSUsers    = new TMSUsers();
+$TMSContacts = new TMSContacts();
 
-$bookmarks = $TMSUsers->get_all_bookmarks();
+$data = $TMSContacts->get_all_contacts();
 
-$args = array(
-	'status_post' => 'publish',
-);
-
-$items = $reports->get_favorites( $bookmarks, $args );
-
-$items[ 'hide_total' ] = true;
-
+$results       = get_field_value( $data, 'data' );
+$total_pages   = get_field_value( $data[ 'pagination' ], 'total_pages' );
+$current_pages = get_field_value( $data[ 'pagination' ], 'current_pages' );
 ?>
     <div class="container-fluid">
         <div class="row">
@@ -50,27 +46,38 @@ $items[ 'hide_total' ] = true;
                             </tr>
                             </thead>
                             <tbody>
-                            <tr>
-                                <td></td>
-                                <td></td>
-                                <td></td>
-                                <td></td>
-                                <td></td>
-                                <td></td>
-                                <td></td>
-                                <td></td>
-                                <td></td>
-                            </tr>
+							<?php if ( $results ):
+								foreach ( $results as $item ):?>
+                                    <tr>
+                                        <td>
+                                            <input type="hidden" name="id"
+                                                   value="<?php echo esc_attr( $item[ 'id' ] ); ?>">
+											<?php echo esc_html( $item[ 'company_name' ] ); ?>
+                                        </td>
+                                        <td><?php echo esc_html( $item[ 'city' ] ); ?>,
+											<?php echo esc_html( $item[ 'state' ] ); ?>
+											<?php echo esc_html( $item[ 'zip_code' ] ); ?></td>
+                                        <td>
+											<?php echo $item[ 'name' ]; ?>
+                                        </td>
+                                        <td><?php echo $item[ 'office_number' ]; ?></td>
+                                        <td><?php echo $item[ 'direct_number' ]; ?></td>
+                                        <td><?php echo $item[ 'email' ]; ?></td>
+                                        <td>0</td>
+                                        <td></td>
+                                        <td></td>
+                                    </tr>
+								<?php endforeach;
+							endif; ?>
                             </tbody>
                         </table>
 						<?php
-						if ( $TMSUsers->check_user_role_access( array( 'billing', 'accounting' ), true ) ) {
-							echo esc_html( get_template_part( TEMPLATE_PATH . 'tables/report', 'table-accounting', $items ) );
-						} else if ( $TMSUsers->check_user_role_access( array( 'tracking' ), true ) ) {
-							echo esc_html( get_template_part( TEMPLATE_PATH . 'tables/report', 'table-tracking', $items ) );
-						} else {
-							echo esc_html( get_template_part( TEMPLATE_PATH . 'tables/report', 'table', $items ) );
-						}
+						
+						echo esc_html( get_template_part( TEMPLATE_PATH . 'report', 'pagination', array(
+							'total_pages'  => $total_pages,
+							'current_page' => $current_pages,
+						) ) );
+						
 						?>
                     </div>
                 </div>

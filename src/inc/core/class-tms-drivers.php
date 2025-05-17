@@ -9,11 +9,13 @@ class TMSDrivers extends TMSDriversHelper {
 	
 	public $log_controller = false;
 	
-	public $helper = false;
+	public $helper       = false;
+	public $email_helper = false;
 	
 	public function __construct() {
 		$this->log_controller = new TMSLogs();
 		$this->helper         = new TMSCommonHelper();
+		$this->email_helper   = new TMSEmails();
 	}
 	
 	public function init() {
@@ -316,6 +318,80 @@ class TMSDrivers extends TMSDriversHelper {
 		);
 	}
 	
+	public function send_email_new_driver( $ID_DRIVER ) {
+		global $global_options;
+		$user_id        = get_current_user_id();
+		$project        = get_field( 'current_select', 'user_' . $user_id );
+		$select_emails  = get_field_value( $global_options, 'mails_add_driver' );
+		$add_new_driver = get_field_value( $global_options, 'add_new_driver' );
+		$user_name      = $this->get_user_full_name_by_id( $user_id );
+		$driver_object  = $this->get_driver_by_id( $ID_DRIVER );
+		$meta           = get_field_value( $driver_object, 'meta' );
+		
+		$driver_name   = get_field_value( $meta, 'driver_name' ) ?? '';
+		$driver_phone  = get_field_value( $meta, 'driver_phone' ) ?? '';
+		$vehicle_type  = get_field_value( $meta, 'vehicle_type' ) ?? '';
+		$vehicle_model = get_field_value( $meta, 'vehicle_model' ) ?? '';
+		$vehicle_make  = get_field_value( $meta, 'vehicle_make' );
+		$dimensions    = get_field_value( $meta, 'dimensions' );
+		$payload       = get_field_value( $meta, 'payload' );
+		$home_location = get_field_value( $meta, 'home_location' );
+		$city          = get_field_value( $meta, 'city' );
+		
+		$driver_capabilities = array(
+			'twic'               => get_field_value( $meta, 'twic' ),
+			'tsa'                => get_field_value( $meta, 'tsa_approved' ),
+			'hazmat'             => get_field_value( $meta, 'hazmat_certificate' ) || get_field_value( $meta, 'hazmat_endorsement' ),
+			'change-9'           => get_field_value( $meta, 'change_9_training' ),
+			'tanker-endorsement' => get_field_value( $meta, 'tanker_endorsement' ),
+			'background-check'   => get_field_value( $meta, 'background_check' ),
+			'liftgate'           => get_field_value( $meta, 'lift_gate' ),
+			'pallet-jack'        => get_field_value( $meta, 'pallet_jack' ),
+			'dolly'              => get_field_value( $meta, 'dolly' ),
+			'ppe'                => get_field_value( $meta, 'ppe' ),
+			'e-track'            => get_field_value( $meta, 'e_tracks' ),
+			'ramp'               => get_field_value( $meta, 'ramp' ),
+			'printer'            => get_field_value( $meta, 'printer' ),
+			'sleeper'            => get_field_value( $meta, 'sleeper' ),
+			'load-bars'          => get_field_value( $meta, 'load_bars' ),
+			'mc'                 => get_field_value( $meta, 'mc' ),
+			'dot'                => get_field_value( $meta, 'dot' ),
+			'real_id'            => get_field_value( $meta, 'real_id' ),
+			'macropoint'         => get_field_value( $meta, 'macro_point' ),
+			'tucker-tools'       => get_field_value( $meta, 'trucker_tools' ),
+		);
+		
+		$labels = $this->labels;
+		
+		$available_labels = array_intersect_key( $labels, array_filter( $driver_capabilities, function( $value ) {
+			return ! empty( $value );
+		} ) );
+		
+		$str = '';
+		if ( is_array( $available_labels ) && ! empty( $available_labels ) ) {
+			$available_labels_str = implode( ', ', $available_labels );
+			$str                  = "\nAdditional details: " . $available_labels_str;
+		}
+		$vehicle_type = $driverHelper->vehicle[ $vehicle_type ] . ', ' . $vehicle_make . ' ' . $vehicle_model ?? '';
+		
+		if ( $add_new_driver ) {
+			$link = '<a href="' . $add_new_driver . '?post_id=' . $ID_DRIVER . '">' . '(' . $ID_DRIVER . ') ' . $driver_name . '</a>';
+		}
+		
+		$this->email_helper->send_custom_email( $select_emails, array(
+			'subject'      => 'New Driver added:' . ' (' . $ID_DRIVER . ') ' . $driver_name,
+			'project_name' => $project,
+			'subtitle'     => $user_name[ 'full_name' ] . ' has added the new driver to our system ' . $link,
+			'message'      => "Contact phone number: " . $driver_phone . "\n
+				Vehicle: " . $vehicle_type . "\n
+				Cargo space details: " . $dimensions . " inches, " . $payload . "\n
+				Home location: " . $city . ', ' . $home_location . "
+				" . $str . "
+				\n\nDon't forget to rate your experience with this driver in our system if you happen to book a load for this unit.
+				"
+		) );
+	}
+	
 	public function update_driver_status() {
 		if ( defined( 'DOING_AJAX' ) && DOING_AJAX ) {
 			
@@ -328,6 +404,7 @@ class TMSDrivers extends TMSDriversHelper {
 			$result = $this->update_driver_status_in_db( $MY_INPUT );
 			
 			if ( $result ) {
+				$this->send_email_new_driver( $MY_INPUT[ 'post_id' ] );
 				wp_send_json_success( [ 'message' => 'Published', 'data' => $MY_INPUT ] );
 			}
 			
@@ -791,6 +868,8 @@ class TMSDrivers extends TMSDriversHelper {
 					? sanitize_text_field( $_POST[ 'recruiter_add' ] ) : '',
 				'preferred_distance'         => isset( $_POST[ 'preferred_distance' ] ) && is_array( $_POST[ 'preferred_distance' ] )
 					? implode( ',', array_map( 'sanitize_text_field', $_POST[ 'preferred_distance' ] ) ) : '',
+				'cross_border'               => isset( $_POST[ 'cross_border' ] ) && is_array( $_POST[ 'cross_border' ] )
+					? implode( ',', array_map( 'sanitize_text_field', $_POST[ 'cross_border' ] ) ) : '',
 				'owner_type'                 => isset( $_POST[ 'owner_type' ] )
 					? sanitize_text_field( $_POST[ 'owner_type' ] ) : '',
 				'emergency_contact_name'     => isset( $_POST[ 'emergency_contact_name' ] )
@@ -835,6 +914,8 @@ class TMSDrivers extends TMSDriversHelper {
 					? sanitize_email( $_POST[ 'driver_email' ] ) : '',
 				'preferred_distance'         => isset( $_POST[ 'preferred_distance' ] ) && is_array( $_POST[ 'preferred_distance' ] )
 					? implode( ',', array_map( 'sanitize_text_field', $_POST[ 'preferred_distance' ] ) ) : '',
+				'cross_border'               => isset( $_POST[ 'cross_border' ] ) && is_array( $_POST[ 'cross_border' ] )
+					? implode( ',', array_map( 'sanitize_text_field', $_POST[ 'cross_border' ] ) ) : '',
 				'home_location'              => isset( $_POST[ 'home_location' ] )
 					? sanitize_text_field( $_POST[ 'home_location' ] ) : '',
 				'city'                       => isset( $_POST[ 'city' ] ) ? sanitize_text_field( $_POST[ 'city' ] )

@@ -96,6 +96,9 @@ function addNewContact(ajaxUrl) {
                     console.log('update successfully:', requestStatus.data);
                     printMessage(requestStatus.data.message, 'success', 8000);
                     LoadingBtn(addBtn, false);
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 2000);
                 } else {
                     LoadingBtn(addBtn, false);
                     // eslint-disable-next-line no-alert

@@ -10,6 +10,7 @@ $languages          = $driver->languages;
 $relation_options   = $driver->relation_options;
 $owner_type_options = $driver->owner_type_options;
 $labels_distance    = $driver->labels_distance;
+$labels_border      = $driver->labels_border;
 $sources            = $driver->source;
 
 $helper     = new TMSReportsHelper();
@@ -50,6 +51,7 @@ $emergency_contact_name     = get_field_value( $meta, 'emergency_contact_name' )
 $emergency_contact_phone    = get_field_value( $meta, 'emergency_contact_phone' );
 $emergency_contact_relation = get_field_value( $meta, 'emergency_contact_relation' );
 $preferred_distance         = get_field_value( $meta, 'preferred_distance' );
+$cross_border               = get_field_value( $meta, 'cross_border' );
 $source                     = get_field_value( $meta, 'source' );
 $recruiter_add              = get_field_value( $meta, 'recruiter_add' );
 
@@ -312,6 +314,39 @@ $dot         = get_field_value( $meta, 'dot' );
 					endif;
 					?>
 
+                </div>
+            </div>
+
+            <h4 class="mt-4">Cross border</h4>
+
+            <div class="row">
+                <div class="col-12 d-flex align-items-center gap-4">
+					<?php
+					
+					$selected_cross_border = array_map( 'trim', explode( ',', $cross_border ) );
+					
+					if ( is_array( $labels_border ) ):
+						foreach ( $labels_border as $key => $label ):
+							$is_checked = in_array( $key, $selected_cross_border, true );
+							
+							?>
+                            <div class="form-check form-switch">
+                                <input class="form-check-input js-disable-with-logic"
+                                       data-value="any"
+                                       type="checkbox"
+                                       id="<?php echo esc_attr( $key ); ?>"
+                                       value="<?php echo esc_attr( $key ); ?>"
+                                       name="cross_border[]"
+									<?php echo checked( $is_checked ); ?>
+                                />
+                                <label class="form-check-label" for="<?php echo esc_attr( $key ); ?>">
+									<?php echo esc_html( $label ); ?>
+                                </label>
+                            </div>
+						<?php
+						endforeach;
+					endif;
+					?>
                 </div>
             </div>
 

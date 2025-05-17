@@ -3506,9 +3506,6 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 		global $global_options;
 		$add_new_load = get_field_value( $global_options, 'add_new_load' );
 		$link         = '';
-		if ( $add_new_load ) {
-			$link = '<a href="' . $add_new_load . '?post_id=' . $data[ 'post_id' ] . '">Load</a>';
-		}
 		
 		// Prepare the data to update
 		$update_params = array(
@@ -3540,15 +3537,15 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 				}
 				
 				if ( $cleanedpick !== $data[ 'pick_up_location_json' ] || $cleaneddeliv !== $data[ 'delivery_location_json' ] ) {
-					$values = '------- OLD VALUES PICK UP -------' . "<br><br>";
+					$values = '------- OLD VALUES PICK UP -------' . "<br><br><del>";
 					
 					$values .= $this->formatJsonForEmail( $cleanedpick );
 					
-					$values .= "<br>" . '------- OLD VALUES DELIVERED -------' . "<br><br>";
+					$values .= "</del><br>" . '------- OLD VALUES DELIVERED -------' . "<br><br><del>";
 					
 					$values .= $this->formatJsonForEmail( $cleaneddeliv );
 					
-					$values .= "<br>" . '------- NEW VALUES PICK UP-------' . "<br><br>";
+					$values .= "</del><br>" . '------- NEW VALUES PICK UP-------' . "<br><br>";
 					
 					$values .= $this->formatJsonForEmail( $data[ 'pick_up_location_json' ] );
 					
@@ -3558,11 +3555,23 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 					
 					$select_emails = $this->email_helper->get_selected_emails( $this->user_emails, array( 'tracking_email' ) );
 					
+					
+					if ( $add_new_load ) {
+						$url = add_query_arg( array(
+							'post_id'    => $data[ 'post_id' ],
+							'use_driver' => $this->project,
+						), $add_new_load );
+						
+						$link = sprintf( '<a href="%s">%s</a>', esc_url( $url ), esc_html( $data[ 'reference_number' ] ) );
+					}
+					
+					
+					$who_changed = 'locations';
 					$this->email_helper->send_custom_email( $select_emails, array(
 						'subject'      => 'Changed locations',
-						'project_name' => 'Project: ' . $this->project,
-						'subtitle'     => 'User changed: ' . $user_name[ 'full_name' ],
-						'message'      => $values . "\n" . ' load № ' . $data[ 'reference_number' ] . ' Link to: ' . $link,
+						'project_name' => $this->project,
+						'subtitle'     => $user_name[ 'full_name' ] . ' has changed the ' . $who_changed . ' for the load ' . $link,
+						'message'      => $values,
 					) );
 				}
 			}
@@ -3672,19 +3681,28 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 				global $global_options;
 				$add_new_load = get_field_value( $global_options, 'add_new_load' );
 				$link         = '';
-				if ( $add_new_load ) {
-					$link = '<a href="' . $add_new_load . '?post_id=' . $data[ 'post_id' ] . '">Load</a>';
-				}
 				
 				$select_emails = $this->email_helper->get_selected_emails( $this->user_emails, array( 'tracking_email' ) );
 				$user_name     = $this->get_user_full_name_by_id( $user_id );
 				
+				if ( $add_new_load ) {
+					$url = add_query_arg( array(
+						'post_id'    => $data[ 'post_id' ],
+						'use_driver' => $this->project,
+					), $add_new_load );
+					
+					$link = sprintf( '<a href="%s">%s</a>', esc_url( $url ), esc_html( $data[ 'reference_number' ] ) );
+				}
+				
+				
+				$who_changed = 'rate confirmation';
 				$this->email_helper->send_custom_email( $select_emails, array(
 					'subject'      => 'Update rate confirmation',
-					'project_name' => 'Project: ' . $this->project,
-					'subtitle'     => 'User changed: ' . $user_name[ 'full_name' ],
-					'message'      => 'Link to: ' . $link,
+					'project_name' => $this->project,
+					'subtitle'     => $user_name[ 'full_name' ] . ' has changed the ' . $who_changed . ' for the load ' . $link,
+					'message'      => '',
 				) );
+				
 			}
 		}
 		
@@ -3751,8 +3769,14 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 		global $global_options;
 		$add_new_load = get_field_value( $global_options, 'add_new_load' );
 		$link         = '';
+		
 		if ( $add_new_load ) {
-			$link = '<a href="' . $add_new_load . '?post_id=' . $data[ 'post_id' ] . '">Load</a>';
+			$url = add_query_arg( array(
+				'post_id'    => $data[ 'post_id' ],
+				'use_driver' => $this->project,
+			), $add_new_load );
+			
+			$link = sprintf( '<a href="%s">%s</a>', esc_url( $url ), esc_html( $data[ 'reference_number' ] ) );
 		}
 		
 		if ( $data[ 'post_status' ] === 'publish' ) {
@@ -3790,11 +3814,13 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 						'team_leader_email'
 					) );
 					
+					
+					$who_changed = 'Changed driver';
 					$this->email_helper->send_custom_email( $select_emails, array(
 						'subject'      => 'Changed driver',
-						'project_name' => 'Project: ' . $this->project,
-						'subtitle'     => 'User changed: ' . $user_name[ 'full_name' ],
-						'message'      => 'New value: ' . $data[ 'unit_number_name' ] . ' Old value: ' . $data[ 'old_unit_number_name' ] . 'Load № ' . $data[ 'reference_number' ] . ' Link to: ' . $link,
+						'project_name' => $this->project,
+						'subtitle'     => $user_name[ 'full_name' ] . ' has changed the ' . $who_changed . ' for the load ' . $link,
+						'message'      => '<del>' . $data[ 'old_unit_number_name' ] . '</del>, now: ' . $data[ 'unit_number_name' ],
 					) );
 				}
 			}
@@ -3831,12 +3857,14 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 					$new_status_label = $this->get_label_by_key( $data[ 'load_status' ], 'statuses' );
 					$old_status_label = $this->get_label_by_key( $data[ 'old_load_status' ], 'statuses' );
 					
+					$who_changed = 'status';
 					$this->email_helper->send_custom_email( $select_emails, array(
 						'subject'      => 'Changed load status',
-						'project_name' => 'Project: ' . $this->project,
-						'subtitle'     => 'User changed: ' . $user_name[ 'full_name' ],
-						'message'      => 'New value: ' . $new_status_label . ' Old value: ' . $old_status_label . 'Load № ' . $data[ 'reference_number' ] . ' Link to: ' . $link,
+						'project_name' => $this->project,
+						'subtitle'     => $user_name[ 'full_name' ] . ' has changed the ' . $who_changed . ' for the load ' . $link,
+						'message'      => '<del>' . $old_status_label . '</del>, now: ' . $new_status_label,
 					) );
+					
 				}
 				
 				if ( $data[ 'load_status' ] !== $data[ 'old_load_status' ] ) {
@@ -3867,11 +3895,12 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 						'accounting_email',
 					) );
 					
+					$who_changed = 'Driver rate';
 					$this->email_helper->send_custom_email( $select_emails, array(
 						'subject'      => 'Changed Driver rate',
-						'project_name' => 'Project: ' . $this->project,
-						'subtitle'     => 'User changed: ' . $user_name[ 'full_name' ],
-						'message'      => 'New value: $' . $data[ 'driver_rate' ] . ' Old value: $' . $data[ 'old_value_driver_rate' ] . 'Load № ' . $data[ 'reference_number' ] . ' Link to: ' . $link,
+						'project_name' => $this->project,
+						'subtitle'     => $user_name[ 'full_name' ] . ' has changed the ' . $who_changed . ' for the load ' . $link,
+						'message'      => '<del>$' . $data[ 'old_value_driver_rate' ] . '</del>, now: $' . $data[ 'driver_rate' ],
 					) );
 					
 					$data[ 'modify_driver_price' ] = '1';
@@ -3890,11 +3919,13 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 						'accounting_email',
 					) );
 					
+					
+					$who_changed = 'Booked rate';
 					$this->email_helper->send_custom_email( $select_emails, array(
 						'subject'      => 'Changed Booked rate',
-						'project_name' => 'Project: ' . $this->project,
-						'subtitle'     => 'User changed: ' . $user_name[ 'full_name' ],
-						'message'      => 'New value: $' . $data[ 'booked_rate' ] . ' Old value: $' . $data[ 'old_value_booked_rate' ] . 'Load № ' . $data[ 'reference_number' ] . ' Link to: ' . $link,
+						'project_name' => $this->project,
+						'subtitle'     => $user_name[ 'full_name' ] . ' has changed the ' . $who_changed . ' for the load ' . $link,
+						'message'      => '<del>$' . $data[ 'old_value_booked_rate' ] . '</del>, now: $' . $data[ 'booked_rate' ],
 					) );
 					
 					$this->log_controller->create_one_log( array(
@@ -4046,9 +4077,6 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 		$user_name    = $this->get_user_full_name_by_id( $user_id );
 		$add_new_load = get_field_value( $global_options, 'add_new_load' );
 		$link         = '';
-		if ( $add_new_load ) {
-			$link = '<a href="' . $add_new_load . '?post_id=' . $data[ 'post_id' ] . '">Load</a>';
-		}
 		
 		// Проверяем корректность входных данных
 		if ( ! $image_id || ! $image_field || ! $post_id ) {
@@ -4081,11 +4109,21 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 						'team_leader_email'
 					) );
 					
+					if ( $add_new_load ) {
+						$url = add_query_arg( array(
+							'post_id'    => $data[ 'post_id' ],
+							'use_driver' => $this->project,
+						), $add_new_load );
+						
+						$link = sprintf( '<a href="%s">%s</a>', esc_url( $url ), esc_html( $data[ 'reference_number' ] ) );
+					}
+					
+					$who_changed = 'rate confirmation';
 					$this->email_helper->send_custom_email( $select_emails, array(
 						'subject'      => 'Changed rate confirmation',
-						'project_name' => 'Project: ' . $this->project,
-						'subtitle'     => 'User changed: ' . $user_name[ 'full_name' ],
-						'message'      => 'Need check this load - load № ' . $data[ 'reference_number' ] . ' Link to: ' . $link,
+						'project_name' => $this->project,
+						'subtitle'     => $user_name[ 'full_name' ] . 'has updated the ' . $who_changed . ' for the load ' . $link,
+						'message'      => 'You may need to review the document.',
 					) );
 				}
 				

@@ -3586,6 +3586,9 @@ function addNewContact(ajaxUrl) {
         console.log('update successfully:', requestStatus.data);
         (0,_info_messages__WEBPACK_IMPORTED_MODULE_0__.printMessage)(requestStatus.data.message, 'success', 8000);
         (0,_common_loading_btn__WEBPACK_IMPORTED_MODULE_1__.LoadingBtn)(addBtn, false);
+        setTimeout(function () {
+          window.location.reload();
+        }, 2000);
       } else {
         (0,_common_loading_btn__WEBPACK_IMPORTED_MODULE_1__.LoadingBtn)(addBtn, false);
         (0,_info_messages__WEBPACK_IMPORTED_MODULE_0__.printMessage)("Error update:".concat(requestStatus.data.message), 'danger', 8000);

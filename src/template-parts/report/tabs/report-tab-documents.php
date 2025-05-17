@@ -460,7 +460,8 @@ if ( $report_object ) {
             </div>
 		<?php endif; ?>
 		
-		<?php if ( ! $screen_picture ):
+		<?php
+		if ( ! $screen_picture || current_user_can( 'administrator' ) ):
 			
 			
 			$text = $reports->create_message_dispatch( $meta );

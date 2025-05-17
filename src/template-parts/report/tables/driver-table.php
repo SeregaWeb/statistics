@@ -42,13 +42,14 @@ if ( ! empty( $results ) ) : ?>
 			$payload = get_field_value( $meta, 'payload' );
 			$preferred_distance = get_field_value( $meta, 'preferred_distance' );
 			$selected_distances = array_map( 'trim', explode( ',', $preferred_distance ) );
+			$cross_border = get_field_value( $meta, 'cross_border' );
+			$selected_cross_border = array_map( 'trim', explode( ',', $cross_border ) );
 			
 			$driver_capabilities = array(
 				'twic.svg'               => get_field_value( $meta, 'twic' ),
 				'tsa.svg'                => get_field_value( $meta, 'tsa_approved' ),
 				'hazmat.svg'             => get_field_value( $meta, 'hazmat_certificate' ) || get_field_value( $meta, 'hazmat_endorsement' ),
 				'change-9.svg'           => get_field_value( $meta, 'change_9_training' ),
-				'canada.svg'             => get_field_value( $meta, 'canada_transition_proof' ),
 				'tanker-endorsement.svg' => get_field_value( $meta, 'tanker_endorsement' ),
 				'background-check.svg'   => get_field_value( $meta, 'background_check' ),
 				'liftgate.svg'           => get_field_value( $meta, 'lift_gate' ),
@@ -69,6 +70,8 @@ if ( ! empty( $results ) ) : ?>
 				'otr.svg'                => is_numeric( array_search( 'otr', $selected_distances ) ),
 				'local.svg'              => is_numeric( array_search( 'local', $selected_distances ) ),
 				'regional.svg'           => is_numeric( array_search( 'regional', $selected_distances ) ),
+				'canada.svg'             => is_numeric( array_search( 'canada', $selected_cross_border ) ) || get_field_value( $meta, 'canada_transition_proof' ),
+				'mexico.svg'             => is_numeric( array_search( 'mexico', $selected_cross_border ) ),
 			);
 			
 			

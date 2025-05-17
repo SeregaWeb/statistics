@@ -58,3 +58,26 @@ function disable_canonical_redirect_for_paged( $redirect_url ) {
 }
 
 add_filter( 'redirect_canonical', 'disable_canonical_redirect_for_paged' );
+
+add_action( 'template_redirect', function() {
+	if ( isset( $_GET[ 'use_driver' ] ) ) {
+		$use_driver  = $_GET[ 'use_driver' ];
+		$user_id     = get_current_user_id();
+		$raw         = get_field( 'field_66eeb9e964c67', 'user_' . $user_id );
+		$need_select = false;
+		foreach ( $raw as $key => $value ) {
+			if ( strtolower( $value ) === strtolower( $use_driver ) ) {
+				$need_select = $value;
+			}
+		}
+		
+		if ( $need_select ) {
+			update_field( 'field_66eeba6448749', $need_select, 'user_' . $user_id );
+		} else {
+			wp_die( 'Access denied. <a href="' . home_url() . '">Go to home page</a>' );
+		}
+		$clean_url = remove_query_arg( 'use_driver' );
+		wp_safe_redirect( $clean_url );
+		exit;
+	}
+} );

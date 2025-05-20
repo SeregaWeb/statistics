@@ -45,6 +45,7 @@ $tbd                     = false;
 $date_booked_formatted   = '';
 $shared_with_client      = '';
 $macropoint_set          = false;
+$trucker_tools           = false;
 $second_driver           = '';
 $second_unit_number_name = '';
 $second_driver_rate      = '';
@@ -97,6 +98,7 @@ if ( $report_object ) {
 		$tbd                    = get_field_value( $meta, 'tbd' );
 		$shared_with_client     = get_field_value( $meta, 'shared_with_client' );
 		$macropoint_set         = get_field_value( $meta, 'macropoint_set' );
+		$trucker_tools          = get_field_value( $meta, 'trucker_tools' );
 		$additional_fees        = get_field_value( $meta, 'additional_fees' );
 		$additional_fees_val    = get_field_value( $meta, 'additional_fees_val' );
 		$additional_fees_driver = get_field_value( $meta, 'additional_fees_driver' );
@@ -152,8 +154,9 @@ $read_only = $TMSUsers->check_read_only( $post_status );
         <div class="mb-2 col-12 col-xl-4">
             <label for="reference_number" class="form-label">Reference Number</label>
 			<?php if ( ! $read_only && ! $tracking_tl ): ?>
-                <input type="text" name="reference_number" value="<?php echo $reference_number; ?>" class="form-control"
-                       required>
+                <input type="text" name="reference_number" value="<?php echo $reference_number; ?>"
+                       class="form-control js-reference-number"
+					<?php echo $load_status !== 'waiting-on-rc' ? 'required' : ''; ?>>
 			<?php else: ?>
                 <p class="m-0"><strong><?php echo $reference_number ?></strong></p>
                 <input type="hidden" name="reference_number" value="<?php echo $reference_number; ?>">
@@ -218,7 +221,8 @@ $read_only = $TMSUsers->check_read_only( $post_status );
                 <input type="hidden" name="load_status" value="<?php echo $load_status; ?>">
 			<?php else: ?>
 
-                <select name="load_status" class="form-control form-select" required>
+                <select name="load_status" class="form-control form-select js-unrequider" data-value="waiting-on-rc"
+                        data-target=".js-reference-number" required>
 					<?php if ( ! $read_only ): ?>
                         <option value="">Select status</option>
 					<?php endif; ?>
@@ -421,6 +425,19 @@ $read_only = $TMSUsers->check_read_only( $post_status );
                         </label>
                     </div>
                 </div>
+
+                <div class="col-12"></div>
+
+                <div class="mb-2 col-12 col-md-6 col-xl-4">
+                    <div class="form-check form-switch p-0 mt-1">
+                        <input class="form-check-input ml-0" <?php echo is_numeric( $trucker_tools ) ? 'checked'
+							: ''; ?> id="trucker_tools" name="trucker_tools"
+                               type="checkbox">
+                        <label class="form-check-label ml-2" for="trucker_tools">Trucker Tools set
+                        </label>
+                    </div>
+                </div>
+			
 			<?php else: ?>
                 <div class="col-12 col-md-6 col-xl-4  mb-2">
                     <div class="form-check form-switch p-0 mt-1">
@@ -431,6 +448,20 @@ $read_only = $TMSUsers->check_read_only( $post_status );
                         </label>
 
                         <input type="hidden" name="macropoint_set" value="<?php echo $macropoint_set; ?>">
+                    </div>
+                </div>
+
+                <div class="col-12"></div>
+
+                <div class="col-12 col-md-6 col-xl-4  mb-2">
+                    <div class="form-check form-switch p-0 mt-1">
+                        <input disabled class="form-check-input disabled ml-0" <?php echo is_numeric( $trucker_tools )
+							? 'checked' : ''; ?> name="fake-trucker_tools"
+                               type="checkbox">
+                        <label class="form-check-label ml-2" for="trucker_tools">Trucker Tools set
+                        </label>
+
+                        <input type="hidden" name="trucker_tools" value="<?php echo $trucker_tools; ?>">
                     </div>
                 </div>
 			<?php endif; ?>
@@ -574,6 +605,18 @@ $read_only = $TMSUsers->check_read_only( $post_status );
                            id="macropoint_set" name="macropoint_set"
                            type="checkbox">
                     <label class="form-check-label ml-2" for="macropoint_set">MacroPoint set
+                    </label>
+                </div>
+            </div>
+
+
+            <div class="col-12"></div>
+            <div class="mb-2 col-12 col-md-6 col-xl-4">
+                <div class="form-check form-switch p-0 mt-1">
+                    <input class="form-check-input ml-0" <?php echo is_numeric( $trucker_tools ) ? 'checked' : ''; ?>
+                           id="trucker_tools" name="trucker_tools"
+                           type="checkbox">
+                    <label class="form-check-label ml-2" for="trucker_tools">Trucker Tools set
                     </label>
                 </div>
             </div>
@@ -814,5 +857,4 @@ $read_only = $TMSUsers->check_read_only( $post_status );
             </div>
         </div>
     </div>
-
 </form>

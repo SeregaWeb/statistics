@@ -14,6 +14,7 @@ import {
     initMoneyMask,
     quickPayMethod,
     triggerCurrentTime,
+    unrequiderInit,
 } from './components/input-helpers';
 import {
     actionCreateReportInit,
@@ -153,6 +154,7 @@ function ready() {
     toggleBlocksRadio();
     dateMaskInit();
     dragAnDropInit();
+    unrequiderInit();
 
     createDocumentInvoice();
     createDocumentInvoiceActions(urlAjax);

@@ -11,10 +11,12 @@ get_header();
 $reports = new TMSReports();
 
 $args = array(
-	'status_post'    => 'publish',
-	'per_page_loads' => 100,
-	'exclude_paid'   => true,
-	'exclude_status' => array( 'cancelled' ),
+	'status_post'        => 'publish',
+	'per_page_loads'     => 100,
+	'exclude_paid'       => true,
+	'exclude_tbd'        => true,
+	'exclude_status'     => array( 'cancelled' ),
+	'exclude_empty_rate' => true,
 );
 
 $args  = $reports->set_filter_params( $args );

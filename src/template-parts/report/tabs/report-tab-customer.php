@@ -171,7 +171,6 @@ if ( $report_object ) {
                     </button>
 				<?php endif; ?>
             </div>
-
             <div class="col-12 col-lg-8">
                 <div class="additional-contacts js-additional-contact row <?php echo ( $additional_contacts_isset ) ? ''
 					: 'd-none'; ?>">

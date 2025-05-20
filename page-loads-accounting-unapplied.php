@@ -106,14 +106,7 @@ if ( is_array( $items ) && ! empty( $items ) ) {
                                                     </td>
                                                     <td>
 														<?php
-														$statuses_labels                        = [
-															'factoring-delayed-advance' => 'Delayed advance',
-															'unapplied-payment'         => 'Unapplied payments',
-															'in-processing'             => 'Processing',
-															'pending-to-tafs'           => 'Pending to factoring',
-															'fraud'                     => 'Fraud',
-															'company-closed'            => 'Company closed',
-														];
+														$statuses_labels                        = $reports->statuses_factoring_labels;
 														
 														foreach ( $statuses_labels as $status_key => $label ) :
 															if ( isset( $report[ 'statuses' ][ $status_key ] ) ) :

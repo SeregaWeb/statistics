@@ -39,9 +39,9 @@ if ( ! empty( $results ) ) : ?>
         <thead>
         <tr>
             <th><input class="checkbox-big js-select-load-all" type="checkbox" name="select-all"></th>
-            <th scope="col" title="dispatcher">Disp.</th>
-            <th scope="col">Pick up location</th>
-            <th scope="col">Delivery location</th>
+            <th scope="col" title="dispatcher">LOAD NO</th>
+            <th scope="col">ORIGIN</th>
+            <th scope="col">DESTINATION</th>
             <th scope="col">Gross</th>
             <th scope="col">Broker</th>
             <th scope="col">Pick Up Date</th>

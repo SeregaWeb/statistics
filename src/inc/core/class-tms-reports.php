@@ -149,6 +149,9 @@ class TMSReports extends TMSReportsHelper {
 			LEFT JOIN $table_meta AS load_status
 				ON main.id = load_status.post_id
 				AND load_status.meta_key = 'load_status'
+			LEFT JOIN $table_meta AS driver_rate
+				ON main.id = driver_rate.post_id
+				AND driver_rate.meta_key = 'driver_rate'
 			LEFT JOIN $table_meta AS source
 				ON main.id = source.post_id
 				AND source.meta_key = 'source'
@@ -167,6 +170,9 @@ class TMSReports extends TMSReportsHelper {
 			LEFT JOIN $table_meta AS factoring_status
 				ON main.id = factoring_status.post_id
 				AND factoring_status.meta_key = 'factoring_status'
+			LEFT JOIN $table_meta AS tbd
+				ON main.id = tbd.post_id
+				AND tbd.meta_key = 'tbd'
 			WHERE 1=1";
 		
 		// Основной запрос
@@ -193,6 +199,10 @@ class TMSReports extends TMSReportsHelper {
 		if ( ! empty( $args[ 'status_post' ] ) ) {
 			$where_conditions[] = "main.status_post = %s";
 			$where_values[]     = $args[ 'status_post' ];
+		}
+		
+		if ( isset( $args[ 'exclude_empty_rate' ] ) && $args[ 'exclude_empty_rate' ] ) {
+			$where_conditions[] = "driver_rate.meta_value IS NOT NULL AND driver_rate.meta_value != '' AND CAST(driver_rate.meta_value AS DECIMAL) > 0";
 		}
 		
 		if ( isset( $args[ 'ar_problem' ] ) && $args[ 'ar_problem' ] ) {
@@ -244,10 +254,14 @@ class TMSReports extends TMSReportsHelper {
 		if ( isset( $args[ 'exclude_paid' ] ) && ! empty( $args[ 'exclude_paid' ] ) ) {
 			// Условие для exclude_paid: показывать все записи, где значение не "paid" или оно отсутствует/пустое
 			$where_conditions[] = "(
-        driver_pay_statuses.meta_value NOT IN ('paid')
-        OR driver_pay_statuses.meta_value IS NULL
-        OR driver_pay_statuses.meta_value = ''
-    )";
+		        driver_pay_statuses.meta_value NOT IN ('paid')
+		        OR driver_pay_statuses.meta_value IS NULL
+		        OR driver_pay_statuses.meta_value = ''
+		    )";
+		}
+		
+		if ( isset( $args[ 'exclude_tbd' ] ) && ! empty( $args[ 'exclude_tbd' ] ) ) {
+			$where_conditions[] = "(tbd.meta_value IS NULL OR tbd.meta_value != '1')";
 		}
 		
 		if ( isset( $args[ 'include_paid' ] ) && ! empty( $args[ 'include_paid' ] ) ) {
@@ -1812,6 +1826,7 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 			if ( $load_status == 'waiting-on-rc' ) {
 				$required_fields = array_diff_key( $required_fields, array_flip( [
 					'pick_up_location',
+					'reference_number',
 					'delivery_location',
 					'attached_file_required'
 				] ) );
@@ -2474,6 +2489,7 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 				"driver_phone"            => FILTER_SANITIZE_STRING,
 				"shared_with_client"      => FILTER_VALIDATE_BOOLEAN,
 				"macropoint_set"          => FILTER_VALIDATE_BOOLEAN,
+				"trucker_tools"           => FILTER_VALIDATE_BOOLEAN,
 				"old_driver_phone"        => FILTER_SANITIZE_STRING,
 				"profit"                  => FILTER_SANITIZE_STRING,
 				"load_status"             => FILTER_SANITIZE_STRING,
@@ -3560,6 +3576,7 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 						$url = add_query_arg( array(
 							'post_id'    => $data[ 'post_id' ],
 							'use_driver' => $this->project,
+							'tab'        => 'pills-trip-tab',
 						), $add_new_load );
 						
 						$link = sprintf( '<a href="%s">%s</a>', esc_url( $url ), esc_html( $data[ 'reference_number' ] ) );
@@ -3689,6 +3706,7 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 					$url = add_query_arg( array(
 						'post_id'    => $data[ 'post_id' ],
 						'use_driver' => $this->project,
+						'tab'        => 'pills-documents-tab',
 					), $add_new_load );
 					
 					$link = sprintf( '<a href="%s">%s</a>', esc_url( $url ), esc_html( $data[ 'reference_number' ] ) );
@@ -3774,6 +3792,7 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 			$url = add_query_arg( array(
 				'post_id'    => $data[ 'post_id' ],
 				'use_driver' => $this->project,
+				'tab'        => 'pills-load-tab',
 			), $add_new_load );
 			
 			$link = sprintf( '<a href="%s">%s</a>', esc_url( $url ), esc_html( $data[ 'reference_number' ] ) );
@@ -3815,7 +3834,7 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 					) );
 					
 					
-					$who_changed = 'Changed driver';
+					$who_changed = 'driver';
 					$this->email_helper->send_custom_email( $select_emails, array(
 						'subject'      => 'Changed driver',
 						'project_name' => $this->project,
@@ -3969,6 +3988,7 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 			'tbd'                     => $data[ 'tbd' ],
 			'shared_with_client'      => $data[ 'shared_with_client' ],
 			'macropoint_set'          => $data[ 'macropoint_set' ],
+			'trucker_tools'           => $data[ 'trucker_tools' ],
 			'second_unit_number_name' => $data[ 'second_unit_number_name' ],
 			'second_driver_rate'      => $data[ 'second_driver_rate' ],
 			'second_driver_phone'     => $data[ 'second_driver_phone' ],
@@ -4113,6 +4133,7 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 						$url = add_query_arg( array(
 							'post_id'    => $data[ 'post_id' ],
 							'use_driver' => $this->project,
+							'tab'        => 'pills-documents-tab',
 						), $add_new_load );
 						
 						$link = sprintf( '<a href="%s">%s</a>', esc_url( $url ), esc_html( $data[ 'reference_number' ] ) );
@@ -4122,7 +4143,7 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 					$this->email_helper->send_custom_email( $select_emails, array(
 						'subject'      => 'Changed rate confirmation',
 						'project_name' => $this->project,
-						'subtitle'     => $user_name[ 'full_name' ] . 'has updated the ' . $who_changed . ' for the load ' . $link,
+						'subtitle'     => $user_name[ 'full_name' ] . ' has updated the ' . $who_changed . ' for the load ' . $link,
 						'message'      => 'You may need to review the document.',
 					) );
 				}

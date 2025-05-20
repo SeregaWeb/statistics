@@ -10,6 +10,16 @@ class TMSReportsHelper extends TMSReportsIcons {
 		'direct'                    => 'Direct',
 	);
 	
+	
+	public $statuses_factoring_labels = [
+		'factoring-delayed-advance' => 'Delayed advance',
+		'unapplied-payment'         => 'Unapplied payments',
+		'in-processing'             => 'Processing',
+		'pending-to-tafs'           => 'Pending to factoring',
+		'fraud'                     => 'Fraud',
+		'company-closed'            => 'Company closed',
+	];
+	
 	public $select = array(
 		"USA_LABEL" => array( "---United states (US)---" ),
 		"AL"        => "Alabama, AL",
@@ -217,6 +227,12 @@ class TMSReportsHelper extends TMSReportsIcons {
 		'Odysseia',
 		'Martlet',
 		'Endurance'
+	);
+	
+	public $tms_tables_with_label = array(
+		'Odysseia'  => 'Odysseia',
+		'Martlet'   => 'Martlet Express',
+		'Endurance' => 'Endurance Transport'
 	);
 	
 	public $statuses_ar = array(
@@ -848,6 +864,9 @@ Kindly confirm once you've received this message." ) . "\n";
 			return isset( $this->sources[ $key ] ) ? $this->sources[ $key ] : $key;
 		}
 		
+		if ( $search_list === 'factoring_broker' ) {
+			return isset( $this->factoring_broker[ $key ] ) ? $this->factoring_broker[ $key ] : $key;
+		}
 		if ( $search_list === 'processing' ) {
 			return isset( $this->processing[ $key ] ) ? $this->processing[ $key ] : $key;
 		}
@@ -1301,22 +1320,37 @@ Kindly confirm once you've received this message." ) . "\n";
 		$unit_number_name = esc_html( get_field_value( $meta, 'unit_number_name' ) );
 		$driver_phone     = esc_html( get_field_value( $meta, 'driver_phone' ) );
 		$macropoint_set   = get_field_value( $meta, 'macropoint_set' );
+		$trucker_tools    = get_field_value( $meta, 'trucker_tools' );
 		
 		$second_unit_number_name = esc_html( get_field_value( $meta, 'second_unit_number_name' ) );
 		$second_driver_phone     = esc_html( get_field_value( $meta, 'second_driver_phone' ) );
-		
+		$shared_with_client      = get_field_value( $meta, 'shared_with_client' );
 		ob_start();
+		
+		$title = array();
+		
+		if ( $macropoint_set ) {
+			$title[] = 'MacroPoint set';
+		}
+		
+		if ( $trucker_tools ) {
+			$title[] = 'Trucker Tools set';
+		}
+		
+		$title_str = implode( ', ', $title );
+		
 		?>
         <div class="d-flex flex-column">
             <p class="m-0"><?php echo $unit_number_name; ?></p>
 			<?php if ( $driver_phone ) { ?>
-                <span class="text-small relative <?php echo $macropoint_set ? 'macropoint'
-					: ''; ?>" <?php echo $macropoint_set ? 'title="MacroPoint set"' : ''; ?>>
-                                <?php echo $driver_phone; ?>
-                            </span>
+                <span class="text-small relative <?php echo $shared_with_client ? 'text-primary'
+					: ''; ?> <?php echo $macropoint_set ? 'macropoint' : ''; ?> <?php echo $trucker_tools
+					? 'trucker_tools' : ''; ?>" title="<?php echo $title_str; ?>">
+				<?php echo $driver_phone; ?>
+                </span>
 			<?php } ?>
 			<?php if ( $second_unit_number_name && $second_driver_phone ): ?>
-                <p class="m-0"><?php echo $second_unit_number_name; ?></p>
+                <p class=" m-0"><?php echo $second_unit_number_name; ?></p>
 				<?php if ( $second_driver_phone ) { ?>
                     <span class="text-small relative">
                                 <?php echo $second_driver_phone; ?>

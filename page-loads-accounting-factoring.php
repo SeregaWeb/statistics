@@ -10,6 +10,7 @@ get_header();
 
 $statistics = new TMSStatistics();
 $TMSUsers   = new TMSUsers();
+$TMSBroker  = new TMSReportsCompany();
 
 $current_year  = date( 'Y' ); // Returns the current year
 $current_month = date( 'm' ); // Returns the current month
@@ -164,6 +165,45 @@ if ( ! $show_filter_by_office ) {
                             </div>
                         </form>
 
+                    </div>
+
+                    <div class="col-12 mt-3 mb-3">
+                        <h2>Top Debtor Summary</h2>
+                    </div>
+
+                    <div class="col-12">
+                        <table class="table">
+                            <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Profit</th>
+                                <th>Count</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+							
+							
+							<?php
+							$top5 = $statistics->get_top_10_customers( $year_param, $mount_param, $office );
+							
+							if ( is_array( $top5 ) ) {
+								foreach ( $top5 as $item ) {
+									$template_broker = $TMSBroker->get_broker_and_link_by_id( $item[ 'customer_id' ] );
+									$total_profit    = esc_html( '$' . $statistics->format_currency( $item[ 'total_profit' ] ) );
+									?>
+
+                                    <tr>
+                                        <td><?php echo $template_broker; ?></td>
+                                        <td><?php echo $total_profit; ?></td>
+                                        <td><?php echo $item[ 'post_count' ]; ?></td>
+                                    </tr>
+									
+									<?php
+								}
+							}
+							?>
+                            </tbody>
+                        </table>
                     </div>
                 </div>
             </div>

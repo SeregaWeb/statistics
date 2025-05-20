@@ -404,3 +404,31 @@ export function applyZipCodeMask(selector: string, countrySelector = '.js-countr
         });
     });
 }
+
+export function unrequiderInit() {
+    const unrequiders = document.querySelectorAll('.js-unrequider');
+
+    unrequiders.forEach((select) => {
+        select.addEventListener('change', function (e) {
+            const { target } = e;
+
+            if (!target) return;
+
+            // @ts-ignore
+            const selectedValue = target.value;
+            // @ts-ignore
+            const targetSelector = target.dataset.target;
+            // @ts-ignore
+            const expectedValue = target.dataset.value;
+
+            const targetVal = document.querySelector(targetSelector);
+            if (!targetVal) return;
+
+            if (selectedValue === expectedValue) {
+                targetVal.removeAttribute('required');
+            } else {
+                targetVal.setAttribute('required', 'required');
+            }
+        });
+    });
+}

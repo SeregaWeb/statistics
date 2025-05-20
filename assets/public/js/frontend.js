@@ -3519,17 +3519,25 @@ function LoadingBtn(btn, state) {
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   initAdditionalContactHandler: function() { return /* binding */ initAdditionalContactHandler; },
-/* harmony export */   initContactsHandler: function() { return /* binding */ initContactsHandler; }
+/* harmony export */   initContactsHandler: function() { return /* binding */ initContactsHandler; },
+/* harmony export */   openEdit: function() { return /* binding */ openEdit; }
 /* harmony export */ });
 /* harmony import */ var _info_messages__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ../info-messages */ "./src/js/components/info-messages.ts");
 /* harmony import */ var _common_loading_btn__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ../common/loading-btn */ "./src/js/components/common/loading-btn.ts");
+/* harmony import */ var _parts_popup_window__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ../../parts/popup-window */ "./src/js/parts/popup-window.js");
+/* harmony import */ var _search_action__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ../search-action */ "./src/js/components/search-action.ts");
+/* harmony import */ var _tel_mask__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! ../tel-mask */ "./src/js/components/tel-mask.ts");
+
+
+
 
 
 function addAdditionalContact(container) {
   var row = document.createElement('div');
   row.className = 'additional-contact row g-1 mt-2';
-  row.innerHTML = "\n    <div class=\"col\">\n      <input type=\"text\" name=\"\" class=\"form-control\" placeholder=\"Name\">\n    </div>\n    <div class=\"col\">\n      <input type=\"text\" name=\"\" class=\"form-control\" placeholder=\"Phone\">\n    </div>\n    <div class=\"col\">\n      <input type=\"email\" name=\"\" class=\"form-control\" placeholder=\"Email\">\n    </div>\n    <div class=\"col-md-1 d-flex align-items-center\">\n      <button type=\"button\" class=\"btn btn-outline-danger btn-sm js-remove-contact\" title=\"Remove\">\n        &times;\n      </button>\n    </div>\n  ";
+  row.innerHTML = "\n    <div class=\"col\">\n      <input type=\"text\" name=\"\" class=\"form-control\" placeholder=\"Name\">\n    </div>\n    <div class=\"col\">\n      <input type=\"text\" name=\"\" class=\"form-control js-tel-mask\" placeholder=\"Phone\">\n    </div>\n    <div class=\"col-1\">\n      <input type=\"text\" name=\"\" class=\"form-control\" placeholder=\"Ext\">\n    </div>\n    <div class=\"col\">\n      <input type=\"email\" name=\"\" class=\"form-control\" placeholder=\"Email\">\n    </div>\n    <div class=\"col-md-1 d-flex align-items-center\">\n      <button type=\"button\" class=\"btn btn-outline-danger btn-sm js-remove-contact\" title=\"Remove\">\n        &times;\n      </button>\n    </div>\n  ";
   container.appendChild(row);
+  (0,_tel_mask__WEBPACK_IMPORTED_MODULE_4__.telMaskInit)();
 }
 function reindexAdditionalContacts(container) {
   var rows = container.querySelectorAll('.additional-contact');
@@ -3538,7 +3546,8 @@ function reindexAdditionalContacts(container) {
     if (inputs.length === 3) {
       inputs[0].name = "additional_contacts[".concat(index, "][name]");
       inputs[1].name = "additional_contacts[".concat(index, "][phone]");
-      inputs[2].name = "additional_contacts[".concat(index, "][email]");
+      inputs[2].name = "additional_contacts[".concat(index, "][ext]");
+      inputs[3].name = "additional_contacts[".concat(index, "][email]");
     }
   });
 }
@@ -3600,7 +3609,70 @@ function addNewContact(ajaxUrl) {
     });
   });
 }
+function editContact(ajaxUrl) {
+  var form = document.querySelector('.js-edit-contact');
+  if (!form) return;
+  var addBtn = form.querySelector('button[type="submit"]');
+  form.addEventListener('submit', function (e) {
+    e.preventDefault();
+    (0,_common_loading_btn__WEBPACK_IMPORTED_MODULE_1__.LoadingBtn)(addBtn, true);
+    var target = e.target;
+    var formData = new FormData(target);
+    formData.append('action', 'edit_contact');
+    var options = {
+      method: 'POST',
+      body: formData
+    };
+    fetch(ajaxUrl, options).then(function (res) {
+      return res.json();
+    }).then(function (requestStatus) {
+      if (requestStatus.success) {
+        console.log('update successfully:', requestStatus.data);
+        (0,_info_messages__WEBPACK_IMPORTED_MODULE_0__.printMessage)(requestStatus.data.message, 'success', 8000);
+        (0,_common_loading_btn__WEBPACK_IMPORTED_MODULE_1__.LoadingBtn)(addBtn, false);
+        setTimeout(function () {
+          window.location.reload();
+        }, 2000);
+      } else {
+        (0,_common_loading_btn__WEBPACK_IMPORTED_MODULE_1__.LoadingBtn)(addBtn, false);
+        (0,_info_messages__WEBPACK_IMPORTED_MODULE_0__.printMessage)("Error update:".concat(requestStatus.data.message), 'danger', 8000);
+      }
+    }).catch(function (error) {
+      (0,_common_loading_btn__WEBPACK_IMPORTED_MODULE_1__.LoadingBtn)(addBtn, false);
+      (0,_info_messages__WEBPACK_IMPORTED_MODULE_0__.printMessage)("Request failed: ".concat(error), 'danger', 8000);
+      console.error('Request failed:', error);
+    });
+  });
+}
+function openEdit(ajaxUrl) {
+  var popupInstance = new _parts_popup_window__WEBPACK_IMPORTED_MODULE_2__["default"]();
+  var editBtns = document.querySelectorAll('.js-open-popup-edit');
+  if (editBtns && editBtns.length) {
+    editBtns.forEach(function (btn) {
+      btn.addEventListener('click', function (event) {
+        event.preventDefault();
+        var tr = event.target.closest('tr');
+        if (!tr) return;
+        var form = tr.querySelector('.js-popup-edit-content');
+        if (!form) return;
+        var content = form.innerHTML;
+        var popup = document.querySelector('#popup_contacts_edit');
+        if (!popup) return;
+        var popupForm = popup.querySelector('form');
+        if (!popupForm) return;
+        popupForm.innerHTML = '';
+        popupForm.innerHTML = content;
+        popupInstance.openOnePopup('#popup_contacts_edit');
+        initAdditionalContactHandler('.js-edit-contact');
+        (0,_search_action__WEBPACK_IMPORTED_MODULE_3__.addSearchAction)(ajaxUrl);
+        editContact(ajaxUrl);
+        (0,_tel_mask__WEBPACK_IMPORTED_MODULE_4__.telMaskInit)();
+      });
+    });
+  }
+}
 function initContactsHandler(ajaxUrl) {
+  openEdit(ajaxUrl);
   initAdditionalContactHandler();
   addNewContact(ajaxUrl);
 }
@@ -5678,7 +5750,8 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */   dragAnDropInit: function() { return /* binding */ dragAnDropInit; },
 /* harmony export */   initMoneyMask: function() { return /* binding */ initMoneyMask; },
 /* harmony export */   quickPayMethod: function() { return /* binding */ quickPayMethod; },
-/* harmony export */   triggerCurrentTime: function() { return /* binding */ triggerCurrentTime; }
+/* harmony export */   triggerCurrentTime: function() { return /* binding */ triggerCurrentTime; },
+/* harmony export */   unrequiderInit: function() { return /* binding */ unrequiderInit; }
 /* harmony export */ });
 /* harmony import */ var imask__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! imask */ "./node_modules/imask/esm/index.js");
 /* harmony import */ var _create_report__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./create-report */ "./src/js/components/create-report.ts");
@@ -5978,6 +6051,25 @@ function applyZipCodeMask(selector) {
     configure();
     countryFields.forEach(function (el) {
       el.addEventListener('change', configure);
+    });
+  });
+}
+function unrequiderInit() {
+  var unrequiders = document.querySelectorAll('.js-unrequider');
+  unrequiders.forEach(function (select) {
+    select.addEventListener('change', function (e) {
+      var target = e.target;
+      if (!target) return;
+      var selectedValue = target.value;
+      var targetSelector = target.dataset.target;
+      var expectedValue = target.dataset.value;
+      var targetVal = document.querySelector(targetSelector);
+      if (!targetVal) return;
+      if (selectedValue === expectedValue) {
+        targetVal.removeAttribute('required');
+      } else {
+        targetVal.setAttribute('required', 'required');
+      }
     });
   });
 }
@@ -19528,6 +19620,7 @@ function ready() {
   (0,_components_toggle_blocks_init__WEBPACK_IMPORTED_MODULE_8__.toggleBlocksRadio)();
   (0,_components_tel_mask__WEBPACK_IMPORTED_MODULE_20__.dateMaskInit)();
   (0,_components_input_helpers__WEBPACK_IMPORTED_MODULE_2__.dragAnDropInit)();
+  (0,_components_input_helpers__WEBPACK_IMPORTED_MODULE_2__.unrequiderInit)();
   (0,_components_document_create_money_check__WEBPACK_IMPORTED_MODULE_25__.createDocumentInvoice)();
   (0,_components_document_create_money_check__WEBPACK_IMPORTED_MODULE_25__.createDocumentInvoiceActions)(urlAjax);
   (0,_components_document_create_money_check__WEBPACK_IMPORTED_MODULE_25__.createDocumentBolActions)(urlAjax);

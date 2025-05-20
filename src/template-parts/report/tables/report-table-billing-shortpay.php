@@ -40,7 +40,7 @@ if ( ! empty( $results ) ) : ?>
         <tr>
             <th><input class="checkbox-big js-select-load-all" type="checkbox" name="select-all"></th>
             <th scope="col">Booked</th>
-            <th scope="col" title="dispatcher">Disp.</th>
+            <th scope="col" title="dispatcher">LOAD NO</th>
             <th scope="col">Client</th>
             <th scope="col">Pick up</th>
             <th scope="col">Delivery</th>

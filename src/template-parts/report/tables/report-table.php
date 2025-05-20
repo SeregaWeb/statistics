@@ -37,16 +37,16 @@ if ( ! empty( $results ) ) : ?>
     <table class="table mb-5 w-100">
         <thead>
         <tr>
-            <th scope="col">Date booked</th>
-            <th scope="col" title="dispatcher">Disp.</th>
-            <th scope="col">Pick up location</th>
-            <th scope="col">Delivery location</th>
-            <th scope="col">Unit & name</th>
-            <th scope="col">Booked rate</th>
-            <th scope="col">Driver rate</th>
+            <th scope="col">BOOKED DATE</th>
+            <th scope="col" title="dispatcher">LOAD NO</th>
+            <th scope="col">ORIGIN</th>
+            <th scope="col">DESTINATION</th>
+            <th scope="col">UNIT & NAME</th>
+            <th scope="col">GROSS RATE</th>
+            <th scope="col">DRIVER RATE</th>
             <th scope="col">Profit</th>
             <th scope="col">Miles</th>
-            <th scope="col">Pick Up Date</th>
+            <th scope="col">PU DATE</th>
             <th scope="col">Load status</th>
             <th scope="col">Instructions</th>
             <th scope="col">Source</th>

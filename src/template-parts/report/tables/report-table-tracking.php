@@ -35,10 +35,10 @@ if ( ! empty( $results ) ) : ?>
         <thead>
         <tr>
             <th scope="col">
-                Dispatcher<br>
+                LOAD NO
             </th>
-            <th scope="col">Pick up location</th>
-            <th scope="col">Delivery location</th>
+            <th scope="col">ORIGIN</th>
+            <th scope="col">DESTINATION</th>
             <th scope="col">Unit & name</th>
             <th scope="col">Client</th>
             <th scope="col">Load status</th>

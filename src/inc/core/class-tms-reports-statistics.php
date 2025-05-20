@@ -493,6 +493,55 @@ class  TMSStatistics extends TMSReportsHelper {
 		return $wpdb->get_results( $query, ARRAY_A );
 	}
 	
+	public function get_top_10_customers( $year, $month, $office = 'all' ) {
+		global $wpdb;
+		$table_reports = $wpdb->prefix . $this->table_main;
+		$table_meta    = $wpdb->prefix . $this->table_meta;
+		
+		// Базовый SQL
+		$sql = "
+		    SELECT
+		        customer.meta_value AS customer_id,
+		        SUM(CAST(profit.meta_value AS DECIMAL(10,2))) AS total_profit,
+		        COUNT(DISTINCT reports.id) AS post_count
+		    FROM {$table_reports} AS reports
+		    LEFT JOIN {$table_meta} AS profit
+		        ON profit.post_id = reports.id AND profit.meta_key = 'profit'
+		    LEFT JOIN {$table_meta} AS customer
+		        ON customer.post_id = reports.id AND customer.meta_key = 'customer_id'
+		    LEFT JOIN $table_meta AS office_dispatcher
+  				ON office_dispatcher.post_id = reports.id
+	  			AND office_dispatcher.meta_key = 'office_dispatcher'
+		";
+		
+		
+		// Собираем условия
+		$where = [ "reports.status_post = 'publish'" ];
+		
+		if ( $year !== 'all' && $month !== 'all' ) {
+			$where[] = $wpdb->prepare( "YEAR(reports.date_booked) = %d", $year );
+			$where[] = $wpdb->prepare( "MONTH(reports.date_booked) = %d", $month );
+		}
+		
+		if ( $office !== 'all' ) {
+			$where[] = $wpdb->prepare( "office_dispatcher.meta_value = %s", $office );
+		}
+		
+		// Добавляем WHERE в запрос
+		if ( ! empty( $where ) ) {
+			$sql .= ' WHERE ' . implode( ' AND ', $where );
+		}
+		
+		$sql .= "
+		    GROUP BY customer.meta_value
+		    ORDER BY total_profit DESC
+		    LIMIT 10
+		";
+		
+		$results = $wpdb->get_results( $sql, ARRAY_A );
+		
+		return $results;
+	}
 	
 	public function get_monthly_fuctoring_stats( $year, $month, $office = 'all' ) {
 		global $wpdb;

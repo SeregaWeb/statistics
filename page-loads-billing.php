@@ -14,7 +14,7 @@ $args = array(
 	'status_post'              => 'publish',
 	'exclude_factoring_status' => array( 'paid' ),
 	'per_page_loads'           => 100,
-	'exclude_status'           => array( 'cancelled' ),
+	'exclude_status'           => array( 'cancelled', 'waiting-on-pu-date', 'at-pu' ),
 );
 
 $args = $reports->set_filter_params( $args );

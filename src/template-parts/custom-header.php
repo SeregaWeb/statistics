@@ -8,7 +8,7 @@
 global $global_options;
 
 $helper       = new TMSReportsHelper();
-$array_tables = $helper->tms_tables;
+$array_tables = $helper->tms_tables_with_label;
 $user_id      = get_current_user_id();
 $user_name    = $helper->get_user_full_name_by_id( $user_id );
 
@@ -54,14 +54,14 @@ $logout_url = wp_logout_url( ! empty( $login_link ) ? $login_link : home_url() )
                     </button>
 				<?php endif; ?>
 				<?php if ( is_array( $view_tables ) && sizeof( $view_tables ) > 0 ) ?>
-                <div class="w-25">
+                <div>
                     <select class="form-select js-select-current-table" aria-label="Default select example">
 						<?php if ( is_array( $array_tables ) ): ?>
-							<?php foreach ( $array_tables as $val ):
-								$view = array_search( $val, $view_tables );
+							<?php foreach ( $array_tables as $key => $val ):
+								$view = array_search( $key, $view_tables );
 								if ( is_numeric( $view ) ): ?>
-                                    <option <?php echo $curent_tables === $val ? 'selected' : ''; ?>
-                                            value="<?php echo $val; ?>"><?php echo $val; ?></option>
+                                    <option <?php echo $curent_tables === $key ? 'selected' : ''; ?>
+                                            value="<?php echo $key; ?>"><?php echo $val; ?></option>
 								<?php endif; ?>
 							<?php endforeach; ?>
 						<?php endif; ?>

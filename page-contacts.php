@@ -11,6 +11,7 @@ get_header();
 $reports     = new TMSReports();
 $TMSUsers    = new TMSUsers();
 $TMSContacts = new TMSContacts();
+$company     = new TMSReportsCompany();
 
 $data = $TMSContacts->get_all_contacts();
 
@@ -25,9 +26,8 @@ $current_pages = get_field_value( $data[ 'pagination' ], 'current_pages' );
                     <div class="col-12">
                         <div class="d-flex justify-content-start gap-4 align-items-center mb-4">
                             <h2 class="mb-2 mt-3">Contacts</h2>
-                            <button class="btn btn-outline-primary js-open-popup-activator" data-href="#popup_contacts"
-
-                            >Add a contact
+                            <button class="btn btn-outline-primary js-open-popup-activator" data-href="#popup_contacts">
+                                Add a contact
                             </button>
                         </div>
 
@@ -47,8 +47,166 @@ $current_pages = get_field_value( $data[ 'pagination' ], 'current_pages' );
                             </thead>
                             <tbody>
 							<?php if ( $results ):
-								foreach ( $results as $item ):?>
+								foreach ( $results as $item ):
+									$value_company_name = $item[ 'company_name' ];
+									$contact = $item[ 'contact_first_name' ] . ' ' . $item[ 'contact_last_name' ];
+									$phone = $item[ 'phone_number' ];
+									$email = $item[ 'email' ];
+									$name = $item[ 'company_name' ];
+									$address = $item[ 'address1' ] . ', ' . $company->get_label_by_key( $item[ 'state' ] ) . ' ' . $item[ 'zip_code' ] . ', ' . $item[ 'country' ];
+									$dot = $item[ 'dot_number' ];
+									$mc = $item[ 'mc_number' ];
+									
+									$template_select_company = $company->print_list_customers( $name, $address, $mc, $dot, $contact, $phone, $email, $item[ 'company_id' ] );
+									
+									?>
                                     <tr>
+
+                                        <td class="js-popup-edit-content d-none">
+                                            <div class="row g-1">
+                                                <h4 class="md-1">Edit contact</h4>
+                                                <input type="hidden" name="main_id"
+                                                       value="<?= esc_attr( $item[ 'main_id' ] ); ?>">
+                                                <div class="mb-2 js-result-search-wrap">
+                                                    <label class="form-label">Select company <span
+                                                                class="text-danger">*</span></label>
+                                                    <p class="form-label text-small">Enter company name or MC number</p>
+                                                    <div class="form-group position-relative js-container-search">
+                                                        <input id="input-name" type="text" required name="company_name"
+                                                               value="<?= esc_attr( $item[ 'company_name' ] ?? '' ) ?>"
+                                                               placeholder="MC,DOT or Name"
+                                                               autocomplete="off"
+                                                               class="form-control js-search-company">
+                                                        <ul class="my-dropdown-search js-container-search-list"></ul>
+                                                    </div>
+                                                    <div class="result-search js-result-search">
+														<?php echo $template_select_company; ?>
+                                                    </div>
+                                                </div>
+
+                                                <div class="mb-2 col-md-6 col-12">
+                                                    <label class="form-label">Name <span
+                                                                class="text-danger">*</span></label>
+                                                    <input type="text" name="name" class="form-control"
+                                                           value="<?= esc_attr( $item[ 'name' ] ?? '' ) ?>" required>
+                                                </div>
+
+                                                <div class="mb-2 col-md-6 col-12">
+                                                    <label class="form-label">Office Number</label>
+                                                    <input type="text" name="office_number" class="form-control"
+                                                           value="<?= esc_attr( $item[ 'office_number' ] ?? '' ) ?>">
+                                                </div>
+
+                                                <div class="mb-2 col-md-5 col-9">
+                                                    <label class="form-label">Direct Number</label>
+                                                    <input type="text" name="direct_number"
+                                                           class="form-control js-tel-mask"
+                                                           value="<?= esc_attr( $item[ 'direct_number' ] ?? '' ) ?>">
+                                                </div>
+
+                                                <div class="mb-2 col-md-1 col-3">
+                                                    <label class="form-label">Ext</label>
+                                                    <input type="text" name="direct_ext"
+                                                           class="form-control "
+                                                           value="<?= esc_attr( $item[ 'direct_ext' ] ?? '' ) ?>">
+                                                </div>
+
+
+                                                <div class="mb-2 col-md-6 col-12">
+                                                    <label class="form-label">Email <span
+                                                                class="text-danger">*</span></label>
+                                                    <input type="email" name="email" class="form-control"
+                                                           value="<?= esc_attr( $item[ 'email' ] ?? '' ) ?>" required>
+                                                </div>
+
+                                                <h5 class="mt-3">Support Contact (optional)</h5>
+
+                                                <div class="mb-2 col-md-4 col-12">
+                                                    <label class="form-label">Support Contact</label>
+                                                    <input type="text" name="support_contact" class="form-control"
+                                                           value="<?= esc_attr( $item[ 'support_contact' ] ?? '' ) ?>">
+                                                </div>
+
+                                                <div class="mb-2 col-md-3 col-9">
+                                                    <label class="form-label">Support Phone</label>
+                                                    <input type="text" name="support_phone"
+                                                           class="form-control js-tel-mask"
+                                                           value="<?= esc_attr( $item[ 'support_phone' ] ?? '' ) ?>">
+                                                </div>
+
+                                                <div class="mb-2 col-md-1 col-3">
+                                                    <label class="form-label">Ext</label>
+                                                    <input type="text" name="support_ext" class="form-control"
+                                                           value="<?= esc_attr( $item[ 'support_ext' ] ?? '' ) ?>">
+                                                </div>
+
+                                                <div class="mb-2 col-md-4 col-12">
+                                                    <label class="form-label">Support Email</label>
+                                                    <input type="email" name="support_email" class="form-control"
+                                                           value="<?= esc_attr( $item[ 'support_email' ] ?? '' ) ?>">
+                                                </div>
+
+                                                <h5 class="mt-3">Additional Contacts (optional)</h5>
+
+                                                <div class="js-additional-contacts col-12">
+													<?php if ( ! empty( $item[ 'additional_contacts' ] ) && is_array( $item[ 'additional_contacts' ] ) ): ?>
+														<?php foreach ( $item[ 'additional_contacts' ] as $contact ): ?>
+                                                            <div class="additional-contact row g-1 mt-2">
+                                                                <div class="col">
+                                                                    <input type="text" name="additional_contact_name[]"
+                                                                           class="form-control"
+                                                                           placeholder="Name"
+                                                                           value="<?= esc_attr( $contact[ 'contact_name' ] ) ?>">
+                                                                </div>
+                                                                <div class="col">
+                                                                    <input type="text" name="additional_contact_phone[]"
+                                                                           class="form-control  js-tel-mask"
+                                                                           placeholder="Phone"
+                                                                           value="<?= esc_attr( $contact[ 'contact_phone' ] ) ?>">
+                                                                </div>
+                                                                <div class="col-1">
+                                                                    <input type="text" name="additional_contact_ext[]"
+                                                                           class="form-control"
+                                                                           placeholder="ext"
+                                                                           value="<?= esc_attr( $contact[ 'contact_ext' ] ) ?>">
+                                                                </div>
+                                                                <div class="col">
+                                                                    <input type="email"
+                                                                           name="additional_contact_email[]"
+                                                                           class="form-control"
+                                                                           placeholder="Email"
+                                                                           value="<?= esc_attr( $contact[ 'contact_email' ] ) ?>">
+                                                                </div>
+                                                                <div class="col-md-1 d-flex align-items-center">
+                                                                    <button type="button"
+                                                                            class="btn btn-outline-danger btn-sm js-remove-contact"
+                                                                            title="Remove">
+                                                                        &times;
+                                                                    </button>
+                                                                </div>
+                                                            </div>
+														<?php endforeach; ?>
+													<?php endif; ?>
+                                                </div>
+
+                                                <div class="mt-2">
+                                                    <button type="button"
+                                                            class="btn btn-outline-primary btn-sm js-add-contact-btn">+
+                                                        Add Additional Contact
+                                                    </button>
+                                                </div>
+
+                                                <div class="mt-3">
+                                                    <button type="submit" class="btn btn-success">
+                                                        <span class="active-state">Save Contact</span>
+                                                        <span class="disabled-state">
+                    <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                    Creating...
+                </span>
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </td>
                                         <td>
                                             <input type="hidden" name="id"
                                                    value="<?php echo esc_attr( $item[ 'id' ] ); ?>">
@@ -65,7 +223,12 @@ $current_pages = get_field_value( $data[ 'pagination' ], 'current_pages' );
                                         <td><?php echo $item[ 'email' ]; ?></td>
                                         <td>0</td>
                                         <td></td>
-                                        <td></td>
+                                        <td class="d-flex justify-content-end gap-1">
+                                            <button class="btn btn-outline-primary btn-sm js-open-popup-edit">Edit
+                                            </button>
+
+                                            <button class="btn btn-danger btn-sm">Remove</button>
+                                        </td>
                                     </tr>
 								<?php endforeach;
 							endif; ?>
@@ -86,6 +249,9 @@ $current_pages = get_field_value( $data[ 'pagination' ], 'current_pages' );
     </div>
 
 <?php
+
+echo esc_html( get_template_part( TEMPLATE_PATH . 'popups/report', 'popup-edit-contact' ) );
+
 do_action( 'wp_rock_before_page_content' );
 
 if ( have_posts() ) :

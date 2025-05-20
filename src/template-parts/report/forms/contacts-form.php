@@ -29,9 +29,14 @@
             <input type="text" name="office_number" class="form-control">
         </div>
 
-        <div class="mb-2 col-md-6 col-12">
+        <div class="mb-2 col-md-5 col-9">
             <label class="form-label">Direct Number</label>
-            <input type="text" name="direct_number" class="form-control">
+            <input type="text" name="direct_number" class="form-control js-tel-mask">
+        </div>
+
+        <div class="mb-2 col-md-1 col-3">
+            <label class="form-label">Ext</label>
+            <input type="text" name="direct_ext" class="form-control">
         </div>
 
         <div class="mb-2 col-md-6 col-12">
@@ -47,9 +52,14 @@
             <input type="text" name="support_contact" class="form-control">
         </div>
 
-        <div class="mb-2 col-md-4 col-12">
+        <div class="mb-2 col-md-3 col-9">
             <label class="form-label">Support Phone</label>
-            <input type="text" name="support_phone" class="form-control">
+            <input type="text" name="support_phone" class="form-control js-tel-mask">
+        </div>
+
+        <div class="mb-2 col-md-1 col-3">
+            <label class="form-label">Ext</label>
+            <input type="text" name="support_ext" class="form-control">
         </div>
 
         <div class="mb-2 col-md-4 col-12">

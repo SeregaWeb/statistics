@@ -4,10 +4,11 @@ global $global_options, $report_data;
 $add_new_load = get_field_value( $global_options, 'add_new_load' ) ?? '';
 $link_broker  = get_field_value( $global_options, 'single_page_broker' ) ?? '';
 
-$TMSUsers   = new TMSUsers();
-$TMSShipper = new TMSReportsShipper();
-$TMSBroker  = new TMSReportsCompany();
-$helper     = new TMSReportsHelper();
+$TMSUsers        = new TMSUsers();
+$TMSShipper      = new TMSReportsShipper();
+$TMSBroker       = new TMSReportsCompany();
+$helper          = new TMSReportsHelper();
+$statuses_labels = $helper->statuses_factoring_labels;
 
 $results       = get_field_value( $args, 'results' ) ?? [];
 $total_pages   = get_field_value( $args, 'total_pages' ) ?? 0;
@@ -35,12 +36,12 @@ if ( ! empty( $results ) ) :?>
     <table class="table mb-5 w-100">
         <thead>
         <tr>
-            <th scope="col" title="dispatcher">Disp.</th>
+            <th scope="col" title="dispatcher">LOAD NO</th>
             <th scope="col">Broker</th>
             <th scope="col">Factoring status</th>
 
-            <th scope="col">Pick up location</th>
-            <th scope="col">Delivery location</th>
+            <th scope="col">ORIGIN</th>
+            <th scope="col">DESTINATION</th>
             <th scope="col">Booked rate</th>
             <th scope="col">Load status</th>
 
@@ -175,7 +176,7 @@ if ( ! empty( $results ) ) :?>
                 <td>
 					<?php echo $template_broker; ?>
                 </td>
-                <td><?php echo $helper->get_label_by_key( $factoring_status, 'factoring_status' ); ?></td>
+                <td><?php echo $helper->get_label_by_key( $factoring_status, 'factoring_broker' ); ?></td>
 
                 <td>
 					<?php echo $pdlocations[ 'pick_up_template' ] ?? 'N/A'; ?>
@@ -202,7 +203,7 @@ if ( ! empty( $results ) ) :?>
                         <?php echo $helper->get_label_by_key( $processing, 'processing' ); ?>
                     </span>
                 </td>
-                <td><?php echo $days_passed; ?></td>
+                <td><?php echo $invoice_status !== "paid" ? $days_passed : ''; ?></td>
 
                 <td>
 					

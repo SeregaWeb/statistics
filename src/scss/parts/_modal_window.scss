@@ -42,7 +42,7 @@ html {
         background: #fff;
         border-radius: 8px;
         margin: 0 auto;
-        max-width: 620px;
+        max-width: 920px;
         padding: 30px 20px;
         position: relative;
         width: 100%;
@@ -54,7 +54,7 @@ html {
         top: 100px;
         left: 50%;
         transform: translate(-50%, 0);
-        max-width: 620px;
+        max-width: 920px;
 
         @include max-break('1024px') {
             max-width: 100vw;

@@ -21,6 +21,7 @@ class TMSContacts extends TMSDriversHelper {
 	public function ajax_actions() {
 		$actions = array(
 			'add_new_contact' => 'add_new_contact',
+			'edit_contact'    => 'edit_contact',
 		);
 		
 		foreach ( $actions as $ajax_action => $method ) {
@@ -38,9 +39,11 @@ class TMSContacts extends TMSDriversHelper {
 				'name'                => FILTER_SANITIZE_STRING,
 				'office_number'       => FILTER_SANITIZE_STRING,
 				'direct_number'       => FILTER_SANITIZE_STRING,
+				'direct_ext'          => FILTER_SANITIZE_STRING,
 				'email'               => FILTER_SANITIZE_EMAIL,
 				'support_contact'     => FILTER_SANITIZE_STRING,
 				'support_phone'       => FILTER_SANITIZE_STRING,
+				'support_ext'         => FILTER_SANITIZE_STRING,
 				'support_email'       => FILTER_SANITIZE_EMAIL,
 				'additional_contacts' => [
 					'filter' => FILTER_DEFAULT,
@@ -60,9 +63,11 @@ class TMSContacts extends TMSDriversHelper {
 				'name'            => $MY_INPUT[ 'name' ],
 				'office_number'   => $MY_INPUT[ 'office_number' ],
 				'direct_number'   => $MY_INPUT[ 'direct_number' ],
+				'direct_ext'      => $MY_INPUT[ 'direct_ext' ],
 				'email'           => $MY_INPUT[ 'email' ],
 				'support_contact' => $MY_INPUT[ 'support_contact' ],
 				'support_phone'   => $MY_INPUT[ 'support_phone' ],
+				'support_ext'     => $MY_INPUT[ 'support_ext' ],
 				'support_email'   => $MY_INPUT[ 'support_email' ],
 			], [
 				'%d',
@@ -89,9 +94,11 @@ class TMSContacts extends TMSDriversHelper {
 						'contact_id'    => $contact_id,
 						'contact_name'  => sanitize_text_field( $contact[ 'name' ] ),
 						'contact_phone' => sanitize_text_field( $contact[ 'phone' ] ),
+						'contact_ext'   => sanitize_text_field( $contact[ 'ext' ] ),
 						'contact_email' => sanitize_email( $contact[ 'email' ] ),
 					], [
 						'%d',
+						'%s',
 						'%s',
 						'%s',
 						'%s'
@@ -103,6 +110,82 @@ class TMSContacts extends TMSDriversHelper {
 		}
 	}
 	
+	public function edit_contact() {
+		if ( defined( 'DOING_AJAX' ) && DOING_AJAX ) {
+			global $wpdb;
+			
+			$MY_INPUT = filter_var_array( $_POST, [
+				'main_id'             => FILTER_SANITIZE_NUMBER_INT,
+				"customer_id"         => FILTER_SANITIZE_NUMBER_INT,
+				'name'                => FILTER_SANITIZE_STRING,
+				'office_number'       => FILTER_SANITIZE_STRING,
+				'direct_number'       => FILTER_SANITIZE_STRING,
+				'direct_ext'          => FILTER_SANITIZE_STRING,
+				'email'               => FILTER_SANITIZE_EMAIL,
+				'support_contact'     => FILTER_SANITIZE_STRING,
+				'support_phone'       => FILTER_SANITIZE_STRING,
+				'support_ext'         => FILTER_SANITIZE_STRING,
+				'support_email'       => FILTER_SANITIZE_EMAIL,
+				'additional_contacts' => [
+					'filter' => FILTER_DEFAULT,
+					'flags'  => FILTER_REQUIRE_ARRAY
+				]
+			] );
+			
+			$table_main       = $wpdb->prefix . $this->table_main;
+			$table_additional = $wpdb->prefix . $this->additional_contact;
+			$user_id          = get_current_user_id();
+			$main_id          = (int) $MY_INPUT[ 'main_id' ];
+			
+			$data = [
+				'user_id_added'   => $user_id,
+				'company_id'      => (int) $MY_INPUT[ 'customer_id' ],
+				'name'            => $MY_INPUT[ 'name' ],
+				'office_number'   => $MY_INPUT[ 'office_number' ],
+				'direct_number'   => $MY_INPUT[ 'direct_number' ],
+				'direct_ext'      => $MY_INPUT[ 'direct_ext' ],
+				'email'           => $MY_INPUT[ 'email' ],
+				'support_contact' => $MY_INPUT[ 'support_contact' ],
+				'support_phone'   => $MY_INPUT[ 'support_phone' ],
+				'support_ext'     => $MY_INPUT[ 'support_ext' ],
+				'support_email'   => $MY_INPUT[ 'support_email' ],
+			];
+			
+			$format = [ '%d', '%d', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s' ];
+			
+			if ( $main_id > 0 ) {
+				// UPDATE
+				$wpdb->update( $table_main, $data, [ 'id' => $main_id ], $format, [ '%d' ] );
+				$contact_id = $main_id;
+				
+				// Удаляем старые доп. контакты
+				$wpdb->delete( $table_additional, [ 'contact_id' => $contact_id ], [ '%d' ] );
+			} else {
+				// INSERT
+				$wpdb->insert( $table_main, $data, $format );
+				$contact_id = $wpdb->insert_id;
+			}
+			
+			// Вставка дополнительных контактов
+			if ( ! empty( $MY_INPUT[ 'additional_contacts' ] ) && is_array( $MY_INPUT[ 'additional_contacts' ] ) ) {
+				foreach ( $MY_INPUT[ 'additional_contacts' ] as $contact ) {
+					if ( empty( $contact[ 'name' ] ) && empty( $contact[ 'phone' ] ) && empty( $contact[ 'email' ] ) ) {
+						continue;
+					}
+					
+					$wpdb->insert( $table_additional, [
+						'contact_id'    => $contact_id,
+						'contact_name'  => sanitize_text_field( $contact[ 'name' ] ),
+						'contact_phone' => sanitize_text_field( $contact[ 'phone' ] ),
+						'contact_ext'   => sanitize_text_field( $contact[ 'ext' ] ),
+						'contact_email' => sanitize_email( $contact[ 'email' ] ),
+					], [ '%d', '%s', '%s', '%s', '%s' ] );
+				}
+			}
+			
+			wp_send_json_success( [ 'message' => 'Contact saved', 'contact_id' => $contact_id ] );
+		}
+	}
 	
 	public function get_contact_by_id( $id ) {
 		global $wpdb;
@@ -141,16 +224,22 @@ class TMSContacts extends TMSDriversHelper {
 		$total_pages = (int) ceil( $total_records / $per_page );
 		
 		// Получение основной информации с JOIN на компании
-		$main_contacts = $wpdb->get_results( $wpdb->prepare( "SELECT m.*, c.*
-		 FROM $table_main m
-		 LEFT JOIN $table_companies c ON m.company_id = c.id
-		 WHERE m.user_id_added = %d
-		 ORDER BY m.$sort_by DESC
-		 LIMIT %d OFFSET %d", $current_user_id, $per_page, $offset ), ARRAY_A );
+		$main_contacts = $wpdb->get_results( $wpdb->prepare( "
+		    SELECT
+		        m.*,
+		        m.id AS main_id,
+		        c.id AS company_id_alias,
+		        c.*
+		    FROM $table_main m
+		    LEFT JOIN $table_companies c ON m.company_id = c.id
+		    WHERE m.user_id_added = %d
+		    ORDER BY m.$sort_by DESC
+		    LIMIT %d OFFSET %d
+		", $current_user_id, $per_page, $offset ), ARRAY_A );
 		
 		// Присоединяем дополнительные контакты
 		foreach ( $main_contacts as &$contact ) {
-			$contact_id                       = (int) $contact[ 'id' ];
+			$contact_id                       = (int) $contact[ 'main_id' ];
 			$contact[ 'additional_contacts' ] = $wpdb->get_results( $wpdb->prepare( "SELECT contact_name, contact_phone, contact_email
 			 FROM $table_additional
 			 WHERE contact_id = %d", $contact_id ), ARRAY_A );
@@ -179,6 +268,7 @@ class TMSContacts extends TMSDriversHelper {
 		contact_id mediumint(9) NOT NULL,
 		contact_name varchar(255) DEFAULT '',
 		contact_phone varchar(50) DEFAULT '',
+		contact_ext varchar(50) DEFAULT '',
 		contact_email varchar(255) DEFAULT '',
 		PRIMARY KEY  (id),
 		KEY idx_contact_id (contact_id)
@@ -201,9 +291,11 @@ class TMSContacts extends TMSDriversHelper {
 		name varchar(255) NOT NULL,
 		office_number varchar(50) DEFAULT '',
 		direct_number varchar(50) DEFAULT '',
+		direct_ext varchar(50) DEFAULT '',
 		email varchar(255) NOT NULL,
 		support_contact varchar(255) DEFAULT '',
 		support_phone varchar(50) DEFAULT '',
+		support_ext varchar(50) DEFAULT '',
 		support_email varchar(255) DEFAULT '',
 		PRIMARY KEY  (id),
 		KEY idx_date_created (date_created),

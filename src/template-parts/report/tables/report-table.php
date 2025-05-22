@@ -6,6 +6,7 @@ $add_new_load = get_field_value( $global_options, 'add_new_load' );
 $TMSReports = new TMSReports();
 $TMSUsers   = new TMSUsers();
 $TMSHelper  = new TMSReportsHelper();
+$TMSBroker  = new TMSReportsCompany();
 
 $results                   = get_field_value( $args, 'results' );
 $total_pages               = get_field_value( $args, 'total_pages' );
@@ -32,7 +33,30 @@ foreach ( $trigger_keys as $key ) {
 	}
 }
 
-if ( ! empty( $results ) ) : ?>
+if ( ! empty( $results ) ) :
+	$platforms = $TMSReports->get_stat_platform();
+	?>
+
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <div class="d-flex gap-2 align-items-center">
+			<?php if ( $platforms ):
+				$labels_platforms = array(
+					"highway" => "Highway",
+					"mcp"     => "MCP",
+					"rmis"    => "RMIS",
+				)
+				?>
+				<?php foreach ( $platforms as $key => $platform ):
+				if ( isset( $labels_platforms[ $key ] ) ): ?>
+                    <div class="d-flex gap-1 align-items-start flex-column">
+                        <p class="m-0"><?php echo $labels_platforms[ $key ]; ?> : <span
+                                    class="text-primary m-0 font-weight-bold"><?php echo $platform; ?></span></p>
+                    </div>
+				<?php endif;
+			endforeach; ?>
+			<?php endif; ?>
+        </div>
+    </div>
 
     <table class="table mb-5 w-100">
         <thead>
@@ -120,6 +144,8 @@ if ( ! empty( $results ) ) : ?>
 				$show_separator = true;
 			}
 			
+			$id_customer   = get_field_value( $meta, 'customer_id' );
+			$broker        = $TMSBroker->get_broker_and_link_by_id( $id_customer, false );
 			$previous_date = $date_booked;
 			
 			$show_control = $TMSUsers->show_control_loads( $my_team, $current_user_id, $dispatcher_initials, $is_draft );
@@ -166,13 +192,18 @@ if ( ! empty( $results ) ) : ?>
                 <td>
                     <div class="d-flex gap-1 flex-row align-items-center">
                         <p class="m-0">
-                <span data-bs-toggle="tooltip" data-bs-placement="top"
-                      title="<?php echo $dispatcher[ 'full_name' ]; ?>"
-                      class="initials-circle" style="background-color: <?php echo $color_initials; ?>">
-                    <?php echo esc_html( $dispatcher[ 'initials' ] ); ?>
-                </span>
+                        <span data-bs-toggle="tooltip" data-bs-placement="top"
+                              title="<?php echo $dispatcher[ 'full_name' ]; ?>"
+                              class="initials-circle" style="background-color: <?php echo $color_initials; ?>">
+                            <?php echo esc_html( $dispatcher[ 'initials' ] ); ?>
+                        </span>
                         </p>
-                        <span class="text-small"><?php echo $reference_number; ?></span>
+                        <span class="text-small platform-<?php echo isset( $broker[ 'platform' ] )
+							? $broker[ 'platform' ] : ""; ?>"
+                              title="<?php echo isset( $broker[ 'platform' ] ) ? strtoupper( $broker[ 'platform' ] )
+							      : ""; ?>">
+                            <?php echo $reference_number; ?>
+                        </span>
                     </div>
                 </td>
                 <td><?php echo $pdlocations[ 'pick_up_template' ]; ?></td>

@@ -3,8 +3,11 @@ require_once( ABSPATH . 'wp-admin/includes/upgrade.php' );
 
 class TMSReports extends TMSReportsHelper {
 	
-	public $table_main     = '';
-	public $table_meta     = '';
+	public $table_main = '';
+	public $table_meta = '';
+	
+	public $table_company = 'reports_company';
+	
 	public $per_page_loads = 100;
 	public $user_emails    = array();
 	public $email_helper   = false;
@@ -117,6 +120,104 @@ class TMSReports extends TMSReportsHelper {
 	
 	
 	// GET ITEMS
+	public function get_stat_platform() {
+		global $wpdb;
+		
+		$cache_key = 'stat_platform_cache';
+		$cached    = get_transient( $cache_key );
+		
+		if ( $cached !== false ) {
+			return $cached;
+		}
+		
+		$table_main    = $wpdb->prefix . $this->table_main;
+		$table_meta    = $wpdb->prefix . $this->table_meta;
+		$table_company = $wpdb->prefix . $this->table_company;
+		
+		// Получаем ID компаний, сгруппированных по платформам
+		$platform_data = $wpdb->get_results( "
+		SELECT set_up_platform AS platform, GROUP_CONCAT(id ORDER BY id ASC) AS company_ids
+		FROM $table_company
+		WHERE set_up_platform IN ('rmis', 'highway', 'mcp')
+		GROUP BY set_up_platform
+	", ARRAY_A );
+		
+		if ( empty( $platform_data ) ) {
+			return [];
+		}
+		
+		$final_stats = [];
+		
+		foreach ( $platform_data as $row ) {
+			$platform  = $row[ 'platform' ];
+			$ids_array = array_map( 'intval', explode( ',', $row[ 'company_ids' ] ) );
+			
+			if ( empty( $ids_array ) ) {
+				$final_stats[ $platform ] = 0;
+				continue;
+			}
+			
+			$placeholders = implode( ',', array_fill( 0, count( $ids_array ), '%d' ) );
+			
+			$sql = "
+			SELECT COUNT(DISTINCT main.id)
+			FROM {$table_main} AS main
+			LEFT JOIN {$table_meta} AS customer_meta
+				ON main.id = customer_meta.post_id AND customer_meta.meta_key = 'customer_id'
+			LEFT JOIN {$table_meta} AS load_status
+				ON main.id = load_status.post_id AND load_status.meta_key = 'load_status'
+			WHERE customer_meta.meta_value IN ($placeholders)
+			  AND main.status_post = 'publish'
+			  AND (load_status.meta_value IS NULL OR load_status.meta_value NOT IN ('waiting-on-rc', 'delivered', 'tonu', 'cancelled'))
+		";
+			
+			$count = $wpdb->get_var( $wpdb->prepare( $sql, ...$ids_array ) );
+			
+			$final_stats[ $platform ] = (int) $count;
+		}
+		
+		set_transient( $cache_key, $final_stats, 30 * MINUTE_IN_SECONDS );
+		
+		return $final_stats;
+	}
+	
+	public function get_stat_tools() {
+		global $wpdb;
+		$cache_key = 'stat_tool_cache';
+		$cached    = get_transient( $cache_key );
+		
+		if ( $cached !== false ) {
+			return $cached;
+		}
+		
+		$table_main = $wpdb->prefix . $this->table_main;
+		$table_meta = $wpdb->prefix . $this->table_meta;
+		
+		$sql = "
+		SELECT
+			COUNT(DISTINCT CASE
+				WHEN macropoint.meta_value IS NOT NULL AND macropoint.meta_value != '' THEN macropoint.post_id
+			END) AS macropoint_count,
+			COUNT(DISTINCT CASE
+				WHEN truckertools.meta_value IS NOT NULL AND truckertools.meta_value != '' THEN truckertools.post_id
+			END) AS truckertools_count
+		FROM $table_main AS main
+		LEFT JOIN $table_meta AS macropoint
+			ON main.id = macropoint.post_id AND macropoint.meta_key = 'macropoint_set'
+		LEFT JOIN $table_meta AS truckertools
+			ON main.id = truckertools.post_id AND truckertools.meta_key = 'trucker_tools'
+		LEFT JOIN $table_meta AS load_status
+			ON main.id = load_status.post_id AND load_status.meta_key = 'load_status'
+		WHERE main.status_post = 'publish'
+		  AND (load_status.meta_value IS NULL OR load_status.meta_value NOT IN ('waiting-on-rc', 'delivered', 'tonu', 'cancelled'))
+	";
+		
+		$results = $wpdb->get_row( $sql, ARRAY_A );
+		set_transient( $cache_key, $results, 30 * MINUTE_IN_SECONDS );
+		
+		return $results;
+	}
+	
 	
 	/**
 	 * @param $args
@@ -1962,6 +2063,7 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 				"tbd"                   => FILTER_VALIDATE_BOOLEAN,
 				"ar-action"             => FILTER_VALIDATE_BOOLEAN,
 				"ar_status"             => FILTER_SANITIZE_STRING,
+				"driver_pay_st"         => FILTER_SANITIZE_STRING,
 				"old_ar_status"         => FILTER_SANITIZE_STRING,
 				"old_factoring_status"  => FILTER_SANITIZE_STRING,
 				"checked_invoice_proof" => FILTER_SANITIZE_STRING,
@@ -1978,7 +2080,7 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 				$MY_INPUT[ 'booked_rate' ] = 0;
 			}
 			
-			if ( $MY_INPUT[ 'factoring_status' ] === 'paid' && ! isset( $MY_INPUT[ 'log_file_isset' ] ) ) {
+			if ( $MY_INPUT[ 'factoring_status' ] === 'paid' && $MY_INPUT[ 'driver_pay_st' ] === 'paid' && ! isset( $MY_INPUT[ 'log_file_isset' ] ) ) {
 				$id_logs_file = $this->archive_logs_and_close_load( $MY_INPUT );
 				if ( is_numeric( $id_logs_file ) ) {
 					$MY_INPUT[ 'log_file' ] = $id_logs_file;
@@ -2064,12 +2166,21 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 			// Sanitize input data
 			$MY_INPUT = filter_var_array( $_POST, [
 				"post_id"                 => FILTER_SANITIZE_STRING,
+				"factoring_status"        => FILTER_SANITIZE_STRING,
+				"log_file_isset"          => FILTER_SANITIZE_STRING,
 				"bank_payment_status"     => FILTER_SANITIZE_STRING,
 				"driver_pay_statuses"     => FILTER_SANITIZE_STRING,
 				"quick_pay_accounting"    => FILTER_VALIDATE_BOOLEAN,
 				"quick_pay_method"        => FILTER_SANITIZE_STRING,
 				"quick_pay_driver_amount" => FILTER_SANITIZE_STRING,
 			] );
+			
+			if ( $MY_INPUT[ 'factoring_status' ] === 'paid' && $MY_INPUT[ 'driver_pay_statuses' ] === 'paid' && ! isset( $MY_INPUT[ 'log_file_isset' ] ) ) {
+				$id_logs_file = $this->archive_logs_and_close_load( $MY_INPUT );
+				if ( is_numeric( $id_logs_file ) ) {
+					$MY_INPUT[ 'log_file' ] = $id_logs_file;
+				}
+			}
 			
 			// Insert the company report
 			$result = $this->update_report_accounting_in_db( $MY_INPUT );
@@ -3103,6 +3214,10 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 			"quick_pay_method"        => 'Quick pay method',
 			"quick_pay_driver_amount" => 'Will charge the driver',
 		);
+		
+		if ( isset( $data[ 'log_file' ] ) && is_numeric( $data[ 'log_file' ] ) ) {
+			$post_meta[ 'log_file' ] = $data[ 'log_file' ];
+		}
 		
 		// Проверяем, если старые данные существуют
 		if ( isset( $old_data[ 'meta' ] ) ) {

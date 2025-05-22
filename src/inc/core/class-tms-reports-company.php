@@ -46,10 +46,12 @@ class TMSReportsCompany extends TMSReportsHelper {
 		
 		$broker_name = '';
 		$broker_mc   = '';
+		$platform    = '';
 		
 		if ( isset( $broker_info[ 0 ] ) && $broker_info[ 0 ] ) {
 			$broker_name = $broker_info[ 0 ][ 'company_name' ];
 			$broker_mc   = $broker_info[ 0 ][ 'mc_number' ];
+			$platform    = $broker_info[ 0 ][ 'set_up_platform' ];
 		}
 		
 		if ( ! $broker_mc ) {
@@ -85,6 +87,7 @@ class TMSReportsCompany extends TMSReportsHelper {
 			'template' => ob_get_clean(),
 			'name'     => $broker_name,
 			'mc'       => $broker_mc,
+			'platform' => $platform,
 		);
 	}
 	

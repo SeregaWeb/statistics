@@ -38,6 +38,7 @@ $driver_rate            = '';
 $profit                 = '';
 $tbd                    = false;
 $ar_status              = '';
+$driver_pay_st          = '';
 $log_file_isset         = '';
 $ar_action_field        = '';
 $ar_action              = false;
@@ -53,13 +54,13 @@ if ( $report_object ) {
 		$load_problem_formatted = ( ! is_null( $load_problem ) ) ? date( 'Y-m-d', strtotime( $load_problem ) ) : null;
 		
 		$factoring_status = get_field_value( $meta, 'factoring_status' );
-		
-		$short_pay      = get_field_value( $meta, 'short_pay' );
-		$rc_proof       = get_field_value( $meta, 'rc_proof' );
-		$pod_proof      = get_field_value( $meta, 'pod_proof' );
-		$invoiced_proof = get_field_value( $meta, 'invoiced_proof' );
-		$processing     = get_field_value( $meta, 'processing' );
-		$type_pay       = get_field_value( $meta, 'quick_pay' );
+		$driver_pay_st    = get_field_value( $meta, 'driver_pay_statuses' );
+		$short_pay        = get_field_value( $meta, 'short_pay' );
+		$rc_proof         = get_field_value( $meta, 'rc_proof' );
+		$pod_proof        = get_field_value( $meta, 'pod_proof' );
+		$invoiced_proof   = get_field_value( $meta, 'invoiced_proof' );
+		$processing       = get_field_value( $meta, 'processing' );
+		$type_pay         = get_field_value( $meta, 'quick_pay' );
 		
 		$processing_fees   = get_field_value( $meta, 'processing_fees' );
 		$type_pay_method   = get_field_value( $meta, 'type_pay' );
@@ -106,6 +107,7 @@ if ( $report_object ) {
     <input type="hidden" name="driver_rate" value="<?php echo $driver_rate; ?>">
     <input type="hidden" name="profit" value="<?php echo $profit; ?>">
     <input type="hidden" name="tbd" value="<?php echo $tbd; ?>">
+    <input type="hidden" name="driver_pay_st" value="<?php echo $driver_pay_st; ?>">
 
     <div class="row">
         <div class="mb-2 col-12 col-md-6 col-xl-4">

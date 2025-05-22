@@ -15,13 +15,26 @@ $quick_pay_methods   = $reports->get_quick_pay_methods();
 
 $bank_payment_st = $driver_pay_st = $quick_pay_accounting = $quick_pay_method = $quick_pay_driver_amount = $driver_rate = null;
 
+$log_file_isset   = false;
+$factoring_status = '';
+$ar_status        = '';
+$driver_pay_st    = '';
+$short_pay        = '';
+$rc_proof         = false;
+$pod_proof        = false;
+$invoiced_proof   = false;
+$processing       = '';
+$type_pay         = '';
+$type_pay_method  = '';
+
 if ( $report_object ) {
 	$values = $report_object;
 	$meta   = get_field_value( $values, 'meta' );
 	$main   = get_field_value( $values, 'main' );
 	
 	if ( is_array( $values ) && sizeof( $values ) > 0 ) {
-		
+		$log_file_isset          = get_field_value( $meta, 'log_file' );
+		$factoring_status        = get_field_value( $meta, 'factoring_status' );
 		$bank_payment_st         = get_field_value( $meta, 'bank_payment_status' );
 		$driver_pay_st           = get_field_value( $meta, 'driver_pay_statuses' );
 		$quick_pay_accounting    = get_field_value( $meta, 'quick_pay_accounting' );
@@ -39,6 +52,11 @@ $full_view_only = get_field_value( $args, 'full_view_only' );
 
 <form class="<?php echo ( $full_view_only ) ? '' : 'js-uploads-accounting' ?> d-grid">
     <div class="row">
+		<?php if ( $log_file_isset ): ?>
+            <input type="hidden" name="log_file_isset" value="1">
+		<?php endif; ?>
+
+        <input type="hidden" name="factoring_status" value="<?php echo $factoring_status; ?>">
 
         <div class="mb-2 col-12 col-md-6 col-xl-4">
             <label for="bank_payment_status" class="form-label">Bank status</label>
@@ -56,7 +74,8 @@ $full_view_only = get_field_value( $args, 'full_view_only' );
 
         <div class="mb-2 col-12 col-md-6 col-xl-4">
             <label for="driver_pay_statuses" class="form-label">Payment status</label>
-            <select name="driver_pay_statuses" class="form-control form-select">
+            <select name="driver_pay_statuses" class="form-control form-select js-select-status-factoring"
+                    data-previous-value="<?php echo $factoring_status; ?>">
                 <option value="">Select status</option>
 				<?php if ( is_array( $driver_pay_statuses ) ): ?>
 					<?php foreach ( $driver_pay_statuses as $key => $status ): ?>

@@ -168,7 +168,7 @@ if ( ! $show_filter_by_office ) {
                     </div>
 
                     <div class="col-12 mt-3 mb-3">
-                        <h2>Top Debtor Summary</h2>
+                        <h2>Debtor Summary</h2>
                     </div>
 
                     <div class="col-12">

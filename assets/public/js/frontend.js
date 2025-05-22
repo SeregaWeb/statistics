@@ -6508,23 +6508,24 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */   setStatusPaid: function() { return /* binding */ setStatusPaid; }
 /* harmony export */ });
 var setStatusPaid = function setStatusPaid() {
-  var selectElement = document.querySelector('.js-select-status-factoring');
-  if (!selectElement) return;
-  selectElement.addEventListener('change', function (event) {
-    var target = event.target;
-    var selectedValue = target.value;
-    var previousValue = target.dataset.previousValue || '';
-    if (selectedValue === 'paid') {
-      var confirmationMessage = "If you select 'Paid', make sure editing is finished, as the load will be locked and no further changes will be possible.";
-      var userConfirmed = confirm(confirmationMessage);
-      if (userConfirmed) {
-        target.dataset.previousValue = selectedValue;
+  var selectElementAll = document.querySelectorAll('.js-select-status-factoring');
+  selectElementAll.forEach(function (item) {
+    item.addEventListener('change', function (event) {
+      var target = event.target;
+      var selectedValue = target.value;
+      var previousValue = target.dataset.previousValue || '';
+      if (selectedValue === 'paid') {
+        var confirmationMessage = "If you select 'Paid', make sure editing is finished, as the load will be locked and no further changes will be possible.";
+        var userConfirmed = confirm(confirmationMessage);
+        if (userConfirmed) {
+          target.dataset.previousValue = selectedValue;
+        } else {
+          target.value = previousValue;
+        }
       } else {
-        target.value = previousValue;
+        target.dataset.previousValue = selectedValue;
       }
-    } else {
-      target.dataset.previousValue = selectedValue;
-    }
+    });
   });
 };
 

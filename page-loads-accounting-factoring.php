@@ -113,16 +113,14 @@ if ( ! $show_filter_by_office ) {
 
                             <div class="d-flex flex-column gap-1">
 								<?php
-								$data               = $statistics->get_monthly_fuctoring_stats( $year_param, $mount_param, $office );
-								$second_driver_rate = floatval( $data[ 'total_second_driver_rate' ] );
-								
-								$general_profit      = floatval( $data[ 'total_booked_rate' ] ) - floatval( $data[ 'total_driver_rate' ] ) - $second_driver_rate;
-								$general_true_profit = floatval( $data[ 'total_true_profit' ] ) - $second_driver_rate;
-								
-								$paid_to_factoring = $general_profit - $general_true_profit;
-								$after_factoring   = floatval( $data[ 'total_booked_rate' ] ) - $paid_to_factoring;
-								
-								$data[ 'total_driver_rate' ] = floatval( $data[ 'total_driver_rate' ] ) + $second_driver_rate;
+								$data                      = $statistics->get_monthly_fuctoring_stats( $year_param, $mount_param, $office );
+								$second_driver_rate        = floatval( $data[ 'total_second_driver_rate' ] );
+								$general_profit            = floatval( $data[ 'total_booked_rate' ] ) - ( floatval( $data[ 'total_driver_rate' ] ) + $second_driver_rate );
+								$total_percent_booked_rate = floatval( $data[ 'total_percent_booked_rate' ] );
+								$paid_to_factoring         = $total_percent_booked_rate;
+								$general_true_profit       = $general_profit - $paid_to_factoring;
+								$after_factoring           = floatval( $data[ 'total_booked_rate' ] ) - $paid_to_factoring;
+								$driver_rate               = floatval( $data[ 'total_driver_rate' ] ) + $second_driver_rate;
 								
 								?>
 
@@ -134,7 +132,7 @@ if ( ! $show_filter_by_office ) {
 
                                     <div class="table-values-col">
                                         <p>Driver rate</p>
-										<?php echo esc_html( '$' . $statistics->format_currency( $data[ 'total_driver_rate' ] ) ); ?>
+										<?php echo esc_html( '$' . $statistics->format_currency( $driver_rate ) ); ?>
                                     </div>
 
                                     <div class="table-values-col">

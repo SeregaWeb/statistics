@@ -32,6 +32,48 @@ class TMSReports extends TMSReportsHelper {
 		}
 	}
 	
+	public function get_profit_by_preset( $preset_ids ) {
+		global $wpdb;
+		
+		if ( empty( $preset_ids ) || ! is_array( $preset_ids ) ) {
+			return [];
+		}
+		
+		$table_main = $wpdb->prefix . $this->table_main;
+		$table_meta = $wpdb->prefix . $this->table_meta;
+		
+		$placeholders = implode( ',', array_fill( 0, count( $preset_ids ), '%s' ) );
+		
+		$sql = "
+		SELECT
+			preset_meta.meta_value AS preset_id,
+			COUNT(DISTINCT preset_meta.post_id) AS total_posts,
+			SUM(CAST(profit_meta.meta_value AS DECIMAL(10,2))) AS total_profit
+		FROM {$table_meta} AS preset_meta
+		INNER JOIN {$table_meta} AS profit_meta
+			ON profit_meta.post_id = preset_meta.post_id AND profit_meta.meta_key = 'profit'
+		WHERE preset_meta.meta_key = 'preset'
+		  AND preset_meta.meta_value IN ($placeholders)
+		GROUP BY preset_meta.meta_value
+	";
+		
+		$prepared_sql = $wpdb->prepare( $sql, ...$preset_ids );
+		$results      = $wpdb->get_results( $prepared_sql, ARRAY_A );
+		
+		$output = [];
+		
+		foreach ( $results as $row ) {
+			$preset_id            = 'brocker_' . $row[ 'preset_id' ];
+			$output[ $preset_id ] = [
+				'total_posts'  => (int) $row[ 'total_posts' ],
+				'total_profit' => (float) $row[ 'total_profit' ],
+			];
+		}
+		
+		return $output;
+	}
+	
+	
 	public function get_profit_by_dates( $array_dates, $office = null ) {
 		global $wpdb;
 		$table_main = $wpdb->prefix . $this->table_main;
@@ -123,7 +165,7 @@ class TMSReports extends TMSReportsHelper {
 	public function get_stat_platform() {
 		global $wpdb;
 		
-		$cache_key = 'stat_platform_cache';
+		$cache_key = 'stat_platform_cache_' . $this->project;
 		$cached    = get_transient( $cache_key );
 		
 		if ( $cached !== false ) {
@@ -183,7 +225,7 @@ class TMSReports extends TMSReportsHelper {
 	
 	public function get_stat_tools() {
 		global $wpdb;
-		$cache_key = 'stat_tool_cache';
+		$cache_key = 'stat_tool_cache_' . $this->project;
 		$cached    = get_transient( $cache_key );
 		
 		if ( $cached !== false ) {
@@ -217,7 +259,6 @@ class TMSReports extends TMSReportsHelper {
 		
 		return $results;
 	}
-	
 	
 	/**
 	 * @param $args
@@ -1988,7 +2029,9 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 				"contact_email"     => FILTER_SANITIZE_STRING,
 				"post_id"           => FILTER_SANITIZE_STRING,
 				"read_only"         => FILTER_SANITIZE_STRING,
+				"preset-select"     => FILTER_SANITIZE_STRING,
 			] );
+			
 			
 			if ( isset( $MY_INPUT[ 'read_only' ] ) ) {
 				wp_send_json_success();
@@ -2217,6 +2260,7 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 				"contact_phone"     => FILTER_SANITIZE_STRING,
 				"contact_phone_ext" => FILTER_SANITIZE_STRING,
 				"contact_email"     => FILTER_SANITIZE_STRING,
+				"preset-select"     => FILTER_SANITIZE_STRING,
 			] );
 			
 			$additional_contacts = [];
@@ -2649,8 +2693,6 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 	}
 	
 	public function count_all_sum( $MY_INPUT ) {
-		
-		
 		$MY_INPUT[ "booked_rate" ]        = $this->convert_to_number( $MY_INPUT[ "booked_rate" ] );
 		$MY_INPUT[ "driver_rate" ]        = $this->convert_to_number( $MY_INPUT[ "driver_rate" ] );
 		$MY_INPUT[ "second_driver_rate" ] = $this->convert_to_number( $MY_INPUT[ "second_driver_rate" ] );
@@ -2687,8 +2729,8 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 		
 		$MY_INPUT[ "booked_rate_modify" ] = $processing_fees_val - $percent_value;;
 		$MY_INPUT[ 'percent_quick_pay_value' ] = $percent_value;
-		
-		$MY_INPUT[ 'percent_booked_rate' ] = $MY_INPUT[ "booked_rate_modify" ] * 0.02;
+		// FACTORING PERCENT
+		$MY_INPUT[ 'percent_booked_rate' ] = $MY_INPUT[ "booked_rate_modify" ] * 0.0165;
 		if ( isset( $with_second_sum ) ) {
 			$MY_INPUT[ 'profit' ]      = $MY_INPUT[ "booked_rate_modify" ] - $with_second_sum;
 			$MY_INPUT[ 'true_profit' ] = $MY_INPUT[ "booked_rate_modify" ] - ( $MY_INPUT[ 'percent_booked_rate' ] + $with_second_sum );
@@ -3528,6 +3570,10 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 			'additional_contacts' => $data[ 'additional_contacts' ],
 		);
 		
+		if ( isset( $data[ 'preset-select' ] ) && ! empty( $data[ 'preset-select' ] ) ) {
+			$post_meta[ 'preset' ] = $data[ 'preset-select' ];
+		}
+		
 		// Specify the condition (WHERE clause)
 		$where = array( 'id' => $post_id );
 		
@@ -3577,6 +3623,10 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 			'contact_email'       => $data[ 'contact_email' ],
 			'additional_contacts' => $data[ 'additional_contacts' ],
 		);
+		
+		if ( isset( $data[ 'preset-select' ] ) && ! empty( $data[ 'preset-select' ] ) ) {
+			$post_meta[ 'preset' ] = $data[ 'preset-select' ];
+		}
 		
 		$result = $wpdb->insert( $table_name, $insert_params, array(
 			'%d',  // user_id_added

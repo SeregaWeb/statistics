@@ -80,10 +80,18 @@ if ( $report_object ) {
     <div class="container">
         <div class="row">
             <div class="col-12 col-md-8 pl-0 pr-0 pr-md-3 js-result-search-wrap">
-				
 				<?php if ( ! $read_only ): ?>
 
-                    <figure>
+                    <blockquote class="blockquote">
+                        <p>Search in my contact</p>
+                    </blockquote>
+                    <input type="text" name="use_preset" class="js-use-preset form-control">
+                    <input type="hidden" name="preset-select" value=""/>
+                    <div class="js-result-search-preset result-search-contact">
+
+                    </div>
+
+                    <figure class="mt-3">
                         <blockquote class="blockquote">
                             <p>Enter your customer's Motor Carrier # or name<span
                                         class="required-star text-danger">*</span></p>

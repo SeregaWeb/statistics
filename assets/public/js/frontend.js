@@ -3481,6 +3481,33 @@ var disabledValuesInSelectInit = function disabledValuesInSelectInit() {
 
 /***/ }),
 
+/***/ "./src/js/components/common/customer-tamplate.ts":
+/*!*******************************************************!*\
+  !*** ./src/js/components/common/customer-tamplate.ts ***!
+  \*******************************************************/
+/***/ (function(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   generateCustomerTemplate: function() { return /* binding */ generateCustomerTemplate; }
+/* harmony export */ });
+function generateCustomerTemplate(_ref) {
+  var id = _ref.id,
+    name = _ref.name,
+    address = _ref.address,
+    mc = _ref.mc,
+    dot = _ref.dot,
+    contact = _ref.contact,
+    phone = _ref.phone,
+    email = _ref.email;
+  var dotTmpl = dot ? "<span><strong>#DOT:</strong> ".concat(dot, "</span>") : '';
+  var mcTmpl = mc ? "<span><strong>#MC:</strong> ".concat(mc, "</span>") : '';
+  return "\n        <ul class=\"result-search-el\">\n            <li class=\"name\">".concat(name !== null && name !== void 0 ? name : '', "</li>\n            <li class=\"address\">").concat(address !== null && address !== void 0 ? address : '', "</li>\n            <li>").concat(mcTmpl, "</li>\n            <li>").concat(dotTmpl, "</li>\n            <li>").concat(contact !== null && contact !== void 0 ? contact : '', "</li>\n            <li>").concat(phone !== null && phone !== void 0 ? phone : '', "</li>\n            <li>").concat(email !== null && email !== void 0 ? email : '', "</li>\n        </ul>\n        <input type=\"hidden\" name=\"customer_id\" value=\"").concat(id !== null && id !== void 0 ? id : '', "\">\n    ");
+}
+
+/***/ }),
+
 /***/ "./src/js/components/common/loading-btn.ts":
 /*!*************************************************!*\
   !*** ./src/js/components/common/loading-btn.ts ***!
@@ -3527,6 +3554,12 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _parts_popup_window__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ../../parts/popup-window */ "./src/js/parts/popup-window.js");
 /* harmony import */ var _search_action__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ../search-action */ "./src/js/components/search-action.ts");
 /* harmony import */ var _tel_mask__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! ../tel-mask */ "./src/js/components/tel-mask.ts");
+/* harmony import */ var _parts_helpers__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! ../../parts/helpers */ "./src/js/parts/helpers.js");
+/* harmony import */ var _common_customer_tamplate__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! ../common/customer-tamplate */ "./src/js/components/common/customer-tamplate.ts");
+/* harmony import */ var _create_report__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(/*! ../create-report */ "./src/js/components/create-report.ts");
+
+
+
 
 
 
@@ -3543,7 +3576,7 @@ function reindexAdditionalContacts(container) {
   var rows = container.querySelectorAll('.additional-contact');
   rows.forEach(function (row, index) {
     var inputs = row.querySelectorAll('input');
-    if (inputs.length === 3) {
+    if (inputs.length === 4) {
       inputs[0].name = "additional_contacts[".concat(index, "][name]");
       inputs[1].name = "additional_contacts[".concat(index, "][phone]");
       inputs[2].name = "additional_contacts[".concat(index, "][ext]");
@@ -3671,10 +3704,107 @@ function openEdit(ajaxUrl) {
     });
   }
 }
+function setPreset() {
+  var clickInit = document.querySelectorAll('.js-preset-click');
+  clickInit && clickInit.forEach(function (item) {
+    item.addEventListener('click', function (e) {
+      var _a, _b, _c, _d, _e;
+      e.preventDefault();
+      var target = e.target;
+      if (!target) return;
+      var oldActive = document.querySelector('.js-preset-click.active');
+      oldActive === null || oldActive === void 0 ? void 0 : oldActive.classList.remove('active');
+      target.classList.add('active');
+      var presetJsonSearch = target.querySelector('.js-preset-json');
+      var jsonStr = presetJsonSearch.innerHTML;
+      var jsonObj = JSON.parse(jsonStr);
+      var selectedPrest = document.querySelector('input[name="preset-select"]');
+      if (selectedPrest) {
+        selectedPrest.value = jsonObj.main_id;
+      }
+      var searchCompany = document.querySelector('.js-search-company');
+      var searchCompanyContainer = document.querySelector('.js-result-search');
+      var additionalResult = document.querySelector('.js-additional-contact-wrap');
+      var additionalContainer = document.querySelector('.js-additional-contact');
+      var contactNameInput = document.querySelector('#contact-input-firstname');
+      var contactPhoneInput = document.querySelector('#contact-input-phone');
+      var contactPhoneExtInput = document.querySelector('#contact-input-phone_ext');
+      var contactEmailInput = document.querySelector('#contact-input-email');
+      if (contactNameInput && contactPhoneInput && contactPhoneExtInput && contactEmailInput) {
+        contactNameInput.value = (_a = "".concat(jsonObj.name)) !== null && _a !== void 0 ? _a : '';
+        contactPhoneInput.value = (_b = "".concat(jsonObj.direct_number)) !== null && _b !== void 0 ? _b : '';
+        contactPhoneExtInput.value = (_c = "".concat(jsonObj.direct_ext)) !== null && _c !== void 0 ? _c : '';
+        contactEmailInput.value = (_d = "".concat(jsonObj.direct_email)) !== null && _d !== void 0 ? _d : '';
+      }
+      if (searchCompany && searchCompanyContainer) {
+        var customerData = {
+          id: jsonObj === null || jsonObj === void 0 ? void 0 : jsonObj.id,
+          name: jsonObj === null || jsonObj === void 0 ? void 0 : jsonObj.company_name,
+          address: jsonObj === null || jsonObj === void 0 ? void 0 : jsonObj.address1,
+          mc: jsonObj === null || jsonObj === void 0 ? void 0 : jsonObj.mc_number,
+          dot: jsonObj === null || jsonObj === void 0 ? void 0 : jsonObj.dot_number,
+          contact: "".concat(jsonObj === null || jsonObj === void 0 ? void 0 : jsonObj.contact_first_name, " ").concat(jsonObj === null || jsonObj === void 0 ? void 0 : jsonObj.contact_last_name),
+          phone: jsonObj === null || jsonObj === void 0 ? void 0 : jsonObj.phone_number,
+          email: jsonObj === null || jsonObj === void 0 ? void 0 : jsonObj.company_email
+        };
+        searchCompany.value = (_e = jsonObj.company_name) !== null && _e !== void 0 ? _e : '';
+        searchCompanyContainer.innerHTML = (0,_common_customer_tamplate__WEBPACK_IMPORTED_MODULE_6__.generateCustomerTemplate)(customerData);
+      }
+      var contacts = jsonObj === null || jsonObj === void 0 ? void 0 : jsonObj.additional_contacts;
+      var templates = contacts.map(function (contact) {
+        var valueName = contact.contact_name || '';
+        var valuePhone = contact.contact_phone || '';
+        var valueEmail = contact.contact_email || '';
+        var valueExt = contact.contact_ext || '';
+        return "<div class=\"additional-card js-additional-card\">\n                        <input type=\"text\" name=\"additional_contact_name[]\" readonly=\"\" value=\"".concat(valueName, "\" class=\"form-control js-additional-field-name\">\n                        <input type=\"text\" name=\"additional_contact_phone[]\" readonly=\"\" value=\"").concat(valuePhone, "\" class=\"form-control js-additional-field-phone\">\n                        <input type=\"text\" name=\"additional_contact_phone_ext[]\" readonly value=\"").concat(valueExt, "\" class=\"form-control js-additional-field-phone\">\n                        <input type=\"text\" name=\"additional_contact_email[]\" readonly=\"\" value=\"").concat(valueEmail, "\" class=\"form-control js-additional-field-email\">\n                            <button class=\"additional-card__edit js-edit-contact\">\n                                <svg width=\"668\" height=\"668\" viewBox=\"0 0 668 668\" fill=\"none\" xmlns=\"http://www.w3.org/2000/svg\">\n                                <path d=\"M640.46 27.5413C676.29 63.3746 676.29 121.472 640.46 157.305L623.94 173.823C619.13 172.782 613.073 171.196 606.17 168.801C587.693 162.391 563.41 150.276 540.567 127.433C517.723 104.591 505.61 80.3076 499.2 61.8299C496.803 54.9269 495.22 48.8696 494.177 44.0596L510.697 27.5413C546.53 -8.29175 604.627 -8.29175 640.46 27.5413Z\" fill=\"#1C274C\"></path>\n                                <path d=\"M420.003 377.76C406.537 391.227 399.803 397.96 392.377 403.753C383.62 410.583 374.143 416.44 364.117 421.22C355.617 425.27 346.583 428.28 328.513 434.303L233.236 466.063C224.345 469.027 214.542 466.713 207.915 460.087C201.287 453.457 198.973 443.657 201.937 434.763L233.696 339.487C239.719 321.417 242.73 312.383 246.781 303.883C251.56 293.857 257.416 284.38 264.248 275.623C270.04 268.197 276.773 261.465 290.24 247.998L454.11 84.1284C462.9 107.268 478.31 135.888 505.21 162.789C532.113 189.69 560.733 205.099 583.873 213.891L420.003 377.76Z\" fill=\"#1C274C\"></path>\n                                <path d=\"M618.517 618.516C667.333 569.703 667.333 491.133 667.333 334C667.333 282.39 667.333 239.258 665.603 202.87L453.533 414.943C441.823 426.656 433.027 435.456 423.127 443.176C411.507 452.243 398.933 460.013 385.627 466.353C374.293 471.756 362.487 475.686 346.777 480.92L249.048 513.496C222.189 522.45 192.578 515.46 172.559 495.44C152.54 475.423 145.55 445.81 154.503 418.953L187.078 321.223C192.312 305.513 196.244 293.706 201.645 282.373C207.986 269.066 215.757 256.493 224.822 244.871C232.543 234.972 241.344 226.176 253.058 214.468L465.13 2.39583C428.743 0.6665 385.61 0.666504 334 0.666504C176.865 0.666504 98.2977 0.6665 49.4824 49.4822C0.666744 98.2975 0.666748 176.865 0.666748 334C0.666748 491.133 0.666744 569.703 49.4824 618.516C98.2977 667.333 176.865 667.333 334 667.333C491.133 667.333 569.703 667.333 618.517 618.516Z\" fill=\"#1C274C\"></path>\n                            </svg>\n                            </button>\n                            <button class=\"additional-card__remove js-remove-contact\">\n                                <svg width=\"668\" height=\"668\" viewBox=\"0 0 668 668\" fill=\"none\" xmlns=\"http://www.w3.org/2000/svg\">\n                                <path fill-rule=\"evenodd\" clip-rule=\"evenodd\" d=\"M334 667.333C176.865 667.333 98.2976 667.333 49.4823 618.516C0.666622 569.703 0.666626 491.133 0.666626 334C0.666626 176.865 0.666622 98.2975 49.4823 49.4822C98.2976 0.6665 176.865 0.666504 334 0.666504C491.133 0.666504 569.703 0.6665 618.517 49.4822C667.333 98.2975 667.333 176.865 667.333 334C667.333 491.133 667.333 569.703 618.517 618.516C569.703 667.333 491.133 667.333 334 667.333ZM232.988 232.989C242.751 223.226 258.581 223.226 268.343 232.989L334 298.646L399.653 232.99C409.417 223.227 425.247 223.227 435.01 232.99C444.773 242.753 444.773 258.582 435.01 268.343L369.353 334L435.01 399.656C444.773 409.416 444.773 425.246 435.01 435.01C425.247 444.773 409.417 444.773 399.653 435.01L334 369.357L268.343 435.01C258.581 444.773 242.752 444.773 232.989 435.01C223.226 425.246 223.226 409.42 232.989 399.656L298.643 334L232.988 268.343C223.225 258.581 223.225 242.752 232.988 232.989Z\" fill=\"#1C274C\"></path>\n                            </svg>\n                            </button>\n                    </div>");
+      }).join('');
+      console.log('template', templates);
+      if (additionalContainer && additionalResult) {
+        if (templates) {
+          additionalContainer === null || additionalContainer === void 0 ? void 0 : additionalContainer.classList.remove('d-none');
+          additionalResult.innerHTML = templates;
+          (0,_create_report__WEBPACK_IMPORTED_MODULE_7__.addActionsDeleteUniversalCard)('.js-remove-contact', '.js-additional-card');
+          (0,_create_report__WEBPACK_IMPORTED_MODULE_7__.addActionsEditAdditionalCard)();
+        } else {
+          additionalContainer === null || additionalContainer === void 0 ? void 0 : additionalContainer.classList.add('d-none');
+          additionalResult.innerHTML = '';
+        }
+      }
+    });
+  });
+}
+function usePreset(ajaxUrl) {
+  var inputsPreset = document.querySelectorAll('.js-use-preset');
+  inputsPreset && inputsPreset.forEach(function (inputSearch) {
+    inputSearch.addEventListener('input', (0,_parts_helpers__WEBPACK_IMPORTED_MODULE_5__.debounce)(function (event) {
+      console.log('Search preset', event.target.value);
+      var formData = new FormData();
+      formData.append('action', 'search_contact');
+      formData.append('search', event.target.value);
+      var options = {
+        method: 'POST',
+        body: formData
+      };
+      fetch(ajaxUrl, options).then(function (res) {
+        return res.json();
+      }).then(function (requestStatus) {
+        if (requestStatus.success) {
+          console.log('select search', requestStatus);
+          var result = document.querySelector('.js-result-search-preset');
+          result.innerHTML = requestStatus.data;
+          setPreset();
+        }
+      }).catch(function (error) {
+        console.error('Request failed:', error);
+      });
+    }, 1000));
+  });
+}
 function initContactsHandler(ajaxUrl) {
   openEdit(ajaxUrl);
   initAdditionalContactHandler();
   addNewContact(ajaxUrl);
+  usePreset(ajaxUrl);
 }
 
 /***/ }),
@@ -3811,6 +3941,8 @@ var ActionDeleteCompanyInit = function ActionDeleteCompanyInit(ajaxUrl) {
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   actionCreateReportInit: function() { return /* binding */ actionCreateReportInit; },
+/* harmony export */   addActionsDeleteUniversalCard: function() { return /* binding */ addActionsDeleteUniversalCard; },
+/* harmony export */   addActionsEditAdditionalCard: function() { return /* binding */ addActionsEditAdditionalCard; },
 /* harmony export */   addShipperPointInit: function() { return /* binding */ addShipperPointInit; },
 /* harmony export */   additionalContactsInit: function() { return /* binding */ additionalContactsInit; },
 /* harmony export */   createDraftPosts: function() { return /* binding */ createDraftPosts; },

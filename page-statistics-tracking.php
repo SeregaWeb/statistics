@@ -62,7 +62,8 @@ $dispatchers = $items[ 'dispatchers' ];
 									
 									echo get_template_part( TEMPLATE_PATH . 'common/card', 'statistics-tracking', array(
 										'user'       => $user,
-										'user_stats' => $user_stats
+										'user_stats' => $user_stats,
+										'total'      => 25,
 									) );
 									
 									?>

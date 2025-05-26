@@ -41,7 +41,7 @@ if ( ! $active_item ) {
 if ( $show_filter_by_office ): ?>
     <form class="w-100 d-flex gap-1">
         <select class="form-select w-auto" name="office" aria-label=".form-select-sm example">
-            <option value="all">Office</option>
+            <option value="all">Company total</option>
 			<?php if ( isset( $offices[ 'choices' ] ) && is_array( $offices[ 'choices' ] ) ): ?>
 				<?php foreach ( $offices[ 'choices' ] as $key => $val ): ?>
                     <option value="<?php echo $key; ?>" <?php echo $office_dispatcher === $key ? 'selected' : '' ?> >

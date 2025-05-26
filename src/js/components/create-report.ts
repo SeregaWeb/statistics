@@ -637,7 +637,7 @@ export const previewFileUpload = () => {
         });
 };
 
-const addActionsDeleteUniversalCard = (selectorBtn, selectorCard) => {
+export const addActionsDeleteUniversalCard = (selectorBtn, selectorCard) => {
     if (!selectorBtn || !selectorCard) return;
     // @ts-ignore
     const btnsSelectors = document.querySelectorAll(selectorBtn);
@@ -662,7 +662,7 @@ const addActionsDeleteUniversalCard = (selectorBtn, selectorCard) => {
 /**
  * add actions edit after dynamic add in page
  */
-const addActionsEditAdditionalCard = () => {
+export const addActionsEditAdditionalCard = () => {
     // eslint-disable-next-line @wordpress/no-unused-vars-before-return
     const batonsEdit = document.querySelectorAll('.js-edit-contact');
 

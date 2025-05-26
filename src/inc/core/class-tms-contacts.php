@@ -6,7 +6,7 @@ class TMSContacts extends TMSDriversHelper {
 	public $table_main         = 'contacts';
 	public $additional_contact = 'contacts_additional_info';
 	public $helper             = false;
-	public $per_page_loads     = 1;
+	public $per_page_loads     = 25;
 	
 	public function __construct() {
 		$this->helper = new TMSCommonHelper();
@@ -22,11 +22,93 @@ class TMSContacts extends TMSDriversHelper {
 		$actions = array(
 			'add_new_contact' => 'add_new_contact',
 			'edit_contact'    => 'edit_contact',
+			'search_contact'  => 'search_contact',
 		);
 		
 		foreach ( $actions as $ajax_action => $method ) {
 			add_action( "wp_ajax_{$ajax_action}", [ $this, $method ] );
 			add_action( "wp_ajax_nopriv_{$ajax_action}", [ $this->helper, 'need_login' ] );
+		}
+	}
+	
+	public function search_contact() {
+		if ( defined( 'DOING_AJAX' ) && DOING_AJAX ) {
+			global $wpdb;
+			
+			$table_main       = $wpdb->prefix . $this->table_main;
+			$table_additional = $wpdb->prefix . $this->additional_contact;
+			$table_companies  = $wpdb->prefix . 'reports_company';
+			
+			$current_user_id = get_current_user_id();
+			
+			$MY_INPUT = filter_var_array( $_POST, [
+				"search" => FILTER_SANITIZE_STRING,
+			] );
+			
+			$search = '%' . $wpdb->esc_like( $MY_INPUT[ 'search' ] ) . '%';
+			
+			// Получаем ID из основной таблицы по name или email
+			$main_contact_ids = $wpdb->get_col( $wpdb->prepare( "
+			SELECT id FROM $table_main
+			WHERE user_id_added = %d
+			AND (name LIKE %s OR email LIKE %s)
+		", $current_user_id, $search, $search ) );
+			
+			// Получаем ID из дополнительных контактов
+			$additional_ids = $wpdb->get_col( $wpdb->prepare( "
+			SELECT contact_id FROM $table_additional
+			WHERE contact_name LIKE %s OR contact_email LIKE %s
+		", $search, $search ) );
+			
+			// Объединяем ID
+			$all_ids = array_unique( array_merge( $main_contact_ids, $additional_ids ) );
+			
+			if ( empty( $all_ids ) ) {
+				wp_send_json_success( [
+					'data'  => [],
+					'total' => 0,
+				] );
+			}
+			
+			// Получаем основную информацию
+			$placeholders  = implode( ',', array_fill( 0, count( $all_ids ), '%d' ) );
+			$sql           = "
+			SELECT
+				m.*,
+				m.email AS direct_email,
+				m.id AS main_id,
+				c.id AS company_id_alias,
+				c.email AS company_email,
+				c.*
+			FROM $table_main m
+			LEFT JOIN $table_companies c ON m.company_id = c.id
+			WHERE m.id IN ($placeholders)
+		";
+			$query         = $wpdb->prepare( $sql, ...$all_ids );
+			$main_contacts = $wpdb->get_results( $query, ARRAY_A );
+			
+			$template = '';
+			
+			// Добавляем дополнительные контакты
+			foreach ( $main_contacts as &$contact ) {
+				$contact_id                       = (int) $contact[ 'main_id' ];
+				$contact[ 'additional_contacts' ] = $wpdb->get_results( $wpdb->prepare( "
+				SELECT contact_name, contact_phone, contact_email, contact_ext
+				FROM $table_additional
+				WHERE contact_id = %d
+			", $contact_id ), ARRAY_A );
+				
+				$template .= '<div class="result-search-contact__item js-preset-click">
+					<p>' . $contact[ 'name' ] . ' - (' . $contact[ 'company_name' ] . ' | ' . $contact[ 'direct_email' ] . ')</p>
+					<input type="hidden" value="' . $contact[ 'main_id' ] . '" name="main_contact_id" />
+					<div class="d-none js-preset-json">
+						' . json_encode( $contact ) . '
+					</div>
+				</div>';
+			}
+			
+			
+			wp_send_json_success( $template );
 		}
 	}
 	
@@ -132,6 +214,7 @@ class TMSContacts extends TMSDriversHelper {
 				]
 			] );
 			
+			
 			$table_main       = $wpdb->prefix . $this->table_main;
 			$table_additional = $wpdb->prefix . $this->additional_contact;
 			$user_id          = get_current_user_id();
@@ -213,6 +296,10 @@ class TMSContacts extends TMSDriversHelper {
 		
 		$current_user_id = get_current_user_id();
 		
+		if ( isset( $args[ 'dispatcher' ] ) && ! empty( $args[ 'dispatcher' ] ) ) {
+			$current_user_id = $args[ 'dispatcher' ];
+		}
+		
 		$per_page     = isset( $args[ 'per_page_loads' ] ) ? (int) $args[ 'per_page_loads' ] : $this->per_page_loads;
 		$current_page = isset( $_GET[ 'paged' ] ) ? absint( $_GET[ 'paged' ] ) : 1;
 		$offset       = ( $current_page - 1 ) * $per_page;
@@ -227,8 +314,10 @@ class TMSContacts extends TMSDriversHelper {
 		$main_contacts = $wpdb->get_results( $wpdb->prepare( "
 		    SELECT
 		        m.*,
+		        m.email AS direct_email,
 		        m.id AS main_id,
 		        c.id AS company_id_alias,
+		        c.email AS company_email,
 		        c.*
 		    FROM $table_main m
 		    LEFT JOIN $table_companies c ON m.company_id = c.id
@@ -240,7 +329,7 @@ class TMSContacts extends TMSDriversHelper {
 		// Присоединяем дополнительные контакты
 		foreach ( $main_contacts as &$contact ) {
 			$contact_id                       = (int) $contact[ 'main_id' ];
-			$contact[ 'additional_contacts' ] = $wpdb->get_results( $wpdb->prepare( "SELECT contact_name, contact_phone, contact_email
+			$contact[ 'additional_contacts' ] = $wpdb->get_results( $wpdb->prepare( "SELECT contact_name, contact_phone, contact_email, contact_ext
 			 FROM $table_additional
 			 WHERE contact_id = %d", $contact_id ), ARRAY_A );
 		}
@@ -256,7 +345,6 @@ class TMSContacts extends TMSDriversHelper {
 			'sort_by'    => $sort_by,
 		];
 	}
-	
 	
 	public function table_contacts_additional_init() {
 		global $wpdb;

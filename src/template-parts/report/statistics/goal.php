@@ -56,7 +56,6 @@ if ( $hide_filter ):
             <input type="hidden" name="active_state" value="goal">
             <select class="form-select w-auto" name="team-lead"
                     aria-label=".form-select-sm example">
-                <option value="">Team lead</option>
 				<?php if ( is_array( $dispatchers_tl ) ): ?>
 					<?php foreach ( $dispatchers_tl as $dispatcher ): ?>
                         <option value="<?php echo $dispatcher[ 'id' ]; ?>" <?php echo strval( $dispatcher_tl_initials ) === strval( $dispatcher[ 'id' ] )

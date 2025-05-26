@@ -68,7 +68,7 @@ get_header();
 									<?php if ( $show_filter_by_office ): ?>
                                         <select class="form-select w-auto" name="office"
                                                 aria-label=".form-select-sm example">
-                                            <option value="all">Office</option>
+                                            <option value="all">Company total</option>
 											<?php if ( isset( $offices[ 'choices' ] ) && is_array( $offices[ 'choices' ] ) ): ?>
 												<?php foreach ( $offices[ 'choices' ] as $key => $val ): ?>
                                                     <option value="<?php echo $key; ?>" <?php echo $office === $key
@@ -196,8 +196,10 @@ get_header();
 												continue;
 											}
 											
-											$dbdate     = $performance->get_or_create_performance_record( $dispatcher[ 'id' ], $date );
-											$report     = $performance->get_dispatcher_weekly_report( $date, $dispatcher[ 'id' ] );
+											$dbdate = $performance->get_or_create_performance_record( $dispatcher[ 'id' ], $date );
+											
+											$report = $performance->get_dispatcher_weekly_report( $date, $dispatcher[ 'id' ] );
+											
 											$print_date = array(
 												'user_id'         => is_numeric( $dbdate ) ? $dispatcher[ 'id' ]
 													: $dbdate[ 'user_id' ],
@@ -305,8 +307,37 @@ get_header();
                                                 <td><?php echo $dispatcher[ 'fullname' ]; ?></td>
 												
 												<?php
-												$md_color = $print_date[ 'monday_date' ][ 'performance' ] >= 100
-													? '#d9facb' : ' #f4cccc' ?>
+												$days_keys = [
+													'monday_date',
+													'tuesday_date',
+													'wednesday_date',
+													'thursday_date',
+													'friday_date'
+												];
+												$colors    = [];
+												
+												foreach ( $days_keys as $day_key ) {
+													if ( isset( $print_date[ $day_key ][ 'performance' ] ) && $print_date[ $day_key ][ 'performance' ] !== '' ) {
+														$performance_val = (float) $print_date[ $day_key ][ 'performance' ];
+														if ( $performance_val == 0 ) {
+															$colors[ $day_key ] = '#ffffff';
+														} else {
+															$colors[ $day_key ] = $performance_val >= 100 ? '#d9facb'
+																: '#f4cccc';
+														}
+													} else {
+														$colors[ $day_key ] = '#ffffff';
+													}
+												}
+												
+												
+												// Теперь у тебя есть:
+												$md_color = $colors[ 'monday_date' ];
+												$tu_color = $colors[ 'tuesday_date' ];
+												$wd_color = $colors[ 'wednesday_date' ];
+												$th_color = $colors[ 'thursday_date' ];
+												$fr_color = $colors[ 'friday_date' ];
+												?>
 
                                                 <td style="background-color: <?php echo $md_color; ?>">
 													<?php if ( $edit_access ): ?>
@@ -325,11 +356,6 @@ get_header();
                                                 <td style="background-color: <?php echo $md_color; ?>"><?php echo $print_date[ 'monday_date' ][ 'performance' ]; ?>
                                                     %
                                                 </td>
-												
-												<?php
-												$tu_color = $print_date[ 'tuesday_date' ][ 'performance' ] >= 100
-													? '#d9facb' : ' #f4cccc' ?>
-
 
                                                 <td style="background-color: <?php echo $tu_color; ?>">
 													<?php if ( $edit_access ): ?>
@@ -348,10 +374,6 @@ get_header();
                                                 <td style="background-color: <?php echo $tu_color; ?>"><?php echo $print_date[ 'tuesday_date' ][ 'performance' ]; ?>
                                                     %
                                                 </td>
-												
-												<?php
-												$wd_color = $print_date[ 'wednesday_date' ][ 'performance' ] >= 100
-													? '#d9facb' : ' #f4cccc' ?>
 
                                                 <td style="background-color: <?php echo $wd_color; ?>">
 													<?php if ( $edit_access ): ?>
@@ -370,10 +392,7 @@ get_header();
                                                 <td style="background-color: <?php echo $wd_color; ?>"><?php echo $print_date[ 'wednesday_date' ][ 'performance' ]; ?>
                                                     %
                                                 </td>
-												
-												<?php
-												$th_color = $print_date[ 'thursday_date' ][ 'performance' ] >= 100
-													? '#d9facb' : ' #f4cccc' ?>
+
 
                                                 <td style="background-color: <?php echo $th_color; ?>">
 													<?php if ( $edit_access ): ?>
@@ -394,9 +413,7 @@ get_header();
                                                 <td style="background-color: <?php echo $th_color; ?>"><?php echo $print_date[ 'thursday_date' ][ 'performance' ]; ?>
                                                     %
                                                 </td>
-												
-												<?php $fr_color = $print_date[ 'friday_date' ][ 'performance' ] >= 100
-													? '#d9facb' : ' #f4cccc' ?>
+
 
                                                 <td style="background-color: <?php echo $fr_color; ?>">
 													<?php if ( $edit_access ): ?>

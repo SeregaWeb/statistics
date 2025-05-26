@@ -36,47 +36,52 @@ class  TMSStatistics extends TMSReportsHelper {
 		return $weekdayCount;
 	}
 	
-	public function get_sources_statistics( $office_dispatcher = 'all' ) {
+	public function get_sources_statistics( $office_dispatcher = 'all', $year_param, $month_param ) {
 		global $wpdb;
+		
+		$table_main = $wpdb->prefix . $this->table_main; // Например: wp_reports
 		$table_meta = $wpdb->prefix . $this->table_meta;
 		
-		// Результирующий массив
 		$statistics = [];
 		
 		foreach ( $this->sources as $key => $label ) {
-			// Базовый SQL-запрос
-			$sql = "
-            SELECT COUNT(DISTINCT source_meta.post_id) as count,
-                   SUM(CASE WHEN profit_meta.meta_key = 'profit' THEN profit_meta.meta_value ELSE 0 END) as profit
-            FROM $table_meta as source_meta
-            INNER JOIN $table_meta as profit_meta
-                ON source_meta.post_id = profit_meta.post_id
-                AND profit_meta.meta_key = 'profit'
-            LEFT JOIN $table_meta as office_dispatcher
-                ON source_meta.post_id = office_dispatcher.post_id
-                AND office_dispatcher.meta_key = 'office_dispatcher'
-            LEFT JOIN $table_meta AS tbd
-				ON source_meta.id = tbd.post_id
-				AND tbd.meta_key = 'tbd'
-            LEFT JOIN $table_meta as load_status
-                ON source_meta.post_id = load_status.post_id
-                AND load_status.meta_key = 'load_status'
-            
-            WHERE source_meta.meta_key = 'source'
-                AND load_status.meta_value NOT IN ( 'cancelled', 'waiting-on-rc' )
-            	AND (tbd.meta_value IS NULL OR tbd.meta_value = '')
-                AND source_meta.meta_value = %s
-        ";
 			
-			// Добавляем фильтр по офису, если он задан
+			$sql = "
+			SELECT COUNT(DISTINCT source_meta.post_id) as count,
+				   SUM(CASE WHEN profit_meta.meta_key = 'profit' THEN profit_meta.meta_value ELSE 0 END) as profit
+			FROM $table_meta as source_meta
+			INNER JOIN $table_meta as profit_meta
+				ON source_meta.post_id = profit_meta.post_id AND profit_meta.meta_key = 'profit'
+			LEFT JOIN $table_meta as office_dispatcher
+				ON source_meta.post_id = office_dispatcher.post_id AND office_dispatcher.meta_key = 'office_dispatcher'
+			LEFT JOIN $table_meta as tbd
+				ON source_meta.id = tbd.post_id AND tbd.meta_key = 'tbd'
+			LEFT JOIN $table_meta as load_status
+				ON source_meta.post_id = load_status.post_id AND load_status.meta_key = 'load_status'
+			INNER JOIN $table_main as reports
+				ON source_meta.post_id = reports.id
+			WHERE source_meta.meta_key = 'source'
+			  AND source_meta.meta_value = %s
+			  AND (tbd.meta_value IS NULL OR tbd.meta_value = '')
+			  AND load_status.meta_value NOT IN ('cancelled', 'waiting-on-rc')
+		";
+			
+			$params = [ $key ];
+			
 			if ( $office_dispatcher !== 'all' ) {
-				$sql   .= " AND office_dispatcher.meta_value = %s";
-				$query = $wpdb->prepare( $sql, $key, $office_dispatcher );
-			} else {
-				$query = $wpdb->prepare( $sql, $key );
+				$sql      .= " AND office_dispatcher.meta_value = %s";
+				$params[] = $office_dispatcher;
 			}
 			
-			// Выполняем запрос
+			if ( $year_param !== 'all' && $month_param !== 'all' ) {
+				$sql      .= " AND YEAR(reports.date_booked) = %d AND MONTH(reports.date_booked) = %d";
+				$params[] = (int) $year_param;
+				$params[] = (int) $month_param;
+			}
+			
+			$sql .= " AND reports.status_post = 'publish'";
+			
+			$query  = $wpdb->prepare( $sql, ...$params );
 			$result = $wpdb->get_row( $query );
 			
 			$statistics[ $key ] = [
@@ -559,9 +564,11 @@ class  TMSStatistics extends TMSReportsHelper {
 		        SUM(CAST(IFNULL(processing_fees.meta_value, 0) AS DECIMAL(10,2))) AS total_processing_fees,
 		        SUM(CAST(IFNULL(percent_quick_pay_value.meta_value, 0) AS DECIMAL(10,2))) AS total_percent_quick_pay_value,
 		        SUM(CAST(IFNULL(quick_pay_driver_amount.meta_value, 0) AS DECIMAL(10,2))) AS total_quick_pay_driver_amount,
-		        SUM(CAST(IFNULL(booked_rate_modify.meta_value, 0) AS DECIMAL(10,2))) AS total_booked_rate_modify
+		        SUM(CAST(IFNULL(booked_rate_modify.meta_value, 0) AS DECIMAL(10,2))) AS total_booked_rate_modify,
+		        SUM(CAST(IFNULL(percent_booked_rate.meta_value, 0) AS DECIMAL(10,2))) AS total_percent_booked_rate
 		    FROM $table_reports reports
 		    LEFT JOIN $table_meta profit ON reports.id = profit.post_id AND profit.meta_key = 'profit'
+		    LEFT JOIN $table_meta percent_booked_rate ON reports.id = percent_booked_rate.post_id AND percent_booked_rate.meta_key = 'percent_booked_rate'
 		    LEFT JOIN $table_meta booked_rate ON reports.id = booked_rate.post_id AND booked_rate.meta_key = 'booked_rate'
 		    LEFT JOIN $table_meta driver_rate ON reports.id = driver_rate.post_id AND driver_rate.meta_key = 'driver_rate'
 		    LEFT JOIN $table_meta second_driver_rate ON reports.id = second_driver_rate.post_id AND second_driver_rate.meta_key = 'second_driver_rate'
@@ -604,6 +611,7 @@ class  TMSStatistics extends TMSReportsHelper {
 			'total_processing_fees'         => 0.00,
 			'percent_quick_pay_value'       => 0.00,
 			'total_quick_pay_driver_amount' => 0.00,
+			'total_percent_booked_rate'     => 0.00,
 		];
 		
 		// Populate the result with actual data if available
@@ -618,6 +626,7 @@ class  TMSStatistics extends TMSReportsHelper {
 			$monthly_stats[ 'total_processing_fees' ]         = $results[ 0 ][ 'total_processing_fees' ] ?? 0.00;
 			$monthly_stats[ 'percent_quick_pay_value' ]       = $results[ 0 ][ 'percent_quick_pay_value' ] ?? 0.00;
 			$monthly_stats[ 'total_quick_pay_driver_amount' ] = $results[ 0 ][ 'total_quick_pay_driver_amount' ] ?? 0.00;
+			$monthly_stats[ 'total_percent_booked_rate' ]     = $results[ 0 ][ 'total_percent_booked_rate' ] ?? 0.00;
 		}
 		
 		// Return the monthly statistics

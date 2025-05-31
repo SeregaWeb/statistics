@@ -20,14 +20,41 @@ class TMSContacts extends TMSDriversHelper {
 	
 	public function ajax_actions() {
 		$actions = array(
-			'add_new_contact' => 'add_new_contact',
-			'edit_contact'    => 'edit_contact',
-			'search_contact'  => 'search_contact',
+			'add_new_contact'    => 'add_new_contact',
+			'edit_contact'       => 'edit_contact',
+			'search_contact'     => 'search_contact',
+			'delete_one_contact' => 'delete_one_contact',
 		);
 		
 		foreach ( $actions as $ajax_action => $method ) {
 			add_action( "wp_ajax_{$ajax_action}", [ $this, $method ] );
 			add_action( "wp_ajax_nopriv_{$ajax_action}", [ $this->helper, 'need_login' ] );
+		}
+	}
+	
+	public function delete_one_contact() {
+		if ( defined( 'DOING_AJAX' ) && DOING_AJAX ) {
+			global $wpdb;
+			$table_main       = $wpdb->prefix . $this->table_main;
+			$table_additional = $wpdb->prefix . $this->additional_contact;
+			
+			$MY_INPUT = filter_var_array( $_POST, [
+				'id' => FILTER_SANITIZE_NUMBER_INT
+			] );
+			
+			$contact_id = (int) $MY_INPUT[ 'id' ];
+			
+			if ( $contact_id > 0 ) {
+				// Удаляем дополнительные контакты
+				$wpdb->delete( $table_additional, [ 'contact_id' => $contact_id ], [ '%d' ] );
+				
+				// Удаляем основной контакт
+				$wpdb->delete( $table_main, [ 'id' => $contact_id ], [ '%d' ] );
+				
+				wp_send_json_success( [ 'message' => 'Contact successfully deleted.' ] );
+			} else {
+				wp_send_json_error( [ 'message' => 'Invalid ID .' ] );
+			}
 		}
 	}
 	
@@ -64,10 +91,8 @@ class TMSContacts extends TMSDriversHelper {
 			$all_ids = array_unique( array_merge( $main_contact_ids, $additional_ids ) );
 			
 			if ( empty( $all_ids ) ) {
-				wp_send_json_success( [
-					'data'  => [],
-					'total' => 0,
-				] );
+				$template = '<p class="text-small text-danger mt-1">Not found</p>';
+				wp_send_json_success( $template );
 			}
 			
 			// Получаем основную информацию
@@ -106,7 +131,6 @@ class TMSContacts extends TMSDriversHelper {
 					</div>
 				</div>';
 			}
-			
 			
 			wp_send_json_success( $template );
 		}
@@ -392,7 +416,6 @@ class TMSContacts extends TMSDriversHelper {
 	) $charset_collate;";
 		
 		dbDelta( $sql );
-		
 		
 	}
 	

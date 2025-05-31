@@ -3688,6 +3688,9 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 		$add_new_load = get_field_value( $global_options, 'add_new_load' );
 		$link         = '';
 		
+		$report = $this->get_report_by_id( $post_id );
+		$meta   = get_field_value( $report, 'meta' );
+		
 		// Prepare the data to update
 		$update_params = array(
 			'user_id_updated' => $user_id,
@@ -3697,9 +3700,9 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 		);
 		
 		if ( $data[ 'post_status' ] === 'publish' ) {
-			if ( ! empty( $data[ 'old_pick_up_location' ] ) && $data[ 'old_delivery_location' ] ) {
-				$cleanedpick  = stripslashes( $data[ 'old_pick_up_location' ] );
-				$cleaneddeliv = stripslashes( $data[ 'old_delivery_location' ] );
+			if ( isset( $meta[ 'pick_up_location' ] ) && isset( $meta[ 'delivery_location' ] ) && ! empty( $meta[ 'pick_up_location' ] ) && $meta[ 'delivery_location' ] ) {
+				$cleanedpick  = $meta[ 'pick_up_location' ];
+				$cleaneddeliv = $meta[ 'delivery_location' ];
 				
 				if ( $cleanedpick !== $data[ 'pick_up_location_json' ] ) {
 					$this->log_controller->create_one_log( array(
@@ -4528,10 +4531,11 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 	function handle_dispatcher_deletion( $user_id ) {
 		// Проверяем, является ли удаляемый пользователь диспетчером
 		$user = get_user_by( 'ID', $user_id );
-		if ( $user && in_array( 'dispatcher', $user->roles ) ) {
+		if ( $user && in_array( 'dispatcher', $user->roles ) || $user && in_array( 'dispatcher-tl', $user->roles ) ) {
 			
 			// Выполняем перенос лодов на нового диспетчера
 			$result = $this->move_loads_for_new_dispatcher( $user_id );
+			$this->move_contacts_for_new_dispatcher( $user_id );
 			
 			// Логируем результат для отладки
 			if ( is_wp_error( $result ) ) {
@@ -4591,6 +4595,37 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 		}
 		
 		return true;
+	}
+	
+	function update_contacts_for_new_user( $id_user, $new_dispatcher_id ) {
+		global $wpdb;
+		
+		$table_contacts = $wpdb->prefix . 'contacts';
+		
+		$id_user           = (int) $id_user;
+		$new_dispatcher_id = (int) $new_dispatcher_id;
+		
+		if ( $id_user > 0 && $new_dispatcher_id > 0 ) {
+			$updated = $wpdb->update( $table_contacts, [ 'user_id_added' => $new_dispatcher_id ], [ 'user_id_added' => $id_user ], [ '%d' ], [ '%d' ] );
+			
+			return $updated; // вернёт количество обновлённых строк
+		}
+		
+		return false;
+	}
+	
+	function move_contacts_for_new_dispatcher( $dispatcher_id_to_find ) {
+		global $global_options;
+		
+		// Получаем новый ID диспетчера из глобальных настроек
+		$new_dispatcher_id = get_field_value( $global_options, 'empty_dispatcher' );
+		
+		if ( $new_dispatcher_id === $dispatcher_id_to_find ) {
+			return new WP_Error( 'invalid_id', 'Новый ID диспетчера не может совпадать с удаляемым.' );
+		}
+		
+		$this->update_contacts_for_new_user( $dispatcher_id_to_find, $new_dispatcher_id );
+		
 	}
 	
 	function move_loads_for_new_dispatcher( $dispatcher_id_to_find ) {

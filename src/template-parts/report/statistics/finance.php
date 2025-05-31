@@ -1,5 +1,6 @@
 <?php
 $statistics         = new TMSStatistics();
+$report             = new TMSReports();
 $helper             = new TMSReportsHelper();
 $TMSUsers           = new TMSUsers();
 $office_dispatcher  = get_field_value( $_GET, 'office' );
@@ -30,8 +31,9 @@ $show_filter_by_office = $TMSUsers->check_user_role_access( array(
 	'moderator'
 ), true );
 
+$project = $report->project;
 
-$dispatcher_json = $statistics->get_dispatcher_statistics( $office_dispatcher );
+$dispatcher_json = $statistics->get_dispatcher_statistics( $office_dispatcher, $project );
 $dispatcher_arr  = json_decode( $dispatcher_json, true );
 
 if ( ! $active_item ) {

@@ -52,7 +52,7 @@ $current_pages = get_field_value( $data[ 'pagination' ], 'current_pages' );
 						<?php if ( $access ) { ?>
                             <div class="d-flex justify-content-between ">
                                 <div class="d-flex justify-content-start gap-4 align-items-center mb-4">
-                                    <h2 class="">Contacts</h2>
+                                    <h2 class="">Contacts book</h2>
                                     <button class="btn btn-outline-primary js-open-popup-activator"
                                             data-href="#popup_contacts">
                                         Add a contact
@@ -162,17 +162,11 @@ $current_pages = get_field_value( $data[ 'pagination' ], 'current_pages' );
                                                                required>
                                                     </div>
 
-                                                    <div class="mb-2 col-md-6 col-12">
+                                                    <div class="mb-2 col-md-5 col-12">
                                                         <label class="form-label">Office Number</label>
-                                                        <input type="text" name="office_number" class="form-control"
-                                                               value="<?= esc_attr( $item[ 'office_number' ] ?? '' ) ?>">
-                                                    </div>
-
-                                                    <div class="mb-2 col-md-5 col-9">
-                                                        <label class="form-label">Direct Number</label>
-                                                        <input type="text" name="direct_number"
+                                                        <input type="text" name="office_number"
                                                                class="form-control js-tel-mask"
-                                                               value="<?= esc_attr( $item[ 'direct_number' ] ?? '' ) ?>">
+                                                               value="<?= esc_attr( $item[ 'office_number' ] ?? '' ) ?>">
                                                     </div>
 
                                                     <div class="mb-2 col-md-1 col-3">
@@ -182,6 +176,12 @@ $current_pages = get_field_value( $data[ 'pagination' ], 'current_pages' );
                                                                value="<?= esc_attr( $item[ 'direct_ext' ] ?? '' ) ?>">
                                                     </div>
 
+                                                    <div class="mb-2 col-md-6 col-9">
+                                                        <label class="form-label">Direct Number</label>
+                                                        <input type="text" name="direct_number"
+                                                               class="form-control js-tel-mask"
+                                                               value="<?= esc_attr( $item[ 'direct_number' ] ?? '' ) ?>">
+                                                    </div>
 
                                                     <div class="mb-2 col-md-6 col-12">
                                                         <label class="form-label">Email <span
@@ -304,7 +304,9 @@ $current_pages = get_field_value( $data[ 'pagination' ], 'current_pages' );
                                                 <button class="btn btn-outline-primary btn-sm js-open-popup-edit">Edit
                                                 </button>
 
-                                                <button class="btn btn-danger btn-sm">Remove</button>
+                                                <button class="btn btn-danger btn-sm js-remove-contact"
+                                                        data-value="<?php echo $item[ 'main_id' ] ?>">Remove
+                                                </button>
                                             </td>
                                         </tr>
 									<?php endforeach;

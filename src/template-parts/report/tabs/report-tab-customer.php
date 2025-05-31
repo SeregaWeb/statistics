@@ -83,7 +83,7 @@ if ( $report_object ) {
 				<?php if ( ! $read_only ): ?>
 
                     <blockquote class="blockquote">
-                        <p>Search in my contact</p>
+                        <p>Contacts book</p>
                     </blockquote>
                     <input type="text" name="use_preset" class="js-use-preset form-control">
                     <input type="hidden" name="preset-select" value=""/>

@@ -110,7 +110,6 @@ if ( ! empty( $results ) ) : ?>
 				$driver_rate_raw = floatval( $driver_rate_raw ) - $float_value;
 			}
 			
-			$driver_rate = esc_html( '$' . $helper->format_currency( $driver_rate_raw ) );
 			
 			if ( $second_driver ) {
 				
@@ -120,7 +119,6 @@ if ( ! empty( $results ) ) : ?>
 					$second_driver_rate_raw = floatval( $second_driver_rate_raw ) - $float_value;
 				}
 				
-				$second_driver_rate = esc_html( '$' . $helper->format_currency( $second_driver_rate_raw ) );
 			}
 			
 			$true_profit_raw = get_field_value( $meta, 'true_profit' );
@@ -147,18 +145,25 @@ if ( ! empty( $results ) ) : ?>
 			
 			$quick_pay_driver_amount = get_field_value( $meta, 'quick_pay_driver_amount' );
 			$quick_pay_method        = get_field_value( $meta, 'quick_pay_method' );
-			
 			if ( $quick_pay_driver_amount && $quick_pay_method ) {
-				$quick_pay_show        = floatval( $driver_rate_raw ) - floatval( $quick_pay_driver_amount );
+				$quick_pay_show        = floatval( $driver_rate_raw );
 				$quick_pay_show_method = $helper->get_quick_pay_methods_for_accounting( $quick_pay_method );
 				$component_quick_pay   = "<span class='text-small'>$" . $quick_pay_show . " - " . $quick_pay_show_method . "</span>";
 				
+				$driver_rate_raw += floatval( $quick_pay_driver_amount );
+				
 				if ( $second_driver_rate_raw ) {
-					$second_quick_pay_show        = floatval( $second_driver_rate_raw ) - floatval( $quick_pay_driver_amount );
+					$second_quick_pay_show        = floatval( $second_driver_rate_raw );
 					$second_quick_pay_show_method = $helper->get_quick_pay_methods_for_accounting( $quick_pay_method );
 					$second_component_quick_pay   = "<span class='text-small'>$" . $second_quick_pay_show . " - " . $second_quick_pay_show_method . "</span>";
+					$second_driver_rate_raw       += floatval( $quick_pay_driver_amount );
 					
 				}
+			}
+			
+			$driver_rate = esc_html( '$' . $helper->format_currency( $driver_rate_raw ) );
+			if ( $second_driver ) {
+				$second_driver_rate = esc_html( '$' . $helper->format_currency( $second_driver_rate_raw ) );
 			}
 			
 			$now_show = ( $factoring_status_row === 'paid' );

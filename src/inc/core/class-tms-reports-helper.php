@@ -324,6 +324,10 @@ class TMSReportsHelper extends TMSReportsIcons {
 	
 	function get_dispatchers( $office_user = null ) {
 		// Аргументы для получения пользователей с ролью 'dispatcher'
+		
+		$report  = new TMSReports();
+		$project = $report->project;
+		
 		$args = array(
 			'role__in' => array( 'dispatcher', 'dispatcher-tl' ),
 			'orderby'  => 'display_name',
@@ -336,28 +340,32 @@ class TMSReportsHelper extends TMSReportsIcons {
 		// Массив для хранения информации о пользователях
 		$dispatchers = array();
 		
+		
 		// Перебираем каждого пользователя
 		foreach ( $users as $user ) {
 			// Получаем имя и фамилию пользователя
 			$first_name = get_user_meta( $user->ID, 'first_name', true );
 			$last_name  = get_user_meta( $user->ID, 'last_name', true );
 			$office     = get_field( 'work_location', "user_" . $user->ID );
+			$access     = get_field( 'permission_view', 'user_' . $user->ID );
 			// Собираем массив с ID и полным именем
-			if ( is_null( $office_user ) ):
-				$dispatchers[] = array(
-					'id'       => $user->ID,
-					'fullname' => trim( $first_name . ' ' . $last_name ),
-					'office'   => $office,
-				);
-			else:
-				if ( $office_user === $office ):
+			if ( in_array( $project, $access ) ) {
+				if ( is_null( $office_user ) ):
 					$dispatchers[] = array(
 						'id'       => $user->ID,
 						'fullname' => trim( $first_name . ' ' . $last_name ),
 						'office'   => $office,
 					);
+				else:
+					if ( $office_user === $office ):
+						$dispatchers[] = array(
+							'id'       => $user->ID,
+							'fullname' => trim( $first_name . ' ' . $last_name ),
+							'office'   => $office,
+						);
+					endif;
 				endif;
-			endif;
+			}
 		}
 		
 		return $dispatchers;
@@ -472,6 +480,7 @@ class TMSReportsHelper extends TMSReportsIcons {
 	}
 	
 	function compare_pick_up_locations( $originalJson, $modifiedJson ) {
+		
 		$originalArray = json_decode( $originalJson, true );
 		$modifiedArray = json_decode( $modifiedJson, true );
 		

@@ -125,6 +125,16 @@ $access = $TMSUsers->check_user_role_access( [
                                     </button>
                                 </li>
 
+                                <li class="nav-item js-change-url-tab flex-grow-1" role="presentation">
+                                    <button class="nav-link w-100 <?php echo $disabled_tabs;
+									echo $helper->change_active_tab( 'pills-driver-stats-tab', 'show', 'drivers' ); ?> "
+                                            id="pills-driver-stats-tab"
+                                            data-bs-toggle="pill"
+                                            data-bs-target="#pills-driver-stats" type="button" role="tab"
+                                            aria-controls="pills-driver-stats" aria-selected="false">Statistic
+                                    </button>
+                                </li>
+
                             </ul>
 
                             <div class="tab-content" id="pills-tabContent">

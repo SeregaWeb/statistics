@@ -16,7 +16,7 @@ $my_team = $TMSUser->check_group_access();
 $args = array(
 	'status_post'    => 'publish',
 	'user_id'        => get_current_user_id(),
-	'exclude_status' => array( 'delivered', 'tonu', 'cancelled' ),
+	'exclude_status' => array( 'delivered', 'tonu', 'cancelled', 'waiting-on-rc' ),
 	'my_team'        => $my_team,
 );
 

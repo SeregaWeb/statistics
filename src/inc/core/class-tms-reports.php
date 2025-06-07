@@ -940,17 +940,17 @@ class TMSReports extends TMSReportsHelper {
 		$sort_order   = strtolower( $args[ 'sort_order' ] ?? 'desc' ) === 'asc' ? 'ASC' : 'DESC';
 		
 		$join_builder = "
-    FROM $table_main AS main
-    LEFT JOIN $table_meta AS dispatcher ON main.id = dispatcher.post_id AND dispatcher.meta_key = 'dispatcher_initials'
-    LEFT JOIN $table_meta AS reference ON main.id = reference.post_id AND reference.meta_key = 'reference_number'
-    LEFT JOIN $table_meta AS unit_number ON main.id = unit_number.post_id AND unit_number.meta_key = 'unit_number_name'
-    LEFT JOIN $table_meta AS unit_phone ON main.id = unit_phone.post_id AND unit_phone.meta_key = 'driver_phone'
-    LEFT JOIN $table_meta AS load_status ON main.id = load_status.post_id AND load_status.meta_key = 'load_status'
-    LEFT JOIN $table_meta AS office_dispatcher
-				ON main.id = office_dispatcher.post_id
-				AND office_dispatcher.meta_key = 'office_dispatcher'
-    WHERE 1=1
-    ";
+	    FROM $table_main AS main
+	    LEFT JOIN $table_meta AS dispatcher ON main.id = dispatcher.post_id AND dispatcher.meta_key = 'dispatcher_initials'
+	    LEFT JOIN $table_meta AS reference ON main.id = reference.post_id AND reference.meta_key = 'reference_number'
+	    LEFT JOIN $table_meta AS unit_number ON main.id = unit_number.post_id AND unit_number.meta_key = 'unit_number_name'
+	    LEFT JOIN $table_meta AS unit_phone ON main.id = unit_phone.post_id AND unit_phone.meta_key = 'driver_phone'
+	    LEFT JOIN $table_meta AS load_status ON main.id = load_status.post_id AND load_status.meta_key = 'load_status'
+	    LEFT JOIN $table_meta AS office_dispatcher
+					ON main.id = office_dispatcher.post_id
+					AND office_dispatcher.meta_key = 'office_dispatcher'
+	    WHERE 1=1
+	    ";
 		
 		$sql = "SELECT main.*,
     dispatcher.meta_value AS dispatcher_initials_value,
@@ -1010,12 +1010,13 @@ class TMSReports extends TMSReportsHelper {
 		}
 		
 		// Подсчет общего количества записей
-		$total_records_sql = "SELECT COUNT(*)" . $join_builder . ( $where_conditions
+		$total_records_sql = "SELECT COUNT(*) " . $join_builder . ( $where_conditions
 				? ' AND ' . implode( ' AND ', $where_conditions ) : '' );
-		$total_records     = $wpdb->get_var( $wpdb->prepare( $total_records_sql, ...$where_values ) );
 		
-		$total_pages = ceil( $total_records / $per_page );
-		$offset      = ( $current_page - 1 ) * $per_page;
+		$total_records = $wpdb->get_var( $wpdb->prepare( $total_records_sql, ...$where_values ) );
+		$total_pages   = ceil( $total_records / $per_page );
+		
+		$offset = ( $current_page - 1 ) * $per_page;
 		
 		$sql            .= " ORDER BY
     CASE
@@ -1027,14 +1028,13 @@ class TMSReports extends TMSReportsHelper {
         ELSE 6
     END,
     CASE
-        WHEN LOWER(load_status.meta_value) IN ('at-pu', 'at-del', 'waiting-on-pu-date', 'waiting-on-rc') THEN COALESCE(main.pick_up_date, '9999-12-31 23:59:59')
+        WHEN LOWER(load_status.meta_value) IN ('at-pu', 'at-del', 'waiting-on-pu-date', 'waiting-on-rc', 'loaded-enroute') THEN COALESCE(main.pick_up_date, '9999-12-31 23:59:59')
         ELSE COALESCE(main.delivery_date, '9999-12-31 23:59:59')
     END $sort_order
     LIMIT %d, %d";
 		$where_values[] = $offset;
 		$where_values[] = $per_page;
-		
-		$main_results = $wpdb->get_results( $wpdb->prepare( $sql, ...$where_values ), ARRAY_A );
+		$main_results   = $wpdb->get_results( $wpdb->prepare( $sql, ...$where_values ), ARRAY_A );
 		
 		// Обработка метаданных
 		$post_ids  = wp_list_pluck( $main_results, 'id' );
@@ -1063,31 +1063,39 @@ class TMSReports extends TMSReportsHelper {
 		];
 	}
 	
-	public function get_table_items_tracking_statistics() {
+	public function get_table_items_tracking_statistics( $office_dispatcher = 'all' ) {
 		global $wpdb;
 		
 		$table_main = $wpdb->prefix . $this->table_main;
 		$table_meta = $wpdb->prefix . $this->table_meta;
 		
 		$join_builder = "
-    FROM $table_main AS main
-    LEFT JOIN $table_meta AS dispatcher ON main.id = dispatcher.post_id AND dispatcher.meta_key = 'dispatcher_initials'
-    LEFT JOIN $table_meta AS load_status ON main.id = load_status.post_id AND load_status.meta_key = 'load_status'
-    WHERE 1=1
-";
-
-// Исключаем статусы
+		    FROM $table_main AS main
+		    LEFT JOIN $table_meta AS dispatcher ON main.id = dispatcher.post_id AND dispatcher.meta_key = 'dispatcher_initials'
+		    LEFT JOIN $table_meta AS load_status ON main.id = load_status.post_id AND load_status.meta_key = 'load_status'
+	        LEFT JOIN $table_meta AS office_dispatcher ON main.id = office_dispatcher.post_id AND office_dispatcher.meta_key = 'office_dispatcher'
+	    WHERE 1=1
+		";
+		
+		// Исключаем статусы
 		$exclude_status = [ 'delivered', 'tonu', 'cancelled', 'waiting-on-rc' ];
 		$include_status = [ 'waiting-on-pu-date', 'at-pu', 'loaded-enroute', 'at-del' ];
 		
 		$where_conditions = [];
 		
+		$where_conditions[] = "main.status_post = 'publish'";
+		
 		if ( ! empty( $exclude_status ) ) {
 			$exclude_status     = esc_sql( $exclude_status );
 			$where_conditions[] = "load_status.meta_value NOT IN ('" . implode( "','", $exclude_status ) . "')";
 		}
-
-// Фильтруем только нужные статусы
+		
+		if ( ! empty( $office_dispatcher ) && $office_dispatcher !== 'all' ) {
+			$escaped_value      = esc_sql( $office_dispatcher );
+			$where_conditions[] = "office_dispatcher.meta_value = '{$escaped_value}'";
+		}
+		
+		// Фильтруем только нужные статусы
 		if ( ! empty( $include_status ) ) {
 			$include_status     = esc_sql( $include_status );
 			$where_conditions[] = "load_status.meta_value IN ('" . implode( "','", $include_status ) . "')";
@@ -1102,13 +1110,13 @@ class TMSReports extends TMSReportsHelper {
 		if ( $where_conditions ) {
 			$sql .= ' AND ' . implode( ' AND ', $where_conditions );
 		}
-
-// Группировка по диспетчеру и статусу
+		
+		// Группировка по диспетчеру и статусу
 		$sql .= " GROUP BY dispatcher.meta_value, load_status.meta_value";
 		
 		$results = $wpdb->get_results( $sql, ARRAY_A );
-
-// Формируем структуру результата
+		
+		// Формируем структуру результата
 		$dispatcher_data  = [];
 		$grand_total_data = [
 			'waiting-on-pu-date' => 0,
@@ -1184,31 +1192,33 @@ class TMSReports extends TMSReportsHelper {
 		return $team_total;
 	}
 	
-	public function get_tracking_users_for_statistics( $exclude ) {
+	public function get_tracking_users_for_statistics( $exclude, $office_dispatcher = 'all' ) {
 		
 		global $wpdb;
 		
 		$sql = "
-		SELECT u.ID, u.display_name,
-			   COALESCE(nightshift.meta_value, '0') AS nightshift,
-			   COALESCE(my_team.meta_value, '') AS my_team,
-			   COALESCE(initials_color.meta_value, '') AS initials_color,
-			   um_first.meta_value AS first_name,
-			   um_last.meta_value AS last_name
-		FROM {$wpdb->users} AS u
-		INNER JOIN {$wpdb->usermeta} AS ur ON u.ID = ur.user_id AND ur.meta_key = '{$wpdb->prefix}capabilities'
-		LEFT JOIN {$wpdb->usermeta} AS nightshift ON u.ID = nightshift.user_id AND nightshift.meta_key = %s
-		LEFT JOIN {$wpdb->usermeta} AS my_team ON u.ID = my_team.user_id AND my_team.meta_key = %s
-		LEFT JOIN {$wpdb->usermeta} AS initials_color ON u.ID = initials_color.user_id AND initials_color.meta_key = %s
-		LEFT JOIN {$wpdb->usermeta} AS um_first ON u.ID = um_first.user_id AND um_first.meta_key = 'first_name'
-		LEFT JOIN {$wpdb->usermeta} AS um_last ON u.ID = um_last.user_id AND um_last.meta_key = 'last_name'
-		WHERE (
-			ur.meta_value LIKE %s OR
-			ur.meta_value LIKE %s
-		)" . ( ! empty( $exclude ) ? " AND u.ID NOT IN (" . implode( ',', array_map( 'absint', $exclude ) ) . ") "
-				: "" );
+	SELECT u.ID, u.display_name,
+		   COALESCE(nightshift.meta_value, '0') AS nightshift,
+		   COALESCE(my_team.meta_value, '') AS my_team,
+		   COALESCE(initials_color.meta_value, '') AS initials_color,
+		   COALESCE(weekends.meta_value, '0') AS weekends,
+		   um_first.meta_value AS first_name,
+		   um_last.meta_value AS last_name
+	FROM {$wpdb->users} AS u
+	INNER JOIN {$wpdb->usermeta} AS ur ON u.ID = ur.user_id AND ur.meta_key = '{$wpdb->prefix}capabilities'
+	LEFT JOIN {$wpdb->usermeta} AS nightshift ON u.ID = nightshift.user_id AND nightshift.meta_key = %s
+	LEFT JOIN {$wpdb->usermeta} AS my_team ON u.ID = my_team.user_id AND my_team.meta_key = %s
+	LEFT JOIN {$wpdb->usermeta} AS initials_color ON u.ID = initials_color.user_id AND initials_color.meta_key = %s
+	LEFT JOIN {$wpdb->usermeta} AS weekends ON u.ID = weekends.user_id AND weekends.meta_key = %s
+	LEFT JOIN {$wpdb->usermeta} AS um_first ON u.ID = um_first.user_id AND um_first.meta_key = 'first_name'
+	LEFT JOIN {$wpdb->usermeta} AS um_last ON u.ID = um_last.user_id AND um_last.meta_key = 'last_name'
+	WHERE (
+		ur.meta_value LIKE %s OR
+		ur.meta_value LIKE %s
+	)" . ( ! empty( $exclude ) ? " AND u.ID NOT IN (" . implode( ',', array_map( 'absint', $exclude ) ) . ") " : "" );
 		
-		$results = $wpdb->get_results( $wpdb->prepare( $sql, 'nightshift', 'my_team', 'initials_color', '%"tracking"%', '%"tracking-tl"%' ), ARRAY_A );
+		$results = $wpdb->get_results( $wpdb->prepare( $sql, 'nightshift', 'my_team', 'initials_color', 'weekends', '%"tracking"%', '%"tracking-tl"%' ), ARRAY_A );
+		
 		
 		$tracking_data = [
 			'nightshift' => [],
@@ -1220,8 +1230,21 @@ class TMSReports extends TMSReportsHelper {
 			$last_name      = trim( $user[ 'last_name' ] ?? '' );
 			$initials       = mb_strtoupper( mb_substr( $first_name, 0, 1 ) . mb_substr( $last_name, 0, 1 ) );
 			$initials_color = $user[ 'initials_color' ];
+			$office         = get_field( 'work_location', 'user_' . $user[ 'ID' ] );
+			$my_team        = ! empty( $user[ 'my_team' ] ) ? maybe_unserialize( $user[ 'my_team' ] ) : [];
+			$weekends       = ! empty( $user[ 'weekends' ] ) ? maybe_unserialize( $user[ 'weekends' ] ) : [];
 			
-			$my_team = ! empty( $user[ 'my_team' ] ) ? unserialize( $user[ 'my_team' ] ) : [];
+			// Получаем текущий день недели в нижнем регистре, например: 'monday'
+			$today = strtolower( date( 'l' ) );
+			
+			if ( $office_dispatcher !== 'all' && $office_dispatcher !== $office ) {
+				continue;
+			}
+			
+			// Пропустить пользователя, если сегодня его выходной
+			if ( is_array( $weekends ) && in_array( $today, $weekends, true ) ) {
+				continue;
+			}
 			
 			$user_data = [
 				'id'             => $user[ 'ID' ],
@@ -2730,7 +2753,24 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 		$MY_INPUT[ "booked_rate_modify" ] = $processing_fees_val - $percent_value;;
 		$MY_INPUT[ 'percent_quick_pay_value' ] = $percent_value;
 		// FACTORING PERCENT
-		$MY_INPUT[ 'percent_booked_rate' ] = $MY_INPUT[ "booked_rate_modify" ] * 0.0165;
+		
+		$proc = 0.0165;
+		
+		if ( "Martlet" === $this->project ) {
+			$proc = 0.035;
+			
+		}
+		
+		if ( "Endurance" === $this->project ) {
+			$proc = 0.02;
+			
+		}
+		
+		if ( $MY_INPUT[ "type_pay" ] === 'quick-pay' ) {
+		}
+		
+		$MY_INPUT[ 'percent_booked_rate' ] = $MY_INPUT[ "booked_rate_modify" ] * $proc;
+		
 		if ( isset( $with_second_sum ) ) {
 			$MY_INPUT[ 'profit' ]      = $MY_INPUT[ "booked_rate_modify" ] - $with_second_sum;
 			$MY_INPUT[ 'true_profit' ] = $MY_INPUT[ "booked_rate_modify" ] - ( $MY_INPUT[ 'percent_booked_rate' ] + $with_second_sum );
@@ -3450,13 +3490,13 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 				$this->log_controller->create_one_log( array(
 					'user_id' => $user_id,
 					'post_id' => $post_id,
-					'message' => 'Set new status: ' . $this->get_label_by_key( $data[ 'status' ], 'statuses' ) . '<br>Gross, Driver Rate, Profit = 0.00',
+					'message' => 'Updated status: ' . $this->get_label_by_key( $data[ 'status' ], 'statuses' ) . '<br>Gross, Driver Rate, Profit = 0.00',
 				) );
 			} else {
 				$this->log_controller->create_one_log( array(
 					'user_id' => $user_id,
 					'post_id' => $post_id,
-					'message' => 'Set new status: ' . $this->get_label_by_key( $data[ 'status' ], 'statuses' ),
+					'message' => 'Updated status: ' . $this->get_label_by_key( $data[ 'status' ], 'statuses' ),
 				) );
 			}
 			
@@ -3645,7 +3685,7 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 			$this->log_controller->create_one_log( array(
 				'user_id' => $user_id,
 				'post_id' => $id_new_post,
-				'message' => 'Create load:' . $insert_params[ 'date_created' ]
+				'message' => 'Load added: ' . $insert_params[ 'date_created' ] . ' EST',
 			) );
 			
 			return $id_new_post; // Return the ID of the added record

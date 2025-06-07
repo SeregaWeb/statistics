@@ -449,6 +449,27 @@
             "allow_null": 0
         },
         {
+            "key": "field_684459fb95899",
+            "label": "Empty recruiter",
+            "name": "empty_recruiter",
+            "aria-label": "",
+            "type": "user",
+            "instructions": "",
+            "required": 0,
+            "conditional_logic": 0,
+            "wrapper": {
+                "width": "",
+                "class": "",
+                "id": ""
+            },
+            "role": [
+                "recruiter"
+            ],
+            "return_format": "id",
+            "multiple": 0,
+            "allow_null": 0
+        },
+        {
             "key": "field_66f9533f38610",
             "label": "Links helpers",
             "name": "",
@@ -1199,5 +1220,5 @@
     "active": true,
     "description": "",
     "show_in_rest": 0,
-    "modified": 1747307900
+    "modified": 1749309978
 }

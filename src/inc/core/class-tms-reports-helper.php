@@ -684,8 +684,12 @@ class TMSReportsHelper extends TMSReportsIcons {
 				}
 			}
 			
-			$time = trim( $location[ 'time_start' ] . ( $location[ 'time_end' ] ? ' - ' . $location[ 'time_end' ]
-					: '' ) );
+			if ( isset( $location[ 'time_start' ] ) && isset( $location[ 'time_end' ] ) ) {
+				$time = trim( $location[ 'time_start' ] . ( $location[ 'time_end' ] ? ' - ' . $location[ 'time_end' ]
+						: '' ) );
+			} else {
+				$time = null;
+			}
 			
 			$address_line   = preg_replace( '/[\x{2028}\x{2029}]/u', '', $address_line );
 			$title          = preg_replace( '/[\x{2028}\x{2029}]/u', '', $title );

@@ -1,6 +1,7 @@
 <?php
 $user       = $args[ 'user' ];
 $user_stats = $args[ 'user_stats' ];
+$TMSUser    = new TMSUsers();
 
 $total = isset( $args[ 'total' ] ) ? $args[ 'total' ] : false;
 
@@ -35,6 +36,30 @@ $class_total = '';
             <li>
                 <span>Waiting: <?php echo esc_html( $user_stats[ 'waiting-on-pu-date' ] ?? 0 ); ?></span>
             </li>
+			
+			<?php if ( isset( $user[ 'my_team' ] ) ): ?>
+                <li>
+                    <div>
+                        <p class="mb-0">Team</p>
+                        <div class="d-flex gap-1 flex-wrap ">
+							<?php foreach ( $user[ 'my_team' ] as $user_team ):
+								$user_arr = $TMSUser->get_user_full_name_by_id( $user_team );
+								$color_initials = $user_arr ? get_field( 'initials_color', 'user_' . $user_team )
+									: '#030303';
+								if ( ! $user_arr ) {
+									$user_arr = array( 'full_name' => 'User not found', 'initials' => 'NF' );
+								}
+								?>
+                                <span data-bs-toggle="tooltip" data-bs-placement="top"
+                                      title="<?php echo $user_arr[ 'full_name' ]; ?>"
+                                      class="initials-circle" style="background-color: <?php echo $color_initials; ?>">
+                            <?php echo esc_html( $user_arr[ 'initials' ] ); ?>
+                        </span>
+							<?php endforeach; ?>
+                        </div>
+                    </div>
+                </li>
+			<?php endif; ?>
         </ul>
     </div>
 

@@ -72,20 +72,28 @@ class TMSContacts extends TMSDriversHelper {
 				"search" => FILTER_SANITIZE_STRING,
 			] );
 			
-			$search = '%' . $wpdb->esc_like( $MY_INPUT[ 'search' ] ) . '%';
+			if ( empty( $MY_INPUT[ 'search' ] ) ) {
+				wp_send_json_success( '' );
+			}
 			
-			// Получаем ID из основной таблицы по name или email
+			$search = '%' . $wpdb->esc_like( trim( $MY_INPUT[ 'search' ] ) ) . '%';
+			
+			// Get IDs only for current user's contacts
 			$main_contact_ids = $wpdb->get_col( $wpdb->prepare( "
-			SELECT id FROM $table_main
-			WHERE user_id_added = %d
-			AND (name LIKE %s OR email LIKE %s)
-		", $current_user_id, $search, $search ) );
+				SELECT DISTINCT m.id
+				FROM $table_main m
+				WHERE m.user_id_added = %d
+				AND (m.name LIKE %s OR m.email LIKE %s)
+			", $current_user_id, $search, $search ) );
+			
 			
 			// Получаем ID из дополнительных контактов
 			$additional_ids = $wpdb->get_col( $wpdb->prepare( "
-			SELECT contact_id FROM $table_additional
-			WHERE contact_name LIKE %s OR contact_email LIKE %s
-		", $search, $search ) );
+				SELECT a.contact_id
+				FROM $table_additional a
+				INNER JOIN $table_main m ON a.contact_id = m.id
+				WHERE m.user_id_added = %d AND (a.contact_name LIKE %s OR a.contact_email LIKE %s)
+			", $current_user_id, $search, $search ) );
 			
 			// Объединяем ID
 			$all_ids = array_unique( array_merge( $main_contact_ids, $additional_ids ) );

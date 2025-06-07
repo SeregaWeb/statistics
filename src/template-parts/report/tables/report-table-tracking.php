@@ -9,7 +9,6 @@ $helper     = new TMSReportsHelper();
 $logs       = new TMSLogs();
 $TMSReports = new TMSReports();
 
-
 $results       = get_field_value( $args, 'results' );
 $total_pages   = get_field_value( $args, 'total_pages' );
 $current_pages = get_field_value( $args, 'current_pages' );

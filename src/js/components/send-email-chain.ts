@@ -1,5 +1,6 @@
 import { printMessage } from './info-messages';
 
+// eslint-disable-next-line import/prefer-default-export
 export const sendEmailChain = (ajaxUrl) => {
     const forms = document.querySelectorAll('.js-send-email-chain');
 

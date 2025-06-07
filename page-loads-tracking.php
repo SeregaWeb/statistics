@@ -33,9 +33,8 @@ if ( ! $office_dispatcher || $sellect_all_offices ) {
 	$office_dispatcher = 'all';
 }
 
-$args  = $reports->set_filter_params( $args, $office_dispatcher );
-$items = $reports->get_table_items_tracking( $args );
-
+$args                 = $reports->set_filter_params( $args, $office_dispatcher );
+$items                = $reports->get_table_items_tracking( $args );
 $post_tp              = 'tracking';
 $items[ 'page_type' ] = $post_tp;
 

@@ -4,7 +4,9 @@ class TMSDrivers extends TMSDriversHelper {
 	
 	public $table_main     = 'drivers';
 	public $table_meta     = 'drivers_meta';
-	public $per_page_loads = 100;
+	public $table_raiting  = 'drivers_raiting';
+	public $table_notice   = 'drivers_notice';
+	public $per_page_loads = 30;
 	public $hold_time      = 15;
 	
 	public $log_controller = false;
@@ -40,6 +42,91 @@ class TMSDrivers extends TMSDriversHelper {
 			add_action( "wp_ajax_{$ajax_action}", [ $this, $method ] );
 			add_action( "wp_ajax_nopriv_{$ajax_action}", [ $this->helper, 'need_login' ] );
 		}
+		
+		add_action( 'delete_user', array( $this, 'handle_recruiter_deletion' ), 20 );
+	}
+	
+	function handle_recruiter_deletion( $user_id ) {
+		// Проверяем, является ли удаляемый пользователь диспетчером
+		$user = get_user_by( 'ID', $user_id );
+		
+		if ( $user && in_array( 'recruiter', $user->roles ) || $user && in_array( 'recruiter-tl', $user->roles ) ) {
+			
+			// Выполняем перенос лодов на нового диспетчера
+			$result = $this->move_driver_for_new_recruiter( $user_id );
+			
+			// Логируем результат для отладки
+			if ( is_wp_error( $result ) ) {
+				error_log( 'Error transferring loads: ' . $result->get_error_message() );
+			} else {
+				error_log( 'Successful load transfer: ' . $result );
+			}
+		}
+	}
+	
+	function move_driver_for_new_recruiter( $recruiter_id_to_find ) {
+		global $global_options;
+		
+		// Получаем новый ID диспетчера из глобальных настроек
+		$new_recruiter_id = get_field_value( $global_options, 'empty_recruiter' );
+		
+		// Проверяем, что новый ID не равен ID удаляемого диспетчера
+		if ( $new_recruiter_id === $recruiter_id_to_find ) {
+			return new WP_Error( 'invalid_id', 'Новый ID диспетчера не может совпадать с удаляемым.' );
+		}
+		
+		// Получаем все записи, связанные с удаляемым диспетчером
+		$records = $this->get_recruiter_initials_records( $recruiter_id_to_find );
+		
+		// Проверяем, есть ли что обновлять
+		if ( empty( $records ) ) {
+			return new WP_Error( 'no_records', 'error found drivers.' );
+		}
+		
+		// Обновляем все записи на нового диспетчера
+		$update_result = $this->update_recruiter_initials_records( $records, $new_recruiter_id );
+		
+		// Проверяем результат
+		if ( $update_result > 0 ) {
+			return 'success move to new recruiter.';
+		} else {
+			return new WP_Error( 'update_failed', 'Не удалось обновить записи.' );
+		}
+	}
+	
+	function update_recruiter_initials_records( $records, $new_recruiter_id ) {
+		global $wpdb;
+		
+		$table_name = $wpdb->prefix . $this->table_main;
+		
+		$updated_rows = 0;
+		
+		foreach ( $records as $record ) {
+			if ( ! empty( $record[ 'id' ] ) ) {
+				$result = $wpdb->update( $table_name, [ 'user_id_added' => $new_recruiter_id ], [ 'id' => $record[ 'id' ] ], [ '%d' ], [ '%d' ] );
+				
+				if ( $result !== false ) {
+					$updated_rows += $result; // увеличиваем счетчик, если обновление прошло
+				}
+			}
+		}
+		
+		return $updated_rows; // можно вернуть число успешно обновлённых строк
+	}
+	
+	
+	function get_recruiter_initials_records( $dispatcher_id ) {
+		global $wpdb;
+		
+		$table_name = $wpdb->prefix . $this->table_main;
+		
+		// Выполняем запрос к каждой таблице
+		$query = $wpdb->prepare( "SELECT id FROM $table_name
+        WHERE user_id_added = %s", $dispatcher_id );
+		
+		$table_results = $wpdb->get_results( $query, ARRAY_A );
+		
+		return $table_results;
 	}
 	
 	public function remove_one_driver() {
@@ -812,7 +899,7 @@ class TMSDrivers extends TMSDriversHelper {
 					? sanitize_text_field( $_POST[ 'driver_name' ] ) : '',
 				'driver_phone'               => isset( $_POST[ 'driver_phone' ] )
 					? sanitize_text_field( $_POST[ 'driver_phone' ] ) : '',
-				'driver_email'               => isset( $_POST[ 'driver_email' ] )
+				'driver_email'               => isset( $_POST[ 'driver_emawil' ] )
 					? sanitize_email( $_POST[ 'driver_email' ] ) : '',
 				'home_location'              => isset( $_POST[ 'home_location' ] )
 					? sanitize_text_field( $_POST[ 'home_location' ] ) : '',
@@ -1559,6 +1646,44 @@ class TMSDrivers extends TMSDriversHelper {
 		return false;
 	}
 	
+	function insert_driver_rating( $driver_id, $name, $time, $reit, $message = '', $order_number = '' ) {
+		global $wpdb;
+		
+		$table_name = $wpdb->prefix . $this->table_raiting;
+		
+		$data = [
+			'driver_id'    => (int) $driver_id,
+			'name'         => sanitize_text_field( $name ),
+			'time'         => (int) $time,
+			'reit'         => (int) $reit,
+			'message'      => sanitize_textarea_field( $message ),
+			'order_number' => sanitize_text_field( $order_number ),
+		];
+		
+		$formats = [ '%d', '%s', '%d', '%d', '%s', '%s' ];
+		
+		return $wpdb->insert( $table_name, $data, $formats );
+	}
+	
+	function insert_driver_notice( $driver_id, $name, $date, $message = '', $status = false ) {
+		global $wpdb;
+		
+		$table_name = $wpdb->prefix . $this->table_notice;
+		
+		$data = [
+			'driver_id' => (int) $driver_id,
+			'name'      => sanitize_text_field( $name ),
+			'date'      => (int) $date,
+			'message'   => sanitize_textarea_field( $message ),
+			'status'    => (int) $status,
+		];
+		
+		$formats = [ '%d', '%s', '%d', '%s', '%d' ];
+		
+		return $wpdb->insert( $table_name, $data, $formats );
+	}
+	
+	
 	public function update_driver_in_db( $data = [] ) {
 		global $wpdb;
 		
@@ -1629,6 +1754,7 @@ class TMSDrivers extends TMSDriversHelper {
 	public function create_tables() {
 		$this->table_driver();
 		$this->table_driver_meta();
+		$this->register_driver_tables();
 	}
 	
 	public function table_driver() {
@@ -1659,6 +1785,32 @@ class TMSDrivers extends TMSDriversHelper {
 		dbDelta( $sql );
 	}
 	
+	public function update_user_id_added( $driver_id, $user_id ) {
+		global $wpdb;
+		
+		if ( empty( $driver_id ) || empty( $user_id ) ) {
+			return false;
+		}
+		
+		$table_name = $wpdb->prefix . $this->table_main;
+		
+		return $wpdb->update( $table_name, [ 'user_id_added' => intval( $user_id ) ], [ 'id' => intval( $driver_id ) ], [ '%d' ], [ '%d' ] );
+	}
+	
+	public function update_date_created( $driver_id ) {
+		global $wpdb;
+		
+		if ( empty( $driver_id ) ) {
+			return false;
+		}
+		
+		$date_created = date( "Y-m-d H:i:s" );
+		$table_name   = $wpdb->prefix . $this->table_main;
+		
+		return $wpdb->update( $table_name, [ 'date_created' => $date_created ], [ 'id' => intval( $driver_id ) ], [ '%s' ], [ '%d' ] );
+	}
+	
+	
 	public function table_driver_meta() {
 		global $wpdb;
 		$table_meta_name = $wpdb->prefix . $this->table_meta;
@@ -1676,5 +1828,40 @@ class TMSDrivers extends TMSDriversHelper {
     		) $charset_collate;";
 		
 		dbDelta( $sql );
+	}
+	
+	function register_driver_tables() {
+		global $wpdb;
+		
+		$charset_collate = $wpdb->get_charset_collate();
+		
+		$table_rating = $wpdb->prefix . $this->table_raiting;
+		$table_notice = $wpdb->prefix . $this->table_notice;
+		
+		$sql_rating = "CREATE TABLE $table_rating (
+		id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+		driver_id BIGINT UNSIGNED DEFAULT NULL,
+		name VARCHAR(255) NOT NULL,
+		time INT(11) NOT NULL,
+		reit TINYINT UNSIGNED NOT NULL,
+		message TEXT,
+		order_number VARCHAR(100),
+		PRIMARY KEY  (id),
+		KEY idx_driver_id (driver_id)
+	) $charset_collate;";
+		
+		$sql_notice = "CREATE TABLE $table_notice (
+		id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+		driver_id BIGINT UNSIGNED DEFAULT NULL,
+		name VARCHAR(255) NOT NULL,
+		date INT(11) NOT NULL,
+		message TEXT,
+		status TINYINT(1) NOT NULL DEFAULT 0,
+		PRIMARY KEY  (id),
+		KEY idx_driver_id (driver_id)
+	) $charset_collate;";
+		
+		dbDelta( $sql_rating );
+		dbDelta( $sql_notice );
 	}
 }

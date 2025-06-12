@@ -227,6 +227,25 @@ class  TMSUsers extends TMSReportsHelper {
 		if ( $check_group ) {
 			$current_user_id = get_current_user_id();
 			$my_team         = get_field( 'my_team', 'user_' . $current_user_id );
+			
+			$day_name        = strtolower( date( 'l' ) ); // Получаем день недели, например: 'Monday'
+			$key_name        = 'exclude_' . $day_name;
+			$exclude_drivers = get_field( $key_name, 'user_' . $current_user_id );
+			
+			if ( is_array( $exclude_drivers ) && ! empty( $exclude_drivers ) ) {
+				$exclude_drivers = array_map( 'intval', $exclude_drivers );
+			}
+			if ( is_array( $my_team ) && ! empty( $my_team ) ) {
+				$my_team = array_map( 'intval', $my_team );
+			}
+			
+			if ( is_array( $exclude_drivers ) && ! empty( $exclude_drivers ) ) {
+				$filtered_team = array_filter( $my_team, function( $driver_id ) use ( $exclude_drivers ) {
+					return ! in_array( $driver_id, $exclude_drivers, true );
+				} );
+				$my_team       = $filtered_team;
+			}
+			
 		}
 		
 		return $my_team;

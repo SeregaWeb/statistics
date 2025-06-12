@@ -1,5 +1,5 @@
 <?php
-
+$drivers      = new TMSDrivers();
 $helper       = new TMSReportsHelper();
 $icons        = new TMSReportsIcons();
 $driverHelper = new TMSDriversHelper();
@@ -82,6 +82,15 @@ if ( ! empty( $results ) ) : ?>
 			$user_recruiter = $helper->get_user_full_name_by_id( $user_id_added );
 			$color_initials = $user_recruiter ? get_field( 'initials_color', 'user_' . $user_id_added ) : '#030303';
 			$user_recruiter = $user_recruiter ?: [ 'full_name' => 'User not found', 'initials' => 'NF' ];
+
+//			if ( $user_recruiter[ 'initials' ] === 'NF' ) {
+//				$drivers->update_user_id_added( $row[ 'id' ], '68' );
+//			}
+//
+//			if ( $date_hired == '11/30/-0001' ) {
+//				$drivers->update_date_created( $row[ 'id' ] );
+//			}
+			
 			?>
 
             <tr>

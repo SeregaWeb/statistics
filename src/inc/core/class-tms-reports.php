@@ -1226,13 +1226,37 @@ class TMSReports extends TMSReportsHelper {
 		];
 		
 		foreach ( $results as $user ) {
-			$first_name     = trim( $user[ 'first_name' ] ?? '' );
-			$last_name      = trim( $user[ 'last_name' ] ?? '' );
-			$initials       = mb_strtoupper( mb_substr( $first_name, 0, 1 ) . mb_substr( $last_name, 0, 1 ) );
-			$initials_color = $user[ 'initials_color' ];
-			$office         = get_field( 'work_location', 'user_' . $user[ 'ID' ] );
-			$my_team        = ! empty( $user[ 'my_team' ] ) ? maybe_unserialize( $user[ 'my_team' ] ) : [];
-			$weekends       = ! empty( $user[ 'weekends' ] ) ? maybe_unserialize( $user[ 'weekends' ] ) : [];
+			$first_name      = trim( $user[ 'first_name' ] ?? '' );
+			$last_name       = trim( $user[ 'last_name' ] ?? '' );
+			$initials        = mb_strtoupper( mb_substr( $first_name, 0, 1 ) . mb_substr( $last_name, 0, 1 ) );
+			$initials_color  = $user[ 'initials_color' ];
+			$fields          = get_fields( 'user_' . $user[ 'ID' ] );
+			$day_name        = strtolower( date( 'l' ) ); // Получаем день недели, например: 'Monday'
+			$key_name        = 'exclude_' . $day_name;
+			$exclude_drivers = get_field_value( $fields, $key_name ) ?? [];
+			
+			$office = get_field_value( $fields, 'work_location' );
+			
+			
+			$my_team = ! empty( $user[ 'my_team' ] ) ? maybe_unserialize( $user[ 'my_team' ] ) : [];
+			
+			if ( is_array( $exclude_drivers ) && ! empty( $exclude_drivers ) ) {
+				$exclude_drivers = array_map( 'intval', $exclude_drivers );
+			}
+			
+			if ( is_array( $my_team ) && ! empty( $my_team ) ) {
+				$my_team = array_map( 'intval', $my_team );
+			}
+			
+			if ( is_array( $exclude_drivers ) && ! empty( $exclude_drivers ) ) {
+				$filtered_team = array_filter( $my_team, function( $driver_id ) use ( $exclude_drivers ) {
+					return ! in_array( $driver_id, $exclude_drivers, true );
+				} );
+				
+				$my_team = $filtered_team;
+			}
+			
+			$weekends = ! empty( $user[ 'weekends' ] ) ? maybe_unserialize( $user[ 'weekends' ] ) : [];
 			
 			// Получаем текущий день недели в нижнем регистре, например: 'monday'
 			$today = strtolower( date( 'l' ) );

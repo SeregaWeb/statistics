@@ -378,7 +378,7 @@ export function applyZipCodeMask(selector: string, countrySelector = '.js-countr
             const country = getCountry();
             // сбрасываем текущее значение
             // eslint-disable-next-line no-param-reassign
-            input.value = '';
+
             // убираем старые ограничители
             input.removeAttribute('maxlength');
             input.removeAttribute('pattern');
@@ -388,6 +388,10 @@ export function applyZipCodeMask(selector: string, countrySelector = '.js-countr
                 // для Канады: только длина до 7 символов
                 input.setAttribute('maxlength', '7');
             } else {
+                if (input.value.length > 5) {
+                    // eslint-disable-next-line no-param-reassign
+                    input.value = '';
+                }
                 // для США/Мексики: только 5 цифр
                 input.setAttribute('maxlength', '5');
                 input.setAttribute('pattern', '\\d{5}');

@@ -16,6 +16,12 @@ $dispatchers_tl = $statistics->get_dispatchers_tl();
 
 $exclude_dispatchers = $helper->get_empty_dispatcher();
 
+$exclude_users = get_field( 'exclude_users', get_the_ID() ) ?? [];
+
+if ( ! empty( $exclude_users ) ) {
+	$exclude_dispatchers = array_merge( $exclude_users, $exclude_dispatchers );
+}
+
 $date               = get_field_value( $_GET, 'date' );
 $merged_dispatchers = $helper->merge_unique_dispatchers( $dispatchers, $dispatchers_tl, $exclude_dispatchers );
 $week_dates         = $helper->get_week_dates_from_monday( $date );

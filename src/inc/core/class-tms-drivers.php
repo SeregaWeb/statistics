@@ -46,6 +46,40 @@ class TMSDrivers extends TMSDriversHelper {
 		add_action( 'delete_user', array( $this, 'handle_recruiter_deletion' ), 20 );
 	}
 	
+	public function get_statistics() {
+		global $wpdb;
+		
+		$table_main = $wpdb->prefix . $this->table_main;
+		$table_meta = $wpdb->prefix . $this->table_meta;
+		
+		// Собираем запрос
+		$sql = "
+		SELECT
+			m.user_id_added,
+			COUNT(DISTINCT m.id) as total,
+			SUM(CASE WHEN tm1.meta_key = 'tanker_endorsement' AND tm1.meta_value = 'on' THEN 1 ELSE 0 END) AS tanker_on,
+			SUM(CASE WHEN tm2.meta_key = 'twic' AND tm2.meta_value = 'on' THEN 1 ELSE 0 END) AS twic_on,
+			SUM(CASE WHEN tm3.meta_key = 'hazmat_endorsement' AND tm3.meta_value = 'on' THEN 1 ELSE 0 END) AS hazmat_on,
+			SUM(CASE WHEN tm4.meta_key = 'vehicle_type' AND tm4.meta_value = 'cargo-van' THEN 1 ELSE 0 END) AS cargo_van,
+			SUM(CASE WHEN tm5.meta_key = 'vehicle_type' AND tm5.meta_value = 'sprinter-van' THEN 1 ELSE 0 END) AS sprinter_van,
+			SUM(CASE WHEN tm6.meta_key = 'vehicle_type' AND tm6.meta_value = 'box-truck' THEN 1 ELSE 0 END) AS box_truck,
+			SUM(CASE WHEN tm7.meta_key = 'vehicle_type' AND tm7.meta_value = 'reefer' THEN 1 ELSE 0 END) AS reefer
+		FROM $table_main AS m
+		LEFT JOIN $table_meta AS tm1 ON tm1.post_id = m.id AND tm1.meta_key = 'tanker_endorsement'
+		LEFT JOIN $table_meta AS tm2 ON tm2.post_id = m.id AND tm2.meta_key = 'twic'
+		LEFT JOIN $table_meta AS tm3 ON tm3.post_id = m.id AND tm3.meta_key = 'hazmat_endorsement'
+		LEFT JOIN $table_meta AS tm4 ON tm4.post_id = m.id AND tm4.meta_key = 'vehicle_type' AND tm4.meta_value = 'cargo-van'
+		LEFT JOIN $table_meta AS tm5 ON tm5.post_id = m.id AND tm5.meta_key = 'vehicle_type' AND tm5.meta_value = 'sprinter-van'
+		LEFT JOIN $table_meta AS tm6 ON tm6.post_id = m.id AND tm6.meta_key = 'vehicle_type' AND tm6.meta_value = 'box-truck'
+		LEFT JOIN $table_meta AS tm7 ON tm7.post_id = m.id AND tm7.meta_key = 'vehicle_type' AND tm7.meta_value = 'reefer'
+		GROUP BY m.user_id_added
+	";
+		
+		$results = $wpdb->get_results( $sql, ARRAY_A );
+		
+		return $results;
+	}
+	
 	function handle_recruiter_deletion( $user_id ) {
 		// Проверяем, является ли удаляемый пользователь диспетчером
 		$user = get_user_by( 'ID', $user_id );
@@ -1829,6 +1863,77 @@ class TMSDrivers extends TMSDriversHelper {
 		
 		dbDelta( $sql );
 	}
+	
+	public function find_driver_id_by_meta( $name = '', $phone = '', $email = '' ) {
+		global $wpdb;
+		
+		$meta_table = $wpdb->prefix . $this->table_meta;
+		
+		$where_clauses = [];
+		$params        = [];
+		
+		if ( ! empty( $name ) ) {
+			$where_clauses[] = "(meta_key = 'driver_name' AND meta_value = %s)";
+			$params[]        = $name;
+		}
+		
+		if ( ! empty( $phone ) ) {
+			$where_clauses[] = "(meta_key = 'driver_phone' AND meta_value = %s)";
+			$params[]        = $phone;
+		}
+		
+		if ( ! empty( $email ) ) {
+			$where_clauses[] = "(meta_key = 'driver_email' AND meta_value = %s)";
+			$params[]        = $email;
+		}
+		
+		if ( empty( $where_clauses ) ) {
+			return false; // нет параметров для поиска
+		}
+		
+		$sql = "
+		SELECT post_id
+		FROM $meta_table
+		WHERE " . implode( ' OR ', $where_clauses ) . "
+		LIMIT 1
+	";
+		
+		$query     = $wpdb->prepare( $sql, ...$params );
+		$driver_id = $wpdb->get_var( $query );
+		
+		return $driver_id ? (int) $driver_id : false;
+	}
+	
+	public function replace_driver_id( $old_id, $new_id ) {
+		global $wpdb;
+		
+		$main_table   = $wpdb->prefix . $this->table_main;
+		$meta_table   = $wpdb->prefix . $this->table_meta;
+		$notice_table = $wpdb->prefix . $this->table_notice;
+		$rating_table = $wpdb->prefix . $this->table_raiting;
+		
+		$old_id = (int) $old_id;
+		$new_id = (int) $new_id;
+		
+		if ( ! $old_id || ! $new_id || $old_id === $new_id ) {
+			return false;
+		}
+		
+		// 1. Обновление ID в основной таблице
+		$wpdb->update( $main_table, [ 'id' => $new_id ], [ 'id' => $old_id ] );
+		
+		// 2. Обновление post_id в meta-таблице
+		$wpdb->update( $meta_table, [ 'post_id' => $new_id ], [ 'post_id' => $old_id ] );
+		
+		// 3. Обновление driver_id в таблице рейтингов
+		$wpdb->update( $rating_table, [ 'driver_id' => $new_id ], [ 'driver_id' => $old_id ] );
+		
+		// 4. Обновление driver_id в таблице notice
+		$wpdb->update( $notice_table, [ 'driver_id' => $new_id ], [ 'driver_id' => $old_id ] );
+		
+		return true;
+	}
+	
 	
 	function register_driver_tables() {
 		global $wpdb;

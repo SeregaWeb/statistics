@@ -437,7 +437,6 @@ $orange_lvl = $TMSUsers->check_user_role_access( array(
 													<?php endforeach; ?>
                                                 </select>
                                             </div>
-
                                             <div class="form-group mt-3 col-6 js-zip">
                                                 <label for="input-zip" class="form-label">Zip Code <span
                                                             class="required-star text-danger">*</span></label>
@@ -456,7 +455,7 @@ $orange_lvl = $TMSUsers->check_user_role_access( array(
                                             </div>
 
                                             <div class="form-group mt-3 col-6">
-                                                <label class="form-label">&nbsp;</label>
+                                                <label class="form-label">Last name</label>
                                                 <input id="input-lastname" type="text" name="LastName"
                                                        placeholder="Last Name"
                                                        class="form-control"

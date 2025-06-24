@@ -86,7 +86,9 @@ echo '</tr>';
 foreach ( $dispatchers as $dispatcher ) {
 	if ( $my_team !== null && is_array( $my_team ) && in_array( $dispatcher[ 'id' ], $my_team ) ) {
 		$fullname = $dispatcher[ 'fullname' ];
+		$stat     = [];
 		// Если данные по диспетчеру есть в $dispatcher_stats_indexed, используем их, иначе нули
+		
 		if ( isset( $dispatcher_stats_indexed[ $fullname ] ) ) {
 			$stat           = $dispatcher_stats_indexed[ $fullname ];
 			$post_count     = $stat[ 'post_count' ];
@@ -137,10 +139,9 @@ foreach ( $dispatchers as $dispatcher ) {
 			$goal_completion = 0;
 		}
 		
-		
-		if ( isset( $stat ) ) {
+		if ( isset( $stat ) && ! empty( $stat ) ) {
 			$total_team_load   += is_numeric( $post_count ) ? $post_count : 0;
-			$total_team_profit += is_numeric( $stat[ 'total_profit' ] ) ? $stat[ 'total_profit' ] : 0;
+			$total_team_profit += is_numeric( $stat[ 'total_profit' ] ) ? floatval( $stat[ 'total_profit' ] ) : 0;
 			$total_team_goals  += is_numeric( $stat[ 'goal' ] ) ? $stat[ 'goal' ] : 0;
 			$total_team_left   = is_numeric( $stat[ 'goal' ] ) && is_numeric( $stat[ 'total_profit' ] )
 				? $stat[ 'goal' ] - $stat[ 'total_profit' ] : 0;

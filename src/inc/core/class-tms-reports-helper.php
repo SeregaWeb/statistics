@@ -710,6 +710,15 @@ class TMSReportsHelper extends TMSReportsIcons {
 		
 		foreach ( $emails as $email ) {
 			$user = get_user_by( 'email', $email );
+			// get weekend
+			$fields   = get_fields( 'user_' . $user->ID );
+			$today    = strtolower( date( 'l' ) );
+			$weekends = get_field_value( $fields, 'weekends' ) ?? [];
+			
+			if ( is_array( $weekends ) && in_array( $today, $weekends, true ) ) {
+				continue;
+			}
+			
 			if ( $user && $user->ID !== $exclude_user_id ) {
 				return $user;
 			}
@@ -724,7 +733,6 @@ class TMSReportsHelper extends TMSReportsIcons {
 		
 		// Теперь ищем tracking, исключая nightshift_user
 		$tracking_user = $this->find_user_by_emails( $tracking_email, $nightshift_user ? $nightshift_user->ID : null );
-		
 		
 		// Проверяем, что пользователи найдены
 		if ( ! $tracking_user ) {

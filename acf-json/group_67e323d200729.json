@@ -27,7 +27,7 @@
             {
                 "param": "page_template",
                 "operator": "==",
-                "value": "page-statistics.php"
+                "value": "page-performance.php"
             }
         ]
     ],
@@ -40,5 +40,5 @@
     "active": true,
     "description": "",
     "show_in_rest": 0,
-    "modified": 1742939150
+    "modified": 1749740139
 }

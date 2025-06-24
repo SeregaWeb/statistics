@@ -227,8 +227,6 @@
         margin-bottom: 60px;
     }
 
-
-
     ul {
         list-style: none;
         padding: 0;
@@ -259,6 +257,33 @@
     }
 
     ul {
+        li {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-size: 14px;
+            color: #838383;
+        }
+    }
+}
+
+.list-group {
+    list-style: none;
+}
+
+.list-groups {
+    border-top: 2px solid #000000;
+    padding-top: 10px;
+}
+
+.card-hr {
+    max-width: 320px;
+    width: 100%;
+}
+
+.statistics-styles {
+    .list-group {
+
         li {
             display: flex;
             align-items: center;

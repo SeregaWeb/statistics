@@ -136,10 +136,6 @@ class TMSEmails extends TMSUsers {
 		
 		$user_fields = $user_id ? get_fields( 'user_' . $user_id ) : $this->user_fields;
 		
-		if ( $user_id ) {
-		
-		}
-		
 		$current_select  = $project ?? get_field_value( $user_fields, 'current_select' );
 		$current_user_id = $user_id ? intval( $user_id ) : get_current_user_id(); // Get the current user ID
 		
@@ -166,8 +162,19 @@ class TMSEmails extends TMSUsers {
 		$tracking = $query->get_results();
 		$emails   = array();
 		
+		
 		if ( ! empty( $tracking ) ) {
 			foreach ( $tracking as $leader ) {
+//
+//				// get weekend
+//				$fields   = get_fields( 'user_' . $leader->ID );
+//				$today    = strtolower( date( 'l' ) );
+//				$weekends = get_field_value( $fields, 'weekends' ) ?? [];
+//
+//				if ( is_array( $weekends ) && in_array( $today, $weekends, true ) ) {
+//					continue;
+//				}
+				
 				$emails[] = $leader->user_email;
 			}
 		}

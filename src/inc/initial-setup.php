@@ -288,6 +288,7 @@ function import_drivers( $drivers, $page = 1 ) {
 		
 		$table_name = $wpdb->prefix . $table_main;
 		
+		$data_main[ 'id' ]              = $id;
 		$data_main[ 'user_id_added' ]   = $data_new_driver[ 'recruiter_add' ];
 		$data_main[ 'date_created' ]    = $date;
 		$data_main[ 'user_id_updated' ] = $id_hr;
@@ -332,7 +333,7 @@ function import_drivers( $drivers, $page = 1 ) {
 	}
 }
 
-//import_drivers_from_json( 4 );
+//import_drivers_from_json( 6 );
 
 /**
  * Sanitize uploaded file name

@@ -36,37 +36,47 @@ class  TMSStatistics extends TMSReportsHelper {
 		return $weekdayCount;
 	}
 	
-	public function get_sources_statistics( $office_dispatcher = 'all', $year_param, $month_param ) {
+	public function get_sources_statistics(
+		$office_dispatcher = 'all', $year_param, $month_param, $dispatcher_initials = 'all'
+	) {
 		global $wpdb;
 		
-		$table_main = $wpdb->prefix . $this->table_main; // Например: wp_reports
+		$table_main = $wpdb->prefix . $this->table_main;
 		$table_meta = $wpdb->prefix . $this->table_meta;
 		
 		$statistics = [];
 		
 		foreach ( $this->sources as $key => $label ) {
-			
 			$sql = "
-			SELECT COUNT(DISTINCT source_meta.post_id) as count,
-				   SUM(CASE WHEN profit_meta.meta_key = 'profit' THEN profit_meta.meta_value ELSE 0 END) as profit
-			FROM $table_meta as source_meta
-			INNER JOIN $table_meta as profit_meta
-				ON source_meta.post_id = profit_meta.post_id AND profit_meta.meta_key = 'profit'
-			LEFT JOIN $table_meta as office_dispatcher
-				ON source_meta.post_id = office_dispatcher.post_id AND office_dispatcher.meta_key = 'office_dispatcher'
-			LEFT JOIN $table_meta as tbd
-				ON source_meta.id = tbd.post_id AND tbd.meta_key = 'tbd'
-			LEFT JOIN $table_meta as load_status
-				ON source_meta.post_id = load_status.post_id AND load_status.meta_key = 'load_status'
-			INNER JOIN $table_main as reports
+			SELECT
+				COUNT(DISTINCT reports.id) as count,
+				SUM(CAST(profit_meta.meta_value AS DECIMAL(10,2))) as profit
+			FROM {$table_meta} source_meta
+			INNER JOIN {$table_main} reports
 				ON source_meta.post_id = reports.id
+			INNER JOIN {$table_meta} profit_meta
+				ON reports.id = profit_meta.post_id AND profit_meta.meta_key = 'profit'
+			LEFT JOIN {$table_meta} office_dispatcher
+				ON reports.id = office_dispatcher.post_id AND office_dispatcher.meta_key = 'office_dispatcher'
+			LEFT JOIN {$table_meta} dispatcher_initials
+				ON reports.id = dispatcher_initials.post_id AND dispatcher_initials.meta_key = 'dispatcher_initials'
+			LEFT JOIN {$table_meta} load_status
+				ON reports.id = load_status.post_id AND load_status.meta_key = 'load_status'
+			LEFT JOIN {$table_meta} tbd
+				ON reports.id = tbd.post_id AND tbd.meta_key = 'tbd'
 			WHERE source_meta.meta_key = 'source'
-			  AND source_meta.meta_value = %s
-			  AND (tbd.meta_value IS NULL OR tbd.meta_value = '')
-			  AND load_status.meta_value NOT IN ('cancelled', 'waiting-on-rc')
+				AND source_meta.meta_value = %s
+				AND reports.status_post = 'publish'
+				AND (tbd.meta_value IS NULL OR tbd.meta_value = '')
+				AND load_status.meta_value NOT IN ('cancelled', 'waiting-on-rc')
 		";
 			
 			$params = [ $key ];
+			
+			if ( $dispatcher_initials !== 'all' ) {
+				$sql      .= " AND dispatcher_initials.meta_value = %s";
+				$params[] = $dispatcher_initials;
+			}
 			
 			if ( $office_dispatcher !== 'all' ) {
 				$sql      .= " AND office_dispatcher.meta_value = %s";
@@ -79,14 +89,13 @@ class  TMSStatistics extends TMSReportsHelper {
 				$params[] = (int) $month_param;
 			}
 			
-			$sql .= " AND reports.status_post = 'publish'";
-			
 			$query  = $wpdb->prepare( $sql, ...$params );
 			$result = $wpdb->get_row( $query );
 			
 			$statistics[ $key ] = [
+				'dispatcher'   => $dispatcher_initials ?? '',
 				'label'        => $label,
-				'post_count'   => $result->count ?? 0,
+				'post_count'   => (int) ( $result->count ?? 0 ),
 				'total_profit' => isset( $result->profit ) ? number_format( $result->profit, 2 ) : '0.00',
 			];
 		}

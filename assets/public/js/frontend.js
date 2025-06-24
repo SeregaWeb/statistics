@@ -6241,13 +6241,15 @@ function applyZipCodeMask(selector) {
     }
     function configure() {
       var country = getCountry();
-      input.value = '';
       input.removeAttribute('maxlength');
       input.removeAttribute('pattern');
       input.removeEventListener('input', restrictToFiveDigits);
       if (country === 'Canada') {
         input.setAttribute('maxlength', '7');
       } else {
+        if (input.value.length > 5) {
+          input.value = '';
+        }
         input.setAttribute('maxlength', '5');
         input.setAttribute('pattern', '\\d{5}');
         input.addEventListener('input', restrictToFiveDigits);

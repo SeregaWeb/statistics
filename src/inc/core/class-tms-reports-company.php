@@ -12,6 +12,7 @@ class TMSReportsCompany extends TMSReportsHelper {
 		add_action( 'wp_ajax_update_company', array( $this, 'update_company' ) );
 		add_action( 'wp_ajax_search_company', array( $this, 'search_company' ) );
 		add_action( 'wp_ajax_delete_broker', array( $this, 'delete_broker' ) );
+		add_action( 'wp_ajax_optimize_company_tables', array( $this, 'optimize_company_tables' ) );
 	}
 	
 	public function init() {
@@ -961,5 +962,216 @@ class TMSReportsCompany extends TMSReportsHelper {
 		}
 		
 		return true;
+	}
+	
+	/**
+	 * Optimize company tables for better performance with large datasets
+	 */
+	public function optimize_company_tables() {
+		// Check nonce for security
+		if ( ! wp_verify_nonce( $_POST['tms_optimize_nonce'], 'tms_optimize_database' ) ) {
+			wp_die( 'Security check failed' );
+		}
+		
+		// Check user capabilities
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_die( 'Insufficient permissions' );
+		}
+		
+		$optimization_type = sanitize_text_field( $_POST['optimization_type'] ?? 'indexes' );
+		$results = [];
+		
+		try {
+			if ( $optimization_type === 'full' ) {
+				$results = $this->perform_full_company_optimization();
+			} else {
+				$results = $this->perform_fast_company_optimization();
+			}
+			
+			wp_send_json_success( $results );
+		} catch ( Exception $e ) {
+			wp_send_json_error( [ 'message' => $e->getMessage() ] );
+		}
+	}
+	
+	/**
+	 * Perform fast optimization (indexes only)
+	 */
+	public function perform_fast_company_optimization() {
+		global $wpdb;
+		$results = [];
+		
+		// Optimize main company table
+		$main_table = $wpdb->prefix . $this->table_main;
+		$results['main_table'] = $this->optimize_company_main_table_fast( $main_table );
+		
+		// Optimize meta table
+		$meta_table = $wpdb->prefix . $this->table_meta;
+		$results['meta_table'] = $this->optimize_company_meta_table_fast( $meta_table );
+		
+		return $results;
+	}
+	
+	/**
+	 * Perform full optimization (structural changes)
+	 */
+	public function perform_full_company_optimization() {
+		global $wpdb;
+		$results = [];
+		
+		// Optimize main company table
+		$main_table = $wpdb->prefix . $this->table_main;
+		$results['main_table'] = $this->optimize_company_main_table_full( $main_table );
+		
+		// Optimize meta table
+		$meta_table = $wpdb->prefix . $this->table_meta;
+		$results['meta_table'] = $this->optimize_company_meta_table_full( $meta_table );
+		
+		return $results;
+	}
+	
+	/**
+	 * Fast optimization for main company table
+	 */
+	private function optimize_company_main_table_fast( $table_name ) {
+		global $wpdb;
+		$changes = [];
+		
+		// Add composite indexes for better query performance
+		$indexes = [
+			'idx_user_date_created' => 'user_id_added, date_created',
+			'idx_platform_date' => 'set_up_platform, date_created',
+			'idx_user_platform' => 'user_id_added, set_up_platform',
+			'idx_company_email' => 'company_name, email',
+			'idx_mc_dot' => 'mc_number, dot_number',
+		];
+		
+		foreach ( $indexes as $index_name => $columns ) {
+			$index_exists = $wpdb->get_var( "SHOW INDEX FROM $table_name WHERE Key_name = '$index_name'" );
+			if ( ! $index_exists ) {
+				$wpdb->query( "ALTER TABLE $table_name ADD INDEX $index_name ($columns)" );
+				$changes[] = "Added composite index: $index_name";
+			}
+		}
+		
+		// Optimize table
+		$wpdb->query( "OPTIMIZE TABLE $table_name" );
+		$changes[] = "Table optimized";
+		
+		return $changes;
+	}
+	
+	/**
+	 * Full optimization for main company table
+	 */
+	private function optimize_company_main_table_full( $table_name ) {
+		global $wpdb;
+		$changes = [];
+		
+		// Change data types for better performance
+		$alter_queries = [
+			"ALTER TABLE $table_name MODIFY id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT",
+			"ALTER TABLE $table_name MODIFY user_id_added BIGINT UNSIGNED NOT NULL",
+			"ALTER TABLE $table_name MODIFY user_id_updated BIGINT UNSIGNED NULL",
+			"ALTER TABLE $table_name MODIFY date_created TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP",
+			"ALTER TABLE $table_name MODIFY date_updated TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP",
+		];
+		
+		foreach ( $alter_queries as $query ) {
+			$wpdb->query( $query );
+			$changes[] = "Updated data types for better performance";
+		}
+		
+		// Add composite indexes
+		$indexes = [
+			'idx_user_date_created' => 'user_id_added, date_created',
+			'idx_platform_date' => 'set_up_platform, date_created',
+			'idx_user_platform' => 'user_id_added, set_up_platform',
+			'idx_company_email' => 'company_name, email',
+			'idx_mc_dot' => 'mc_number, dot_number',
+			'idx_user_platform_date' => 'user_id_added, set_up_platform, date_created',
+		];
+		
+		foreach ( $indexes as $index_name => $columns ) {
+			$index_exists = $wpdb->get_var( "SHOW INDEX FROM $table_name WHERE Key_name = '$index_name'" );
+			if ( ! $index_exists ) {
+				$wpdb->query( "ALTER TABLE $table_name ADD INDEX $index_name ($columns)" );
+				$changes[] = "Added composite index: $index_name";
+			}
+		}
+		
+		// Optimize table
+		$wpdb->query( "OPTIMIZE TABLE $table_name" );
+		$changes[] = "Table optimized";
+		
+		return $changes;
+	}
+	
+	/**
+	 * Fast optimization for company meta table
+	 */
+	private function optimize_company_meta_table_fast( $table_name ) {
+		global $wpdb;
+		$changes = [];
+		
+		// Add composite indexes for meta queries
+		$indexes = [
+			'idx_post_meta_key' => 'post_id, meta_key(191)',
+			'idx_meta_key_value' => 'meta_key(191), meta_value(191)',
+		];
+		
+		foreach ( $indexes as $index_name => $columns ) {
+			$index_exists = $wpdb->get_var( "SHOW INDEX FROM $table_name WHERE Key_name = '$index_name'" );
+			if ( ! $index_exists ) {
+				$wpdb->query( "ALTER TABLE $table_name ADD INDEX $index_name ($columns)" );
+				$changes[] = "Added composite index: $index_name";
+			}
+		}
+		
+		// Optimize table
+		$wpdb->query( "OPTIMIZE TABLE $table_name" );
+		$changes[] = "Table optimized";
+		
+		return $changes;
+	}
+	
+	/**
+	 * Full optimization for company meta table
+	 */
+	private function optimize_company_meta_table_full( $table_name ) {
+		global $wpdb;
+		$changes = [];
+		
+		// Change data types for better performance
+		$alter_queries = [
+			"ALTER TABLE $table_name MODIFY id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT",
+			"ALTER TABLE $table_name MODIFY post_id BIGINT UNSIGNED NOT NULL",
+		];
+		
+		foreach ( $alter_queries as $query ) {
+			$wpdb->query( $query );
+			$changes[] = "Updated data types for better performance";
+		}
+		
+		// Add composite indexes
+		$indexes = [
+			'idx_post_meta_key' => 'post_id, meta_key(191)',
+			'idx_meta_key_value' => 'meta_key(191), meta_value(191)',
+			'idx_post_meta_key_value' => 'post_id, meta_key(191), meta_value(191)',
+		];
+		
+		foreach ( $indexes as $index_name => $columns ) {
+			$index_exists = $wpdb->get_var( "SHOW INDEX FROM $table_name WHERE Key_name = '$index_name'" );
+			if ( ! $index_exists ) {
+				$wpdb->query( "ALTER TABLE $table_name ADD INDEX $index_name ($columns)" );
+				$changes[] = "Added composite index: $index_name";
+			}
+		}
+		
+		// Optimize table
+		$wpdb->query( "OPTIMIZE TABLE $table_name" );
+		$changes[] = "Table optimized";
+		
+		return $changes;
 	}
 }

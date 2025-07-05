@@ -36,6 +36,7 @@ class TMSDrivers extends TMSDriversHelper {
 			'update_driver_status'      => 'update_driver_status',
 			'remove_one_driver'         => 'remove_one_driver',
 			'upload_driver_helper'      => 'upload_driver_helper',
+			'optimize_drivers_tables'   => 'optimize_drivers_tables',
 		);
 		
 		foreach ( $actions as $ajax_action => $method ) {
@@ -1968,5 +1969,370 @@ class TMSDrivers extends TMSDriversHelper {
 		
 		dbDelta( $sql_rating );
 		dbDelta( $sql_notice );
+	}
+	
+	/**
+	 * Optimize drivers tables for better performance with large datasets
+	 */
+	public function optimize_drivers_tables() {
+		// Check nonce for security
+		if ( ! wp_verify_nonce( $_POST['tms_optimize_nonce'], 'tms_optimize_database' ) ) {
+			wp_die( 'Security check failed' );
+		}
+		
+		// Check user capabilities
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_die( 'Insufficient permissions' );
+		}
+		
+		$optimization_type = sanitize_text_field( $_POST['optimization_type'] ?? 'indexes' );
+		$results = [];
+		
+		try {
+			if ( $optimization_type === 'full' ) {
+				$results = $this->perform_full_drivers_optimization();
+			} else {
+				$results = $this->perform_fast_drivers_optimization();
+			}
+			
+			wp_send_json_success( $results );
+		} catch ( Exception $e ) {
+			wp_send_json_error( [ 'message' => $e->getMessage() ] );
+		}
+	}
+	
+	/**
+	 * Perform fast optimization (indexes only)
+	 */
+	public function perform_fast_drivers_optimization() {
+		global $wpdb;
+		$results = [];
+		
+		// Optimize main drivers table
+		$main_table = $wpdb->prefix . $this->table_main;
+		$results['main_table'] = $this->optimize_drivers_main_table_fast( $main_table );
+		
+		// Optimize meta table
+		$meta_table = $wpdb->prefix . $this->table_meta;
+		$results['meta_table'] = $this->optimize_drivers_meta_table_fast( $meta_table );
+		
+		// Optimize rating table
+		$rating_table = $wpdb->prefix . $this->table_raiting;
+		$results['rating_table'] = $this->optimize_drivers_rating_table_fast( $rating_table );
+		
+		// Optimize notice table
+		$notice_table = $wpdb->prefix . $this->table_notice;
+		$results['notice_table'] = $this->optimize_drivers_notice_table_fast( $notice_table );
+		
+		return $results;
+	}
+	
+	/**
+	 * Perform full optimization (structural changes)
+	 */
+	public function perform_full_drivers_optimization() {
+		global $wpdb;
+		$results = [];
+		
+		// Optimize main drivers table
+		$main_table = $wpdb->prefix . $this->table_main;
+		$results['main_table'] = $this->optimize_drivers_main_table_full( $main_table );
+		
+		// Optimize meta table
+		$meta_table = $wpdb->prefix . $this->table_meta;
+		$results['meta_table'] = $this->optimize_drivers_meta_table_full( $meta_table );
+		
+		// Optimize rating table
+		$rating_table = $wpdb->prefix . $this->table_raiting;
+		$results['rating_table'] = $this->optimize_drivers_rating_table_full( $rating_table );
+		
+		// Optimize notice table
+		$notice_table = $wpdb->prefix . $this->table_notice;
+		$results['notice_table'] = $this->optimize_drivers_notice_table_full( $notice_table );
+		
+		return $results;
+	}
+	
+	/**
+	 * Fast optimization for main drivers table
+	 */
+	private function optimize_drivers_main_table_fast( $table_name ) {
+		global $wpdb;
+		$changes = [];
+		
+		// Add composite indexes for better query performance
+		$indexes = [
+			'idx_user_date_created' => 'user_id_added, date_created',
+			'idx_status_date_available' => 'status_post, date_available',
+			'idx_user_status' => 'user_id_added, status_post',
+		];
+		
+		foreach ( $indexes as $index_name => $columns ) {
+			$index_exists = $wpdb->get_var( "SHOW INDEX FROM $table_name WHERE Key_name = '$index_name'" );
+			if ( ! $index_exists ) {
+				$wpdb->query( "ALTER TABLE $table_name ADD INDEX $index_name ($columns)" );
+				$changes[] = "Added composite index: $index_name";
+			}
+		}
+		
+		// Optimize table
+		$wpdb->query( "OPTIMIZE TABLE $table_name" );
+		$changes[] = "Table optimized";
+		
+		return $changes;
+	}
+	
+	/**
+	 * Full optimization for main drivers table
+	 */
+	private function optimize_drivers_main_table_full( $table_name ) {
+		global $wpdb;
+		$changes = [];
+		
+		// Change data types for better performance
+		$alter_queries = [
+			"ALTER TABLE $table_name MODIFY id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT",
+			"ALTER TABLE $table_name MODIFY user_id_added BIGINT UNSIGNED NOT NULL",
+			"ALTER TABLE $table_name MODIFY user_id_updated BIGINT UNSIGNED NULL",
+			"ALTER TABLE $table_name MODIFY date_created TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP",
+			"ALTER TABLE $table_name MODIFY date_updated TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP",
+			"ALTER TABLE $table_name MODIFY clean_check_date TIMESTAMP NULL DEFAULT NULL",
+			"ALTER TABLE $table_name MODIFY updated_zipcode TIMESTAMP NULL DEFAULT NULL",
+			"ALTER TABLE $table_name MODIFY date_available TIMESTAMP NULL DEFAULT NULL",
+			"ALTER TABLE $table_name MODIFY checked_from_brokersnapshot TIMESTAMP NULL DEFAULT NULL",
+		];
+		
+		foreach ( $alter_queries as $query ) {
+			$wpdb->query( $query );
+			$changes[] = "Updated data types for better performance";
+		}
+		
+		// Add composite indexes
+		$indexes = [
+			'idx_user_date_created' => 'user_id_added, date_created',
+			'idx_status_date_available' => 'status_post, date_available',
+			'idx_user_status' => 'user_id_added, status_post',
+			'idx_date_created_status' => 'date_created, status_post',
+		];
+		
+		foreach ( $indexes as $index_name => $columns ) {
+			$index_exists = $wpdb->get_var( "SHOW INDEX FROM $table_name WHERE Key_name = '$index_name'" );
+			if ( ! $index_exists ) {
+				$wpdb->query( "ALTER TABLE $table_name ADD INDEX $index_name ($columns)" );
+				$changes[] = "Added composite index: $index_name";
+			}
+		}
+		
+		// Optimize table
+		$wpdb->query( "OPTIMIZE TABLE $table_name" );
+		$changes[] = "Table optimized";
+		
+		return $changes;
+	}
+	
+	/**
+	 * Fast optimization for drivers meta table
+	 */
+	private function optimize_drivers_meta_table_fast( $table_name ) {
+		global $wpdb;
+		$changes = [];
+		
+		// Add composite indexes for meta queries
+		$indexes = [
+			'idx_post_meta_key' => 'post_id, meta_key(191)',
+			'idx_meta_key_value' => 'meta_key(191), meta_value(191)',
+		];
+		
+		foreach ( $indexes as $index_name => $columns ) {
+			$index_exists = $wpdb->get_var( "SHOW INDEX FROM $table_name WHERE Key_name = '$index_name'" );
+			if ( ! $index_exists ) {
+				$wpdb->query( "ALTER TABLE $table_name ADD INDEX $index_name ($columns)" );
+				$changes[] = "Added composite index: $index_name";
+			}
+		}
+		
+		// Optimize table
+		$wpdb->query( "OPTIMIZE TABLE $table_name" );
+		$changes[] = "Table optimized";
+		
+		return $changes;
+	}
+	
+	/**
+	 * Full optimization for drivers meta table
+	 */
+	private function optimize_drivers_meta_table_full( $table_name ) {
+		global $wpdb;
+		$changes = [];
+		
+		// Change data types for better performance
+		$alter_queries = [
+			"ALTER TABLE $table_name MODIFY id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT",
+			"ALTER TABLE $table_name MODIFY post_id BIGINT UNSIGNED NOT NULL",
+		];
+		
+		foreach ( $alter_queries as $query ) {
+			$wpdb->query( $query );
+			$changes[] = "Updated data types for better performance";
+		}
+		
+		// Add composite indexes
+		$indexes = [
+			'idx_post_meta_key' => 'post_id, meta_key(191)',
+			'idx_meta_key_value' => 'meta_key(191), meta_value(191)',
+			'idx_post_meta_key_value' => 'post_id, meta_key(191), meta_value(191)',
+		];
+		
+		foreach ( $indexes as $index_name => $columns ) {
+			$index_exists = $wpdb->get_var( "SHOW INDEX FROM $table_name WHERE Key_name = '$index_name'" );
+			if ( ! $index_exists ) {
+				$wpdb->query( "ALTER TABLE $table_name ADD INDEX $index_name ($columns)" );
+				$changes[] = "Added composite index: $index_name";
+			}
+		}
+		
+		// Optimize table
+		$wpdb->query( "OPTIMIZE TABLE $table_name" );
+		$changes[] = "Table optimized";
+		
+		return $changes;
+	}
+	
+	/**
+	 * Fast optimization for drivers rating table
+	 */
+	private function optimize_drivers_rating_table_fast( $table_name ) {
+		global $wpdb;
+		$changes = [];
+		
+		// Add composite indexes
+		$indexes = [
+			'idx_driver_time' => 'driver_id, time',
+			'idx_driver_reit' => 'driver_id, reit',
+			'idx_time_reit' => 'time, reit',
+		];
+		
+		foreach ( $indexes as $index_name => $columns ) {
+			$index_exists = $wpdb->get_var( "SHOW INDEX FROM $table_name WHERE Key_name = '$index_name'" );
+			if ( ! $index_exists ) {
+				$wpdb->query( "ALTER TABLE $table_name ADD INDEX $index_name ($columns)" );
+				$changes[] = "Added composite index: $index_name";
+			}
+		}
+		
+		// Optimize table
+		$wpdb->query( "OPTIMIZE TABLE $table_name" );
+		$changes[] = "Table optimized";
+		
+		return $changes;
+	}
+	
+	/**
+	 * Full optimization for drivers rating table
+	 */
+	private function optimize_drivers_rating_table_full( $table_name ) {
+		global $wpdb;
+		$changes = [];
+		
+		// Change data types for better performance
+		$alter_queries = [
+			"ALTER TABLE $table_name MODIFY time BIGINT UNSIGNED NOT NULL",
+		];
+		
+		foreach ( $alter_queries as $query ) {
+			$wpdb->query( $query );
+			$changes[] = "Updated data types for better performance";
+		}
+		
+		// Add composite indexes
+		$indexes = [
+			'idx_driver_time' => 'driver_id, time',
+			'idx_driver_reit' => 'driver_id, reit',
+			'idx_time_reit' => 'time, reit',
+			'idx_driver_time_reit' => 'driver_id, time, reit',
+		];
+		
+		foreach ( $indexes as $index_name => $columns ) {
+			$index_exists = $wpdb->get_var( "SHOW INDEX FROM $table_name WHERE Key_name = '$index_name'" );
+			if ( ! $index_exists ) {
+				$wpdb->query( "ALTER TABLE $table_name ADD INDEX $index_name ($columns)" );
+				$changes[] = "Added composite index: $index_name";
+			}
+		}
+		
+		// Optimize table
+		$wpdb->query( "OPTIMIZE TABLE $table_name" );
+		$changes[] = "Table optimized";
+		
+		return $changes;
+	}
+	
+	/**
+	 * Fast optimization for drivers notice table
+	 */
+	private function optimize_drivers_notice_table_fast( $table_name ) {
+		global $wpdb;
+		$changes = [];
+		
+		// Add composite indexes
+		$indexes = [
+			'idx_driver_date' => 'driver_id, date',
+			'idx_driver_status' => 'driver_id, status',
+			'idx_date_status' => 'date, status',
+		];
+		
+		foreach ( $indexes as $index_name => $columns ) {
+			$index_exists = $wpdb->get_var( "SHOW INDEX FROM $table_name WHERE Key_name = '$index_name'" );
+			if ( ! $index_exists ) {
+				$wpdb->query( "ALTER TABLE $table_name ADD INDEX $index_name ($columns)" );
+				$changes[] = "Added composite index: $index_name";
+			}
+		}
+		
+		// Optimize table
+		$wpdb->query( "OPTIMIZE TABLE $table_name" );
+		$changes[] = "Table optimized";
+		
+		return $changes;
+	}
+	
+	/**
+	 * Full optimization for drivers notice table
+	 */
+	private function optimize_drivers_notice_table_full( $table_name ) {
+		global $wpdb;
+		$changes = [];
+		
+		// Change data types for better performance
+		$alter_queries = [
+			"ALTER TABLE $table_name MODIFY date BIGINT UNSIGNED NOT NULL",
+		];
+		
+		foreach ( $alter_queries as $query ) {
+			$wpdb->query( $query );
+			$changes[] = "Updated data types for better performance";
+		}
+		
+		// Add composite indexes
+		$indexes = [
+			'idx_driver_date' => 'driver_id, date',
+			'idx_driver_status' => 'driver_id, status',
+			'idx_date_status' => 'date, status',
+			'idx_driver_date_status' => 'driver_id, date, status',
+		];
+		
+		foreach ( $indexes as $index_name => $columns ) {
+			$index_exists = $wpdb->get_var( "SHOW INDEX FROM $table_name WHERE Key_name = '$index_name'" );
+			if ( ! $index_exists ) {
+				$wpdb->query( "ALTER TABLE $table_name ADD INDEX $index_name ($columns)" );
+				$changes[] = "Added composite index: $index_name";
+			}
+		}
+		
+		// Optimize table
+		$wpdb->query( "OPTIMIZE TABLE $table_name" );
+		$changes[] = "Table optimized";
+		
+		return $changes;
 	}
 }

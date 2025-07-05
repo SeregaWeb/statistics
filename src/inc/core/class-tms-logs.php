@@ -24,6 +24,260 @@ class TMSLogs extends TMSReports {
 		add_action( 'wp_ajax_add_user_log', array( $this, 'add_user_log' ) );
 	}
 	
+	/**
+	 * Optimize log tables for large datasets (500k+ records)
+	 * Safe to run on existing data - no data loss
+	 * @return array
+	 */
+	public function optimize_log_tables_for_performance() {
+		global $wpdb;
+		
+		$results = array();
+		$tables = $this->tms_tables;
+		
+		foreach ( $tables as $val ) {
+			$log_table_name = $wpdb->prefix . 'reports_logs_' . strtolower( $val );
+			
+			$table_results = array(
+				'table' => $log_table_name,
+				'changes' => array()
+			);
+			
+			// 1. Изменяем тип ID на BIGINT для поддержки больших объемов
+			$result = $wpdb->query( "
+				ALTER TABLE $log_table_name 
+				MODIFY COLUMN id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT
+			" );
+			if ( $result !== false ) {
+				$table_results['changes'][] = 'Changed id to BIGINT UNSIGNED';
+			}
+			
+			// 2. Изменяем типы ID загрузки и пользователя на INT UNSIGNED
+			$result = $wpdb->query( "
+				ALTER TABLE $log_table_name 
+				MODIFY COLUMN id_load INT UNSIGNED NOT NULL,
+				MODIFY COLUMN id_user INT UNSIGNED NOT NULL
+			" );
+			if ( $result !== false ) {
+				$table_results['changes'][] = 'Changed id_load and id_user to INT UNSIGNED';
+			}
+			
+			// 3. Изменяем datetime на TIMESTAMP для лучшей производительности
+			$result = $wpdb->query( "
+				ALTER TABLE $log_table_name 
+				MODIFY COLUMN log_date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+			" );
+			if ( $result !== false ) {
+				$table_results['changes'][] = 'Changed log_date to TIMESTAMP';
+			}
+			
+			// 4. Изменяем longtext на TEXT для лучшей производительности
+			$result = $wpdb->query( "
+				ALTER TABLE $log_table_name 
+				MODIFY COLUMN log_text TEXT NOT NULL
+			" );
+			if ( $result !== false ) {
+				$table_results['changes'][] = 'Changed log_text from LONGTEXT to TEXT';
+			}
+			
+			// 5. Добавляем составные индексы для частых запросов
+			$indexes_to_add = array(
+				'idx_load_date' => '(id_load, log_date)',
+				'idx_user_date' => '(id_user, log_date)',
+				'idx_priority_date' => '(log_priority, log_date)',
+				'idx_date_priority' => '(log_date, log_priority)',
+				'idx_load_user' => '(id_load, id_user)',
+				'idx_role_date' => '(user_role, log_date)'
+			);
+			
+			foreach ( $indexes_to_add as $index_name => $index_columns ) {
+				// Проверяем, существует ли индекс
+				$index_exists = $wpdb->get_var( "
+					SHOW INDEX FROM $log_table_name WHERE Key_name = '$index_name'
+				" );
+				
+				if ( ! $index_exists ) {
+					$result = $wpdb->query( "
+						ALTER TABLE $log_table_name ADD INDEX $index_name $index_columns
+					" );
+					if ( $result !== false ) {
+						$table_results['changes'][] = "Added index: $index_name";
+					}
+				}
+			}
+			
+			// 6. Оптимизируем таблицу
+			$wpdb->query( "OPTIMIZE TABLE $log_table_name" );
+			$wpdb->query( "ANALYZE TABLE $log_table_name" );
+			
+			$table_results['changes'][] = 'Optimized and analyzed table';
+			$results[] = $table_results;
+		}
+		
+		// Оптимизируем таблицу drivers_logs
+		$drivers_log_table = $wpdb->prefix . 'drivers_logs';
+		
+		$drivers_results = array(
+			'table' => $drivers_log_table,
+			'changes' => array()
+		);
+		
+		// 1. Изменяем тип ID на BIGINT
+		$result = $wpdb->query( "
+			ALTER TABLE $drivers_log_table 
+			MODIFY COLUMN id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT
+		" );
+		if ( $result !== false ) {
+			$drivers_results['changes'][] = 'Changed id to BIGINT UNSIGNED';
+		}
+		
+		// 2. Изменяем типы ID загрузки и пользователя
+		$result = $wpdb->query( "
+			ALTER TABLE $drivers_log_table 
+			MODIFY COLUMN id_load INT UNSIGNED NOT NULL,
+			MODIFY COLUMN id_user INT UNSIGNED NOT NULL
+		" );
+		if ( $result !== false ) {
+			$drivers_results['changes'][] = 'Changed id_load and id_user to INT UNSIGNED';
+		}
+		
+		// 3. Изменяем datetime на TIMESTAMP
+		$result = $wpdb->query( "
+			ALTER TABLE $drivers_log_table 
+			MODIFY COLUMN log_date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+		" );
+		if ( $result !== false ) {
+			$drivers_results['changes'][] = 'Changed log_date to TIMESTAMP';
+		}
+		
+		// 4. Изменяем longtext на TEXT
+		$result = $wpdb->query( "
+			ALTER TABLE $drivers_log_table 
+			MODIFY COLUMN log_text TEXT NOT NULL
+		" );
+		if ( $result !== false ) {
+			$drivers_results['changes'][] = 'Changed log_text from LONGTEXT to TEXT';
+		}
+		
+		// 5. Добавляем составные индексы для drivers_logs
+		$drivers_indexes = array(
+			'idx_load_date' => '(id_load, log_date)',
+			'idx_user_date' => '(id_user, log_date)',
+			'idx_priority_date' => '(log_priority, log_date)',
+			'idx_date_priority' => '(log_date, log_priority)',
+			'idx_load_user' => '(id_load, id_user)',
+			'idx_role_date' => '(user_role, log_date)'
+		);
+		
+		foreach ( $drivers_indexes as $index_name => $index_columns ) {
+			$index_exists = $wpdb->get_var( "
+				SHOW INDEX FROM $drivers_log_table WHERE Key_name = '$index_name'
+			" );
+			
+			if ( ! $index_exists ) {
+				$result = $wpdb->query( "
+					ALTER TABLE $drivers_log_table ADD INDEX $index_name $index_columns
+				" );
+				if ( $result !== false ) {
+					$drivers_results['changes'][] = "Added index: $index_name";
+				}
+			}
+		}
+		
+		// 6. Оптимизируем drivers_logs таблицу
+		$wpdb->query( "OPTIMIZE TABLE $drivers_log_table" );
+		$wpdb->query( "ANALYZE TABLE $drivers_log_table" );
+		
+		$drivers_results['changes'][] = 'Optimized and analyzed table';
+		$results[] = $drivers_results;
+		
+		return $results;
+	}
+	
+	/**
+	 * Add performance indexes to existing log tables (safe operation)
+	 * @return array
+	 */
+	public function add_log_performance_indexes_safe() {
+		global $wpdb;
+		
+		$results = array();
+		$tables = $this->tms_tables;
+		
+		foreach ( $tables as $val ) {
+			$log_table_name = $wpdb->prefix . 'reports_logs_' . strtolower( $val );
+			
+			$table_results = array(
+				'table' => $log_table_name,
+				'indexes_added' => array()
+			);
+			
+			// Добавляем только недостающие индексы
+			$main_indexes = array(
+				'idx_load_date' => '(id_load, log_date)',
+				'idx_user_date' => '(id_user, log_date)',
+				'idx_priority_date' => '(log_priority, log_date)',
+				'idx_date_priority' => '(log_date, log_priority)',
+				'idx_load_user' => '(id_load, id_user)',
+				'idx_role_date' => '(user_role, log_date)'
+			);
+			
+			foreach ( $main_indexes as $index_name => $index_columns ) {
+				$index_exists = $wpdb->get_var( "
+					SHOW INDEX FROM $log_table_name WHERE Key_name = '$index_name'
+				" );
+				
+				if ( ! $index_exists ) {
+					$result = $wpdb->query( "
+						ALTER TABLE $log_table_name ADD INDEX $index_name $index_columns
+					" );
+					if ( $result !== false ) {
+						$table_results['indexes_added'][] = $index_name;
+					}
+				}
+			}
+			
+			$results[] = $table_results;
+		}
+		
+		// Добавляем индексы для drivers_logs
+		$drivers_log_table = $wpdb->prefix . 'drivers_logs';
+		
+		$drivers_results = array(
+			'table' => $drivers_log_table,
+			'indexes_added' => array()
+		);
+		
+		$drivers_indexes = array(
+			'idx_load_date' => '(id_load, log_date)',
+			'idx_user_date' => '(id_user, log_date)',
+			'idx_priority_date' => '(log_priority, log_date)',
+			'idx_date_priority' => '(log_date, log_priority)',
+			'idx_load_user' => '(id_load, id_user)',
+			'idx_role_date' => '(user_role, log_date)'
+		);
+		
+		foreach ( $drivers_indexes as $index_name => $index_columns ) {
+			$index_exists = $wpdb->get_var( "
+				SHOW INDEX FROM $drivers_log_table WHERE Key_name = '$index_name'
+			" );
+			
+			if ( ! $index_exists ) {
+				$result = $wpdb->query( "
+					ALTER TABLE $drivers_log_table ADD INDEX $index_name $index_columns
+				" );
+				if ( $result !== false ) {
+					$drivers_results['indexes_added'][] = $index_name;
+				}
+			}
+		}
+		
+		$results[] = $drivers_results;
+		
+		return $results;
+	}
+
+	
 	
 	public function get_last_log_by_post( $post_id ) {
 		global $wpdb;

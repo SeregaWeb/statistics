@@ -129,6 +129,146 @@ class TMSReportsPerformance extends TMSReportsHelper {
 		dbDelta( $sql );
 	}
 	
+	/**
+	 * Optimize performance tables for large datasets (500k+ records)
+	 * Safe to run on existing data - no data loss
+	 * @return array
+	 */
+	public function optimize_performance_tables_for_performance() {
+		global $wpdb;
+		
+		$results = array();
+		$table_name = $wpdb->prefix . $this->table_main;
+		
+		$table_results = array(
+			'table' => $table_name,
+			'changes' => array()
+		);
+		
+		// 1. Изменяем тип ID на BIGINT для поддержки больших объемов
+		$result = $wpdb->query( "
+			ALTER TABLE $table_name 
+			MODIFY COLUMN id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT
+		" );
+		if ( $result !== false ) {
+			$table_results['changes'][] = 'Changed id to BIGINT UNSIGNED';
+		}
+		
+		// 2. Изменяем типы пользователей на INT UNSIGNED
+		$result = $wpdb->query( "
+			ALTER TABLE $table_name 
+			MODIFY COLUMN user_id INT UNSIGNED NOT NULL,
+			MODIFY COLUMN user_last_updated INT UNSIGNED NULL
+		" );
+		if ( $result !== false ) {
+			$table_results['changes'][] = 'Changed user_id fields to INT UNSIGNED';
+		}
+		
+		// 3. Изменяем типы звонков на INT UNSIGNED для лучшей производительности
+		$result = $wpdb->query( "
+			ALTER TABLE $table_name 
+			MODIFY COLUMN monday_calls INT UNSIGNED DEFAULT 0,
+			MODIFY COLUMN tuesday_calls INT UNSIGNED DEFAULT 0,
+			MODIFY COLUMN wednesday_calls INT UNSIGNED DEFAULT 0,
+			MODIFY COLUMN thursday_calls INT UNSIGNED DEFAULT 0,
+			MODIFY COLUMN friday_calls INT UNSIGNED DEFAULT 0,
+			MODIFY COLUMN saturday_calls INT UNSIGNED DEFAULT 0,
+			MODIFY COLUMN sunday_calls INT UNSIGNED DEFAULT 0
+		" );
+		if ( $result !== false ) {
+			$table_results['changes'][] = 'Changed calls fields to INT UNSIGNED';
+		}
+		
+		// 4. Оптимизируем тип bonus
+		$result = $wpdb->query( "
+			ALTER TABLE $table_name 
+			MODIFY COLUMN bonus DECIMAL(10,2) DEFAULT 0.00
+		" );
+		if ( $result !== false ) {
+			$table_results['changes'][] = 'Optimized bonus field';
+		}
+		
+		// 5. Добавляем составные индексы для частых запросов
+		$indexes_to_add = array(
+			'idx_user_date_range' => '(user_id, date)',
+			'idx_date_user' => '(date, user_id)',
+			'idx_user_updated' => '(user_id, user_last_updated)',
+			'idx_date_range' => '(date)',
+			'idx_user_performance' => '(user_id, monday_calls, tuesday_calls, wednesday_calls, thursday_calls, friday_calls, saturday_calls, sunday_calls)',
+			'idx_bonus_range' => '(bonus)'
+		);
+		
+		foreach ( $indexes_to_add as $index_name => $index_columns ) {
+			// Проверяем, существует ли индекс
+			$index_exists = $wpdb->get_var( "
+				SHOW INDEX FROM $table_name WHERE Key_name = '$index_name'
+			" );
+			
+			if ( ! $index_exists ) {
+				$result = $wpdb->query( "
+					ALTER TABLE $table_name ADD INDEX $index_name $index_columns
+				" );
+				if ( $result !== false ) {
+					$table_results['changes'][] = "Added index: $index_name";
+				}
+			}
+		}
+		
+		// 6. Оптимизируем таблицу
+		$wpdb->query( "OPTIMIZE TABLE $table_name" );
+		$wpdb->query( "ANALYZE TABLE $table_name" );
+		
+		$table_results['changes'][] = 'Optimized and analyzed table';
+		$results[] = $table_results;
+		
+		return $results;
+	}
+	
+	/**
+	 * Add performance indexes to existing performance tables (safe operation)
+	 * @return array
+	 */
+	public function add_performance_indexes_safe() {
+		global $wpdb;
+		
+		$results = array();
+		$table_name = $wpdb->prefix . $this->table_main;
+		
+		$table_results = array(
+			'table' => $table_name,
+			'indexes_added' => array()
+		);
+		
+		// Добавляем только недостающие индексы
+		$main_indexes = array(
+			'idx_user_date_range' => '(user_id, date)',
+			'idx_date_user' => '(date, user_id)',
+			'idx_user_updated' => '(user_id, user_last_updated)',
+			'idx_date_range' => '(date)',
+			'idx_user_performance' => '(user_id, monday_calls, tuesday_calls, wednesday_calls, thursday_calls, friday_calls, saturday_calls, sunday_calls)',
+			'idx_bonus_range' => '(bonus)'
+		);
+		
+		foreach ( $main_indexes as $index_name => $index_columns ) {
+			$index_exists = $wpdb->get_var( "
+				SHOW INDEX FROM $table_name WHERE Key_name = '$index_name'
+			" );
+			
+			if ( ! $index_exists ) {
+				$result = $wpdb->query( "
+					ALTER TABLE $table_name ADD INDEX $index_name $index_columns
+				" );
+				if ( $result !== false ) {
+					$table_results['indexes_added'][] = $index_name;
+				}
+			}
+		}
+		
+		$results[] = $table_results;
+		
+		return $results;
+	}
+	
 	public function get_or_create_performance_record( $user_id, $date ) {
 		global $wpdb;
 		if ( ! $this->is_valid_date( $date ) ) {

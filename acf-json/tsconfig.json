@@ -1,0 +1,25 @@
+{
+  "compilerOptions": {
+    "module": "esnext",
+    "target": "es2015",
+    "jsx": "react",
+    "lib": ["dom", "dom.iterable", "esnext"],
+    "allowJs": true,
+    "strict": true,
+    "moduleResolution": "node",
+    "removeComments": true,
+    "skipLibCheck": true,
+    "experimentalDecorators": true,
+    "esModuleInterop": true,
+    "isolatedModules": true,
+    "allowSyntheticDefaultImports": true,
+    "noImplicitAny": false,
+    "strictNullChecks": true,
+  },
+  "exclude": ["node_modules", "vendor"],
+  "extends": "@tsconfig/recommended/tsconfig.json",
+  "$schema": "https://json.schemastore.org/tsconfig",
+  "display": "Recommended",
+  "compileOnSave": true,
+  "include": ["src/**/*"]
+}

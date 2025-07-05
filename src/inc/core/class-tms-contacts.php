@@ -24,6 +24,7 @@ class TMSContacts extends TMSDriversHelper {
 			'edit_contact'       => 'edit_contact',
 			'search_contact'     => 'search_contact',
 			'delete_one_contact' => 'delete_one_contact',
+			'optimize_contacts_tables' => 'optimize_contacts_tables',
 		);
 		
 		foreach ( $actions as $ajax_action => $method ) {
@@ -427,4 +428,213 @@ class TMSContacts extends TMSDriversHelper {
 		
 	}
 	
+	/**
+	 * Optimize contacts tables for better performance with large datasets
+	 */
+	public function optimize_contacts_tables() {
+		// Check nonce for security
+		if ( ! wp_verify_nonce( $_POST['tms_optimize_nonce'], 'tms_optimize_database' ) ) {
+			wp_die( 'Security check failed' );
+		}
+		
+		// Check user capabilities
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_die( 'Insufficient permissions' );
+		}
+		
+		$optimization_type = sanitize_text_field( $_POST['optimization_type'] ?? 'indexes' );
+		$results = [];
+		
+		try {
+			if ( $optimization_type === 'full' ) {
+				$results = $this->perform_full_contacts_optimization();
+			} else {
+				$results = $this->perform_fast_contacts_optimization();
+			}
+			
+			wp_send_json_success( $results );
+		} catch ( Exception $e ) {
+			wp_send_json_error( [ 'message' => $e->getMessage() ] );
+		}
+	}
+	
+	/**
+	 * Perform fast optimization (indexes only)
+	 */
+	public function perform_fast_contacts_optimization() {
+		global $wpdb;
+		$results = [];
+		
+		// Optimize main contacts table
+		$main_table = $wpdb->prefix . $this->table_main;
+		$results['main_table'] = $this->optimize_contacts_main_table_fast( $main_table );
+		
+		// Optimize additional contacts table
+		$additional_table = $wpdb->prefix . $this->additional_contact;
+		$results['additional_table'] = $this->optimize_contacts_additional_table_fast( $additional_table );
+		
+		return $results;
+	}
+	
+	/**
+	 * Perform full optimization (structural changes)
+	 */
+	public function perform_full_contacts_optimization() {
+		global $wpdb;
+		$results = [];
+		
+		// Optimize main contacts table
+		$main_table = $wpdb->prefix . $this->table_main;
+		$results['main_table'] = $this->optimize_contacts_main_table_full( $main_table );
+		
+		// Optimize additional contacts table
+		$additional_table = $wpdb->prefix . $this->additional_contact;
+		$results['additional_table'] = $this->optimize_contacts_additional_table_full( $additional_table );
+		
+		return $results;
+	}
+	
+	/**
+	 * Fast optimization for main contacts table
+	 */
+	private function optimize_contacts_main_table_fast( $table_name ) {
+		global $wpdb;
+		$changes = [];
+		
+		// Add composite indexes for better query performance
+		$indexes = [
+			'idx_user_company' => 'user_id_added, company_id',
+			'idx_user_date' => 'user_id_added, date_created',
+			'idx_company_email' => 'company_id, email',
+			'idx_user_email' => 'user_id_added, email',
+		];
+		
+		foreach ( $indexes as $index_name => $columns ) {
+			$index_exists = $wpdb->get_var( "SHOW INDEX FROM $table_name WHERE Key_name = '$index_name'" );
+			if ( ! $index_exists ) {
+				$wpdb->query( "ALTER TABLE $table_name ADD INDEX $index_name ($columns)" );
+				$changes[] = "Added composite index: $index_name";
+			}
+		}
+		
+		// Optimize table
+		$wpdb->query( "OPTIMIZE TABLE $table_name" );
+		$changes[] = "Table optimized";
+		
+		return $changes;
+	}
+	
+	/**
+	 * Full optimization for main contacts table
+	 */
+	private function optimize_contacts_main_table_full( $table_name ) {
+		global $wpdb;
+		$changes = [];
+		
+		// Change data types for better performance
+		$alter_queries = [
+			"ALTER TABLE $table_name MODIFY id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT",
+			"ALTER TABLE $table_name MODIFY user_id_added BIGINT UNSIGNED NOT NULL",
+			"ALTER TABLE $table_name MODIFY company_id BIGINT UNSIGNED NOT NULL",
+			"ALTER TABLE $table_name MODIFY date_created TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP",
+		];
+		
+		foreach ( $alter_queries as $query ) {
+			$wpdb->query( $query );
+			$changes[] = "Updated data types for better performance";
+		}
+		
+		// Add composite indexes
+		$indexes = [
+			'idx_user_company' => 'user_id_added, company_id',
+			'idx_user_date' => 'user_id_added, date_created',
+			'idx_company_email' => 'company_id, email',
+			'idx_user_email' => 'user_id_added, email',
+			'idx_user_company_date' => 'user_id_added, company_id, date_created',
+		];
+		
+		foreach ( $indexes as $index_name => $columns ) {
+			$index_exists = $wpdb->get_var( "SHOW INDEX FROM $table_name WHERE Key_name = '$index_name'" );
+			if ( ! $index_exists ) {
+				$wpdb->query( "ALTER TABLE $table_name ADD INDEX $index_name ($columns)" );
+				$changes[] = "Added composite index: $index_name";
+			}
+		}
+		
+		// Optimize table
+		$wpdb->query( "OPTIMIZE TABLE $table_name" );
+		$changes[] = "Table optimized";
+		
+		return $changes;
+	}
+	
+	/**
+	 * Fast optimization for additional contacts table
+	 */
+	private function optimize_contacts_additional_table_fast( $table_name ) {
+		global $wpdb;
+		$changes = [];
+		
+		// Add composite indexes for additional contacts queries
+		$indexes = [
+			'idx_contact_email' => 'contact_id, contact_email',
+			'idx_contact_name' => 'contact_id, contact_name',
+			'idx_contact_phone' => 'contact_id, contact_phone',
+		];
+		
+		foreach ( $indexes as $index_name => $columns ) {
+			$index_exists = $wpdb->get_var( "SHOW INDEX FROM $table_name WHERE Key_name = '$index_name'" );
+			if ( ! $index_exists ) {
+				$wpdb->query( "ALTER TABLE $table_name ADD INDEX $index_name ($columns)" );
+				$changes[] = "Added composite index: $index_name";
+			}
+		}
+		
+		// Optimize table
+		$wpdb->query( "OPTIMIZE TABLE $table_name" );
+		$changes[] = "Table optimized";
+		
+		return $changes;
+	}
+	
+	/**
+	 * Full optimization for additional contacts table
+	 */
+	private function optimize_contacts_additional_table_full( $table_name ) {
+		global $wpdb;
+		$changes = [];
+		
+		// Change data types for better performance
+		$alter_queries = [
+			"ALTER TABLE $table_name MODIFY id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT",
+			"ALTER TABLE $table_name MODIFY contact_id BIGINT UNSIGNED NOT NULL",
+		];
+		
+		foreach ( $alter_queries as $query ) {
+			$wpdb->query( $query );
+			$changes[] = "Updated data types for better performance";
+		}
+		
+		// Add composite indexes
+		$indexes = [
+			'idx_contact_email' => 'contact_id, contact_email',
+			'idx_contact_name' => 'contact_id, contact_name',
+			'idx_contact_phone' => 'contact_id, contact_phone',
+			'idx_contact_email_name' => 'contact_id, contact_email, contact_name',
+		];
+		
+		foreach ( $indexes as $index_name => $columns ) {
+			$index_exists = $wpdb->get_var( "SHOW INDEX FROM $table_name WHERE Key_name = '$index_name'" );
+			if ( ! $index_exists ) {
+				$wpdb->query( "ALTER TABLE $table_name ADD INDEX $index_name ($columns)" );
+				$changes[] = "Added composite index: $index_name";
+			}
+		}
+		
+		// Optimize table
+		$wpdb->query( "OPTIMIZE TABLE $table_name" );
+		$changes[] = "Table optimized";
+		
+		return $changes;
+	}
 }

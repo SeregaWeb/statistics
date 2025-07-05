@@ -1,0 +1,22 @@
+@import 'parts/normalize.css';
+@import 'bootstrap/bootstrap';
+@import 'bootstrap';
+@import 'parts/mixin';
+@import 'parts/variables';
+@import 'parts/fonts';
+@import 'parts/button';
+@import 'parts/global';
+@import 'parts/header';
+@import 'parts/footer';
+@import 'parts/modal_window';
+@import 'parts/cookies';
+@import 'parts/small_components';
+
+@import "components/account";
+@import "components/statistics";
+@import "components/statuses_colors";
+@import "components/broker-shipper";
+@import "components/log";
+@import "components/platforms";
+
+@import '~flatpickr/dist/flatpickr.min.css';

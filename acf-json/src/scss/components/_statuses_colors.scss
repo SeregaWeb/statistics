@@ -1,0 +1,286 @@
+$color_status_canceled: #EE5843;
+$color_status_loaded: #effee9;
+$color_status_dell: #d9facb;
+$color_status_delivery: #b7e1cd;
+$color_status_waiting: #ffff00;
+
+$color_accounting_processed: #b7e1cd;
+$color_accounting_unsubmitted: #ffff00;
+$color_accounting_others: #ff0000;
+
+$color_direct_1: #effee9;
+$color_direct_2: #fff7df;
+$color_direct_3: #ffdcdc;
+
+.direct_invoicing {
+    &_paid {
+        td {
+            background-color: $color_direct_1;
+        }
+    }
+    &_in-processing {
+        td {
+            background-color: $color_direct_2;
+        }
+    }
+
+    &_requires-attention ,
+    &_in-dispute ,
+    &_charge-back ,
+    &_short-pay ,
+    &_fraud ,
+    &_company-closed {
+        td {
+            background-color: $color_direct_3;
+        }
+    }
+}
+
+.load-status-accounting-Processing td {
+    background-color: #fff7df;
+}
+.load-status-accounting-Paid td {
+    background-color: $color_status_loaded;
+}
+
+.factoring-color-unsubmitted td ,
+.factoring-color-in-processing td ,
+.factoring-color-pending-to-tafs td {
+    background-color: #fff7df;
+}
+
+
+.factoring-color-processed td {
+    background-color: #f6fff3;
+}
+
+.factoring-color-paid td {
+    background-color: #effee9;
+}
+
+.factoring-color-requires-attention td ,
+.factoring-color-in-dispute td ,
+.factoring-color-charge-back td ,
+.factoring-color-short-pay td ,
+.factoring-color-fraud td ,
+.factoring-color-company-closed td {
+    background-color: #ffdcdc;
+}
+
+.load-status-tonu,
+.load-status-cancelled {
+    background-color: #ffdcdc;
+
+    td {
+        background-color: transparent !important;
+
+        &.cancelled, &.tonu {
+            span {
+                background-color: transparent !important;
+                color: #000000 !important;
+                padding: 0;
+            }
+        }
+    }
+}
+
+.load-status-at-del,
+.load-status-delivered {
+    background-color: #effee9;
+
+    td {
+        background-color: transparent !important;
+
+        &.at-del, &.delivered {
+            span {
+                background-color: transparent !important;
+                color: #000000 !important;
+                padding: 0;
+            }
+        }
+    }
+}
+
+.load-status-loaded-enroute {
+    background-color: #f7fef5;
+
+    td {
+        background-color: transparent !important;
+
+        &.loaded-enroute {
+            span {
+                background-color: transparent !important;
+                color: #000000 !important;
+                padding: 0;
+            }
+        }
+    }
+}
+
+.tonu,
+.cancelled {
+    span {
+        display: inline-flex;
+        padding: 5px;
+        background-color: $color_status_canceled !important;
+        color: #ffffff !important;
+    }
+}
+
+.waiting-on-rc {
+    span {
+        display: inline-flex;
+        padding: 5px;
+        background-color: $color_status_waiting !important;
+    }
+}
+
+.at-del {
+    span {
+        display: inline-flex;
+        padding: 5px;
+        background-color: $color_status_dell !important;
+    }
+}
+
+.loaded-enroute {
+    span {
+        display: inline-flex;
+        padding: 5px;
+        background-color: $color_status_loaded !important;
+    }
+}
+
+.delivered {
+    span {
+        display: inline-flex;
+        padding: 5px;
+        background-color: $color_status_delivery !important;
+
+    }
+}
+
+
+.unsubmitted,
+.in-processing {
+    span {
+        display: inline-flex;
+        padding: 5px;
+        background-color: $color_accounting_unsubmitted !important;
+    }
+}
+
+.processed {
+    span {
+        display: inline-flex;
+        padding: 5px;
+
+        background-color: $color_accounting_processed !important;
+    }
+}
+
+.charge-back,
+.in-dispute,
+.requires-attention,
+.short-pay {
+    span {
+        display: inline-flex;
+        padding: 5px;
+
+        background-color: $color_accounting_others !important;
+        color: #ffffff !important;
+    }
+}
+
+.invoiced {
+    span {
+        display: inline-flex;
+        padding: 5px;
+        background: #b7e1cd !important;
+    }
+}
+
+.not-invoiced {
+    span {
+        display: inline-flex;
+        padding: 5px;
+        color: #ffffff !important;
+        background: #ff0000 !important;
+    }
+}
+
+.status-tracking-loaded-enroute {
+    background-color: #effee9;
+
+    td {
+        background-color: transparent !important;
+    }
+}
+
+.status-tracking-at-del {
+    background-color: #d9facb;
+
+    td {
+        background-color: transparent !important;
+    }
+}
+
+.status-tracking-cancelled,
+.status-tracking-tonu {
+    background-color: #ffdcdc;
+
+    td {
+        background-color: transparent !important;
+    }
+}
+
+.brocker-red {
+    td {
+        background-color: #f4cccc !important;
+    }
+}
+
+.brocker-orange {
+    td {
+        background-color: #fff2cc !important;
+    }
+}
+
+.brocker-gray {
+    td {
+        background-color: #efefef !important;
+    }
+}
+
+
+.credit-approval-required,
+.broker-can-be-discussed,
+.broker-one-load-allowed {
+    td {
+        background-color: #fff2cc !important;
+    }
+}
+
+.broker-denied {
+    td {
+        background-color: #f4cccc !important;
+    }
+}
+
+.broker-not-found {
+    td {
+        background-color: #efefef !important;
+    }
+}
+
+.tbd {
+    td {
+        background-color: #fff7df !important;
+    }
+}
+
+.load-status-waiting-on-rc  {
+    td {
+        background-color: #fff7df !important;
+    }
+}

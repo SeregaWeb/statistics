@@ -10,7 +10,7 @@ class TMSReportsShipper extends TMSReportsHelper {
 		add_action( 'wp_ajax_update_shipper', array( $this, 'update_shipper' ) );
 		add_action( 'wp_ajax_search_shipper', array( $this, 'search_shipper' ) );
 		add_action( 'wp_ajax_delete_shipper', array( $this, 'delete_shipper' ) );
-		
+		add_action( 'wp_ajax_optimize_shipper_tables', array( $this, 'optimize_shipper_tables' ) );
 	}
 	
 	public function init() {
@@ -516,4 +516,140 @@ class TMSReportsShipper extends TMSReportsHelper {
 		return $results;
 	}
 	
+	/**
+	 * Optimize shipper tables for better performance with large datasets
+	 */
+	public function optimize_shipper_tables() {
+		// Check nonce for security
+		if ( ! wp_verify_nonce( $_POST['tms_optimize_nonce'], 'tms_optimize_database' ) ) {
+			wp_die( 'Security check failed' );
+		}
+		
+		// Check user capabilities
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_die( 'Insufficient permissions' );
+		}
+		
+		$optimization_type = sanitize_text_field( $_POST['optimization_type'] ?? 'indexes' );
+		$results = [];
+		
+		try {
+			if ( $optimization_type === 'full' ) {
+				$results = $this->perform_full_shipper_optimization();
+			} else {
+				$results = $this->perform_fast_shipper_optimization();
+			}
+			
+			wp_send_json_success( $results );
+		} catch ( Exception $e ) {
+			wp_send_json_error( [ 'message' => $e->getMessage() ] );
+		}
+	}
+	
+	/**
+	 * Perform fast optimization (indexes only)
+	 */
+	public function perform_fast_shipper_optimization() {
+		global $wpdb;
+		$results = [];
+		
+		// Optimize main shipper table
+		$main_table = $wpdb->prefix . $this->table_main;
+		$results['main_table'] = $this->optimize_shipper_main_table_fast( $main_table );
+		
+		return $results;
+	}
+	
+	/**
+	 * Perform full optimization (structural changes)
+	 */
+	public function perform_full_shipper_optimization() {
+		global $wpdb;
+		$results = [];
+		
+		// Optimize main shipper table
+		$main_table = $wpdb->prefix . $this->table_main;
+		$results['main_table'] = $this->optimize_shipper_main_table_full( $main_table );
+		
+		return $results;
+	}
+	
+	/**
+	 * Fast optimization for main shipper table
+	 */
+	private function optimize_shipper_main_table_fast( $table_name ) {
+		global $wpdb;
+		$changes = [];
+		
+		// Add composite indexes for better query performance
+		$indexes = [
+			'idx_user_date_created' => 'user_id_added, date_created',
+			'idx_user_updated' => 'user_id_updated, date_updated',
+			'idx_shipper_email' => 'shipper_name, email',
+			'idx_shipper_phone' => 'shipper_name, phone_number',
+			'idx_city_state' => 'city, state',
+			'idx_zip_city' => 'zip_code, city',
+		];
+		
+		foreach ( $indexes as $index_name => $columns ) {
+			$index_exists = $wpdb->get_var( "SHOW INDEX FROM $table_name WHERE Key_name = '$index_name'" );
+			if ( ! $index_exists ) {
+				$wpdb->query( "ALTER TABLE $table_name ADD INDEX $index_name ($columns)" );
+				$changes[] = "Added composite index: $index_name";
+			}
+		}
+		
+		// Optimize table
+		$wpdb->query( "OPTIMIZE TABLE $table_name" );
+		$changes[] = "Table optimized";
+		
+		return $changes;
+	}
+	
+	/**
+	 * Full optimization for main shipper table
+	 */
+	private function optimize_shipper_main_table_full( $table_name ) {
+		global $wpdb;
+		$changes = [];
+		
+		// Change data types for better performance
+		$alter_queries = [
+			"ALTER TABLE $table_name MODIFY id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT",
+			"ALTER TABLE $table_name MODIFY user_id_added BIGINT UNSIGNED NOT NULL",
+			"ALTER TABLE $table_name MODIFY user_id_updated BIGINT UNSIGNED NULL",
+			"ALTER TABLE $table_name MODIFY date_created TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP",
+			"ALTER TABLE $table_name MODIFY date_updated TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP",
+		];
+		
+		foreach ( $alter_queries as $query ) {
+			$wpdb->query( $query );
+			$changes[] = "Updated data types for better performance";
+		}
+		
+		// Add composite indexes
+		$indexes = [
+			'idx_user_date_created' => 'user_id_added, date_created',
+			'idx_user_updated' => 'user_id_updated, date_updated',
+			'idx_shipper_email' => 'shipper_name, email',
+			'idx_shipper_phone' => 'shipper_name, phone_number',
+			'idx_city_state' => 'city, state',
+			'idx_zip_city' => 'zip_code, city',
+			'idx_user_shipper_date' => 'user_id_added, shipper_name, date_created',
+		];
+		
+		foreach ( $indexes as $index_name => $columns ) {
+			$index_exists = $wpdb->get_var( "SHOW INDEX FROM $table_name WHERE Key_name = '$index_name'" );
+			if ( ! $index_exists ) {
+				$wpdb->query( "ALTER TABLE $table_name ADD INDEX $index_name ($columns)" );
+				$changes[] = "Added composite index: $index_name";
+			}
+		}
+		
+		// Optimize table
+		$wpdb->query( "OPTIMIZE TABLE $table_name" );
+		$changes[] = "Table optimized";
+		
+		return $changes;
+	}
 }

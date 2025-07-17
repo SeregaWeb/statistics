@@ -37,6 +37,7 @@ class TMSDrivers extends TMSDriversHelper {
 			'remove_one_driver'         => 'remove_one_driver',
 			'upload_driver_helper'      => 'upload_driver_helper',
 			'optimize_drivers_tables'   => 'optimize_drivers_tables',
+			'update_location_driver'    => 'update_location_driver',
 		);
 		
 		foreach ( $actions as $ajax_action => $method ) {
@@ -164,9 +165,72 @@ class TMSDrivers extends TMSDriversHelper {
 		return $table_results;
 	}
 	
+	public function update_location_driver() {
+		if ( defined( 'DOING_AJAX' ) && DOING_AJAX ) {
+			$MY_INPUT = filter_var_array( $_POST, [
+				"driver_id"        => FILTER_SANITIZE_STRING,
+				"driver_status"    => FILTER_SANITIZE_STRING,
+				"status_date"      => FILTER_SANITIZE_STRING,
+				"current_location" => FILTER_SANITIZE_STRING,
+				"current_city"     => FILTER_SANITIZE_STRING,
+				"current_zipcode"  => FILTER_SANITIZE_STRING,
+				"latitude"         => FILTER_SANITIZE_STRING,
+				"longitude"        => FILTER_SANITIZE_STRING,
+				"country"          => FILTER_SANITIZE_STRING,
+				"current_country"  => FILTER_SANITIZE_STRING,
+			] );
+			
+			// Проверяем, что driver_id передан
+			if ( empty( $MY_INPUT[ 'driver_id' ] ) ) {
+				wp_send_json_error( [ 'message' => 'Driver ID is required' ] );
+				
+				return;
+			}
+			
+			$driver_id = intval( $MY_INPUT[ 'driver_id' ] );
+			
+			// Подготавливаем данные для обновления
+			$update_data = [
+				'driver_id'        => $driver_id,
+				'driver_status'    => $MY_INPUT[ 'driver_status' ] ?? '',
+				'status_date'      => $MY_INPUT[ 'status_date' ] ?? '',
+				'current_location' => $MY_INPUT[ 'current_location' ] ?? '',
+				'current_city'     => $MY_INPUT[ 'current_city' ] ?? '',
+				'current_zipcode'  => $MY_INPUT[ 'current_zipcode' ] ?? '',
+				'latitude'         => $MY_INPUT[ 'latitude' ] ?? '',
+				'longitude'        => $MY_INPUT[ 'longitude' ] ?? '',
+				'country'          => $MY_INPUT[ 'country' ] ?? '',
+				'current_country'  => $MY_INPUT[ 'current_country' ] ?? '',
+			];
+			
+			
+			if ( $update_data[ 'latitude' ] === '' || $update_data[ 'longitude' ] === '' ) {
+				wp_send_json_error( [ 'message' => 'Latitude or longitude is required, please check the address.' ] );
+			}
+			
+			// Обновляем данные водителя
+			$result = $this->update_driver_in_db( $update_data );
+			
+			if ( $result ) {
+				wp_send_json_success( [
+					'message'   => 'Driver location updated successfully',
+					'driver_id' => $driver_id,
+					'data'      => $update_data
+				] );
+			} else {
+				wp_send_json_error( [ 'message' => 'Failed to update driver location' ] );
+			}
+		} else {
+			wp_send_json_error( [ 'message' => 'Invalid request' ] );
+		}
+	}
+	
 	public function remove_one_driver() {
 		if ( defined( 'DOING_AJAX' ) && DOING_AJAX ) {
 			global $wpdb;
+			
+			// Clear drivers cache when driver is removed
+			$this->clear_drivers_cache();
 			
 			// Получаем данные запроса
 			$MY_INPUT = filter_var_array( $_POST, [
@@ -237,12 +301,12 @@ class TMSDrivers extends TMSDriversHelper {
 	}
 	
 	public function set_filter_params( $args ) {
-		$my_search  = trim( get_field_value( $_GET, 'my_search' ) );
-		$recruiter  = trim( get_field_value( $_GET, 'recruiter' ) );
-		$year       = trim( get_field_value( $_GET, 'fyear' ) );
-		$month      = trim( get_field_value( $_GET, 'fmonth' ) );
-		$source     = trim( get_field_value( $_GET, 'source' ) );
-		$additional = trim( get_field_value( $_GET, 'additional' ) );
+		$my_search  = trim( get_field_value( $_GET, 'my_search' ) ?? '' );
+		$recruiter  = trim( get_field_value( $_GET, 'recruiter' ) ?? '' );
+		$year       = trim( get_field_value( $_GET, 'fyear' ) ?? '' );
+		$month      = trim( get_field_value( $_GET, 'fmonth' ) ?? '' );
+		$source     = trim( get_field_value( $_GET, 'source' ) ?? '' );
+		$additional = trim( get_field_value( $_GET, 'additional' ) ?? '' );
 		
 		if ( $my_search ) {
 			$args[ 'my_search' ] = $my_search;
@@ -270,6 +334,32 @@ class TMSDrivers extends TMSDriversHelper {
 		return $args;
 	}
 	
+	public function set_filter_params_search( $args ) {
+		$my_search       = trim( get_field_value( $_GET, 'my_search' ) ?? '' );
+		$extended_search = trim( get_field_value( $_GET, 'extended_search' ) ?? '' );
+		$radius          = trim( get_field_value( $_GET, 'radius' ) ?? '' );
+		$country         = trim( get_field_value( $_GET, 'country' ) ?? '' );
+		
+		if ( $my_search ) {
+			$args[ 'my_search' ] = $my_search;
+		}
+		
+		if ( $extended_search ) {
+			$args[ 'extended_search' ] = $extended_search;
+		}
+		
+		if ( $radius ) {
+			$args[ 'radius' ] = $radius;
+		}
+		
+		if ( $country ) {
+			$args[ 'country' ] = $country;
+		}
+		
+		
+		return $args;
+	}
+	
 	public function get_table_items( $args = array() ) {
 		global $wpdb;
 		
@@ -282,26 +372,26 @@ class TMSDrivers extends TMSDriversHelper {
 			: 'DESC';
 		
 		$join_builder = "
-	FROM $table_main AS main
-	LEFT JOIN $table_meta AS driver_name
-		ON main.id = driver_name.post_id AND driver_name.meta_key = 'driver_name'
-	LEFT JOIN $table_meta AS driver_phone
-		ON main.id = driver_phone.post_id AND driver_phone.meta_key = 'driver_phone'
-	LEFT JOIN $table_meta AS driver_email
-		ON main.id = driver_email.post_id AND driver_email.meta_key = 'driver_email'
-	LEFT JOIN $table_meta AS plates
-		ON main.id = plates.post_id AND plates.meta_key = 'plates'
-	LEFT JOIN $table_meta AS entity_name
-		ON main.id = entity_name.post_id AND entity_name.meta_key = 'entity_name'
-	LEFT JOIN $table_meta AS vin
-		ON main.id = vin.post_id AND vin.meta_key = 'vin'
-	LEFT JOIN $table_meta AS auto_liability_insurer
-		ON main.id = auto_liability_insurer.post_id AND auto_liability_insurer.meta_key = 'auto_liability_insurer'
-	LEFT JOIN $table_meta AS motor_cargo_insurer
-		ON main.id = motor_cargo_insurer.post_id AND motor_cargo_insurer.meta_key = 'motor_cargo_insurer'
-	LEFT JOIN $table_meta AS source
-		ON main.id = source.post_id AND source.meta_key = 'source'
-";
+			FROM $table_main AS main
+			LEFT JOIN $table_meta AS driver_name
+				ON main.id = driver_name.post_id AND driver_name.meta_key = 'driver_name'
+			LEFT JOIN $table_meta AS driver_phone
+				ON main.id = driver_phone.post_id AND driver_phone.meta_key = 'driver_phone'
+			LEFT JOIN $table_meta AS driver_email
+				ON main.id = driver_email.post_id AND driver_email.meta_key = 'driver_email'
+			LEFT JOIN $table_meta AS plates
+				ON main.id = plates.post_id AND plates.meta_key = 'plates'
+			LEFT JOIN $table_meta AS entity_name
+				ON main.id = entity_name.post_id AND entity_name.meta_key = 'entity_name'
+			LEFT JOIN $table_meta AS vin
+				ON main.id = vin.post_id AND vin.meta_key = 'vin'
+			LEFT JOIN $table_meta AS auto_liability_insurer
+				ON main.id = auto_liability_insurer.post_id AND auto_liability_insurer.meta_key = 'auto_liability_insurer'
+			LEFT JOIN $table_meta AS motor_cargo_insurer
+				ON main.id = motor_cargo_insurer.post_id AND motor_cargo_insurer.meta_key = 'motor_cargo_insurer'
+			LEFT JOIN $table_meta AS source
+				ON main.id = source.post_id AND source.meta_key = 'source'
+		";
 		
 		$where_conditions = array();
 		$where_values     = array();
@@ -316,7 +406,7 @@ class TMSDrivers extends TMSDriversHelper {
 		LEFT JOIN $table_meta AS {$additional_alias}
 			ON main.id = {$additional_alias}.post_id
 			AND {$additional_alias}.meta_key = %s
-	";
+			";
 			$where_conditions[] = "({$additional_alias}.meta_value IS NOT NULL AND {$additional_alias}.meta_value != '')";
 			$where_values[]     = $additional_key;
 		}
@@ -382,16 +472,24 @@ class TMSDrivers extends TMSDriversHelper {
 		}
 		
 		// Подсчёт общего количества записей с учётом фильтров
-		$total_records_sql = "SELECT COUNT(*)" . $join_builder;
+		// Выполняем запрос без LIMIT для подсчёта общего количества
+		$count_sql = "SELECT main.id" . $join_builder . " WHERE 1=1";
 		if ( ! empty( $where_conditions ) ) {
-			$total_records_sql .= ' AND ' . implode( ' AND ', $where_conditions );
+			$count_sql .= ' AND ' . implode( ' AND ', $where_conditions );
 		}
+		$count_sql .= " ORDER BY main.$sort_by $sort_order";
 		
-		
-		$total_records = $wpdb->get_var( $wpdb->prepare( $total_records_sql, ...$where_values ) );
+		$all_results   = $wpdb->get_results( $wpdb->prepare( $count_sql, ...$where_values ), ARRAY_A );
+		$total_records = count( $all_results );
 		
 		// Вычисляем количество страниц
 		$total_pages = ceil( $total_records / $per_page );
+		// Корректировка: если записей меньше, чем на одну страницу, показываем только одну страницу (или 0, если записей нет)
+		if ( $total_records == 0 ) {
+			$total_pages = 0;
+		} elseif ( $total_pages < 1 ) {
+			$total_pages = 1;
+		}
 		
 		// Смещение для текущей страницы
 		$offset = ( $current_page - 1 ) * $per_page;
@@ -430,7 +528,13 @@ class TMSDrivers extends TMSDriversHelper {
 				$post_id               = $result[ 'id' ];
 				$result[ 'meta_data' ] = isset( $meta_data[ $post_id ] ) ? $meta_data[ $post_id ] : array();
 			}
+			
+			// Сортировка по статусу и времени обновления для обычного поиска
+			if ( ! isset( $args[ 'has_distance_data' ] ) || ! $args[ 'has_distance_data' ] || empty( $args[ 'filtered_drivers' ] ) ) {
+				$main_results = $this->sort_drivers_by_status_priority_for_regular_search( $main_results );
+			}
 		}
+		
 		
 		return array(
 			'results'       => $main_results,
@@ -438,6 +542,307 @@ class TMSDrivers extends TMSDriversHelper {
 			'total_posts'   => $total_records,
 			'current_pages' => $current_page,
 		);
+	}
+	
+	public function get_table_items_search( $args = array() ) {
+		global $wpdb;
+		
+		$table_main = $wpdb->prefix . $this->table_main;
+		$table_meta = $wpdb->prefix . $this->table_meta;
+		
+		
+		$per_page     = isset( $args[ 'per_page_loads' ] ) ? $args[ 'per_page_loads' ] : $this->per_page_loads;
+		$current_page = isset( $_GET[ 'paged' ] ) ? absint( $_GET[ 'paged' ] ) : 1;
+		$sort_by      = ! empty( $args[ 'sort_by' ] ) ? $args[ 'sort_by' ] : 'id';
+		$sort_order   = ! empty( $args[ 'sort_order' ] ) && strtolower( $args[ 'sort_order' ] ) == 'asc' ? 'ASC'
+			: 'DESC';
+		
+		// Check if we have a search address for geocoding
+		if ( $args[ 'my_search' ] ) {
+			global $global_options;
+			
+			$api_key_here_map = get_field_value( $global_options, 'api_key_here_map' );
+			$use_driver       = get_field_value( $global_options, 'use_driver' );
+			$url_pelias       = get_field_value( $global_options, 'url_pelias' );
+			$url_ors          = get_field_value( $global_options, 'url_ors' );
+			$geocoder         = get_field_value( $global_options, 'use_geocoder' );
+			
+			// Get coordinates for the search address
+			$search_coordinates = $this->get_coordinates_by_address( $args[ 'my_search' ], $geocoder, array(
+				'api_key'      => $api_key_here_map,
+				'url_pelias'   => $url_pelias,
+				'region_value' => isset( $args[ 'country' ] ) ? $args[ 'country' ] : ''
+			) );
+			
+			// If we have coordinates, use advanced distance-based filtering
+			if ( $search_coordinates ) {
+				$args[ 'search_lat' ] = $search_coordinates[ 'lat' ];
+				$args[ 'search_lng' ] = $search_coordinates[ 'lng' ];
+				
+				// Get all available drivers with caching
+				$cache_key = 'tms_all_available_drivers';
+				$all_drivers = get_transient( $cache_key );
+				
+				if ( false === $all_drivers ) {
+					$all_drivers = $this->get_all_available_driver( true );
+					// Cache for 15 minutes (900 seconds)
+					set_transient( $cache_key, $all_drivers, 15 * MINUTE_IN_SECONDS );
+				}
+				
+				// Filter and sort drivers by distance
+				$max_distance  = isset( $args[ 'radius' ] ) ? intval( $args[ 'radius' ] ) : 300;
+				$valid_drivers = $this->filter_and_sort_drivers_by_distance( $all_drivers, $search_coordinates[ 'lat' ], $search_coordinates[ 'lng' ], $max_distance );
+				
+				// Get real road distances using mapping service
+				if ( ! empty( $valid_drivers ) ) {
+					$MapController = new Map_Controller();
+					
+					// Prepare start location
+					$start_location = array(
+						array(
+							"lat" => (float) $search_coordinates[ 'lat' ],
+							"lng" => (float) $search_coordinates[ 'lng' ]
+						)
+					);
+					
+					// Prepare driver locations
+					$driver_locations = array();
+					foreach ( $valid_drivers as $driver ) {
+						$driver_locations[] = array(
+							"lat" => (float) $driver[ 'lat' ],
+							"lng" => (float) $driver[ 'lon' ]
+						);
+					}
+					
+					// Get real distances
+					$real_distances = $MapController->getDistances( $start_location, $driver_locations );
+					
+					// Update drivers with real distances
+					if ( $real_distances && is_array( $real_distances ) ) {
+						$i = 0;
+						foreach ( $valid_drivers as $driver_id => &$driver ) {
+							if ( isset( $real_distances[ $i ] ) ) {
+								// Handle different response formats from mapping services
+								$distance_value = $real_distances[ $i ];
+								if ( is_array( $distance_value ) && isset( $distance_value[ 'distance' ] ) ) {
+									// OpenRouteServices format: array with 'distance' key
+									$distance_value = $distance_value[ 'distance' ];
+								}
+								
+								// Ensure we have a numeric value
+								if ( is_numeric( $distance_value ) ) {
+									$driver[ 'real_distance' ] = round( $distance_value, 2 );
+								}
+							}
+							$i ++;
+						}
+					}
+					
+					// Sort drivers by status priority
+					$valid_drivers = $this->sort_drivers_by_status_priority( $valid_drivers, $search_coordinates );
+				}
+				// Store filtered drivers for template use (even if empty)
+				$args[ 'filtered_drivers' ]       = $valid_drivers;
+				$args[ 'total_filtered_drivers' ] = count( $valid_drivers );
+				$args[ 'has_distance_data' ]      = true;
+				$args[ 'search_coordinates' ]     = $search_coordinates;
+			}
+		}
+		
+		$join_builder = "
+			FROM $table_main AS main
+			LEFT JOIN $table_meta AS driver_name
+				ON main.id = driver_name.post_id AND driver_name.meta_key = 'driver_name'
+			LEFT JOIN $table_meta AS driver_phone
+				ON main.id = driver_phone.post_id AND driver_phone.meta_key = 'driver_phone'
+		LEFT JOIN $table_meta AS vehicle_type
+				ON main.id = vehicle_type.post_id AND vehicle_type.meta_key = 'vehicle_type'
+		";
+		
+		$where_conditions = array();
+		$where_values     = array();
+		
+		// Check if we have filtered drivers from distance-based search
+		if ( isset( $args[ 'has_distance_data' ] ) && $args[ 'has_distance_data' ] && ! empty( $args[ 'filtered_drivers' ] ) ) {
+			// For distance-based search, return all filtered drivers without pagination
+			$filtered_driver_ids = array_keys( $args[ 'filtered_drivers' ] );
+			
+			if ( ! empty( $filtered_driver_ids ) ) {
+				$where_conditions[] = "main.id IN (" . implode( ',', array_map( 'absint', $filtered_driver_ids ) ) . ")";
+				// Remove pagination for distance-based results
+				$per_page = count( $filtered_driver_ids );
+				
+				$current_page = 1;
+			} else {
+				// No drivers found in distance search, return empty results
+				return array(
+					'results'       => array(),
+					'total_pages'   => 0,
+					'total_posts'   => 0,
+					'current_pages' => 1,
+				);
+			}
+		} else {
+			// Regular search without distance filtering
+			if ( ! empty( $args[ 'status_post' ] ) ) {
+				$where_conditions[] = "main.status_post = %s";
+				$where_values[]     = $args[ 'status_post' ];
+			}
+			if ( ! empty( $args[ 'extended_search' ] ) ) {
+				// Check if the search term is a vehicle display name and convert to key if found
+				$search_term = $args[ 'extended_search' ];
+				$vehicle_key = $this->get_vehicle_key_by_value( $search_term );
+				
+				// If it's a vehicle name, use the key for vehicle_type search, otherwise use original term
+				if ( $vehicle_key !== false ) {
+					// Search by vehicle key in vehicle_type field
+					$where_conditions[] = "vehicle_type.meta_value = %s";
+					$where_values[]     = $vehicle_key;
+				} else {
+					// Check if search term is numeric (ID search)
+					if ( is_numeric( $search_term ) ) {
+						// Search in all fields including ID
+						$where_conditions[] = "(" . "main.id LIKE %s OR " . "driver_name.meta_value LIKE %s OR " . "driver_phone.meta_value LIKE %s OR " . "vehicle_type.meta_value LIKE %s  " . ")";
+						
+						$search_value = '%' . $wpdb->esc_like( $search_term ) . '%';
+						// Add 4 values for the 4 placeholders in the search condition
+						for ( $i = 0; $i < 4; $i ++ ) {
+							$where_values[] = $search_value;
+						}
+					} else {
+						// Search only in text fields (name, phone, vehicle), not in ID
+						$where_conditions[] = "(" . "driver_name.meta_value LIKE %s OR " . "driver_phone.meta_value LIKE %s OR " . "vehicle_type.meta_value LIKE %s  " . ")";
+						
+						$search_value = '%' . $wpdb->esc_like( $search_term ) . '%';
+						// Add 3 values for the 3 placeholders in the search condition
+						for ( $i = 0; $i < 3; $i ++ ) {
+							$where_values[] = $search_value;
+						}
+					}
+				}
+			}
+		}
+		
+		// Основной запрос
+		$sql = "SELECT DISTINCT main.*" . $join_builder . " WHERE 1=1";
+		
+		// Применяем фильтры к запросу
+		if ( ! empty( $where_conditions ) ) {
+			$sql .= ' AND ' . implode( ' AND ', $where_conditions );
+		}
+		
+		// Подсчёт общего количества записей с учётом фильтров
+		if ( isset( $args[ 'has_distance_data' ] ) && $args[ 'has_distance_data' ] && ! empty( $args[ 'filtered_drivers' ] ) ) {
+			// For distance-based search, use the count of filtered drivers
+			$total_records = count( $args[ 'filtered_drivers' ] );
+		} else {
+			// For regular search, we'll count records after the main query to avoid JOIN duplication issues
+			$total_records = 0; // Will be updated after main query
+		}
+		
+		// Для обычного поиска сначала получаем общее количество записей
+		if ( ! isset( $args[ 'has_distance_data' ] ) || ! $args[ 'has_distance_data' ] || empty( $args[ 'filtered_drivers' ] ) ) {
+			// Выполняем запрос без LIMIT для подсчёта общего количества
+			$count_sql = "SELECT main.id" . $join_builder . " WHERE 1=1";
+			if ( ! empty( $where_conditions ) ) {
+				$count_sql .= ' AND ' . implode( ' AND ', $where_conditions );
+			}
+			$count_sql .= " ORDER BY main.$sort_by $sort_order";
+			
+			$all_results   = $wpdb->get_results( $wpdb->prepare( $count_sql, ...$where_values ), ARRAY_A );
+			$total_records = count( $all_results );
+		}
+		
+		// Вычисляем количество страниц
+		$total_pages = ceil( $total_records / $per_page );
+		// Корректировка: если записей меньше, чем на одну страницу, показываем только одну страницу (или 0, если записей нет)
+		if ( $total_records == 0 ) {
+			$total_pages = 0;
+		} elseif ( $total_pages < 1 ) {
+			$total_pages = 1;
+		}
+		// Смещение для текущей страницы
+		$offset = ( $current_page - 1 ) * $per_page;
+		// Теперь добавляем LIMIT/OFFSET для основного запроса
+		$sql            .= " ORDER BY main.$sort_by $sort_order LIMIT %d, %d";
+		$where_values[] = $offset;
+		$where_values[] = $per_page;
+		
+		// Выполняем запрос
+		$main_results = $wpdb->get_results( $wpdb->prepare( $sql, ...$where_values ), ARRAY_A );
+		
+		
+		// Собираем все ID записей для получения дополнительных метаданных
+		$post_ids = wp_list_pluck( $main_results, 'id' );
+		// Если есть записи, получаем метаданные
+		$meta_data = array();
+		if ( ! empty( $post_ids ) ) {
+			$meta_sql     = "SELECT post_id, meta_key, meta_value
+					 FROM $table_meta
+					 WHERE post_id IN (" . implode( ',', array_map( 'absint', $post_ids ) ) . ")";
+			$meta_results = $wpdb->get_results( $meta_sql, ARRAY_A );
+			
+			// Преобразуем метаданные в ассоциативный массив по post_id
+			foreach ( $meta_results as $meta_row ) {
+				$post_id = $meta_row[ 'post_id' ];
+				if ( ! isset( $meta_data[ $post_id ] ) ) {
+					$meta_data[ $post_id ] = array();
+				}
+				$meta_data[ $post_id ][ $meta_row[ 'meta_key' ] ] = $meta_row[ 'meta_value' ];
+			}
+		}
+		
+		if ( is_array( $main_results ) && ! empty( $main_results ) ) {
+			// Объединяем основную таблицу с метаданными
+			foreach ( $main_results as $key => $result ) {
+				$post_id                             = $result[ 'id' ];
+				$main_results[ $key ][ 'meta_data' ] = isset( $meta_data[ $post_id ] ) ? $meta_data[ $post_id ]
+					: array();
+			}
+		}
+		
+		// Prepare return data
+		$return_data = array(
+			'results'       => $main_results,
+			'total_pages'   => $total_pages,
+			'total_posts'   => $total_records,
+			'current_pages' => $current_page,
+		);
+		
+		// Add distance data if available
+		if ( isset( $args[ 'has_distance_data' ] ) && $args[ 'has_distance_data' ] && ! empty( $args[ 'filtered_drivers' ] ) ) {
+			$return_data[ 'id_posts' ]          = $args[ 'filtered_drivers' ];
+			$return_data[ 'has_distance_data' ] = true;
+			
+			
+			// Sort results by the order from filtered_drivers
+			if ( ! empty( $main_results ) ) {
+				$sorted_results      = array();
+				$filtered_driver_ids = array_keys( $args[ 'filtered_drivers' ] );
+				
+				// Create a lookup array for quick access to results by ID
+				// Use the first occurrence of each ID to avoid duplicates
+				$results_by_id = array();
+				foreach ( $main_results as $result ) {
+					$id = $result[ 'id' ];
+					if ( ! isset( $results_by_id[ $id ] ) ) {
+						$results_by_id[ $id ] = $result;
+					}
+				}
+				
+				// Sort results according to the order in filtered_drivers
+				foreach ( $filtered_driver_ids as $driver_id ) {
+					if ( isset( $results_by_id[ $driver_id ] ) ) {
+						$sorted_results[] = $results_by_id[ $driver_id ];
+					}
+				}
+				
+				// Update the results with sorted order
+				$return_data[ 'results' ] = $sorted_results;
+			}
+		}
+		
+		return $return_data;
 	}
 	
 	public function send_email_new_driver( $ID_DRIVER ) {
@@ -1289,6 +1694,9 @@ class TMSDrivers extends TMSDriversHelper {
 				'gvwr'                    => sanitize_text_field( get_field_value( $_POST, 'gvwr' ) ),
 				'payload'                 => sanitize_text_field( get_field_value( $_POST, 'payload' ) ),
 				'dimensions'              => sanitize_text_field( get_field_value( $_POST, 'dimensions_1' ) . ' / ' . get_field_value( $_POST, 'dimensions_2' ) . ' / ' . get_field_value( $_POST, 'dimensions_3' ) ),
+				'side_door_on'            => sanitize_text_field( get_field_value( $_POST, 'side_door_on' ) ),
+				'side_door'               => sanitize_text_field( get_field_value( $_POST, 'side_door_1' ) . ' / ' . get_field_value( $_POST, 'side_door_2' ) ),
+				'overall_dimensions'      => sanitize_text_field( get_field_value( $_POST, 'overall_dimensions_1' ) . ' / ' . get_field_value( $_POST, 'overall_dimensions_2' ) . ' / ' . get_field_value( $_POST, 'overall_dimensions_3' ) ),
 				'vin'                     => sanitize_text_field( get_field_value( $_POST, 'vin' ) ),
 				'registration_type'       => sanitize_text_field( get_field_value( $_POST, 'registration_type' ) ),
 				'registration_status'     => sanitize_text_field( get_field_value( $_POST, 'registration_status' ) ),
@@ -1660,6 +2068,9 @@ class TMSDrivers extends TMSDriversHelper {
 		
 		$table_name = $wpdb->prefix . $this->table_main;
 		
+		// Clear drivers cache when new driver is added
+		$this->clear_drivers_cache();
+		
 		$user_id = get_current_user_id();
 		
 		$data_main[ 'user_id_added' ]   = $data[ 'recruiter_add' ];
@@ -1727,6 +2138,9 @@ class TMSDrivers extends TMSDriversHelper {
 			return false;
 		}
 		
+		// Clear drivers cache when driver data is updated
+		$this->clear_drivers_cache();
+		
 		$driver_id = $data[ 'driver_id' ];
 		
 		if ( ! $driver_id ) {
@@ -1743,6 +2157,24 @@ class TMSDrivers extends TMSDriversHelper {
 		
 		$data_main[ 'user_id_updated' ] = $user_id;
 		$data_main[ 'date_updated' ]    = current_time( 'mysql' );
+		
+		if ( isset( $data[ 'current_zipcode' ] ) ) {
+			$data_main[ 'updated_zipcode' ] = current_time( 'mysql' );
+		}
+		
+		if ( isset( $data[ 'status_date' ] ) && ! empty( $data[ 'status_date' ] ) ) {
+			// Convert date from m/d/Y H:i format to MySQL datetime format
+			$date_obj = DateTime::createFromFormat( 'm/d/Y H:i', $data[ 'status_date' ] );
+			if ( $date_obj ) {
+				$data_main[ 'date_available' ] = $date_obj->format( 'Y-m-d H:i:s' );
+			} else {
+				// Try alternative format if the first one fails
+				$date_obj = DateTime::createFromFormat( 'm/d/Y g:i a', $data[ 'status_date' ] );
+				if ( $date_obj ) {
+					$data_main[ 'date_available' ] = $date_obj->format( 'Y-m-d H:i:s' );
+				}
+			}
+		}
 		
 		$update_result = $wpdb->update( $table_name, $data_main, array( 'id' => $driver_id ) );
 		
@@ -1976,7 +2408,7 @@ class TMSDrivers extends TMSDriversHelper {
 	 */
 	public function optimize_drivers_tables() {
 		// Check nonce for security
-		if ( ! wp_verify_nonce( $_POST['tms_optimize_nonce'], 'tms_optimize_database' ) ) {
+		if ( ! wp_verify_nonce( $_POST[ 'tms_optimize_nonce' ], 'tms_optimize_database' ) ) {
 			wp_die( 'Security check failed' );
 		}
 		
@@ -1985,8 +2417,8 @@ class TMSDrivers extends TMSDriversHelper {
 			wp_die( 'Insufficient permissions' );
 		}
 		
-		$optimization_type = sanitize_text_field( $_POST['optimization_type'] ?? 'indexes' );
-		$results = [];
+		$optimization_type = sanitize_text_field( $_POST[ 'optimization_type' ] ?? 'indexes' );
+		$results           = [];
 		
 		try {
 			if ( $optimization_type === 'full' ) {
@@ -1996,7 +2428,8 @@ class TMSDrivers extends TMSDriversHelper {
 			}
 			
 			wp_send_json_success( $results );
-		} catch ( Exception $e ) {
+		}
+		catch ( Exception $e ) {
 			wp_send_json_error( [ 'message' => $e->getMessage() ] );
 		}
 	}
@@ -2009,20 +2442,20 @@ class TMSDrivers extends TMSDriversHelper {
 		$results = [];
 		
 		// Optimize main drivers table
-		$main_table = $wpdb->prefix . $this->table_main;
-		$results['main_table'] = $this->optimize_drivers_main_table_fast( $main_table );
+		$main_table              = $wpdb->prefix . $this->table_main;
+		$results[ 'main_table' ] = $this->optimize_drivers_main_table_fast( $main_table );
 		
 		// Optimize meta table
-		$meta_table = $wpdb->prefix . $this->table_meta;
-		$results['meta_table'] = $this->optimize_drivers_meta_table_fast( $meta_table );
+		$meta_table              = $wpdb->prefix . $this->table_meta;
+		$results[ 'meta_table' ] = $this->optimize_drivers_meta_table_fast( $meta_table );
 		
 		// Optimize rating table
-		$rating_table = $wpdb->prefix . $this->table_raiting;
-		$results['rating_table'] = $this->optimize_drivers_rating_table_fast( $rating_table );
+		$rating_table              = $wpdb->prefix . $this->table_raiting;
+		$results[ 'rating_table' ] = $this->optimize_drivers_rating_table_fast( $rating_table );
 		
 		// Optimize notice table
-		$notice_table = $wpdb->prefix . $this->table_notice;
-		$results['notice_table'] = $this->optimize_drivers_notice_table_fast( $notice_table );
+		$notice_table              = $wpdb->prefix . $this->table_notice;
+		$results[ 'notice_table' ] = $this->optimize_drivers_notice_table_fast( $notice_table );
 		
 		return $results;
 	}
@@ -2035,20 +2468,20 @@ class TMSDrivers extends TMSDriversHelper {
 		$results = [];
 		
 		// Optimize main drivers table
-		$main_table = $wpdb->prefix . $this->table_main;
-		$results['main_table'] = $this->optimize_drivers_main_table_full( $main_table );
+		$main_table              = $wpdb->prefix . $this->table_main;
+		$results[ 'main_table' ] = $this->optimize_drivers_main_table_full( $main_table );
 		
 		// Optimize meta table
-		$meta_table = $wpdb->prefix . $this->table_meta;
-		$results['meta_table'] = $this->optimize_drivers_meta_table_full( $meta_table );
+		$meta_table              = $wpdb->prefix . $this->table_meta;
+		$results[ 'meta_table' ] = $this->optimize_drivers_meta_table_full( $meta_table );
 		
 		// Optimize rating table
-		$rating_table = $wpdb->prefix . $this->table_raiting;
-		$results['rating_table'] = $this->optimize_drivers_rating_table_full( $rating_table );
+		$rating_table              = $wpdb->prefix . $this->table_raiting;
+		$results[ 'rating_table' ] = $this->optimize_drivers_rating_table_full( $rating_table );
 		
 		// Optimize notice table
-		$notice_table = $wpdb->prefix . $this->table_notice;
-		$results['notice_table'] = $this->optimize_drivers_notice_table_full( $notice_table );
+		$notice_table              = $wpdb->prefix . $this->table_notice;
+		$results[ 'notice_table' ] = $this->optimize_drivers_notice_table_full( $notice_table );
 		
 		return $results;
 	}
@@ -2062,9 +2495,9 @@ class TMSDrivers extends TMSDriversHelper {
 		
 		// Add composite indexes for better query performance
 		$indexes = [
-			'idx_user_date_created' => 'user_id_added, date_created',
+			'idx_user_date_created'     => 'user_id_added, date_created',
 			'idx_status_date_available' => 'status_post, date_available',
-			'idx_user_status' => 'user_id_added, status_post',
+			'idx_user_status'           => 'user_id_added, status_post',
 		];
 		
 		foreach ( $indexes as $index_name => $columns ) {
@@ -2109,10 +2542,10 @@ class TMSDrivers extends TMSDriversHelper {
 		
 		// Add composite indexes
 		$indexes = [
-			'idx_user_date_created' => 'user_id_added, date_created',
+			'idx_user_date_created'     => 'user_id_added, date_created',
 			'idx_status_date_available' => 'status_post, date_available',
-			'idx_user_status' => 'user_id_added, status_post',
-			'idx_date_created_status' => 'date_created, status_post',
+			'idx_user_status'           => 'user_id_added, status_post',
+			'idx_date_created_status'   => 'date_created, status_post',
 		];
 		
 		foreach ( $indexes as $index_name => $columns ) {
@@ -2139,7 +2572,7 @@ class TMSDrivers extends TMSDriversHelper {
 		
 		// Add composite indexes for meta queries
 		$indexes = [
-			'idx_post_meta_key' => 'post_id, meta_key(191)',
+			'idx_post_meta_key'  => 'post_id, meta_key(191)',
 			'idx_meta_key_value' => 'meta_key(191), meta_value(191)',
 		];
 		
@@ -2178,8 +2611,8 @@ class TMSDrivers extends TMSDriversHelper {
 		
 		// Add composite indexes
 		$indexes = [
-			'idx_post_meta_key' => 'post_id, meta_key(191)',
-			'idx_meta_key_value' => 'meta_key(191), meta_value(191)',
+			'idx_post_meta_key'       => 'post_id, meta_key(191)',
+			'idx_meta_key_value'      => 'meta_key(191), meta_value(191)',
 			'idx_post_meta_key_value' => 'post_id, meta_key(191), meta_value(191)',
 		];
 		
@@ -2209,7 +2642,7 @@ class TMSDrivers extends TMSDriversHelper {
 		$indexes = [
 			'idx_driver_time' => 'driver_id, time',
 			'idx_driver_reit' => 'driver_id, reit',
-			'idx_time_reit' => 'time, reit',
+			'idx_time_reit'   => 'time, reit',
 		];
 		
 		foreach ( $indexes as $index_name => $columns ) {
@@ -2246,9 +2679,9 @@ class TMSDrivers extends TMSDriversHelper {
 		
 		// Add composite indexes
 		$indexes = [
-			'idx_driver_time' => 'driver_id, time',
-			'idx_driver_reit' => 'driver_id, reit',
-			'idx_time_reit' => 'time, reit',
+			'idx_driver_time'      => 'driver_id, time',
+			'idx_driver_reit'      => 'driver_id, reit',
+			'idx_time_reit'        => 'time, reit',
 			'idx_driver_time_reit' => 'driver_id, time, reit',
 		];
 		
@@ -2276,9 +2709,9 @@ class TMSDrivers extends TMSDriversHelper {
 		
 		// Add composite indexes
 		$indexes = [
-			'idx_driver_date' => 'driver_id, date',
+			'idx_driver_date'   => 'driver_id, date',
 			'idx_driver_status' => 'driver_id, status',
-			'idx_date_status' => 'date, status',
+			'idx_date_status'   => 'date, status',
 		];
 		
 		foreach ( $indexes as $index_name => $columns ) {
@@ -2315,9 +2748,9 @@ class TMSDrivers extends TMSDriversHelper {
 		
 		// Add composite indexes
 		$indexes = [
-			'idx_driver_date' => 'driver_id, date',
-			'idx_driver_status' => 'driver_id, status',
-			'idx_date_status' => 'date, status',
+			'idx_driver_date'        => 'driver_id, date',
+			'idx_driver_status'      => 'driver_id, status',
+			'idx_date_status'        => 'date, status',
 			'idx_driver_date_status' => 'driver_id, date, status',
 		];
 		
@@ -2334,5 +2767,685 @@ class TMSDrivers extends TMSDriversHelper {
 		$changes[] = "Table optimized";
 		
 		return $changes;
+	}
+	
+	/**
+	 * Конвертирует время из любого часового пояса в время Нью-Йорка
+	 *
+	 * @param string $input_time Время в формате "m/d/Y H:i" или "Y-m-d H:i:s"
+	 *
+	 * @return string Время в Нью-Йорке в формате "Y-m-d H:i:s"
+	 */
+	public function convert_time_to_new_york( $input_time ) {
+		if ( empty( $input_time ) ) {
+			return '';
+		}
+		
+		try {
+			// Создаем объект DateTime из входного времени
+			$date_time = new DateTime( $input_time );
+			
+			// Устанавливаем часовой пояс Нью-Йорка
+			$ny_timezone = new DateTimeZone( 'America/New_York' );
+			
+			// Конвертируем время в Нью-Йорк
+			$date_time->setTimezone( $ny_timezone );
+			
+			// Возвращаем время в формате MySQL
+			return $date_time->format( 'Y-m-d H:i:s' );
+			
+		}
+		catch ( Exception $e ) {
+			// Если произошла ошибка, возвращаем исходное время
+			error_log( 'Error converting time to New York: ' . $e->getMessage() );
+			
+			return $input_time;
+		}
+	}
+	
+	/**
+	 * Get driver statistics from rating and notice tables
+	 *
+	 * @param int $driver_id Driver ID
+	 * @param bool $full_data Whether to return full data or just summary
+	 *
+	 * @return array Array with rating and notice data
+	 */
+	public function get_driver_statistics( $driver_id, $full_data = false ) {
+		global $wpdb;
+		
+		if ( empty( $driver_id ) || ! is_numeric( $driver_id ) ) {
+			return [
+				'rating' => [
+					'avg_rating' => 0,
+					'count'      => 0,
+					'data'       => []
+				],
+				'notice' => [
+					'count' => 0,
+					'data'  => []
+				]
+			];
+		}
+		
+		$driver_id    = (int) $driver_id;
+		$rating_table = $wpdb->prefix . $this->table_raiting;
+		$notice_table = $wpdb->prefix . $this->table_notice;
+		
+		$result = [
+			'rating' => [
+				'avg_rating' => 0,
+				'count'      => 0,
+				'data'       => []
+			],
+			'notice' => [
+				'count' => 0,
+				'data'  => []
+			]
+		];
+		
+		// Get rating statistics
+		$rating_query = $wpdb->prepare( "
+			SELECT 
+				AVG(reit) as avg_rating,
+				COUNT(*) as count
+			FROM $rating_table 
+			WHERE driver_id = %d
+		", $driver_id );
+		
+		$rating_stats = $wpdb->get_row( $rating_query );
+		
+		if ( $rating_stats ) {
+			$result[ 'rating' ][ 'avg_rating' ] = round( (float) $rating_stats->avg_rating, 2 );
+			$result[ 'rating' ][ 'count' ]      = (int) $rating_stats->count;
+		}
+		
+		// Get notice count
+		$notice_count_query = $wpdb->prepare( "
+			SELECT COUNT(*) as count
+			FROM $notice_table 
+			WHERE driver_id = %d
+		", $driver_id );
+		
+		$notice_count                  = $wpdb->get_var( $notice_count_query );
+		$result[ 'notice' ][ 'count' ] = (int) $notice_count;
+		
+		// Get full data if requested
+		if ( $full_data ) {
+			// Get all rating records
+			$rating_data_query = $wpdb->prepare( "
+				SELECT 
+					id,
+					name,
+					time,
+					reit,
+					message,
+					order_number
+				FROM $rating_table 
+				WHERE driver_id = %d
+				ORDER BY time DESC
+			", $driver_id );
+			
+			$result[ 'rating' ][ 'data' ] = $wpdb->get_results( $rating_data_query, ARRAY_A );
+			
+			// Get all notice records
+			$notice_data_query = $wpdb->prepare( "
+				SELECT 
+					id,
+					name,
+					date,
+					message,
+					status
+				FROM $notice_table 
+				WHERE driver_id = %d
+				ORDER BY date DESC
+			", $driver_id );
+			
+			$result[ 'notice' ][ 'data' ] = $wpdb->get_results( $notice_data_query, ARRAY_A );
+		}
+		
+		return $result;
+	}
+	
+	/**
+	 * Get coordinates (lat/lng) using different geocoders with caching
+	 *
+	 * @param string $address Address to geocode
+	 * @param string $geocoder_type 'default' for Pelias or 'here' for Here Maps
+	 * @param array $options Additional options (api_key, url_pelias, region_value)
+	 *
+	 * @return array|false Array with 'lat' and 'lng' or false on error
+	 */
+	public function get_coordinates_by_address( $address, $geocoder_type = 'default', $options = array() ) {
+		global $global_options;
+		
+		// Get default options from global settings
+		$api_key_here_map = get_field_value( $global_options, 'api_key_here_map' );
+		$url_pelias       = get_field_value( $global_options, 'url_pelias' );
+		
+		// Override with passed options
+		$api_key_here_map = isset( $options[ 'api_key' ] ) ? $options[ 'api_key' ] : $api_key_here_map;
+		$url_pelias       = isset( $options[ 'url_pelias' ] ) ? $options[ 'url_pelias' ] : $url_pelias;
+		$region_value     = isset( $options[ 'region_value' ] ) ? $options[ 'region_value' ] : '';
+		
+		// Create cache key based on address, geocoder type, and options
+		$cache_key = $this->generate_coordinates_cache_key( $address, $geocoder_type, $options );
+		
+		// Try to get from cache first
+		$cached_coordinates = get_transient( $cache_key );
+		if ( $cached_coordinates !== false ) {
+			return $cached_coordinates;
+		}
+		
+		// If not in cache, get from API
+		if ( $geocoder_type === 'here' ) {
+			$coordinates = $this->get_coordinates_here_maps( $address, $api_key_here_map, $region_value );
+		} else {
+			$coordinates = $this->get_coordinates_pelias( $address, $url_pelias );
+		}
+		
+		// Cache the result for 30 days (2592000 seconds)
+		if ( $coordinates !== false ) {
+			set_transient( $cache_key, $coordinates, 30 * DAY_IN_SECONDS );
+		}
+		
+		return $coordinates;
+	}
+	
+	/**
+	 * Generate unique cache key for coordinates
+	 *
+	 * @param string $address Address to geocode
+	 * @param string $geocoder_type Type of geocoder
+	 * @param array $options Additional options
+	 *
+	 * @return string Cache key
+	 */
+	private function generate_coordinates_cache_key( $address, $geocoder_type, $options = array() ) {
+		// Normalize address (trim, lowercase for consistency)
+		$normalized_address = strtolower( trim( $address ) );
+		
+		// Create options hash
+		$options_hash = '';
+		if ( ! empty( $options ) ) {
+			$options_hash = md5( serialize( $options ) );
+		}
+		
+		// Create cache key
+		$cache_key = 'tms_coordinates_' . $geocoder_type . '_' . md5( $normalized_address ) . '_' . $options_hash;
+		
+		return $cache_key;
+	}
+	
+	/**
+	 * Get coordinates using Here Maps API
+	 *
+	 * @param string $address Address to geocode
+	 * @param string $api_key Here Maps API key
+	 * @param string $region_value Additional region value
+	 *
+	 * @return array|false Array with 'lat' and 'lng' or false on error
+	 */
+	private function get_coordinates_here_maps( $address, $api_key, $region_value = '' ) {
+		if ( empty( $api_key ) ) {
+			return false;
+		}
+		
+		// Prepare search text
+		$search_text = $address;
+		if ( ! empty( $region_value ) ) {
+			$search_text .= ' ' . $region_value;
+		}
+		
+		// Build Here Maps API URL
+		$url    = 'https://geocode.search.hereapi.com/v1/geocode';
+		$params = array(
+			'q'      => $search_text,
+			'apiKey' => $api_key,
+			'gen'    => '9'
+		);
+		
+		$full_url = $url . '?' . http_build_query( $params );
+		
+		// Make request
+		$response = wp_remote_get( $full_url );
+		
+		if ( is_wp_error( $response ) ) {
+			return false;
+		}
+		
+		$body = wp_remote_retrieve_body( $response );
+		$data = json_decode( $body, true );
+		
+		// Check if we have results
+		if ( isset( $data[ 'items' ] ) && ! empty( $data[ 'items' ] ) ) {
+			$first_item = $data[ 'items' ][ 0 ];
+			if ( isset( $first_item[ 'position' ] ) ) {
+				return array(
+					'lat' => $first_item[ 'position' ][ 'lat' ],
+					'lng' => $first_item[ 'position' ][ 'lng' ]
+				);
+			}
+		}
+		
+		return false;
+	}
+	
+	/**
+	 * Get coordinates using Pelias geocoder
+	 *
+	 * @param string $address Address to geocode
+	 * @param string $url_pelias Pelias API URL
+	 *
+	 * @return array|false Array with 'lat' and 'lng' or false on error
+	 */
+	private function get_coordinates_pelias( $address, $url_pelias ) {
+		if ( empty( $url_pelias ) ) {
+			return false;
+		}
+		
+		// Build Pelias API URL
+		$url    = rtrim( $url_pelias, '/' ) . '/v1/search';
+		$params = array(
+			'text' => $address,
+			'lang' => 'en-us'
+		);
+		
+		$full_url = $url . '?' . http_build_query( $params );
+		
+		// Make request
+		$response = wp_remote_get( $full_url );
+		
+		if ( is_wp_error( $response ) ) {
+			return false;
+		}
+		
+		$body = wp_remote_retrieve_body( $response );
+		$data = json_decode( $body, true );
+		
+		// Check if we have results
+		if ( isset( $data[ 'features' ] ) && ! empty( $data[ 'features' ] ) ) {
+			$first_feature = $data[ 'features' ][ 0 ];
+			if ( isset( $first_feature[ 'geometry' ][ 'coordinates' ] ) ) {
+				$coordinates = $first_feature[ 'geometry' ][ 'coordinates' ];
+				
+				// Pelias returns [lng, lat] format
+				return array(
+					'lng' => $coordinates[ 0 ],
+					'lat' => $coordinates[ 1 ]
+				);
+			}
+		}
+		
+		return false;
+	}
+	
+		/**
+	 * Clear all drivers cache
+	 * 
+	 * @return bool Success status
+	 */
+	public function clear_drivers_cache() {
+		return delete_transient( 'tms_all_available_drivers' );
+	}
+	
+	/**
+	 * Clear coordinates cache for specific address or all coordinates cache
+	 * 
+	 * @param string $address Optional specific address to clear cache for
+	 * @param string $geocoder_type Optional specific geocoder type
+	 *
+	 * @return bool Success status
+	 */
+	public function clear_coordinates_cache( $address = '', $geocoder_type = '' ) {
+		if ( ! empty( $address ) ) {
+			// Clear cache for specific address
+			$options   = array();
+			$cache_key = $this->generate_coordinates_cache_key( $address, $geocoder_type, $options );
+			
+			return delete_transient( $cache_key );
+		} else {
+			// Clear all coordinates cache
+			global $wpdb;
+			
+			// Get all transients that start with our prefix
+			$prefix = 'tms_coordinates_';
+			$sql    = $wpdb->prepare( "DELETE FROM {$wpdb->options} WHERE option_name LIKE %s", $wpdb->esc_like( '_transient_' . $prefix ) . '%' );
+			
+			$result1 = $wpdb->query( $sql );
+			
+			// Also delete the timeout entries
+			$sql2 = $wpdb->prepare( "DELETE FROM {$wpdb->options} WHERE option_name LIKE %s", $wpdb->esc_like( '_transient_timeout_' . $prefix ) . '%' );
+			
+			$result2 = $wpdb->query( $sql2 );
+			
+			return ( $result1 !== false && $result2 !== false );
+		}
+	}
+	
+	/**
+	 * Get all available drivers with location data
+	 *
+	 * @param bool $all Get all drivers or only available ones
+	 * @param bool $only_updated Get only recently updated drivers
+	 *
+	 * @return array Array of drivers with location data
+	 */
+	public function get_all_available_driver( $all = false, $only_updated = false ) {
+		global $wpdb;
+		
+		$table_main = $wpdb->prefix . $this->table_main;
+		$table_meta = $wpdb->prefix . $this->table_meta;
+		
+		$query_start = "
+		SELECT main.id as post_id,
+			   lat.meta_value as lat,
+			   lng.meta_value as lon,
+			   status.meta_value as status,
+			   main.updated_zipcode as updated
+		FROM $table_main main
+		LEFT JOIN $table_meta lat ON main.id = lat.post_id AND lat.meta_key = 'latitude'
+		LEFT JOIN $table_meta lng ON main.id = lng.post_id AND lng.meta_key = 'longitude'
+		LEFT JOIN $table_meta status ON main.id = status.post_id AND status.meta_key = 'driver_status'
+		WHERE 1=1
+		";
+		
+		if ( ! $all ) {
+			$query_start .= "
+			AND status.meta_value IN('available_on','available','on_hold', 'loaded_enroute')
+			";
+		} else {
+			$query_start .= "
+			AND status.meta_value NOT IN ('banned', 'blocked', 'expired_documents')
+			";
+		}
+		
+		$query_end = "
+		AND lat.meta_value != ''
+		AND lng.meta_value != ''
+		";
+		
+		if ( $only_updated ) {
+			// Define time threshold for recently updated drivers
+			$time_threshold = defined( 'TIME_AVAILABLE_DRIVER' ) ? TIME_AVAILABLE_DRIVER : '-12 hours';
+			$b              = strtotime( $time_threshold );
+			$query_start    .= "AND main.updated_zipcode >= '" . $b . "'";
+			
+			// Add UNION for banned drivers if only_updated is true
+			$query_end .= "
+			UNION SELECT
+			main.id as post_id,
+			lat.meta_value as lat,
+			lng.meta_value as lon,
+			status.meta_value as status,
+			main.updated_zipcode as updated
+			FROM $table_main main
+			LEFT JOIN $table_meta lat ON main.id = lat.post_id AND lat.meta_key = 'latitude'
+			LEFT JOIN $table_meta lng ON main.id = lng.post_id AND lng.meta_key = 'longitude'
+			LEFT JOIN $table_meta status ON main.id = status.post_id AND status.meta_key = 'driver_status'
+			WHERE status.meta_value = 'banned'
+			AND lat.meta_value != ''
+			AND lng.meta_value != ''
+			";
+		}
+		
+		$result = $wpdb->get_results( $query_start . $query_end, ARRAY_A );
+		
+		return $result;
+	}
+	
+	/**
+	 * Calculate distance between two points using Haversine formula
+	 *
+	 * @param float $latitudeFrom Latitude of start point in [deg decimal]
+	 * @param float $longitudeFrom Longitude of start point in [deg decimal]
+	 * @param float $latitudeTo Latitude of target point in [deg decimal]
+	 * @param float $longitudeTo Longitude of target point in [deg decimal]
+	 * @param float $earthRadius Mean earth radius in [miles]
+	 *
+	 * @return float Distance between points in [miles]
+	 */
+	public function calculate_distance( $latitudeFrom, $longitudeFrom, $latitudeTo, $longitudeTo, $earthRadius = 3959
+	) {
+		// Convert from degrees to radians
+		$latFrom = deg2rad( $latitudeFrom );
+		$lonFrom = deg2rad( $longitudeFrom );
+		$latTo   = deg2rad( $latitudeTo );
+		$lonTo   = deg2rad( $longitudeTo );
+		
+		$lonDelta = $lonTo - $lonFrom;
+		$a        = pow( cos( $latTo ) * sin( $lonDelta ), 2 ) + pow( cos( $latFrom ) * sin( $latTo ) - sin( $latFrom ) * cos( $latTo ) * cos( $lonDelta ), 2 );
+		$b        = sin( $latFrom ) * sin( $latTo ) + cos( $latFrom ) * cos( $latTo ) * cos( $lonDelta );
+		
+		$angle = atan2( sqrt( $a ), $b );
+		
+		return $angle * $earthRadius;
+	}
+	
+	/**
+	 * Filter and sort drivers by distance from given coordinates
+	 *
+	 * @param array $all_drivers Array of all drivers
+	 * @param float $search_lat Latitude of search point
+	 * @param float $search_lng Longitude of search point
+	 * @param float $max_distance Maximum distance in miles
+	 *
+	 * @return array Filtered and sorted drivers
+	 */
+	public function filter_and_sort_drivers_by_distance( $all_drivers, $search_lat, $search_lng, $max_distance ) {
+		if ( ! is_array( $all_drivers ) || empty( $all_drivers ) ) {
+			return array();
+		}
+		
+		$valid_drivers = array();
+		
+		foreach ( $all_drivers as $driver ) {
+			$lat_t   = floatval( $driver[ 'lat' ] );
+			$lon_t   = floatval( $driver[ 'lon' ] );
+			$updated = $driver[ 'updated' ];
+			$status  = $driver[ 'status' ];
+			
+			// Calculate distance
+			$distance = $this->calculate_distance( $search_lat, $search_lng, $lat_t, $lon_t );
+			
+			// Check if driver is within specified distance
+			if ( $distance <= $max_distance ) {
+				$valid_drivers[ $driver[ 'post_id' ] ] = array(
+					'updated'  => $updated,
+					'distance' => round( $distance, 2 ),
+					'lat'      => $lat_t,
+					'lon'      => $lon_t,
+					'status'   => $status,
+					'post_id'  => $driver[ 'post_id' ]
+				);
+			}
+		}
+		
+		// Sort by distance (closest first)
+		uasort( $valid_drivers, function( $item1, $item2 ) {
+			return $item1[ 'distance' ] <=> $item2[ 'distance' ];
+		} );
+		
+		return $valid_drivers;
+	}
+	
+	/**
+	 * Get driver locations for mapping
+	 *
+	 * @param array $valid_drivers Filtered drivers
+	 * @param float $search_lat Search latitude
+	 * @param float $search_lng Search longitude
+	 *
+	 * @return array Array with start location and driver locations
+	 */
+	public function get_driver_locations_for_map( $valid_drivers, $search_lat, $search_lng ) {
+		$driver_locations = array();
+		
+		foreach ( $valid_drivers as $driver ) {
+			$driver_locations[] = array(
+				"lat"      => (float) $driver[ 'lat' ],
+				"lng"      => (float) $driver[ 'lon' ],
+				"distance" => $driver[ 'distance' ],
+				"status"   => $driver[ 'status' ],
+				"post_id"  => $driver[ 'post_id' ]
+			);
+		}
+		
+		$start_location = array(
+			array(
+				"lat" => (float) $search_lat,
+				"lng" => (float) $search_lng
+			)
+		);
+		
+		return array(
+			'start_location'   => $start_location,
+			'driver_locations' => $driver_locations
+		);
+	}
+	
+	/**
+	 * Sort drivers by status priority
+	 *
+	 * @param array $valid_drivers Array of valid drivers
+	 * @param array $search_coordinates Search coordinates (optional)
+	 *
+	 * @return array Sorted drivers by status priority
+	 */
+	public function sort_drivers_by_status_priority( $valid_drivers, $search_coordinates = null ) {
+		if ( ! is_array( $valid_drivers ) || empty( $valid_drivers ) ) {
+			return $valid_drivers;
+		}
+		
+		// Define time threshold for recently updated drivers
+		$time_threshold = defined( 'TIME_AVAILABLE_DRIVER' ) ? TIME_AVAILABLE_DRIVER : '-12 hours';
+		$time           = strtotime( $time_threshold );
+		
+		// Filter out drivers with null distances
+		$last_filter_array = array();
+		foreach ( $valid_drivers as $key => $driver ) {
+			if ( isset( $driver[ 'real_distance' ] ) && is_numeric( $driver[ 'real_distance' ] ) ) {
+				$last_filter_array[ $key ] = $driver;
+			}
+		}
+		
+		// Separate drivers by status and update flag
+		$available_arr        = array();
+		$available_on_arr     = array();
+		$available_others_arr = array();
+		
+		foreach ( $last_filter_array as $key => $driver ) {
+			$updated = true;
+			
+			// Check if driver was updated recently
+			if ( isset( $driver[ 'updated' ] ) ) {
+				$driver_updated_time = strtotime( $driver[ 'updated' ] );
+				if ( $driver_updated_time && $driver_updated_time < $time ) {
+					$updated = false;
+				}
+			}
+			
+			
+			// Add Google Maps link
+			$link = "";
+			if ( $search_coordinates && isset( $search_coordinates[ 'lat' ] ) && isset( $search_coordinates[ 'lng' ] ) ) {
+				$link = "https://www.google.com/maps/dir/?api=1&origin=" . $search_coordinates[ 'lat' ] . "," . $search_coordinates[ 'lng' ] . "&destination=" . $driver[ 'lat' ] . "," . $driver[ 'lon' ] . "&travelmode=driving";
+			}
+			$driver_data = array(
+				'air_distance' => $driver[ 'distance' ],
+				'distance'     => $driver[ 'real_distance' ],
+				'status'       => $driver[ 'status' ],
+				'updated'      => $updated,
+				'air_mile'     => false, // We're using real distances now
+				'link'         => $link,
+				'lat'          => $driver[ 'lat' ],
+				'lon'          => $driver[ 'lon' ],
+				'post_id'      => $driver[ 'post_id' ]
+			);
+			
+			// Clean status string (remove extra spaces)
+			$clean_status = trim( $driver[ 'status' ] );
+			
+			// Правильная логика сортировки:
+			// 1. available и updated = true
+			// 2. available_on и updated = true  
+			// 3. все остальные
+			if ( $updated === true && $clean_status === 'available' ) {
+				$available_arr[ $key ] = $driver_data;
+			} elseif ( $updated === true && ( $clean_status === 'available_on' || $clean_status === 'loaded_enroute' ) ) {
+				$available_on_arr[ $key ] = $driver_data;
+			} else {
+				// Все остальные: on_hold, not_available, или любой статус с updated = false
+				$available_others_arr[ $key ] = $driver_data;
+			}
+		}
+		
+		// Sort each group by distance
+		uasort( $available_arr, function( $item1, $item2 ) {
+			return $item1[ 'distance' ] <=> $item2[ 'distance' ];
+		} );
+		
+		uasort( $available_on_arr, function( $item1, $item2 ) {
+			return $item1[ 'distance' ] <=> $item2[ 'distance' ];
+		} );
+		
+		uasort( $available_others_arr, function( $item1, $item2 ) {
+			return $item1[ 'distance' ] <=> $item2[ 'distance' ];
+		} );
+		
+		// Combine arrays in priority order
+		$order_status = array();
+		
+		// First: available and on_hold drivers (updated)
+		foreach ( $available_arr as $key => $val ) {
+			$order_status[ $key ] = $val;
+		}
+		
+		// Second: available_on and loaded_enroute drivers (updated)
+		foreach ( $available_on_arr as $key => $val ) {
+			$order_status[ $key ] = $val;
+		}
+		
+		// Third: all other drivers (not recently updated)
+		foreach ( $available_others_arr as $key => $val ) {
+			$order_status[ $key ] = $val;
+		}
+		
+		return $order_status;
+	}
+	
+	// Добавляю функцию сортировки для обычного поиска
+	public function sort_drivers_by_status_priority_for_regular_search( $drivers ) {
+		if ( ! is_array( $drivers ) || empty( $drivers ) ) {
+			return $drivers;
+		}
+		
+		$time         = strtotime( current_time( 'mysql' ) . '-12 hours' );
+		$available    = [];
+		$available_on = [];
+		$others       = [];
+		
+		foreach ( $drivers as $driver ) {
+			$meta            = isset( $driver[ 'meta_data' ] ) ? $driver[ 'meta_data' ] : [];
+			$status          = isset( $meta[ 'driver_status' ] ) ? trim( $meta[ 'driver_status' ] ) : '';
+			$updated_zipcode = isset( $driver[ 'updated_zipcode' ] ) ? $driver[ 'updated_zipcode' ] : '';
+			$updated         = true;
+			if ( $updated_zipcode ) {
+				$updated_time = strtotime( $updated_zipcode );
+				if ( $updated_time && $time >= $updated_time ) {
+					$updated = false;
+				}
+			}
+			if ( $updated === true && $status === 'available' ) {
+				$available[] = $driver;
+			} elseif ( $updated === true && ( $status === 'available_on' || $status === 'loaded_enroute' ) ) {
+				$available_on[] = $driver;
+			} else {
+				$others[] = $driver;
+			}
+		}
+		
+		// Можно добавить дополнительную сортировку внутри групп, если нужно (например, по времени или расстоянию)
+		return array_merge( $available, $available_on, $others );
 	}
 }

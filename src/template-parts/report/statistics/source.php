@@ -52,7 +52,7 @@ $show_filter_by_office = $TMSUsers->check_user_role_access( array(
     <div class="w-100 mb-2">
         <h2>Source</h2>
 		<?php
-		$dispatcher_json = $statistics->get_sources_statistics( $office_dispatcher, $year_param, $mount_param, $dispatcher_initials );
+		$dispatcher_json = $statistics->get_sources_statistics( $year_param, $mount_param, $office_dispatcher, $dispatcher_initials );
 		
 		if ( $show_filter_by_office ): ?>
             <form class="w-100 d-flex flex-column gap-1 pb-1">

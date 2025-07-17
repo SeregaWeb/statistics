@@ -1,4 +1,5 @@
 import { printMessage } from './info-messages';
+import { getLocationDataByZipCodeHero } from './search-driver/driver-hero';
 
 function fillFormFields({ city, state, country }, container) {
     if (!container) return;
@@ -39,34 +40,6 @@ function fillFormFields({ city, state, country }, container) {
     });
 }
 
-async function getLocationDataByZipCode(zipCode, apiKey) {
-    const endpoint = `https://geocode.search.hereapi.com/v1/geocode?q=${zipCode}&in=countryCode%3AUSA%2CCAN%2CMEX&apiKey=${apiKey}`;
-
-    try {
-        const response = await fetch(endpoint);
-        const data = await response.json();
-
-        if (data.items && data.items.length > 0) {
-            const location = data.items[0];
-            const city = location.address.city || '';
-            const state = location.address.stateCode || '';
-            const country = location.address.countryCode || '';
-
-            return {
-                city,
-                state,
-                country,
-            };
-        }
-
-        return null;
-    } catch (error) {
-        console.error('Error fetching data from Here API:', error);
-        printMessage(`Error fetching data from Here API: ${error}`, 'danger', 8000);
-        return null;
-    }
-}
-
 // eslint-disable-next-line import/prefer-default-export
 export const autoFillAddress = (key) => {
     const btns = document.querySelectorAll('.js-fill-auto');
@@ -86,7 +59,7 @@ export const autoFillAddress = (key) => {
 
                 if (value) {
                     try {
-                        const locationData = await getLocationDataByZipCode(value, key);
+                        const locationData = await getLocationDataByZipCodeHero(value, key);
                         if (locationData) {
                             console.log('City:', locationData.city);
                             console.log('State:', locationData.state);

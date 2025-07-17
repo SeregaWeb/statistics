@@ -116,3 +116,30 @@ export const cleanUrlByFilterDriver = () => {
         });
     }
 };
+
+export const cleanUrlByFilterDriverSearch = () => {
+    const form = document.getElementById('navbarNavDriverSearch') as HTMLFormElement | null;
+
+    if (form) {
+        form.addEventListener('submit', function (event) {
+            event.preventDefault();
+
+            const params = new URLSearchParams();
+
+            // Получаем значения всех полей безопасно
+            const country = form.elements.namedItem('country') as HTMLInputElement | null;
+            const radius = form.elements.namedItem('radius') as HTMLInputElement | null;
+            const mySearch = form.elements.namedItem('my_search') as HTMLInputElement | null;
+            const extendedSearch = form.elements.namedItem('extended_search') as HTMLInputElement | null;
+
+            // Проверяем и добавляем параметры только если элементы существуют и не пусты
+            if (mySearch?.value) params.append('my_search', mySearch.value);
+            if (country?.value) params.append('country', country.value);
+            if (radius?.value) params.append('radius', radius.value);
+            if (extendedSearch?.value) params.append('extended_search', extendedSearch.value); 
+
+            // Перенаправляем на URL с параметрами
+            window.location.href = `?${params.toString()}`;
+        });
+    }
+};

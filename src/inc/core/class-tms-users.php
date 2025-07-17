@@ -7,50 +7,56 @@ class  TMSUsers extends TMSReportsHelper {
 	public function __construct() {
 		$this->project_for_bookmark = $this->get_select_project();
 	}
-
-	public function get_dispatchers_weekends( ) {
-		if (!current_user_can('edit_users')) {
-			wp_send_json_error('Insufficient permissions');
+	
+	public function get_dispatchers_weekends() {
+		if ( ! current_user_can( 'edit_users' ) ) {
+			wp_send_json_error( 'Insufficient permissions' );
 		}
-		$user_id = intval($_POST['user_id'] ?? 0);
-		if (!$user_id) {
-			wp_send_json_error('No user_id');
+		$user_id = intval( $_POST[ 'user_id' ] ?? 0 );
+		if ( ! $user_id ) {
+			wp_send_json_error( 'No user_id' );
 		}
-		$days = [
-			'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'
+		$days   = [
+			'monday',
+			'tuesday',
+			'wednesday',
+			'thursday',
+			'friday',
+			'saturday',
+			'sunday'
 		];
 		$result = [];
-		foreach ($days as $day) {
-			$field = 'exclude_' . $day;
-			$value = get_field($field, 'user_' . $user_id);
-			$result[$day] = is_array($value) ? array_map('strval', $value) : [];
+		foreach ( $days as $day ) {
+			$field          = 'exclude_' . $day;
+			$value          = get_field( $field, 'user_' . $user_id );
+			$result[ $day ] = is_array( $value ) ? array_map( 'strval', $value ) : [];
 		}
-		wp_send_json_success($result);
+		wp_send_json_success( $result );
 	}
-
-	public function debug_save_weekends() {
 	
-		$move_from = intval($_POST['move-from'] ?? 0);
-		$move_to = intval($_POST['move-to'] ?? 0);
-		$dispatchers = $_POST['dispatcher'] ?? [];
+	public function debug_save_weekends() {
+		
+		$move_from   = intval( $_POST[ 'move-from' ] ?? 0 );
+		$move_to     = intval( $_POST[ 'move-to' ] ?? 0 );
+		$dispatchers = $_POST[ 'dispatcher' ] ?? [];
 		
 		// Преобразуем в массив если пришла строка
-		if (!is_array($dispatchers)) {
-			$dispatchers = [$dispatchers];
+		if ( ! is_array( $dispatchers ) ) {
+			$dispatchers = [ $dispatchers ];
 		}
 		
 		// Очищаем от 'user_' префикса
-		$dispatchers = array_map(function($dispatcher) {
-			return str_replace('user_', '', $dispatcher);
-		}, $dispatchers);
+		$dispatchers = array_map( function( $dispatcher ) {
+			return str_replace( 'user_', '', $dispatcher );
+		}, $dispatchers );
 		
-		if (!$move_from || !$move_to || empty($dispatchers)) {
-			wp_send_json_error('Недостаточно данных');
+		if ( ! $move_from || ! $move_to || empty( $dispatchers ) ) {
+			wp_send_json_error( 'Недостаточно данных' );
 		}
-	
+		
 		// Ключи ACF
 		$team_key = 'field_66f9240398a70';
-		$days = [
+		$days     = [
 			'monday'    => 'field_684aafd1edc47',
 			'tuesday'   => 'field_684ab094edc48',
 			'wednesday' => 'field_684ab0c8edc49',
@@ -59,62 +65,201 @@ class  TMSUsers extends TMSReportsHelper {
 			'saturday'  => 'field_684ab0f5edc4c',
 			'sunday'    => 'field_684ab105edc4d',
 		];
-	
-				// Обрабатываем каждого выбранного диспетчера
-		foreach ($dispatchers as $dispatcher) {
+		
+		// Массив для сбора информации о задействованных пользователях
+		$involved_users = [];
+		
+		// Получаем информацию о пользователе, который делает перенос
+		$current_user     = wp_get_current_user();
+		$involved_users[] = [
+			'full_name'       => $current_user->display_name,
+			'email'           => $current_user->user_email,
+			'role'            => $this->get_user_role_name( $current_user->ID ),
+			'action'          => 'mover',
+			'weekend_changes' => null,
+			'project'         => $this->project
+		];
+		
+		// Получаем информацию о move-from пользователе
+		$move_from_user = get_user_by( 'ID', $move_from );
+		if ( $move_from_user ) {
+			$involved_users[] = [
+				'full_name'       => $move_from_user->display_name,
+				'email'           => $move_from_user->user_email,
+				'role'            => $this->get_user_role_name( $move_from ),
+				'action'          => 'move_from',
+				'weekend_changes' => null
+			];
+		}
+		
+		// Получаем информацию о move-to пользователе
+		$move_to_user = get_user_by( 'ID', $move_to );
+		if ( $move_to_user ) {
+			$involved_users[] = [
+				'full_name'       => $move_to_user->display_name,
+				'email'           => $move_to_user->user_email,
+				'role'            => $this->get_user_role_name( $move_to ),
+				'action'          => 'move_to',
+				'weekend_changes' => null
+			];
+		}
+		
+		// Обрабатываем каждого выбранного диспетчера
+		foreach ( $dispatchers as $dispatcher ) {
+			$dispatcher_user = get_user_by( 'ID', $dispatcher );
+			
+			// Сохраняем текущее состояние выходных ДО изменений
+			// Проверяем состояние в команде move_from (откуда переносим)
+			$current_weekend_state = [];
+			foreach ( $days as $day => $field_key ) {
+				$ex = get_field( $field_key, 'user_' . $move_from );
+				if ( ! is_array( $ex ) ) {
+					$ex = [];
+				}
+				$ex                            = array_map( 'strval', $ex );
+				$current_weekend_state[ $day ] = in_array( $dispatcher, $ex, true );
+			}
+			
+			$weekend_changes = $this->track_weekend_changes( $dispatcher, $move_to, $days, $current_weekend_state );
+			
+			$involved_users[] = [
+				'full_name'       => $dispatcher_user ? $dispatcher_user->display_name : 'Unknown User',
+				'email'           => $dispatcher_user ? $dispatcher_user->user_email : '',
+				'role'            => $this->get_user_role_name( $dispatcher ),
+				'action'          => 'dispatcher',
+				'weekend_changes' => $weekend_changes
+			];
+			
 			// 1. Удаляем диспетчера из команды move-from
-			$from_team = get_field($team_key, 'user_' . $move_from);
-			if (is_array($from_team)) {
-				$from_team = array_map('strval', $from_team);
-				$from_team = array_diff($from_team, [$dispatcher]);
-				update_field($team_key, array_values($from_team), 'user_' . $move_from);
+			$from_team = get_field( $team_key, 'user_' . $move_from );
+			if ( is_array( $from_team ) ) {
+				$from_team = array_map( 'strval', $from_team );
+				$from_team = array_diff( $from_team, [ $dispatcher ] );
+				update_field( $team_key, array_values( $from_team ), 'user_' . $move_from );
 			}
-
+			
 			// 2. Удаляем диспетчера из всех exclude_* у move-from
-			foreach ($days as $day => $field_key) {
-				$ex = get_field($field_key, 'user_' . $move_from);
-				if (is_array($ex)) {
-					$ex = array_map('strval', $ex);
-					$ex = array_diff($ex, [$dispatcher]);
-					update_field($field_key, array_values($ex), 'user_' . $move_from);
+			foreach ( $days as $day => $field_key ) {
+				$ex = get_field( $field_key, 'user_' . $move_from );
+				if ( is_array( $ex ) ) {
+					$ex = array_map( 'strval', $ex );
+					$ex = array_diff( $ex, [ $dispatcher ] );
+					update_field( $field_key, array_values( $ex ), 'user_' . $move_from );
 				}
 			}
-
+			
 			// 3. Добавляем диспетчера в команду move-to
-			$to_team = get_field($team_key, 'user_' . $move_to);
-			if (!is_array($to_team)) $to_team = [];
-			$to_team = array_map('strval', $to_team);
-			if (!in_array($dispatcher, $to_team, true)) {
-				$to_team[] = $dispatcher;
-				update_field($team_key, array_values($to_team), 'user_' . $move_to);
+			$to_team = get_field( $team_key, 'user_' . $move_to );
+			if ( ! is_array( $to_team ) ) {
+				$to_team = [];
 			}
-
+			$to_team = array_map( 'strval', $to_team );
+			if ( ! in_array( $dispatcher, $to_team, true ) ) {
+				$to_team[] = $dispatcher;
+				update_field( $team_key, array_values( $to_team ), 'user_' . $move_to );
+			}
+			
 			// 4. Добавляем диспетчера в exclude_* move-to по отмеченным дням
-			foreach ($days as $day => $field_key) {
-				$key = 'exclude_' . $day . '_user_' . $dispatcher;
-				$checked = !empty($_POST[$key]);
-				$ex = get_field($field_key, 'user_' . $move_to);
-				if (!is_array($ex)) $ex = [];
-				$ex = array_map('strval', $ex);
-
-				if ($checked && !in_array($dispatcher, $ex, true)) {
-					$ex[] = $dispatcher;
-				} elseif (!$checked && in_array($dispatcher, $ex, true)) {
-					$ex = array_diff($ex, [$dispatcher]);
+			foreach ( $days as $day => $field_key ) {
+				$key     = 'exclude_' . $day . '_user_' . $dispatcher;
+				$checked = ! empty( $_POST[ $key ] );
+				$ex      = get_field( $field_key, 'user_' . $move_to );
+				if ( ! is_array( $ex ) ) {
+					$ex = [];
 				}
-				update_field($field_key, array_values($ex), 'user_' . $move_to);
+				$ex = array_map( 'strval', $ex );
+				
+				if ( $checked && ! in_array( $dispatcher, $ex, true ) ) {
+					$ex[] = $dispatcher;
+				} elseif ( ! $checked && in_array( $dispatcher, $ex, true ) ) {
+					$ex = array_diff( $ex, [ $dispatcher ] );
+				}
+				update_field( $field_key, array_values( $ex ), 'user_' . $move_to );
 			}
 		}
-	
-		wp_send_json_success(array('success' => true, 'message' => 'Moved successfully'));
+		
+		
+		// Send email notifications to involved users
+		$this->send_team_transfer_notifications( $involved_users );
+		
+		wp_send_json_success( array(
+			'success'        => true,
+			'message'        => 'Moved successfully',
+			'involved_users' => $involved_users
+		) );
 	}
-
+	
+	/**
+	 * Получает название роли пользователя
+	 */
+	private function get_user_role_name( $user_id ) {
+		$user = get_user_by( 'ID', $user_id );
+		if ( ! $user ) {
+			return 'Unknown';
+		}
+		
+		$roles = $user->roles;
+		if ( empty( $roles ) ) {
+			return 'No Role';
+		}
+		
+		$role_names = [
+			'administrator' => 'Administrator',
+			'editor'        => 'Editor',
+			'author'        => 'Author',
+			'contributor'   => 'Contributor',
+			'subscriber'    => 'Subscriber',
+			'dispatcher'    => 'Dispatcher',
+			'driver'        => 'Driver'
+		];
+		
+		$role = $roles[ 0 ];
+		
+		return $role_names[ $role ] ?? ucfirst( $role );
+	}
+	
+	/**
+	 * Отслеживает изменения в выходных днях диспетчера
+	 */
+	private function track_weekend_changes( $dispatcher_id, $move_to_id, $days, $current_weekend_state ) {
+		$added_days   = [];
+		$removed_days = [];
+		
+		foreach ( $days as $day => $field_key ) {
+			$key     = 'exclude_' . $day . '_user_' . $dispatcher_id;
+			$checked = ! empty( $_POST[ $key ] );
+			
+			// Используем сохраненное состояние ДО изменений
+			$was_excluded = $current_weekend_state[ $day ] ?? false;
+			
+			if ( $checked && ! $was_excluded ) {
+				$added_days[] = $day;
+			} elseif ( ! $checked && $was_excluded ) {
+				$removed_days[] = $day;
+			}
+		}
+		
+		if ( empty( $added_days ) && empty( $removed_days ) ) {
+			return 'Weekend changes: no changes';
+		}
+		
+		$changes = [];
+		if ( ! empty( $added_days ) ) {
+			$changes[] = 'added new (' . implode( ', ', $added_days ) . ')';
+		}
+		if ( ! empty( $removed_days ) ) {
+			$changes[] = 'removed (' . implode( ', ', $removed_days ) . ')';
+		}
+		
+		return 'Weekend changes: ' . implode( ' ', $changes );
+	}
+	
 	
 	public function ajax_actions() {
 		add_action( 'wp_ajax_select_project', array( $this, 'select_project' ) );
 		add_action( 'wp_ajax_toggle_bookmark', array( $this, 'toggle_bookmark' ) );
-		add_action('wp_ajax_get_dispatchers_weekends', array( $this, 'get_dispatchers_weekends' ) );
-		add_action('wp_ajax_debug_save_weekends', array( $this, 'debug_save_weekends' ) );
+		add_action( 'wp_ajax_get_dispatchers_weekends', array( $this, 'get_dispatchers_weekends' ) );
+		add_action( 'wp_ajax_debug_save_weekends', array( $this, 'debug_save_weekends' ) );
 	}
 	
 	function get_select_project() {
@@ -410,5 +555,140 @@ class  TMSUsers extends TMSReportsHelper {
 		}
 		
 		return $read_only;
+	}
+	
+	/**
+	 * Send email notifications for team transfers
+	 */
+	private function send_team_transfer_notifications( $involved_users ) {
+		$emails = new TMSEmails();
+		$emails->init();
+		
+		$project_name = $this->get_select_project();
+		
+		if ( strtolower( $project_name ) === 'odysseia' ) {
+			$project_name = 'Odysseia';
+		}
+		
+		if ( strtolower( $project_name ) === 'martlet' ) {
+			$project_name = 'Martlet';
+		}
+		
+		if ( strtolower( $project_name ) === 'endurance' ) {
+			$project_name = 'Endurance';
+		}
+		
+		// Find mover, move_from, move_to users
+		$mover       = null;
+		$move_from   = null;
+		$move_to     = null;
+		$dispatchers = [];
+		
+		foreach ( $involved_users as $user ) {
+			switch ( $user[ 'action' ] ) {
+				case 'mover':
+					$mover = $user;
+					break;
+				case 'move_from':
+					$move_from = $user;
+					break;
+				case 'move_to':
+					$move_to = $user;
+					break;
+				case 'dispatcher':
+					$dispatchers[] = $user;
+					break;
+			}
+		}
+		
+		// Get dispatcher names for email content
+		$dispatcher_names        = array_map( function( $d ) {
+			return $d[ 'full_name' ];
+		}, $dispatchers );
+		$dispatcher_names_string = implode( ', ', $dispatcher_names );
+		
+		// Send email to move_from user
+		if ( $move_from && ! empty( $move_from[ 'email' ] ) ) {
+			$move_from_texts = [
+				'subject'      => 'Changes in your tracking team',
+				'project_name' => $project_name,
+				'message'      => sprintf( 'User %s (%s) has transferred dispatchers: %s to %s.', $mover[ 'full_name' ], $mover[ 'role' ], $dispatcher_names_string, $move_to[ 'full_name' ] )
+			];
+			
+			$emails->send_custom_email( $move_from[ 'email' ], $move_from_texts );
+		}
+		
+		// Send email to move_to user
+		if ( $move_to && ! empty( $move_to[ 'email' ] ) ) {
+			$move_to_texts = [
+				'subject'      => 'Changes in your tracking team',
+				'project_name' => $project_name,
+				'message'      => sprintf( 'User %s (%s) has transferred dispatchers: %s from %s.', $mover[ 'full_name' ], $mover[ 'role' ], $dispatcher_names_string, $move_from[ 'full_name' ] )
+			];
+			
+			$emails->send_custom_email( $move_to[ 'email' ], $move_to_texts );
+		}
+		
+		// Send email to each dispatcher
+		foreach ( $dispatchers as $dispatcher ) {
+			if ( ! empty( $dispatcher[ 'email' ] ) ) {
+				$dispatcher_texts = [
+					'subject'      => 'You have been added to another tracking team',
+					'project_name' => $project_name,
+					'message'      => sprintf( 'User %s (%s) has transferred you from %s to %s.<br><br>%s', $mover[ 'full_name' ], $mover[ 'role' ], $move_from[ 'full_name' ], $move_to[ 'full_name' ], $dispatcher[ 'weekend_changes' ] )
+				];
+				
+				$emails->send_custom_email( $dispatcher[ 'email' ], $dispatcher_texts );
+			}
+		}
+		
+		// Send control email to administrator
+		$this->send_admin_control_email( $mover, $move_from, $move_to, $dispatchers, $project_name );
+	}
+	
+	/**
+	 * Send detailed control email to administrator
+	 */
+	private function send_admin_control_email( $mover, $move_from, $move_to, $dispatchers, $project_name ) {
+		$emails = new TMSEmails();
+		$emails->init();
+		
+		// Get admin emails with safe checks
+		$all_emails   = $emails->get_all_emails();
+		$admin_emails = isset( $all_emails[ 'admin_email' ] ) ? $all_emails[ 'admin_email' ] : '';
+		
+		if ( empty( $admin_emails ) ) {
+			return; // No admin emails configured
+		}
+		
+		// Build detailed content
+		$content = sprintf( '<h2>Team Transfer Control Report</h2>
+			<p><strong>Project:</strong> %s</p>
+			<p><strong>Operation performed by:</strong> %s (%s) - %s</p>
+			<p><strong>Date:</strong> %s</p>
+			<br>
+			<h3>Transfer Details:</h3>
+			<p><strong>From Team:</strong> %s (%s) - %s</p>
+			<p><strong>To Team:</strong> %s (%s) - %s</p>
+			<br>
+			<h3>Transferred Dispatchers:</h3>', $project_name, $mover[ 'full_name' ], $mover[ 'role' ], $mover[ 'email' ], date( 'Y-m-d H:i:s' ), $move_from[ 'full_name' ], $move_from[ 'role' ], $move_from[ 'email' ], $move_to[ 'full_name' ], $move_to[ 'role' ], $move_to[ 'email' ] );
+		
+		// Add dispatcher details
+		foreach ( $dispatchers as $dispatcher ) {
+			$content .= sprintf( '<div style="margin: 10px 0; padding: 10px; border-left: 3px solid #007cba; background: #f8f9fa;">
+					<p><strong>%s</strong> (%s) - %s</p>
+					<p><strong>Weekend Changes:</strong> %s</p>
+				</div>', $dispatcher[ 'full_name' ], $dispatcher[ 'role' ], $dispatcher[ 'email' ], $dispatcher[ 'weekend_changes' ] );
+		}
+		
+		$content .= '<br><p><em>This is an automated control report for administrative purposes.</em></p>';
+		
+		$admin_texts = [
+			'subject'      => 'Team Transfer Control Report - ' . $project_name . ' - ' . date( 'Y-m-d H:i' ),
+			'project_name' => $project_name,
+			'message'      => $content
+		];
+		
+		$emails->send_custom_email( $admin_emails, $admin_texts );
 	}
 }

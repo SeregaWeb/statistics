@@ -153,7 +153,7 @@ class TMSReportsCompany extends TMSReportsHelper {
 	                            
 	                            <div class="d-none">
 		                            <div class="js-content-company my-dropdown-search__hidden">
-		                                ' . $this->print_list_customers( $name, $address, $mc, $dot, $contact, $phone, $email, $value->id ) . '
+		                                ' . $this->print_list_customers( $value->id, $name, $address, $mc, $dot, $contact, $phone, $email ) . '
 									</div>
 								</div>
 	                        </a>
@@ -167,7 +167,7 @@ class TMSReportsCompany extends TMSReportsHelper {
 	}
 	
 	public function print_list_customers(
-		$name = '', $address = '', $mc = '', $dot = '', $contact = '', $phone = '', $email = '', $id
+		$id, $name = '', $address = '', $mc = '', $dot = '', $contact = '', $phone = '', $email = ''
 	) {
 		
 		if ( ! $id ) {
@@ -305,7 +305,7 @@ class TMSReportsCompany extends TMSReportsHelper {
 				$dot     = $MY_INPUT[ 'DotNo' ];
 				$mc      = $MY_INPUT[ 'MotorCarrNo' ];
 				
-				$template_select_company = $this->print_list_customers( $name, $address, $mc, $dot, $contact, $phone, $email, $result );
+				$template_select_company = $this->print_list_customers( $result, $name, $address, $mc, $dot, $contact, $phone, $email );
 				
 				wp_send_json_success( [
 					'message' => 'Company successfully added',

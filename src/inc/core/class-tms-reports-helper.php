@@ -1098,15 +1098,15 @@ Kindly confirm once you've received this message." ) . "\n";
 	}
 	
 	function set_filter_params( $args, $default_office = false ) {
-		$dispatcher_filter = trim( get_field_value( $_GET, 'dispatcher' ) );
-		$my_search         = trim( get_field_value( $_GET, 'my_search' ) );
-		$year              = trim( get_field_value( $_GET, 'fyear' ) );
-		$month             = trim( get_field_value( $_GET, 'fmonth' ) );
-		$load_status       = trim( get_field_value( $_GET, 'load_status' ) );
-		$source            = trim( get_field_value( $_GET, 'source' ) );
-		$factoring         = trim( get_field_value( $_GET, 'factoring' ) );
-		$invoice           = trim( get_field_value( $_GET, 'invoice' ) );
-		$office            = trim( get_field_value( $_GET, 'office' ) );
+		$dispatcher_filter = trim( get_field_value( $_GET, 'dispatcher' ) ?? '' );
+		$my_search         = trim( get_field_value( $_GET, 'my_search' ) ?? '' );
+		$year              = trim( get_field_value( $_GET, 'fyear' ) ?? '' );
+		$month             = trim( get_field_value( $_GET, 'fmonth' ) ?? '' );
+		$load_status       = trim( get_field_value( $_GET, 'load_status' ) ?? '' );
+		$source            = trim( get_field_value( $_GET, 'source' ) ?? '' );
+		$factoring         = trim( get_field_value( $_GET, 'factoring' ) ?? '' );
+		$invoice           = trim( get_field_value( $_GET, 'invoice' ) ?? '' );
+		$office            = trim( get_field_value( $_GET, 'office' ) ?? '' );
 		
 		if ( $default_office ) {
 			$args[ 'office' ] = $default_office;
@@ -1194,7 +1194,7 @@ Kindly confirm once you've received this message." ) . "\n";
 	}
 	
 	function format_currency( $value ) {
-		$cleaned   = str_replace( ',', '', $value );
+		$cleaned   = str_replace( ',', '', $value ?? '' );
 		$formatted = number_format( (float) $cleaned, 2, '.', ',' );
 		if ( str_ends_with( $formatted, '.00' ) ) {
 			return substr( $formatted, 0, - 3 );

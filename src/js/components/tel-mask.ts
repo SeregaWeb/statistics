@@ -36,6 +36,23 @@ export const dateMaskInit = () => {
         dateFormat: 'm/d/Y', // Американский формат
         allowInput: true,
     });
+    
+    // Инициализация селектора времени
+    flatpickr('.js-new-format-time', {
+        enableTime: true,
+        noCalendar: true,
+        dateFormat: 'H:i', // Формат времени HH:MM
+        time_24hr: true, // 24-часовой формат
+        allowInput: true,
+    });
+    
+    // Инициализация селектора даты и времени
+    flatpickr('.js-new-format-datetime', {
+        enableTime: true,
+        dateFormat: 'm/d/Y H:i', // Дата и время в американском формате
+        time_24hr: true, // 24-часовой формат
+        allowInput: true,
+    });
 };
 
 export const masksAllSite = () => {

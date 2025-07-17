@@ -15,16 +15,9 @@ $args     = array(
 	'status_post' => 'publish',
 );
 
-$args  = $Drivers->set_filter_params( $args );
-$items = $Drivers->get_table_items( $args );
+$args = $Drivers->set_filter_params_search( $args );
 
-$access = $TMSUsers->check_user_role_access( [
-	'administrator',
-	'recruiter',
-	'recruiter-tl',
-	'accounting',
-	'driver_updates'
-], true );
+$items = $Drivers->get_table_items_search( $args );
 
 ?>
     <div class="container-fluid">
@@ -32,14 +25,13 @@ $access = $TMSUsers->check_user_role_access( [
             <div class="container">
                 <div class="row">
                     <div class="col-12 pt-3 pb-3">
-						<?php if ( ! $access ) :
-							echo $helper->message_top( 'error', 'Access only Administrator, recruiters and recruiters team leader have access to this page.' );
-						else:
-							
-							echo esc_html( get_template_part( TEMPLATE_PATH . 'filters/driver', 'filter' ) );
-							
-							echo esc_html( get_template_part( TEMPLATE_PATH . 'tables/driver', 'table', $items ) );
-						endif; ?>
+						<?php
+						
+						echo esc_html( get_template_part( TEMPLATE_PATH . 'filters/driver', 'search-filter' ) );
+						
+						echo esc_html( get_template_part( TEMPLATE_PATH . 'tables/driver', 'search-table', $items ) );
+						
+						?>
                     </div>
                 </div>
             </div>

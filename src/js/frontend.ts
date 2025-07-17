@@ -52,6 +52,7 @@ import {
     cleanUrlByFilterAr,
     cleanUrlByFilterDriver,
     cleanUrlByFilterPlatform,
+    cleanUrlByFilterDriverSearch,
 } from './components/filter-clean';
 import { disabledValuesInSelectInit, showHiddenValueInit } from './components/chow-hidden-value';
 import { logsInit } from './components/logs';
@@ -70,6 +71,7 @@ import {
 import { driversActions } from './components/driver-core';
 import { initContactsHandler } from './components/contacts/contacts-init';
 import { moveDispatcher } from './components/move-dispatcher';
+import { initialSearchDriver } from './components/search-driver/search-driver-core';
 
 function ready() {
     console.log('ready');
@@ -82,7 +84,10 @@ function ready() {
     // @ts-ignore
     const linkMartlet = var_from_php.link_web_service_martlet;
     // @ts-ignore
-    const hereApi = var_from_php.here_api_key;
+    const hereApi = var_from_php.here_api_key; // @ts-ignore
+
+    // @ts-ignore
+    initialSearchDriver(var_from_php);
 
     const useServices = {
         Odysseia: linkOdysseia,
@@ -126,8 +131,9 @@ function ready() {
     // DRIVER START
     driversActions(urlAjax);
     cleanUrlByFilterDriver();
-    // DRIVER END
+    cleanUrlByFilterDriverSearch();
 
+    // DRIVER END
     additionalContactsInit();
     addShipperPointInit();
     // Helpers

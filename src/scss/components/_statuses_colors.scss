@@ -284,3 +284,72 @@ $color_direct_3: #ffdcdc;
         background-color: #fff7df !important;
     }
 }
+
+.driver-status {
+    text-align: center;
+    font-size: 12px !important;
+}
+
+.available {
+    background-color: #00d200 !important;
+    color: #000000;
+    font-weight: bold;
+}
+
+.no_updates {
+    background-color: #ff3939 !important;
+    color: #000000;
+    font-weight: bold;
+}
+
+.loaded_enroute,
+.available_on {
+    background-color: #cefece !important;
+    color: #000000;
+    font-weight: bold;
+}
+
+.available_off {
+    background-color: #e06665 !important;
+    color: #000000;
+    font-weight: bold;
+}
+
+.banned {
+    background-color: #ffb261 !important;
+    color: #000000;
+    font-weight: bold;
+}
+
+.no_interview,
+.expired_documents,
+.blocked {
+    background-color: #d60000 !important;
+    color: #ffffff;
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.on_vocation {
+    background-color: #ffb4d3 !important;
+    color: #000000;
+    font-weight: bold;
+}
+
+.on_hold {
+    background-color: #b2b2b2 !important;
+    color: #000000;
+    font-weight: bold;
+}
+
+.need_update {
+    background-color: #f1cfcf !important;
+    color: #b92727 !important;
+    font-weight: 600;
+
+    span {
+        font-size: 12px;
+    }
+}

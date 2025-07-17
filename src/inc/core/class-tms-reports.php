@@ -2732,6 +2732,11 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 			} else {
 				$MY_INPUT = $this->count_all_sum( $MY_INPUT );
 			}
+
+			// Add current time to date_booked if it's only a date
+			if (strlen($MY_INPUT['date_booked']) === 10) {
+				$MY_INPUT['date_booked'] = $MY_INPUT['date_booked'] . ' ' . date('H:i:s');
+			}
 			
 			$result = $this->add_load( $MY_INPUT );
 			
@@ -4502,12 +4507,12 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 			$sql = "CREATE TABLE $table_meta_name (
 		        id mediumint(9) NOT NULL AUTO_INCREMENT,
 		        post_id mediumint(9) NOT NULL,
-		        meta_key longtext,
-		        meta_value longtext,
+		        meta_key varchar(255) NOT NULL,
+		        meta_value text,
 		        PRIMARY KEY  (id),
                 INDEX idx_post_id (post_id),
-         		INDEX idx_meta_key (meta_key(191)),
-         		INDEX idx_meta_key_value (meta_key(191), meta_value(191))
+         		INDEX idx_meta_key (meta_key),
+         		INDEX idx_meta_key_value (meta_key, meta_value(191))
     		) $charset_collate;";
 			
 			dbDelta( $sql );

@@ -186,7 +186,7 @@ if ( ! empty( $results ) ) :
 
             <tr class="load-status-<?php echo $load_status; ?> <?php echo $tbd ? 'tbd' : ''; ?>">
                 <td>
-                    <label class="h-100 cursor-pointer"
+                    <label class="h-100 cursor-pointer" title="<?php echo $date_booked_raw; ?>"
                            for="load-<?php echo $row[ 'id' ]; ?>"><?php echo $date_booked; ?></label>
                 </td>
                 <td>

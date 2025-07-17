@@ -167,7 +167,7 @@ class TMSReportsShipper extends TMSReportsHelper {
 				
 				$short_address = $city . ' ' . $state;
 				$name          = $MY_INPUT[ "shipper_name" ];
-				$templ         = $this->print_list_shipper( $MY_INPUT[ "full_address" ], $result, $short_address, $name );
+				$templ         = $this->print_list_shipper( $result, $short_address, $MY_INPUT[ "full_address" ], $name );
 				
 				wp_send_json_success( [ 'message' => 'shipper successfully added', 'tmpl' => $templ ] );
 			} else {
@@ -436,7 +436,7 @@ class TMSReportsShipper extends TMSReportsHelper {
 	                            </span>
 	                            <div class="d-none">
 		                            <div class="js-content-company my-dropdown-search__hidden">
-		                                ' . $this->print_list_shipper( $address, $value->id, $short_address, $name ) . '
+		                                ' . $this->print_list_shipper( $value->id, $short_address, $address, $name ) . '
 									</div>
 								</div>
 	                        </a>
@@ -449,7 +449,7 @@ class TMSReportsShipper extends TMSReportsHelper {
 		}
 	}
 	
-	public function print_list_shipper( $address = '', $id, $short_address, $name = false ) {
+	public function print_list_shipper( $id, $short_address, $address = '', $name = false ) {
 		
 		if ( ! $id ) {
 			return false;

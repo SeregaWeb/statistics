@@ -37,7 +37,7 @@ class  TMSStatistics extends TMSReportsHelper {
 	}
 	
 	public function get_sources_statistics(
-		$office_dispatcher = 'all', $year_param, $month_param, $dispatcher_initials = 'all'
+		$year_param, $month_param, $office_dispatcher = 'all', $dispatcher_initials = 'all'
 	) {
 		global $wpdb;
 		

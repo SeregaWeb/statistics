@@ -127,6 +127,16 @@ $access = $TMSUsers->check_user_role_access( [
 
                                 <li class="nav-item js-change-url-tab flex-grow-1" role="presentation">
                                     <button class="nav-link w-100 <?php echo $disabled_tabs;
+									echo $helper->change_active_tab( 'pills-driver-location-tab', 'show', 'drivers' ); ?> "
+                                            id="pills-driver-location-tab"
+                                            data-bs-toggle="pill"
+                                            data-bs-target="#pills-driver-location" type="button" role="tab"
+                                            aria-controls="pills-driver-location" aria-selected="false">Current location
+                                    </button>
+                                </li>
+
+                                <li class="nav-item js-change-url-tab flex-grow-1" role="presentation">
+                                    <button class="nav-link w-100 <?php echo $disabled_tabs;
 									echo $helper->change_active_tab( 'pills-driver-stats-tab', 'show', 'drivers' ); ?> "
                                             id="pills-driver-stats-tab"
                                             data-bs-toggle="pill"
@@ -195,6 +205,19 @@ $access = $TMSUsers->check_user_role_access( [
 									) ) );
 									?>
                                 </div>
+
+                                <div class="tab-pane fade <?php echo $helper->change_active_tab( 'pills-driver-location-tab', 'show', 'drivers' ); ?>"
+                                     id="pills-driver-location" role="tabpanel"
+                                     aria-labelledby="pills-driver-location-tab">
+									<?php
+									echo esc_html( get_template_part( TEMPLATE_PATH . 'tabs/driver', 'tab-location', array(
+										'full_view_only' => $full_only_view,
+										'report_object'  => $driver_object,
+										'post_id'        => $post_id
+									) ) );
+									?>
+                                </div>
+
 
                             </div>
                         </div>

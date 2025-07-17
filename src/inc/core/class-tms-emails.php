@@ -186,7 +186,7 @@ class TMSEmails extends TMSUsers {
 		global $global_options;
 		$emails = get_field_value( $global_options, 'admin_emails' );
 		
-		return $emails;
+		return $emails ?: '';
 	}
 	
 	function send_custom_email( $emails, $texts ) {

@@ -125,7 +125,7 @@ $current_pages = get_field_value( $data[ 'pagination' ], 'current_pages' );
 										$dot                = $item[ 'dot_number' ];
 										$mc                 = $item[ 'mc_number' ];
 										
-										$template_select_company = $company->print_list_customers( $name, $address, $mc, $dot, $contact, $phone, $email, $item[ 'company_id' ] );
+										$template_select_company = $company->print_list_customers( $item[ 'company_id' ], $name, $address, $mc, $dot, $contact, $phone, $email );
 										
 										?>
                                         <tr>

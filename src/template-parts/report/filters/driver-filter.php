@@ -5,11 +5,11 @@ $recruiters    = $helper->get_recruiters();
 $sources       = $driver_helper->source;
 
 $search             = get_field_value( $_GET, 'my_search' );
-$recruiter_initials = trim( get_field_value( $_GET, 'recruiter' ) );
+$recruiter_initials = trim( get_field_value( $_GET, 'recruiter' ) ?? '' );
 $month              = get_field_value( $_GET, 'fmonth' );
 $year_param         = get_field_value( $_GET, 'fyear' );
-$source             = trim( get_field_value( $_GET, 'source' ) );
-$additional         = trim( get_field_value( $_GET, 'additional' ) );
+$source             = trim( get_field_value( $_GET, 'source' ) ?? '' );
+$additional         = trim( get_field_value( $_GET, 'additional' ) ?? '' );
 $current_year       = date( 'Y' );
 
 

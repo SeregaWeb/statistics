@@ -7,6 +7,7 @@
 
 /*Collect all ACF option fields to global variable. */
 global $global_options;
+const TIME_AVAILABLE_DRIVER = '-12 hours';
 
 if ( function_exists( 'get_fields' ) ) {
 	if ( function_exists( 'pll_current_language' ) ) {
@@ -20,6 +21,7 @@ if ( function_exists( 'get_fields' ) ) {
 }
 
 show_admin_bar( false );
+
 
 /**
  * Main theme's class init

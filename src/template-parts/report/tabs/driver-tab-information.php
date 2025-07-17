@@ -20,6 +20,9 @@ $vehicle_year            = get_field_value( $meta, 'vehicle_year' );
 $gvwr                    = get_field_value( $meta, 'gvwr' );
 $payload                 = get_field_value( $meta, 'payload' );
 $dimensions              = get_field_value( $meta, 'dimensions' );
+$overall_dimensions      = get_field_value( $meta, 'overall_dimensions' );
+$side_door               = get_field_value( $meta, 'side_door' );
+$side_door_on            = get_field_value( $meta, 'side_door_on' );
 $vin                     = get_field_value( $meta, 'vin' );
 $registration_type       = get_field_value( $meta, 'registration_type' );
 $registration_status     = get_field_value( $meta, 'registration_status' );
@@ -41,6 +44,16 @@ $dimension_arr = explode( '/', $dimensions );
 $dimensions_1  = $dimensions ? $dimension_arr[ 0 ] : '';
 $dimensions_2  = $dimensions ? $dimension_arr[ 1 ] : '';
 $dimensions_3  = $dimensions ? $dimension_arr[ 2 ] : '';
+
+$overall_dimensions_arr = explode( '/', $overall_dimensions );
+$overall_dimensions_1   = $overall_dimensions ? $overall_dimensions_arr[ 0 ] : '';
+$overall_dimensions_2   = $overall_dimensions ? $overall_dimensions_arr[ 1 ] : '';
+$overall_dimensions_3   = $overall_dimensions ? $overall_dimensions_arr[ 2 ] : '';
+
+
+$side_door_arr = explode( '/', $side_door );
+$side_door_1   = $side_door ? $side_door_arr[ 0 ] : '';
+$side_door_2   = $side_door ? $side_door_arr[ 1 ] : '';
 
 $vehicle_pictures     = get_field_value( $meta, 'vehicle_pictures' );
 $vehicle_pictures_arr = false;
@@ -390,7 +403,13 @@ $files = array(
             </div>
 
             <div class="col-md-4 mb-3">
-                <label class="form-label">Dimensions<span class="required-star text-danger">*</span></label>
+                <label class="form-label">VIN<span class="required-star text-danger">*</span></label>
+                <input required type="text" class="form-control" name="vin" value="<?php echo $vin; ?>">
+            </div>
+
+            <div class="col-md-4 mb-3">
+                <label class="form-label">Cargo space dimensions.<span
+                            class="required-star text-danger">*</span></label>
                 <div class="d-flex gap-1">
                     <input required type="text" class="form-control" name="dimensions_1"
                            value="<?php echo $dimensions_1; ?>">
@@ -401,9 +420,40 @@ $files = array(
                 </div>
             </div>
 
-            <div class="col-md-4 mb-3">
-                <label class="form-label">VIN<span class="required-star text-danger">*</span></label>
-                <input required type="text" class="form-control" name="vin" value="<?php echo $vin; ?>">
+            <div class="col-12 col-md-4 mb-3"></div>
+
+            <div class="col-12 col-md-4 mb-3 d-flex align-items-end">
+                <div class="d-flex gap-1 align-items-center">
+                    <div class="form-check form-switch">
+                        <input class="form-check-input js-toggle <?php echo $e_tracks_file ? 'disabled' : ''; ?>"
+                               data-block-toggle="js-side-door-driver"
+                               type="checkbox" name="side_door_on"
+                               id="side_door_on" <?php echo $side_door_on ? 'checked' : ''; ?>>
+                        <label class="form-check-label text-nowrap" for="side_door_on">
+                            Side door.
+                        </label>
+                    </div>
+                    <div class="js-side-door-driver <?php echo $side_door_on ? '' : 'd-none'; ?>">
+                        <div class="d-flex gap-1">
+                            <input type="text" class="form-control" name="side_door_1"
+                                   value="<?php echo $side_door_1; ?>">
+                            <input type="text" class="form-control" name="side_door_2"
+                                   value="<?php echo $side_door_2; ?>">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-12 col-md-4 mb-3">
+                <label class="form-label">Overall dimensions.</label>
+                <div class="d-flex gap-1">
+                    <input type="text" class="form-control" name="overall_dimensions_1"
+                           value="<?php echo $overall_dimensions_1; ?>">
+                    <input type="text" class="form-control" name="overall_dimensions_2"
+                           value="<?php echo $overall_dimensions_2; ?>">
+                    <input type="text" class="form-control" name="overall_dimensions_3"
+                           value="<?php echo $overall_dimensions_3; ?>">
+                </div>
             </div>
 
             <div class="col-md-4 mb-3">

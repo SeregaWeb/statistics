@@ -1,7 +1,7 @@
 <?php
 /**
  * Card Statistics Tracking Template
- * 
+ *
  * @package WP-rock
  * @since 4.4.0
  */
@@ -12,11 +12,11 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 // Extract and validate arguments
-$user       = isset( $args['user'] ) ? $args['user'] : array();
-$user_stats = isset( $args['user_stats'] ) ? $args['user_stats'] : array();
+$user       = isset( $args[ 'user' ] ) ? $args[ 'user' ] : array();
+$user_stats = isset( $args[ 'user_stats' ] ) ? $args[ 'user_stats' ] : array();
 $TMSUser    = new TMSUsers();
 
-$total = isset( $args['total'] ) ? $args['total'] : false;
+$total = isset( $args[ 'total' ] ) ? $args[ 'total' ] : false;
 
 $class_total = '';
 
@@ -32,66 +32,68 @@ if ( is_array( $user_stats ) ) {
 }
 
 // Only display card if user has statistics
-if ( $has_stats && isset( $user_stats['total'] ) && $user_stats['total'] > 0 ) :
+if ( $has_stats && isset( $user_stats[ 'total' ] ) && $user_stats[ 'total' ] > 0 ) :
 	
 	// Set total class for styling
-	if ( is_numeric( $total ) && $total <= $user_stats['total'] ) {
+	if ( is_numeric( $total ) && $total <= $user_stats[ 'total' ] ) {
 		$class_total = 'text-danger';
 	}
 	?>
 
-	<div class="card-tracking-stats">
-		<?php if ( isset( $user['name'] ) && isset( $user['initials'] ) && isset( $user['initials_color'] ) ) : ?>
-			<p class="card-tracking-stats__user" 
-			   title="<?php echo esc_attr( $user['name'] ); ?>"
-			   style="background-color: <?php echo esc_attr( $user['initials_color'] ); ?>;">
-				<?php echo esc_html( $user['initials'] ); ?>
-			</p>
+    <div class="card-tracking-stats">
+		<?php if ( isset( $user[ 'name' ] ) && isset( $user[ 'initials' ] ) && isset( $user[ 'initials_color' ] ) ) : ?>
+            <p class="card-tracking-stats__user"
+               title="<?php echo esc_attr( $user[ 'name' ] ); ?>"
+               style="background-color: <?php echo esc_attr( $user[ 'initials_color' ] ); ?>;">
+				<?php echo esc_html( $user[ 'initials' ] ); ?>
+            </p>
 		<?php endif; ?>
 
-		<ul>
-				<li>
-			    <?php if ( isset( $user_stats['at-pu'] ) && $user_stats['at-pu'] > 0 ) : ?>
+        <ul>
+            <li>
+				<?php if ( isset( $user_stats[ 'at-pu' ] ) && $user_stats[ 'at-pu' ] > 0 ) : ?>
                     <span>At Pick Up:
-							<?php echo esc_html( $user_stats['at-pu'] ); ?>
+							<?php echo esc_html( $user_stats[ 'at-pu' ] ); ?>
 					</span>
-                    <?php else: ?> 
+				<?php else: ?>
                     <span></span>
-                <?php endif; ?>
-			    <?php if ( isset( $user_stats['total'] ) && $user_stats['total'] > 0 ) : ?>
+				<?php endif; ?>
+				<?php if ( isset( $user_stats[ 'total' ] ) && $user_stats[ 'total' ] > 0 ) : ?>
                     <span>
 						Total: <span class="<?php echo esc_attr( $class_total ); ?>">
-							<?php echo esc_html( $user_stats['total'] ); ?>
+							<?php echo esc_html( $user_stats[ 'total' ] ); ?>
 						</span>
 					</span>
-			    <?php endif; ?>
+				<?php endif; ?>
+            </li>
+			<?php if ( isset( $user_stats[ 'at-del' ] ) && $user_stats[ 'at-del' ] > 0 ) : ?>
+                <li>
+                    <span>At Delivery: <?php echo esc_html( $user_stats[ 'at-del' ] ); ?></span>
                 </li>
-			<?php if ( isset( $user_stats['at-del'] ) && $user_stats['at-del'] > 0 ) : ?>
-				<li>
-					<span>At Delivery: <?php echo esc_html( $user_stats['at-del'] ); ?></span>
-				</li>
 			<?php endif; ?>
 			
-			<?php if ( isset( $user_stats['loaded-enroute'] ) && $user_stats['loaded-enroute'] > 0 ) : ?>
-				<li>
-					<span>Loaded: <?php echo esc_html( $user_stats['loaded-enroute'] ); ?></span>
-				</li>
+			<?php if ( isset( $user_stats[ 'loaded-enroute' ] ) && $user_stats[ 'loaded-enroute' ] > 0 ) : ?>
+                <li>
+                    <span>Loaded: <?php echo esc_html( $user_stats[ 'loaded-enroute' ] ); ?></span>
+                </li>
 			<?php endif; ?>
 			
-			<?php if ( isset( $user_stats['waiting-on-pu-date'] ) && $user_stats['waiting-on-pu-date'] > 0 ) : ?>
-				<li>
-					<span>Waiting: <?php echo esc_html( $user_stats['waiting-on-pu-date'] ); ?></span>
-				</li>
+			<?php if ( isset( $user_stats[ 'waiting-on-pu-date' ] ) && $user_stats[ 'waiting-on-pu-date' ] > 0 ) : ?>
+                <li>
+                    <span>Waiting: <?php echo esc_html( $user_stats[ 'waiting-on-pu-date' ] ); ?></span>
+                </li>
 			<?php endif; ?>
 			
-			<?php if ( isset( $user['my_team'] ) && is_array( $user['my_team'] ) && ! empty( $user['my_team'] ) ) : ?>
-				<li class="mt-1">
-					<div>
-						<p class="mb-0">Team</p>
-						<div class="d-flex gap-1 flex-wrap">
-							<?php foreach ( $user['my_team'] as $user_team ) : ?>
+			<?php if ( isset( $user[ 'my_team' ] ) && is_array( $user[ 'my_team' ] ) && ! empty( $user[ 'my_team' ] ) ) : ?>
+                <li class="mt-1">
+                    <div>
+                        <p class="mb-0">Team</p>
+                        <div class="d-flex gap-1 flex-wrap">
+							<?php foreach ( $user[ 'my_team' ] as $user_team ) : ?>
 								<?php
+								
 								$user_arr = $TMSUser->get_user_full_name_by_id( $user_team );
+								
 								
 								// Get user color with fallback
 								$color_initials = '#030303';
@@ -101,25 +103,35 @@ if ( $has_stats && isset( $user_stats['total'] ) && $user_stats['total'] > 0 ) :
 										$color_initials = $user_color;
 									}
 								} else {
-									$user_arr = array(
-										'full_name' => 'User not found',
-										'initials'  => 'NF'
-									);
+									
+									// Remove user from ACF field and update
+									$current_team = get_field( 'field_66f9240398a70', 'user_' . $args[ 'user' ][ 'id' ] );
+									if ( is_array( $current_team ) ) {
+										// Remove the user from the team array
+										$updated_team = array_diff( $current_team, array( $user_team ) );
+										// Update the ACF field
+										update_field( 'field_66f9240398a70', $updated_team, 'user_' . $args[ 'user' ][ 'id' ] );
+									}
+									
+									$user_arr = false;
 								}
 								?>
-								<span data-bs-toggle="tooltip" 
-									  data-bs-placement="top"
-									  title="<?php echo esc_attr( $user_arr['full_name'] ); ?>"
-									  class="initials-circle" 
-									  style="background-color: <?php echo esc_attr( $color_initials ); ?>">
-									<?php echo esc_html( $user_arr['initials'] ); ?>
+
+								<?php if (is_array( $user_arr )) : ?>
+                                <span data-bs-toggle="tooltip"
+                                      data-bs-placement="top"
+                                      title="<?php echo esc_attr( $user_arr[ 'full_name' ] ); ?>"
+                                      class="initials-circle"
+                                      style="background-color: <?php echo esc_attr( $color_initials ); ?>">
+									<?php echo esc_html( $user_arr[ 'initials' ] ); ?>
 								</span>
+								<?php endif; ?>
 							<?php endforeach; ?>
-						</div>
-					</div>
-				</li>
+                        </div>
+                    </div>
+                </li>
 			<?php endif; ?>
-		</ul>
-	</div>
+        </ul>
+    </div>
 
 <?php endif; ?>

@@ -413,6 +413,52 @@
             "name": "api_key_here_map",
             "aria-label": "",
             "type": "text",
+            "instructions": "Origin key - OJaRpFm0M5EA4nZ1B9cyLSzatYwNlXzYmfkyRAIeZn4\r\nNew key - dDPXwUrlE4iacYQDqhjaU1bEZtOmSL9XGi16VzI2AhU\r\n15-07-2023 key - E4X05HtHOEy6RjrkGE-4XQfGEKnznvHn11Bd11OWeuI",
+            "required": 0,
+            "conditional_logic": 0,
+            "wrapper": {
+                "width": "",
+                "class": "",
+                "id": ""
+            },
+            "default_value": "",
+            "maxlength": "",
+            "placeholder": "",
+            "prepend": "",
+            "append": ""
+        },
+        {
+            "key": "field_686a6d0c0c5b9",
+            "label": "Use MAP API ?",
+            "name": "use_driver",
+            "aria-label": "",
+            "type": "select",
+            "instructions": "",
+            "required": 0,
+            "conditional_logic": 0,
+            "wrapper": {
+                "width": "",
+                "class": "",
+                "id": ""
+            },
+            "choices": {
+                "Here": "Here",
+                "OpenRouteServices": "OpenRouteServices"
+            },
+            "default_value": "Here",
+            "return_format": "value",
+            "multiple": 0,
+            "allow_null": 0,
+            "ui": 0,
+            "ajax": 0,
+            "placeholder": ""
+        },
+        {
+            "key": "field_686a6d860c5ba",
+            "label": "URL Pelias",
+            "name": "url_pelias",
+            "aria-label": "",
+            "type": "text",
             "instructions": "",
             "required": 0,
             "conditional_logic": 0,
@@ -426,6 +472,52 @@
             "placeholder": "",
             "prepend": "",
             "append": ""
+        },
+        {
+            "key": "field_686a6d960c5bb",
+            "label": "URL ORS",
+            "name": "url_ors",
+            "aria-label": "",
+            "type": "text",
+            "instructions": "",
+            "required": 0,
+            "conditional_logic": 0,
+            "wrapper": {
+                "width": "",
+                "class": "",
+                "id": ""
+            },
+            "default_value": "",
+            "maxlength": "",
+            "placeholder": "",
+            "prepend": "",
+            "append": ""
+        },
+        {
+            "key": "field_686a6db00c5bc",
+            "label": "Use geocoder",
+            "name": "use_geocoder",
+            "aria-label": "",
+            "type": "select",
+            "instructions": "",
+            "required": 0,
+            "conditional_logic": 0,
+            "wrapper": {
+                "width": "",
+                "class": "",
+                "id": ""
+            },
+            "choices": {
+                "default": "Default",
+                "here": "Here Map"
+            },
+            "default_value": "default",
+            "return_format": "value",
+            "multiple": 0,
+            "allow_null": 0,
+            "ui": 0,
+            "ajax": 0,
+            "placeholder": ""
         },
         {
             "key": "field_67b0f7fc27455",
@@ -1220,5 +1312,5 @@
     "active": true,
     "description": "",
     "show_in_rest": 0,
-    "modified": 1749309978
+    "modified": 1751805412
 }

@@ -29,6 +29,16 @@ class TMSDriversHelper {
 		"dry-van"      => "Dry van",
 	);
 	
+	/**
+	 * Get vehicle key by value
+	 * 
+	 * @param string $value Vehicle display name (e.g., "Cargo van")
+	 * @return string|false Vehicle key (e.g., "cargo-van") or false if not found
+	 */
+	public function get_vehicle_key_by_value( $value ) {
+		return array_search( $value, $this->vehicle );
+	}
+	
 	public $source = array(
 		'betterteam'     => 'Betterteam',
 		'indeed'         => 'Indeed',

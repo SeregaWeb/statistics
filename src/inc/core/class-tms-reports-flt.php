@@ -1,7 +1,7 @@
 <?php
 require_once( ABSPATH . 'wp-admin/includes/upgrade.php' );
 
-class TMSReports extends TMSReportsHelper {
+class TMSReportsFlt extends TMSReportsHelper {
 	
 	public $table_main = '';
 	public $table_meta = '';
@@ -27,8 +27,8 @@ class TMSReports extends TMSReportsHelper {
 		$curent_tables        = get_field( 'current_select', 'user_' . $user_id );
 		if ( $curent_tables ) {
 			$this->project    = $curent_tables;
-			$this->table_main = 'reports_' . strtolower( $curent_tables );
-			$this->table_meta = 'reportsmeta_' . strtolower( $curent_tables );
+			$this->table_main = 'reports_flt_' . strtolower( $curent_tables );
+			$this->table_meta = 'reportsmeta_flt_' . strtolower( $curent_tables );
 		}
 	}
 	
@@ -72,7 +72,6 @@ class TMSReports extends TMSReportsHelper {
 		
 		return $output;
 	}
-	
 	
 	public function get_profit_by_dates( $array_dates, $office = null ) {
 		global $wpdb;
@@ -164,7 +163,7 @@ class TMSReports extends TMSReportsHelper {
 	public function get_stat_platform() {
 		global $wpdb;
 		
-		$cache_key = 'stat_platform_cache_' . $this->project;
+		$cache_key = 'stat_platform_cache_flt' . $this->project;
 		$cached    = get_transient( $cache_key );
 		
 		if ( $cached !== false ) {
@@ -224,9 +223,8 @@ class TMSReports extends TMSReportsHelper {
 	
 	public function get_stat_tools() {
 		global $wpdb;
-		$cache_key = 'stat_tool_cache_' . $this->project;
+		$cache_key = 'stat_tool_cache_flt' . $this->project;
 		$cached    = get_transient( $cache_key );
-		
 		if ( $cached !== false ) {
 			return $cached;
 		}
@@ -1937,12 +1935,12 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 	public function get_load_counts_by_user_id( $user_id, $project_needs ) {
 		global $wpdb;
 		
-		$table_odysseia       = $wpdb->prefix . 'reports_odysseia';
-		$table_martlet        = $wpdb->prefix . 'reports_martlet';
-		$table_endurance      = $wpdb->prefix . 'reports_endurance';
-		$table_meta_odysseia  = $wpdb->prefix . 'reportsmeta_odysseia';
-		$table_meta_martlet   = $wpdb->prefix . 'reportsmeta_martlet';
-		$table_meta_endurance = $wpdb->prefix . 'reportsmeta_endurance';
+		$table_odysseia       = $wpdb->prefix . 'reports_flt_odysseia';
+		$table_martlet        = $wpdb->prefix . 'reports_flt_martlet';
+		$table_endurance      = $wpdb->prefix . 'reports_flt_endurance';
+		$table_meta_odysseia  = $wpdb->prefix . 'reportsmeta_flt_odysseia';
+		$table_meta_martlet   = $wpdb->prefix . 'reportsmeta_flt_martlet';
+		$table_meta_endurance = $wpdb->prefix . 'reportsmeta_flt_endurance';
 		$result               = array();
 		
 		if ( is_numeric( array_search( 'Odysseia', $project_needs ) ) ) {
@@ -2066,7 +2064,7 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 	 * function update draft report (tab 1)
 	 * @return void
 	 */
-	public function update_new_draft_report() {
+	public function update_new_draft_report_flt() {
 		// Check if it's an AJAX request (simple defense)
 		if ( defined( 'DOING_AJAX' ) && DOING_AJAX ) {
 			// Sanitize input data
@@ -2133,7 +2131,7 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 	 * function update draft report (tab 5)
 	 * @return void
 	 */
-	public function update_billing_report() {
+	public function update_billing_report_flt() {
 		// Check if it's an AJAX request (simple defense)
 		if ( defined( 'DOING_AJAX' ) && DOING_AJAX ) {
 			// Sanitize input data
@@ -2204,7 +2202,7 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 	
 	public function archive_logs_and_close_load( $data ) {
 		$load_id  = get_field_value( $data, 'post_id' );
-		$template = $this->log_controller->get_all_logs( $load_id ); // Получаем шаблон с логами
+		$template = $this->log_controller->get_all_logs( $load_id, 'reports_flt' ); // Получаем шаблон с логами
 		
 		// Определяем имя файла
 		$file_name  = "load-logs-{$load_id}.txt";
@@ -2239,7 +2237,7 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 			wp_update_attachment_metadata( $attachment_id, $attachment_data );
 			
 			if ( is_numeric( $attachment_id ) ) {
-				$this->log_controller->delete_all_logs( $load_id );
+				$this->log_controller->delete_all_logs( $load_id, 'reports_flt' );
 			}
 			
 			return $attachment_id;
@@ -2252,7 +2250,7 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 	 * function update draft report (tab 6)
 	 * @return void
 	 */
-	public function update_accounting_report() {
+	public function update_accounting_report_flt() {
 		// Check if it's an AJAX request (simple defense)
 		if ( defined( 'DOING_AJAX' ) && DOING_AJAX ) {
 			// Sanitize input data
@@ -2299,7 +2297,7 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 	 * function add new report (tab 1)
 	 * @return void
 	 */
-	public function add_new_report_draft() {
+	public function add_new_report_draft_flt() {
 		// Check if it's an AJAX request (simple defense)
 		if ( defined( 'DOING_AJAX' ) && DOING_AJAX ) {
 			// Sanitize input data
@@ -2369,7 +2367,7 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 	 * function update draft report files (tab 4)
 	 * @return void
 	 */
-	public function update_files_report() {
+	public function update_files_report_flt() {
 		// check if it's ajax request (simple defence)
 		if ( defined( 'DOING_AJAX' ) && DOING_AJAX ) {
 			
@@ -2587,7 +2585,7 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 	 * function update draft report (tab 3)
 	 * @return void
 	 */
-	public function update_shipper_info() {
+	public function update_shipper_info_flt() {
 		// check if it's ajax request (simple defence)
 		if ( defined( 'DOING_AJAX' ) && DOING_AJAX ) {
 			$data = $_POST;
@@ -2672,7 +2670,7 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 	 * function update draft report (tab 2)
 	 * @return void
 	 */
-	public function add_new_report() {
+	public function add_new_report_flt() {
 		// check if it's ajax request (simple defence)
 		if ( defined( 'DOING_AJAX' ) && DOING_AJAX ) {
 			
@@ -2822,7 +2820,7 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 		return $MY_INPUT;
 	}
 	
-	public function quick_update_post() {
+	public function quick_update_post_flt() {
 		if ( defined( 'DOING_AJAX' ) && DOING_AJAX ) {
 			
 			$MY_INPUT = filter_var_array( $_POST, [
@@ -2855,7 +2853,7 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 		}
 	}
 	
-	public function quick_update_post_ar() {
+	public function quick_update_post_ar_flt() {
 		if ( defined( 'DOING_AJAX' ) && DOING_AJAX ) {
 			
 			$MY_INPUT = filter_var_array( $_POST, [
@@ -2887,7 +2885,7 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 	 * function delete one file (tab 1)
 	 * @return void
 	 */
-	public function delete_open_image() {
+	public function delete_open_image_flt() {
 		// check if it's ajax request (simple defence)
 		if ( defined( 'DOING_AJAX' ) && DOING_AJAX ) {
 			
@@ -2909,7 +2907,7 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 		}
 	}
 	
-	public function send_email_chain() {
+	public function send_email_chain_flt() {
 		if ( defined( 'DOING_AJAX' ) && DOING_AJAX ) {
 			
 			$MY_INPUT = filter_var_array( $_POST, [
@@ -2917,7 +2915,7 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 			] );
 			
 			$TMSEmails  = new TMSEmails();
-			$email_send = $TMSEmails->send_email_create_load( $MY_INPUT[ 'load_id' ] );
+			$email_send = $TMSEmails->send_email_create_load( $MY_INPUT[ 'load_id' ], 'reports_flt' );;
 			
 			if ( $email_send[ 'success' ] ) {
 				$post_meta = array(
@@ -2935,7 +2933,7 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 	 * function update post status
 	 * @return void
 	 */
-	public function update_post_status() {
+	public function update_post_status_flt() {
 		if ( defined( 'DOING_AJAX' ) && DOING_AJAX ) {
 			
 			$MY_INPUT = filter_var_array( $_POST, [
@@ -2960,7 +2958,7 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 	 * function change status post
 	 * @return void
 	 */
-	public function rechange_status_load() {
+	public function rechange_status_load_flt() {
 		if ( defined( 'DOING_AJAX' ) && DOING_AJAX ) {
 			
 			$MY_INPUT = filter_var_array( $_POST, [
@@ -2991,7 +2989,7 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 		}
 	}
 	
-	public function get_driver_by_id() {
+	public function get_driver_by_id_flt() {
 		if ( defined( 'DOING_AJAX' ) && DOING_AJAX ) {
 			// Sanitize the input data
 			$MY_INPUT = filter_var_array( $_POST, [
@@ -3053,7 +3051,7 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 		wp_die();
 	}
 	
-	public function quick_update_status() {
+	public function quick_update_status_flt() {
 		if ( defined( 'DOING_AJAX' ) && DOING_AJAX ) {
 			$MY_INPUT = filter_var_array( $_POST, [
 				'id_load' => FILTER_SANITIZE_NUMBER_INT,
@@ -3071,7 +3069,7 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 		}
 	}
 	
-	public function quick_update_status_all() {
+	public function quick_update_status_all_flt() {
 		if ( defined( 'DOING_AJAX' ) && DOING_AJAX ) {
 			$MY_INPUT = filter_var_array( $_POST, [
 				'data' => FILTER_DEFAULT, // Оставляем строку как есть
@@ -3127,7 +3125,7 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 	 * function remove one load by id
 	 * @return void
 	 */
-	public function remove_one_load() {
+	public function remove_one_load_flt() {
 		if ( defined( 'DOING_AJAX' ) && DOING_AJAX ) {
 			global $wpdb;
 			
@@ -3220,33 +3218,37 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 		
 		if ( $data[ 'ar-action' ] && ! isset( $data[ 'checked_ar_action' ] ) ) {
 			$this->log_controller->create_one_log( array(
-				'user_id' => $user_id,
-				'post_id' => $data[ 'post_id' ],
-				'message' => 'Set Ar action'
+				'post_type' => 'reports_flt',
+				'user_id'   => $user_id,
+				'post_id'   => $data[ 'post_id' ],
+				'message'   => 'Set Ar action'
 			) );
 		}
 		
 		if ( isset( $data[ 'checked_ar_action' ] ) && ! $data[ 'ar-action' ] ) {
 			$this->log_controller->create_one_log( array(
-				'user_id' => $user_id,
-				'post_id' => $data[ 'post_id' ],
-				'message' => 'Unset Ar action'
+				'post_type' => 'reports_flt',
+				'user_id'   => $user_id,
+				'post_id'   => $data[ 'post_id' ],
+				'message'   => 'Unset Ar action'
 			) );
 		}
 		
 		if ( $data[ 'invoiced_proof' ] && ! isset( $data[ 'checked_invoice_proof' ] ) ) {
 			$this->log_controller->create_one_log( array(
-				'user_id' => $user_id,
-				'post_id' => $data[ 'post_id' ],
-				'message' => 'Set Invoiced'
+				'post_type' => 'reports_flt',
+				'user_id'   => $user_id,
+				'post_id'   => $data[ 'post_id' ],
+				'message'   => 'Set Invoiced'
 			) );
 		}
 		
 		if ( isset( $data[ 'checked_invoice_proof' ] ) && ! $data[ 'invoiced_proof' ] ) {
 			$this->log_controller->create_one_log( array(
-				'user_id' => $user_id,
-				'post_id' => $data[ 'post_id' ],
-				'message' => 'Unset Invoiced'
+				'post_type' => 'reports_flt',
+				'user_id'   => $user_id,
+				'post_id'   => $data[ 'post_id' ],
+				'message'   => 'Unset Invoiced'
 			) );
 			
 			$update_params[ 'load_problem' ] = null;
@@ -3333,16 +3335,18 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 				
 				if ( $old_value === null && $new_value ) {
 					$this->log_controller->create_one_log( array(
-						'user_id' => $user_id,
-						'post_id' => $data[ 'post_id' ],
-						'message' => "Field '{$label_fields[$key]}' added for the first time with value: {$new_value}."
+						'post_type' => 'reports_flt',
+						'user_id'   => $user_id,
+						'post_id'   => $data[ 'post_id' ],
+						'message'   => "Field '{$label_fields[$key]}' added for the first time with value: {$new_value}."
 					) );
 					
 				} elseif ( $old_value !== $new_value && $new_value ) {
 					$this->log_controller->create_one_log( array(
-						'user_id' => $user_id,
-						'post_id' => $data[ 'post_id' ],
-						'message' => "Field '{$label_fields[$key]}' updated. Old value: {$old_value}, New value: {$new_value}."
+						'post_type' => 'reports_flt',
+						'user_id'   => $user_id,
+						'post_id'   => $data[ 'post_id' ],
+						'message'   => "Field '{$label_fields[$key]}' updated. Old value: {$old_value}, New value: {$new_value}."
 					) );
 				}
 			}
@@ -3350,9 +3354,10 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 			foreach ( $post_meta as $key => $value ) {
 				if ( $value ):
 					$this->log_controller->create_one_log( array(
-						'user_id' => $user_id,
-						'post_id' => $data[ 'post_id' ],
-						'message' => "Field '{$label_fields[$key]}' added for the first time with value: {$value}."
+						'post_type' => 'reports_flt',
+						'user_id'   => $user_id,
+						'post_id'   => $data[ 'post_id' ],
+						'message'   => "Field '{$label_fields[$key]}' added for the first time with value: {$value}."
 					) );
 				endif;
 			}
@@ -3457,9 +3462,10 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 			$meta_string = implode( " ", $meta_descriptions );
 			
 			$this->log_controller->create_one_log( array(
-				'user_id' => $user_id,
-				'post_id' => $post_id,
-				'message' => 'Quick edit:</br>' . $meta_string
+				'post_type' => 'reports_flt',
+				'user_id'   => $user_id,
+				'post_id'   => $post_id,
+				'message'   => 'Quick edit:</br>' . $meta_string
 			) );
 			
 			// Обновляем мета-данные, если они заданы
@@ -3512,15 +3518,17 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 		if ( $result !== false ) {
 			if ( $data[ 'status' ] === 'cancelled' ) {
 				$this->log_controller->create_one_log( array(
-					'user_id' => $user_id,
-					'post_id' => $post_id,
-					'message' => 'Updated status: ' . $this->get_label_by_key( $data[ 'status' ], 'statuses' ) . '<br>Gross, Driver Rate, Profit = 0.00',
+					'post_type' => 'reports_flt',
+					'user_id'   => $user_id,
+					'post_id'   => $post_id,
+					'message'   => 'Updated status: ' . $this->get_label_by_key( $data[ 'status' ], 'statuses' ) . '<br>Gross, Driver Rate, Profit = 0.00',
 				) );
 			} else {
 				$this->log_controller->create_one_log( array(
-					'user_id' => $user_id,
-					'post_id' => $post_id,
-					'message' => 'Updated status: ' . $this->get_label_by_key( $data[ 'status' ], 'statuses' ),
+					'post_type' => 'reports_flt',
+					'user_id'   => $user_id,
+					'post_id'   => $post_id,
+					'message'   => 'Updated status: ' . $this->get_label_by_key( $data[ 'status' ], 'statuses' ),
 				) );
 			}
 			
@@ -3588,9 +3596,10 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 			
 			
 			$this->log_controller->create_one_log( array(
-				'user_id' => $user_id,
-				'post_id' => $post_id,
-				'message' => 'Quick edit:</br>' . $meta_string
+				'post_type' => 'reports_flt',
+				'user_id'   => $user_id,
+				'post_id'   => $post_id,
+				'message'   => 'Quick edit:</br>' . $meta_string
 			) );
 			
 			// Обновляем мета-данные, если они заданы
@@ -3706,9 +3715,10 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 			$result      = $this->update_post_meta_data( $id_new_post, $post_meta );
 			
 			$this->log_controller->create_one_log( array(
-				'user_id' => $user_id,
-				'post_id' => $id_new_post,
-				'message' => 'Load added: ' . $insert_params[ 'date_created' ] . ' EST',
+				'post_type' => 'reports_flt',
+				'user_id'   => $user_id,
+				'post_id'   => $id_new_post,
+				'message'   => 'Load added: ' . $insert_params[ 'date_created' ] . ' EST',
 			) );
 			
 			return $id_new_post; // Return the ID of the added record
@@ -3769,17 +3779,19 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 				
 				if ( $cleanedpick !== $data[ 'pick_up_location_json' ] ) {
 					$this->log_controller->create_one_log( array(
-						'user_id' => $user_id,
-						'post_id' => $data[ 'post_id' ],
-						'message' => 'Edit Pick UP location: ' . $this->compare_pick_up_locations( $cleanedpick, $data[ 'pick_up_location_json' ] )
+						'post_type' => 'reports_flt',
+						'user_id'   => $user_id,
+						'post_id'   => $data[ 'post_id' ],
+						'message'   => 'Edit Pick UP location: ' . $this->compare_pick_up_locations( $cleanedpick, $data[ 'pick_up_location_json' ] )
 					) );
 				}
 				
 				if ( $cleaneddeliv !== $data[ 'delivery_location_json' ] ) {
 					$this->log_controller->create_one_log( array(
-						'user_id' => $user_id,
-						'post_id' => $data[ 'post_id' ],
-						'message' => 'Edit Delivery location: ' . $this->compare_pick_up_locations( $cleaneddeliv, $data[ 'delivery_location_json' ] )
+						'post_type' => 'reports_flt',
+						'user_id'   => $user_id,
+						'post_id'   => $data[ 'post_id' ],
+						'message'   => 'Edit Delivery location: ' . $this->compare_pick_up_locations( $cleaneddeliv, $data[ 'delivery_location_json' ] )
 					) );
 				}
 				
@@ -3911,18 +3923,20 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 		
 		if ( ! empty( $data[ 'proof_of_delivery' ] ) ) {
 			$this->log_controller->create_one_log( array(
-				'user_id' => $user_id,
-				'post_id' => $data[ 'post_id' ],
-				'message' => 'Added proof of delivery'
+				'post_type' => 'reports_flt',
+				'user_id'   => $user_id,
+				'post_id'   => $data[ 'post_id' ],
+				'message'   => 'Added proof of delivery'
 			) );
 		}
 		
 		if ( ! empty( $data[ 'updated_rate_confirmation' ] ) ) {
 			
 			$this->log_controller->create_one_log( array(
-				'user_id' => $user_id,
-				'post_id' => $data[ 'post_id' ],
-				'message' => 'Added rate confirmation'
+				'post_type' => 'reports_flt',
+				'user_id'   => $user_id,
+				'post_id'   => $data[ 'post_id' ],
+				'message'   => 'Added rate confirmation'
 			) );
 			
 			if ( $data[ 'updated_rate_confirmation' ] !== $current_data[ 'updated_rate_confirmation' ] ) {
@@ -4033,18 +4047,20 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 			
 			if ( $data[ 'old_tbd' ] && is_null( $data[ 'tbd' ] ) ) {
 				$this->log_controller->create_one_log( array(
-					'user_id' => $user_id,
-					'post_id' => $data[ 'post_id' ],
-					'message' => 'Remove status TBD'
+					'post_type' => 'reports_flt',
+					'user_id'   => $user_id,
+					'post_id'   => $data[ 'post_id' ],
+					'message'   => 'Remove status TBD'
 				) );
 			}
 			
 			if ( $instructions ) {
 				if ( $this->normalize_string( $instructions ) !== $this->normalize_string( $data[ 'old_instructions' ] ) ) {
 					$this->log_controller->create_one_log( array(
-						'user_id' => $user_id,
-						'post_id' => $data[ 'post_id' ],
-						'message' => 'Changed instructions: ' . 'New value: ' . $instructions . ' Old value: ' . $data[ 'old_instructions' ]
+						'post_type' => 'reports_flt',
+						'user_id'   => $user_id,
+						'post_id'   => $data[ 'post_id' ],
+						'message'   => 'Changed instructions: ' . 'New value: ' . $instructions . ' Old value: ' . $data[ 'old_instructions' ]
 					) );
 				}
 			}
@@ -4053,9 +4069,10 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 				if ( $data[ 'old_unit_number_name' ] !== $data[ 'unit_number_name' ] ) {
 					
 					$this->log_controller->create_one_log( array(
-						'user_id' => $user_id,
-						'post_id' => $data[ 'post_id' ],
-						'message' => 'Changed driver: ' . 'New value: ' . $data[ 'unit_number_name' ] . ' Old value: ' . $data[ 'old_unit_number_name' ]
+						'post_type' => 'reports_flt',
+						'user_id'   => $user_id,
+						'post_id'   => $data[ 'post_id' ],
+						'message'   => 'Changed driver: ' . 'New value: ' . $data[ 'unit_number_name' ] . ' Old value: ' . $data[ 'old_unit_number_name' ]
 					) );
 					
 					$select_emails = $this->email_helper->get_selected_emails( $this->user_emails, array(
@@ -4078,9 +4095,10 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 			if ( $data[ 'old_driver_phone' ] && ! empty( $data[ 'old_driver_phone' ] ) ) {
 				if ( $data[ 'driver_phone' ] !== $data[ 'old_driver_phone' ] ) {
 					$this->log_controller->create_one_log( array(
-						'user_id' => $user_id,
-						'post_id' => $data[ 'post_id' ],
-						'message' => 'Changed Driver phone: ' . 'New value: ' . $data[ 'driver_phone' ] . ' Old value: ' . $data[ 'old_driver_phone' ]
+						'post_type' => 'reports_flt',
+						'user_id'   => $user_id,
+						'post_id'   => $data[ 'post_id' ],
+						'message'   => 'Changed Driver phone: ' . 'New value: ' . $data[ 'driver_phone' ] . ' Old value: ' . $data[ 'old_driver_phone' ]
 					) );
 				}
 			}
@@ -4088,9 +4106,10 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 			if ( $data[ 'weight' ] && ! empty( $data[ 'weight' ] ) ) {
 				if ( $data[ 'weight' ] !== $data[ 'old_weight' ] ) {
 					$this->log_controller->create_one_log( array(
-						'user_id' => $user_id,
-						'post_id' => $data[ 'post_id' ],
-						'message' => 'Changed Weight: ' . 'New value: ' . $data[ 'weight' ] . ' Old value: ' . $data[ 'old_weight' ]
+						'post_type' => 'reports_flt',
+						'user_id'   => $user_id,
+						'post_id'   => $data[ 'post_id' ],
+						'message'   => 'Changed Weight: ' . 'New value: ' . $data[ 'weight' ] . ' Old value: ' . $data[ 'old_weight' ]
 					) );
 				}
 			}
@@ -4123,9 +4142,10 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 					$old_status_label = $this->get_label_by_key( $data[ 'old_load_status' ], 'statuses' );
 					
 					$this->log_controller->create_one_log( array(
-						'user_id' => $user_id,
-						'post_id' => $data[ 'post_id' ],
-						'message' => 'Changed Load status: ' . 'New value: ' . $new_status_label . ' Old value: ' . $old_status_label
+						'post_type' => 'reports_flt',
+						'user_id'   => $user_id,
+						'post_id'   => $data[ 'post_id' ],
+						'message'   => 'Changed Load status: ' . 'New value: ' . $new_status_label . ' Old value: ' . $old_status_label
 					) );
 				}
 			}
@@ -4133,9 +4153,10 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 			if ( is_numeric( $data[ 'old_value_driver_rate' ] ) ) {
 				if ( $data[ 'driver_rate' ] !== floatval( $data[ 'old_value_driver_rate' ] ) ) {
 					$this->log_controller->create_one_log( array(
-						'user_id' => $user_id,
-						'post_id' => $data[ 'post_id' ],
-						'message' => 'Changed Driver rate: ' . 'New value: ' . $data[ 'driver_rate' ] . ' Old value: $' . $data[ 'old_value_driver_rate' ]
+						'post_type' => 'reports_flt',
+						'user_id'   => $user_id,
+						'post_id'   => $data[ 'post_id' ],
+						'message'   => 'Changed Driver rate: ' . 'New value: ' . $data[ 'driver_rate' ] . ' Old value: $' . $data[ 'old_value_driver_rate' ]
 					) );
 					
 					$select_emails = $this->email_helper->get_selected_emails( $this->user_emails, array(
@@ -4179,9 +4200,10 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 					) );
 					
 					$this->log_controller->create_one_log( array(
-						'user_id' => $user_id,
-						'post_id' => $data[ 'post_id' ],
-						'message' => 'Changed Booked rate: ' . 'New value: ' . $data[ 'booked_rate' ] . ' Old value: $' . $data[ 'old_value_booked_rate' ]
+						'post_type' => 'reports_flt',
+						'user_id'   => $user_id,
+						'post_id'   => $data[ 'post_id' ],
+						'message'   => 'Changed Booked rate: ' . 'New value: ' . $data[ 'booked_rate' ] . ' Old value: $' . $data[ 'old_value_booked_rate' ]
 					) );
 				}
 			}
@@ -4467,347 +4489,57 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 		$tables = $this->tms_tables;
 		
 		foreach ( $tables as $val ) {
-			$table_name      = $wpdb->prefix . 'reports_' . strtolower( $val );
-			$table_meta_name = $wpdb->prefix . 'reportsmeta_' . strtolower( $val );
+			$table_name      = $wpdb->prefix . 'reports_flt_' . strtolower( $val );
+			$table_meta_name = $wpdb->prefix . 'reportsmeta_flt_' . strtolower( $val );
 			$charset_collate = $wpdb->get_charset_collate();
 			
+			// Создаем оптимизированную основную таблицу с BIGINT и TIMESTAMP
 			$sql = "CREATE TABLE $table_name (
-			    id mediumint(9) NOT NULL AUTO_INCREMENT,
-			    user_id_added mediumint(9) NOT NULL,
-			    date_created datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
-			    user_id_updated mediumint(9) NULL,
-			    date_updated datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-			    pick_up_date datetime NOT NULL,
-			    delivery_date datetime NOT NULL,
-			    date_booked datetime NOT NULL,
-			    load_problem datetime NULL DEFAULT NULL,
+			    id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+			    user_id_added INT UNSIGNED NOT NULL,
+			    date_created TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+			    user_id_updated INT UNSIGNED NULL,
+			    date_updated TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+			    pick_up_date TIMESTAMP NOT NULL,
+			    delivery_date TIMESTAMP NOT NULL,
+			    date_booked TIMESTAMP NOT NULL,
+			    load_problem TIMESTAMP NULL DEFAULT NULL,
 			    status_post varchar(50) NULL DEFAULT NULL,
 			    PRIMARY KEY (id),
 			    INDEX idx_date_created (date_created),
 			    INDEX idx_pick_up_date (pick_up_date),
 			    INDEX idx_delivery_date (delivery_date),
 			    INDEX idx_date_booked (date_booked),
-			    INDEX idx_load_problem (load_problem)
+			    INDEX idx_load_problem (load_problem),
+			    INDEX idx_date_booked_status (date_booked, status_post),
+			    INDEX idx_pick_up_delivery (pick_up_date, delivery_date),
+			    INDEX idx_user_status (user_id_added, status_post),
+			    INDEX idx_created_status (date_created, status_post),
+			    INDEX idx_status_post (status_post)
 			) $charset_collate;";
 			
 			dbDelta( $sql );
 			
+			// Создаем оптимизированную мета-таблицу с BIGINT и правильными индексами
 			$sql = "CREATE TABLE $table_meta_name (
-		        id mediumint(9) NOT NULL AUTO_INCREMENT,
-		        post_id mediumint(9) NOT NULL,
-		        meta_key varchar(255) NOT NULL,
-		        meta_value text,
-		        PRIMARY KEY  (id),
+		        id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+		        post_id BIGINT UNSIGNED NOT NULL,
+		        meta_key VARCHAR(255) NOT NULL,
+		        meta_value TEXT,
+		        PRIMARY KEY (id),
                 INDEX idx_post_id (post_id),
          		INDEX idx_meta_key (meta_key),
-         		INDEX idx_meta_key_value (meta_key, meta_value(191))
+         		INDEX idx_meta_key_value (meta_key, meta_value(191)),
+         		INDEX idx_post_meta_key (post_id, meta_key),
+         		INDEX idx_meta_value (meta_value(100)),
+         		INDEX idx_key_value (meta_key, meta_value(100))
     		) $charset_collate;";
 			
 			dbDelta( $sql );
 		}
 	}
 	
-	/**
-	 * update table add new fields and indexes isset fields
-	 * @return void
-	 */
-	public function update_tables_with_delivery_and_indexes() {
-		global $wpdb;
-		
-		$tables = $this->tms_tables;
-		
-		foreach ( $tables as $val ) {
-			$table_name      = $wpdb->prefix . 'reports_' . strtolower( $val );
-			$table_meta_name = $wpdb->prefix . 'reportsmeta_' . strtolower( $val );
-			
-			// Добавляем новое поле delivery_date и индексы на все даты
-			$wpdb->query( "
-            ALTER TABLE $table_name
-            ADD COLUMN delivery_date datetime NOT NULL AFTER pick_up_date,
-            ADD INDEX idx_date_created (date_created),
-            ADD INDEX idx_pick_up_date (pick_up_date),
-            ADD INDEX idx_delivery_date (delivery_date),
-            ADD INDEX idx_date_booked (date_booked),
-            ADD INDEX idx_load_problem (load_problem);
-        " );
-			
-			// Добавляем индексы в мета таблицу
-			$wpdb->query( "
-            ALTER TABLE $table_meta_name
-            ADD INDEX idx_post_id (post_id),
-            ADD INDEX idx_meta_key (meta_key(191)),
-            ADD INDEX idx_meta_key_value (meta_key(191), meta_value(191));
-        " );
-		}
-	}
-	
-	/**
-	 * Optimize existing tables for large datasets (500k+ records)
-	 * Safe to run on existing data - no data loss
-	 * @return array
-	 */
-	public function optimize_existing_tables_for_performance() {
-		global $wpdb;
-		
-		$results = array();
-		$tables  = $this->tms_tables;
-		
-		foreach ( $tables as $val ) {
-			$table_name      = $wpdb->prefix . 'reports_' . strtolower( $val );
-			$table_meta_name = $wpdb->prefix . 'reportsmeta_' . strtolower( $val );
-			
-			$table_results = array(
-				'table'      => $table_name,
-				'meta_table' => $table_meta_name,
-				'changes'    => array()
-			);
-			
-			// 1. Изменяем тип ID на BIGINT для поддержки больших объемов
-			$result = $wpdb->query( "
-				ALTER TABLE $table_name 
-				MODIFY COLUMN id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT
-			" );
-			if ( $result !== false ) {
-				$table_results[ 'changes' ][] = 'Changed id to BIGINT UNSIGNED';
-			}
-			
-			// 2. Изменяем типы пользователей на INT UNSIGNED
-			$result = $wpdb->query( "
-				ALTER TABLE $table_name 
-				MODIFY COLUMN user_id_added INT UNSIGNED NOT NULL,
-				MODIFY COLUMN user_id_updated INT UNSIGNED NULL
-			" );
-			if ( $result !== false ) {
-				$table_results[ 'changes' ][] = 'Changed user_id fields to INT UNSIGNED';
-			}
-			
-			// 3. Изменяем datetime на TIMESTAMP для лучшей производительности
-			$result = $wpdb->query( "
-				ALTER TABLE $table_name 
-				MODIFY COLUMN date_created TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-				MODIFY COLUMN date_updated TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-				MODIFY COLUMN pick_up_date TIMESTAMP NOT NULL,
-				MODIFY COLUMN delivery_date TIMESTAMP NOT NULL,
-				MODIFY COLUMN date_booked TIMESTAMP NOT NULL,
-				MODIFY COLUMN load_problem TIMESTAMP NULL DEFAULT NULL
-			" );
-			if ( $result !== false ) {
-				$table_results[ 'changes' ][] = 'Changed datetime fields to TIMESTAMP';
-			}
-			
-			// 4. Добавляем составные индексы для частых запросов
-			$indexes_to_add = array(
-				'idx_date_booked_status' => '(date_booked, status_post)',
-				'idx_pick_up_delivery'   => '(pick_up_date, delivery_date)',
-				'idx_user_status'        => '(user_id_added, status_post)',
-				'idx_created_status'     => '(date_created, status_post)',
-				'idx_status_post'        => '(status_post)'
-			);
-			
-			foreach ( $indexes_to_add as $index_name => $index_columns ) {
-				// Проверяем, существует ли индекс
-				$index_exists = $wpdb->get_var( "
-					SHOW INDEX FROM $table_name WHERE Key_name = '$index_name'
-				" );
-				
-				if ( ! $index_exists ) {
-					$result = $wpdb->query( "
-						ALTER TABLE $table_name ADD INDEX $index_name $index_columns
-					" );
-					if ( $result !== false ) {
-						$table_results[ 'changes' ][] = "Added index: $index_name";
-					}
-				}
-			}
-			
-			// 5. Оптимизируем мета-таблицу
-			$result = $wpdb->query( "
-				ALTER TABLE $table_meta_name 
-				MODIFY COLUMN id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-				MODIFY COLUMN post_id BIGINT UNSIGNED NOT NULL
-			" );
-			if ( $result !== false ) {
-				$table_results[ 'changes' ][] = 'Changed meta table id fields to BIGINT UNSIGNED';
-			}
-			
-			// 6. Изменяем longtext на более эффективные типы
-			$result = $wpdb->query( "
-				ALTER TABLE $table_meta_name 
-				MODIFY COLUMN meta_key VARCHAR(255) NOT NULL,
-				MODIFY COLUMN meta_value TEXT
-			" );
-			if ( $result !== false ) {
-				$table_results[ 'changes' ][] = 'Changed meta_key to VARCHAR(255), meta_value to TEXT';
-			}
-			
-			// 7. Добавляем дополнительные индексы для мета-таблицы
-			$meta_indexes = array(
-				'idx_post_meta_key' => '(post_id, meta_key)',
-				'idx_meta_value'    => '(meta_value(100))',
-				'idx_key_value'     => '(meta_key, meta_value(100))'
-			);
-			
-			foreach ( $meta_indexes as $index_name => $index_columns ) {
-				$index_exists = $wpdb->get_var( "
-					SHOW INDEX FROM $table_meta_name WHERE Key_name = '$index_name'
-				" );
-				
-				if ( ! $index_exists ) {
-					$result = $wpdb->query( "
-						ALTER TABLE $table_meta_name ADD INDEX $index_name $index_columns
-					" );
-					if ( $result !== false ) {
-						$table_results[ 'changes' ][] = "Added meta index: $index_name";
-					}
-				}
-			}
-			
-			// 8. Оптимизируем таблицы
-			$wpdb->query( "OPTIMIZE TABLE $table_name" );
-			$wpdb->query( "OPTIMIZE TABLE $table_meta_name" );
-			$wpdb->query( "ANALYZE TABLE $table_name" );
-			$wpdb->query( "ANALYZE TABLE $table_meta_name" );
-			
-			$table_results[ 'changes' ][] = 'Optimized and analyzed tables';
-			$results[]                    = $table_results;
-		}
-		
-		return $results;
-	}
-	
-	/**
-	 * Add performance indexes to existing tables (safe operation)
-	 * @return array
-	 */
-	public function add_performance_indexes_safe() {
-		global $wpdb;
-		
-		$results = array();
-		$tables  = $this->tms_tables;
-		
-		foreach ( $tables as $val ) {
-			$table_name      = $wpdb->prefix . 'reports_' . strtolower( $val );
-			$table_meta_name = $wpdb->prefix . 'reportsmeta_' . strtolower( $val );
-			
-			$table_results = array(
-				'table'         => $table_name,
-				'meta_table'    => $table_meta_name,
-				'indexes_added' => array()
-			);
-			
-			// Добавляем только недостающие индексы
-			$main_indexes = array(
-				'idx_date_booked_status' => '(date_booked, status_post)',
-				'idx_pick_up_delivery'   => '(pick_up_date, delivery_date)',
-				'idx_user_status'        => '(user_id_added, status_post)',
-				'idx_created_status'     => '(date_created, status_post)'
-			);
-			
-			foreach ( $main_indexes as $index_name => $index_columns ) {
-				$index_exists = $wpdb->get_var( "
-					SHOW INDEX FROM $table_name WHERE Key_name = '$index_name'
-				" );
-				
-				if ( ! $index_exists ) {
-					$result = $wpdb->query( "
-						ALTER TABLE $table_name ADD INDEX $index_name $index_columns
-					" );
-					if ( $result !== false ) {
-						$table_results[ 'indexes_added' ][] = $index_name;
-					}
-				}
-			}
-			
-			// Индексы для мета-таблицы
-			$meta_indexes = array(
-				'idx_post_meta_key' => '(post_id, meta_key)',
-				'idx_meta_value'    => '(meta_value(100))',
-				'idx_key_value'     => '(meta_key, meta_value(100))'
-			);
-			
-			foreach ( $meta_indexes as $index_name => $index_columns ) {
-				$index_exists = $wpdb->get_var( "
-					SHOW INDEX FROM $table_meta_name WHERE Key_name = '$index_name'
-				" );
-				
-				if ( ! $index_exists ) {
-					$result = $wpdb->query( "
-						ALTER TABLE $table_meta_name ADD INDEX $index_name $index_columns
-					" );
-					if ( $result !== false ) {
-						$table_results[ 'indexes_added' ][] = "meta_$index_name";
-					}
-				}
-			}
-			
-			$results[] = $table_results;
-		}
-		
-		return $results;
-	}
-	
-	/**
-	 * AJAX handler for database optimization
-	 * @return void
-	 */
-	public function optimize_database_tables() {
-		if ( ! current_user_can( 'manage_options' ) ) {
-			wp_send_json_error( array( 'message' => 'Insufficient permissions' ) );
-		}
-		
-		$optimization_type = $_POST[ 'optimization_type' ] ?? 'indexes';
-		
-		try {
-			if ( $optimization_type === 'full' ) {
-				$results = $this->optimize_existing_tables_for_performance();
-				$message = 'Full database optimization completed successfully';
-			} else {
-				$results = $this->add_performance_indexes_safe();
-				$message = 'Performance indexes added successfully';
-			}
-			
-			wp_send_json_success( array(
-				'message'           => $message,
-				'results'           => $results,
-				'optimization_type' => $optimization_type
-			) );
-			
-		}
-		catch ( Exception $e ) {
-			wp_send_json_error( array(
-				'message' => 'Optimization failed: ' . $e->getMessage(),
-				'error'   => $e->getMessage()
-			) );
-		}
-	}
-	
-	/**
-	 * AJAX handler for adding performance table indexes only
-	 * @return void
-	 */
-	public function add_performance_table_indexes() {
-		if ( ! current_user_can( 'manage_options' ) ) {
-			wp_send_json_error( array( 'message' => 'Insufficient permissions' ) );
-		}
-		
-		try {
-			$results = $this->add_performance_indexes_safe();
-			
-			wp_send_json_success( array(
-				'message' => 'Performance indexes added successfully',
-				'results' => $results
-			) );
-			
-		}
-		catch ( Exception $e ) {
-			wp_send_json_error( array(
-				'message' => 'Failed to add indexes: ' . $e->getMessage(),
-				'error'   => $e->getMessage()
-			) );
-		}
-	}
-	
-	public function add_pinned_message() {
+	public function add_pinned_message_flt() {
 		
 		if ( defined( 'DOING_AJAX' ) && DOING_AJAX ) {
 			
@@ -4844,7 +4576,7 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 		}
 	}
 	
-	public function delete_pinned_message() {
+	public function delete_pinned_message_flt() {
 		if ( defined( 'DOING_AJAX' ) && DOING_AJAX ) {
 			$post_id = intval( $_POST[ 'id' ] ?? 0 );
 			if ( ! $post_id ) {
@@ -4871,35 +4603,25 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 	public function ajax_actions() {
 		
 		$actions = [
-			'add_new_report'                => 'add_new_report',
-			'add_new_draft_report'          => 'add_new_report_draft',
-			'update_new_draft_report'       => 'update_new_draft_report',
-			'update_billing_report'         => 'update_billing_report',
-			'update_files_report'           => 'update_files_report',
-			'delete_open_image'             => 'delete_open_image',
-			'update_shipper_info'           => 'update_shipper_info',
-			'send_email_chain'              => 'send_email_chain',
-			'update_post_status'            => 'update_post_status',
-			'rechange_status_load'          => 'rechange_status_load',
-			'remove_one_load'               => 'remove_one_load',
-			'get_driver_by_id'              => 'get_driver_by_id',
-			'update_accounting_report'      => 'update_accounting_report',
-			'quick_update_post'             => 'quick_update_post',
-			'quick_update_post_ar'          => 'quick_update_post_ar',
-			'quick_update_status'           => 'quick_update_status',
-			'quick_update_status_all'       => 'quick_update_status_all',
-			'add_pinned_message'            => 'add_pinned_message',
-			'delete_pinned_message'         => 'delete_pinned_message',
-			'optimize_database_tables'      => 'optimize_database_tables',
-			'add_performance_indexes'       => 'add_performance_indexes',
-			'optimize_log_tables'           => 'optimize_log_tables',
-			'add_log_performance_indexes'   => 'add_log_performance_indexes',
-			'optimize_performance_tables'   => 'optimize_performance_tables',
-			'add_performance_table_indexes' => 'add_performance_table_indexes',
-			'optimize_drivers_tables'       => 'optimize_drivers_tables',
-			'optimize_contacts_tables'      => 'optimize_contacts_tables',
-			'optimize_company_tables'       => 'optimize_company_tables',
-			'optimize_shipper_tables'       => 'optimize_shipper_tables',
+			'add_new_report_flt'           => 'add_new_report_flt',
+			'add_new_draft_report_flt'     => 'add_new_report_draft_flt',
+			'update_new_draft_report_flt'  => 'update_new_draft_report_flt',
+			'update_billing_report_flt'    => 'update_billing_report_flt',
+			'update_files_report_flt'      => 'update_files_report_flt',
+			'delete_open_image_flt'        => 'delete_open_image_flt',
+			'update_shipper_info_flt'      => 'update_shipper_info_flt',
+			'send_email_chain_flt'         => 'send_email_chain_flt',
+			'update_post_status_flt'       => 'update_post_status_flt',
+			'rechange_status_load_flt'     => 'rechange_status_load_flt',
+			'remove_one_load_flt'          => 'remove_one_load_flt',
+			'get_driver_by_id_flt'         => 'get_driver_by_id_flt',
+			'update_accounting_report_flt' => 'update_accounting_report_flt',
+			'quick_update_post_flt'        => 'quick_update_post_flt',
+			'quick_update_post_ar_flt'     => 'quick_update_post_ar_flt',
+			'quick_update_status_flt'      => 'quick_update_status_flt',
+			'quick_update_status_all_flt'  => 'quick_update_status_all_flt',
+			'add_pinned_message_flt'       => 'add_pinned_message_flt',
+			'delete_pinned_message_flt'    => 'delete_pinned_message_flt',
 		];
 		
 		foreach ( $actions as $ajax_action => $method ) {
@@ -4922,579 +4644,8 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 		//add_action( 'after_setup_theme', array( $this, 'update_tables_with_delivery_and_indexes' ) );
 		
 		$this->ajax_actions();
-		
-		// Add admin menu for database optimization
-		add_action( 'admin_menu', array( $this, 'add_database_optimization_menu' ) );
 	}
 	
-	/**
-	 * Add database optimization page to admin menu
-	 * @return void
-	 */
-	public function add_database_optimization_menu() {
-		add_submenu_page( 'tools.php',   // Parent slug (Tools menu)
-			'Database Optimization',     // Page title
-			'DB Optimization',           // Menu title
-			'manage_options',            // Capability
-			'tms-database-optimization', // Menu slug
-			array( $this, 'render_database_optimization_page' ) // Callback function
-		);
-	}
-	
-	/**
-	 * Render database optimization page
-	 * @return void
-	 */
-	public function render_database_optimization_page() {
-		// Проверяем права доступа
-		if ( ! current_user_can( 'manage_options' ) ) {
-			wp_die( 'Insufficient permissions' );
-		}
-		
-		// Обработка формы
-		if ( isset( $_POST[ 'action' ] ) && $_POST[ 'action' ] === 'optimize_database' ) {
-			$optimization_type = $_POST[ 'optimization_type' ] ?? 'indexes';
-			
-			if ( $optimization_type === 'full' ) {
-				$results = $this->optimize_existing_tables_for_performance();
-				$message = 'Full database optimization completed successfully';
-			} else {
-				$results = $this->add_performance_indexes_safe();
-				$message = 'Performance indexes added successfully';
-			}
-		}
-		?>
-        <div class="wrap">
-            <h1>Database Optimization</h1>
-            <p class="description">Optimize your database for better performance with large datasets (500k+ records)</p>
-			
-			<?php if ( isset( $message ) ) : ?>
-                <div class="notice notice-success">
-                    <h3><?php echo esc_html( $message ); ?></h3>
-					<?php if ( isset( $results ) ) : ?>
-                        <h4>Changes made:</h4>
-                        <ul>
-							<?php foreach ( $results as $table_result ) : ?>
-                                <li>
-                                    <strong><?php echo esc_html( $table_result[ 'table' ] ); ?></strong>
-									<?php if ( ! empty( $table_result[ 'changes' ] ) ) : ?>
-                                        <ul>
-											<?php foreach ( $table_result[ 'changes' ] as $change ) : ?>
-                                                <li><?php echo esc_html( $change ); ?></li>
-											<?php endforeach; ?>
-                                        </ul>
-									<?php endif; ?>
-									<?php if ( ! empty( $table_result[ 'indexes_added' ] ) ) : ?>
-                                        <ul>
-											<?php foreach ( $table_result[ 'indexes_added' ] as $index ) : ?>
-                                                <li>Added index: <?php echo esc_html( $index ); ?></li>
-											<?php endforeach; ?>
-                                        </ul>
-									<?php endif; ?>
-                                </li>
-							<?php endforeach; ?>
-                        </ul>
-					<?php endif; ?>
-                </div>
-			<?php endif; ?>
-
-            <div class="card">
-                <h2>Reports Tables Optimization</h2>
-                <div class="optimization-section">
-                    <h3>Quick Optimization (Safe)</h3>
-                    <p>Add performance indexes to existing tables. This is safe and won't affect your data.</p>
-                    <form method="post" id="quick-optimize-form">
-                        <input type="hidden" name="action" value="optimize_database">
-                        <input type="hidden" name="optimization_type" value="indexes">
-						<?php wp_nonce_field( 'tms_optimize_database', 'tms_optimize_nonce' ); ?>
-                        <button type="submit" class="button button-primary">
-                            Add Performance Indexes
-                        </button>
-                    </form>
-                </div>
-
-                <div class="optimization-section">
-                    <h3>Full Optimization (Advanced)</h3>
-                    <p><strong>Warning:</strong> This will modify table structures. Make sure you have a backup!</p>
-                    <ul>
-                        <li>Change ID fields to BIGINT (supports 18+ quintillion records)</li>
-                        <li>Optimize data types (datetime → timestamp)</li>
-                        <li>Add comprehensive indexes</li>
-                        <li>Optimize meta table structure</li>
-                    </ul>
-                    <form method="post" id="full-optimize-form"
-                          onsubmit="return confirm('Are you sure? This will modify table structures. Make sure you have a backup!');">
-                        <input type="hidden" name="action" value="optimize_database">
-                        <input type="hidden" name="optimization_type" value="full">
-						<?php wp_nonce_field( 'tms_optimize_database', 'tms_optimize_nonce' ); ?>
-                        <button type="submit" class="button button-warning">
-                            Full Database Optimization
-                        </button>
-                    </form>
-                </div>
-            </div>
-
-            <div class="card">
-                <h2>Log Tables Optimization</h2>
-                <div class="optimization-section">
-                    <h3>Quick Log Optimization (Safe)</h3>
-                    <p>Add performance indexes to log tables. This is safe and won't affect your data.</p>
-                    <form method="post" id="quick-log-optimize-form">
-                        <input type="hidden" name="action" value="optimize_log_tables">
-                        <input type="hidden" name="optimization_type" value="indexes">
-						<?php wp_nonce_field( 'tms_optimize_database', 'tms_optimize_nonce' ); ?>
-                        <button type="submit" class="button button-primary">
-                            Add Log Performance Indexes
-                        </button>
-                    </form>
-                </div>
-
-                <div class="optimization-section">
-                    <h3>Full Log Optimization (Advanced)</h3>
-                    <p><strong>Warning:</strong> This will modify log table structures. Make sure you have a backup!</p>
-                    <ul>
-                        <li>Change ID fields to BIGINT (supports 18+ quintillion records)</li>
-                        <li>Optimize data types (datetime → timestamp)</li>
-                        <li>Change LONGTEXT to TEXT for better performance</li>
-                        <li>Add comprehensive indexes for log queries</li>
-                    </ul>
-                    <form method="post" id="full-log-optimize-form"
-                          onsubmit="return confirm('Are you sure? This will modify log table structures. Make sure you have a backup!');">
-                        <input type="hidden" name="action" value="optimize_log_tables">
-                        <input type="hidden" name="optimization_type" value="full">
-						<?php wp_nonce_field( 'tms_optimize_database', 'tms_optimize_nonce' ); ?>
-                        <button type="submit" class="button button-warning">
-                            Full Log Tables Optimization
-                        </button>
-                    </form>
-                </div>
-            </div>
-
-            <div class="card">
-                <h2>Performance Tables Optimization</h2>
-                <div class="optimization-section">
-                    <h3>Quick Performance Optimization (Safe)</h3>
-                    <p>Add performance indexes to performance tables. This is safe and won't affect your data.</p>
-                    <form method="post" id="quick-performance-optimize-form">
-                        <input type="hidden" name="action" value="optimize_performance_tables">
-                        <input type="hidden" name="optimization_type" value="indexes">
-						<?php wp_nonce_field( 'tms_optimize_database', 'tms_optimize_nonce' ); ?>
-                        <button type="submit" class="button button-primary">
-                            Add Performance Table Indexes
-                        </button>
-                    </form>
-                </div>
-
-                <div class="optimization-section">
-                    <h3>Full Performance Optimization (Advanced)</h3>
-                    <p><strong>Warning:</strong> This will modify performance table structures. Make sure you have a
-                        backup!</p>
-                    <ul>
-                        <li>Change ID fields to BIGINT (supports 18+ quintillion records)</li>
-                        <li>Optimize user ID fields to INT UNSIGNED</li>
-                        <li>Optimize calls fields to INT UNSIGNED</li>
-                        <li>Add comprehensive indexes for performance queries</li>
-                    </ul>
-                    <form method="post" id="full-performance-optimize-form"
-                          onsubmit="return confirm('Are you sure? This will modify performance table structures. Make sure you have a backup!');">
-                        <input type="hidden" name="action" value="optimize_performance_tables">
-                        <input type="hidden" name="optimization_type" value="full">
-						<?php wp_nonce_field( 'tms_optimize_database', 'tms_optimize_nonce' ); ?>
-                        <button type="submit" class="button button-warning">
-                            Full Performance Tables Optimization
-                        </button>
-                    </form>
-                </div>
-            </div>
-
-            <div class="card">
-                <h2>Drivers Tables Optimization</h2>
-                <div class="optimization-section">
-                    <h3>Quick Drivers Optimization (Safe)</h3>
-                    <p>Add performance indexes to drivers tables. This is safe and won't affect your data.</p>
-                    <form method="post" id="quick-drivers-optimize-form">
-                        <input type="hidden" name="action" value="optimize_drivers_tables">
-                        <input type="hidden" name="optimization_type" value="indexes">
-						<?php wp_nonce_field( 'tms_optimize_database', 'tms_optimize_nonce' ); ?>
-                        <button type="submit" class="button button-primary">
-                            Add Drivers Performance Indexes
-                        </button>
-                    </form>
-                </div>
-
-                <div class="optimization-section">
-                    <h3>Full Drivers Optimization (Advanced)</h3>
-                    <p><strong>Warning:</strong> This will modify drivers table structures. Make sure you have a backup!
-                    </p>
-                    <ul>
-                        <li>Change ID fields to BIGINT (supports 18+ quintillion records)</li>
-                        <li>Optimize user ID fields to BIGINT UNSIGNED</li>
-                        <li>Change datetime fields to TIMESTAMP for better performance</li>
-                        <li>Add comprehensive indexes for driver queries</li>
-                        <li>Optimize meta table structure</li>
-                    </ul>
-                    <form method="post" id="full-drivers-optimize-form"
-                          onsubmit="return confirm('Are you sure? This will modify drivers table structures. Make sure you have a backup!');">
-                        <input type="hidden" name="action" value="optimize_drivers_tables">
-                        <input type="hidden" name="optimization_type" value="full">
-						<?php wp_nonce_field( 'tms_optimize_database', 'tms_optimize_nonce' ); ?>
-                        <button type="submit" class="button button-warning">
-                            Full Drivers Tables Optimization
-                        </button>
-                    </form>
-                </div>
-            </div>
-
-            <div class="card">
-                <h2>Contacts Tables Optimization</h2>
-                <div class="optimization-section">
-                    <h3>Quick Contacts Optimization (Safe)</h3>
-                    <p>Add performance indexes to contacts tables. This is safe and won't affect your data.</p>
-                    <form method="post" id="quick-contacts-optimize-form">
-                        <input type="hidden" name="action" value="optimize_contacts_tables">
-                        <input type="hidden" name="optimization_type" value="indexes">
-						<?php wp_nonce_field( 'tms_optimize_database', 'tms_optimize_nonce' ); ?>
-                        <button type="submit" class="button button-primary">
-                            Add Contacts Performance Indexes
-                        </button>
-                    </form>
-                </div>
-
-                <div class="optimization-section">
-                    <h3>Full Contacts Optimization (Advanced)</h3>
-                    <p><strong>Warning:</strong> This will modify contacts table structures. Make sure you have a
-                        backup!</p>
-                    <ul>
-                        <li>Change ID fields to BIGINT (supports 18+ quintillion records)</li>
-                        <li>Optimize user ID and company ID fields to BIGINT UNSIGNED</li>
-                        <li>Change datetime fields to TIMESTAMP for better performance</li>
-                        <li>Add comprehensive indexes for contact queries</li>
-                        <li>Optimize additional contacts table structure</li>
-                    </ul>
-                    <form method="post" id="full-contacts-optimize-form"
-                          onsubmit="return confirm('Are you sure? This will modify contacts table structures. Make sure you have a backup!');">
-                        <input type="hidden" name="action" value="optimize_contacts_tables">
-                        <input type="hidden" name="optimization_type" value="full">
-						<?php wp_nonce_field( 'tms_optimize_database', 'tms_optimize_nonce' ); ?>
-                        <button type="submit" class="button button-warning">
-                            Full Contacts Tables Optimization
-                        </button>
-                    </form>
-                </div>
-            </div>
-
-            <div class="card">
-                <h2>Company Tables Optimization</h2>
-                <div class="optimization-section">
-                    <h3>Quick Company Optimization (Safe)</h3>
-                    <p>Add performance indexes to company tables. This is safe and won't affect your data.</p>
-                    <form method="post" id="quick-company-optimize-form">
-                        <input type="hidden" name="action" value="optimize_company_tables">
-                        <input type="hidden" name="optimization_type" value="indexes">
-						<?php wp_nonce_field( 'tms_optimize_database', 'tms_optimize_nonce' ); ?>
-                        <button type="submit" class="button button-primary">
-                            Add Company Performance Indexes
-                        </button>
-                    </form>
-                </div>
-
-                <div class="optimization-section">
-                    <h3>Full Company Optimization (Advanced)</h3>
-                    <p><strong>Warning:</strong> This will modify company table structures. Make sure you have a backup!
-                    </p>
-                    <ul>
-                        <li>Change ID fields to BIGINT (supports 18+ quintillion records)</li>
-                        <li>Optimize user ID fields to BIGINT UNSIGNED</li>
-                        <li>Change datetime fields to TIMESTAMP for better performance</li>
-                        <li>Add comprehensive indexes for company queries</li>
-                        <li>Optimize meta table structure</li>
-                    </ul>
-                    <form method="post" id="full-company-optimize-form"
-                          onsubmit="return confirm('Are you sure? This will modify company table structures. Make sure you have a backup!');">
-                        <input type="hidden" name="action" value="optimize_company_tables">
-                        <input type="hidden" name="optimization_type" value="full">
-						<?php wp_nonce_field( 'tms_optimize_database', 'tms_optimize_nonce' ); ?>
-                        <button type="submit" class="button button-warning">
-                            Full Company Tables Optimization
-                        </button>
-                    </form>
-                </div>
-            </div>
-
-            <div class="card">
-                <h2>Shipper Tables Optimization</h2>
-                <div class="optimization-section">
-                    <h3>Quick Shipper Optimization (Safe)</h3>
-                    <p>Add performance indexes to shipper tables. This is safe and won't affect your data.</p>
-                    <form method="post" id="quick-shipper-optimize-form">
-                        <input type="hidden" name="action" value="optimize_shipper_tables">
-                        <input type="hidden" name="optimization_type" value="indexes">
-						<?php wp_nonce_field( 'tms_optimize_database', 'tms_optimize_nonce' ); ?>
-                        <button type="submit" class="button button-primary">
-                            Add Shipper Performance Indexes
-                        </button>
-                    </form>
-                </div>
-
-                <div class="optimization-section">
-                    <h3>Full Shipper Optimization (Advanced)</h3>
-                    <p><strong>Warning:</strong> This will modify shipper table structures. Make sure you have a backup!
-                    </p>
-                    <ul>
-                        <li>Change ID fields to BIGINT (supports 18+ quintillion records)</li>
-                        <li>Optimize user ID fields to BIGINT UNSIGNED</li>
-                        <li>Change datetime fields to TIMESTAMP for better performance</li>
-                        <li>Add comprehensive indexes for shipper queries</li>
-                        <li>Optimize address and location-based searches</li>
-                    </ul>
-                    <form method="post" id="full-shipper-optimize-form"
-                          onsubmit="return confirm('Are you sure? This will modify shipper table structures. Make sure you have a backup!');">
-                        <input type="hidden" name="action" value="optimize_shipper_tables">
-                        <input type="hidden" name="optimization_type" value="full">
-						<?php wp_nonce_field( 'tms_optimize_database', 'tms_optimize_nonce' ); ?>
-                        <button type="submit" class="button button-warning">
-                            Full Shipper Tables Optimization
-                        </button>
-                    </form>
-                </div>
-            </div>
-
-            <div class="card">
-                <h2>Optimization Details</h2>
-                <h3>What will be optimized:</h3>
-                <ul>
-                    <li><strong>ID Fields:</strong> mediumint(9) → BIGINT UNSIGNED (supports 18+ quintillion records)
-                    </li>
-                    <li><strong>User ID Fields:</strong> mediumint(9) → INT UNSIGNED</li>
-                    <li><strong>Date Fields:</strong> datetime → TIMESTAMP (better performance)</li>
-                    <li><strong>Meta Table:</strong> longtext → VARCHAR(255) for keys, TEXT for values</li>
-                    <li><strong>Indexes:</strong> Add composite indexes for frequent queries</li>
-                </ul>
-
-                <h3>Performance Improvements:</h3>
-                <ul>
-                    <li>5-10x faster queries</li>
-                    <li>Support for 10+ million records</li>
-                    <li>60-80% less memory usage</li>
-                    <li>Sub-100ms response times</li>
-                </ul>
-
-                <h3>Safety Features:</h3>
-                <ul>
-                    <li>No data loss - only structure changes</li>
-                    <li>Index existence check before adding</li>
-                    <li>Error handling and rollback capability</li>
-                    <li>Detailed logging of all changes</li>
-                </ul>
-            </div>
-        </div>
-
-        <style>
-			.card {
-				background: #fff;
-				border: 1px solid #ccd0d4;
-				border-radius: 4px;
-				padding: 20px;
-				margin: 20px 0;
-			}
-
-			.card h2 {
-				margin-top: 0;
-				color: #23282d;
-				border-bottom: 2px solid #0073aa;
-				padding-bottom: 10px;
-			}
-
-			.optimization-section {
-				margin: 20px 0;
-				padding: 15px;
-				border: 1px solid #e5e5e5;
-				border-radius: 4px;
-				background: #f9f9f9;
-			}
-
-			.optimization-section h3 {
-				margin-top: 0;
-				color: #0073aa;
-			}
-
-			.button-warning {
-				background: #dc3232 !important;
-				border-color: #dc3232 !important;
-				color: #fff !important;
-			}
-
-			.button-warning:hover {
-				background: #c92626 !important;
-				border-color: #c92626 !important;
-			}
-        </style>
-
-        <script>
-          document.addEventListener('DOMContentLoaded', function () {
-            // AJAX версия для лучшего UX
-            const quickForm = document.getElementById('quick-optimize-form')
-            const fullForm = document.getElementById('full-optimize-form')
-            const quickLogForm = document.getElementById('quick-log-optimize-form')
-            const fullLogForm = document.getElementById('full-log-optimize-form')
-            const quickPerformanceForm = document.getElementById('quick-performance-optimize-form')
-            const fullPerformanceForm = document.getElementById('full-performance-optimize-form')
-            const quickDriversForm = document.getElementById('quick-drivers-optimize-form')
-            const fullDriversForm = document.getElementById('full-drivers-optimize-form')
-            const quickContactsForm = document.getElementById('quick-contacts-optimize-form')
-            const fullContactsForm = document.getElementById('full-contacts-optimize-form')
-            const quickCompanyForm = document.getElementById('quick-company-optimize-form')
-            const fullCompanyForm = document.getElementById('full-company-optimize-form')
-            const quickShipperForm = document.getElementById('quick-shipper-optimize-form')
-            const fullShipperForm = document.getElementById('full-shipper-optimize-form')
-            
-            if (quickForm) {
-              quickForm.addEventListener('submit', function (e) {
-                e.preventDefault()
-                runOptimization('indexes', this, 'optimize_database_tables')
-              })
-            }
-            
-            if (fullForm) {
-              fullForm.addEventListener('submit', function (e) {
-                e.preventDefault()
-                if (confirm('Are you sure? This will modify table structures. Make sure you have a backup!')) {
-                  runOptimization('full', this, 'optimize_database_tables')
-                }
-              })
-            }
-            
-            if (quickLogForm) {
-              quickLogForm.addEventListener('submit', function (e) {
-                e.preventDefault()
-                runOptimization('indexes', this, 'optimize_log_tables')
-              })
-            }
-            
-            if (fullLogForm) {
-              fullLogForm.addEventListener('submit', function (e) {
-                e.preventDefault()
-                if (confirm('Are you sure? This will modify log table structures. Make sure you have a backup!')) {
-                  runOptimization('full', this, 'optimize_log_tables')
-                }
-              })
-            }
-            
-            if (quickPerformanceForm) {
-              quickPerformanceForm.addEventListener('submit', function (e) {
-                e.preventDefault()
-                runOptimization('indexes', this, 'optimize_performance_tables')
-              })
-            }
-            
-            if (fullPerformanceForm) {
-              fullPerformanceForm.addEventListener('submit', function (e) {
-                e.preventDefault()
-                if (confirm('Are you sure? This will modify performance table structures. Make sure you have a backup!')) {
-                  runOptimization('full', this, 'optimize_performance_tables')
-                }
-              })
-            }
-            
-            if (quickDriversForm) {
-              quickDriversForm.addEventListener('submit', function (e) {
-                e.preventDefault()
-                runOptimization('indexes', this, 'optimize_drivers_tables')
-              })
-            }
-            
-            if (fullDriversForm) {
-              fullDriversForm.addEventListener('submit', function (e) {
-                e.preventDefault()
-                if (confirm('Are you sure? This will modify drivers table structures. Make sure you have a backup!')) {
-                  runOptimization('full', this, 'optimize_drivers_tables')
-                }
-              })
-            }
-            
-            if (quickContactsForm) {
-              quickContactsForm.addEventListener('submit', function (e) {
-                e.preventDefault()
-                runOptimization('indexes', this, 'optimize_contacts_tables')
-              })
-            }
-            
-            if (fullContactsForm) {
-              fullContactsForm.addEventListener('submit', function (e) {
-                e.preventDefault()
-                if (confirm('Are you sure? This will modify contacts table structures. Make sure you have a backup!')) {
-                  runOptimization('full', this, 'optimize_contacts_tables')
-                }
-              })
-            }
-            
-            if (quickCompanyForm) {
-              quickCompanyForm.addEventListener('submit', function (e) {
-                e.preventDefault()
-                runOptimization('indexes', this, 'optimize_company_tables')
-              })
-            }
-            
-            if (fullCompanyForm) {
-              fullCompanyForm.addEventListener('submit', function (e) {
-                e.preventDefault()
-                if (confirm('Are you sure? This will modify company table structures. Make sure you have a backup!')) {
-                  runOptimization('full', this, 'optimize_company_tables')
-                }
-              })
-            }
-            
-            if (quickShipperForm) {
-              quickShipperForm.addEventListener('submit', function (e) {
-                e.preventDefault()
-                runOptimization('indexes', this, 'optimize_shipper_tables')
-              })
-            }
-            
-            if (fullShipperForm) {
-              fullShipperForm.addEventListener('submit', function (e) {
-                e.preventDefault()
-                if (confirm('Are you sure? This will modify shipper table structures. Make sure you have a backup!')) {
-                  runOptimization('full', this, 'optimize_shipper_tables')
-                }
-              })
-            }
-            
-            function runOptimization (type, form, action) {
-              const button = form.querySelector('button')
-              const originalText = button.textContent
-              button.disabled = true
-              button.textContent = 'Optimizing...'
-              
-              const formData = new FormData()
-              formData.append('action', action)
-              formData.append('optimization_type', type)
-              
-              fetch(ajaxurl, {
-                method: 'POST',
-                body  : formData
-              })
-                .then(response => response.json())
-                .then(data => {
-                  if (data.success) {
-                    location.reload() // Перезагружаем для показа результатов
-                  }
-                  else {
-                    alert('Error: ' + data.data.message)
-                    button.disabled = false
-                    button.textContent = originalText
-                  }
-                })
-                .catch(error => {
-                  alert('Request failed: ' + error)
-                  button.disabled = false
-                  button.textContent = originalText
-                })
-            }
-          })
-        </script>
-		<?php
-	}
 	
 	function handle_dispatcher_deletion( $user_id ) {
 		// Проверяем, является ли удаляемый пользователь диспетчером
@@ -5517,19 +4668,19 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 	function get_dispatcher_initials_records( $dispatcher_id ) {
 		global $wpdb;
 		$results = [];
-		
-		// Получаем список таблиц
+
+// Получаем список таблиц
 		$tables = $this->tms_tables;
 		foreach ( $tables as $val ) {
-			$table_meta_name = $wpdb->prefix . 'reportsmeta_' . strtolower( $val );
-			
-			// Выполняем запрос к каждой таблице
+			$table_meta_name = $wpdb->prefix . 'reportsmeta_flt_' . strtolower( $val );
+
+// Выполняем запрос к каждой таблице
 			$query = $wpdb->prepare( "SELECT id FROM $table_meta_name
             WHERE meta_key = %s AND meta_value = %s", 'dispatcher_initials', $dispatcher_id );
 			
 			$table_results = $wpdb->get_results( $query, ARRAY_A );
-			
-			// Добавляем результаты в общий массив с использованием имени таблицы в качестве ключа
+
+// Добавляем результаты в общий массив с использованием имени таблицы в качестве ключа
 			if ( ! empty( $table_results ) ) {
 				$results[ $table_meta_name ] = $table_results;
 			} else {
@@ -5584,8 +4735,8 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 	
 	function move_contacts_for_new_dispatcher( $dispatcher_id_to_find ) {
 		global $global_options;
-		
-		// Получаем новый ID диспетчера из глобальных настроек
+
+// Получаем новый ID диспетчера из глобальных настроек
 		$new_dispatcher_id = get_field_value( $global_options, 'empty_dispatcher' );
 		
 		if ( $new_dispatcher_id === $dispatcher_id_to_find ) {
@@ -5598,309 +4749,33 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 	
 	function move_loads_for_new_dispatcher( $dispatcher_id_to_find ) {
 		global $global_options;
-		
-		// Получаем новый ID диспетчера из глобальных настроек
+
+// Получаем новый ID диспетчера из глобальных настроек
 		$new_dispatcher_id = get_field_value( $global_options, 'empty_dispatcher' );
-		
-		// Проверяем, что новый ID не равен ID удаляемого диспетчера
+
+// Проверяем, что новый ID не равен ID удаляемого диспетчера
 		if ( $new_dispatcher_id === $dispatcher_id_to_find ) {
 			return new WP_Error( 'invalid_id', 'Новый ID диспетчера не может совпадать с удаляемым.' );
 		}
-		
-		// Получаем все записи, связанные с удаляемым диспетчером
+
+// Получаем все записи, связанные с удаляемым диспетчером
 		$records = $this->get_dispatcher_initials_records( $dispatcher_id_to_find );
-		
-		// Проверяем, есть ли что обновлять
+
+// Проверяем, есть ли что обновлять
 		if ( empty( $records ) ) {
 			return new WP_Error( 'no_records', 'Записей для обновления не найдено.' );
 		}
-		
-		// Обновляем все записи на нового диспетчера
+
+// Обновляем все записи на нового диспетчера
 		$update_result = $this->update_dispatcher_initials_records( $records, $new_dispatcher_id );
-		
-		// Проверяем результат
+
+// Проверяем результат
 		if ( $update_result ) {
 			return 'Записи успешно перенесены на нового диспетчера.';
 		} else {
 			return new WP_Error( 'update_failed', 'Не удалось обновить записи.' );
 		}
 	}
-	
-	/**
-	 * AJAX handler for log tables optimization
-	 * @return void
-	 */
-	public function optimize_log_tables() {
-		if ( ! current_user_can( 'manage_options' ) ) {
-			wp_send_json_error( array( 'message' => 'Insufficient permissions' ) );
-		}
-		
-		$optimization_type = $_POST[ 'optimization_type' ] ?? 'indexes';
-		
-		try {
-			$logs = new TMSLogs();
-			
-			if ( $optimization_type === 'full' ) {
-				$results = $logs->optimize_log_tables_for_performance();
-				$message = 'Full log tables optimization completed successfully';
-			} else {
-				$results = $logs->add_log_performance_indexes_safe();
-				$message = 'Log performance indexes added successfully';
-			}
-			
-			wp_send_json_success( array(
-				'message'           => $message,
-				'results'           => $results,
-				'optimization_type' => $optimization_type
-			) );
-			
-		}
-		catch ( Exception $e ) {
-			wp_send_json_error( array(
-				'message' => 'Log optimization failed: ' . $e->getMessage(),
-				'error'   => $e->getMessage()
-			) );
-		}
-	}
-	
-	/**
-	 * AJAX handler for adding log performance indexes only
-	 * @return void
-	 */
-	public function add_log_performance_indexes() {
-		if ( ! current_user_can( 'manage_options' ) ) {
-			wp_send_json_error( array( 'message' => 'Insufficient permissions' ) );
-		}
-		
-		try {
-			$logs    = new TMSLogs();
-			$results = $logs->add_log_performance_indexes_safe();
-			
-			wp_send_json_success( array(
-				'message' => 'Log performance indexes added successfully',
-				'results' => $results
-			) );
-			
-		}
-		catch ( Exception $e ) {
-			wp_send_json_error( array(
-				'message' => 'Failed to add log indexes: ' . $e->getMessage(),
-				'error'   => $e->getMessage()
-			) );
-		}
-	}
-	
-	/**
-	 * AJAX handler for performance tables optimization
-	 * @return void
-	 */
-	public function optimize_performance_tables() {
-		if ( ! current_user_can( 'manage_options' ) ) {
-			wp_send_json_error( array( 'message' => 'Insufficient permissions' ) );
-		}
-		
-		$optimization_type = $_POST[ 'optimization_type' ] ?? 'indexes';
-		
-		try {
-			$performance = new TMSReportsPerformance();
-			
-			if ( $optimization_type === 'full' ) {
-				$results = $performance->optimize_performance_tables_for_performance();
-				$message = 'Full performance tables optimization completed successfully';
-			} else {
-				$results = $performance->add_performance_indexes_safe();
-				$message = 'Performance indexes added successfully';
-			}
-			
-			wp_send_json_success( array(
-				'message'           => $message,
-				'results'           => $results,
-				'optimization_type' => $optimization_type
-			) );
-			
-		}
-		catch ( Exception $e ) {
-			wp_send_json_error( array(
-				'message' => 'Performance optimization failed: ' . $e->getMessage(),
-				'error'   => $e->getMessage()
-			) );
-		}
-	}
-	
-	/**
-	 * AJAX handler for adding performance indexes only
-	 * @return void
-	 */
-	public function add_performance_indexes() {
-		if ( ! current_user_can( 'manage_options' ) ) {
-			wp_send_json_error( array( 'message' => 'Insufficient permissions' ) );
-		}
-		
-		try {
-			$performance = new TMSReportsPerformance();
-			$results     = $performance->add_performance_indexes_safe();
-			
-			wp_send_json_success( array(
-				'message' => 'Performance indexes added successfully',
-				'results' => $results
-			) );
-			
-		}
-		catch ( Exception $e ) {
-			wp_send_json_error( array(
-				'message' => 'Failed to add performance indexes: ' . $e->getMessage(),
-				'error'   => $e->getMessage()
-			) );
-		}
-	}
-	
-	/**
-	 * AJAX handler for drivers tables optimization
-	 * @return void
-	 */
-	public function optimize_drivers_tables() {
-		if ( ! current_user_can( 'manage_options' ) ) {
-			wp_send_json_error( array( 'message' => 'Insufficient permissions' ) );
-		}
-		
-		$optimization_type = $_POST[ 'optimization_type' ] ?? 'indexes';
-		
-		try {
-			$drivers = new TMSDrivers();
-			
-			if ( $optimization_type === 'full' ) {
-				$results = $drivers->perform_full_drivers_optimization();
-				$message = 'Full drivers tables optimization completed successfully';
-			} else {
-				$results = $drivers->perform_fast_drivers_optimization();
-				$message = 'Drivers performance indexes added successfully';
-			}
-			
-			wp_send_json_success( array(
-				'message'           => $message,
-				'results'           => $results,
-				'optimization_type' => $optimization_type
-			) );
-			
-		}
-		catch ( Exception $e ) {
-			wp_send_json_error( array(
-				'message' => 'Drivers optimization failed: ' . $e->getMessage(),
-				'error'   => $e->getMessage()
-			) );
-		}
-	}
-	
-	/**
-	 * AJAX handler for contacts tables optimization
-	 * @return void
-	 */
-	public function optimize_contacts_tables() {
-		if ( ! current_user_can( 'manage_options' ) ) {
-			wp_send_json_error( array( 'message' => 'Insufficient permissions' ) );
-		}
-		
-		$optimization_type = $_POST[ 'optimization_type' ] ?? 'indexes';
-		
-		try {
-			$contacts = new TMSContacts();
-			
-			if ( $optimization_type === 'full' ) {
-				$results = $contacts->perform_full_contacts_optimization();
-				$message = 'Full contacts tables optimization completed successfully';
-			} else {
-				$results = $contacts->perform_fast_contacts_optimization();
-				$message = 'Contacts performance indexes added successfully';
-			}
-			
-			wp_send_json_success( array(
-				'message'           => $message,
-				'results'           => $results,
-				'optimization_type' => $optimization_type
-			) );
-			
-		}
-		catch ( Exception $e ) {
-			wp_send_json_error( array(
-				'message' => 'Contacts optimization failed: ' . $e->getMessage(),
-				'error'   => $e->getMessage()
-			) );
-		}
-	}
-	
-	/**
-	 * AJAX handler for company tables optimization
-	 * @return void
-	 */
-	public function optimize_company_tables() {
-		if ( ! current_user_can( 'manage_options' ) ) {
-			wp_send_json_error( array( 'message' => 'Insufficient permissions' ) );
-		}
-		
-		$optimization_type = $_POST[ 'optimization_type' ] ?? 'indexes';
-		
-		try {
-			$company = new TMSReportsCompany();
-			
-			if ( $optimization_type === 'full' ) {
-				$results = $company->perform_full_company_optimization();
-				$message = 'Full company tables optimization completed successfully';
-			} else {
-				$results = $company->perform_fast_company_optimization();
-				$message = 'Company performance indexes added successfully';
-			}
-			
-			wp_send_json_success( array(
-				'message'           => $message,
-				'results'           => $results,
-				'optimization_type' => $optimization_type
-			) );
-			
-		}
-		catch ( Exception $e ) {
-			wp_send_json_error( array(
-				'message' => 'Company optimization failed: ' . $e->getMessage(),
-				'error'   => $e->getMessage()
-			) );
-		}
-	}
-	
-	/**
-	 * AJAX handler for shipper tables optimization
-	 * @return void
-	 */
-	public function optimize_shipper_tables() {
-		if ( ! current_user_can( 'manage_options' ) ) {
-			wp_send_json_error( array( 'message' => 'Insufficient permissions' ) );
-		}
-		
-		$optimization_type = $_POST[ 'optimization_type' ] ?? 'indexes';
-		
-		try {
-			$shipper = new TMSReportsShipper();
-			
-			if ( $optimization_type === 'full' ) {
-				$results = $shipper->perform_full_shipper_optimization();
-				$message = 'Full shipper tables optimization completed successfully';
-			} else {
-				$results = $shipper->perform_fast_shipper_optimization();
-				$message = 'Shipper performance indexes added successfully';
-			}
-			
-			wp_send_json_success( array(
-				'message'           => $message,
-				'results'           => $results,
-				'optimization_type' => $optimization_type
-			) );
-			
-		}
-		catch ( Exception $e ) {
-			wp_send_json_error( array(
-				'message' => 'Shipper optimization failed: ' . $e->getMessage(),
-				'error'   => $e->getMessage()
-			) );
-		}
-	}
-	
-	// CREATE TABLE AND UPDATE SQL END
+
+// CREATE TABLE AND UPDATE SQL END
 }

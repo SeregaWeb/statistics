@@ -15,6 +15,7 @@ $source              = get_field_value( $_GET, 'source' );
 $factoring           = get_field_value( $_GET, 'factoring' );
 $invoice             = get_field_value( $_GET, 'invoice' );
 $office              = get_field_value( $_GET, 'office' );
+$type                = get_field_value( $_GET, 'type' );
 
 $post_tp = get_field_value( $args, 'post_type' );
 $offices = $helper->get_offices_from_acf();
@@ -137,6 +138,10 @@ $show_filter_by_office = $TMSUsers->check_user_role_access( array(
                     <a class="btn btn-outline-danger" href="<?php echo get_the_permalink(); ?>">Reset</a>
 				<?php endif; ?>
             </div>
+            
+            <?php if ( $type ): ?>
+                <input type="hidden" name="type" value="<?php echo esc_attr( $type ); ?>">
+            <?php endif; ?>
         </form>
     </div>
 </nav>

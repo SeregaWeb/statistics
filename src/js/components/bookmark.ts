@@ -10,6 +10,8 @@ export const bookmarkInit = (ajaxUrl) => {
                 const button = event.target;
                 // @ts-ignore
                 const postId = button.dataset.id;
+                // @ts-ignore
+                const isFlt = button.dataset.flt === '1';
 
                 try {
                     const response = await fetch(ajaxUrl, {
@@ -18,6 +20,7 @@ export const bookmarkInit = (ajaxUrl) => {
                         body: new URLSearchParams({
                             action: 'toggle_bookmark',
                             post_id: postId,
+                            is_flt: isFlt ? '1' : '0',
                         }),
                     });
                     const result = await response.json();

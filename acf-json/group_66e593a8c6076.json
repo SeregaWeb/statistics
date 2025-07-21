@@ -293,6 +293,27 @@
                             "prepend": "",
                             "append": "",
                             "parent_repeater": "field_66e59448bdfaa"
+                        },
+                        {
+                            "key": "field_687cdd538e7a3",
+                            "label": "FLT access",
+                            "name": "flt_access",
+                            "aria-label": "",
+                            "type": "true_false",
+                            "instructions": "",
+                            "required": 0,
+                            "conditional_logic": 0,
+                            "wrapper": {
+                                "width": "",
+                                "class": "",
+                                "id": ""
+                            },
+                            "message": "Vision only FLT access users",
+                            "default_value": 0,
+                            "ui_on_text": "",
+                            "ui_off_text": "",
+                            "ui": 1,
+                            "parent_repeater": "field_66e59448bdfaa"
                         }
                     ]
                 }
@@ -319,6 +340,22 @@
             "key": "field_66eece0e66b61",
             "label": "Add new load",
             "name": "add_new_load",
+            "aria-label": "",
+            "type": "link",
+            "instructions": "this link need for loads draft edit",
+            "required": 1,
+            "conditional_logic": 0,
+            "wrapper": {
+                "width": "",
+                "class": "",
+                "id": ""
+            },
+            "return_format": "url"
+        },
+        {
+            "key": "field_687cdceb890b8",
+            "label": "Add new load flt",
+            "name": "add_new_load_flt",
             "aria-label": "",
             "type": "link",
             "instructions": "this link need for loads draft edit",
@@ -1312,5 +1349,5 @@
     "active": true,
     "description": "",
     "show_in_rest": 0,
-    "modified": 1751805412
+    "modified": 1753053129
 }

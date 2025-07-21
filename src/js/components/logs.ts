@@ -1,6 +1,7 @@
 import { printMessage } from './info-messages';
 import { updateStatusPost } from './create-report';
 
+// eslint-disable-next-line import/prefer-default-export
 export const logsInit = (ajaxUrl) => {
     const userLog = document.querySelector('.js-log-message');
 

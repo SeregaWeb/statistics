@@ -23,7 +23,10 @@ export const updateStatusPost = (ajaxUrl) => {
 
                 // @ts-ignore
                 const formData = new FormData();
-                const action = 'update_post_status';
+
+                const flt = document.querySelector('input[name="flt"]');
+
+                const action = flt ? 'update_post_status_flt' : 'update_post_status';
 
                 const postId = document.querySelector('.js-post-id');
 
@@ -141,13 +144,14 @@ export const fullRemovePost = (ajaxUrl) => {
 
                 if (target instanceof HTMLElement && question) {
                     const idLoad = target.getAttribute('data-id');
+                    const isFlt = target.getAttribute('data-flt') === '1';
 
                     if (!idLoad) {
                         printMessage(`Error remove Load: reload this page and try again`, 'danger', 8000);
                         return;
                     }
 
-                    const action = 'remove_one_load';
+                    const action = isFlt ? 'remove_one_load_flt' : 'remove_one_load';
 
                     const formData = new FormData();
 
@@ -209,7 +213,13 @@ export const actionCreateReportInit = (ajaxUrl) => {
 
                 // @ts-ignore
                 const formData = new FormData(target);
-                formData.append('action', 'add_new_report');
+
+                const flt = document.querySelector('input[name="flt"]');
+                if (!flt) {
+                    formData.append('action', 'add_new_report');
+                } else {
+                    formData.append('action', 'add_new_report_flt');
+                }
 
                 const options = {
                     method: 'POST',
@@ -274,13 +284,22 @@ export const createDraftPosts = (ajaxUrl) => {
                 event.preventDefault();
                 const nextTargetTab = 'pills-load-tab';
                 // const tab = new Tab(document.getElementById(nextTargetTab));
+
+                const flt = document.querySelector('input[name="flt"]');
                 let action = 'add_new_draft_report';
+                if (flt) {
+                    action = 'add_new_draft_report_flt';
+                }
                 // @ts-ignore
                 const btnSubmit = event.target.querySelector('.js-submit-and-next-tab');
                 btnSubmit && btnSubmit.setAttribute('disabled', 'true');
 
                 if (hasReportIdInUrl()) {
                     action = 'update_new_draft_report';
+
+                    if (flt) {
+                        action = 'update_new_draft_report_flt';
+                    }
                 }
 
                 // @ts-ignore
@@ -383,7 +402,10 @@ export const updateFilesReportInit = (ajaxUrl) => {
                 btnSubmit && btnSubmit.setAttribute('disabled', 'true');
                 // @ts-ignore
                 const formData = new FormData(target);
-                formData.append('action', 'update_files_report');
+
+                const flt = document.querySelector('input[name="flt"]');
+                const action = flt ? 'update_files_report_flt' : 'update_files_report';
+                formData.append('action', action);
 
                 const options = {
                     method: 'POST',
@@ -425,7 +447,12 @@ export const updateBillingReportInit = (ajaxUrl) => {
                 btnSubmit && btnSubmit.setAttribute('disabled', 'true');
                 // @ts-ignore
                 const formData = new FormData(target);
-                formData.append('action', 'update_billing_report');
+
+                const flt = document.querySelector('input[name="flt"]');
+
+                const action = flt ? 'update_billing_report_flt' : 'update_billing_report';
+
+                formData.append('action', action);
 
                 const options = {
                     method: 'POST',
@@ -470,7 +497,12 @@ export const updateAccountingReportInit = (ajaxUrl) => {
                 btnSubmit && btnSubmit.setAttribute('disabled', 'true');
                 // @ts-ignore
                 const formData = new FormData(target);
-                formData.append('action', 'update_accounting_report');
+
+                const flt = document.querySelector('input[name="flt"]');
+
+                const action = flt ? 'update_accounting_report_flt' : 'update_accounting_report';
+
+                formData.append('action', action);
 
                 const options = {
                     method: 'POST',
@@ -515,7 +547,8 @@ export const removeOneFileInitial = (ajaxUrl) => {
                 const { target } = event;
                 // @ts-ignore
                 const formData = new FormData(target);
-                const action = 'delete_open_image';
+                const flt = document.querySelector('input[name="flt"]');
+                const action = flt ? 'delete_open_image_flt' : 'delete_open_image';
 
                 formData.append('action', action);
 
@@ -1199,7 +1232,14 @@ export const sendShipperFormInit = (ajaxUrl) => {
             const nextTargetTab = 'pills-documents-tab';
             // @ts-ignore
             const formData = new FormData(target);
-            const action = 'update_shipper_info';
+
+            const flt = document.querySelector('input[name="flt"]');
+
+            let action = 'update_shipper_info';
+
+            if (flt) {
+                action = 'update_shipper_info_flt';
+            }
 
             formData.append('action', action);
 
@@ -1246,6 +1286,12 @@ const selectCheckedLoads = () => {
 export const quickEditInit = (ajaxUrl, selector, action) => {
     const form = document.querySelector(selector);
 
+    const flt = document.querySelector('input[name="flt"]');
+
+    if (flt) {
+        action += '_flt';
+    }
+
     form &&
         form.addEventListener('submit', (event) => {
             event.preventDefault();
@@ -1289,6 +1335,8 @@ export const quickEditInit = (ajaxUrl, selector, action) => {
 
 export const quickEditTrackingStatus = (ajaxUrl) => {
     const forms = document.querySelectorAll('.js-save-status');
+    const flt = document.querySelector('input[name="flt"]');
+    const action = flt ? 'quick_update_status_flt' : 'quick_update_status';
 
     forms &&
         forms.forEach((item) => {
@@ -1298,7 +1346,7 @@ export const quickEditTrackingStatus = (ajaxUrl) => {
                 // @ts-ignore
                 const formData = new FormData(e.target);
 
-                formData.append('action', 'quick_update_status');
+                formData.append('action', action);
 
                 const options = {
                     method: 'POST',
@@ -1388,7 +1436,10 @@ export const pinnedMessageInit = (ajaxUrl) => {
             btnSubmit && btnSubmit.setAttribute('disabled', 'true');
 
             const formData = new FormData(target);
-            formData.append('action', 'add_pinned_message');
+
+            const flt = document.querySelector('input[name="flt"]');
+            const action = flt ? 'add_pinned_message_flt' : 'add_pinned_message';
+            formData.append('action', action);
 
             fetch(ajaxUrl, {
                 method: 'POST',
@@ -1445,10 +1496,13 @@ export function addDeletePinnedHandler(ajaxUrl: string) {
         // eslint-disable-next-line no-alert,no-restricted-globals
         if (!confirm('Are you sure you want to remove this pinned message?')) return;
 
+        const flt = document.querySelector('input[name="flt"]');
+        const action = flt ? 'delete_pinned_message_flt' : 'delete_pinned_message';
+
         fetch(ajaxUrl, {
             method: 'POST',
             body: new URLSearchParams({
-                action: 'delete_pinned_message',
+                action,
                 id,
             }),
         })

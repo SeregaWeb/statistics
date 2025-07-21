@@ -4,6 +4,7 @@ $statuses = $helper->get_statuses();
 
 $search      = get_field_value( $_GET, 'my_search' );
 $load_status = get_field_value( $_GET, 'load_status' );
+$type        = get_field_value( $_GET, 'type' );
 
 $hide_status = get_field_value( $args, 'hide_status' );
 
@@ -58,6 +59,10 @@ $offices = $helper->get_offices_from_acf();
                     <a class="btn btn-outline-danger" href="<?php echo get_the_permalink(); ?>">Reset</a>
 				<?php endif; ?>
             </div>
+            
+            <?php if ( $type ): ?>
+                <input type="hidden" name="type" value="<?php echo esc_attr( $type ); ?>">
+            <?php endif; ?>
         </form>
     </div>
 </nav>

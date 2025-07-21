@@ -1,12 +1,16 @@
 <?php
 global $global_options;
 
-$add_new_load = get_field_value( $global_options, 'add_new_load' );
-
+$flt        = get_field_value( $args, 'flt' );
 $TMSReports = new TMSReports();
-$TMSUsers   = new TMSUsers();
-$TMSHelper  = new TMSReportsHelper();
-$TMSBroker  = new TMSReportsCompany();
+
+if ( $flt ) {
+	$TMSReports = new TMSReportsFlt();
+}
+
+$TMSUsers  = new TMSUsers();
+$TMSHelper = new TMSReportsHelper();
+$TMSBroker = new TMSReportsCompany();
 
 $results                   = get_field_value( $args, 'results' );
 $total_pages               = get_field_value( $args, 'total_pages' );
@@ -237,15 +241,17 @@ if ( ! empty( $results ) ) :
                 <td><?php echo $source; ?></td>
                 <td>
                     <div class="d-flex">
-                        <button class="btn-bookmark js-btn-bookmark <?php echo $TMSUsers->is_bookmarked( $row[ 'id' ] )
+                        <button class="btn-bookmark js-btn-bookmark <?php echo $TMSUsers->is_bookmarked( $row[ 'id' ], isset( $flt ) ? $flt : false )
 							? 'active' : ''; ?>"
-                                data-id="<?php echo $row[ 'id' ]; ?>">
+                                data-id="<?php echo $row[ 'id' ]; ?>"
+                                data-flt="<?php echo isset( $flt ) ? ( $flt ? '1' : '0' ) : '0'; ?>">
 							<?php echo $helper->get_icon_bookmark(); ?>
                         </button>
 						<?php if ( $show_control ): ?>
 							<?php echo esc_html( get_template_part( TEMPLATE_PATH . 'tables/control', 'dropdown', [
 								'id'       => $row[ 'id' ],
 								'is_draft' => $is_draft,
+								'flt'      => $flt,
 							] ) ); ?>
 						<?php endif; ?>
                     </div>

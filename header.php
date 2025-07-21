@@ -103,6 +103,8 @@ We will immediately let you know once the truck is on-site.
         <?php if (is_array($sidebar)):
         
         $small = isset($_COOKIE['sidebar']) && +$_COOKIE['sidebar'] !== 0 ? 'small' : '';
+        $flt_user_access = get_field('flt', 'user_' . $user->ID);
+        $is_admin = current_user_can('administrator');
         
         ?>
         <div class="left-sidebar js-sidebar <?php echo $small; ?>">
@@ -110,6 +112,7 @@ We will immediately let you know once the truck is on-site.
                 $first_link = false;
             
                 $exclude = array_search($role, $block['exclude_role_all_list']);
+                
                 $target_top = $block['menu'][0]['link']['target'];
                
                 if (is_array($block['menu']) && !is_numeric($exclude)):
@@ -132,6 +135,9 @@ We will immediately let you know once the truck is on-site.
                             $menu_url_base = strtok($menu_url, '?');
                             $current_page = $current_url_base === $menu_url_base ? 'current-page' : '';
                             $exclude = array_search($role, $menu['exclude_role']);
+                            $flt_access = $menu['flt_access'];
+                            
+                            if ($flt_access && !$flt_user_access && !$is_admin) {continue;}
                             
                              if (!is_numeric($exclude)) :
                              

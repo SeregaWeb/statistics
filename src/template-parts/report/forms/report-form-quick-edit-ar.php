@@ -3,9 +3,15 @@
 $reports     = new TMSReports();
 $ar_statuses = $reports->get_ar_statuses();
 
+$type   = get_field_value( $_GET, 'type' );
+$is_flt = $type === 'flt';
 ?>
 
 <form class="w-100 js-quick-edit-ar">
+	
+	<?php if ( $is_flt ): ?>
+        <input type="hidden" name="flt" value="1">
+	<?php endif ?>
 
     <div class="w-100 mt-3 mb-3">
         <label for="factoring_status" class="form-label">A/R status</label>

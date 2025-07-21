@@ -277,7 +277,7 @@ class TMSEmails extends TMSUsers {
 		return $upload_url;
 	}
 	
-	function send_email_create_load( $id_load ) {
+	function send_email_create_load( $id_load, $flt = 'reports' ) {
 		global $global_options;
 		// Получение пользователей для ответа
 		$reply_users = get_field_value( $global_options, 'reply_create_loads_emails' );
@@ -285,7 +285,12 @@ class TMSEmails extends TMSUsers {
 			$reply_users = []; // Убедимся, что это массив
 		}
 		
-		$reports       = new TMSReports();
+		$reports = new TMSReports();
+		
+		if ( $flt === 'reports_flt' ) {
+			$reports = new TMSReportsFlt();
+		}
+		
 		$project_name  = $reports->project;
 		$project_email = get_field_value( $global_options, strtolower( $project_name ) . '_email' );
 		$project_phone = get_field_value( $global_options, strtolower( $project_name ) . '_phone' );

@@ -3,6 +3,7 @@ global $global_options;
 
 $add_new_load = get_field_value( $global_options, 'add_new_load' );
 $link_broker  = get_field_value( $global_options, 'single_page_broker' );
+$flt = get_field_value( $args, 'flt' );
 
 $TMSUsers   = new TMSUsers();
 $TMSShipper = new TMSReportsShipper();
@@ -131,6 +132,7 @@ if ( ! empty( $results ) ) : ?>
 						echo esc_html( get_template_part( TEMPLATE_PATH . 'tables/control', 'dropdown', array(
 							'id'       => $row[ 'id' ],
 							'is_draft' => $is_draft,
+                            'flt'      => $flt,
 						) ) );
 					endif; ?>
                 </td>

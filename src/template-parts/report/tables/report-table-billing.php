@@ -12,7 +12,8 @@ $total_pages   = get_field_value( $args, 'total_pages' );
 $current_pages = get_field_value( $args, 'current_pages' );
 $is_draft      = get_field_value( $args, 'is_draft' );
 $is_ar_problev = get_field_value( $args, 'ar_problem' );
-
+$flt = get_field_value( $args, 'flt' );
+    
 $page_type = get_field_value( $args, 'page_type' );
 
 $current_user_id = get_current_user_id();
@@ -167,14 +168,16 @@ if ( ! empty( $results ) ) : ?>
                 <td>
 					<?php if ( $show_control ): ?>
                         <div class="d-flex">
-                            <button class="btn-bookmark js-btn-bookmark <?php echo $TMSUsers->is_bookmarked( $row[ 'id' ] )
-								? 'active' : ''; ?>" data-id="<?php echo $row[ 'id' ]; ?>">
+                            <button class="btn-bookmark js-btn-bookmark <?php echo $TMSUsers->is_bookmarked( $row[ 'id' ], isset( $flt ) ? $flt : false )
+								? 'active' : ''; ?>" data-id="<?php echo $row[ 'id' ]; ?>"
+								data-flt="<?php echo isset( $flt ) ? ( $flt ? '1' : '0' ) : '0'; ?>">
 								<?php echo $helper->get_icon_bookmark(); ?>
                             </button>
 							<?php
 							echo esc_html( get_template_part( TEMPLATE_PATH . 'tables/control', 'dropdown', array(
 								'id'       => $row[ 'id' ],
 								'is_draft' => $is_draft,
+                                'flt'      => $flt,
 							) ) );
 							?>
 

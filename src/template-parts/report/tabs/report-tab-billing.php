@@ -10,6 +10,7 @@ $ar_statuses        = $reports->get_ar_statuses();
 
 $report_object = ! empty( $args[ 'report_object' ] ) ? $args[ 'report_object' ] : null;
 $post_id       = ! empty( $args[ 'post_id' ] ) ? $args[ 'post_id' ] : null;
+$flt           = ! empty( $args[ 'flt' ] ) ? $args[ 'flt' ] : null;
 
 $booked_rate = 0;
 $driver_rate = 0;
@@ -86,6 +87,10 @@ if ( $report_object ) {
 <h3 class="p-0 display-6 mb-4">Billing info</h3>
 
 <form class="js-uploads-billing d-grid">
+	
+	<?php if ( $flt ): ?>
+        <input type="hidden" name="flt" value="<?php echo $flt; ?>">
+	<?php endif; ?>
 
     <input type="hidden" name="old_ar_status" value="<?php echo $ar_status; ?>">
     <input type="hidden" name="old_factoring_status" value="<?php echo $factoring_status; ?>">

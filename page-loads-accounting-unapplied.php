@@ -9,7 +9,24 @@
 get_header();
 
 global $global_options, $report_data;
-$reports = new TMSReports();
+
+// Проверяем доступ к FLT
+$flt_user_access = get_field( 'flt', 'user_' . get_current_user_id() );
+$is_admin = current_user_can( 'administrator' );
+$show_flt_tabs = $flt_user_access || $is_admin;
+
+// Определяем тип данных для загрузки
+$type = get_field_value( $_GET, 'type' );
+$is_flt = $type === 'flt';
+
+
+
+// Выбираем класс в зависимости от типа
+if ( $is_flt ) {
+	$reports = new TMSReportsFlt();
+} else {
+	$reports = new TMSReports();
+}
 
 $link_broker = get_field_value( $global_options, 'single_page_broker' ) ?? '';
 
@@ -29,6 +46,9 @@ if ( is_array( $items ) && ! empty( $items ) ) {
 	$post_tp               = 'accounting';
 	$items[ 'page_type' ]  = $post_tp;
 	$items[ 'ar_problem' ] = true;
+	if ( $is_flt ) {
+		$items[ 'flt' ] = true;
+	}
 }
 ?>
     <div class="container-fluid">
@@ -36,6 +56,15 @@ if ( is_array( $items ) && ! empty( $items ) ) {
             <div class="container">
                 <div class="row">
                     <div class="col-12 mb-3 mt-3">
+						
+						<?php if ( $is_flt && ! $show_flt_tabs ):
+							echo $reports->message_top( 'danger', $reports->messages_prepare( 'not-access' ) );
+						else: ?>
+                        
+                        <?php
+                        echo esc_html( get_template_part( TEMPLATE_PATH . 'common/flt', 'tabs', array( 'show_flt_tabs' => $show_flt_tabs, 'is_flt' => $is_flt ) ) );
+                        ?>
+                        
                         <ul class="nav nav-pills" id="pills-tab" role="tablist">
                             <li class="nav-item w-25" role="presentation">
                                 <button class="nav-link w-100 active" id="pills-info-tab" data-bs-toggle="pill"
@@ -203,6 +232,7 @@ if ( is_array( $items ) && ! empty( $items ) ) {
                             </div>
                         </div>
 
+						<?php endif; ?>
                     </div>
                 </div>
             </div>

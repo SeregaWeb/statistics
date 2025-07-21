@@ -8,6 +8,8 @@ export const saveAllTracking = (urlAjax: string) => {
             event.preventDefault();
 
             const table = document.querySelector<HTMLElement>('.js-table-tracking');
+            const flt = document.querySelector<HTMLInputElement>('input[name="flt"]');
+            const action = flt ? 'quick_update_status_all_flt' : 'quick_update_status_all';
             if (!table) return;
 
             const result = Array.from(
@@ -27,7 +29,7 @@ export const saveAllTracking = (urlAjax: string) => {
                 .filter((item): item is string => item !== null);
 
             const formData = new FormData();
-            formData.append('action', 'quick_update_status_all');
+            formData.append('action', action);
             formData.append('data', result.join(','));
 
             const btn = form.querySelector<HTMLButtonElement>('button');

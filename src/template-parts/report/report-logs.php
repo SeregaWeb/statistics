@@ -16,6 +16,11 @@ $logs_messages = $logs->get_user_logs_by_post( $post_id, $user_id, $post_type );
 ?>
 
 <div class="w-100 sticky-top">
+	
+	<?php if ( $post_type === 'reports_flt' ): ?>
+        <input type="hidden" name="flt" value="<?php echo $post_type; ?>">
+	<?php endif; ?>
+
     <h4 class="mb-2 log-title-container">
         <span>Logs</span>
         <button class="js-hide-logs">
@@ -39,7 +44,7 @@ $logs_messages = $logs->get_user_logs_by_post( $post_id, $user_id, $post_type );
         <button class="btn btn-primary">Send</button>
     </form>
 	
-	<?php if ( $post_type === 'report' ) :
+	<?php if ( $post_type === 'report' || $post_type === 'reports_flt' ) :
 		?>
         <div class="js-pin-container">
 			<?php

@@ -2,9 +2,10 @@
 
 $report_object = ! empty( $args[ 'report_object' ] ) ? $args[ 'report_object' ] : null;
 $post_id       = ! empty( $args[ 'post_id' ] ) ? $args[ 'post_id' ] : null;
-$reports       = new TMSReports();
-$helper        = new TMSReportsHelper();
-$states        = $helper->get_states();
+$flt           = ! empty( $args[ 'flt' ] ) ? $args[ 'flt' ] : null;
+
+$helper = new TMSReportsHelper();
+$states = $helper->get_states();
 
 $full_view_only = get_field_value( $args, 'full_view_only' );
 
@@ -59,7 +60,10 @@ if ( $report_object ) {
 ?>
 
 <form class="js-shipper">
-
+	
+	<?php if ( $flt ): ?>
+        <input type="hidden" name="flt" value="<?php echo $flt; ?>">
+	<?php endif; ?>
 
     <h3 class="p-0 display-6 mb-4">Shipper info</h3>
 
@@ -265,10 +269,10 @@ if ( $report_object ) {
 
                             <div class="col-12 col-md-1 p-0 card-shipper__btns">
                                 <button class="additional-card__edit js-edit-ship">
-									<?php echo $reports->get_icon_edit(); ?>
+									<?php echo $helper->get_icon_edit(); ?>
                                 </button>
                                 <button class="additional-card__remove js-remove-ship">
-									<?php echo $reports->get_close_icon(); ?>
+									<?php echo $helper->get_close_icon(); ?>
                                 </button>
                             </div>
 						
@@ -337,10 +341,10 @@ if ( $report_object ) {
 
                             <div class="col-12 col-md-1 p-0 card-shipper__btns">
                                 <button class="additional-card__edit js-edit-ship">
-									<?php echo $reports->get_icon_edit(); ?>
+									<?php echo $helper->get_icon_edit(); ?>
                                 </button>
                                 <button class="additional-card__remove js-remove-ship">
-									<?php echo $reports->get_close_icon(); ?>
+									<?php echo $helper->get_close_icon(); ?>
                                 </button>
                             </div>
 						

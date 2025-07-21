@@ -1,7 +1,7 @@
 <?php
 global $global_options;
 
-$add_new_load = get_field_value( $global_options, 'add_new_load' );
+$flt = get_field_value( $args, 'flt' );
 
 $TMSUsers   = new TMSUsers();
 $TMSShipper = new TMSReportsShipper();
@@ -246,14 +246,16 @@ if ( ! empty( $results ) ) : ?>
                 <td>
 					<?php if ( $show_control ): ?>
                         <div class="d-flex">
-                            <button class="btn-bookmark js-btn-bookmark <?php echo $TMSUsers->is_bookmarked( $row[ 'id' ] )
-								? 'active' : ''; ?>" data-id="<?php echo $row[ 'id' ]; ?>">
+                            <button class="btn-bookmark js-btn-bookmark <?php echo $TMSUsers->is_bookmarked( $row[ 'id' ], isset( $flt ) ? $flt : false )
+								? 'active' : ''; ?>" data-id="<?php echo $row[ 'id' ]; ?>"
+								data-flt="<?php echo isset( $flt ) ? ( $flt ? '1' : '0' ) : '0'; ?>">
 								<?php echo $helper->get_icon_bookmark(); ?>
                             </button>
 							<?php
 							echo esc_html( get_template_part( TEMPLATE_PATH . 'tables/control', 'dropdown', array(
 								'id'       => $row[ 'id' ],
 								'is_draft' => $is_draft,
+								'flt'      => $flt,
 							) ) );
 							?>
                         </div>

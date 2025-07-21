@@ -13,7 +13,8 @@ export const sendEmailChain = (ajaxUrl) => {
 
                 // @ts-ignore
                 const formData = new FormData(target);
-                const action = 'send_email_chain';
+                const flt = document.querySelector('input[name="flt"]');
+                const action = flt ? 'send_email_chain_flt' : 'send_email_chain';
                 formData.append('action', action);
                 const options = {
                     method: 'POST',

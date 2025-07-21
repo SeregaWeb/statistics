@@ -168,8 +168,9 @@ if ( ! empty( $results ) ) : ?>
                 <td>
 					<?php if ( $show_control ): ?>
                         <div class="d-flex">
-                            <button class="btn-bookmark js-btn-bookmark <?php echo $TMSUsers->is_bookmarked( $row[ 'id' ] )
-								? 'active' : ''; ?>" data-id="<?php echo $row[ 'id' ]; ?>">
+                            <button class="btn-bookmark js-btn-bookmark <?php echo $TMSUsers->is_bookmarked( $row[ 'id' ], isset( $flt ) ? $flt : false )
+								? 'active' : ''; ?>" data-id="<?php echo $row[ 'id' ]; ?>"
+								data-flt="<?php echo isset( $flt ) ? ( $flt ? '1' : '0' ) : '0'; ?>">
 								<?php echo $helper->get_icon_bookmark(); ?>
                             </button>
 							<?php

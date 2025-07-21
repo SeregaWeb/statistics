@@ -1107,6 +1107,7 @@ Kindly confirm once you've received this message." ) . "\n";
 		$factoring         = trim( get_field_value( $_GET, 'factoring' ) ?? '' );
 		$invoice           = trim( get_field_value( $_GET, 'invoice' ) ?? '' );
 		$office            = trim( get_field_value( $_GET, 'office' ) ?? '' );
+		$type              = trim( get_field_value( $_GET, 'type' ) ?? '' );
 		
 		if ( $default_office ) {
 			$args[ 'office' ] = $default_office;
@@ -1146,6 +1147,10 @@ Kindly confirm once you've received this message." ) . "\n";
 		
 		if ( $load_status ) {
 			$args[ 'load_status' ] = $load_status;
+		}
+		
+		if ( $type ) {
+			$args[ 'type' ] = $type;
 		}
 		
 		return $args;
@@ -1599,6 +1604,17 @@ Kindly confirm once you've received this message." ) . "\n";
 		$date_est = new DateTime( 'now', new DateTimeZone( 'America/New_York' ) );
 		
 		return $date_est->format( 'Y-m-d H:i:s' );
+	}
+	
+	/**
+	 * Get current date in EST timezone for form inputs
+	 * 
+	 * @return string
+	 */
+	function getCurrentDateForAmerica() {
+		$date_est = new DateTime( 'now', new DateTimeZone( 'America/New_York' ) );
+		
+		return $date_est->format( 'Y-m-d' );
 	}
 	
 	/**

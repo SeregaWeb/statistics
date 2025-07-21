@@ -18,6 +18,7 @@ export const cleanUrlByFilter = () => {
             const factoring = form.elements.namedItem('factoring') as HTMLInputElement | null;
             const invoice = form.elements.namedItem('invoice') as HTMLInputElement | null;
             const office = form.elements.namedItem('office') as HTMLInputElement | null;
+            const type = form.elements.namedItem('type') as HTMLInputElement | null;
 
             // Проверяем и добавляем параметры только если элементы существуют и не пусты
             if (office?.value) params.append('office', office.value);
@@ -29,6 +30,7 @@ export const cleanUrlByFilter = () => {
             if (source?.value) params.append('source', source.value);
             if (factoring?.value) params.append('factoring', factoring.value);
             if (invoice?.value) params.append('invoice', invoice.value);
+            if (type?.value) params.append('type', type.value);
 
             // Перенаправляем на URL с параметрами
             window.location.href = `?${params.toString()}`;
@@ -47,10 +49,12 @@ export const cleanUrlByFilterAr = () => {
 
             const mySearch = form.elements.namedItem('my_search') as HTMLInputElement | null;
             const status = form.elements.namedItem('status') as HTMLInputElement | null;
+            const type = form.elements.namedItem('type') as HTMLInputElement | null;
 
             // Проверяем и добавляем параметры только если элементы существуют и не пусты
             if (mySearch?.value) params.append('my_search', mySearch.value);
             if (status?.value) params.append('status', status.value);
+            if (type?.value) params.append('type', type.value);
 
             // Перенаправляем на URL с параметрами
             window.location.href = `?${params.toString()}`;

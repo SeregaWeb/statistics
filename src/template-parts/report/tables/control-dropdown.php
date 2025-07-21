@@ -5,6 +5,11 @@ global $global_options;
 $add_new_load = get_field_value( $global_options, 'add_new_load' );
 $id           = get_field_value( $args, 'id' );
 $is_draft     = get_field_value( $args, 'is_draft' );
+$flt          = get_field_value( $args, 'flt' );
+
+if ( $flt ) {
+	$add_new_load = get_field_value( $global_options, 'add_new_load_flt' );
+}
 
 $TMSUsers  = new TMSUsers();
 $TMSHelper = new TMSReportsHelper();
@@ -28,7 +33,9 @@ $TMSHelper = new TMSReportsHelper();
 		<?php if ( $TMSUsers->check_user_role_access( array( 'administrator' ), true ) || $is_draft ): ?>
             <li>
                 <button class="dropdown-item text-danger js-remove-load"
-                        data-id="<?php echo $id; ?>" type="button">Delete
+                        data-id="<?php echo $id; ?>" 
+                        data-flt="<?php echo $flt ? '1' : '0'; ?>" 
+                        type="button">Delete
                 </button>
             </li>
 		<?php endif; ?>

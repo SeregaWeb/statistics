@@ -3,6 +3,9 @@
 $helper   = new TMSReportsHelper();
 $TMSUsers = new TMSUsers();
 
+$type   = get_field_value( $_GET, 'type' );
+$is_flt = $type === 'flt';
+
 $billing_info    = $TMSUsers->check_user_role_access( array( 'administrator', 'billing' ), true );
 $accounting_info = $TMSUsers->check_user_role_access( array( 'administrator', 'accounting' ), true );
 
@@ -16,6 +19,10 @@ $include_statuses = array( 'unsubmitted', 'in-processing', 'processed' );
 ?>
 
 <form class="w-100 js-quick-edit">
+	
+	<?php if ( $is_flt ): ?>
+        <input type="hidden" name="flt" value="1">
+	<?php endif ?>
 	
 	<?php if ( $billing_info ): ?>
 

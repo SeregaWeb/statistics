@@ -272,17 +272,17 @@ class  TMSUsers extends TMSReportsHelper {
 		return strtolower( $curent_tables );
 	}
 	
-	function is_bookmarked( $id ) {
-		$user_bookmarks = get_user_meta( get_current_user_id(), 'user_bookmarks_' . $this->project_for_bookmark, true )
-			?: [];
+	function is_bookmarked( $id, $is_flt = false ) {
+		$meta_key = $is_flt ? 'user_bookmarks_flt_' . $this->project_for_bookmark : 'user_bookmarks_' . $this->project_for_bookmark;
+		$user_bookmarks = get_user_meta( get_current_user_id(), $meta_key, true ) ?: [];
 		$is_bookmarked  = in_array( $id, $user_bookmarks );
 		
 		return $is_bookmarked;
 	}
 	
-	function get_all_bookmarks() {
-		$user_bookmarks = get_user_meta( get_current_user_id(), 'user_bookmarks_' . $this->project_for_bookmark, true )
-			?: [];
+	function get_all_bookmarks( $is_flt = false ) {
+		$meta_key = $is_flt ? 'user_bookmarks_flt_' . $this->project_for_bookmark : 'user_bookmarks_' . $this->project_for_bookmark;
+		$user_bookmarks = get_user_meta( get_current_user_id(), $meta_key, true ) ?: [];
 		
 		return $user_bookmarks;
 	}
@@ -297,8 +297,11 @@ class  TMSUsers extends TMSReportsHelper {
 			wp_send_json_error( [ 'message' => 'Invalid post ID.' ] );
 		}
 		
+		$is_flt = isset( $_POST[ 'is_flt' ] ) ? (bool) $_POST[ 'is_flt' ] : false;
+		$meta_key = $is_flt ? 'user_bookmarks_flt_' . $this->project_for_bookmark : 'user_bookmarks_' . $this->project_for_bookmark;
+		
 		$user_id        = get_current_user_id();
-		$user_bookmarks = get_user_meta( $user_id, 'user_bookmarks_' . $this->project_for_bookmark, true ) ?: [];
+		$user_bookmarks = get_user_meta( $user_id, $meta_key, true ) ?: [];
 		
 		if ( in_array( $post_id, $user_bookmarks ) ) {
 			$user_bookmarks = array_diff( $user_bookmarks, [ $post_id ] );
@@ -308,7 +311,7 @@ class  TMSUsers extends TMSReportsHelper {
 			$is_bookmarked    = true;
 		}
 		
-		update_user_meta( $user_id, 'user_bookmarks_' . $this->project_for_bookmark, $user_bookmarks );
+		update_user_meta( $user_id, $meta_key, $user_bookmarks );
 		
 		wp_send_json_success( [ 'is_bookmarked' => $is_bookmarked ] );
 	}

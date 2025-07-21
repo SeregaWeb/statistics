@@ -8,6 +8,7 @@ $required_file = '';
 $others_files  = '';
 $report_object = ! empty( $args[ 'report_object' ] ) ? $args[ 'report_object' ] : null;
 $post_id       = ! empty( $args[ 'post_id' ] ) ? $args[ 'post_id' ] : null;
+$flt           = ! empty( $args[ 'flt' ] ) ? $args[ 'flt' ] : null;
 
 $billing_info = $TMSUsers->check_user_role_access( array( 'administrator', 'billing', 'accounting' ), true );
 
@@ -190,6 +191,10 @@ if ( $report_object ) {
 ?>
 
 <h3 class="p-0 display-6 mb-4">Upload files</h3>
+
+<?php if ( $flt ): ?>
+    <input type="hidden" name="flt" value="<?php echo $flt; ?>">
+<?php endif; ?>
 
 <?php if ( ( $others_files || $freight_pictures || $required_file || $screen_picture || $update_rate_conf || $proof_of_delivery ) && isset( $post_id ) ): ?>
     <div class="container-uploads <?php echo $full_view_only ? "read-only" : '' ?>">
@@ -462,11 +467,8 @@ if ( $report_object ) {
 		
 		<?php
 		if ( ! $screen_picture || current_user_can( 'administrator' ) ):
-			
-			
 			$text = $reports->create_message_dispatch( $meta );
 			?>
-
 
             <div class="col-12 p-0 mb-2 order-4">
                 <button class="btn btn-outline-primary js-toggle" data-block-toggle="js-show-generate">Create dispatch

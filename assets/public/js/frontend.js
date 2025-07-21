@@ -3259,14 +3259,15 @@ var bookmarkInit = function bookmarkInit(ajaxUrl) {
   buttons && buttons.forEach(function (item) {
     item.addEventListener('click', function (event) {
       return __awaiter(void 0, void 0, void 0, /*#__PURE__*/_regeneratorRuntime().mark(function _callee() {
-        var button, postId, response, result;
+        var button, postId, isFlt, response, result;
         return _regeneratorRuntime().wrap(function _callee$(_context) {
           while (1) switch (_context.prev = _context.next) {
             case 0:
               button = event.target;
               postId = button.dataset.id;
-              _context.prev = 2;
-              _context.next = 5;
+              isFlt = button.dataset.flt === '1';
+              _context.prev = 3;
+              _context.next = 6;
               return fetch(ajaxUrl, {
                 method: 'POST',
                 headers: {
@@ -3274,31 +3275,32 @@ var bookmarkInit = function bookmarkInit(ajaxUrl) {
                 },
                 body: new URLSearchParams({
                   action: 'toggle_bookmark',
-                  post_id: postId
+                  post_id: postId,
+                  is_flt: isFlt ? '1' : '0'
                 })
               });
-            case 5:
+            case 6:
               response = _context.sent;
-              _context.next = 8;
+              _context.next = 9;
               return response.json();
-            case 8:
+            case 9:
               result = _context.sent;
               if (result.success) {
                 button.classList.toggle('active', result.is_bookmarked);
               } else {
                 alert(result.message || 'Something went wrong!');
               }
-              _context.next = 15;
+              _context.next = 16;
               break;
-            case 12:
-              _context.prev = 12;
-              _context.t0 = _context["catch"](2);
+            case 13:
+              _context.prev = 13;
+              _context.t0 = _context["catch"](3);
               console.error('Error:', _context.t0);
-            case 15:
+            case 16:
             case "end":
               return _context.stop();
           }
-        }, _callee, null, [[2, 12]]);
+        }, _callee, null, [[3, 13]]);
       }));
     });
   });
@@ -4011,7 +4013,8 @@ var updateStatusPost = function updateStatusPost(ajaxUrl) {
       event.preventDefault();
       var target = event.target;
       var formData = new FormData();
-      var action = 'update_post_status';
+      var flt = document.querySelector('input[name="flt"]');
+      var action = flt ? 'update_post_status_flt' : 'update_post_status';
       var postId = document.querySelector('.js-post-id');
       if (!postId) {
         (0,_info_messages__WEBPACK_IMPORTED_MODULE_1__.printMessage)('Post id not found', 'danger', 8000);
@@ -4094,11 +4097,12 @@ var fullRemovePost = function fullRemovePost(ajaxUrl) {
       var question = window.confirm('Are you sure you want to delete this load? \nIf you agree it will be deleted permanently');
       if (target instanceof HTMLElement && question) {
         var idLoad = target.getAttribute('data-id');
+        var isFlt = target.getAttribute('data-flt') === '1';
         if (!idLoad) {
           (0,_info_messages__WEBPACK_IMPORTED_MODULE_1__.printMessage)("Error remove Load: reload this page and try again", 'danger', 8000);
           return;
         }
-        var action = 'remove_one_load';
+        var action = isFlt ? 'remove_one_load_flt' : 'remove_one_load';
         var formData = new FormData();
         formData.append('action', action);
         formData.append('id_load', idLoad);
@@ -4138,7 +4142,12 @@ var actionCreateReportInit = function actionCreateReportInit(ajaxUrl) {
       btnSubmit && btnSubmit.setAttribute('disabled', 'true');
       var nextTargetTab = 'pills-trip-tab';
       var formData = new FormData(target);
-      formData.append('action', 'add_new_report');
+      var flt = document.querySelector('input[name="flt"]');
+      if (!flt) {
+        formData.append('action', 'add_new_report');
+      } else {
+        formData.append('action', 'add_new_report_flt');
+      }
       var options = {
         method: 'POST',
         body: formData
@@ -4180,11 +4189,18 @@ var createDraftPosts = function createDraftPosts(ajaxUrl) {
     item.addEventListener('submit', function (event) {
       event.preventDefault();
       var nextTargetTab = 'pills-load-tab';
+      var flt = document.querySelector('input[name="flt"]');
       var action = 'add_new_draft_report';
+      if (flt) {
+        action = 'add_new_draft_report_flt';
+      }
       var btnSubmit = event.target.querySelector('.js-submit-and-next-tab');
       btnSubmit && btnSubmit.setAttribute('disabled', 'true');
       if (hasReportIdInUrl()) {
         action = 'update_new_draft_report';
+        if (flt) {
+          action = 'update_new_draft_report_flt';
+        }
       }
       var clearFormBeforeSubmit = event.target.querySelector('.js-container-search-list');
       if (clearFormBeforeSubmit) {
@@ -4256,7 +4272,9 @@ var updateFilesReportInit = function updateFilesReportInit(ajaxUrl) {
       var btnSubmit = target.querySelector('.js-submit-and-next-tab');
       btnSubmit && btnSubmit.setAttribute('disabled', 'true');
       var formData = new FormData(target);
-      formData.append('action', 'update_files_report');
+      var flt = document.querySelector('input[name="flt"]');
+      var action = flt ? 'update_files_report_flt' : 'update_files_report';
+      formData.append('action', action);
       var options = {
         method: 'POST',
         body: formData
@@ -4289,7 +4307,9 @@ var updateBillingReportInit = function updateBillingReportInit(ajaxUrl) {
       var btnSubmit = target.querySelector('.js-submit-and-next-tab');
       btnSubmit && btnSubmit.setAttribute('disabled', 'true');
       var formData = new FormData(target);
-      formData.append('action', 'update_billing_report');
+      var flt = document.querySelector('input[name="flt"]');
+      var action = flt ? 'update_billing_report_flt' : 'update_billing_report';
+      formData.append('action', action);
       var options = {
         method: 'POST',
         body: formData
@@ -4326,7 +4346,9 @@ var updateAccountingReportInit = function updateAccountingReportInit(ajaxUrl) {
       var btnSubmit = target.querySelector('.js-submit-and-next-tab');
       btnSubmit && btnSubmit.setAttribute('disabled', 'true');
       var formData = new FormData(target);
-      formData.append('action', 'update_accounting_report');
+      var flt = document.querySelector('input[name="flt"]');
+      var action = flt ? 'update_accounting_report_flt' : 'update_accounting_report';
+      formData.append('action', action);
       var options = {
         method: 'POST',
         body: formData
@@ -4357,7 +4379,8 @@ var removeOneFileInitial = function removeOneFileInitial(ajaxUrl) {
       event.preventDefault();
       var target = event.target;
       var formData = new FormData(target);
-      var action = 'delete_open_image';
+      var flt = document.querySelector('input[name="flt"]');
+      var action = flt ? 'delete_open_image_flt' : 'delete_open_image';
       formData.append('action', action);
       var options = {
         method: 'POST',
@@ -4763,7 +4786,11 @@ var sendShipperFormInit = function sendShipperFormInit(ajaxUrl) {
     btnSubmit && btnSubmit.setAttribute('disabled', 'disabled');
     var nextTargetTab = 'pills-documents-tab';
     var formData = new FormData(target);
+    var flt = document.querySelector('input[name="flt"]');
     var action = 'update_shipper_info';
+    if (flt) {
+      action = 'update_shipper_info_flt';
+    }
     formData.append('action', action);
     var options = {
       method: 'POST',
@@ -4802,6 +4829,10 @@ var selectCheckedLoads = function selectCheckedLoads() {
 };
 var quickEditInit = function quickEditInit(ajaxUrl, selector, action) {
   var form = document.querySelector(selector);
+  var flt = document.querySelector('input[name="flt"]');
+  if (flt) {
+    action += '_flt';
+  }
   form && form.addEventListener('submit', function (event) {
     event.preventDefault();
     var selectedValues = selectCheckedLoads();
@@ -4835,11 +4866,13 @@ var quickEditInit = function quickEditInit(ajaxUrl, selector, action) {
 };
 var quickEditTrackingStatus = function quickEditTrackingStatus(ajaxUrl) {
   var forms = document.querySelectorAll('.js-save-status');
+  var flt = document.querySelector('input[name="flt"]');
+  var action = flt ? 'quick_update_status_flt' : 'quick_update_status';
   forms && forms.forEach(function (item) {
     item.addEventListener('submit', function (e) {
       e.preventDefault();
       var formData = new FormData(e.target);
-      formData.append('action', 'quick_update_status');
+      formData.append('action', action);
       var options = {
         method: 'POST',
         body: formData
@@ -4904,7 +4937,9 @@ var pinnedMessageInit = function pinnedMessageInit(ajaxUrl) {
     var btnSubmit = target.querySelector('button');
     btnSubmit && btnSubmit.setAttribute('disabled', 'true');
     var formData = new FormData(target);
-    formData.append('action', 'add_pinned_message');
+    var flt = document.querySelector('input[name="flt"]');
+    var action = flt ? 'add_pinned_message_flt' : 'add_pinned_message';
+    formData.append('action', action);
     fetch(ajaxUrl, {
       method: 'POST',
       body: formData
@@ -4938,10 +4973,12 @@ function addDeletePinnedHandler(ajaxUrl) {
     var id = this.getAttribute('data-id');
     if (!id) return;
     if (!confirm('Are you sure you want to remove this pinned message?')) return;
+    var flt = document.querySelector('input[name="flt"]');
+    var action = flt ? 'delete_pinned_message_flt' : 'delete_pinned_message';
     fetch(ajaxUrl, {
       method: 'POST',
       body: new URLSearchParams({
-        action: 'delete_pinned_message',
+        action: action,
         id: id
       })
     }).then(function (r) {
@@ -5868,6 +5905,7 @@ var cleanUrlByFilter = function cleanUrlByFilter() {
       var factoring = form.elements.namedItem('factoring');
       var invoice = form.elements.namedItem('invoice');
       var office = form.elements.namedItem('office');
+      var type = form.elements.namedItem('type');
       if (office === null || office === void 0 ? void 0 : office.value) params.append('office', office.value);
       if (fmonth === null || fmonth === void 0 ? void 0 : fmonth.value) params.append('fmonth', fmonth.value);
       if (fyear === null || fyear === void 0 ? void 0 : fyear.value) params.append('fyear', fyear.value);
@@ -5877,6 +5915,7 @@ var cleanUrlByFilter = function cleanUrlByFilter() {
       if (source === null || source === void 0 ? void 0 : source.value) params.append('source', source.value);
       if (factoring === null || factoring === void 0 ? void 0 : factoring.value) params.append('factoring', factoring.value);
       if (invoice === null || invoice === void 0 ? void 0 : invoice.value) params.append('invoice', invoice.value);
+      if (type === null || type === void 0 ? void 0 : type.value) params.append('type', type.value);
       window.location.href = "?".concat(params.toString());
     });
   }
@@ -5889,8 +5928,10 @@ var cleanUrlByFilterAr = function cleanUrlByFilterAr() {
       var params = new URLSearchParams();
       var mySearch = form.elements.namedItem('my_search');
       var status = form.elements.namedItem('status');
+      var type = form.elements.namedItem('type');
       if (mySearch === null || mySearch === void 0 ? void 0 : mySearch.value) params.append('my_search', mySearch.value);
       if (status === null || status === void 0 ? void 0 : status.value) params.append('status', status.value);
+      if (type === null || type === void 0 ? void 0 : type.value) params.append('type', type.value);
       window.location.href = "?".concat(params.toString());
     });
   }
@@ -6677,18 +6718,20 @@ var saveAllTracking = function saveAllTracking(urlAjax) {
   saveAllForms.forEach(function (form) {
     form.addEventListener('submit', function (event) {
       return __awaiter(void 0, void 0, void 0, /*#__PURE__*/_regeneratorRuntime().mark(function _callee() {
-        var table, result, formData, btn, response, requestStatus;
+        var table, flt, action, result, formData, btn, response, requestStatus;
         return _regeneratorRuntime().wrap(function _callee$(_context) {
           while (1) switch (_context.prev = _context.next) {
             case 0:
               event.preventDefault();
               table = document.querySelector('.js-table-tracking');
+              flt = document.querySelector('input[name="flt"]');
+              action = flt ? 'quick_update_status_all_flt' : 'quick_update_status_all';
               if (table) {
-                _context.next = 4;
+                _context.next = 6;
                 break;
               }
               return _context.abrupt("return");
-            case 4:
+            case 6:
               result = Array.from(table.querySelectorAll('.js-save-status button:not([disabled])')).map(function (button) {
                 var formInTable = button.closest('.js-save-status');
                 if (!formInTable) return null;
@@ -6700,21 +6743,21 @@ var saveAllTracking = function saveAllTracking(urlAjax) {
                 return item !== null;
               });
               formData = new FormData();
-              formData.append('action', 'quick_update_status_all');
+              formData.append('action', action);
               formData.append('data', result.join(','));
               btn = form.querySelector('button');
               if (btn) btn.setAttribute('disabled', 'true');
-              _context.prev = 10;
-              _context.next = 13;
+              _context.prev = 12;
+              _context.next = 15;
               return fetch(urlAjax, {
                 method: 'POST',
                 body: formData
               });
-            case 13:
+            case 15:
               response = _context.sent;
-              _context.next = 16;
+              _context.next = 18;
               return response.json();
-            case 16:
+            case 18:
               requestStatus = _context.sent;
               if (requestStatus.success) {
                 (0,_info_messages__WEBPACK_IMPORTED_MODULE_0__.printMessage)(requestStatus.data.message, 'success', 8000);
@@ -6722,24 +6765,24 @@ var saveAllTracking = function saveAllTracking(urlAjax) {
               } else {
                 (0,_info_messages__WEBPACK_IMPORTED_MODULE_0__.printMessage)(requestStatus.data.message, 'danger', 8000);
               }
-              _context.next = 24;
+              _context.next = 26;
               break;
-            case 20:
-              _context.prev = 20;
-              _context.t0 = _context["catch"](10);
+            case 22:
+              _context.prev = 22;
+              _context.t0 = _context["catch"](12);
               (0,_info_messages__WEBPACK_IMPORTED_MODULE_0__.printMessage)("Request failed: ".concat(_context.t0), 'danger', 8000);
               console.error('Request failed:', _context.t0);
-            case 24:
-              _context.prev = 24;
+            case 26:
+              _context.prev = 26;
               if (btn) btn.removeAttribute('disabled');
-              return _context.finish(24);
-            case 27:
+              return _context.finish(26);
+            case 29:
               console.log(result);
-            case 28:
+            case 30:
             case "end":
               return _context.stop();
           }
-        }, _callee, null, [[10, 20, 24, 27]]);
+        }, _callee, null, [[12, 22, 26, 29]]);
       }));
     });
   });
@@ -7144,7 +7187,8 @@ var sendEmailChain = function sendEmailChain(ajaxUrl) {
       e.preventDefault();
       var target = e.target;
       var formData = new FormData(target);
-      var action = 'send_email_chain';
+      var flt = document.querySelector('input[name="flt"]');
+      var action = flt ? 'send_email_chain_flt' : 'send_email_chain';
       formData.append('action', action);
       var options = {
         method: 'POST',

@@ -27,6 +27,7 @@ require THEME_DIR . '/src/inc/core/class-tms-reports-icons.php';
 require THEME_DIR . '/src/inc/core/class-tms-reports-helper.php';
 require THEME_DIR . '/src/inc/core/class-tms-auth.php';
 require THEME_DIR . '/src/inc/core/class-tms-reports.php';
+require THEME_DIR . '/src/inc/core/class-tms-reports-flt.php';
 require THEME_DIR . '/src/inc/core/class-tms-users.php';
 require THEME_DIR . '/src/inc/core/class-tms-reports-statistics.php';
 require THEME_DIR . '/src/inc/core/class-tms-reports-company.php';

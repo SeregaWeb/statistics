@@ -33,13 +33,13 @@ class TMSLogs extends TMSReports {
 		global $wpdb;
 		
 		$results = array();
-		$tables = $this->tms_tables;
+		$tables  = $this->tms_tables;
 		
 		foreach ( $tables as $val ) {
 			$log_table_name = $wpdb->prefix . 'reports_logs_' . strtolower( $val );
 			
 			$table_results = array(
-				'table' => $log_table_name,
+				'table'   => $log_table_name,
 				'changes' => array()
 			);
 			
@@ -49,7 +49,7 @@ class TMSLogs extends TMSReports {
 				MODIFY COLUMN id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT
 			" );
 			if ( $result !== false ) {
-				$table_results['changes'][] = 'Changed id to BIGINT UNSIGNED';
+				$table_results[ 'changes' ][] = 'Changed id to BIGINT UNSIGNED';
 			}
 			
 			// 2. Изменяем типы ID загрузки и пользователя на INT UNSIGNED
@@ -59,7 +59,7 @@ class TMSLogs extends TMSReports {
 				MODIFY COLUMN id_user INT UNSIGNED NOT NULL
 			" );
 			if ( $result !== false ) {
-				$table_results['changes'][] = 'Changed id_load and id_user to INT UNSIGNED';
+				$table_results[ 'changes' ][] = 'Changed id_load and id_user to INT UNSIGNED';
 			}
 			
 			// 3. Изменяем datetime на TIMESTAMP для лучшей производительности
@@ -68,7 +68,7 @@ class TMSLogs extends TMSReports {
 				MODIFY COLUMN log_date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 			" );
 			if ( $result !== false ) {
-				$table_results['changes'][] = 'Changed log_date to TIMESTAMP';
+				$table_results[ 'changes' ][] = 'Changed log_date to TIMESTAMP';
 			}
 			
 			// 4. Изменяем longtext на TEXT для лучшей производительности
@@ -77,17 +77,17 @@ class TMSLogs extends TMSReports {
 				MODIFY COLUMN log_text TEXT NOT NULL
 			" );
 			if ( $result !== false ) {
-				$table_results['changes'][] = 'Changed log_text from LONGTEXT to TEXT';
+				$table_results[ 'changes' ][] = 'Changed log_text from LONGTEXT to TEXT';
 			}
 			
 			// 5. Добавляем составные индексы для частых запросов
 			$indexes_to_add = array(
-				'idx_load_date' => '(id_load, log_date)',
-				'idx_user_date' => '(id_user, log_date)',
+				'idx_load_date'     => '(id_load, log_date)',
+				'idx_user_date'     => '(id_user, log_date)',
 				'idx_priority_date' => '(log_priority, log_date)',
 				'idx_date_priority' => '(log_date, log_priority)',
-				'idx_load_user' => '(id_load, id_user)',
-				'idx_role_date' => '(user_role, log_date)'
+				'idx_load_user'     => '(id_load, id_user)',
+				'idx_role_date'     => '(user_role, log_date)'
 			);
 			
 			foreach ( $indexes_to_add as $index_name => $index_columns ) {
@@ -101,7 +101,7 @@ class TMSLogs extends TMSReports {
 						ALTER TABLE $log_table_name ADD INDEX $index_name $index_columns
 					" );
 					if ( $result !== false ) {
-						$table_results['changes'][] = "Added index: $index_name";
+						$table_results[ 'changes' ][] = "Added index: $index_name";
 					}
 				}
 			}
@@ -110,15 +110,15 @@ class TMSLogs extends TMSReports {
 			$wpdb->query( "OPTIMIZE TABLE $log_table_name" );
 			$wpdb->query( "ANALYZE TABLE $log_table_name" );
 			
-			$table_results['changes'][] = 'Optimized and analyzed table';
-			$results[] = $table_results;
+			$table_results[ 'changes' ][] = 'Optimized and analyzed table';
+			$results[]                    = $table_results;
 		}
 		
 		// Оптимизируем таблицу drivers_logs
 		$drivers_log_table = $wpdb->prefix . 'drivers_logs';
 		
 		$drivers_results = array(
-			'table' => $drivers_log_table,
+			'table'   => $drivers_log_table,
 			'changes' => array()
 		);
 		
@@ -128,7 +128,7 @@ class TMSLogs extends TMSReports {
 			MODIFY COLUMN id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT
 		" );
 		if ( $result !== false ) {
-			$drivers_results['changes'][] = 'Changed id to BIGINT UNSIGNED';
+			$drivers_results[ 'changes' ][] = 'Changed id to BIGINT UNSIGNED';
 		}
 		
 		// 2. Изменяем типы ID загрузки и пользователя
@@ -138,7 +138,7 @@ class TMSLogs extends TMSReports {
 			MODIFY COLUMN id_user INT UNSIGNED NOT NULL
 		" );
 		if ( $result !== false ) {
-			$drivers_results['changes'][] = 'Changed id_load and id_user to INT UNSIGNED';
+			$drivers_results[ 'changes' ][] = 'Changed id_load and id_user to INT UNSIGNED';
 		}
 		
 		// 3. Изменяем datetime на TIMESTAMP
@@ -147,7 +147,7 @@ class TMSLogs extends TMSReports {
 			MODIFY COLUMN log_date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 		" );
 		if ( $result !== false ) {
-			$drivers_results['changes'][] = 'Changed log_date to TIMESTAMP';
+			$drivers_results[ 'changes' ][] = 'Changed log_date to TIMESTAMP';
 		}
 		
 		// 4. Изменяем longtext на TEXT
@@ -156,17 +156,17 @@ class TMSLogs extends TMSReports {
 			MODIFY COLUMN log_text TEXT NOT NULL
 		" );
 		if ( $result !== false ) {
-			$drivers_results['changes'][] = 'Changed log_text from LONGTEXT to TEXT';
+			$drivers_results[ 'changes' ][] = 'Changed log_text from LONGTEXT to TEXT';
 		}
 		
 		// 5. Добавляем составные индексы для drivers_logs
 		$drivers_indexes = array(
-			'idx_load_date' => '(id_load, log_date)',
-			'idx_user_date' => '(id_user, log_date)',
+			'idx_load_date'     => '(id_load, log_date)',
+			'idx_user_date'     => '(id_user, log_date)',
 			'idx_priority_date' => '(log_priority, log_date)',
 			'idx_date_priority' => '(log_date, log_priority)',
-			'idx_load_user' => '(id_load, id_user)',
-			'idx_role_date' => '(user_role, log_date)'
+			'idx_load_user'     => '(id_load, id_user)',
+			'idx_role_date'     => '(user_role, log_date)'
 		);
 		
 		foreach ( $drivers_indexes as $index_name => $index_columns ) {
@@ -179,7 +179,7 @@ class TMSLogs extends TMSReports {
 					ALTER TABLE $drivers_log_table ADD INDEX $index_name $index_columns
 				" );
 				if ( $result !== false ) {
-					$drivers_results['changes'][] = "Added index: $index_name";
+					$drivers_results[ 'changes' ][] = "Added index: $index_name";
 				}
 			}
 		}
@@ -188,8 +188,8 @@ class TMSLogs extends TMSReports {
 		$wpdb->query( "OPTIMIZE TABLE $drivers_log_table" );
 		$wpdb->query( "ANALYZE TABLE $drivers_log_table" );
 		
-		$drivers_results['changes'][] = 'Optimized and analyzed table';
-		$results[] = $drivers_results;
+		$drivers_results[ 'changes' ][] = 'Optimized and analyzed table';
+		$results[]                      = $drivers_results;
 		
 		return $results;
 	}
@@ -202,24 +202,24 @@ class TMSLogs extends TMSReports {
 		global $wpdb;
 		
 		$results = array();
-		$tables = $this->tms_tables;
+		$tables  = $this->tms_tables;
 		
 		foreach ( $tables as $val ) {
 			$log_table_name = $wpdb->prefix . 'reports_logs_' . strtolower( $val );
 			
 			$table_results = array(
-				'table' => $log_table_name,
+				'table'         => $log_table_name,
 				'indexes_added' => array()
 			);
 			
 			// Добавляем только недостающие индексы
 			$main_indexes = array(
-				'idx_load_date' => '(id_load, log_date)',
-				'idx_user_date' => '(id_user, log_date)',
+				'idx_load_date'     => '(id_load, log_date)',
+				'idx_user_date'     => '(id_user, log_date)',
 				'idx_priority_date' => '(log_priority, log_date)',
 				'idx_date_priority' => '(log_date, log_priority)',
-				'idx_load_user' => '(id_load, id_user)',
-				'idx_role_date' => '(user_role, log_date)'
+				'idx_load_user'     => '(id_load, id_user)',
+				'idx_role_date'     => '(user_role, log_date)'
 			);
 			
 			foreach ( $main_indexes as $index_name => $index_columns ) {
@@ -232,7 +232,7 @@ class TMSLogs extends TMSReports {
 						ALTER TABLE $log_table_name ADD INDEX $index_name $index_columns
 					" );
 					if ( $result !== false ) {
-						$table_results['indexes_added'][] = $index_name;
+						$table_results[ 'indexes_added' ][] = $index_name;
 					}
 				}
 			}
@@ -244,17 +244,17 @@ class TMSLogs extends TMSReports {
 		$drivers_log_table = $wpdb->prefix . 'drivers_logs';
 		
 		$drivers_results = array(
-			'table' => $drivers_log_table,
+			'table'         => $drivers_log_table,
 			'indexes_added' => array()
 		);
 		
 		$drivers_indexes = array(
-			'idx_load_date' => '(id_load, log_date)',
-			'idx_user_date' => '(id_user, log_date)',
+			'idx_load_date'     => '(id_load, log_date)',
+			'idx_user_date'     => '(id_user, log_date)',
 			'idx_priority_date' => '(log_priority, log_date)',
 			'idx_date_priority' => '(log_date, log_priority)',
-			'idx_load_user' => '(id_load, id_user)',
-			'idx_role_date' => '(user_role, log_date)'
+			'idx_load_user'     => '(id_load, id_user)',
+			'idx_role_date'     => '(user_role, log_date)'
 		);
 		
 		foreach ( $drivers_indexes as $index_name => $index_columns ) {
@@ -267,7 +267,7 @@ class TMSLogs extends TMSReports {
 					ALTER TABLE $drivers_log_table ADD INDEX $index_name $index_columns
 				" );
 				if ( $result !== false ) {
-					$drivers_results['indexes_added'][] = $index_name;
+					$drivers_results[ 'indexes_added' ][] = $index_name;
 				}
 			}
 		}
@@ -276,7 +276,6 @@ class TMSLogs extends TMSReports {
 		
 		return $results;
 	}
-
 	
 	
 	public function get_last_log_by_post( $post_id ) {
@@ -412,10 +411,10 @@ class TMSLogs extends TMSReports {
 	    </div>";
 	}
 	
-	public function delete_all_logs( $post_id ) {
+	public function delete_all_logs( $post_id, $post_type = 'report' ) {
 		global $wpdb;
 		
-		$logs_table = $wpdb->prefix . 'reports_logs_' . strtolower( $this->use_project );
+		$logs_table = $this->get_table_by_post_type( $post_type );
 		
 		// Проверяем существование таблицы
 		if ( $wpdb->get_var( "SHOW TABLES LIKE '$logs_table'" ) !== $logs_table ) {
@@ -479,6 +478,10 @@ class TMSLogs extends TMSReports {
 		
 		if ( $post_type === 'report' ) {
 			$logs_table = $wpdb->prefix . 'reports_logs_' . strtolower( $this->use_project );
+		}
+		
+		if ( $post_type === 'reports_flt' ) {
+			$logs_table = $wpdb->prefix . 'reports_logs_flt_' . strtolower( $this->use_project );
 		}
 		
 		if ( $post_type === 'driver' ) {
@@ -546,46 +549,90 @@ class TMSLogs extends TMSReports {
 		
 		$tables = $this->tms_tables;
 		
+		// Создаем оптимизированные обычные таблицы логов
 		foreach ( $tables as $val ) {
 			$log_table_name  = $wpdb->prefix . 'reports_logs_' . strtolower( $val );
 			$charset_collate = $wpdb->get_charset_collate();
 			
 			$sql = "CREATE TABLE $log_table_name (
-            id mediumint(9) NOT NULL AUTO_INCREMENT,
-            id_load mediumint(9) NOT NULL,
-            id_user mediumint(9) NOT NULL,
+            id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+            id_load INT UNSIGNED NOT NULL,
+            id_user INT UNSIGNED NOT NULL,
             user_name varchar(255) NOT NULL,
             user_role varchar(100) NOT NULL,
             log_priority smallint(5) NOT NULL DEFAULT 0,
-            log_date datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
-            log_text longtext NOT NULL,
+            log_date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            log_text TEXT NOT NULL,
             PRIMARY KEY (id),
             INDEX idx_id_load (id_load),
             INDEX idx_id_user (id_user),
             INDEX idx_log_priority (log_priority),
-            INDEX idx_log_date (log_date)
+            INDEX idx_log_date (log_date),
+            INDEX idx_load_date (id_load, log_date),
+            INDEX idx_user_date (id_user, log_date),
+            INDEX idx_priority_date (log_priority, log_date),
+            INDEX idx_date_priority (log_date, log_priority),
+            INDEX idx_load_user (id_load, id_user),
+            INDEX idx_role_date (user_role, log_date)
         ) $charset_collate;";
 			
 			dbDelta( $sql );
 		}
 		
-		$log_table_name  = $wpdb->prefix . 'drivers_logs';
-		$charset_collate = $wpdb->get_charset_collate();
-		
-		$sql = "CREATE TABLE $log_table_name (
-            id mediumint(9) NOT NULL AUTO_INCREMENT,
-            id_load mediumint(9) NOT NULL,
-            id_user mediumint(9) NOT NULL,
+		// Создаем оптимизированные FLT таблицы логов
+		foreach ( $tables as $val ) {
+			$log_table_name  = $wpdb->prefix . 'reports_logs_flt_' . strtolower( $val );
+			$charset_collate = $wpdb->get_charset_collate();
+			
+			$sql = "CREATE TABLE $log_table_name (
+            id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+            id_load INT UNSIGNED NOT NULL,
+            id_user INT UNSIGNED NOT NULL,
             user_name varchar(255) NOT NULL,
             user_role varchar(100) NOT NULL,
             log_priority smallint(5) NOT NULL DEFAULT 0,
-            log_date datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
-            log_text longtext NOT NULL,
+            log_date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            log_text TEXT NOT NULL,
             PRIMARY KEY (id),
             INDEX idx_id_load (id_load),
             INDEX idx_id_user (id_user),
             INDEX idx_log_priority (log_priority),
-            INDEX idx_log_date (log_date)
+            INDEX idx_log_date (log_date),
+            INDEX idx_load_date (id_load, log_date),
+            INDEX idx_user_date (id_user, log_date),
+            INDEX idx_priority_date (log_priority, log_date),
+            INDEX idx_date_priority (log_date, log_priority),
+            INDEX idx_load_user (id_load, id_user),
+            INDEX idx_role_date (user_role, log_date)
+        ) $charset_collate;";
+			
+			dbDelta( $sql );
+		}
+		
+		// Создаем оптимизированную таблицу логов водителей
+		$log_table_name  = $wpdb->prefix . 'drivers_logs';
+		$charset_collate = $wpdb->get_charset_collate();
+		
+		$sql = "CREATE TABLE $log_table_name (
+            id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+            id_load INT UNSIGNED NOT NULL,
+            id_user INT UNSIGNED NOT NULL,
+            user_name varchar(255) NOT NULL,
+            user_role varchar(100) NOT NULL,
+            log_priority smallint(5) NOT NULL DEFAULT 0,
+            log_date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            log_text TEXT NOT NULL,
+            PRIMARY KEY (id),
+            INDEX idx_id_load (id_load),
+            INDEX idx_id_user (id_user),
+            INDEX idx_log_priority (log_priority),
+            INDEX idx_log_date (log_date),
+            INDEX idx_load_date (id_load, log_date),
+            INDEX idx_user_date (id_user, log_date),
+            INDEX idx_priority_date (log_priority, log_date),
+            INDEX idx_date_priority (log_date, log_priority),
+            INDEX idx_load_user (id_load, id_user),
+            INDEX idx_role_date (user_role, log_date)
         ) $charset_collate;";
 		
 		dbDelta( $sql );

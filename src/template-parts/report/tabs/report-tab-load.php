@@ -14,6 +14,7 @@ $dispatchers = array_merge( $dispatchers, $admins );
 
 $post_id       = ! empty( $args[ 'post_id' ] ) ? $args[ 'post_id' ] : null;
 $report_object = ! empty( $args[ 'report_object' ] ) ? $args[ 'report_object' ] : null;
+$flt           = ! empty( $args[ 'flt' ] ) ? $args[ 'flt' ] : null;
 
 $read_only      = false;
 $full_view_only = get_field_value( $args, 'full_view_only' );
@@ -69,7 +70,8 @@ if ( $report_object ) {
 		$date_booked = get_field_value( $main, 'date_booked' );
 		
 		if ( empty( $date_booked ) || $date_booked === '0000-00-00 00:00:00' || is_null( $date_booked ) || ! $date_booked ) {
-			$date_booked_formatted = date( 'Y-m-d' );
+			// Use EST timezone for default date
+			$date_booked_formatted = $helper->getCurrentDateForAmerica();
 		} else {
 			$date_booked_formatted = date( 'Y-m-d', strtotime( $date_booked ) );
 		}
@@ -130,6 +132,10 @@ $read_only = $TMSUsers->check_read_only( $post_status );
 ?>
 <form class="form-group <?php echo ( ! $full_view_only || ( $full_view_only && $tracking_tl ) ) ? 'js-add-new-report'
 	: ''; ?>">
+	
+	<?php if ( $flt ): ?>
+        <input type="hidden" name="flt" value="<?php echo $flt; ?>">
+	<?php endif; ?>
 	
 	<?php if ( $read_only ): ?>
         <input type="hidden" name="read_only" value="true">

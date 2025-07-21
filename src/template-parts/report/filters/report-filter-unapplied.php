@@ -3,6 +3,7 @@ $helper    = new TMSReportsHelper();
 $factoring = $helper->get_factoring_statuses();
 $search    = get_field_value( $_GET, 'my_search' );
 $status    = get_field_value( $_GET, 'status' );
+$type      = get_field_value( $_GET, 'type' );
 
 if ( ! $status ) {
 	$status = 'not-solved';
@@ -42,6 +43,10 @@ if ( ! $status ) {
                     <a class="btn btn-outline-danger" href="<?php echo get_the_permalink(); ?>">Reset</a>
 				<?php endif; ?>
             </div>
+            
+            <?php if ( $type ): ?>
+                <input type="hidden" name="type" value="<?php echo esc_attr( $type ); ?>">
+            <?php endif; ?>
         </form>
     </div>
 </nav>

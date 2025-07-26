@@ -1,15 +1,19 @@
 <?php
 
 class  TMSStatistics extends TMSReportsHelper {
-	public $table_main = '';
-	public $table_meta = '';
+	public $table_main     = '';
+	public $table_meta     = '';
+	public $table_main_flt = '';
+	public $table_meta_flt = '';
 	
 	public function __construct() {
 		$user_id       = get_current_user_id();
 		$curent_tables = get_field( 'current_select', 'user_' . $user_id );
 		if ( $curent_tables ) {
-			$this->table_main = 'reports_' . strtolower( $curent_tables );
-			$this->table_meta = 'reportsmeta_' . strtolower( $curent_tables );
+			$this->table_main     = 'reports_' . strtolower( $curent_tables );
+			$this->table_meta     = 'reportsmeta_' . strtolower( $curent_tables );
+			$this->table_main_flt = 'reports_flt_' . strtolower( $curent_tables );
+			$this->table_meta_flt = 'reportsmeta_flt_' . strtolower( $curent_tables );
 		}
 	}
 	
@@ -513,10 +517,10 @@ class  TMSStatistics extends TMSReportsHelper {
 		return $wpdb->get_results( $query, ARRAY_A );
 	}
 	
-	public function get_top_10_customers( $year, $month, $office = 'all' ) {
+	public function get_top_10_customers( $year, $month, $office = 'all', $is_flt = false ) {
 		global $wpdb;
-		$table_reports = $wpdb->prefix . $this->table_main;
-		$table_meta    = $wpdb->prefix . $this->table_meta;
+		$table_reports = $wpdb->prefix . ( $is_flt ? $this->table_main_flt : $this->table_main );
+		$table_meta    = $wpdb->prefix . ( $is_flt ? $this->table_meta_flt : $this->table_meta );
 		
 		// Базовый SQL
 		$sql = "
@@ -563,10 +567,10 @@ class  TMSStatistics extends TMSReportsHelper {
 		return $results;
 	}
 	
-	public function get_monthly_fuctoring_stats( $year, $month, $office = 'all' ) {
+	public function get_monthly_fuctoring_stats( $year, $month, $office = 'all', $is_flt = false ) {
 		global $wpdb;
-		$table_reports = $wpdb->prefix . $this->table_main;
-		$table_meta    = $wpdb->prefix . $this->table_meta;
+		$table_reports = $wpdb->prefix . ( $is_flt ? $this->table_main_flt : $this->table_main );
+		$table_meta    = $wpdb->prefix . ( $is_flt ? $this->table_meta_flt : $this->table_meta );
 		
 		$sql = "
 		    SELECT

@@ -17,7 +17,6 @@ class TMSReportsFlt extends TMSReportsHelper {
 	
 	public function __construct() {
 		$user_id = get_current_user_id();
-		
 		$this->email_helper = new TMSEmails();
 		$this->email_helper->init();
 		$this->user_emails = $this->email_helper->get_all_emails();
@@ -30,6 +29,9 @@ class TMSReportsFlt extends TMSReportsHelper {
 			$this->table_main = 'reports_flt_' . strtolower( $curent_tables );
 			$this->table_meta = 'reportsmeta_flt_' . strtolower( $curent_tables );
 		}
+
+		// $this->duplicate_flt_loads_for_testing();
+
 	}
 	
 	public function get_profit_by_preset( $preset_ids ) {
@@ -225,6 +227,7 @@ class TMSReportsFlt extends TMSReportsHelper {
 		global $wpdb;
 		$cache_key = 'stat_tool_cache_flt' . $this->project;
 		$cached    = get_transient( $cache_key );
+		
 		if ( $cached !== false ) {
 			return $cached;
 		}
@@ -4778,4 +4781,85 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 	}
 
 // CREATE TABLE AND UPDATE SQL END
+
+	/**
+	 * Временная функция для дублирования FLT грузов для тестирования
+	 * @param int $duplicates_count - количество дубликатов для каждого груза
+	 * @return array
+	 */
+	public function duplicate_flt_loads_for_testing( $duplicates_count = 10 ) {
+		global $wpdb;
+		
+		$table_main = $wpdb->prefix . $this->table_main;
+		$table_meta = $wpdb->prefix . $this->table_meta;
+		
+		// Получаем все существующие грузы
+		$existing_loads = $wpdb->get_results( "SELECT * FROM {$table_main} ORDER BY id ASC", ARRAY_A );
+		
+		if ( empty( $existing_loads ) ) {
+			return array( 'success' => false, 'message' => 'Нет существующих грузов для дублирования' );
+		}
+		
+		$duplicated_count = 0;
+		$errors = array();
+		
+		foreach ( $existing_loads as $load ) {
+			$original_id = $load['id'];
+			
+			// Получаем метаданные оригинального груза
+			$meta_data = $wpdb->get_results( $wpdb->prepare( "SELECT meta_key, meta_value FROM {$table_meta} WHERE post_id = %d", $original_id ), ARRAY_A );
+			
+			for ( $i = 1; $i <= $duplicates_count; $i++ ) {
+				// Создаем копию основного груза
+				unset( $load['id'] ); // Убираем ID чтобы создать новую запись
+				$load['date_created'] = current_time( 'mysql' );
+				$load['date_updated'] = current_time( 'mysql' );
+				
+				// Добавляем суффикс к названию для различения
+				if ( ! empty( $load['load_name'] ) ) {
+					$load['load_name'] = $load['load_name'] . ' (Copy ' . $i . ')';
+				}
+				
+				// Вставляем новый груз
+				$insert_result = $wpdb->insert( $table_main, $load );
+				
+				if ( $insert_result === false ) {
+					$errors[] = "Ошибка при создании дубликата {$i} для груза {$original_id}: " . $wpdb->last_error;
+					continue;
+				}
+				
+				$new_load_id = $wpdb->insert_id;
+				
+				// Копируем метаданные
+				foreach ( $meta_data as $meta ) {
+					$meta_insert = array(
+						'post_id' => $new_load_id,
+						'meta_key' => $meta['meta_key'],
+						'meta_value' => $meta['meta_value']
+					);
+					
+					$meta_result = $wpdb->insert( $table_meta, $meta_insert );
+					
+					if ( $meta_result === false ) {
+						$errors[] = "Ошибка при копировании метаданных для груза {$new_load_id}: " . $wpdb->last_error;
+					}
+				}
+				
+				$duplicated_count++;
+			}
+		}
+		
+		$result = array(
+			'success' => true,
+			'message' => "Создано {$duplicated_count} дубликатов из " . count( $existing_loads ) . " оригинальных грузов",
+			'duplicated_count' => $duplicated_count,
+			'original_count' => count( $existing_loads )
+		);
+		
+		if ( ! empty( $errors ) ) {
+			$result['errors'] = $errors;
+		}
+		
+		return $result;
+	}
 }

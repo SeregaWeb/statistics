@@ -23,6 +23,7 @@ class TMSDrivers extends TMSDriversHelper {
 	public function init() {
 		$this->ajax_actions();
 		$this->create_tables();
+		$this->init_cron();
 	}
 	
 	public function ajax_actions() {
@@ -38,6 +39,7 @@ class TMSDrivers extends TMSDriversHelper {
 			'upload_driver_helper'      => 'upload_driver_helper',
 			'optimize_drivers_tables'   => 'optimize_drivers_tables',
 			'update_location_driver'    => 'update_location_driver',
+			'hold_driver_status'        => 'hold_driver_status',
 		);
 		
 		foreach ( $actions as $ajax_action => $method ) {
@@ -944,31 +946,60 @@ class TMSDrivers extends TMSDriversHelper {
 	public function update_driver_status_in_db( $data ) {
 		global $wpdb;
 		
-		$table_name = $wpdb->prefix . $this->table_main;
+		$table_main = $wpdb->prefix . $this->table_main;
+		$table_meta = $wpdb->prefix . $this->table_meta;
 		$user_id    = get_current_user_id();
 		
+		$driver_id = $data['post_id'];
+		
+		// Обновляем основную таблицу
 		$update_params = array(
 			'user_id_updated' => $user_id,
 			'date_updated'    => current_time( 'mysql' ),
-			'status_post'     => $data[ 'post_status' ],
 		);
 		
-		// Specify the condition (WHERE clause) - assuming post_id is passed in the data array
-		$where = array( 'id' => $data[ 'post_id' ] );
-		// Perform the update
-		$result = $wpdb->update( $table_name, $update_params, $where, array(
-			'%d',  // user_id_updated
-			'%s',  // date_updated
-			'%s',  // post_status
-		), array( '%d' ) // The data type of the where clause (id is an integer)
-		);
-		
-		// Check if the update was successful
-		if ( $result !== false ) {
-			return true; // Update was successful
-		} else {
-			return false; // Error occurred during the update
+		// Добавляем status_post если он передан
+		if ( isset( $data['post_status'] ) ) {
+			$update_params['status_post'] = $data['post_status'];
 		}
+		
+		// Обновляем основную таблицу
+		$result_main = $wpdb->update( $table_main, $update_params, array( 'id' => $driver_id ) );
+		
+		// Обновляем статус водителя в мета-таблице если передан
+		$result_meta = true;
+		if ( isset( $data['driver_status'] ) ) {
+			// Проверяем, существует ли уже запись с этим ключом
+			$existing = $wpdb->get_var( $wpdb->prepare( "
+				SELECT meta_value FROM {$table_meta} 
+				WHERE post_id = %d AND meta_key = 'driver_status'
+			", $driver_id ) );
+			
+			if ( $existing !== null ) {
+				// Обновляем существующую запись
+				$result_meta = $wpdb->update( 
+					$table_meta, 
+					array( 'meta_value' => $data['driver_status'] ), 
+					array( 'post_id' => $driver_id, 'meta_key' => 'driver_status' ),
+					array( '%s' ),
+					array( '%d', '%s' )
+				);
+			} else {
+				// Создаем новую запись
+				$result_meta = $wpdb->insert( 
+					$table_meta, 
+					array( 
+						'post_id' => $driver_id, 
+						'meta_key' => 'driver_status', 
+						'meta_value' => $data['driver_status'] 
+					),
+					array( '%d', '%s', '%s' )
+				);
+			}
+		}
+		
+		// Возвращаем true если оба обновления прошли успешно
+		return ( $result_main !== false && $result_meta !== false );
 	}
 	
 	public function delete_open_image_driver() {
@@ -2221,6 +2252,7 @@ class TMSDrivers extends TMSDriversHelper {
 	public function create_tables() {
 		$this->table_driver();
 		$this->table_driver_meta();
+		$this->table_driver_hold_status();
 		$this->register_driver_tables();
 	}
 	
@@ -2293,6 +2325,27 @@ class TMSDrivers extends TMSDriversHelper {
          		INDEX idx_meta_key (meta_key(191)),
          		INDEX idx_meta_key_value (meta_key(191), meta_value(191))
     		) $charset_collate;";
+		
+		dbDelta( $sql );
+	}
+	
+	public function table_driver_hold_status() {
+		global $wpdb;
+		
+		$table_name = $wpdb->prefix . 'driver_hold_status';
+		$charset_collate = $wpdb->get_charset_collate();
+		
+		$sql = "CREATE TABLE $table_name (
+			id mediumint(9) NOT NULL AUTO_INCREMENT,
+			driver_id mediumint(9) NOT NULL,
+			dispatcher_id mediumint(9) NOT NULL,
+			driver_status varchar(50) NULL DEFAULT NULL,
+			update_date datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+			PRIMARY KEY (id),
+			INDEX idx_driver_id (driver_id),
+			INDEX idx_dispatcher_id (dispatcher_id),
+			INDEX idx_update_date (update_date)
+		) $charset_collate;";
 		
 		dbDelta( $sql );
 	}
@@ -3447,5 +3500,235 @@ class TMSDrivers extends TMSDriversHelper {
 		
 		// Можно добавить дополнительную сортировку внутри групп, если нужно (например, по времени или расстоянию)
 		return array_merge( $available, $available_on, $others );
+	}
+	
+	/**
+	 * AJAX обработчик для удержания/освобождения водителя
+	 */
+	public function hold_driver_status() {
+		if ( defined( 'DOING_AJAX' ) && DOING_AJAX ) {
+			global $wpdb;
+			
+			// Получаем данные запроса
+			$MY_INPUT = filter_var_array( $_POST, [
+				"id_driver"    => FILTER_SANITIZE_NUMBER_INT,
+				"id_user"      => FILTER_SANITIZE_NUMBER_INT,
+				'hold_user_id' => FILTER_SANITIZE_NUMBER_INT
+			] );
+			
+			$driver_id = $MY_INPUT['id_driver'];
+			$dispatcher_id = $MY_INPUT['id_user'];
+			$hold_user_id = $MY_INPUT['hold_user_id'];
+			
+			// Получаем текущий статус водителя
+			$driver_status = $this->get_driver_status_by_id( $driver_id );
+			
+			// Проверяем, не удерживается ли водитель другим диспетчером
+			$driver_holded = $this->check_driver_on_hold( $driver_id );
+			
+			if ( ! is_null( $driver_holded ) && (int) $driver_holded->dispatcher_id !== (int) $dispatcher_id ) {
+				wp_send_json_error( 'Этот водитель уже удерживается другим диспетчером' );
+			}
+			
+			if ( $hold_user_id ) {
+				// Освобождаем водителя
+				$hold_record = $this->check_driver_on_hold( $driver_id );
+				if ( $hold_record && $hold_record->driver_status ) {
+					// Восстанавливаем старый статус из базы данных
+					$this->update_driver_status_in_db( array(
+						'post_id' => $driver_id,
+						'driver_status' => $hold_record->driver_status
+					) );
+				}
+				
+				$this->delete_hold_driver_by_dispatcher_id( $hold_user_id, $driver_id );
+				wp_send_json_success( 'Водитель освобожден' );
+			} else {
+				// Удерживаем водителя
+				$count = $this->get_count_hold_driver( $dispatcher_id );
+				
+				if ( $count < 3 ) {
+					// Сохраняем старый статус перед изменением
+					$old_status = $driver_status['driver_status'];
+					
+					// Устанавливаем статус on_hold
+					$this->update_driver_status_in_db( array(
+						'post_id' => $driver_id,
+						'driver_status' => 'on_hold'
+					) );
+					
+					// Записываем в таблицу удержания со старым статусом
+					$this->add_driver_hold_status( $driver_id, $dispatcher_id, array(
+						'driver_status' => $old_status
+					) );
+					
+					wp_send_json_success( 'Водитель удержан' );
+				}
+				wp_send_json_error( 'Превышен лимит удержания - максимум 3 водителя' );
+			}
+		} else {
+			wp_send_json_error( 'Неверный запрос' );
+		}
+	}
+	
+	/**
+	 * Добавляет запись об удержании водителя
+	 */
+	private function add_driver_hold_status( $driver_id, $dispatcher_id, $driver_data ) {
+		global $wpdb;
+		
+		$table_name = $wpdb->prefix . 'driver_hold_status';
+		
+		$new_time = date( "Y-m-d H:i:s", strtotime( date( "Y-m-d H:i:s" ) . " +{$this->hold_time} minutes" ) );
+		
+		$result = $wpdb->insert( $table_name, array(
+			'driver_id'     => $driver_id,
+			'dispatcher_id' => $dispatcher_id,
+			'driver_status' => $driver_data['driver_status'] ?? null,
+			'update_date'   => $new_time,
+		) );
+		
+		return $result;
+	}
+	
+	/**
+	 * Проверяет, удерживается ли водитель
+	 */
+	private function check_driver_on_hold( $driver_id ) {
+		global $wpdb;
+		
+		$table_name = $wpdb->prefix . 'driver_hold_status';
+		
+		$result = $wpdb->get_row( $wpdb->prepare( "
+			SELECT * FROM {$table_name} 
+			WHERE driver_id = %d 
+			ORDER BY update_date DESC 
+			LIMIT 1
+		", $driver_id ) );
+		
+		return $result;
+	}
+	
+	/**
+	 * Получает статус водителя по ID
+	 */
+	private function get_driver_status_by_id( $driver_id ) {
+		global $wpdb;
+		
+		$table_main = $wpdb->prefix . $this->table_main;
+		$table_meta = $wpdb->prefix . $this->table_meta;
+		
+		// Получаем данные из основной таблицы
+		$main_data = $wpdb->get_row( $wpdb->prepare( "
+			SELECT 
+				id,
+				date_available
+			FROM {$table_main}
+			WHERE id = %d
+		", $driver_id ), ARRAY_A );
+		
+		// Получаем статус из мета-таблицы
+		$status_data = $wpdb->get_var( $wpdb->prepare( "
+			SELECT meta_value
+			FROM {$table_meta}
+			WHERE post_id = %d AND meta_key = 'driver_status'
+		", $driver_id ) );
+		
+		if ( $main_data ) {
+			return array(
+				'id' => $main_data['id'],
+				'date_available' => $main_data['date_available'],
+				'driver_status' => $status_data ?: ''
+			);
+		}
+		
+		return array();
+	}
+	
+	/**
+	 * Удаляет удержание водителя по ID диспетчера
+	 */
+	private function delete_hold_driver_by_dispatcher_id( $dispatcher_id, $driver_id ) {
+		global $wpdb;
+		
+		$table_name = $wpdb->prefix . 'driver_hold_status';
+		
+		return $wpdb->delete( $table_name, array(
+			'dispatcher_id' => $dispatcher_id,
+			'driver_id'     => $driver_id
+		), array( '%d', '%d' ) );
+	}
+	
+	/**
+	 * Получает количество удерживаемых водителей диспетчером
+	 */
+	private function get_count_hold_driver( $dispatcher_id ) {
+		global $wpdb;
+		
+		$table_name = $wpdb->prefix . 'driver_hold_status';
+		
+		$result = $wpdb->get_var( $wpdb->prepare( "
+			SELECT COUNT(id) as holded
+			FROM {$table_name}
+			WHERE dispatcher_id = %d
+		", $dispatcher_id ) );
+		
+		return (int) $result;
+	}
+	
+	/**
+	 * Cron функция для удаления истекших удержаний
+	 */
+	public function cron_delete_expired_holds() {
+		global $wpdb;
+		
+		$table_name = $wpdb->prefix . 'driver_hold_status';
+		$table_main = $wpdb->prefix . $this->table_main;
+		$table_meta = $wpdb->prefix . $this->table_meta;
+		
+		// Получаем истекшие удержания
+		$expired_holds = $wpdb->get_results( "
+			SELECT * FROM {$table_name}
+			WHERE update_date < NOW()
+		" );
+		
+		foreach ( $expired_holds as $hold ) {
+			// Восстанавливаем старый статус водителя из базы данных
+			if ( $hold->driver_status ) {
+				$this->update_driver_status_in_db( array(
+					'post_id' => $hold->driver_id,
+					'driver_status' => $hold->driver_status
+				) );
+			}
+			
+			// Удаляем запись об удержании
+			$wpdb->delete( $table_name, array( 'id' => $hold->id ) );
+		}
+		
+		return count( $expired_holds );
+	}
+	
+	/**
+	 * Инициализация cron задачи
+	 */
+	public function init_cron() {
+		// Добавляем расписание каждые 5 минут
+		add_filter( 'cron_schedules', function( $schedules ) {
+			if ( ! isset( $schedules['15min'] ) ) {
+				$schedules['15min'] = array(
+					'interval' => 15 * 60,
+					'display'  => __( 'Once every 15 minutes' )
+				);
+			}
+			return $schedules;
+		} );
+		
+		// Регистрируем cron задачу
+		if ( ! wp_next_scheduled( 'driver_hold_cleanup_hook' ) ) {
+			wp_schedule_event( time(), '15min', 'driver_hold_cleanup_hook' );
+		}
+		
+		// Добавляем обработчик
+		add_action( 'driver_hold_cleanup_hook', array( $this, 'cron_delete_expired_holds' ) );
 	}
 }

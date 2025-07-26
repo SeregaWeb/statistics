@@ -26,13 +26,14 @@ class TMSDriversHelper {
 		"box-truck"    => "Box truck",
 		"pickup"       => "Pickup",
 		"reefer"       => "Reefer",
-		"dry-van"      => "Dry van",
+		"semi-truck"   => "Semi truck",
 	);
 	
 	/**
 	 * Get vehicle key by value
-	 * 
+	 *
 	 * @param string $value Vehicle display name (e.g., "Cargo van")
+	 *
 	 * @return string|false Vehicle key (e.g., "cargo-van") or false if not found
 	 */
 	public function get_vehicle_key_by_value( $value ) {

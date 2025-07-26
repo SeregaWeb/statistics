@@ -8,6 +8,10 @@
 
 get_header();
 
+// FLT access check
+$show_flt_tabs = get_field( 'flt', 'user_' . get_current_user_id() ) || current_user_can( 'administrator' );
+$is_flt = isset( $_GET['type'] ) && $_GET['type'] === 'flt';
+
 $statistics = new TMSStatistics();
 $TMSUsers   = new TMSUsers();
 $TMSBroker  = new TMSReportsCompany();
@@ -52,10 +56,32 @@ if ( ! $show_filter_by_office ) {
                 <div class="row">
                     <div class="col-12 mb-3 mt-3">
                         <h2>Factoring</h2>
+                        
+                        <?php if ( $show_flt_tabs ): ?>
+                            <!-- FLT Tabs -->
+                            <div class="nav nav-tabs mb-4" id="loads-tabs" role="tablist">
+                                <a class="nav-link <?php echo ! $is_flt ? 'active' : ''; ?>" href="<?php echo remove_query_arg( 'type' ); ?>">
+                                    Expedite
+                                </a>
+                                <a class="nav-link <?php echo $is_flt ? 'active' : ''; ?>" href="<?php echo add_query_arg( 'type', 'flt' ); ?>">
+                                    FLT
+                                </a>
+                            </div>
+                        <?php endif; ?>
                     </div>
                     <div class="col-12">
 
+                        <?php if ( $is_flt && ! $show_flt_tabs ): ?>
+                            <div class="alert alert-danger">
+                                <h4>❌ Доступ запрещен</h4>
+                                <p>У вас нет доступа к FLT данным.</p>
+                            </div>
+                        <?php else: ?>
+
                         <form action="" class="w-100">
+                            <?php if ( $is_flt ): ?>
+                                <input type="hidden" name="type" value="flt">
+                            <?php endif; ?>
                             <div class="d-flex gap-1">
 								<?php if ( $show_filter_by_office ): ?>
                                     <select class="form-select w-auto" name="office"
@@ -113,7 +139,7 @@ if ( ! $show_filter_by_office ) {
 
                             <div class="d-flex flex-column gap-1">
 								<?php
-								$data                      = $statistics->get_monthly_fuctoring_stats( $year_param, $mount_param, $office );
+								$data                      = $statistics->get_monthly_fuctoring_stats( $year_param, $mount_param, $office, $is_flt );
 								$second_driver_rate        = floatval( $data[ 'total_second_driver_rate' ] );
 								$general_profit            = floatval( $data[ 'total_booked_rate' ] ) - ( floatval( $data[ 'total_driver_rate' ] ) + $second_driver_rate );
 								$total_percent_booked_rate = floatval( $data[ 'total_percent_booked_rate' ] );
@@ -182,7 +208,7 @@ if ( ! $show_filter_by_office ) {
 							
 							
 							<?php
-							$top5 = $statistics->get_top_10_customers( $year_param, $mount_param, $office );
+							$top5 = $statistics->get_top_10_customers( $year_param, $mount_param, $office, $is_flt );
 							
 							if ( is_array( $top5 ) ) {
 								foreach ( $top5 as $item ) {
@@ -207,6 +233,8 @@ if ( ! $show_filter_by_office ) {
             </div>
         </div>
     </div>
+
+                        <?php endif; ?>
 
 <?php
 do_action( 'wp_rock_before_page_content' );

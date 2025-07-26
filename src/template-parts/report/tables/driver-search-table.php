@@ -195,8 +195,13 @@ if ( ! empty( $results ) ) :
 //
 			$driver_status = trim( $driver_status );
 			
-			if ( $driver_status && isset( $drivers->status[ $driver_status ] ) ) {
-				$status_text = $drivers->status[ $driver_status ];
+			if ( $driver_status && isset( $drivers->status[ $driver_status ] ) || $driver_status === 'on_hold' ) {
+				
+				if ( $driver_status === 'on_hold' ) {
+					$status_text = 'On hold';
+				} else {
+					$status_text = $drivers->status[ $driver_status ];
+				}
 			} else {
 				$status_text = "Need set status";
 			}
@@ -371,7 +376,10 @@ if ( ! empty( $results ) ) :
                 <td>
                     <div class="d-flex align-items-center">
 
-                        <button class="btn btn-sm h-100">
+                        <button class="btn btn-sm h-100 js-hold-driver"
+                                data-id="<?php echo $row[ 'id' ]; ?>"
+                                data-dispatcher="<?php echo get_current_user_id(); ?>"
+                                data-hold="null">
                             <svg style="width: 18px; height: 18px; pointer-events: none; enable-background:new 0 0 511.992 511.992;"
                                  xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
                                  version="1.1" id="Layer_1" x="0px" y="0px" viewBox="0 0 511.992 511.992"

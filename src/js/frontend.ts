@@ -72,6 +72,7 @@ import { driversActions } from './components/driver-core';
 import { initContactsHandler } from './components/contacts/contacts-init';
 import { moveDispatcher } from './components/move-dispatcher';
 import { initialSearchDriver } from './components/search-driver/search-driver-core';
+import { driverHoldInit } from './components/driver-hold';
 
 function ready() {
     console.log('ready');
@@ -132,6 +133,7 @@ function ready() {
     driversActions(urlAjax);
     cleanUrlByFilterDriver();
     cleanUrlByFilterDriverSearch();
+    driverHoldInit(urlAjax);
 
     // DRIVER END
     additionalContactsInit();

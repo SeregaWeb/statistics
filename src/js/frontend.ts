@@ -68,11 +68,12 @@ import {
     createDocumentInvoice,
     createDocumentInvoiceActions,
 } from './components/document-create-money-check';
-import { driversActions } from './components/driver-core';
+import { driversActions, driverCoreInit } from './components/driver-core';
 import { initContactsHandler } from './components/contacts/contacts-init';
 import { moveDispatcher } from './components/move-dispatcher';
 import { initialSearchDriver } from './components/search-driver/search-driver-core';
 import { driverHoldInit } from './components/driver-hold';
+import { holdSectionInit } from './components/common/hold-section';
 
 function ready() {
     console.log('ready');
@@ -134,6 +135,7 @@ function ready() {
     cleanUrlByFilterDriver();
     cleanUrlByFilterDriverSearch();
     driverHoldInit(urlAjax);
+    driverCoreInit(urlAjax);
 
     // DRIVER END
     additionalContactsInit();
@@ -166,6 +168,7 @@ function ready() {
     dateMaskInit();
     dragAnDropInit();
     unrequiderInit();
+    holdSectionInit();
 
     createDocumentInvoice();
     createDocumentInvoiceActions(urlAjax);

@@ -38,8 +38,8 @@ require THEME_DIR . '/src/inc/core/class-tms-performance.php';
 require THEME_DIR . '/src/inc/core/class-tms-generate-document.php';
 require THEME_DIR . '/src/inc/core/class-tms-drivers-helper.php';
 require THEME_DIR . '/src/inc/core/class-tms-drivers.php';
+require THEME_DIR . '/src/inc/core/class-tms-drivers-recruiter.php';
 require THEME_DIR . '/src/inc/core/class-tms-contacts.php';
-
 require THEME_DIR . '/src/inc/initial-setup.php';
 require THEME_DIR . '/src/inc/enqueue-scripts.php';
 require THEME_DIR . '/src/inc/acf-setting.php';
@@ -50,6 +50,7 @@ require THEME_DIR . '/src/inc/ajax-requests.php';
 require THEME_DIR . '/src/inc/custom-hooks.php';
 require THEME_DIR . '/src/inc/custom-shortcodes.php';
 require THEME_DIR . '/src/inc/class-mobile-detect.php';
+require THEME_DIR . '/src/inc/admin-cache-manager.php';
 
 function disable_canonical_redirect_for_paged( $redirect_url ) {
 	if ( is_paged() && strpos( $redirect_url, '/page/' ) !== false ) {
@@ -86,3 +87,88 @@ add_action( 'template_redirect', function() {
 
 //$reports = new TMSReports();
 //$reports->update_contacts_for_new_user( 5, 1 );
+
+/**
+ * Test Brokersnapshot API key
+ * Usage: ?test_api=1
+ */
+function test_brokersnapshot_api() {
+	if (!isset($_GET['test_api']) || $_GET['test_api'] !== '1') {
+		return;
+	}
+	
+	// Check if user is admin
+	if (!current_user_can('administrator')) {
+		wp_die('Access denied');
+	}
+	
+	global $global_options;
+	// Get API key from global options
+	$api_key = get_field_value($global_options, 'brokersnapshot');
+	
+	if (empty($api_key)) {
+		echo '<h2>API Test Result</h2>';
+		echo '<p style="color: red;">ERROR: API key is empty!</p>';
+		return;
+	}
+	
+	echo '<h2>API Test Result</h2>';
+	echo '<p><strong>API Key:</strong> ' . substr($api_key, 0, 10) . '... (length: ' . strlen($api_key) . ')</p>';
+	
+	// Test API call
+	$endpoint = 'https://brokersnapshot.com/api/v1/Companies';
+	$params = [
+		'name' => 'transportation',
+		'limit' => 2
+	];
+	
+	$url = $endpoint . '?' . http_build_query($params);
+	
+	echo '<p><strong>Request URL:</strong> ' . $url . '</p>';
+	
+	$curl = curl_init();
+	curl_setopt_array($curl, [
+		CURLOPT_URL => $url,
+		CURLOPT_RETURNTRANSFER => true,
+		CURLOPT_HTTPHEADER => [
+			'Authorization: Bearer ' . $api_key
+		]
+	]);
+	
+	$response = curl_exec($curl);
+	$http_code = curl_getinfo($curl, CURLINFO_HTTP_CODE);
+	$curl_error = curl_error($curl);
+	
+	echo '<p><strong>HTTP Code:</strong> ' . $http_code . '</p>';
+	
+	if ($curl_error) {
+		echo '<p style="color: red;"><strong>CURL Error:</strong> ' . $curl_error . '</p>';
+	} else {
+		echo '<p><strong>Response:</strong></p>';
+		echo '<pre style="background: #f5f5f5; padding: 10px; border: 1px solid #ddd;">';
+		echo htmlspecialchars($response);
+		echo '</pre>';
+		
+		$data = json_decode($response, true);
+		if ($data && isset($data['Success'])) {
+			if ($data['Success']) {
+				echo '<p style="color: green;"><strong>✅ API Test Successful!</strong></p>';
+				if (!empty($data['Data'])) {
+					echo '<p><strong>Found ' . count($data['Data']) . ' companies</strong></p>';
+					foreach ($data['Data'] as $company) {
+						echo '<p>• ' . $company['NAME'] . ' (DOT: ' . $company['DOT_NUMBER'] . ', MC: ' . $company['DOCKET_NUMBER'] . ')</p>';
+					}
+				}
+			} else {
+				echo '<p style="color: red;"><strong>❌ API Test Failed</strong></p>';
+			}
+		}
+	}
+	
+	curl_close($curl);
+	
+	echo '<p><a href="' . home_url() . '">← Back to home</a></p>';
+	exit;
+}
+
+add_action('template_redirect', 'test_brokersnapshot_api');

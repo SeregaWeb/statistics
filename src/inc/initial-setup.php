@@ -22,6 +22,25 @@ if ( function_exists( 'get_fields' ) ) {
 
 show_admin_bar( false );
 
+/**
+ * Check field and return its value or return null.
+ *
+ * @param {array}  $data_arr - Array to check and return data.
+ * @param {string} $key      - key that should be found in array.
+ *
+ * @return mixed|null
+ */
+function get_field_value( $data_arr, $key ) {
+	if ( isset( $data_arr[ $key ] ) ) {
+		$value = $data_arr[ $key ];
+		
+		// Убираем слеши, если значение является строкой
+		return is_string( $value ) ? stripslashes( $value ) : $value;
+	}
+	
+	return null;
+}
+
 
 /**
  * Main theme's class init
@@ -64,6 +83,8 @@ $TMSDrivers->init();
 
 $TMSContact = new TMSContacts();
 $TMSContact->init();
+
+// $tms_recruiter = new TMSDriversRecruiter();
 
 function import_drivers_from_json( $page = 1 ) {
 	$theme_dir  = get_stylesheet_directory();
@@ -300,10 +321,11 @@ function import_drivers( $drivers, $page = 1 ) {
 		$data_main[ 'date_updated' ]    = current_time( 'mysql' );
 		$data_main[ 'status_post' ]     = 'publish';
 		
-		$insert_result = $wpdb->insert( $table_name, $data_main );
+		// Use REPLACE INTO to handle existing IDs properly
+		$insert_result = $wpdb->replace( $table_name, $data_main );
 		
-		if ( is_numeric( $insert_result ) ) {
-			$driver_id = $wpdb->insert_id;
+		if ( $insert_result !== false ) {
+			$driver_id = $id; // Use the original ID instead of auto-generated one
 			
 			$res = $driverClass->update_post_meta_data( $driver_id, $data_new_driver );
 			
@@ -338,7 +360,7 @@ function import_drivers( $drivers, $page = 1 ) {
 	}
 }
 
-//import_drivers_from_json( 6 );
+import_drivers_from_json( 4 );
 
 /**
  * Sanitize uploaded file name
@@ -349,27 +371,8 @@ add_filter( 'sanitize_file_name', array( $wp_rock, 'custom_sanitize_file_name' )
 /**
  * Set custom upload size limit
  */
-$wp_rock->px_custom_upload_size_limit( 5 );
+$wp_rock->px_custom_upload_size_limit( 3 );
 
-
-/**
- * Check field and return its value or return null.
- *
- * @param {array}  $data_arr - Array to check and return data.
- * @param {string} $key      - key that should be found in array.
- *
- * @return mixed|null
- */
-function get_field_value( $data_arr, $key ) {
-	if ( isset( $data_arr[ $key ] ) ) {
-		$value = $data_arr[ $key ];
-		
-		// Убираем слеши, если значение является строкой
-		return is_string( $value ) ? stripslashes( $value ) : $value;
-	}
-	
-	return null;
-}
 
 // close admin panel for all roles 
 add_action( 'admin_init', function() {

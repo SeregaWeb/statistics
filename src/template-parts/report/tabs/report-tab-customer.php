@@ -16,9 +16,11 @@ $set_up_platform_val     = '';
 $set_up_val              = '';
 $value_contact_phone_ext = '';
 
-$report_object             = ! empty( $args[ 'report_object' ] ) ? $args[ 'report_object' ] : null;
-$post_id                   = ! empty( $args[ 'post_id' ] ) ? $args[ 'post_id' ] : null;
-$flt                       = ! empty( $args[ 'flt' ] ) ? $args[ 'flt' ] : null;
+$report_object = ! empty( $args[ 'report_object' ] ) ? $args[ 'report_object' ] : null;
+$post_id       = ! empty( $args[ 'post_id' ] ) ? $args[ 'post_id' ] : null;
+$flt           = ! empty( $args[ 'flt' ] ) ? $args[ 'flt' ] : null;
+$project       = ! empty( $args[ 'project' ] ) ? $args[ 'project' ] : null;
+
 $post_status               = 'draft';
 $read_only                 = false;
 $additional_contacts_isset = false;
@@ -73,6 +75,10 @@ if ( $report_object ) {
 
 <h3 class="display-6 mb-4">Customer</h3>
 <form class="<?php echo ! $full_view_only ? 'js-create-not-publish-report' : ''; ?>">
+	
+	<?php if ( $project ): ?>
+        <input type="hidden" name="project" value="<?php echo $project; ?>">
+	<?php endif; ?>
 	
 	<?php if ( $flt ): ?>
         <input type="hidden" name="flt" value="<?php echo $flt; ?>">

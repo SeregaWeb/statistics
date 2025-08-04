@@ -20,6 +20,7 @@ $print_status   = false;
 $head_message   = '';
 $post_id        = isset( $_GET[ 'post_id' ] ) ? $_GET[ 'post_id' ] : false;
 $meta           = null;
+$project        = $reports->project;
 
 if ( $post_id && is_numeric( $post_id ) ) {
 	$report_object = $reports->get_report_by_id( $_GET[ 'post_id' ] );
@@ -166,6 +167,7 @@ $logshowcontent = isset( $_COOKIE[ 'logshow' ] ) && + $_COOKIE[ 'logshow' ] !== 
 									if ( ! isset( $send_mesaage ) || ! $send_mesaage ) {
 										?>
                                         <form class="w-100 d-flex justify-content-end mb-3 js-send-email-chain">
+                                            <input type="hidden" name="project" value="<?php echo $project ?>">
                                             <input type="hidden" name="load_id" value="<?php echo $post_id; ?>">
                                             <button class="btn btn-warning">Create tracking chain</button>
                                         </form>
@@ -272,7 +274,8 @@ $logshowcontent = isset( $_COOKIE[ 'logshow' ] ) && + $_COOKIE[ 'logshow' ] !== 
 									echo esc_html( get_template_part( TEMPLATE_PATH . 'tabs/report', 'tab-customer', array(
 										'full_view_only' => $full_only_view,
 										'report_object'  => $report_object,
-										'post_id'        => $post_id
+										'post_id'        => $post_id,
+										'project'        => $reports->project,
 									) ) );
 									?>
                                 </div>
@@ -284,7 +287,8 @@ $logshowcontent = isset( $_COOKIE[ 'logshow' ] ) && + $_COOKIE[ 'logshow' ] !== 
 										'full_view_only' => $full_only_view,
 										'tracking_tl'    => $tracking_tl,
 										'report_object'  => $report_object,
-										'post_id'        => $post_id
+										'post_id'        => $post_id,
+										'project'        => $reports->project,
 									) ) );
 									?>
                                 </div>
@@ -295,6 +299,7 @@ $logshowcontent = isset( $_COOKIE[ 'logshow' ] ) && + $_COOKIE[ 'logshow' ] !== 
 									echo esc_html( get_template_part( TEMPLATE_PATH . 'tabs/report', 'tab-shipper', array(
 										'full_view_only' => $full_only_view,
 										'report_object'  => $report_object,
+										'project'        => $reports->project,
 										'post_id'        => $post_id
 									) ) );
 									?>
@@ -308,6 +313,7 @@ $logshowcontent = isset( $_COOKIE[ 'logshow' ] ) && + $_COOKIE[ 'logshow' ] !== 
 									echo esc_html( get_template_part( TEMPLATE_PATH . 'tabs/report', 'tab-documents', array(
 										'full_view_only' => $full_only_view,
 										'report_object'  => $report_object,
+										'project'        => $reports->project,
 										'post_id'        => $post_id,
 										'tracking_tl'    => $tracking_tl,
 									) ) );
@@ -324,6 +330,7 @@ $logshowcontent = isset( $_COOKIE[ 'logshow' ] ) && + $_COOKIE[ 'logshow' ] !== 
 										echo esc_html( get_template_part( TEMPLATE_PATH . 'tabs/report', 'tab-billing', array(
 											'full_view_only' => $full_only_view,
 											'report_object'  => $report_object,
+											'project'        => $reports->project,
 											'post_id'        => $post_id
 										) ) );
 										?>
@@ -339,6 +346,7 @@ $logshowcontent = isset( $_COOKIE[ 'logshow' ] ) && + $_COOKIE[ 'logshow' ] !== 
 										echo esc_html( get_template_part( TEMPLATE_PATH . 'tabs/report', 'tab-accounting', array(
 											'full_view_only' => $full_only_view,
 											'report_object'  => $report_object,
+											'project'        => $reports->project,
 											'post_id'        => $post_id
 										) ) );
 										?>
@@ -365,6 +373,7 @@ $logshowcontent = isset( $_COOKIE[ 'logshow' ] ) && + $_COOKIE[ 'logshow' ] !== 
 								echo esc_html( get_template_part( TEMPLATE_PATH . 'report', 'logs', array(
 									'post_id' => $post_id,
 									'user_id' => get_current_user_id(),
+									'project' => $reports->project,
 									'meta'    => $meta,
 								) ) );
 							}

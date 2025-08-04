@@ -11,6 +11,7 @@ $ar_statuses        = $reports->get_ar_statuses();
 $report_object = ! empty( $args[ 'report_object' ] ) ? $args[ 'report_object' ] : null;
 $post_id       = ! empty( $args[ 'post_id' ] ) ? $args[ 'post_id' ] : null;
 $flt           = ! empty( $args[ 'flt' ] ) ? $args[ 'flt' ] : null;
+$project       = ! empty( $args[ 'project' ] ) ? $args[ 'project' ] : null;
 
 $booked_rate = 0;
 $driver_rate = 0;
@@ -87,6 +88,10 @@ if ( $report_object ) {
 <h3 class="p-0 display-6 mb-4">Billing info</h3>
 
 <form class="js-uploads-billing d-grid">
+	
+	<?php if ( $project ): ?>
+        <input type="hidden" name="project" value="<?php echo $project; ?>">
+	<?php endif; ?>
 	
 	<?php if ( $flt ): ?>
         <input type="hidden" name="flt" value="<?php echo $flt; ?>">

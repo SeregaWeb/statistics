@@ -24,6 +24,21 @@ class TMSDrivers extends TMSDriversHelper {
 		$this->ajax_actions();
 		$this->create_tables();
 		$this->init_cron();
+		
+		// Принудительно запускаем cron при каждом запросе (для тестирования)
+		add_action( 'init', array( $this, 'maybe_run_cron' ) );
+	}
+	
+	/**
+	 * Проверяет и запускает cron задачу при необходимости
+	 */
+	public function maybe_run_cron() {
+		// Проверяем, нужно ли запустить cron
+		$next_scheduled = wp_next_scheduled( 'driver_hold_cleanup_hook' );
+		if ( $next_scheduled && $next_scheduled <= time() ) {
+			wp_schedule_single_event( time(), 'driver_hold_cleanup_hook' );
+			spawn_cron();
+		}
 	}
 	
 	public function ajax_actions() {
@@ -40,6 +55,10 @@ class TMSDrivers extends TMSDriversHelper {
 			'optimize_drivers_tables'   => 'optimize_drivers_tables',
 			'update_location_driver'    => 'update_location_driver',
 			'hold_driver_status'        => 'hold_driver_status',
+			'add_driver_rating'         => 'ajax_add_driver_rating',
+			'add_driver_notice'         => 'ajax_add_driver_notice',
+			'update_notice_status'      => 'ajax_update_notice_status',
+			'update_clean_background'   => 'update_clean_background',
 		);
 		
 		foreach ( $actions as $ajax_action => $method ) {
@@ -549,6 +568,9 @@ class TMSDrivers extends TMSDriversHelper {
 	public function get_table_items_search( $args = array() ) {
 		global $wpdb;
 		
+		// Debug: Log incoming arguments
+		error_log('DEBUG: get_table_items_search called with args = ' . print_r($args, true));
+		
 		$table_main = $wpdb->prefix . $this->table_main;
 		$table_meta = $wpdb->prefix . $this->table_meta;
 		
@@ -560,7 +582,7 @@ class TMSDrivers extends TMSDriversHelper {
 			: 'DESC';
 		
 		// Check if we have a search address for geocoding
-		if ( $args[ 'my_search' ] ) {
+		if ( isset( $args[ 'my_search' ] ) && $args[ 'my_search' ] ) {
 			global $global_options;
 			
 			$api_key_here_map = get_field_value( $global_options, 'api_key_here_map' );
@@ -584,11 +606,11 @@ class TMSDrivers extends TMSDriversHelper {
 				// Get all available drivers with caching
 				$cache_key = 'tms_all_available_drivers';
 				$all_drivers = get_transient( $cache_key );
-				
+		
 				if ( false === $all_drivers ) {
 					$all_drivers = $this->get_all_available_driver( true );
 					// Cache for 15 minutes (900 seconds)
-					set_transient( $cache_key, $all_drivers, 15 * MINUTE_IN_SECONDS );
+					set_transient( $cache_key, $all_drivers, 5 * MINUTE_IN_SECONDS );
 				}
 				
 				// Filter and sort drivers by distance
@@ -657,9 +679,20 @@ class TMSDrivers extends TMSDriversHelper {
 				ON main.id = driver_name.post_id AND driver_name.meta_key = 'driver_name'
 			LEFT JOIN $table_meta AS driver_phone
 				ON main.id = driver_phone.post_id AND driver_phone.meta_key = 'driver_phone'
-		LEFT JOIN $table_meta AS vehicle_type
+			LEFT JOIN $table_meta AS vehicle_type
 				ON main.id = vehicle_type.post_id AND vehicle_type.meta_key = 'vehicle_type'
+			LEFT JOIN $table_meta AS mc
+				ON main.id = mc.post_id AND mc.meta_key = 'mc'
+			LEFT JOIN $table_meta AS dot
+				ON main.id = dot.post_id AND dot.meta_key = 'dot'
+			LEFT JOIN $table_meta AS driver_status
+				ON main.id = driver_status.post_id AND driver_status.meta_key = 'driver_status'
+			LEFT JOIN $table_meta AS mc_dot_human_tested
+				ON main.id = mc_dot_human_tested.post_id AND mc_dot_human_tested.meta_key = 'mc_dot_human_tested'
+			LEFT JOIN $table_meta AS clear_background
+				ON main.id = clear_background.post_id AND clear_background.meta_key = 'clear_background'
 		";
+		
 		
 		$where_conditions = array();
 		$where_values     = array();
@@ -701,24 +734,57 @@ class TMSDrivers extends TMSDriversHelper {
 					$where_conditions[] = "vehicle_type.meta_value = %s";
 					$where_values[]     = $vehicle_key;
 				} else {
-					// Check if search term is numeric (ID search)
-					if ( is_numeric( $search_term ) ) {
-						// Search in all fields including ID
-						$where_conditions[] = "(" . "main.id LIKE %s OR " . "driver_name.meta_value LIKE %s OR " . "driver_phone.meta_value LIKE %s OR " . "vehicle_type.meta_value LIKE %s  " . ")";
-						
-						$search_value = '%' . $wpdb->esc_like( $search_term ) . '%';
-						// Add 4 values for the 4 placeholders in the search condition
-						for ( $i = 0; $i < 4; $i ++ ) {
-							$where_values[] = $search_value;
-						}
+					// Check for special search terms
+					$search_lower = strtolower( trim( $search_term ) );
+					
+					// Debug logging
+					error_log('DEBUG: Search term = "' . $search_term . '", search_lower = "' . $search_lower . '"');
+					
+					if ( $search_lower === 'human tested' ) {
+						// Search for drivers with human tested MC/DOT
+						error_log('DEBUG: Found "human tested" condition');
+						$where_conditions[] = "mc_dot_human_tested.meta_value IN ('1', 'on')";
+					} else if ( $search_lower === 'dot' ) {
+						// Search for drivers with DOT (non-empty text field)
+						error_log('DEBUG: Found "dot" condition');
+						$where_conditions[] = "dot.meta_value IS NOT NULL AND dot.meta_value != ''";
+					} else if ( $search_lower === 'mc' ) {
+						// Search for drivers with MC (non-empty text field)
+						error_log('DEBUG: Found "mc" condition');
+						$where_conditions[] = "mc.meta_value IS NOT NULL AND mc.meta_value != ''";
+					} else if ( $search_lower === 'clean background' ) {
+						// Search for drivers with clean background
+						error_log('DEBUG: Found "clean background" condition');
+						$where_conditions[] = "clear_background.meta_value IN ('1', 'on')";
 					} else {
-						// Search only in text fields (name, phone, vehicle), not in ID
-						$where_conditions[] = "(" . "driver_name.meta_value LIKE %s OR " . "driver_phone.meta_value LIKE %s OR " . "vehicle_type.meta_value LIKE %s  " . ")";
+						// Check if the search term is a driver status and convert to key if found
+						$status_key = $this->searchStatusKey( $search_term, $this->status );
 						
-						$search_value = '%' . $wpdb->esc_like( $search_term ) . '%';
-						// Add 3 values for the 3 placeholders in the search condition
-						for ( $i = 0; $i < 3; $i ++ ) {
-							$where_values[] = $search_value;
+						if ( $status_key !== null ) {
+							// Search by status key in driver_status field
+							$where_conditions[] = "driver_status.meta_value = %s";
+							$where_values[]     = $status_key;
+						} else {
+							// Check if search term is numeric (ID search)
+							if ( is_numeric( $search_term ) ) {
+								// Search in all fields including ID
+								$where_conditions[] = "(" . "main.id LIKE %s OR " . "driver_name.meta_value LIKE %s OR " . "driver_phone.meta_value LIKE %s OR " . "vehicle_type.meta_value LIKE %s OR " . "mc.meta_value LIKE %s OR " . "dot.meta_value LIKE %s" . ")";
+								
+								$search_value = '%' . $wpdb->esc_like( $search_term ) . '%';
+								// Add 6 values for the 6 placeholders in the search condition
+								for ( $i = 0; $i < 6; $i ++ ) {
+									$where_values[] = $search_value;
+								}
+							} else {
+								// Search only in text fields (name, phone, vehicle, mc, dot), not in ID
+								$where_conditions[] = "(" . "driver_name.meta_value LIKE %s OR " . "driver_phone.meta_value LIKE %s OR " . "vehicle_type.meta_value LIKE %s OR " . "mc.meta_value LIKE %s OR " . "dot.meta_value LIKE %s" . ")";
+								
+								$search_value = '%' . $wpdb->esc_like( $search_term ) . '%';
+								// Add 5 values for the 5 placeholders in the search condition
+								for ( $i = 0; $i < 5; $i ++ ) {
+									$where_values[] = $search_value;
+								}
+							}
 						}
 					}
 				}
@@ -769,6 +835,11 @@ class TMSDrivers extends TMSDriversHelper {
 		$sql            .= " ORDER BY main.$sort_by $sort_order LIMIT %d, %d";
 		$where_values[] = $offset;
 		$where_values[] = $per_page;
+		
+		// Debug: Log the final SQL query
+		error_log('DEBUG: Final SQL query = ' . $wpdb->prepare( $sql, ...$where_values ));
+		error_log('DEBUG: Where conditions = ' . print_r($where_conditions, true));
+		error_log('DEBUG: Where values = ' . print_r($where_values, true));
 		
 		// Выполняем запрос
 		$main_results = $wpdb->get_results( $wpdb->prepare( $sql, ...$where_values ), ARRAY_A );
@@ -952,6 +1023,8 @@ class TMSDrivers extends TMSDriversHelper {
 		
 		$driver_id = $data['post_id'];
 		
+
+		
 		// Обновляем основную таблицу
 		$update_params = array(
 			'user_id_updated' => $user_id,
@@ -997,6 +1070,14 @@ class TMSDrivers extends TMSDriversHelper {
 				);
 			}
 		}
+		
+		// Clear drivers cache when driver status is updated
+		$this->clear_drivers_cache();
+		
+		// Also clear search cache to ensure fresh data
+		delete_transient( 'tms_all_available_drivers' );
+		
+
 		
 		// Возвращаем true если оба обновления прошли успешно
 		return ( $result_main !== false && $result_meta !== false );
@@ -1436,6 +1517,8 @@ class TMSDrivers extends TMSDriversHelper {
 					? sanitize_text_field( $_POST[ 'emergency_contact_phone' ] ) : '',
 				'emergency_contact_relation' => isset( $_POST[ 'emergency_contact_relation' ] )
 					? sanitize_text_field( $_POST[ 'emergency_contact_relation' ] ) : '',
+				'mc_dot_human_tested'       => isset( $_POST[ 'mc_dot_human_tested' ] )
+					? sanitize_text_field( $_POST[ 'mc_dot_human_tested' ] ) : '',
 			);
 			
 			// At this point, the data is sanitized and ready for further processing or saving to the database
@@ -1534,6 +1617,9 @@ class TMSDrivers extends TMSDriversHelper {
 					? sanitize_text_field( $_POST[ 'emergency_contact_phone' ] ) : '',
 				'emergency_contact_relation' => isset( $_POST[ 'emergency_contact_relation' ] )
 					? sanitize_text_field( $_POST[ 'emergency_contact_relation' ] ) : '',
+				'mc_dot_human_tested'       => isset( $_POST[ 'mc_dot_human_tested' ] )
+					? sanitize_text_field( $_POST[ 'mc_dot_human_tested' ] ) : '',
+	
 			);
 			
 			
@@ -1565,6 +1651,8 @@ class TMSDrivers extends TMSDriversHelper {
 				'macro_point',
 				'trucker_tools',
 				'source',
+				'mc_dot_human_tested',
+				'clear_background',
 			);
 			
 			if ( $post_status === 'publish' ) {
@@ -2259,7 +2347,7 @@ class TMSDrivers extends TMSDriversHelper {
 	public function table_driver() {
 		global $wpdb;
 		
-		$table_name = $wpdb->prefix . $this->table_main;;
+		$table_name = $wpdb->prefix . $this->table_main;
 		
 		$charset_collate = $wpdb->get_charset_collate();
 		
@@ -2959,6 +3047,168 @@ class TMSDrivers extends TMSDriversHelper {
 		
 		return $result;
 	}
+
+	/**
+	 * Add new rating for driver
+	 */
+	public function add_driver_rating( $driver_id, $rating, $load_number = '', $comments = '' ) {
+		global $wpdb;
+		
+		if ( empty( $driver_id ) || ! is_numeric( $driver_id ) ) {
+			return false;
+		}
+		
+		$driver_id = (int) $driver_id;
+		$rating = (int) $rating;
+		
+		// Validate rating (1-5)
+		if ( $rating < 1 || $rating > 5 ) {
+			return false;
+		}
+		
+		$current_user_id = get_current_user_id();
+		$helper = new TMSReportsHelper();
+		$user_info = $helper->get_user_full_name_by_id( $current_user_id );
+		$user_name = $user_info ? $user_info['full_name'] : 'Unknown User';
+		
+		$time = current_time( 'timestamp' );
+		
+		return $this->insert_driver_rating( $driver_id, $user_name, $time, $rating, $comments, $load_number );
+	}
+
+	/**
+	 * Add new notice for driver
+	 */
+	public function add_driver_notice( $driver_id, $message ) {
+		global $wpdb;
+		
+		if ( empty( $driver_id ) || ! is_numeric( $driver_id ) ) {
+			return false;
+		}
+		
+		$driver_id = (int) $driver_id;
+		
+		$current_user_id = get_current_user_id();
+		$helper = new TMSReportsHelper();
+		$user_info = $helper->get_user_full_name_by_id( $current_user_id );
+		$user_name = $user_info ? $user_info['full_name'] : 'Unknown User';
+		
+		$date = current_time( 'timestamp' );
+		
+		return $this->insert_driver_notice( $driver_id, $user_name, $date, $message, 0 );
+	}
+
+	/**
+	 * Update notice status (toggle between 0 and 1)
+	 */
+	public function update_notice_status( $notice_id ) {
+		global $wpdb;
+		
+		if ( empty( $notice_id ) || ! is_numeric( $notice_id ) ) {
+			return false;
+		}
+		
+		$notice_id = (int) $notice_id;
+		$table_name = $wpdb->prefix . $this->table_notice;
+		
+		// Get current status
+		$current_status = $wpdb->get_var( $wpdb->prepare( "
+			SELECT status FROM $table_name WHERE id = %d
+		", $notice_id ) );
+		
+		if ( $current_status === null ) {
+			return false;
+		}
+		
+		// Toggle status (0 to 1, 1 to 0)
+		$new_status = $current_status == 1 ? 0 : 1;
+		
+		$result = $wpdb->update( 
+			$table_name, 
+			array( 'status' => $new_status ), 
+			array( 'id' => $notice_id ), 
+			array( '%d' ), 
+			array( '%d' ) 
+		);
+		
+		return $result !== false;
+	}
+
+	/**
+	 * AJAX handler for adding driver rating
+	 */
+	public function ajax_add_driver_rating() {
+		// Check nonce for security
+		if ( ! wp_verify_nonce( $_POST['tms_rating_nonce'], 'tms_add_rating' ) ) {
+			wp_send_json_error( 'Security check failed' );
+		}
+
+		$driver_id = intval( $_POST['driver_id'] ?? 0 );
+		$rating = intval( $_POST['rating'] ?? 0 );
+		$load_number = sanitize_text_field( $_POST['load_number'] ?? '' );
+		$comments = sanitize_textarea_field( $_POST['comments'] ?? '' );
+
+		if ( empty( $driver_id ) || $rating < 1 || $rating > 5 ) {
+			wp_send_json_error( 'Invalid data provided' );
+		}
+
+		$result = $this->add_driver_rating( $driver_id, $rating, $load_number, $comments );
+
+		if ( $result ) {
+			wp_send_json_success( 'Rating added successfully' );
+		} else {
+			wp_send_json_error( 'Failed to add rating' );
+		}
+	}
+
+	/**
+	 * AJAX handler for adding driver notice
+	 */
+	public function ajax_add_driver_notice() {
+		// Check nonce for security
+		if ( ! wp_verify_nonce( $_POST['tms_notice_nonce'], 'tms_add_notice' ) ) {
+			wp_send_json_error( 'Security check failed' );
+		}
+
+		$driver_id = intval( $_POST['driver_id'] ?? 0 );
+		$message = sanitize_textarea_field( $_POST['message'] ?? '' );
+
+		if ( empty( $driver_id ) || empty( $message ) ) {
+			wp_send_json_error( 'Invalid data provided' );
+		}
+
+		$result = $this->add_driver_notice( $driver_id, $message );
+
+		if ( $result ) {
+			wp_send_json_success( 'Notice added successfully' );
+		} else {
+			wp_send_json_error( 'Failed to add notice' );
+		}
+	}
+
+	/**
+	 * AJAX handler for updating notice status
+	 */
+	public function ajax_update_notice_status() {
+		// Check nonce for security
+		if ( ! wp_verify_nonce( $_POST['tms_notice_status_nonce'], 'tms_update_notice_status' ) ) {
+			wp_send_json_error( 'Security check failed' );
+		}
+
+		$notice_id = intval( $_POST['notice_id'] ?? 0 );
+
+		if ( empty( $notice_id ) ) {
+			wp_send_json_error( 'Invalid notice ID' );
+		}
+
+		$result = $this->update_notice_status( $notice_id );
+
+		if ( $result ) {
+			wp_send_json_success( 'Notice status updated successfully' );
+		} else {
+			wp_send_json_error( 'Failed to update notice status' );
+		}
+	}
 	
 	/**
 	 * Get coordinates (lat/lng) using different geocoders with caching
@@ -3138,8 +3388,27 @@ class TMSDrivers extends TMSDriversHelper {
 	 * 
 	 * @return bool Success status
 	 */
+	/**
+	 * Clear all drivers related cache
+	 * 
+	 * @return bool Success status
+	 */
 	public function clear_drivers_cache() {
-		return delete_transient( 'tms_all_available_drivers' );
+		global $wpdb;
+		
+		// Clear the main drivers cache
+		$result1 = delete_transient( 'tms_all_available_drivers' );
+		
+		// Clear any other drivers related transients that might exist
+		$prefix = 'tms_drivers_';
+		$sql = $wpdb->prepare( "DELETE FROM {$wpdb->options} WHERE option_name LIKE %s", $wpdb->esc_like( '_transient_' . $prefix ) . '%' );
+		$result2 = $wpdb->query( $sql );
+		
+		// Also delete the timeout entries
+		$sql2 = $wpdb->prepare( "DELETE FROM {$wpdb->options} WHERE option_name LIKE %s", $wpdb->esc_like( '_transient_timeout_' . $prefix ) . '%' );
+		$result3 = $wpdb->query( $sql2 );
+		
+		return ( $result1 !== false && $result2 !== false && $result3 !== false );
 	}
 	
 	/**
@@ -3247,6 +3516,25 @@ class TMSDrivers extends TMSDriversHelper {
 		return $result;
 	}
 	
+	/**
+	 * Search for status key by status value
+	 *
+	 * @param string $search_prepear Status value to search for
+	 * @param array $status_search Array of status values
+	 *
+	 * @return string|null Status key if found, null otherwise
+	 */
+	private function searchStatusKey($search_prepear, $status_search) {
+		// Убираем лишние пробелы с начала и конца строки
+		$search_prepear = trim($search_prepear);
+		
+		// Поиск значения в массиве
+		$key = array_search($search_prepear, $status_search);
+		
+		// Если значение найдено, возвращаем ключ, иначе возвращаем null
+		return $key !== false ? $key : null;
+	}
+
 	/**
 	 * Calculate distance between two points using Haversine formula
 	 *
@@ -3527,47 +3815,81 @@ class TMSDrivers extends TMSDriversHelper {
 			$driver_holded = $this->check_driver_on_hold( $driver_id );
 			
 			if ( ! is_null( $driver_holded ) && (int) $driver_holded->dispatcher_id !== (int) $dispatcher_id ) {
-				wp_send_json_error( 'Этот водитель уже удерживается другим диспетчером' );
+				wp_send_json_error( 'This driver is already on hold by another dispatcher' );
 			}
 			
 			if ( $hold_user_id ) {
 				// Освобождаем водителя
 				$hold_record = $this->check_driver_on_hold( $driver_id );
 				if ( $hold_record && $hold_record->driver_status ) {
-					// Восстанавливаем старый статус из базы данных
+					// Проверяем, что восстановленный статус не on_hold
+					$restore_status = $hold_record->driver_status;
+					if ( $restore_status === 'on_hold' ) {
+						// Если в таблице холда оказался статус on_hold, устанавливаем available
+						$restore_status = 'available';
+					}
+					
+					// Восстанавливаем статус из базы данных
 					$this->update_driver_status_in_db( array(
 						'post_id' => $driver_id,
-						'driver_status' => $hold_record->driver_status
+						'driver_status' => $restore_status
+					) );
+				} else {
+					// Если нет записи в таблице холда, устанавливаем available
+					$this->update_driver_status_in_db( array(
+						'post_id' => $driver_id,
+						'driver_status' => 'available'
 					) );
 				}
 				
 				$this->delete_hold_driver_by_dispatcher_id( $hold_user_id, $driver_id );
-				wp_send_json_success( 'Водитель освобожден' );
+				
+				// Clear drivers cache when driver is released
+				$this->clear_drivers_cache();
+				
+				wp_send_json_success( 'Driver released' );
 			} else {
 				// Удерживаем водителя
 				$count = $this->get_count_hold_driver( $dispatcher_id );
 				
 				if ( $count < 3 ) {
-					// Сохраняем старый статус перед изменением
-					$old_status = $driver_status['driver_status'];
+					// Проверяем, не находится ли водитель уже на удержании
+					$existing_hold = $this->check_driver_on_hold( $driver_id );
 					
-					// Устанавливаем статус on_hold
-					$this->update_driver_status_in_db( array(
-						'post_id' => $driver_id,
-						'driver_status' => 'on_hold'
-					) );
-					
-					// Записываем в таблицу удержания со старым статусом
-					$this->add_driver_hold_status( $driver_id, $dispatcher_id, array(
-						'driver_status' => $old_status
-					) );
-					
-					wp_send_json_success( 'Водитель удержан' );
+					if ( $existing_hold && (int) $existing_hold->dispatcher_id === (int) $dispatcher_id ) {
+						// Водитель уже удерживается этим диспетчером - продлеваем время удержания
+						$this->extend_driver_hold_time( $driver_id, $dispatcher_id );
+						wp_send_json_success( 'Hold time extended' );
+					} else {
+						// Сохраняем оригинальный статус (не on_hold)
+						$original_status = $driver_status['driver_status'];
+						
+						// Если текущий статус уже on_hold, получаем оригинальный статус из таблицы холда
+						if ( $original_status === 'on_hold' && $existing_hold ) {
+							$original_status = $existing_hold->driver_status ?: 'available';
+						}
+						
+						// Устанавливаем статус on_hold
+						$this->update_driver_status_in_db( array(
+							'post_id' => $driver_id,
+							'driver_status' => 'on_hold'
+						) );
+						
+						// Записываем в таблицу удержания с оригинальным статусом
+						$this->add_driver_hold_status( $driver_id, $dispatcher_id, array(
+							'driver_status' => $original_status
+						) );
+						
+						// Clear drivers cache when driver is put on hold
+						$this->clear_drivers_cache();
+						
+						wp_send_json_success( 'Driver put on hold' );
+					}
 				}
-				wp_send_json_error( 'Превышен лимит удержания - максимум 3 водителя' );
+				wp_send_json_error( 'Hold limit exceeded - maximum 3 drivers' );
 			}
 		} else {
-			wp_send_json_error( 'Неверный запрос' );
+			wp_send_json_error( 'Invalid request' );
 		}
 	}
 	
@@ -3579,7 +3901,9 @@ class TMSDrivers extends TMSDriversHelper {
 		
 		$table_name = $wpdb->prefix . 'driver_hold_status';
 		
-		$new_time = date( "Y-m-d H:i:s", strtotime( date( "Y-m-d H:i:s" ) . " +{$this->hold_time} minutes" ) );
+		// Используем WordPress время и добавляем 15 минут
+		$current_time = current_time( 'mysql' );
+		$new_time = date( 'Y-m-d H:i:s', strtotime( $current_time ) + ( $this->hold_time * 60 ) );
 		
 		$result = $wpdb->insert( $table_name, array(
 			'driver_id'     => $driver_id,
@@ -3587,6 +3911,11 @@ class TMSDrivers extends TMSDriversHelper {
 			'driver_status' => $driver_data['driver_status'] ?? null,
 			'update_date'   => $new_time,
 		) );
+		
+		// Clear cache when hold is added
+		if ( $result ) {
+			delete_transient( 'tms_all_available_drivers' );
+		}
 		
 		return $result;
 	}
@@ -3607,6 +3936,118 @@ class TMSDrivers extends TMSDriversHelper {
 		", $driver_id ) );
 		
 		return $result;
+	}
+	
+	/**
+	 * Получает информацию об удержании водителя (публичный метод)
+	 */
+	public function get_driver_hold_info( $driver_id ) {
+		global $wpdb;
+		
+		$table_name = $wpdb->prefix . 'driver_hold_status';
+		
+		$result = $wpdb->get_row( $wpdb->prepare( "
+			SELECT * FROM {$table_name} 
+			WHERE driver_id = %d 
+			ORDER BY update_date DESC 
+			LIMIT 1
+		", $driver_id ) );
+		
+
+		if ( $result ) {
+			// Проверяем, не истекло ли время удержания
+			$current_time = current_time( 'mysql' );
+			$hold_expires = $result->update_date;
+			
+			if ( $current_time > $hold_expires ) {
+				// Время удержания истекло
+				return null;
+			}
+			
+			// Вычисляем оставшееся время
+			$time_diff = strtotime( $hold_expires ) - strtotime( $current_time );
+			$minutes_left = max( 0, round( $time_diff / 60 ) );
+			
+			// Получаем имя диспетчера
+			$helper = new TMSReportsHelper();
+			$dispatcher_info = $helper->get_user_full_name_by_id( $result->dispatcher_id );
+			$dispatcher_name = $dispatcher_info ? $dispatcher_info['full_name'] : 'Unknown';
+		
+
+			return array(
+				'dispatcher_id' => $result->dispatcher_id,
+				'dispatcher_name' => $dispatcher_name,
+				'hold_expires' => $hold_expires,
+				'minutes_left' => $minutes_left,
+				'original_status' => $result->driver_status
+			);
+		}
+		
+		return null;
+	}
+	
+	/**
+	 * Получает всех водителей на холде с полной информацией
+	 */
+	public function get_drivers_on_hold() {
+		global $wpdb;
+		
+		$table_hold = $wpdb->prefix . 'driver_hold_status';
+		$current_user_id = get_current_user_id();
+		
+		// Получаем ID водителей на холде для текущего пользователя (только активные холды)
+		$current_time = current_time( 'mysql' );
+		$driver_ids = $wpdb->get_col( $wpdb->prepare( "
+			SELECT driver_id 
+			FROM {$table_hold} 
+			WHERE dispatcher_id = %d 
+			AND update_date > %s
+			AND update_date != '1970-01-01 00:00:00'
+			ORDER BY update_date ASC
+		", $current_user_id, $current_time ) );
+
+		// Debug info
+		error_log( 'Hold drivers count: ' . count( $driver_ids ) );
+		error_log( 'Current time: ' . $current_time );
+		error_log( 'Driver IDs: ' . implode( ', ', $driver_ids ) );
+
+		if ( empty( $driver_ids ) ) {
+			return array();
+		}
+		
+		// Получаем полную информацию о водителях используя существующий метод
+		$args = array(
+			'status_post' => 'publish',
+			'id_posts' => $driver_ids
+		);
+		
+		$drivers_data = $this->get_table_items_search( $args );
+		$results = isset( $drivers_data['results'] ) ? $drivers_data['results'] : array();
+		
+		$drivers_on_hold = array();
+		
+		foreach ( $results as $driver ) {
+			// Проверяем, что этот водитель действительно в списке запрошенных ID
+			if ( ! in_array( $driver['id'], $driver_ids ) ) {
+				error_log( "Skipping driver {$driver['id']} - not in requested IDs" );
+				continue;
+			}
+			
+			// Получаем информацию о холде для этого водителя
+			$hold_info = $this->get_driver_hold_info( $driver['id'] );
+			
+			// Добавляем только если холд активен
+			if ( $hold_info ) {
+				$driver['hold_info'] = $hold_info;
+				$drivers_on_hold[] = $driver;
+				error_log( "Added driver {$driver['id']} to hold list" );
+			} else {
+				error_log( "Driver {$driver['id']} has no active hold" );
+			}
+		}
+		
+		error_log( 'Final drivers on hold count: ' . count( $drivers_on_hold ) );
+		return $drivers_on_hold;
 	}
 	
 	/**
@@ -3677,6 +4118,35 @@ class TMSDrivers extends TMSDriversHelper {
 	}
 	
 	/**
+	 * Продлевает время удержания водителя
+	 */
+	private function extend_driver_hold_time( $driver_id, $dispatcher_id ) {
+		global $wpdb;
+		
+		$table_name = $wpdb->prefix . 'driver_hold_status';
+		
+		// Используем WordPress время и добавляем 15 минут
+		$current_time = current_time( 'mysql' );
+		$new_time = date( 'Y-m-d H:i:s', strtotime( $current_time ) + ( $this->hold_time * 60 ) );
+		
+		$result = $wpdb->update( 
+			$table_name, 
+			array( 'update_date' => $new_time ), 
+			array( 'driver_id' => $driver_id, 'dispatcher_id' => $dispatcher_id ),
+			array( '%s' ),
+			array( '%d', '%d' )
+		);
+		
+		// Clear drivers cache when hold time is extended
+		$this->clear_drivers_cache();
+		
+		// Also clear search cache
+		delete_transient( 'tms_all_available_drivers' );
+		
+		return $result;
+	}
+	
+	/**
 	 * Cron функция для удаления истекших удержаний
 	 */
 	public function cron_delete_expired_holds() {
@@ -3686,49 +4156,128 @@ class TMSDrivers extends TMSDriversHelper {
 		$table_main = $wpdb->prefix . $this->table_main;
 		$table_meta = $wpdb->prefix . $this->table_meta;
 		
-		// Получаем истекшие удержания
-		$expired_holds = $wpdb->get_results( "
+		// Получаем только истекшие удержания (время истечения уже прошло)
+		$current_wp_time = current_time( 'mysql' );
+		
+		$expired_holds = $wpdb->get_results( $wpdb->prepare( "
 			SELECT * FROM {$table_name}
-			WHERE update_date < NOW()
-		" );
+			WHERE update_date < %s
+		", $current_wp_time ) );
+		
+		// Проверяем, что результат не null
+		if ( $expired_holds === null ) {
+			return 0;
+		}
+		
+		$status_updated = false;
 		
 		foreach ( $expired_holds as $hold ) {
 			// Восстанавливаем старый статус водителя из базы данных
 			if ( $hold->driver_status ) {
+				// Проверяем, что восстановленный статус не on_hold
+				$restore_status = $hold->driver_status;
+				if ( $restore_status === 'on_hold' ) {
+					// Если в таблице холда оказался статус on_hold, устанавливаем available
+					$restore_status = 'available';
+				}
+				
 				$this->update_driver_status_in_db( array(
 					'post_id' => $hold->driver_id,
-					'driver_status' => $hold->driver_status
+					'driver_status' => $restore_status
 				) );
+				$status_updated = true;
+			} else {
+				// Если нет статуса в таблице холда, устанавливаем available
+				$this->update_driver_status_in_db( array(
+					'post_id' => $hold->driver_id,
+					'driver_status' => 'available'
+				) );
+				$status_updated = true;
 			}
 			
 			// Удаляем запись об удержании
 			$wpdb->delete( $table_name, array( 'id' => $hold->id ) );
 		}
 		
-		return count( $expired_holds );
+		// Clear drivers cache if any status was updated
+		if ( $status_updated ) {
+			$this->clear_drivers_cache();
+			
+			// Clear search cache as well
+			delete_transient( 'tms_all_available_drivers' );
+		}
+		
+		return count( $expired_holds ?: array() );
 	}
 	
 	/**
 	 * Инициализация cron задачи
 	 */
 	public function init_cron() {
-		// Добавляем расписание каждые 5 минут
+		// Добавляем расписание каждую минуту
 		add_filter( 'cron_schedules', function( $schedules ) {
-			if ( ! isset( $schedules['15min'] ) ) {
-				$schedules['15min'] = array(
-					'interval' => 15 * 60,
-					'display'  => __( 'Once every 15 minutes' )
+			if ( ! isset( $schedules['1min'] ) ) {
+				$schedules['1min'] = array(
+					'interval' => 60,
+					'display'  => __( 'Once every minute' )
 				);
 			}
 			return $schedules;
 		} );
 		
-		// Регистрируем cron задачу
-		if ( ! wp_next_scheduled( 'driver_hold_cleanup_hook' ) ) {
-			wp_schedule_event( time(), '15min', 'driver_hold_cleanup_hook' );
-		}
-		
 		// Добавляем обработчик
 		add_action( 'driver_hold_cleanup_hook', array( $this, 'cron_delete_expired_holds' ) );
+		
+		// Регистрируем cron задачу
+		if ( ! wp_next_scheduled( 'driver_hold_cleanup_hook' ) ) {
+			wp_schedule_event( time(), '1min', 'driver_hold_cleanup_hook' );
+		}
+	}
+	
+	public function update_clean_background() {
+		if ( defined( 'DOING_AJAX' ) && DOING_AJAX ) {
+					$MY_INPUT = filter_var_array( $_POST, [
+			"driver_id" => FILTER_SANITIZE_NUMBER_INT,
+			"checkbox_status" => FILTER_SANITIZE_STRING,
+		] );
+			
+			if ( ! isset( $MY_INPUT[ 'driver_id' ] ) || empty( $MY_INPUT[ 'driver_id' ] ) ) {
+				wp_send_json_error( [ 'message' => 'Driver ID not found' ] );
+			}
+			
+			$driver_id = (int) $MY_INPUT[ 'driver_id' ];
+			
+			global $wpdb;
+			$table_main = $wpdb->prefix . $this->table_main;
+			
+			// Update clean_check_date in main table with current time
+			$current_time = current_time( 'mysql' );
+			$update_data = array(
+				'clean_check_date' => $current_time,
+			);
+			
+			$result = $wpdb->update( $table_main, $update_data, array( 'id' => $driver_id ) );
+			
+			// Update clear_background in meta table based on checkbox status
+			$checkbox_status = isset( $MY_INPUT[ 'checkbox_status' ] ) ? $MY_INPUT[ 'checkbox_status' ] : '';
+			$meta_data = array(
+				'clear_background' => $checkbox_status,
+			);
+			$this->update_post_meta_data( $driver_id, $meta_data );
+			
+			if ( $result !== false ) {
+				// Clear drivers cache when driver data is updated
+				$this->clear_drivers_cache();
+				
+				$formatted_date = date( "m/d/Y", strtotime( $current_time ) );
+				
+				wp_send_json_success( array( 
+					'date' => $formatted_date, 
+					'message' => 'Clean background check date updated successfully'
+				) );
+			} else {
+				wp_send_json_error( [ 'message' => 'Failed to update clean background check date' ] );
+			}
+		}
 	}
 }

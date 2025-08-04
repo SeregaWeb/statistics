@@ -9,6 +9,7 @@ $others_files  = '';
 $report_object = ! empty( $args[ 'report_object' ] ) ? $args[ 'report_object' ] : null;
 $post_id       = ! empty( $args[ 'post_id' ] ) ? $args[ 'post_id' ] : null;
 $flt           = ! empty( $args[ 'flt' ] ) ? $args[ 'flt' ] : null;
+$project       = ! empty( $args[ 'project' ] ) ? $args[ 'project' ] : null;
 
 $billing_info = $TMSUsers->check_user_role_access( array( 'administrator', 'billing', 'accounting' ), true );
 
@@ -192,6 +193,7 @@ if ( $report_object ) {
 
 <h3 class="p-0 display-6 mb-4">Upload files</h3>
 
+
 <?php if ( $flt ): ?>
     <input type="hidden" name="flt" value="<?php echo $flt; ?>">
 <?php endif; ?>
@@ -219,6 +221,7 @@ if ( $report_object ) {
                 <input type="hidden" name="image-fields" value="attached_file_required">
                 <input type="hidden" name="post_id" value="<?php echo $post_id; ?>">
                 <input type="hidden" name="reference_number" value="<?php echo $reference_number; ?>">
+                <input type="hidden" name="project" value="<?php echo $project; ?>">
 				
 				<?php if ( ! $full_view_only ): ?>
                     <button class="card-upload__btn card-upload__btn--remove" type="submit">
@@ -251,7 +254,7 @@ if ( $report_object ) {
                 <input type="hidden" name="image-id" value="<?php echo $update_rate_conf_arr[ 'id' ]; ?>">
                 <input type="hidden" name="image-fields" value="updated_rate_confirmation">
                 <input type="hidden" name="post_id" value="<?php echo $post_id; ?>">
-				
+                <input type="hidden" name="project" value="<?php echo $project; ?>">
 				<?php if ( ! $full_view_only ): ?>
                     <button class="card-upload__btn card-upload__btn--remove" type="submit">
 						<?php echo $reports->get_close_icon(); ?>
@@ -283,6 +286,7 @@ if ( $report_object ) {
                 <input type="hidden" name="image-id" value="<?php echo $screen_picture_arr[ 'id' ]; ?>">
                 <input type="hidden" name="image-fields" value="screen_picture">
                 <input type="hidden" name="post_id" value="<?php echo $post_id; ?>">
+                <input type="hidden" name="project" value="<?php echo $project; ?>">
 				
 				<?php if ( ! $full_view_only ): ?>
                     <button class="card-upload__btn card-upload__btn--remove" type="submit">
@@ -315,7 +319,7 @@ if ( $report_object ) {
                 <input type="hidden" name="image-id" value="<?php echo $proof_of_delivery_arr[ 'id' ]; ?>">
                 <input type="hidden" name="image-fields" value="proof_of_delivery">
                 <input type="hidden" name="post_id" value="<?php echo $post_id; ?>">
-				
+                <input type="hidden" name="project" value="<?php echo $project; ?>">
 				<?php if ( ! $full_view_only ): ?>
                     <button class="card-upload__btn card-upload__btn--remove" type="submit">
 						<?php echo $reports->get_close_icon(); ?>
@@ -348,6 +352,7 @@ if ( $report_object ) {
                            value="<?php echo $value[ 'id' ]; ?>">
                     <input type="hidden" name="image-fields" value="attached_files">
                     <input type="hidden" name="post_id" value="<?php echo $post_id; ?>">
+                    <input type="hidden" name="project" value="<?php echo $project; ?>">
 					<?php if ( ! $full_view_only ): ?>
                         <button class="card-upload__btn card-upload__btn--remove" type="submit">
 							<?php echo $reports->get_close_icon(); ?>
@@ -382,7 +387,8 @@ if ( $report_object ) {
                            value="<?php echo $value[ 'id' ]; ?>">
                     <input type="hidden" name="image-fields" value="freight_pictures">
                     <input type="hidden" name="post_id" value="<?php echo $post_id; ?>">
-					<?php if ( ! $full_view_only ): ?>
+                    <input type="hidden" name="project"
+                           value="<?php echo $project; ?>"> <?php if ( ! $full_view_only ): ?>
                         <button class="card-upload__btn card-upload__btn--remove" type="submit">
 							<?php echo $reports->get_close_icon(); ?>
                         </button>
@@ -399,7 +405,11 @@ if ( $report_object ) {
 <?php endif; ?>
 
 <?php if ( ! $full_view_only ): ?>
+
     <form class="js-uploads-files d-grid">
+		<?php if ( $project ): ?>
+            <input type="hidden" name="project" value="<?php echo $project; ?>">
+		<?php endif; ?>
 		
 		<?php if ( ! $required_file ): ?>
             <div class="js-add-new-report order-1">

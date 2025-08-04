@@ -7,8 +7,12 @@ $id           = get_field_value( $args, 'id' );
 $is_draft     = get_field_value( $args, 'is_draft' );
 $TMSHelper    = new TMSReportsHelper();
 $TMSUsers     = new TMSUsers();
+$TMSIcons     = new TMSReportsIcons();
+
+$is_admin = $TMSUsers->check_user_role_access( array( 'administrator' ), true );
 ?>
 
+<?php if ( $is_admin || $is_draft ): ?>
 <div class="dropdown">
     <button class="btn button-action" type="button" id="dropdownMenu2"
             data-bs-toggle="dropdown"
@@ -16,15 +20,10 @@ $TMSUsers     = new TMSUsers();
 		<?php echo $TMSHelper->get_dropdown_load_icon(); ?>
     </button>
     <ul class="dropdown-menu" aria-labelledby="dropdownMenu2">
-		<?php if ( $TMSUsers->check_user_role_access( array( 'billing' ), true ) ) : ?>
-            <li><a href="<?php echo $add_new_load . '?driver=' . $id; ?>"
-                   class="dropdown-item">View</a></li>
-		<?php else: ?>
-            <li><a href="<?php echo $add_new_load . '?driver=' . $id; ?>"
-                   class="dropdown-item">Edit</a></li>
-		<?php endif; ?>
+        <li><a href="<?php echo $add_new_load . '?driver=' . $id; ?>"
+               class="dropdown-item">Edit</a></li>
 		
-		<?php if ( $TMSUsers->check_user_role_access( array( 'administrator' ), true ) || $is_draft ): ?>
+		<?php if ( $is_admin || $is_draft ): ?>
             <li>
                 <button class="dropdown-item text-danger js-remove-driver"
                         data-id="<?php echo $id; ?>" type="button">Delete
@@ -33,3 +32,8 @@ $TMSUsers     = new TMSUsers();
 		<?php endif; ?>
     </ul>
 </div>
+<?php else: ?>
+<a href="<?php echo $add_new_load . '?driver=' . $id; ?>" class="btn btn-sm button-action">
+    <?php echo $TMSIcons->get_icon_link_out(); ?>
+</a>
+<?php endif; ?>

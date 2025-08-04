@@ -15,6 +15,7 @@ $dispatchers = array_merge( $dispatchers, $admins );
 $post_id       = ! empty( $args[ 'post_id' ] ) ? $args[ 'post_id' ] : null;
 $report_object = ! empty( $args[ 'report_object' ] ) ? $args[ 'report_object' ] : null;
 $flt           = ! empty( $args[ 'flt' ] ) ? $args[ 'flt' ] : null;
+$project       = ! empty( $args[ 'project' ] ) ? $args[ 'project' ] : null;
 
 $read_only      = false;
 $full_view_only = get_field_value( $args, 'full_view_only' );
@@ -132,6 +133,10 @@ $read_only = $TMSUsers->check_read_only( $post_status );
 ?>
 <form class="form-group <?php echo ( ! $full_view_only || ( $full_view_only && $tracking_tl ) ) ? 'js-add-new-report'
 	: ''; ?>">
+	
+	<?php if ( $project ): ?>
+        <input type="hidden" name="project" value="<?php echo $project; ?>">
+	<?php endif; ?>
 	
 	<?php if ( $flt ): ?>
         <input type="hidden" name="flt" value="<?php echo $flt; ?>">
@@ -559,6 +564,7 @@ $read_only = $TMSUsers->check_read_only( $post_status );
                            data-value="<?php echo $unit_number_name; ?>"
                            value="<?php echo stripslashes( $unit_number_name ); ?>" class="form-control" required>
                     <button class="btn btn-primary js-fill-driver" data-phone=".js-phone-driver">Fill</button>
+                    <input type="hidden" name="attached_driver" value="<?php echo get_field_value( $meta, 'attached_driver' ); ?>">
                 </div>
                 <input type="hidden" name="old_unit_number_name" value="<?php echo $unit_number_name; ?>">
             </div>
@@ -660,6 +666,7 @@ $read_only = $TMSUsers->check_read_only( $post_status );
                             >
                             <button class="btn btn-primary js-fill-driver" data-phone=".js-second-phone-driver">Fill
                             </button>
+                            <input type="hidden" name="attached_second_driver" value="<?php echo get_field_value( $meta, 'attached_second_driver' ); ?>">
                         </div>
                         <input type="hidden" name="old_second_unit_number_name"
                                value="<?php echo $second_unit_number_name; ?>">

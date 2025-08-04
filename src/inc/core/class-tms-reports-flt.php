@@ -16,7 +16,7 @@ class TMSReportsFlt extends TMSReportsHelper {
 	public $helper         = false;
 	
 	public function __construct() {
-		$user_id = get_current_user_id();
+		$user_id            = get_current_user_id();
 		$this->email_helper = new TMSEmails();
 		$this->email_helper->init();
 		$this->user_emails = $this->email_helper->get_all_emails();
@@ -29,9 +29,9 @@ class TMSReportsFlt extends TMSReportsHelper {
 			$this->table_main = 'reports_flt_' . strtolower( $curent_tables );
 			$this->table_meta = 'reportsmeta_flt_' . strtolower( $curent_tables );
 		}
-
+		
 		// $this->duplicate_flt_loads_for_testing();
-
+		
 	}
 	
 	public function get_profit_by_preset( $preset_ids ) {
@@ -2080,7 +2080,15 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 				"post_id"           => FILTER_SANITIZE_STRING,
 				"read_only"         => FILTER_SANITIZE_STRING,
 				"preset-select"     => FILTER_SANITIZE_STRING,
+				"project"           => FILTER_SANITIZE_STRING,
 			] );
+			
+			if ( isset( $MY_INPUT[ 'project' ] ) && $MY_INPUT[ 'project' ] !== $this->project ) {
+				wp_send_json_error( [
+					'message' => 'You have changed the project
+					need to switch back, current project - ' . $this->project . ' previous - ' . $MY_INPUT[ 'project' ]
+				] );
+			}
 			
 			
 			if ( isset( $MY_INPUT[ 'read_only' ] ) ) {
@@ -2162,7 +2170,15 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 				"checked_invoice_proof" => FILTER_SANITIZE_STRING,
 				"checked_ar_action"     => FILTER_SANITIZE_STRING,
 				"log_file_isset"        => FILTER_SANITIZE_STRING,
+				"project"               => FILTER_SANITIZE_STRING,
 			] );
+			
+			if ( isset( $MY_INPUT[ 'project' ] ) && $MY_INPUT[ 'project' ] !== $this->project ) {
+				wp_send_json_error( [
+					'message' => 'You have changed the project
+					need to switch back, current project - ' . $this->project . ' previous - ' . $MY_INPUT[ 'project' ]
+				] );
+			}
 			
 			
 			if ( ! $MY_INPUT[ 'ar-action' ] ) {
@@ -2266,7 +2282,15 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 				"quick_pay_accounting"    => FILTER_VALIDATE_BOOLEAN,
 				"quick_pay_method"        => FILTER_SANITIZE_STRING,
 				"quick_pay_driver_amount" => FILTER_SANITIZE_STRING,
+				"project"                 => FILTER_SANITIZE_STRING,
 			] );
+			
+			if ( isset( $MY_INPUT[ 'project' ] ) && $MY_INPUT[ 'project' ] !== $this->project ) {
+				wp_send_json_error( [
+					'message' => 'You have changed the project
+					need to switch back, current project - ' . $this->project . ' previous - ' . $MY_INPUT[ 'project' ]
+				] );
+			}
 			
 			if ( $MY_INPUT[ 'factoring_status' ] === 'paid' && $MY_INPUT[ 'driver_pay_statuses' ] === 'paid' && ! isset( $MY_INPUT[ 'log_file_isset' ] ) ) {
 				$id_logs_file = $this->archive_logs_and_close_load( $MY_INPUT );
@@ -2311,7 +2335,15 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 				"contact_phone_ext" => FILTER_SANITIZE_STRING,
 				"contact_email"     => FILTER_SANITIZE_STRING,
 				"preset-select"     => FILTER_SANITIZE_STRING,
+				"project"           => FILTER_SANITIZE_STRING,
 			] );
+			
+			if ( isset( $MY_INPUT[ 'project' ] ) && $MY_INPUT[ 'project' ] !== $this->project ) {
+				wp_send_json_error( [
+					'message' => 'You have changed the project
+					need to switch back, current project - ' . $this->project . ' previous - ' . $MY_INPUT[ 'project' ]
+				] );
+			}
 			
 			$additional_contacts = [];
 			if ( ! empty( $_POST[ 'additional_contact_name' ] ) && ! empty( $_POST[ 'additional_contact_phone' ] ) && ! empty( $_POST[ 'additional_contact_email' ] ) ) {
@@ -2375,8 +2407,16 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 		if ( defined( 'DOING_AJAX' ) && DOING_AJAX ) {
 			
 			$MY_INPUT = filter_var_array( $_POST, [
-				"post_id" => FILTER_SANITIZE_STRING
+				"post_id" => FILTER_SANITIZE_STRING,
+				"project" => FILTER_SANITIZE_STRING,
 			] );
+			
+			if ( isset( $MY_INPUT[ 'project' ] ) && $MY_INPUT[ 'project' ] !== $this->project ) {
+				wp_send_json_error( [
+					'message' => 'You have changed the project
+					need to switch back, current project - ' . $this->project . ' previous - ' . $MY_INPUT[ 'project' ]
+				] );
+			}
 			
 			if ( ! empty( $_FILES[ 'screen_picture' ] ) ) {
 				$MY_INPUT[ 'screen_picture' ] = $this->upload_one_file( $_FILES[ 'screen_picture' ] );
@@ -2593,12 +2633,19 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 		if ( defined( 'DOING_AJAX' ) && DOING_AJAX ) {
 			$data = $_POST;
 			
+			if ( isset( $data[ 'project' ] ) && $data[ 'project' ] !== $this->project ) {
+				wp_send_json_error( [
+					'message' => 'You have changed the project
+					need to switch back, current project - ' . $this->project . ' previous - ' . $data[ 'project' ]
+				] );
+			}
+			
 			if ( ! isset( $data[ 'pick_up_location_address_id' ] ) ) {
-				wp_send_json_error( [ 'message' => 'Pick up not fill' ] );
+				wp_send_json_error( [ 'message' => 'Pick up not filled' ] );
 			}
 			
 			if ( ! isset( $data[ 'delivery_location_address_id' ] ) ) {
-				wp_send_json_error( [ 'message' => 'Delivery not fill' ] );
+				wp_send_json_error( [ 'message' => 'Delivery not filled' ] );
 			}
 			
 			$pick_up_location  = [];
@@ -2714,12 +2761,22 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 				"second_driver_rate"      => FILTER_SANITIZE_STRING,
 				"second_driver_phone"     => FILTER_SANITIZE_STRING,
 				"second_driver"           => FILTER_VALIDATE_BOOLEAN,
+				"attached_driver"         => FILTER_SANITIZE_STRING,
+				"attached_second_driver"  => FILTER_SANITIZE_STRING,
 				"tbd"                     => FILTER_VALIDATE_BOOLEAN,
 				"old_tbd"                 => FILTER_VALIDATE_BOOLEAN,
 				"additional_fees"         => FILTER_VALIDATE_BOOLEAN,
 				"additional_fees_val"     => FILTER_SANITIZE_STRING,
 				"additional_fees_driver"  => FILTER_VALIDATE_BOOLEAN,
+				"project"                 => FILTER_SANITIZE_STRING,
 			] );
+			
+			if ( isset( $MY_INPUT[ 'project' ] ) && $MY_INPUT[ 'project' ] !== $this->project ) {
+				wp_send_json_error( [
+					'message' => 'You have changed the project
+					need to switch back, current project - ' . $this->project . ' previous - ' . $MY_INPUT[ 'project' ]
+				] );
+			}
 			
 			if ( $MY_INPUT[ 'load_status' ] === 'cancelled' ) {
 				$MY_INPUT[ "booked_rate" ]        = '0.00';
@@ -2832,11 +2889,19 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 				"driver_pay_statuses" => FILTER_SANITIZE_STRING,
 				"post_ids"            => FILTER_SANITIZE_STRING,
 				"invoiced_proof"      => FILTER_VALIDATE_BOOLEAN,
+				"project"             => FILTER_SANITIZE_STRING,
 			] );
+			
+			if ( isset( $MY_INPUT[ 'project' ] ) && $MY_INPUT[ 'project' ] !== $this->project ) {
+				wp_send_json_error( [
+					'message' => 'You have changed the project
+					need to switch back, current project - ' . $this->project . ' previous - ' . $MY_INPUT[ 'project' ]
+				] );
+			}
 			
 			
 			if ( ! $MY_INPUT[ 'factoring_status' ] && ! $MY_INPUT[ 'bank_payment_status' ] && ! $MY_INPUT[ 'driver_pay_statuses' ] && ! $MY_INPUT[ 'invoiced_proof' ] ) {
-				wp_send_json_error( array( 'message' => 'You do not select any option' ) );
+				wp_send_json_error( array( 'message' => 'You did not select any option' ) );
 			}
 			
 			
@@ -2862,11 +2927,19 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 			$MY_INPUT = filter_var_array( $_POST, [
 				"ar_status" => FILTER_SANITIZE_STRING,
 				"post_ids"  => FILTER_SANITIZE_STRING,
+				"project"   => FILTER_SANITIZE_STRING,
 			] );
+			
+			if ( isset( $MY_INPUT[ 'project' ] ) && $MY_INPUT[ 'project' ] !== $this->project ) {
+				wp_send_json_error( [
+					'message' => 'You have changed the project
+					need to switch back, current project - ' . $this->project . ' previous - ' . $MY_INPUT[ 'project' ]
+				] );
+			}
 			
 			
 			if ( ! $MY_INPUT[ 'ar_status' ] ) {
-				wp_send_json_error( array( 'message' => 'You do not select any option' ) );
+				wp_send_json_error( array( 'message' => 'You did not select any option' ) );
 			}
 			
 			$filled_fields = array_filter( $MY_INPUT, function( $value ) {
@@ -2897,8 +2970,16 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 				"image-fields"     => FILTER_SANITIZE_STRING,
 				"post_id"          => FILTER_SANITIZE_STRING,
 				"reference_number" => FILTER_SANITIZE_STRING,
+				"project"          => FILTER_SANITIZE_STRING,
 			] );
-			$result   = $this->remove_one_image_in_db( $MY_INPUT );
+			
+			if ( isset( $MY_INPUT[ 'project' ] ) && $MY_INPUT[ 'project' ] !== $this->project ) {
+				wp_send_json_error( [
+					'message' => 'You have changed the project
+					need to switch back, current project - ' . $this->project . ' previous - ' . $MY_INPUT[ 'project' ]
+				] );
+			}
+			$result = $this->remove_one_image_in_db( $MY_INPUT );
 			
 			if ( $result === true ) {
 				wp_send_json_success( [ 'message' => 'Remove success', 'data' => $MY_INPUT ] );
@@ -2915,7 +2996,15 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 			
 			$MY_INPUT = filter_var_array( $_POST, [
 				"load_id" => FILTER_SANITIZE_STRING,
+				"project" => FILTER_SANITIZE_STRING,
 			] );
+			
+			if ( isset( $MY_INPUT[ 'project' ] ) && $MY_INPUT[ 'project' ] !== $this->project ) {
+				wp_send_json_error( [
+					'message' => 'You have changed the project
+					need to switch back, current project - ' . $this->project . ' previous - ' . $MY_INPUT[ 'project' ]
+				] );
+			}
 			
 			$TMSEmails  = new TMSEmails();
 			$email_send = $TMSEmails->send_email_create_load( $MY_INPUT[ 'load_id' ], 'reports_flt' );;
@@ -2941,7 +3030,15 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 			
 			$MY_INPUT = filter_var_array( $_POST, [
 				"post_id" => FILTER_SANITIZE_STRING,
+				"project" => FILTER_SANITIZE_STRING,
 			] );
+			
+			if ( isset( $MY_INPUT[ 'project' ] ) && $MY_INPUT[ 'project' ] !== $this->project ) {
+				wp_send_json_error( [
+					'message' => 'You have changed the project
+					need to switch back, current project - ' . $this->project . ' previous - ' . $MY_INPUT[ 'project' ]
+				] );
+			}
 			
 			$MY_INPUT[ 'post_status' ] = 'publish';
 			
@@ -3059,7 +3156,15 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 			$MY_INPUT = filter_var_array( $_POST, [
 				'id_load' => FILTER_SANITIZE_NUMBER_INT,
 				'status'  => FILTER_SANITIZE_STRING,
+				"project" => FILTER_SANITIZE_STRING,
 			] );
+			
+			if ( isset( $MY_INPUT[ 'project' ] ) && $MY_INPUT[ 'project' ] !== $this->project ) {
+				wp_send_json_error( [
+					'message' => 'You have changed the project
+					need to switch back, current project - ' . $this->project . ' previous - ' . $MY_INPUT[ 'project' ]
+				] );
+			}
 			
 			$result = $this->update_quick_status_in_db( $MY_INPUT );
 			if ( $result ) {
@@ -3075,8 +3180,16 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 	public function quick_update_status_all_flt() {
 		if ( defined( 'DOING_AJAX' ) && DOING_AJAX ) {
 			$MY_INPUT = filter_var_array( $_POST, [
-				'data' => FILTER_DEFAULT, // Оставляем строку как есть
+				'data'    => FILTER_DEFAULT, // Оставляем строку как есть
+				"project" => FILTER_SANITIZE_STRING,
 			] );
+			
+			if ( isset( $MY_INPUT[ 'project' ] ) && $MY_INPUT[ 'project' ] !== $this->project ) {
+				wp_send_json_error( [
+					'message' => 'You have changed the project
+					need to switch back, current project - ' . $this->project . ' previous - ' . $MY_INPUT[ 'project' ]
+				] );
+			}
 			
 			// Проверяем, что пришли данные
 			if ( empty( $MY_INPUT[ 'data' ] ) ) {
@@ -3089,7 +3202,7 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 			$decoded_data = explode( ',', $decoded_data );
 			
 			if ( ! is_array( $decoded_data ) ) {
-				wp_send_json_error( [ 'message' => 'Uncorrected data' ] );
+				wp_send_json_error( [ 'message' => 'Incorrect data' ] );
 			}
 			$update_results = [];
 			
@@ -3135,7 +3248,15 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 			// Получаем данные запроса
 			$MY_INPUT = filter_var_array( $_POST, [
 				"id_load" => FILTER_SANITIZE_STRING,
+				"project" => FILTER_SANITIZE_STRING,
 			] );
+			
+			if ( isset( $MY_INPUT[ 'project' ] ) && $MY_INPUT[ 'project' ] !== $this->project ) {
+				wp_send_json_error( [
+					'message' => 'You have changed the project
+					need to switch back, current project - ' . $this->project . ' previous - ' . $MY_INPUT[ 'project' ]
+				] );
+			}
 			
 			$id_load    = $MY_INPUT[ "id_load" ];
 			$table_name = $wpdb->prefix . $this->table_main;
@@ -4249,6 +4370,8 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 			'second_driver_rate'      => $data[ 'second_driver_rate' ],
 			'second_driver_phone'     => $data[ 'second_driver_phone' ],
 			'second_driver'           => $data[ 'second_driver' ],
+			'attached_driver'         => $data[ 'attached_driver' ] ?? '',
+			'attached_second_driver'  => $data[ 'attached_second_driver' ] ?? '',
 			'additional_fees'         => $data[ 'additional_fees' ],
 			'additional_fees_val'     => $data[ 'additional_fees_val' ],
 			'additional_fees_driver'  => $data[ 'additional_fees_driver' ],
@@ -4546,6 +4669,13 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 		
 		if ( defined( 'DOING_AJAX' ) && DOING_AJAX ) {
 			
+			if ( isset( $_POST[ 'project' ] ) && $_POST[ 'project' ] !== $this->project ) {
+				wp_send_json_error( [
+					'message' => 'You have changed the project
+					need to switch back, current project - ' . $this->project . ' previous - ' . $_POST[ 'project' ]
+				] );
+			}
+			
 			$user_id        = intval( $_POST[ 'user_id' ] ?? 0 );
 			$post_id        = intval( $_POST[ 'post_id' ] ?? 0 );
 			$pinned_message = sanitize_textarea_field( $_POST[ 'pinned_message' ] ?? '' );
@@ -4581,6 +4711,14 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 	
 	public function delete_pinned_message_flt() {
 		if ( defined( 'DOING_AJAX' ) && DOING_AJAX ) {
+			
+			if ( isset( $_POST[ 'project' ] ) && $_POST[ 'project' ] !== $this->project ) {
+				wp_send_json_error( [
+					'message' => 'You have changed the project
+					need to switch back, current project - ' . $this->project . ' previous - ' . $_POST[ 'project' ]
+				] );
+			}
+			
 			$post_id = intval( $_POST[ 'id' ] ?? 0 );
 			if ( ! $post_id ) {
 				wp_send_json_error( [ 'message' => 'No post_id provided' ] );
@@ -4781,10 +4919,12 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 	}
 
 // CREATE TABLE AND UPDATE SQL END
-
+	
 	/**
 	 * Временная функция для дублирования FLT грузов для тестирования
+	 *
 	 * @param int $duplicates_count - количество дубликатов для каждого груза
+	 *
 	 * @return array
 	 */
 	public function duplicate_flt_loads_for_testing( $duplicates_count = 10 ) {
@@ -4801,23 +4941,23 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 		}
 		
 		$duplicated_count = 0;
-		$errors = array();
+		$errors           = array();
 		
 		foreach ( $existing_loads as $load ) {
-			$original_id = $load['id'];
+			$original_id = $load[ 'id' ];
 			
 			// Получаем метаданные оригинального груза
 			$meta_data = $wpdb->get_results( $wpdb->prepare( "SELECT meta_key, meta_value FROM {$table_meta} WHERE post_id = %d", $original_id ), ARRAY_A );
 			
-			for ( $i = 1; $i <= $duplicates_count; $i++ ) {
+			for ( $i = 1; $i <= $duplicates_count; $i ++ ) {
 				// Создаем копию основного груза
-				unset( $load['id'] ); // Убираем ID чтобы создать новую запись
-				$load['date_created'] = current_time( 'mysql' );
-				$load['date_updated'] = current_time( 'mysql' );
+				unset( $load[ 'id' ] ); // Убираем ID чтобы создать новую запись
+				$load[ 'date_created' ] = current_time( 'mysql' );
+				$load[ 'date_updated' ] = current_time( 'mysql' );
 				
 				// Добавляем суффикс к названию для различения
-				if ( ! empty( $load['load_name'] ) ) {
-					$load['load_name'] = $load['load_name'] . ' (Copy ' . $i . ')';
+				if ( ! empty( $load[ 'load_name' ] ) ) {
+					$load[ 'load_name' ] = $load[ 'load_name' ] . ' (Copy ' . $i . ')';
 				}
 				
 				// Вставляем новый груз
@@ -4833,9 +4973,9 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 				// Копируем метаданные
 				foreach ( $meta_data as $meta ) {
 					$meta_insert = array(
-						'post_id' => $new_load_id,
-						'meta_key' => $meta['meta_key'],
-						'meta_value' => $meta['meta_value']
+						'post_id'    => $new_load_id,
+						'meta_key'   => $meta[ 'meta_key' ],
+						'meta_value' => $meta[ 'meta_value' ]
 					);
 					
 					$meta_result = $wpdb->insert( $table_meta, $meta_insert );
@@ -4845,19 +4985,19 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 					}
 				}
 				
-				$duplicated_count++;
+				$duplicated_count ++;
 			}
 		}
 		
 		$result = array(
-			'success' => true,
-			'message' => "Создано {$duplicated_count} дубликатов из " . count( $existing_loads ) . " оригинальных грузов",
+			'success'          => true,
+			'message'          => "Создано {$duplicated_count} дубликатов из " . count( $existing_loads ) . " оригинальных грузов",
 			'duplicated_count' => $duplicated_count,
-			'original_count' => count( $existing_loads )
+			'original_count'   => count( $existing_loads )
 		);
 		
 		if ( ! empty( $errors ) ) {
-			$result['errors'] = $errors;
+			$result[ 'errors' ] = $errors;
 		}
 		
 		return $result;

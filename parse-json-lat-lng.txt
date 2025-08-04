@@ -1,0 +1,261 @@
+
+/**
+ * Parse driver location data and update drivers
+ * This function parses JSON data with driver location information and updates drivers
+ */
+function parse_and_update_driver_locations($json_data) {
+	global $wpdb;
+	
+	$helper = new TMSReportsHelper();
+	$states = $helper->get_states();
+	$driverClass = new TMSDrivers();
+	
+	// Parse JSON data
+	$data = json_decode($json_data, true);
+	
+	if (json_last_error() !== JSON_ERROR_NONE) {
+		return new WP_Error('json_error', 'Ошибка разбора JSON: ' . json_last_error_msg());
+	}
+	
+	$parsed_data = [];
+	
+	// Check if data has success/data/drivers structure
+	if (isset($data['success']) && isset($data['data']) && isset($data['data']['drivers'])) {
+		// Use the 'drivers' array which contains the actual driver information
+		$drivers_data = $data['data']['drivers'];
+	} elseif (isset($data['drivers'])) {
+		// Use the 'drivers' array directly
+		$drivers_data = $data['drivers'];
+	} elseif (isset($data['success']) && isset($data['data'])) {
+		// Use the 'data' array which contains the actual driver information
+		$drivers_data = $data['data'];
+	} else {
+		// Use data directly if it's already in the correct format
+		$drivers_data = $data;
+	}
+	
+	foreach ($drivers_data as $driver_id => $driver_info) {
+		$parsed_info = [];
+		
+		// Parse latitude and longitude
+		$parsed_info['latitude'] = $driver_info['latitude'] ?? '';
+		$parsed_info['longitude'] = $driver_info['longitude'] ?? '';
+		
+		// Parse zipcode
+		$parsed_info['current_zipcode'] = $driver_info['zipcode'] ?? '';
+		
+		// Parse city
+		$parsed_info['current_city'] = $driver_info['city'] ?? '';
+		
+		// Parse state - convert label to value
+		$state_label = $driver_info['state'] ?? '';
+		$state_value = '';
+		
+		if (!empty($state_label)) {
+			// First try: find exact match
+			foreach ($states as $key => $value) {
+				if (is_array($value)) {
+					$value = $value[0]; // Take first element if it's an array
+				}
+				if ($value === $state_label) {
+					$state_value = $key;
+					break;
+				}
+			}
+			
+			// Second try: if not found, try partial match
+			if (empty($state_value)) {
+				foreach ($states as $key => $value) {
+					if (is_array($value)) {
+						$value = $value[0];
+					}
+					if (stripos($value, $state_label) !== false || stripos($state_label, $value) !== false) {
+						$state_value = $key;
+						break;
+					}
+				}
+			}
+			
+			// Third try: if not found, extract part after comma and try again
+			if (empty($state_value) && strpos($state_label, ',') !== false) {
+				$parts = explode(',', $state_label);
+				$last_part = trim(end($parts)); // Get the last part after comma
+				
+				foreach ($states as $key => $value) {
+					if (is_array($value)) {
+						$value = $value[0];
+					}
+					if (stripos($value, $last_part) !== false || stripos($last_part, $value) !== false) {
+						$state_value = $key;
+						break;
+					}
+				}
+			}
+		}
+		
+		$parsed_info['current_location'] = $state_value;
+		
+		// Parse date - convert from "06\/01\/2023 4:00 am" format to MySQL datetime
+		$date_string = $driver_info['date'] ?? '';
+		$date_available = null;
+		
+		if (!empty($date_string)) {
+			// Remove escaped slashes and parse date
+			$clean_date = str_replace('\\/', '/', $date_string);
+			$datetime = DateTime::createFromFormat('m/d/Y g:i a', $clean_date);
+			
+			if ($datetime) {
+				$date_available = $datetime->format('Y-m-d H:i:s');
+			}
+		}
+		$parsed_info['date_available'] = $date_available;
+		
+		// Parse status - take only the value from status array
+		$status_info = $driver_info['status'] ?? [];
+		$parsed_info['driver_status'] = is_array($status_info) ? ($status_info['value'] ?? '') : $status_info;
+		
+		$parsed_data[$driver_id] = $parsed_info;
+	}
+	
+	// Display parsed data for review
+	echo "<h3>Parsed Data Preview:</h3>";
+	echo "<pre>";
+	print_r($parsed_data);
+	echo "</pre>";
+	
+	return $parsed_data;
+}
+
+/**
+ * Update drivers with parsed location data
+ */
+function update_drivers_with_location_data($parsed_data) {
+	global $wpdb;
+	
+	$driverClass = new TMSDrivers();
+	$table_main = $wpdb->prefix . 'drivers';
+	$table_meta = $wpdb->prefix . 'drivers_meta';
+	
+	$updated_count = 0;
+	$errors = [];
+	
+	foreach ($parsed_data as $driver_id => $data) {
+		try {
+			// Check if driver exists
+			$driver_exists = $wpdb->get_var($wpdb->prepare(
+				"SELECT id FROM $table_main WHERE id = %d",
+				$driver_id
+			));
+			
+			if (!$driver_exists) {
+				$errors[] = "Driver ID $driver_id not found in database";
+				continue;
+			}
+			
+			// Update main table - date_available
+			if (!empty($data['date_available'])) {
+				$wpdb->update(
+					$table_main,
+					['date_available' => $data['date_available']],
+					['id' => $driver_id],
+					['%s'],
+					['%d']
+				);
+			}
+			
+			// Update meta table - location data
+			$meta_updates = [
+				'latitude' => $data['latitude'],
+				'longitude' => $data['longitude'],
+				'current_zipcode' => $data['current_zipcode'],
+				'current_city' => $data['current_city'],
+				'current_location' => $data['current_location'],
+				'driver_status' => $data['driver_status']
+			];
+			
+			foreach ($meta_updates as $meta_key => $meta_value) {
+				if (!empty($meta_value)) {
+					// Check if meta exists
+					$existing_meta = $wpdb->get_var($wpdb->prepare(
+						"SELECT id FROM $table_meta WHERE post_id = %d AND meta_key = %s",
+						$driver_id,
+						$meta_key
+					));
+					
+					if ($existing_meta) {
+						// Update existing meta
+						$wpdb->update(
+							$table_meta,
+							['meta_value' => $meta_value],
+							['post_id' => $driver_id, 'meta_key' => $meta_key],
+							['%s'],
+							['%d', '%s']
+						);
+					} else {
+						// Insert new meta
+						$wpdb->insert(
+							$table_meta,
+							[
+								'post_id' => $driver_id,
+								'meta_key' => $meta_key,
+								'meta_value' => $meta_value
+							],
+							['%d', '%s', '%s']
+						);
+					}
+				}
+			}
+			
+			$updated_count++;
+			
+		} catch (Exception $e) {
+			$errors[] = "Error updating driver $driver_id: " . $e->getMessage();
+		}
+	}
+	
+	return [
+		'updated_count' => $updated_count,
+		'errors' => $errors
+	];
+}
+
+// Example usage - uncomment to run
+
+$json_data = '';
+$parsed_data = parse_and_update_driver_locations($json_data);
+
+if (!is_wp_error($parsed_data)) {
+	echo "<h3>Ready to update drivers. Review the data above and uncomment the update function call.</h3>";
+	
+	// Uncomment the line below to actually perform the update
+$result = update_drivers_with_location_data($parsed_data);
+echo "<h3>Update Results:</h3>";
+echo "<pre>";
+print_r($result);
+echo "</pre>";
+}
+
+// Test the function
+// parse_and_update_driver_locations($json_data);
+
+/**
+ * Test function to parse driver location data
+ * Call this function from admin to test the parsing
+ */
+function test_driver_location_parsing() {
+	// Your real data here - using a smaller sample for testing
+
+	echo "<h2>Testing Driver Location Parsing</h2>";
+	$parsed_data = parse_and_update_driver_locations($json_data);
+	
+	if (!is_wp_error($parsed_data)) {
+		echo "<h3>Parsing completed successfully!</h3>";
+		echo "<p>Review the data above. If everything looks correct, you can call update_drivers_with_location_data() to perform the actual update.</p>";
+	} else {
+		echo "<h3>Error occurred:</h3>";
+		echo "<p>" . $parsed_data->get_error_message() . "</p>";
+	}
+}
+
+// Uncomment the line below to test the parsing
+add_action('admin_notices', 'test_driver_location_parsing');

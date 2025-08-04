@@ -1,14 +1,14 @@
 <?php
 
 class TMSDriversHelper {
-	
+
 	public $status = array(
 		'available'         => 'Available',
 		'available_on'      => 'Available on',
-		'not_available'     => 'Not available',
+		'available_off'     => 'Not available',
 		'loaded_enroute'    => 'Loaded & Enroute',
-		'out_of_service'    => 'Out of service',
-		'on_vacation'       => 'On vacation',
+		'banned'    		=> 'Out of service',
+		'on_vocation'       => 'On vacation',
 		'no_updates'        => 'No updates',
 		'blocked'           => 'Blocked',
 		'expired_documents' => 'Expired documents',

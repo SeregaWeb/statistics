@@ -652,4 +652,132 @@ class  TMSStatistics extends TMSReportsHelper {
 		return $monthly_stats;
 	}
 	
+	/**
+	 * Get dispatchers with FLT access filtering
+	 * @param string|null $office_user - office filter
+	 * @param bool $is_flt - whether to filter by FLT access
+	 * @return array
+	 */
+	public function get_dispatchers( $office_user = null, $is_flt = false ) {
+		// Аргументы для получения пользователей с ролью 'dispatcher'
+		
+		$report  = new TMSReports();
+		$project = $report->project;
+		
+		$args = array(
+			'role__in' => array( 'dispatcher', 'dispatcher-tl' ),
+			'orderby'  => 'display_name',
+			'order'    => 'ASC',
+		);
+		
+		// Получаем пользователей с заданной ролью
+		$users = get_users( $args );
+		
+		// Массив для хранения информации о пользователях
+		$dispatchers = array();
+		
+		// Перебираем каждого пользователя
+		foreach ( $users as $user ) {
+			// Получаем имя и фамилию пользователя
+			$first_name = get_user_meta( $user->ID, 'first_name', true );
+			$last_name  = get_user_meta( $user->ID, 'last_name', true );
+			$office     = get_field( 'work_location', "user_" . $user->ID );
+			$access     = get_field( 'permission_view', 'user_' . $user->ID );
+			$flt_access = get_field( 'flt', 'user_' . $user->ID );
+			
+			// Проверяем доступ к проекту
+			if ( ! in_array( $project, $access ) ) {
+				continue;
+			}
+			
+			// Фильтруем по FLT доступу
+			if ( $is_flt && ! $flt_access ) {
+				continue;
+			}
+			
+			// Если не FLT режим, исключаем пользователей с FLT доступом
+			if ( ! $is_flt && $flt_access ) {
+				continue;
+			}
+			
+			// Фильтруем по офису
+			if ( is_null( $office_user ) ) {
+				$dispatchers[] = array(
+					'id'       => $user->ID,
+					'fullname' => trim( $first_name . ' ' . $last_name ),
+					'office'   => $office,
+				);
+			} else {
+				if ( $office_user === $office ) {
+					$dispatchers[] = array(
+						'id'       => $user->ID,
+						'fullname' => trim( $first_name . ' ' . $last_name ),
+						'office'   => $office,
+					);
+				}
+			}
+		}
+		
+		return $dispatchers;
+	}
+	
+	/**
+	 * Get dispatchers TL with FLT access filtering
+	 * @param string|null $office_user - office filter
+	 * @param bool $is_flt - whether to filter by FLT access
+	 * @return array
+	 */
+	public function get_dispatchers_tl( $office_user = null, $is_flt = false ) {
+		// Аргументы для получения пользователей с ролью 'dispatcher-tl'
+		$args = array(
+			'role__in' => array( 'dispatcher-tl' ),
+			'orderby'  => 'display_name',
+			'order'    => 'ASC',
+		);
+		
+		// Получаем пользователей с заданной ролью
+		$users = get_users( $args );
+		
+		// Массив для хранения информации о пользователях
+		$dispatchers = array();
+		
+		// Перебираем каждого пользователя
+		foreach ( $users as $user ) {
+			// Получаем имя и фамилию пользователя
+			$first_name = get_user_meta( $user->ID, 'first_name', true );
+			$last_name  = get_user_meta( $user->ID, 'last_name', true );
+			$office     = get_field( 'work_location', "user_" . $user->ID );
+			$flt_access = get_field( 'flt', 'user_' . $user->ID );
+			
+			// Фильтруем по FLT доступу
+			if ( $is_flt && ! $flt_access ) {
+				continue;
+			}
+			
+			// Если не FLT режим, исключаем пользователей с FLT доступом
+			if ( ! $is_flt && $flt_access ) {
+				continue;
+			}
+			
+			// Фильтруем по офису
+			if ( is_null( $office_user ) ) {
+				$dispatchers[] = array(
+					'id'       => $user->ID,
+					'fullname' => trim( $first_name . ' ' . $last_name ),
+					'office'   => $office,
+				);
+			} else {
+				if ( $office_user === $office ) {
+					$dispatchers[] = array(
+						'id'       => $user->ID,
+						'fullname' => trim( $first_name . ' ' . $last_name ),
+						'office'   => $office,
+					);
+				}
+			}
+		}
+		
+		return $dispatchers;
+	}
+	
 }

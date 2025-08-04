@@ -3,6 +3,7 @@
 $report_object = ! empty( $args[ 'report_object' ] ) ? $args[ 'report_object' ] : null;
 $post_id       = ! empty( $args[ 'post_id' ] ) ? $args[ 'post_id' ] : null;
 $flt           = ! empty( $args[ 'flt' ] ) ? $args[ 'flt' ] : null;
+$project       = ! empty( $args[ 'project' ] ) ? $args[ 'project' ] : null;
 
 $helper = new TMSReportsHelper();
 $states = $helper->get_states();
@@ -60,6 +61,10 @@ if ( $report_object ) {
 ?>
 
 <form class="js-shipper">
+	
+	<?php if ( $project ): ?>
+        <input type="hidden" name="project" value="<?php echo $project; ?>">
+	<?php endif; ?>
 	
 	<?php if ( $flt ): ?>
         <input type="hidden" name="flt" value="<?php echo $flt; ?>">

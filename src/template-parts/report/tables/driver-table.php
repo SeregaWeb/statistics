@@ -131,13 +131,13 @@ if ( ! empty( $results ) ) : ?>
                 <td><?php echo $city . ', ' . $home_location; ?></td>
 
                 <td>
-                    <div class="table-tags d-flex gap-1 flex-wrap">
+                    <div class="table-tags d-flex flex-wrap">
 						<?php
 						$array_additionals = $icons->get_capabilities( $driver_capabilities );
 						if ( ! empty( $array_additionals ) ) {
 							foreach ( $array_additionals as $value ) {
 								?>
-                                <img width="30" height="30" src="<?php echo $value; ?>" alt="tag">
+                                <img width="24" height="24" src="<?php echo $value; ?>" alt="tag">
 								<?php
 							}
 						}

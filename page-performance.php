@@ -8,11 +8,22 @@
 
 $statistics  = new TMSStatistics();
 $helper      = new TMSReportsHelper();
-$performance = new TMSReportsPerformance();
 $TMSUsers    = new TMSUsers();
 
-$dispatchers    = $statistics->get_dispatchers();
-$dispatchers_tl = $statistics->get_dispatchers_tl();
+// Проверяем доступ к FLT
+$flt_user_access = get_field( 'flt', 'user_' . get_current_user_id() );
+$is_admin = current_user_can( 'administrator' );
+$show_flt_tabs = $flt_user_access || $is_admin;
+
+// Определяем тип данных для загрузки
+$type = get_field_value( $_GET, 'type' );
+$is_flt = $type === 'flt';
+
+// Создаем класс с нужным режимом
+$performance = new TMSReportsPerformance( $is_flt );
+
+$dispatchers    = $statistics->get_dispatchers( null, $is_flt );
+$dispatchers_tl = $statistics->get_dispatchers_tl( null, $is_flt );
 
 $exclude_dispatchers = $helper->get_empty_dispatcher();
 
@@ -54,6 +65,12 @@ if ( ! $show_filter_by_office ) {
 
 get_header();
 
+// Передаем информацию о FLT в JavaScript
+wp_localize_script( 'frontend_js', 'performanceData', array(
+	'is_flt' => $is_flt,
+	'ajax_url' => admin_url( 'admin-ajax.php' )
+) );
+
 ?>
     <div class="container-fluid">
         <div class="row">
@@ -64,9 +81,18 @@ get_header();
 						<?php if ( $office ): ?>
 
                             <h1 class="mb-4">Performance</h1>
+                            
+                            <?php if ( $show_flt_tabs ): ?>
+                                <?php
+                                echo esc_html( get_template_part( TEMPLATE_PATH . 'common/flt', 'tabs', array( 'show_flt_tabs' => $show_flt_tabs, 'is_flt' => $is_flt ) ) );
+                                ?>
+                            <?php endif; ?>
 
                             <div class="d-flex justify-content-start mb-2 w-100">
                                 <form class="d-flex gap-1">
+                                    <?php if ( $is_flt ): ?>
+                                        <input type="hidden" name="type" value="flt">
+                                    <?php endif; ?>
                                     <select class="form-select" name="date" id="date">
 										<?php echo $helper->generateWeeks( $date ); ?>
                                     </select>
@@ -544,7 +570,9 @@ get_header();
                                 </table>
 							<?php endif; ?>
 						
-						<?php else:
+						<?php elseif ( $is_flt && ! $show_flt_tabs ):
+							echo $helper->message_top( 'danger', $helper->messages_prepare( 'not-access' ) );
+						else:
 							echo $helper->message_top( 'error', '
 it is impossible to determine your office, contact the Administrator' );
 						endif; ?>

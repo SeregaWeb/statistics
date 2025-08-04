@@ -325,7 +325,15 @@ class TMSLogs extends TMSReports {
 				"post_type" => FILTER_SANITIZE_STRING,
 				"message"   => FILTER_SANITIZE_STRING,
 				"priority"  => FILTER_SANITIZE_NUMBER_INT,
+				"project"   => FILTER_SANITIZE_STRING,
 			] );
+			
+			if ( isset( $MY_INPUT[ 'project' ] ) && strtolower( $MY_INPUT[ 'project' ] ) !== $this->use_project ) {
+				wp_send_json_error( [
+					'message' => 'You have changed the project
+					need to switch back, current project - ' . $this->use_project . ' previous - ' . strtolower( $MY_INPUT[ 'project' ] )
+				] );
+			}
 			
 			// Проверка необходимых данных
 			if ( ! $MY_INPUT[ 'user_id' ] || ! $MY_INPUT[ 'post_id' ] || ! $MY_INPUT[ 'post_type' ] || ! $MY_INPUT[ 'message' ] ) {
@@ -335,7 +343,7 @@ class TMSLogs extends TMSReports {
 			$result = $this->create_one_log( $MY_INPUT );
 			
 			if ( $result[ 'insert' ] === false ) {
-				wp_send_json_error( [ 'message' => 'Ошибка при добавлении записи в лог.' ] );
+				wp_send_json_error( [ 'message' => 'Error adding record to log.' ] );
 			}
 			
 			// Генерация HTML карточки
@@ -349,7 +357,7 @@ class TMSLogs extends TMSReports {
 			wp_send_json_success( [ 'template' => $html ] );
 		}
 		
-		wp_send_json_error( [ 'message' => 'Неверный запрос.' ] );
+					wp_send_json_error( [ 'message' => 'Invalid request.' ] );
 	}
 	
 	function create_one_log( $array_data ) {

@@ -26,6 +26,14 @@
     }
 }
 
+.btn.active {
+    svg {
+        path {
+            fill: #ffffff;
+        }
+    }
+}
+
 .save-button {
     outline: none !important;
     padding: 4px;

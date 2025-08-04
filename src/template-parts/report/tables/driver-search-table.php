@@ -96,6 +96,21 @@ if ( ! empty( $results ) ) :
 			$current_zipcode = get_field_value( $meta, 'current_zipcode' );
 			$notes = get_field_value( $meta, 'notes' );
 			
+			// Get hold information if driver is on hold
+			$hold_info = null;
+			$current_user_id = get_current_user_id();
+			$show_phone = true;
+			$show_controls = true;
+			
+			if ( $driver_status === 'on_hold' ) {
+				$hold_info = $drivers->get_driver_hold_info( $row['id'] );
+				if ( $hold_info ) {
+					// Hide phone number and controls from other users
+					$show_phone = ( $current_user_id == $hold_info['dispatcher_id'] );
+					$show_controls = ( $current_user_id == $hold_info['dispatcher_id'] );
+				}
+			}
+			
 			$payload               = get_field_value( $meta, 'payload' );
 			$preferred_distance    = get_field_value( $meta, 'preferred_distance' );
 			$selected_distances    = array_map( 'trim', explode( ',', $preferred_distance ) );
@@ -282,7 +297,13 @@ if ( ! empty( $results ) ) :
 							<?php echo '(' . $row[ 'id' ] . ') ' . $driver_name; ?>
 							<?php echo $icons->get_flags( $languages ); ?>
                         </div>
-                        <span class="text-small"><?php echo $driver_phone; ?></span>
+                        <span class="text-small">
+							<?php if ( $show_phone ) : ?>
+								<?php echo $driver_phone; ?>
+							<?php else : ?>
+								<span style="color: #999;">***-***-****</span>
+							<?php endif; ?>
+						</span>
                     </div>
                 </td>
 
@@ -308,28 +329,43 @@ if ( ! empty( $results ) ) :
                         </span>
                     </div>
                 </td>
-                <td style="width: 152px;">
-                    <div class="table-tags d-flex gap-1 flex-wrap">
+                <td>
+                    <div class="table-tags d-flex flex-wrap">
 						<?php
-						$array_additionals = $icons->get_capabilities( $driver_capabilities );
-						if ( ! empty( $array_additionals ) ) {
-							foreach ( $array_additionals as $value ) {
-								?>
-                                <img width="30" height="30" src="<?php echo $value; ?>" alt="tag">
-								<?php
+						if ( $hold_info ) {
+							// Show hold information instead of capabilities
+							echo '<div style="font-size: 12px; color: #666; line-height: 1.2;">';
+							echo 'On hold by<br>';
+							echo '<strong>' . esc_html( $hold_info['dispatcher_name'] ) . '</strong>';
+							echo '</div>';
+						} else {
+							$array_additionals = $icons->get_capabilities( $driver_capabilities );
+							if ( ! empty( $array_additionals ) ) {
+								foreach ( $array_additionals as $value ) {
+									?>
+									<img width="24" height="24" src="<?php echo $value; ?>" alt="tag">
+									<?php
+								}
 							}
 						}
-						
 						?>
                     </div>
                 </td>
 
-                <td>
-					<?php echo $notes; ?>
+                <td style="width: 282px;">
+					<?php 
+					if ( $hold_info ) {
+						echo 'Will be available in<br>' . $hold_info['minutes_left'] . ' min';
+					} else {
+						echo $notes; 
+					}
+					?>
                 </td>
 
-                <td>
-                    <a target="_blank"
+                <td style="width: 86px;">
+					<?php if ( $show_controls ) : ?>
+                    <a 
+					   target="_blank"
                        href="<?php echo $add_new_load . '?driver=' . $row[ 'id' ] . '&tab=pills-driver-stats-tab'; ?>"
                        class="btn <?php echo $get_button_color( $driver_statistics[ 'rating' ][ 'avg_rating' ] ); ?> btn-sm d-flex align-items-center justify-content-between gap-1">
 						<?php echo $driver_statistics[ 'rating' ][ 'avg_rating' ] > 0
@@ -343,11 +379,26 @@ if ( ! empty( $results ) ) :
                                         S251.539,157,230,157z"></path>
                             </svg>
                     </a>
+					<?php else : ?>
+                    <span  class="btn <?php echo $get_button_color( $driver_statistics[ 'rating' ][ 'avg_rating' ] ); ?> btn-sm d-flex align-items-center justify-content-between gap-1 disabled" style="opacity: 0.5; pointer-events: none;">
+						<?php echo $driver_statistics[ 'rating' ][ 'avg_rating' ] > 0
+							? $driver_statistics[ 'rating' ][ 'avg_rating' ] : '-'; ?>
+                        <svg fill="white" width="12" height="12" version="1.1" xmlns="http://www.w3.org/2000/svg"
+                             xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px" viewBox="0 0 460 460"
+                             style="enable-background:new 0 0 460 460;" xml:space="preserve">
+                                    <path d="M230,0C102.975,0,0,102.975,0,230s102.975,230,230,230s230-102.974,230-230S357.025,0,230,0z M268.333,377.36
+                                        c0,8.676-7.034,15.71-15.71,15.71h-43.101c-8.676,0-15.71-7.034-15.71-15.71V202.477c0-8.676,7.033-15.71,15.71-15.71h43.101
+                                        c8.676,0,15.71,7.033,15.71,15.71V377.36z M230,157c-21.539,0-39-17.461-39-39s17.461-39,39-39s39,17.461,39,39
+                                        S251.539,157,230,157z"></path>
+                            </svg>
+                    </span>
+					<?php endif; ?>
 
                 </td>
 
-                <td>
-                    <a target="_blank"
+                <td style="width: 86px;">
+					<?php if ( $show_controls ) : ?>
+                    <a  target="_blank"
                        href="<?php echo $add_new_load . '?driver=' . $row[ 'id' ] . '&tab=pills-driver-stats-tab'; ?>"
                        class="btn btn-primary btn-sm d-flex align-items-center justify-content-between gap-1">
 						<?php echo $driver_statistics[ 'notice' ][ 'count' ] > 0
@@ -370,13 +421,37 @@ if ( ! empty( $results ) ) :
                             </g>
                         </svg>
                     </a>
+					<?php else : ?>
+                    <span  class="btn btn-primary btn-sm d-flex align-items-center justify-content-between gap-1 disabled" style="opacity: 0.5; pointer-events: none;">
+						<?php echo $driver_statistics[ 'notice' ][ 'count' ] > 0
+							? $driver_statistics[ 'notice' ][ 'count' ] : '-'; ?>
+                        <svg viewBox="-1 0 46 46" width="12" height="12" xmlns="http://www.w3.org/2000/svg"
+                             fill="white">
+                            <g id="_6" data-name="6" transform="translate(-832 -151.466)">
+                                <g id="Group_263" data-name="Group 263">
+                                    <rect id="Rectangle_63" data-name="Rectangle 63" width="6" height="7"
+                                          transform="translate(832 155.466)"></rect>
+                                    <path id="Path_188" data-name="Path 188"
+                                          d="M832,191.827l3,5.419,3-5.419V163.466h-6Z"></path>
+                                    <g id="Group_262" data-name="Group 262">
+                                        <g id="Group_261" data-name="Group 261">
+                                            <path id="Path_189" data-name="Path 189"
+                                                  d="M864.907,155.466l-.3-1H862v-3h-6v3h-3.033l-.3,1H842v42h34v-42Zm9.093,40H844v-38h8.171l-.66,3h14.556l-.66-3H874Z"></path>
+                                        </g>
+                                    </g>
+                                </g>
+                            </g>
+                        </svg>
+                    </span>
+					<?php endif; ?>
 
                 </td>
 
-                <td>
+                <td style="width: 72px;">
+					<?php if ( $show_controls ) : ?>
                     <div class="d-flex align-items-center">
 
-                        <button class="btn btn-sm h-100 js-hold-driver"
+                        <button class="btn btn-sm d-flex align-items-center justify-content-center h-100 js-hold-driver"
                                 data-id="<?php echo $row[ 'id' ]; ?>"
                                 data-dispatcher="<?php echo get_current_user_id(); ?>"
                                 data-hold="null">
@@ -413,6 +488,7 @@ if ( ! empty( $results ) ) :
 							'is_draft' => $is_draft,
 						] ) ); ?>
                     </div>
+					<?php endif; ?>
                 </td>
             </tr> <?php endforeach; ?>
 

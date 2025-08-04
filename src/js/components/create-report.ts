@@ -35,6 +35,13 @@ export const updateStatusPost = (ajaxUrl) => {
                     return;
                 }
 
+                const currentProject = document.querySelector('.js-select-current-table');
+
+                if (currentProject) {
+                    // @ts-ignore
+                    formData.append('project', currentProject?.value);
+                }
+
                 formData.append('action', action);
                 // @ts-ignore
                 formData.append('post_id', postId.value);
@@ -155,8 +162,14 @@ export const fullRemovePost = (ajaxUrl) => {
 
                     const formData = new FormData();
 
+                    const currentProject = document.querySelector('.js-select-current-table');
+
                     formData.append('action', action);
                     formData.append('id_load', idLoad);
+                    if (currentProject) {
+                        // @ts-ignore
+                        formData.append('project', currentProject?.value);
+                    }
 
                     const options = {
                         method: 'POST',

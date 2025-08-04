@@ -30,7 +30,12 @@ export const sendUpdatePerformance = (ajaxUrl) => {
                 if (parentRow) {
                     // @ts-ignore
                     const formData = collectFormData(parentRow);
-                    formData.append('action', 'update_performance');
+                    
+                    // Определяем action в зависимости от типа (FLT или обычный)
+                    const isFlt = (window as any).performanceData?.is_flt || false;
+                    const action = isFlt ? 'update_performance_flt' : 'update_performance';
+                    formData.append('action', action);
+                    
                     console.log(formData); // For debugging: outputs the FormData object
 
                     const options = {

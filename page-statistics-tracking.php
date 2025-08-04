@@ -40,13 +40,19 @@ $show_move_dispatcher = $TMSUser->check_user_role_access( array(
 	'tracking-tl',
 ), true );
 
+$users_access_for_popup = get_field( 'access_for_popup', get_the_ID() );
+$current_user_id        = get_current_user_id();
+
+if ( in_array( $current_user_id, $users_access_for_popup ) ) {
+	$show_move_dispatcher = true;
+}
+
 $show_filter_by_office = true;
 
 // Set office dispatcher based on user permissions
 if ( $select_all_offices ) {
 	$office_dispatcher = ! empty( $office_dispatcher ) ? $office_dispatcher : 'all';
 } elseif ( empty( $office_dispatcher ) ) {
-	$current_user_id = get_current_user_id();
 	if ( $current_user_id ) {
 		$office_dispatcher = get_field( 'work_location', 'user_' . $current_user_id );
 	}

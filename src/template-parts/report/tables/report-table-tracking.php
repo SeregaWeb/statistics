@@ -61,6 +61,7 @@ if ( ! empty( $results ) ) :
 
     <div class="w-100">
         <form class="js-save-all-tracking d-none mb-3">
+            <input type="hidden" name="project" value="<?php echo $TMSReports->project; ?>">
             <button class="btn btn-primary" type="submit">Save all</button>
         </form>
     </div>
@@ -167,6 +168,7 @@ if ( ! empty( $results ) ) :
 					<?php if ( ! $archive && $show_control && ! $now_show && $blocked_update ): ?>
                         <form class="js-save-status d-flex gap-1 align-items-center form-quick-tracking">
                             <input type="hidden" name="id_load" value="<?php echo $row[ 'id' ]; ?>">
+                            <input type="hidden" name="project" value="<?php echo $TMSReports->project; ?>">
 							<?php if ( is_array( $all_statuses ) ) { ?>
                                 <select name="status" class="js-trigger-disable-btn">
 									<?php foreach ( $all_statuses as $key => $st ): ?>
@@ -210,9 +212,9 @@ if ( ! empty( $results ) ) :
                     <td>
                         <div class="d-flex">
 
-                            <button class="btn-bookmark js-btn-bookmark <?php echo $TMSUsers->is_bookmarked( $row[ 'id' ], isset( $flt ) ? $flt : false )
-								? 'active' : ''; ?>" data-id="<?php echo $row[ 'id' ]; ?>"
-								data-flt="<?php echo isset( $flt ) ? ( $flt ? '1' : '0' ) : '0'; ?>">
+                            <button class="btn-bookmark js-btn-bookmark <?php echo $TMSUsers->is_bookmarked( $row[ 'id' ], isset( $flt )
+								? $flt : false ) ? 'active' : ''; ?>" data-id="<?php echo $row[ 'id' ]; ?>"
+                                    data-flt="<?php echo isset( $flt ) ? ( $flt ? '1' : '0' ) : '0'; ?>">
 								<?php echo $helper->get_icon_bookmark(); ?>
                             </button>
 							
@@ -236,6 +238,7 @@ if ( ! empty( $results ) ) :
     <div class="d-flex justify-content-between">
         <div class="w-100">
             <form class="js-save-all-tracking d-none mb-3">
+                <input type="hidden" name="project" value="<?php echo $TMSReports->project; ?>">
                 <button class="btn btn-primary" type="submit">Save all</button>
             </form>
         </div>

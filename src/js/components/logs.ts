@@ -33,6 +33,8 @@ export const logsInit = (ajaxUrl) => {
                         target.removeAttribute('disabled');
                         // @ts-ignore
                         target.reset();
+                    } else {
+                        printMessage(requestStatus.data.message, 'danger', 8000);
                     }
                 })
                 .catch((error) => {

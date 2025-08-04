@@ -1,0 +1,14 @@
+Date: 01/27/2025 ID Driver: 2983 Name: John Doe Param search: john@example.com <span class="dot-highlight">DOT:123456</span> <span class="mc-highlight">MC: 789012</span> Status:Active
+The status has not been changed, the driver has been verified by a person !
+-------------------------------------------------------
+Date: 01/27/2025 ID Driver: 2981 Name: Jane Smith Param search: jane@example.com Error: Not found
+-------------------------------------------------------
+Date: 01/27/2025 ID Driver: 2980 Name: Mike Johnson Param search: mike@example.com <span class="dot-highlight">DOT:654321</span> <span class="mc-highlight">MC: 210987</span> Status:Inactive
+-------------------------------------------------------
+Date: 01/27/2025 ID Driver: 2979 Name: Raquel Del Risco Param search: (555) 123-4567 <span class="dot-highlight">DOT:4285748</span> <span class="mc-highlight">MC: 1234567</span> Status:Active
+-------------------------------------------------------
+Date: 01/27/2025 ID Driver: 2978 Name: Carlos Rodriguez Param search: carlos@example.com Error: Not found
+-------------------------------------------------------
+Date: 01/27/2025 ID Driver: 2977 Name: Maria Garcia Param search: maria@example.com <span class="dot-highlight">DOT:987654</span> <span class="mc-highlight">MC: 765432</span> Status:Inactive
+The status has not been changed, the driver has been verified by a person !
+------------------------------------------------------- 

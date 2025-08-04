@@ -1,13 +1,18 @@
 <?php
 
-$reports     = new TMSReports();
-$ar_statuses = $reports->get_ar_statuses();
+$reports = new TMSReports();
+$project = $reports->project;
 
-$type   = get_field_value( $_GET, 'type' );
-$is_flt = $type === 'flt';
+$ar_statuses = $reports->get_ar_statuses();
+$type        = get_field_value( $_GET, 'type' );
+$is_flt      = $type === 'flt';
 ?>
 
 <form class="w-100 js-quick-edit-ar">
+	
+	<?php if ( $project ): ?>
+        <input type="hidden" name="project" value="<?php echo $project; ?>">
+	<?php endif; ?>
 	
 	<?php if ( $is_flt ): ?>
         <input type="hidden" name="flt" value="1">

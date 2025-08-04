@@ -33,26 +33,14 @@ export const initGetInfoDriver = (urlAjax, ProjectsLinks) => {
                     return;
                 }
 
-                // Find the project selector
-                const useProject = document.querySelector('.js-select-current-table');
-                if (!useProject) {
-                    console.warn('Project selector not found.');
-                    return;
-                }
-
-                // @ts-ignore
-                const valueProject = useProject.value;
-
-                console.log('Fetching driver for ID:', value, 'and project:', valueProject);
+                console.log('Fetching driver for ID:', value);
 
                 try {
-                    // Call the async function and wait for its result
+                    // Call the internal database function
                     const formData = new FormData();
-                    formData.append('action', 'get_driver_by_id');
+                    formData.append('action', 'get_driver_by_id_internal');
                     // @ts-ignore
                     formData.append('id', value);
-                    // @ts-ignore
-                    formData.append('project', ProjectsLinks[valueProject]);
 
                     const options = {
                         method: 'POST',
@@ -65,13 +53,38 @@ export const initGetInfoDriver = (urlAjax, ProjectsLinks) => {
                             if (requestStatus.success) {
                                 const driver = requestStatus.data;
                                 if (!driver) return;
+                                
+                                // Update phone field
                                 const driverPhone = document.querySelector(phoneSelector);
                                 if (driverPhone) {
                                     // @ts-ignore
                                     driverPhone.value = driver.phone;
                                 }
+                                
+                                // Update driver name field
                                 // @ts-ignore
                                 input.value = `(${value}) ${driver.driver}`;
+                                
+                                // Determine if this is a second driver based on phone selector
+                                const isSecondDriver = phoneSelector === '.js-second-phone-driver';
+                                const hiddenFieldName = isSecondDriver ? 'attached_second_driver' : 'attached_driver';
+                                
+                                // Find existing hidden field for driver ID
+                                let hiddenField = container.querySelector(`input[name="${hiddenFieldName}"]`);
+                                
+                                if (hiddenField) {
+                                    // Update existing hidden field
+                                    // @ts-ignore
+                                    hiddenField.value = value;
+                                    console.log(`Driver ID ${value} updated in ${hiddenFieldName} (${isSecondDriver ? 'second' : 'main'} driver)`);
+                                    
+                                    // Verify the value was set
+                                    // @ts-ignore
+                                    console.log(`Field ${hiddenFieldName} value after update:`, hiddenField.value);
+                                } else {
+                                    console.warn(`Hidden field ${hiddenFieldName} not found in container`);
+                                }
+                                
                                 // eslint-disable-next-line consistent-return
                                 return true;
                             }

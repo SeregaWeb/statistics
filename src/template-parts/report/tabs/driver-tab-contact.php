@@ -59,6 +59,11 @@ $mc_enabled  = get_field_value( $meta, 'mc_enabled' );
 $mc          = get_field_value( $meta, 'mc' );
 $dot_enabled = get_field_value( $meta, 'dot_enabled' );
 $dot         = get_field_value( $meta, 'dot' );
+$mc_dot_human_tested = get_field_value( $meta, 'mc_dot_human_tested' );
+$clear_background = get_field_value( $meta, 'clear_background' );
+
+// Get clean_check_date from main table
+$clean_check_date = get_field_value( $main, 'clean_check_date' );
 ?>
 
 <div class="container mt-4 pb-5">
@@ -184,7 +189,7 @@ $dot         = get_field_value( $meta, 'dot' );
                     <div class="col-md-4 mb-3">
                         <label class="form-label">Team Driver Email</label>
                         <input type="email" class="form-control" name="team_driver_email"
-                               value="<?php echo $team_driver_email; ?>">
+                               value="<?php echo ($team_driver_email && $team_driver_email !== '-') ? $team_driver_email : ''; ?>">
                     </div>
                     <div class="col-md-4 mb-3">
                         <label class="form-label">Date of Birth</label>
@@ -236,7 +241,7 @@ $dot         = get_field_value( $meta, 'dot' );
                     </div>
                     <div class="col-md-4 mb-3">
                         <label class="form-label">Owner Email</label>
-                        <input type="email" class="form-control" name="owner_email" value="<?php echo $owner_email; ?>">
+                        <input type="email" class="form-control" name="owner_email" value="<?php echo ($owner_email && $owner_email !== '-') ? $owner_email : ''; ?>">
                     </div>
                     <div class="col-md-6 mb-3">
                         <label class="form-label">Date of Birth</label>
@@ -438,6 +443,34 @@ $dot         = get_field_value( $meta, 'dot' );
                             <input type="text" class="form-control" name="dot" value="<?php echo $dot; ?>">
                         </div>
                     </div>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-12 mb-3">
+                    <div class="form-check form-switch">
+                        <input class="form-check-input "
+                               type="checkbox" id="mcDotHumanTestedSwitch" name="mc_dot_human_tested"
+							<?php echo $mc_dot_human_tested ? 'checked' : ''; ?>>
+                        <label class="form-check-label" for="mcDotHumanTestedSwitch">MC/DOT human tested ?</label>
+                    </div>
+                </div>
+                <div class="col-12 mb-3">
+                    <div class="form-check form-switch">    
+                        <input class="form-check-input" type="checkbox" id="clearBackgroundSwitch" name="clear_background"
+							<?php echo $clear_background ? 'checked' : ''; ?>>
+                            <label class="form-check-label" for="clearBackgroundSwitch">Clear background ?</label>
+                    </div>
+                    <div class="clear-background-status small text-muted mt-1">
+                        <?php 
+                        if ( $clean_check_date ) {
+                            echo 'last update: ' . date( 'm/d/Y', strtotime( $clean_check_date ) );
+                        } else {
+                            echo 'last update: not verified';
+                        }
+                        ?>
+                    </div>
+                    <button type="button" class="btn btn-outline-primary btn-sm js-clear-background mt-2">Update date clean background</button>
                 </div>
             </div>
 

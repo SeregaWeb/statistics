@@ -3,18 +3,34 @@ require_once( ABSPATH . 'wp-admin/includes/upgrade.php' );
 
 class TMSReportsPerformance extends TMSReportsHelper {
 	public $table_main = 'reports_performance';
+	public $is_flt = false;
+	
+	public function __construct( $is_flt = false ) {
+		$this->is_flt = $is_flt;
+		if ( $is_flt ) {
+			$this->table_main = 'reports_performance_flt';
+		}
+	}
 	
 	public function init() {
 		add_action( 'after_setup_theme', array( $this, 'create_table_performance' ) );
+		add_action( 'after_setup_theme', array( $this, 'create_table_performance_flt' ) );
 		
 		$this->ajax_actions();
 	}
 	
 	public function ajax_actions() {
+		// Регистрируем оба AJAX actions
 		add_action( 'wp_ajax_update_performance', array( $this, 'update_performance' ) );
+		add_action( 'wp_ajax_update_performance_flt', array( $this, 'update_performance_flt' ) );
 	}
 	
 	public function update_performance() {
+		// Debug information
+		error_log( 'TMSReportsPerformance::update_performance called' );
+		error_log( 'POST data: ' . print_r( $_POST, true ) );
+		error_log( 'Table main: ' . $this->table_main );
+		
 		// Ensure this is an AJAX request
 		if ( ! defined( 'DOING_AJAX' ) || ! DOING_AJAX ) {
 			wp_send_json_error( [ 'message' => 'Invalid request' ] );
@@ -100,6 +116,21 @@ class TMSReportsPerformance extends TMSReportsHelper {
 		wp_send_json_success( [ 'message' => 'Record successfully updated', 'data' => $MY_INPUT ] );
 	}
 	
+	/**
+	 * AJAX handler for FLT performance updates
+	 */
+	public function update_performance_flt() {
+		// Временно переключаемся на FLT режим
+		$original_table = $this->table_main;
+		$this->table_main = 'reports_performance_flt';
+		
+		// Вызываем основной метод
+		$this->update_performance();
+		
+		// Возвращаем оригинальную таблицу
+		$this->table_main = $original_table;
+	}
+	
 	
 	public function create_table_performance() {
 		global $wpdb;
@@ -107,26 +138,75 @@ class TMSReportsPerformance extends TMSReportsHelper {
 		$table_name      = $wpdb->prefix . $this->table_main;
 		$charset_collate = $wpdb->get_charset_collate();
 		
+		// Create table with optimized structure for large datasets (500k+ records)
 		$sql = "CREATE TABLE $table_name (
-        id mediumint(9) NOT NULL AUTO_INCREMENT,
-        user_id mediumint(9) NOT NULL,
-        user_last_updated mediumint(9),
+        id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+        user_id INT UNSIGNED NOT NULL,
+        user_last_updated INT UNSIGNED NULL,
         date DATE NOT NULL,
-        monday_calls mediumint(9) DEFAULT 0,
-        tuesday_calls mediumint(9) DEFAULT 0,
-        wednesday_calls mediumint(9) DEFAULT 0,
-        thursday_calls mediumint(9) DEFAULT 0,
-        friday_calls mediumint(9) DEFAULT 0,
-        saturday_calls mediumint(9) DEFAULT 0,
-        sunday_calls mediumint(9) DEFAULT 0,
-        bonus decimal(10,2) DEFAULT 0.00,
+        monday_calls INT UNSIGNED DEFAULT 0,
+        tuesday_calls INT UNSIGNED DEFAULT 0,
+        wednesday_calls INT UNSIGNED DEFAULT 0,
+        thursday_calls INT UNSIGNED DEFAULT 0,
+        friday_calls INT UNSIGNED DEFAULT 0,
+        saturday_calls INT UNSIGNED DEFAULT 0,
+        sunday_calls INT UNSIGNED DEFAULT 0,
+        bonus DECIMAL(10,2) DEFAULT 0.00,
         PRIMARY KEY (id),
         UNIQUE KEY user_date (user_id, date),
-        INDEX idx_user_id (user_id),
-        INDEX idx_date (date)
+        INDEX idx_user_date_range (user_id, date),
+        INDEX idx_date_user (date, user_id),
+        INDEX idx_user_updated (user_id, user_last_updated),
+        INDEX idx_date_range (date),
+        INDEX idx_user_performance (user_id, monday_calls, tuesday_calls, wednesday_calls, thursday_calls, friday_calls, saturday_calls, sunday_calls),
+        INDEX idx_bonus_range (bonus)
     ) $charset_collate;";
 		
 		dbDelta( $sql );
+		
+		// Optimize table after creation
+		$wpdb->query( "OPTIMIZE TABLE $table_name" );
+		$wpdb->query( "ANALYZE TABLE $table_name" );
+	}
+	
+	/**
+	 * Create FLT performance table with optimized structure
+	 */
+	public function create_table_performance_flt() {
+		global $wpdb;
+		
+		$table_name      = $wpdb->prefix . 'reports_performance_flt';
+		$charset_collate = $wpdb->get_charset_collate();
+		
+		// Create table with optimized structure for large datasets (500k+ records)
+		$sql = "CREATE TABLE $table_name (
+        id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+        user_id INT UNSIGNED NOT NULL,
+        user_last_updated INT UNSIGNED NULL,
+        date DATE NOT NULL,
+        monday_calls INT UNSIGNED DEFAULT 0,
+        tuesday_calls INT UNSIGNED DEFAULT 0,
+        wednesday_calls INT UNSIGNED DEFAULT 0,
+        thursday_calls INT UNSIGNED DEFAULT 0,
+        friday_calls INT UNSIGNED DEFAULT 0,
+        saturday_calls INT UNSIGNED DEFAULT 0,
+        sunday_calls INT UNSIGNED DEFAULT 0,
+        bonus DECIMAL(10,2) DEFAULT 0.00,
+        PRIMARY KEY (id),
+        UNIQUE KEY user_date (user_id, date),
+        INDEX idx_user_date_range (user_id, date),
+        INDEX idx_date_user (date, user_id),
+        INDEX idx_user_updated (user_id, user_last_updated),
+        INDEX idx_date_range (date),
+        INDEX idx_user_performance (user_id, monday_calls, tuesday_calls, wednesday_calls, thursday_calls, friday_calls, saturday_calls, sunday_calls),
+        INDEX idx_bonus_range (bonus)
+    ) $charset_collate;";
+		
+		dbDelta( $sql );
+		
+		// Optimize table after creation
+		$wpdb->query( "OPTIMIZE TABLE $table_name" );
+		$wpdb->query( "ANALYZE TABLE $table_name" );
 	}
 	
 	/**
@@ -314,17 +394,30 @@ class TMSReportsPerformance extends TMSReportsHelper {
 			$week_dates[] = date( 'Y-m-d', strtotime( "+$i days", strtotime( $start_date ) ) );
 		}
 		
-		// Таблицы
-		$report_tables = [
-			$wpdb->prefix . 'reports_martlet',
-			$wpdb->prefix . 'reports_odysseia',
-			$wpdb->prefix . 'reports_endurance'
-		];
-		$meta_tables   = [
-			$wpdb->prefix . 'reportsmeta_martlet',
-			$wpdb->prefix . 'reportsmeta_odysseia',
-			$wpdb->prefix . 'reportsmeta_endurance'
-		];
+		// Таблицы в зависимости от режима
+		if ( $this->is_flt ) {
+			$report_tables = [
+				$wpdb->prefix . 'reports_flt_martlet',
+				$wpdb->prefix . 'reports_flt_odysseia',
+				$wpdb->prefix . 'reports_flt_endurance'
+			];
+			$meta_tables   = [
+				$wpdb->prefix . 'reportsmeta_flt_martlet',
+				$wpdb->prefix . 'reportsmeta_flt_odysseia',
+				$wpdb->prefix . 'reportsmeta_flt_endurance'
+			];
+		} else {
+			$report_tables = [
+				$wpdb->prefix . 'reports_martlet',
+				$wpdb->prefix . 'reports_odysseia',
+				$wpdb->prefix . 'reports_endurance'
+			];
+			$meta_tables   = [
+				$wpdb->prefix . 'reportsmeta_martlet',
+				$wpdb->prefix . 'reportsmeta_odysseia',
+				$wpdb->prefix . 'reportsmeta_endurance'
+			];
+		}
 		
 		$weekly_report = [];
 		

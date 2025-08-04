@@ -5,6 +5,7 @@ $user_id   = get_field_value( $args, 'user_id' );
 $post_id   = get_field_value( $args, 'post_id' );
 $post_type = get_field_value( $args, 'post_type' );
 $meta      = get_field_value( $args, 'meta' );
+$project   = get_field_value( $args, 'project' );
 
 if ( ! $post_type ) {
 	$post_type = 'report';
@@ -37,6 +38,7 @@ $logs_messages = $logs->get_user_logs_by_post( $post_id, $user_id, $post_type );
         <input type="hidden" name="user_id" value="<?php echo $user_id; ?>">
         <input type="hidden" name="post_id" value="<?php echo $post_id; ?>">
         <input type="hidden" name="post_type" value="<?php echo $post_type; ?>">
+        <input type="hidden" name="project" value="<?php echo $project; ?>">
         <div class="w-100">
             <label for="exampleFormControlTextarea1" class="form-label">Your message</label>
             <textarea class="form-control" name="message" id="exampleFormControlTextarea1"></textarea>
@@ -58,6 +60,7 @@ $logs_messages = $logs->get_user_logs_by_post( $post_id, $user_id, $post_type );
         <form class="mb-3 d-flex align-items-end gap-1 mt-2 js-pinned-message log-message">
             <input type="hidden" name="user_id" value="<?php echo $user_id; ?>">
             <input type="hidden" name="post_id" value="<?php echo $post_id; ?>">
+            <input type="hidden" name="project" value="<?php echo $project; ?>">
             <div class="w-100">
                 <label for="pinn" class="form-label">Pinned message</label>
                 <textarea class="form-control" name="pinned_message" id="pinn"></textarea>

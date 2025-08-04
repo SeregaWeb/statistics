@@ -3487,6 +3487,34 @@ function decodeHtmlEntities(str) {
 
 /***/ }),
 
+/***/ "./src/js/components/common/hold-section.ts":
+/*!**************************************************!*\
+  !*** ./src/js/components/common/hold-section.ts ***!
+  \**************************************************/
+/***/ (function(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   holdSectionInit: function() { return /* binding */ holdSectionInit; }
+/* harmony export */ });
+var holdSectionInit = function holdSectionInit() {
+  var toggleButton = document.querySelector('.js-toggle-hold-section');
+  if (!toggleButton) return;
+  toggleButton.addEventListener('click', function () {
+    var section = document.querySelector('.hold-drivers-section');
+    var content = section === null || section === void 0 ? void 0 : section.querySelector('.hold-section-content');
+    if (!section || !content) return;
+    content.classList.toggle('d-none');
+    var buttonText = toggleButton.querySelector('.button-text');
+    if (buttonText) {
+      buttonText.textContent = content.classList.contains('d-none') ? 'Show' : 'Hide';
+    }
+  });
+};
+
+/***/ }),
+
 /***/ "./src/js/components/common/loading-btn.ts":
 /*!*************************************************!*\
   !*** ./src/js/components/common/loading-btn.ts ***!
@@ -4020,6 +4048,10 @@ var updateStatusPost = function updateStatusPost(ajaxUrl) {
         (0,_info_messages__WEBPACK_IMPORTED_MODULE_1__.printMessage)('Post id not found', 'danger', 8000);
         return;
       }
+      var currentProject = document.querySelector('.js-select-current-table');
+      if (currentProject) {
+        formData.append('project', currentProject === null || currentProject === void 0 ? void 0 : currentProject.value);
+      }
       formData.append('action', action);
       formData.append('post_id', postId.value);
       var options = {
@@ -4104,8 +4136,12 @@ var fullRemovePost = function fullRemovePost(ajaxUrl) {
         }
         var action = isFlt ? 'remove_one_load_flt' : 'remove_one_load';
         var formData = new FormData();
+        var currentProject = document.querySelector('.js-select-current-table');
         formData.append('action', action);
         formData.append('id_load', idLoad);
+        if (currentProject) {
+          formData.append('project', currentProject === null || currentProject === void 0 ? void 0 : currentProject.value);
+        }
         var options = {
           method: 'POST',
           body: formData
@@ -5328,7 +5364,7 @@ var initGetInfoDriver = function initGetInfoDriver(urlAjax, ProjectsLinks) {
     btns.forEach(function (item) {
       item.addEventListener('click', function (event) {
         return __awaiter(void 0, void 0, void 0, /*#__PURE__*/_regeneratorRuntime().mark(function _callee() {
-          var target, container, input, phoneSelector, value, useProject, valueProject, formData, options;
+          var target, container, input, phoneSelector, value, formData, options;
           return _regeneratorRuntime().wrap(function _callee$(_context) {
             while (1) switch (_context.prev = _context.next) {
               case 0:
@@ -5370,21 +5406,11 @@ var initGetInfoDriver = function initGetInfoDriver(urlAjax, ProjectsLinks) {
                 console.warn('Input value (Driver ID) is empty.');
                 return _context.abrupt("return");
               case 18:
-                useProject = document.querySelector('.js-select-current-table');
-                if (useProject) {
-                  _context.next = 22;
-                  break;
-                }
-                console.warn('Project selector not found.');
-                return _context.abrupt("return");
-              case 22:
-                valueProject = useProject.value;
-                console.log('Fetching driver for ID:', value, 'and project:', valueProject);
+                console.log('Fetching driver for ID:', value);
                 try {
                   formData = new FormData();
-                  formData.append('action', 'get_driver_by_id');
+                  formData.append('action', 'get_driver_by_id_internal');
                   formData.append('id', value);
-                  formData.append('project', ProjectsLinks[valueProject]);
                   options = {
                     method: 'POST',
                     body: formData
@@ -5400,6 +5426,16 @@ var initGetInfoDriver = function initGetInfoDriver(urlAjax, ProjectsLinks) {
                         driverPhone.value = driver.phone;
                       }
                       input.value = "(".concat(value, ") ").concat(driver.driver);
+                      var isSecondDriver = phoneSelector === '.js-second-phone-driver';
+                      var hiddenFieldName = isSecondDriver ? 'attached_second_driver' : 'attached_driver';
+                      var hiddenField = container.querySelector("input[name=\"".concat(hiddenFieldName, "\"]"));
+                      if (hiddenField) {
+                        hiddenField.value = value;
+                        console.log("Driver ID ".concat(value, " updated in ").concat(hiddenFieldName, " (").concat(isSecondDriver ? 'second' : 'main', " driver)"));
+                        console.log("Field ".concat(hiddenFieldName, " value after update:"), hiddenField.value);
+                      } else {
+                        console.warn("Hidden field ".concat(hiddenFieldName, " not found in container"));
+                      }
                       return true;
                     }
                     (0,_info_messages__WEBPACK_IMPORTED_MODULE_0__.printMessage)("".concat(requestStatus.data.message), 'danger', 8000);
@@ -5411,7 +5447,7 @@ var initGetInfoDriver = function initGetInfoDriver(urlAjax, ProjectsLinks) {
                 } catch (error) {
                   console.error('Error occurred while fetching driver:', error);
                 }
-              case 25:
+              case 20:
               case "end":
                 return _context.stop();
             }
@@ -5435,6 +5471,7 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   copyText: function() { return /* binding */ copyText; },
 /* harmony export */   createDriver: function() { return /* binding */ createDriver; },
+/* harmony export */   driverCoreInit: function() { return /* binding */ driverCoreInit; },
 /* harmony export */   driversActions: function() { return /* binding */ driversActions; },
 /* harmony export */   helperDisabledChecbox: function() { return /* binding */ helperDisabledChecbox; },
 /* harmony export */   removeFullDriver: function() { return /* binding */ removeFullDriver; },
@@ -5872,6 +5909,173 @@ var driversActions = function driversActions(urlAjax) {
   copyText();
   helperDisabledChecbox();
 };
+var driverCoreInit = function driverCoreInit(urlAjax) {
+  console.log('driverCoreInit called with urlAjax:', urlAjax);
+  var ratingBtns = document.querySelectorAll('.rating-btn');
+  var selectedRatingInput = document.getElementById('selectedRating');
+  if (ratingBtns.length > 0 && selectedRatingInput) {
+    ratingBtns.forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var rating = parseInt(this.dataset.rating || '0');
+        var getRatingBtnColor = function getRatingBtnColor(value) {
+          if (value <= 1) {
+            return 'btn-outline-danger';
+          }
+          if (value <= 4) {
+            return 'btn-outline-warning';
+          }
+          if (value > 4) {
+            return 'btn-outline-success';
+          }
+          return 'btn-outline-secondary';
+        };
+        var getActiveBtnColor = function getActiveBtnColor(value) {
+          if (value <= 1) {
+            return 'btn-danger';
+          }
+          if (value <= 4) {
+            return 'btn-warning';
+          }
+          if (value > 4) {
+            return 'btn-success';
+          }
+          return 'btn-secondary';
+        };
+        ratingBtns.forEach(function (b) {
+          var bRating = parseInt(b.dataset.rating || '0');
+          b.className = "btn ".concat(getRatingBtnColor(bRating), " rating-btn");
+        });
+        this.className = "btn ".concat(getActiveBtnColor(rating), " rating-btn");
+        selectedRatingInput.value = rating.toString();
+      });
+    });
+  }
+  var ratingForm = document.getElementById('ratingForm');
+  if (ratingForm) {
+    ratingForm.addEventListener('submit', function (e) {
+      e.preventDefault();
+      var formData = new FormData(this);
+      formData.append('action', 'add_driver_rating');
+      fetch(urlAjax, {
+        method: 'POST',
+        body: formData
+      }).then(function (response) {
+        return response.json();
+      }).then(function (data) {
+        if (data.success) {
+          (0,_info_messages__WEBPACK_IMPORTED_MODULE_0__.printMessage)('Rating added successfully!', 'success', 3000);
+          location.reload();
+        } else {
+          (0,_info_messages__WEBPACK_IMPORTED_MODULE_0__.printMessage)('Error: ' + data.data, 'danger', 3000);
+        }
+      }).catch(function (error) {
+        console.error('Error:', error);
+        (0,_info_messages__WEBPACK_IMPORTED_MODULE_0__.printMessage)('An error occurred while adding the rating.', 'danger', 3000);
+      });
+    });
+  }
+  var noticeForm = document.getElementById('noticeForm');
+  if (noticeForm) {
+    noticeForm.addEventListener('submit', function (e) {
+      e.preventDefault();
+      var formData = new FormData(this);
+      formData.append('action', 'add_driver_notice');
+      fetch(urlAjax, {
+        method: 'POST',
+        body: formData
+      }).then(function (response) {
+        return response.json();
+      }).then(function (data) {
+        if (data.success) {
+          (0,_info_messages__WEBPACK_IMPORTED_MODULE_0__.printMessage)('Notice added successfully!', 'success', 3000);
+          location.reload();
+        } else {
+          (0,_info_messages__WEBPACK_IMPORTED_MODULE_0__.printMessage)('Error: ' + data.data, 'danger', 3000);
+        }
+      }).catch(function (error) {
+        console.error('Error:', error);
+        (0,_info_messages__WEBPACK_IMPORTED_MODULE_0__.printMessage)('An error occurred while adding the notice.', 'danger', 3000);
+      });
+    });
+  }
+  var noticeCheckboxes = document.querySelectorAll('.notice-status-checkbox');
+  noticeCheckboxes.forEach(function (checkbox) {
+    checkbox.addEventListener('change', function () {
+      var _this = this;
+      var noticeId = this.dataset.noticeId;
+      if (!noticeId) return;
+      var formData = new FormData();
+      formData.append('action', 'update_notice_status');
+      formData.append('notice_id', noticeId);
+      var nonceElement = document.querySelector('input[name="tms_notice_status_nonce"]');
+      if (nonceElement) {
+        formData.append('tms_notice_status_nonce', nonceElement.value);
+      }
+      fetch(urlAjax, {
+        method: 'POST',
+        body: formData
+      }).then(function (response) {
+        return response.json();
+      }).then(function (data) {
+        if (data.success) {
+          var row = _this.closest('tr');
+          if (row) {
+            if (_this.checked) {
+              row.classList.add('table-success');
+            } else {
+              row.classList.remove('table-success');
+            }
+          }
+        } else {
+          _this.checked = !_this.checked;
+          (0,_info_messages__WEBPACK_IMPORTED_MODULE_0__.printMessage)('Error: ' + data.data, 'danger', 3000);
+        }
+      }).catch(function (error) {
+        console.error('Error:', error);
+        _this.checked = !_this.checked;
+        (0,_info_messages__WEBPACK_IMPORTED_MODULE_0__.printMessage)('An error occurred while updating the notice status.', 'danger', 3000);
+      });
+    });
+  });
+  var clearBackgroundBtn = document.querySelector('.js-clear-background');
+  if (clearBackgroundBtn) {
+    clearBackgroundBtn.addEventListener('click', function () {
+      var driverId = document.querySelector('input[name="driver_id"]');
+      if (!driverId || !driverId.value) {
+        (0,_info_messages__WEBPACK_IMPORTED_MODULE_0__.printMessage)('Driver ID not found', 'danger', 3000);
+        return;
+      }
+      var checkbox = document.querySelector('input[name="clear_background"]');
+      if (!checkbox) {
+        (0,_info_messages__WEBPACK_IMPORTED_MODULE_0__.printMessage)('Clear background checkbox not found', 'danger', 3000);
+        return;
+      }
+      var formData = new FormData();
+      formData.append('action', 'update_clean_background');
+      formData.append('driver_id', driverId.value);
+      formData.append('checkbox_status', checkbox.checked ? 'on' : '');
+      fetch(urlAjax, {
+        method: 'POST',
+        body: formData
+      }).then(function (response) {
+        return response.json();
+      }).then(function (data) {
+        if (data.success) {
+          (0,_info_messages__WEBPACK_IMPORTED_MODULE_0__.printMessage)(data.data.message, 'success', 3000);
+          var statusElement = document.querySelector('.clear-background-status');
+          if (statusElement) {
+            statusElement.textContent = "last update: ".concat(data.data.date);
+          }
+        } else {
+          (0,_info_messages__WEBPACK_IMPORTED_MODULE_0__.printMessage)(data.data.message, 'danger', 3000);
+        }
+      }).catch(function (error) {
+        console.error('Error:', error);
+        (0,_info_messages__WEBPACK_IMPORTED_MODULE_0__.printMessage)('An error occurred while updating clean background check date.', 'danger', 3000);
+      });
+    });
+  }
+};
 
 /***/ }),
 
@@ -5961,12 +6165,12 @@ var driverHoldInit = function driverHoldInit(ajaxUrl) {
               if (result.success) {
                 console.log('Driver hold status updated successfully:', result.data);
                 if (holdUserId && holdUserId !== 'null') {
-                  target.classList.remove('active', 'btn-danger');
+                  target.classList.remove('active', 'btn-primary');
                   target.classList.add('btn-primary');
                   target.setAttribute('data-hold', 'null');
                 } else {
                   target.classList.remove('btn-primary');
-                  target.classList.add('active', 'btn-danger');
+                  target.classList.add('active', 'btn-primary');
                   target.setAttribute('data-hold', dispatcherId);
                 }
                 (0,_info_messages__WEBPACK_IMPORTED_MODULE_0__.printMessage)(result.data || 'Статус водителя обновлен', 'success', 8000);
@@ -6525,6 +6729,8 @@ var logsInit = function logsInit(ajaxUrl) {
         logContainer.innerHTML = requestStatus.data.template + logContainer.innerHTML;
         target.removeAttribute('disabled');
         target.reset();
+      } else {
+        (0,_info_messages__WEBPACK_IMPORTED_MODULE_0__.printMessage)(requestStatus.data.message, 'danger', 8000);
       }
     }).catch(function (error) {
       (0,_info_messages__WEBPACK_IMPORTED_MODULE_0__.printMessage)("Request failed: ".concat(error), 'danger', 8000);
@@ -6758,10 +6964,13 @@ var sendUpdatePerformance = function sendUpdatePerformance(ajaxUrl) {
   if (fakeFormSendButtons) {
     fakeFormSendButtons.forEach(function (item) {
       item.addEventListener('click', function (event) {
+        var _a;
         var parentRow = event.target.closest('.js-fake-form');
         if (parentRow) {
           var formData = collectFormData(parentRow);
-          formData.append('action', 'update_performance');
+          var isFlt = ((_a = window.performanceData) === null || _a === void 0 ? void 0 : _a.is_flt) || false;
+          var action = isFlt ? 'update_performance_flt' : 'update_performance';
+          formData.append('action', action);
           console.log(formData);
           var options = {
             method: 'POST',
@@ -6860,7 +7069,7 @@ var saveAllTracking = function saveAllTracking(urlAjax) {
               }).filter(function (item) {
                 return item !== null;
               });
-              formData = new FormData();
+              formData = new FormData(event.target);
               formData.append('action', action);
               formData.append('data', result.join(','));
               btn = form.querySelector('button');
@@ -20382,6 +20591,8 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _components_move_dispatcher__WEBPACK_IMPORTED_MODULE_28__ = __webpack_require__(/*! ./components/move-dispatcher */ "./src/js/components/move-dispatcher.ts");
 /* harmony import */ var _components_search_driver_search_driver_core__WEBPACK_IMPORTED_MODULE_29__ = __webpack_require__(/*! ./components/search-driver/search-driver-core */ "./src/js/components/search-driver/search-driver-core.ts");
 /* harmony import */ var _components_driver_hold__WEBPACK_IMPORTED_MODULE_30__ = __webpack_require__(/*! ./components/driver-hold */ "./src/js/components/driver-hold.ts");
+/* harmony import */ var _components_common_hold_section__WEBPACK_IMPORTED_MODULE_31__ = __webpack_require__(/*! ./components/common/hold-section */ "./src/js/components/common/hold-section.ts");
+
 
 
 
@@ -20459,6 +20670,7 @@ function ready() {
   (0,_components_filter_clean__WEBPACK_IMPORTED_MODULE_15__.cleanUrlByFilterDriver)();
   (0,_components_filter_clean__WEBPACK_IMPORTED_MODULE_15__.cleanUrlByFilterDriverSearch)();
   (0,_components_driver_hold__WEBPACK_IMPORTED_MODULE_30__.driverHoldInit)(urlAjax);
+  (0,_components_driver_core__WEBPACK_IMPORTED_MODULE_26__.driverCoreInit)(urlAjax);
   (0,_components_create_report__WEBPACK_IMPORTED_MODULE_3__.additionalContactsInit)();
   (0,_components_create_report__WEBPACK_IMPORTED_MODULE_3__.addShipperPointInit)();
   (0,_components_input_helpers__WEBPACK_IMPORTED_MODULE_2__.initMoneyMask)();
@@ -20488,6 +20700,7 @@ function ready() {
   (0,_components_tel_mask__WEBPACK_IMPORTED_MODULE_20__.dateMaskInit)();
   (0,_components_input_helpers__WEBPACK_IMPORTED_MODULE_2__.dragAnDropInit)();
   (0,_components_input_helpers__WEBPACK_IMPORTED_MODULE_2__.unrequiderInit)();
+  (0,_components_common_hold_section__WEBPACK_IMPORTED_MODULE_31__.holdSectionInit)();
   (0,_components_document_create_money_check__WEBPACK_IMPORTED_MODULE_25__.createDocumentInvoice)();
   (0,_components_document_create_money_check__WEBPACK_IMPORTED_MODULE_25__.createDocumentInvoiceActions)(urlAjax);
   (0,_components_document_create_money_check__WEBPACK_IMPORTED_MODULE_25__.createDocumentBolActions)(urlAjax);

@@ -465,6 +465,26 @@
             "append": ""
         },
         {
+            "key": "field_6886a05e9eb76",
+            "label": "Brokersnapshot",
+            "name": "brokersnapshot",
+            "aria-label": "",
+            "type": "text",
+            "instructions": "",
+            "required": 0,
+            "conditional_logic": 0,
+            "wrapper": {
+                "width": "",
+                "class": "",
+                "id": ""
+            },
+            "default_value": "",
+            "maxlength": "",
+            "placeholder": "",
+            "prepend": "",
+            "append": ""
+        },
+        {
             "key": "field_686a6d0c0c5b9",
             "label": "Use MAP API ?",
             "name": "use_driver",
@@ -1349,5 +1369,5 @@
     "active": true,
     "description": "",
     "show_in_rest": 0,
-    "modified": 1753053129
+    "modified": 1753653407
 }

@@ -143,13 +143,10 @@ foreach ( $dispatchers as $dispatcher ) {
 			$total_team_load   += is_numeric( $post_count ) ? $post_count : 0;
 			$total_team_profit += is_numeric( $stat[ 'total_profit' ] ) ? floatval( $stat[ 'total_profit' ] ) : 0;
 			$total_team_goals  += is_numeric( $stat[ 'goal' ] ) ? $stat[ 'goal' ] : 0;
-			$total_team_left   = is_numeric( $stat[ 'goal' ] ) && is_numeric( $stat[ 'total_profit' ] )
-				? $stat[ 'goal' ] - $stat[ 'total_profit' ] : 0;
+			
 		}
 		
-		if ( $total_team_left < 0 ) {
-			$total_team_left = 0;
-		}
+		
 		
 		// Вывод строки таблицы для текущего диспетчера
 		echo '<tr class="text-center">';
@@ -172,6 +169,12 @@ if ( $total_team_profit > 0 && $total_team_load > 0 && $total_team_goals > 0 ) :
 	$total_team_average  += $total_team_profit / $total_team_load;
 	$total_team_complete = ( + $total_team_profit / + $total_team_goals ) * 100;
 	$total_team_complete = number_format( $total_team_complete, 2 );
+
+	$total_team_left = $total_team_goals - $total_team_profit;
+
+	if ( $total_team_left < 0 ) {
+		$total_team_left = 0;
+	}
 	
 	echo '<h2>Total team</h2>';
 	

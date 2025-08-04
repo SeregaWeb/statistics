@@ -4,12 +4,12 @@ $reports  = new TMSReports();
 $TMSUsers = new TMSUsers();
 // tab 5
 
-$invoices           = $reports->get_invoices();
-$factoring_statuses = $reports->get_factoring_status();
-$report_object      = ! empty( $args[ 'report_object' ] ) ? $args[ 'report_object' ] : null;
-$post_id            = ! empty( $args[ 'post_id' ] ) ? $args[ 'post_id' ] : null;
-$flt                = ! empty( $args[ 'flt' ] ) ? $args[ 'flt' ] : null;
-
+$invoices            = $reports->get_invoices();
+$factoring_statuses  = $reports->get_factoring_status();
+$report_object       = ! empty( $args[ 'report_object' ] ) ? $args[ 'report_object' ] : null;
+$post_id             = ! empty( $args[ 'post_id' ] ) ? $args[ 'post_id' ] : null;
+$flt                 = ! empty( $args[ 'flt' ] ) ? $args[ 'flt' ] : null;
+$project             = ! empty( $args[ 'project' ] ) ? $args[ 'project' ] : null;
 $bank_statuses       = $reports->get_bank_statuses();
 $driver_pay_statuses = $reports->get_driver_payment_statuses();
 $quick_pay_methods   = $reports->get_quick_pay_methods();
@@ -52,6 +52,10 @@ $full_view_only = get_field_value( $args, 'full_view_only' );
 <h3 class="p-0 display-6 mb-4">Accounting info</h3>
 
 <form class="<?php echo ( $full_view_only ) ? '' : 'js-uploads-accounting' ?> d-grid">
+	
+	<?php if ( $project ): ?>
+        <input type="hidden" name="project" value="<?php echo $project; ?>">
+	<?php endif; ?>
 	
 	<?php if ( $flt ): ?>
         <input type="hidden" name="flt" value="<?php echo $flt; ?>">

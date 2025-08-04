@@ -28,7 +28,8 @@ export const saveAllTracking = (urlAjax: string) => {
                 })
                 .filter((item): item is string => item !== null);
 
-            const formData = new FormData();
+            // @ts-ignore
+            const formData = new FormData(event.target);
             formData.append('action', action);
             formData.append('data', result.join(','));
 

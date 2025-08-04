@@ -22,6 +22,7 @@ $access = $TMSUsers->check_user_role_access( [
 	'administrator',
 	'recruiter',
 	'recruiter-tl',
+	'dispatcher-tl',
 	'accounting',
 	'driver_updates'
 ], true );

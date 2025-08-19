@@ -704,24 +704,24 @@ export const driverCoreInit = (urlAjax) => {
         });
     });
     
-    // Clear background button functionality
-    const clearBackgroundBtn = document.querySelector('.js-clear-background') as HTMLButtonElement;
-    if (clearBackgroundBtn) {
-        clearBackgroundBtn.addEventListener('click', function() {
+    // Update background date button functionality
+    const updateBackgroundDateBtn = document.querySelector('.js-update-background-date') as HTMLButtonElement;
+    if (updateBackgroundDateBtn) {
+        updateBackgroundDateBtn.addEventListener('click', function() {
             const driverId = document.querySelector('input[name="driver_id"]') as HTMLInputElement;
             if (!driverId || !driverId.value) {
                 printMessage('Driver ID not found', 'danger', 3000);
                 return;
             }
             
-            const checkbox = document.querySelector('input[name="clear_background"]') as HTMLInputElement;
+            const checkbox = document.querySelector('input[name="background_check"]') as HTMLInputElement;
             if (!checkbox) {
-                printMessage('Clear background checkbox not found', 'danger', 3000);
+                printMessage('Background check checkbox not found', 'danger', 3000);
                 return;
             }
             
             const formData = new FormData();
-            formData.append('action', 'update_clean_background'); 
+            formData.append('action', 'update_background_check_date'); 
             formData.append('driver_id', driverId.value);
             formData.append('checkbox_status', checkbox.checked ? 'on' : '');
             
@@ -734,10 +734,10 @@ export const driverCoreInit = (urlAjax) => {
                 if (data.success) {
                     printMessage(data.data.message, 'success', 3000);
                     
-                    // Update the status text below the label
-                    const statusElement = document.querySelector('.clear-background-status');
-                    if (statusElement) {
-                        statusElement.textContent = `last update: ${data.data.date}`;
+                    // Update the date input field
+                    const dateInput = document.querySelector('input[name="background_date"]') as HTMLInputElement;
+                    if (dateInput) {
+                        dateInput.value = data.data.date;
                     }
                 } else {
                     printMessage(data.data.message, 'danger', 3000);
@@ -745,7 +745,50 @@ export const driverCoreInit = (urlAjax) => {
             })
             .catch(error => {
                 console.error('Error:', error);
-                printMessage('An error occurred while updating clean background check date.', 'danger', 3000);
+                printMessage('An error occurred while updating background check date.', 'danger', 3000);
+            });
+        });
+    }
+    
+    // Update only date button functionality
+    const updateOnlyDateBtn = document.querySelector('.js-update-only-date') as HTMLButtonElement;
+    if (updateOnlyDateBtn) {
+        updateOnlyDateBtn.addEventListener('click', function() {
+            const driverId = document.querySelector('input[name="driver_id"]') as HTMLInputElement;
+            if (!driverId || !driverId.value) {
+                printMessage('Driver ID not found', 'danger', 3000);
+                return;
+            }
+            
+            const formData = new FormData();
+            formData.append('action', 'update_driver_zipcode_date'); 
+            formData.append('driver_id', driverId.value);
+            
+            fetch(urlAjax, {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then((data: any) => {
+                if (data.success) {
+                    printMessage(data.data.message, 'success', 3000);
+                    
+                    // Update the date display in the UI
+                    const dateDisplay = document.querySelector('.js-update-only-date')?.closest('.d-flex')?.querySelector('p');
+                    if (dateDisplay) {
+                        const lines = dateDisplay.innerHTML.split('<br>');
+                        if (lines.length >= 2) {
+                            lines[1] = `last update ${data.data.date}`;
+                            dateDisplay.innerHTML = lines.join('<br>');
+                        }
+                    }
+                } else {
+                    printMessage(data.data.message, 'danger', 3000);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                printMessage('An error occurred while updating driver zipcode date.', 'danger', 3000);
             });
         });
     }

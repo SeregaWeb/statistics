@@ -56,6 +56,7 @@ $show_filter_by_office = $TMSUsers->check_user_role_access( array(
 	'tracking-tl',
 	'administrator',
 	'recruiter-tl',
+	'hr_manager',
 	'moderator'
 ), true );
 

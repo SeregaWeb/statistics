@@ -58,7 +58,7 @@ if ( $is_flt ) {
 						<?php
 						if ( $TMSUsers->check_user_role_access( array( 'billing', 'accounting' ), true ) ) {
 							echo esc_html( get_template_part( TEMPLATE_PATH . 'tables/report', 'table-accounting', $items ) );
-						} else if ( $TMSUsers->check_user_role_access( array( 'tracking' ), true ) ) {
+						} else if ( $TMSUsers->check_user_role_access( array( 'tracking', 'morning_tracking', 'nightshift_tracking' ), true ) ) {
 							echo esc_html( get_template_part( TEMPLATE_PATH . 'tables/report', 'table-tracking', $items ) );
 						} else {
 							echo esc_html( get_template_part( TEMPLATE_PATH . 'tables/report', 'table', $items ) );

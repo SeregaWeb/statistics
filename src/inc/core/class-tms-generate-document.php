@@ -75,6 +75,7 @@ class TMSGenerateDocument extends TMSReports {
 	function init_ajax() {
 		add_action( 'wp_ajax_generate_invoice', array( $this, 'generate_invoice' ) );
 		add_action( 'wp_ajax_generate_bol', array( $this, 'generate_bol' ) );
+		add_action( 'wp_ajax_generate_settlement_summary', array( $this, 'generate_settlement_summary' ) );
 	}
 	
 	function generate_invoice() {
@@ -90,6 +91,16 @@ class TMSGenerateDocument extends TMSReports {
 	function generate_bol() {
 		if ( defined( 'DOING_AJAX' ) && DOING_AJAX ) {
 			$url = $this->create_file();
+			if ( $url ) {
+				wp_send_json_success( $url );
+			}
+			wp_send_json_error( 'Error create!' );
+		}
+	}
+	
+	function generate_settlement_summary() {
+		if ( defined( 'DOING_AJAX' ) && DOING_AJAX ) {
+			$url = $this->create_file( 'settlement' );
 			if ( $url ) {
 				wp_send_json_success( $url );
 			}
@@ -298,7 +309,7 @@ class TMSGenerateDocument extends TMSReports {
                     </p>
                 </td>
                 <td width="150px">
-                    <img height="120px" width="150px" style="height: 90px;"
+                    <img height="120px" width="150px" style="height: 120px; width: 120px;"
                          src="<?php echo $this->logo; ?>"
                          alt="logo">
                 </td>
@@ -310,7 +321,7 @@ class TMSGenerateDocument extends TMSReports {
                 <td width="100%" style="text-align: center">
                     <p style="text-align: center;margin: 0;">
 						<?php if ( $input ) { ?>
-                            <input type="text" style="text-align: center" value="<?php echo $this->company_name; ?>"
+                            <input type="text" style="text-align: center; width:100%;" value="<?php echo $this->company_name; ?>"
                                    name="name">
 						<?php } else {
 							echo $name;
@@ -322,7 +333,7 @@ class TMSGenerateDocument extends TMSReports {
                 <td width="100%" style="text-align: center">
                     <p style="text-align: center;margin: 0;">
 						<?php if ( $input ) { ?>
-                            <input type="text" style="text-align: center"
+                            <input type="text" style="text-align: center; width:100%;"
                                    value="<?php echo $this->company_address . ', ' . $this->company_sity_state_zip . ', phone: ' . $this->company_phone; ?>"
                                    name="description">
 						<?php } else {
@@ -368,7 +379,7 @@ class TMSGenerateDocument extends TMSReports {
                     <p style="text-align:right; font-size: 14px;margin: 0; font-weight: bold;">Check #: <strong
                                 style="width: 120px;display: inline-block;text-align: left;">
 							<?php if ( $input ) { ?>
-                                <input type="text" name="check_number">
+                                <input type="text" style="width:100%;" name="check_number">
 							<?php } else {
 								echo $check_number;
 							} ?>
@@ -2204,5 +2215,4 @@ class TMSGenerateDocument extends TMSReports {
 		<?php
 		return ob_get_clean();
 	}
-	
 }

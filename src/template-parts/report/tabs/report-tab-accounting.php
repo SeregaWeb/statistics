@@ -168,6 +168,7 @@ $full_view_only = get_field_value( $args, 'full_view_only' );
 				<?php
 				$previous_tab = $TMSUsers->check_user_role_access( array(
 					'recruiter-tl',
+                    'hr_manager',
 					'recruiter'
 				), true ) && isset( $meta ) ? 'pills-documents-tab' : 'pills-billing-tab';
 				?>

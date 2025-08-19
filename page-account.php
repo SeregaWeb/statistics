@@ -58,6 +58,8 @@ $USER_OBJECT = $TMSUser->get_account_info( $user_id );
 												'recruiter',
 												'billing',
 												'tracking',
+                                                'morning_tracking',
+                                                'nightshift_tracking',
 												'accounting'
 											) ) ) : ?>
                                                 <span class="text">(Total loads: <?php echo $total ?>)</span>

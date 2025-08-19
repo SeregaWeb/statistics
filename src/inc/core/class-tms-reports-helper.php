@@ -1557,6 +1557,49 @@ Kindly confirm once you've received this message." ) . "\n";
 		return ! empty( array_intersect_key( $_GET, array_flip( $params ) ) );
 	}
 	
+	/**
+	 * Clean and decode JSON string with proper quote handling
+	 * 
+	 * @param string $json_string The JSON string to clean and decode
+	 * @return array|null Decoded array or null if failed
+	 */
+	private function cleanAndDecodeJson( $json_string ) {
+		if ( empty( $json_string ) ) {
+			return null;
+		}
+		
+		// Clean up escaped quotes before JSON decode
+		$clean_json = stripslashes( $json_string );
+		// Replace apostrophes with a different character to avoid JSON issues
+		$clean_json = str_replace("'", "`", $clean_json);
+		// Also handle escaped double quotes
+		$clean_json = str_replace('\"', '"', $clean_json);
+		// Handle escaped backticks
+		$clean_json = str_replace('\`', '`', $clean_json);
+		
+		return json_decode( $clean_json, true );
+	}
+
+	/**
+	 * Extract short addresses from location array
+	 * 
+	 * @param array|null $location_array Array of location data
+	 * @return array Array of short addresses
+	 */
+	private function extractShortAddresses( $location_array ) {
+		$addresses = [];
+		
+		if ( is_array( $location_array ) ) {
+			foreach ( $location_array as $location ) {
+				if ( ! empty( $location[ 'short_address' ] ) ) {
+					$addresses[] = $location[ 'short_address' ];
+				}
+			}
+		}
+		
+		return $addresses;
+	}
+
 	function buildHeaderAddReport( $meta ) {
 		
 		if ( ! $meta ) {
@@ -1569,27 +1612,17 @@ Kindly confirm once you've received this message." ) . "\n";
 		
 		$template_p = [];
 		$template_d = [];
+
+		
 		
 		if ( ! empty( $pick_up_location ) ) {
-			$pick_up_location_array = json_decode( $pick_up_location, true );
-			if ( is_array( $pick_up_location_array ) ) {
-				foreach ( $pick_up_location_array as $pick_up ) {
-					if ( ! empty( $pick_up[ 'short_address' ] ) ) {
-						$template_p[] = $pick_up[ 'short_address' ];
-					}
-				}
-			}
+			$pick_up_location_array = $this->cleanAndDecodeJson( $pick_up_location );
+			$template_p = $this->extractShortAddresses( $pick_up_location_array );
 		}
 		
 		if ( ! empty( $delivery_location ) ) {
-			$delivery_location_array = json_decode( $delivery_location, true );
-			if ( is_array( $delivery_location_array ) ) {
-				foreach ( $delivery_location_array as $delivery ) {
-					if ( ! empty( $delivery[ 'short_address' ] ) ) {
-						$template_d[] = $delivery[ 'short_address' ];
-					}
-				}
-			}
+			$delivery_location_array = $this->cleanAndDecodeJson( $delivery_location );
+			$template_d = $this->extractShortAddresses( $delivery_location_array );
 		}
 		
 		$subject = sprintf( '%s %s - %s ', $reference_number, implode( ', ', $template_p ), implode( ', ', $template_d ) );

@@ -38,11 +38,9 @@ if ( ! empty( $results ) ) :
             <th scope="col">
                 Status
             </th>
+
             <th scope="col">
-                Date & Time
-            </th>
-            <th scope="col">
-                Location
+                Location & Date
             </th>
 			<?php if ( isset( $args[ 'has_distance_data' ] ) && $args[ 'has_distance_data' ] ) : ?>
                 <th scope="col">
@@ -97,17 +95,17 @@ if ( ! empty( $results ) ) :
 			$notes = get_field_value( $meta, 'notes' );
 			
 			// Get hold information if driver is on hold
-			$hold_info = null;
+			$hold_info       = null;
 			$current_user_id = get_current_user_id();
-			$show_phone = true;
-			$show_controls = true;
+			$show_phone      = true;
+			$show_controls   = true;
 			
 			if ( $driver_status === 'on_hold' ) {
-				$hold_info = $drivers->get_driver_hold_info( $row['id'] );
+				$hold_info = $drivers->get_driver_hold_info( $row[ 'id' ] );
 				if ( $hold_info ) {
 					// Hide phone number and controls from other users
-					$show_phone = ( $current_user_id == $hold_info['dispatcher_id'] );
-					$show_controls = ( $current_user_id == $hold_info['dispatcher_id'] );
+					$show_phone    = ( $current_user_id == $hold_info[ 'dispatcher_id' ] );
+					$show_controls = ( $current_user_id == $hold_info[ 'dispatcher_id' ] );
 				}
 			}
 			
@@ -226,11 +224,6 @@ if ( ! empty( $results ) ) :
             <tr>
                 <td style="width: 100px;" class="<?php echo $driver_status ? $driver_status
 					: 'text-danger'; ?> driver-status"><?php echo $status_text; ?></td>
-
-                <td style="width: 85px; font-size: 12px;">
-					<?php echo $driver_status !== 'available' ? $date_status : ''; ?>
-                </td>
-				
 				
 				<?php
 				$updated               = true;
@@ -251,12 +244,14 @@ if ( ! empty( $results ) ) :
 				
 				
 				?>
-                <td class="table-column js-location-update <?php echo $class_update_code; ?>">
+                <td class="table-column js-location-update <?php echo $class_update_code; ?>"
+                    style="font-size: 12px; width: 270px;">
 					<?php
 					
 					$state = explode( ',', $updated_zip_code );
 					echo ( isset( $current_location ) && isset( $current_city ) )
-						? $current_city . ', ' . $current_location : 'Need set this field';
+						? $current_city . ', ' . $current_location . ' ' : 'Need to set this field ';
+					echo $driver_status !== 'available' ? $date_status : '';
 					?>
                     <br>
                     <span><?php echo $updated_text; ?></span>
@@ -301,7 +296,7 @@ if ( ! empty( $results ) ) :
 							<?php if ( $show_phone ) : ?>
 								<?php echo $driver_phone; ?>
 							<?php else : ?>
-								<span style="color: #999;">***-***-****</span>
+                                <span style="color: #999;">***-***-****</span>
 							<?php endif; ?>
 						</span>
                     </div>
@@ -336,14 +331,14 @@ if ( ! empty( $results ) ) :
 							// Show hold information instead of capabilities
 							echo '<div style="font-size: 12px; color: #666; line-height: 1.2;">';
 							echo 'On hold by<br>';
-							echo '<strong>' . esc_html( $hold_info['dispatcher_name'] ) . '</strong>';
+							echo '<strong>' . esc_html( $hold_info[ 'dispatcher_name' ] ) . '</strong>';
 							echo '</div>';
 						} else {
 							$array_additionals = $icons->get_capabilities( $driver_capabilities );
 							if ( ! empty( $array_additionals ) ) {
 								foreach ( $array_additionals as $value ) {
 									?>
-									<img width="24" height="24" src="<?php echo $value; ?>" alt="tag">
+                                    <img width="24" height="24" src="<?php echo $value; ?>" alt="tag">
 									<?php
 								}
 							}
@@ -353,34 +348,37 @@ if ( ! empty( $results ) ) :
                 </td>
 
                 <td style="width: 282px;">
-					<?php 
+					<?php
 					if ( $hold_info ) {
-						echo 'Will be available in<br>' . $hold_info['minutes_left'] . ' min';
+						echo 'Will be available in<br>' . $hold_info[ 'minutes_left' ] . ' min';
 					} else {
-						echo $notes; 
+						echo $notes;
 					}
 					?>
                 </td>
 
                 <td style="width: 86px;">
 					<?php if ( $show_controls ) : ?>
-                    <a 
-					   target="_blank"
-                       href="<?php echo $add_new_load . '?driver=' . $row[ 'id' ] . '&tab=pills-driver-stats-tab'; ?>"
-                       class="btn <?php echo $get_button_color( $driver_statistics[ 'rating' ][ 'avg_rating' ] ); ?> btn-sm d-flex align-items-center justify-content-between gap-1">
-						<?php echo $driver_statistics[ 'rating' ][ 'avg_rating' ] > 0
-							? $driver_statistics[ 'rating' ][ 'avg_rating' ] : '-'; ?>
-                        <svg fill="white" width="12" height="12" version="1.1" xmlns="http://www.w3.org/2000/svg"
-                             xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px" viewBox="0 0 460 460"
-                             style="enable-background:new 0 0 460 460;" xml:space="preserve">
+                        <button
+                                type="button"
+                                class="btn w-100 <?php echo $get_button_color( $driver_statistics[ 'rating' ][ 'avg_rating' ] ); ?> btn-sm d-flex align-items-center justify-content-between gap-1 js-driver-rating-btn"
+                                data-driver-id="<?php echo $row[ 'id' ]; ?>"
+                                data-driver-name="<?php echo esc_attr( $driver_name ); ?>"
+                                data-rating="<?php echo $driver_statistics[ 'rating' ][ 'avg_rating' ]; ?>">
+							<?php echo $driver_statistics[ 'rating' ][ 'avg_rating' ] > 0
+								? $driver_statistics[ 'rating' ][ 'avg_rating' ] : '-'; ?>
+                            <svg fill="white" width="12" height="12" version="1.1" xmlns="http://www.w3.org/2000/svg"
+                                 xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px" viewBox="0 0 460 460"
+                                 style="enable-background:new 0 0 460 460;" xml:space="preserve">
                                     <path d="M230,0C102.975,0,0,102.975,0,230s102.975,230,230,230s230-102.974,230-230S357.025,0,230,0z M268.333,377.36
                                         c0,8.676-7.034,15.71-15.71,15.71h-43.101c-8.676,0-15.71-7.034-15.71-15.71V202.477c0-8.676,7.033-15.71,15.71-15.71h43.101
                                         c8.676,0,15.71,7.033,15.71,15.71V377.36z M230,157c-21.539,0-39-17.461-39-39s17.461-39,39-39s39,17.461,39,39
                                         S251.539,157,230,157z"></path>
                             </svg>
-                    </a>
+                        </button>
 					<?php else : ?>
-                    <span  class="btn <?php echo $get_button_color( $driver_statistics[ 'rating' ][ 'avg_rating' ] ); ?> btn-sm d-flex align-items-center justify-content-between gap-1 disabled" style="opacity: 0.5; pointer-events: none;">
+                        <span class="btn <?php echo $get_button_color( $driver_statistics[ 'rating' ][ 'avg_rating' ] ); ?> btn-sm d-flex align-items-center justify-content-between gap-1 disabled"
+                              style="opacity: 0.5; pointer-events: none;">
 						<?php echo $driver_statistics[ 'rating' ][ 'avg_rating' ] > 0
 							? $driver_statistics[ 'rating' ][ 'avg_rating' ] : '-'; ?>
                         <svg fill="white" width="12" height="12" version="1.1" xmlns="http://www.w3.org/2000/svg"
@@ -398,31 +396,34 @@ if ( ! empty( $results ) ) :
 
                 <td style="width: 86px;">
 					<?php if ( $show_controls ) : ?>
-                    <a  target="_blank"
-                       href="<?php echo $add_new_load . '?driver=' . $row[ 'id' ] . '&tab=pills-driver-stats-tab'; ?>"
-                       class="btn btn-primary btn-sm d-flex align-items-center justify-content-between gap-1">
-						<?php echo $driver_statistics[ 'notice' ][ 'count' ] > 0
-							? $driver_statistics[ 'notice' ][ 'count' ] : '-'; ?>
-                        <svg viewBox="-1 0 46 46" width="12" height="12" xmlns="http://www.w3.org/2000/svg"
-                             fill="white">
-                            <g id="_6" data-name="6" transform="translate(-832 -151.466)">
-                                <g id="Group_263" data-name="Group 263">
-                                    <rect id="Rectangle_63" data-name="Rectangle 63" width="6" height="7"
-                                          transform="translate(832 155.466)"></rect>
-                                    <path id="Path_188" data-name="Path 188"
-                                          d="M832,191.827l3,5.419,3-5.419V163.466h-6Z"></path>
-                                    <g id="Group_262" data-name="Group 262">
-                                        <g id="Group_261" data-name="Group 261">
-                                            <path id="Path_189" data-name="Path 189"
-                                                  d="M864.907,155.466l-.3-1H862v-3h-6v3h-3.033l-.3,1H842v42h34v-42Zm9.093,40H844v-38h8.171l-.66,3h14.556l-.66-3H874Z"></path>
+                        <button type="button"
+                           class="btn btn-primary w-100 btn-sm d-flex align-items-center justify-content-between gap-1 js-driver-notice-btn"
+                           data-driver-id="<?php echo $row[ 'id' ]; ?>"
+                           data-driver-name="<?php echo esc_attr( $driver_name ); ?>"
+                           data-notice-count="<?php echo $driver_statistics[ 'notice' ][ 'count' ]; ?>">
+							<?php echo $driver_statistics[ 'notice' ][ 'count' ] > 0
+								? $driver_statistics[ 'notice' ][ 'count' ] : '-'; ?>
+                            <svg viewBox="-1 0 46 46" width="12" height="12" xmlns="http://www.w3.org/2000/svg"
+                                 fill="white">
+                                <g id="_6" data-name="6" transform="translate(-832 -151.466)">
+                                    <g id="Group_263" data-name="Group 263">
+                                        <rect id="Rectangle_63" data-name="Rectangle 63" width="6" height="7"
+                                              transform="translate(832 155.466)"></rect>
+                                        <path id="Path_188" data-name="Path 188"
+                                              d="M832,191.827l3,5.419,3-5.419V163.466h-6Z"></path>
+                                        <g id="Group_262" data-name="Group 262">
+                                            <g id="Group_261" data-name="Group 261">
+                                                <path id="Path_189" data-name="Path 189"
+                                                      d="M864.907,155.466l-.3-1H862v-3h-6v3h-3.033l-.3,1H842v42h34v-42Zm9.093,40H844v-38h8.171l-.66,3h14.556l-.66-3H874Z"></path>
+                                            </g>
                                         </g>
                                     </g>
                                 </g>
-                            </g>
-                        </svg>
-                    </a>
+                            </svg>
+                        </button>
 					<?php else : ?>
-                    <span  class="btn btn-primary btn-sm d-flex align-items-center justify-content-between gap-1 disabled" style="opacity: 0.5; pointer-events: none;">
+                        <span class="btn btn-primary btn-sm d-flex align-items-center justify-content-between gap-1 disabled"
+                              style="opacity: 0.5; pointer-events: none;">
 						<?php echo $driver_statistics[ 'notice' ][ 'count' ] > 0
 							? $driver_statistics[ 'notice' ][ 'count' ] : '-'; ?>
                         <svg viewBox="-1 0 46 46" width="12" height="12" xmlns="http://www.w3.org/2000/svg"
@@ -449,16 +450,16 @@ if ( ! empty( $results ) ) :
 
                 <td style="width: 72px;">
 					<?php if ( $show_controls ) : ?>
-                    <div class="d-flex align-items-center">
+                        <div class="d-flex align-items-center">
 
-                        <button class="btn btn-sm d-flex align-items-center justify-content-center h-100 js-hold-driver"
-                                data-id="<?php echo $row[ 'id' ]; ?>"
-                                data-dispatcher="<?php echo get_current_user_id(); ?>"
-                                data-hold="null">
-                            <svg style="width: 18px; height: 18px; pointer-events: none; enable-background:new 0 0 511.992 511.992;"
-                                 xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
-                                 version="1.1" id="Layer_1" x="0px" y="0px" viewBox="0 0 511.992 511.992"
-                                 xml:space="preserve" width="512" height="512">
+                            <button class="btn btn-sm w-100 d-flex align-items-center justify-content-center h-100 js-hold-driver"
+                                    data-id="<?php echo $row[ 'id' ]; ?>"
+                                    data-dispatcher="<?php echo get_current_user_id(); ?>"
+                                    data-hold="null">
+                                <svg style="width: 18px; height: 18px; pointer-events: none; enable-background:new 0 0 511.992 511.992;"
+                                     xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
+                                     version="1.1" id="Layer_1" x="0px" y="0px" viewBox="0 0 511.992 511.992"
+                                     xml:space="preserve" width="512" height="512">
                                     <g id="XMLID_806_">
                                         <g id="XMLID_386_">
                                             <path id="XMLID_389_"
@@ -482,12 +483,12 @@ if ( ! empty( $results ) ) :
                                         </g>
                                     </g>
                                 </svg>
-                        </button>
-						<?php echo esc_html( get_template_part( TEMPLATE_PATH . 'tables/control', 'dropdown-driver', [
-							'id'       => $row[ 'id' ],
-							'is_draft' => $is_draft,
-						] ) ); ?>
-                    </div>
+                            </button>
+							<?php echo esc_html( get_template_part( TEMPLATE_PATH . 'tables/control', 'dropdown-driver', [
+								'id'       => $row[ 'id' ],
+								'is_draft' => $is_draft,
+							] ) ); ?>
+                        </div>
 					<?php endif; ?>
                 </td>
             </tr> <?php endforeach; ?>
@@ -507,3 +508,65 @@ if ( ! empty( $results ) ) :
 <?php else : ?>
     <p>No loads found.</p>
 <?php endif; ?>
+
+<!-- Driver Rating Popup -->
+<div class="popup" id="driver-rating-popup">
+    <div class="my_overlay js-popup-close"></div>
+    <div class="popup__wrapper-inner">
+        <div class="popup-container">
+            <button class="popup-close js-popup-close">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+            </button>
+            <div class="popup-content">
+                <h3 class="mb-3">Driver Ratings</h3>
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h6 class="mb-0" id="driverRatingName"></h6>
+                    <span class="badge bg-primary" id="driverRatingScore"></span>
+                </div>
+                <div id="driverRatingContent">
+                    <div class="text-center">
+                        <div class="spinner-border" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="mt-4 text-end">
+                    <a href="#" class="btn btn-primary" id="driverRatingFullPage" target="_blank">Go to Full Page</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Driver Notice Popup -->
+<div class="popup" id="driver-notice-popup">
+    <div class="my_overlay js-popup-close"></div>
+    <div class="popup__wrapper-inner">
+        <div class="popup-container">
+            <button class="popup-close js-popup-close">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+            </button>
+            <div class="popup-content">
+                <h3 class="mb-3">Driver Notices</h3>
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h6 class="mb-0" id="driverNoticeName"></h6>
+                    <span class="badge bg-primary" id="driverNoticeCount"></span>
+                </div>
+                <div id="driverNoticeContent">
+                    <div class="text-center">
+                        <div class="spinner-border" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="mt-4 text-end">
+                    <a href="#" class="btn btn-primary" id="driverNoticeFullPage" target="_blank">Go to Full Page</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

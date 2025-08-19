@@ -28,6 +28,7 @@ $select_all_offices = $TMSUsers->check_user_role_access( array(
 	'administrator',
 	'recruiter',
 	'recruiter-tl',
+  'hr_manager',
 	'moderator'
 ), true );
 
@@ -44,7 +45,10 @@ $show_filter_by_office = $TMSUsers->check_user_role_access( array(
 	'administrator',
 	'recruiter',
 	'recruiter-tl',
+  'hr_manager',
 	'tracking',
+  'morning_tracking',
+  'nightshift_tracking',
 	'moderator'
 ), true );
 ?>

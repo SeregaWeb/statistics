@@ -30,7 +30,9 @@ $add_shipper = $TMSUsers->check_user_role_access( array(
 	'dispatcher-tl',
 	'expedite_manager',
 	'administrator',
-	'tracking'
+	'tracking',
+	'morning_tracking',
+	'nightshift_tracking',
 ), true );
 
 $login_link = get_field_value( $global_options, 'link_to_login' );

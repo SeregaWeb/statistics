@@ -61,7 +61,9 @@ $full_only_view = false;
 if ( $TMSUsers->check_user_role_access( array(
 		'dispatcher-tl',
 		'expedite_manager',
-		'tracking'
+		'tracking',
+		'morning_tracking',
+		'nightshift_tracking',
 	), true ) && isset( $meta ) ) {
 	$dispatcher_initials = get_field_value( $meta, 'dispatcher_initials' );
 	$user_id_added       = get_field_value( $main, 'user_id_added' );
@@ -120,6 +122,7 @@ if ( isset( $factoring_status ) && $factoring_status == 'paid' && ! $TMSUsers->c
 
 if ( $TMSUsers->check_user_role_access( array(
 		'recruiter-tl',
+		'hr_manager',
 		'recruiter'
 	), true ) && isset( $meta ) ) {
 	$full_only_view  = true;
@@ -157,6 +160,8 @@ $logshowcontent = isset( $_COOKIE[ 'logshow' ] ) && + $_COOKIE[ 'logshow' ] !== 
 									'expedite_manager',
 									'dispatcher',
 									'tracking',
+									'morning_tracking',
+									'nightshift_tracking',
 									'tracking-tl'
 								), true );
 								

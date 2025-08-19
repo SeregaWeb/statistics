@@ -14,9 +14,9 @@ if ( ! defined( 'ABSPATH' ) ) {
 get_header();
 
 // Initialize classes with proper error handling
-$TMSUser    = new TMSUsers();
-$TMSReports = new TMSReports();
-$statistics = new TMSStatistics();
+$TMSUser       = new TMSUsers();
+$TMSReports    = new TMSReports();
+$TMSStatistics = new TMSStatistics();
 
 // Get exclude field with validation
 $exclude = get_field( 'exclude' );
@@ -25,6 +25,7 @@ $exclude = get_field( 'exclude' );
 $office_dispatcher = isset( $_GET[ 'office' ] ) ? sanitize_text_field( $_GET[ 'office' ] ) : '';
 $active_item       = isset( $_GET[ 'active_state' ] ) ? sanitize_text_field( $_GET[ 'active_state' ] ) : '';
 
+
 // Get offices with validation
 $offices = $TMSReports->get_offices_from_acf();
 
@@ -32,6 +33,8 @@ $offices = $TMSReports->get_offices_from_acf();
 $select_all_offices = $TMSUser->check_user_role_access( array(
 	'administrator',
 	'tracking',
+	'morning_tracking',
+	'nightshift_tracking',
 	'tracking-tl',
 ), true );
 
@@ -48,7 +51,7 @@ if ( in_array( $current_user_id, $users_access_for_popup ) ) {
 }
 
 $show_filter_by_office = true;
-
+//var_dump( $exclude );
 // Set office dispatcher based on user permissions
 if ( $select_all_offices ) {
 	$office_dispatcher = ! empty( $office_dispatcher ) ? $office_dispatcher : 'all';
@@ -67,7 +70,8 @@ $users = $TMSReports->get_tracking_users_for_statistics( '', $office_dispatcher 
 // Get project and dispatchers with validation
 $project           = isset( $TMSReports->project ) ? $TMSReports->project : '';
 $dispatchers       = isset( $items[ 'dispatchers' ] ) ? $items[ 'dispatchers' ] : array();
-$dispatchers_users = array(); // Dispatchers users for move
+
+$dispatchers_users = $TMSStatistics->get_dispatchers( $office_dispatcher, false );
 
 ?>
     <div class="container-fluid tracking-statistics">
@@ -140,9 +144,17 @@ $dispatchers_users = array(); // Dispatchers users for move
                                         <li class="mt-1">
                                             <div>
                                                 <p class="mb-0">Dispatchers</p>
+                                                <div style="display: none">
+													<?php var_dump( $items[ 'dispatchers' ] ); ?>
+                                                </div>
                                                 <div class="d-flex gap-1 flex-wrap">
 													<?php foreach ( $items[ 'dispatchers' ] as $key => $item ) : ?>
+                                                        <div style="display: none">
+															<?php var_dump( $key, $item ); ?>
+                                                        </div>
+														
 														<?php
+														
 														$user_team = str_replace( 'user_', '', $key );
 														$user_arr  = $TMSUser->get_user_full_name_by_id( $user_team );
 														
@@ -159,11 +171,6 @@ $dispatchers_users = array(); // Dispatchers users for move
 																'initials'  => 'NF'
 															);
 														}
-														
-														$dispatchers_users[] = array(
-															'name' => $user_arr[ 'full_name' ],
-															'id'   => $key
-														);
 														
 														?>
                                                         <span data-bs-toggle="tooltip"

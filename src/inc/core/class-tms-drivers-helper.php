@@ -1,13 +1,13 @@
 <?php
 
 class TMSDriversHelper {
-
+	
 	public $status = array(
 		'available'         => 'Available',
 		'available_on'      => 'Available on',
 		'available_off'     => 'Not available',
 		'loaded_enroute'    => 'Loaded & Enroute',
-		'banned'    		=> 'Out of service',
+		'banned'            => 'Out of service',
 		'on_vocation'       => 'On vacation',
 		'no_updates'        => 'No updates',
 		'blocked'           => 'Blocked',
@@ -123,6 +123,12 @@ class TMSDriversHelper {
 	
 	public $registration_status_options = array(
 		"Valid"     => "Valid",
+		"Temporary" => "Temporary",
+		"Expired"   => "Expired"
+	);
+	
+	public $plates_status_options = array(
+		"Permanent" => "Permanent",
 		"Temporary" => "Temporary",
 		"Expired"   => "Expired"
 	);

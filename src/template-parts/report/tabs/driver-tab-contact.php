@@ -4,8 +4,9 @@ $full_only_view = get_field_value( $args, 'full_view_only' );
 $object_driver  = get_field_value( $args, 'report_object' );
 $post_id        = get_field_value( $args, 'post_id' );
 
+$TMSUsers = new TMSUsers();
+$driver   = new TMSDrivers();
 
-$driver             = new TMSDrivers();
 $languages          = $driver->languages;
 $relation_options   = $driver->relation_options;
 $owner_type_options = $driver->owner_type_options;
@@ -55,18 +56,31 @@ $cross_border               = get_field_value( $meta, 'cross_border' );
 $source                     = get_field_value( $meta, 'source' );
 $recruiter_add              = get_field_value( $meta, 'recruiter_add' );
 
-$mc_enabled  = get_field_value( $meta, 'mc_enabled' );
-$mc          = get_field_value( $meta, 'mc' );
-$dot_enabled = get_field_value( $meta, 'dot_enabled' );
-$dot         = get_field_value( $meta, 'dot' );
+$mc_enabled          = get_field_value( $meta, 'mc_enabled' );
+$mc                  = get_field_value( $meta, 'mc' );
+$dot_enabled         = get_field_value( $meta, 'dot_enabled' );
+$dot                 = get_field_value( $meta, 'dot' );
 $mc_dot_human_tested = get_field_value( $meta, 'mc_dot_human_tested' );
-$clear_background = get_field_value( $meta, 'clear_background' );
+$clear_background    = get_field_value( $meta, 'clear_background' );
 
 // Get clean_check_date from main table
 $clean_check_date = get_field_value( $main, 'clean_check_date' );
+
+$access_vehicle = $TMSUsers->check_user_role_access( [
+	'administrator',
+	'recruiter',
+	'recruiter-tl',
+	'hr_manager',
+	'accounting',
+	'billing',
+	'billing-tl',
+	'moderator',
+
+], true );
 ?>
 
 <div class="container mt-4 pb-5">
+	<?php if ( $access_vehicle ): ?>
     <h2 class="mb-3">Owner & Drivers Information</h2>
 	<?php if ( $full_only_view ): ?>
     <form>
@@ -189,7 +203,8 @@ $clean_check_date = get_field_value( $main, 'clean_check_date' );
                     <div class="col-md-4 mb-3">
                         <label class="form-label">Team Driver Email</label>
                         <input type="email" class="form-control" name="team_driver_email"
-                               value="<?php echo ($team_driver_email && $team_driver_email !== '-') ? $team_driver_email : ''; ?>">
+                               value="<?php echo ( $team_driver_email && $team_driver_email !== '-' )
+							       ? $team_driver_email : ''; ?>">
                     </div>
                     <div class="col-md-4 mb-3">
                         <label class="form-label">Date of Birth</label>
@@ -241,7 +256,8 @@ $clean_check_date = get_field_value( $main, 'clean_check_date' );
                     </div>
                     <div class="col-md-4 mb-3">
                         <label class="form-label">Owner Email</label>
-                        <input type="email" class="form-control" name="owner_email" value="<?php echo ($owner_email && $owner_email !== '-') ? $owner_email : ''; ?>">
+                        <input type="email" class="form-control" name="owner_email"
+                               value="<?php echo ( $owner_email && $owner_email !== '-' ) ? $owner_email : ''; ?>">
                     </div>
                     <div class="col-md-6 mb-3">
                         <label class="form-label">Date of Birth</label>
@@ -455,23 +471,7 @@ $clean_check_date = get_field_value( $main, 'clean_check_date' );
                         <label class="form-check-label" for="mcDotHumanTestedSwitch">MC/DOT human tested ?</label>
                     </div>
                 </div>
-                <div class="col-12 mb-3">
-                    <div class="form-check form-switch">    
-                        <input class="form-check-input" type="checkbox" id="clearBackgroundSwitch" name="clear_background"
-							<?php echo $clear_background ? 'checked' : ''; ?>>
-                            <label class="form-check-label" for="clearBackgroundSwitch">Clear background ?</label>
-                    </div>
-                    <div class="clear-background-status small text-muted mt-1">
-                        <?php 
-                        if ( $clean_check_date ) {
-                            echo 'last update: ' . date( 'm/d/Y', strtotime( $clean_check_date ) );
-                        } else {
-                            echo 'last update: not verified';
-                        }
-                        ?>
-                    </div>
-                    <button type="button" class="btn btn-outline-primary btn-sm js-clear-background mt-2">Update date clean background</button>
-                </div>
+
             </div>
 
             <div class="row">
@@ -479,7 +479,7 @@ $clean_check_date = get_field_value( $main, 'clean_check_date' );
                     <label for="dispatcher_initials" class="form-label">Recruiter Initials</label>
 					
 					<?php
-					if ( current_user_can( 'recruiter' ) || current_user_can( 'recruiter-tl' ) ) {
+					if ( current_user_can( 'recruiter' ) || current_user_can( 'recruiter-tl' ) || current_user_can( 'hr_manager' ) ) {
 						if ( ! $recruiter_add ) {
 							$recruiter_add = get_current_user_id();
 							$user_name     = $helper->get_user_full_name_by_id( $recruiter_add );
@@ -535,4 +535,10 @@ $clean_check_date = get_field_value( $main, 'clean_check_date' );
                 </div>
             </div>
         </form>
+		
+		
+		<?php else: ?>
+            <div class="alert alert-info">You do not have permission to upload documents.</div>
+		<?php endif; ?>
+
 </div>

@@ -360,7 +360,299 @@ function import_drivers( $drivers, $page = 1 ) {
 	}
 }
 
-import_drivers_from_json( 4 );
+// import_drivers_from_json( 5 );
+
+// Get drivers data from old site endpoint
+function get_drivers_from_old_site() {
+	$url = 'https://www.odysseia-tms.kiev.ua/wp-json/wp/v2/all-drivers-positions';
+	
+	// Make HTTP request
+	$response = wp_remote_get( $url );
+	
+	if ( is_wp_error( $response ) ) {
+		error_log( 'Error fetching drivers data: ' . $response->get_error_message() );
+		
+		return;
+	}
+	
+	$body = wp_remote_retrieve_body( $response );
+	$data = json_decode( $body, true );
+	
+	if ( json_last_error() !== JSON_ERROR_NONE ) {
+		error_log( 'Error parsing JSON: ' . json_last_error_msg() );
+		
+		return;
+	}
+	
+	if ( ! isset( $data[ 'success' ] ) || ! $data[ 'success' ] ) {
+		error_log( 'API request was not successful' );
+		
+		return;
+	}
+	
+	$drivers = $data[ 'data' ][ 'drivers' ] ?? [];
+	$total   = $data[ 'data' ][ 'total' ] ?? 0;
+	
+	echo "<h2>Drivers Data from Old Site</h2>";
+	echo "<p><strong>Total drivers:</strong> " . $total . "</p>";
+	echo "<div style='max-height: 500px; overflow-y: auto; border: 1px solid #ccc; padding: 10px; background: #f9f9f9;'>";
+	echo "<pre style='font-size: 10px; line-height: 1.2;'>";
+	print_r( $drivers );
+	echo "</pre>";
+	echo "</div>";
+}
+
+// Uncomment the line below to fetch and display drivers data
+// get_drivers_from_old_site();
+
+// Save drivers data to file
+function save_drivers_to_file() {
+	$url = 'https://www.odysseia-tms.kiev.ua/wp-json/wp/v2/all-drivers-positions';
+	
+	// Make HTTP request
+	$response = wp_remote_get( $url );
+	
+	if ( is_wp_error( $response ) ) {
+		error_log( 'Error fetching drivers data: ' . $response->get_error_message() );
+		
+		return;
+	}
+	
+	$body = wp_remote_retrieve_body( $response );
+	$data = json_decode( $body, true );
+	
+	if ( json_last_error() !== JSON_ERROR_NONE ) {
+		error_log( 'Error parsing JSON: ' . json_last_error_msg() );
+		
+		return;
+	}
+	
+	if ( ! isset( $data[ 'success' ] ) || ! $data[ 'success' ] ) {
+		error_log( 'API request was not successful' );
+		
+		return;
+	}
+	
+	$drivers = $data[ 'data' ][ 'drivers' ] ?? [];
+	$total   = $data[ 'data' ][ 'total' ] ?? 0;
+	
+	// Create directory if it doesn't exist
+	$theme_dir  = get_stylesheet_directory();
+	$import_dir = $theme_dir . '/import-drivers';
+	
+	if ( ! is_dir( $import_dir ) ) {
+		wp_mkdir_p( $import_dir );
+	}
+	
+	// Save to file
+	$filename  = $import_dir . '/drivers-from-old-site.json';
+	$json_data = json_encode( $data, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE );
+	
+	if ( file_put_contents( $filename, $json_data ) ) {
+		echo "<h2>Drivers Data Saved Successfully</h2>";
+		echo "<p><strong>Total drivers:</strong> " . $total . "</p>";
+		echo "<p><strong>File saved to:</strong> " . $filename . "</p>";
+		echo "<p><strong>File size:</strong> " . number_format( filesize( $filename ) ) . " bytes</p>";
+	} else {
+		echo "<h2>Error Saving File</h2>";
+		echo "<p>Could not save data to file: " . $filename . "</p>";
+	}
+}
+
+// Uncomment the line below to fetch and save drivers data to file
+// save_drivers_to_file();
+
+// Update drivers data from old site
+function update_drivers_from_old_site() {
+	$url = 'https://www.odysseia-tms.kiev.ua/wp-json/wp/v2/all-drivers-positions';
+	
+	// Make HTTP request
+	$response = wp_remote_get( $url );
+	
+	if ( is_wp_error( $response ) ) {
+		error_log( 'Error fetching drivers data: ' . $response->get_error_message() );
+		
+		return;
+	}
+	
+	$body = wp_remote_retrieve_body( $response );
+	$data = json_decode( $body, true );
+	
+	if ( json_last_error() !== JSON_ERROR_NONE ) {
+		error_log( 'Error parsing JSON: ' . json_last_error_msg() );
+		
+		return;
+	}
+	
+	if ( ! isset( $data[ 'success' ] ) || ! $data[ 'success' ] ) {
+		error_log( 'API request was not successful' );
+		
+		return;
+	}
+	
+	$drivers = $data[ 'data' ][ 'drivers' ] ?? [];
+	$total   = $data[ 'data' ][ 'total' ] ?? 0;
+	
+	echo "<h2>Updating Drivers Data from Old Site</h2>";
+	echo "<p><strong>Total drivers in API:</strong> " . $total . "</p>";
+	
+	// Filter drivers with ID >= 3175
+	$filtered_drivers = [];
+	foreach ( $drivers as $driver_id => $driver_data ) {
+		if ( intval( $driver_id ) >= 3175 ) {
+			$filtered_drivers[ $driver_id ] = $driver_data;
+		}
+	}
+	
+	echo "<p><strong>Drivers to update (ID >= 3175):</strong> " . count( $filtered_drivers ) . "</p>";
+	
+	// Initialize drivers class
+	$drivers_class = new TMSDrivers();
+	$updated_count = 0;
+	$error_count   = 0;
+	
+	foreach ( $filtered_drivers as $driver_id => $driver_data ) {
+		try {
+			// Prepare update data
+			$update_data = [
+				'driver_id'        => $driver_id,
+				'driver_status'    => $driver_data[ 'status' ][ 'value' ] ?? '',
+				'status_date'      => $driver_data[ 'date' ] ?? '',
+				'current_location' => $driver_data[ 'zipcode' ] ?? '',
+				'current_city'     => $driver_data[ 'city' ] ?? '',
+				'current_zipcode'  => $driver_data[ 'zipcode' ] ?? '',
+				'latitude'         => $driver_data[ 'latitude' ] ?? '',
+				'longitude'        => $driver_data[ 'longitude' ] ?? '',
+				'country'          => '', // Extract from state if needed
+				'current_country'  => '', // Extract from state if needed
+			];
+			
+			// Extract country from state if possible
+			if ( ! empty( $driver_data[ 'state' ] ) ) {
+				$state_parts = explode( '_', $driver_data[ 'state' ] );
+				if ( count( $state_parts ) > 1 ) {
+					$update_data[ 'current_country' ] = trim( $state_parts[ 1 ] );
+				}
+			}
+			
+			// Update driver in database
+			$result = $drivers_class->update_driver_in_db( $update_data );
+			
+			if ( $result ) {
+				$updated_count ++;
+				echo "<div style='color: green; font-size: 12px;'>✓ Updated driver ID: $driver_id</div>";
+			} else {
+				$error_count ++;
+				echo "<div style='color: red; font-size: 12px;'>✗ Failed to update driver ID: $driver_id</div>";
+			}
+			
+		}
+		catch ( Exception $e ) {
+			$error_count ++;
+			echo "<div style='color: red; font-size: 12px;'>✗ Error updating driver ID $driver_id: " . $e->getMessage() . "</div>";
+		}
+	}
+	
+	echo "<h3>Update Summary</h3>";
+	echo "<p><strong>Successfully updated:</strong> $updated_count drivers</p>";
+	echo "<p><strong>Errors:</strong> $error_count drivers</p>";
+	echo "<p><strong>Total processed:</strong> " . count( $filtered_drivers ) . " drivers</p>";
+}
+
+// Uncomment the line below to update drivers data from old site
+// update_drivers_from_old_site();
+
+// Replace driver IDs in all related tables (silent mode)
+function replace_driver_ids() {
+	global $wpdb;
+	// Define ID mappings: old_id => new_id
+	$id_mappings = [
+		3251 => 419,
+		3253 => 345,
+		3252 => 268,
+		// Add more mappings here as needed
+		// old_id => new_id,
+	];
+	
+	$total_updated = 0;
+	$errors        = [];
+	
+	foreach ( $id_mappings as $old_id => $new_id ) {
+		try {
+			// Start transaction
+			$wpdb->query( 'START TRANSACTION' );
+			
+			$tables_updated = 0;
+			
+			// 1. Update main drivers table
+			$result = $wpdb->update( $wpdb->prefix . 'drivers', [ 'id' => $new_id ], [ 'id' => $old_id ], [ '%d' ], [ '%d' ] );
+			
+			if ( $result !== false ) {
+				$tables_updated ++;
+			}
+			
+			// 2. Update drivers_meta table
+			$result = $wpdb->update( $wpdb->prefix . 'drivers_meta', [ 'post_id' => $new_id ], [ 'post_id' => $old_id ], [ '%d' ], [ '%d' ] );
+			
+			if ( $result !== false ) {
+				$tables_updated ++;
+			}
+			
+			// 3. Update drivers_raiting table
+			$result = $wpdb->update( $wpdb->prefix . 'drivers_raiting', [ 'driver_id' => $new_id ], [ 'driver_id' => $old_id ], [ '%d' ], [ '%d' ] );
+			
+			if ( $result !== false ) {
+				$tables_updated ++;
+			}
+			
+			// 4. Update drivers_notice table
+			$result = $wpdb->update( $wpdb->prefix . 'drivers_notice', [ 'driver_id' => $new_id ], [ 'driver_id' => $old_id ], [ '%d' ], [ '%d' ] );
+			
+			if ( $result !== false ) {
+				$tables_updated ++;
+			}
+			
+			// 5. Update logs table (if exists)
+			$logs_table = $wpdb->prefix . 'tms_logs';
+			if ( $wpdb->get_var( "SHOW TABLES LIKE '$logs_table'" ) == $logs_table ) {
+				$result = $wpdb->update( $logs_table, [ 'driver_id' => $new_id ], [ 'driver_id' => $old_id ], [ '%d' ], [ '%d' ] );
+				
+				if ( $result !== false ) {
+					$tables_updated ++;
+				}
+			}
+			
+			// Check if any tables were updated
+			if ( $tables_updated > 0 ) {
+				// Commit transaction
+				$wpdb->query( 'COMMIT' );
+				$total_updated ++;
+			} else {
+				// Rollback transaction
+				$wpdb->query( 'ROLLBACK' );
+				$errors[] = "No tables updated for ID $old_id → $new_id";
+			}
+			
+		}
+		catch ( Exception $e ) {
+			// Rollback transaction on error
+			$wpdb->query( 'ROLLBACK' );
+			$errors[] = "Error for ID $old_id → $new_id: " . $e->getMessage();
+		}
+	}
+	
+	// Log results to error log only
+	if ( $total_updated > 0 ) {
+		error_log( "Driver ID replacement: Successfully processed $total_updated mappings" );
+	}
+	
+	if ( ! empty( $errors ) ) {
+		error_log( "Driver ID replacement errors: " . implode( ', ', $errors ) );
+	}
+}
+
+// Uncomment the line below to replace driver IDs
+//replace_driver_ids();
 
 /**
  * Sanitize uploaded file name

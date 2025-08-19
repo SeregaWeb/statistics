@@ -654,8 +654,10 @@ class  TMSStatistics extends TMSReportsHelper {
 	
 	/**
 	 * Get dispatchers with FLT access filtering
+	 *
 	 * @param string|null $office_user - office filter
 	 * @param bool $is_flt - whether to filter by FLT access
+	 *
 	 * @return array
 	 */
 	public function get_dispatchers( $office_user = null, $is_flt = false ) {
@@ -672,7 +674,6 @@ class  TMSStatistics extends TMSReportsHelper {
 		
 		// Получаем пользователей с заданной ролью
 		$users = get_users( $args );
-		
 		// Массив для хранения информации о пользователях
 		$dispatchers = array();
 		
@@ -708,7 +709,7 @@ class  TMSStatistics extends TMSReportsHelper {
 					'office'   => $office,
 				);
 			} else {
-				if ( $office_user === $office ) {
+				if ( $office_user === $office || $office_user === 'all' ) {
 					$dispatchers[] = array(
 						'id'       => $user->ID,
 						'fullname' => trim( $first_name . ' ' . $last_name ),
@@ -718,13 +719,16 @@ class  TMSStatistics extends TMSReportsHelper {
 			}
 		}
 		
+		
 		return $dispatchers;
 	}
 	
 	/**
 	 * Get dispatchers TL with FLT access filtering
+	 *
 	 * @param string|null $office_user - office filter
 	 * @param bool $is_flt - whether to filter by FLT access
+	 *
 	 * @return array
 	 */
 	public function get_dispatchers_tl( $office_user = null, $is_flt = false ) {

@@ -518,14 +518,14 @@ class TMSLogs extends TMSReports {
 		$user_role = reset( $user->roles );
 		
 		// Роли, которые не должны видеть сообщения от роли "billing"
-		$restricted_roles = [ 'tracking', 'dispatcher', 'recruiter' ];
+		$restricted_roles = [ 'tracking', 'dispatcher', 'recruiter', 'morning_tracking', 'nightshift_tracking' ];
 		
 		// SQL-запрос с фильтрацией по роли, посту и сортировкой по дате
 		$query = $wpdb->prepare( "
         SELECT id, id_user, user_name, user_role, log_priority, log_date, log_text
         FROM $logs_table
         WHERE id_load = %d
-          AND (user_role != 'billing' OR %s NOT IN ('tracking', 'dispatcher', 'recruiter'))
+          AND (user_role != 'billing' OR %s NOT IN ('tracking', 'dispatcher', 'recruiter', 'morning_tracking', 'nightshift_tracking'))
         ORDER BY log_date DESC
     ", $post_id, $user_role );
 		

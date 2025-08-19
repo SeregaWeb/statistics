@@ -1214,10 +1214,12 @@ class TMSReportsFlt extends TMSReportsHelper {
 	LEFT JOIN {$wpdb->usermeta} AS um_last ON u.ID = um_last.user_id AND um_last.meta_key = 'last_name'
 	WHERE (
 		ur.meta_value LIKE %s OR
+		ur.meta_value LIKE %s OR
+		ur.meta_value LIKE %s OR
 		ur.meta_value LIKE %s
 	)" . ( ! empty( $exclude ) ? " AND u.ID NOT IN (" . implode( ',', array_map( 'absint', $exclude ) ) . ") " : "" );
 		
-		$results = $wpdb->get_results( $wpdb->prepare( $sql, 'nightshift', 'my_team', 'initials_color', 'weekends', '%"tracking"%', '%"tracking-tl"%' ), ARRAY_A );
+		$results = $wpdb->get_results( $wpdb->prepare( $sql, 'nightshift', 'my_team', 'initials_color', 'weekends', '%"tracking"%', '%"tracking-tl"%', '%"morning_tracking"%', '%"nightshift_tracking"%' ), ARRAY_A );
 		
 		
 		$tracking_data = [
@@ -1280,6 +1282,8 @@ class TMSReportsFlt extends TMSReportsHelper {
 					$tracking_data[ 'tracking_move' ][] = $user_data;
 				}
 				continue;
+			} else {
+				$tracking_data['weekends'][] = $user_data;
 			}
 			
 			

@@ -6,6 +6,7 @@ $post_id        = get_field_value( $args, 'post_id' );
 
 $reports = new TMSReports();
 $driver  = new TMSDrivers();
+$TMSUsers = new TMSUsers();
 
 $main                      = get_field_value( $object_driver, 'main' );
 $meta                      = get_field_value( $object_driver, 'meta' );
@@ -250,6 +251,18 @@ $legalDocumentTypes = $driver->legalDocumentTypes;
 $insuredOptions     = $driver->insuredOptions;
 $statusOptions      = $driver->statusOptions;
 
+$access_vehicle = $TMSUsers->check_user_role_access( [
+	'administrator',
+	'recruiter',
+	'recruiter-tl',
+	'hr_manager',
+	'accounting',
+	'billing',
+	'billing-tl',
+	'moderator',
+	
+], true );
+
 ?>
 
 <div class="container mt-4 pb-5">
@@ -267,6 +280,8 @@ $statusOptions      = $driver->statusOptions;
 		<?php endif; ?>
     </div>
 	
+    <?php if ( $access_vehicle ): ?>
+
 	<?php if ( $total_images > 0 ): ?>
 
         <div class="js-hide-upload-doc-container hide-upload-files mb-3" data-class-toggle="hide-upload-files">
@@ -638,6 +653,10 @@ $statusOptions      = $driver->statusOptions;
                     </div>
                 </div>
             </div>
+            
+            <div class="col-12 mb-3">
+                <button type="button" class="btn btn-outline-primary btn-sm js-update-background-date">Update background check date</button>
+            </div>
 
             <div class="col-12 mb-3">
                 <div class="form-check form-switch">
@@ -962,5 +981,9 @@ $statusOptions      = $driver->statusOptions;
 	foreach ( $popups_upload as $popup ):
 		echo esc_html( get_template_part( TEMPLATE_PATH . 'popups/upload', 'file', $popup ) );
 	endforeach;
-	?>
+
+     else: ?> 
+        <div class="alert alert-info">You do not have permission to upload documents.</div>
+    <?php endif; ?>
+	
 </div>

@@ -37,6 +37,13 @@
                 "operator": "==",
                 "value": "tracking"
             }
+        ],
+        [
+            {
+                "param": "user_role",
+                "operator": "==",
+                "value": "nightshift_tracking"
+            }
         ]
     ],
     "menu_order": 0,
@@ -48,5 +55,5 @@
     "active": true,
     "description": "",
     "show_in_rest": 0,
-    "modified": 1742589706
+    "modified": 1754829640
 }

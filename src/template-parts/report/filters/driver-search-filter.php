@@ -1,50 +1,65 @@
 <?php
 $helper        = new TMSReportsHelper();
 $driver_helper = new TMSDriversHelper();
+$driver        = new TMSDrivers();
 
 $search          = get_field_value( $_GET, 'my_search' );
 $country         = get_field_value( $_GET, 'country' );
 $radius          = get_field_value( $_GET, 'radius' );
 $extended_search = get_field_value( $_GET, 'extended_search' );
+$capabilities    = get_field_value( $_GET, 'capabilities' );
+
+// Get drivers statistics
+$drivers_stats = $driver->get_drivers_available();
 
 // If extended_search is set, use it as the search value
 if ( ! empty( $extended_search ) ) {
 	$search = $extended_search;
 }
 
+// Convert capabilities string to array if it exists
+$selected_capabilities = array();
+if ( ! empty( $capabilities ) ) {
+	$selected_capabilities = is_array( $capabilities ) ? $capabilities : array( $capabilities );
+}
 
-//$driver_capabilities = array(
-//	'twic'                    => 'TWIC',
-//	'tsa_approved'            => 'TSA',
-//	'hazmat_certificate'      => 'Hazmat certificate',
-//	'hazmat_endorsement'      => 'Hazmat endorsement',
-//	'change_9_training'       => 'Change 9',
-//	'canada_transition_proof' => 'Canada transition proof',
-//	'tanker_endorsement'      => 'Tanker endorsement',
-//	'background_check'        => 'Background check',
-//	'lift_gate'               => 'Lift gate',
-//	'pallet_jack'             => 'Pallet jack',
-//	'dolly'                   => 'Dolly',
-//	'ppe'                     => 'PPE',
-//	'e_tracks'                => 'E tracks',
-//	'ramp'                    => 'Ramp',
-//	'printer'                 => 'Printer',
-//	'sleeper'                 => 'Sleeper',
-//	'load_bars'               => 'Load_bars',
-//	'mc'                      => 'MC',
-//	'dot'                     => 'DOT',
-//);
+// Define driver capabilities for filtering
+$driver_capabilities = array(
+	'hazmat_certificate'      => 'Hazmat',
+	'twic'                    => 'TWIC',
+	'cross_border_canada'     => 'Canada', // Special handling for cross_border
+	'cross_border_mexico'     => 'Mexico', // Special handling for cross_border
+	'tsa_approved'            => 'TSA',
+	'real_id'                 => 'Real ID',
+	'pallet_jack'             => 'Pallet Jack',
+	'lift_gate'               => 'Lift Gate',
+	'team_driver_enabled'     => 'Team Driver', // Special handling for team_driver_enabled
+	'ppe'                     => 'PPE',
+	'load_bars'               => 'Load bars',
+	'printer'                 => 'Printer',
+	'cdl'                     => 'CDL',
+	'tanker_endorsement'      => 'Tanker endorsement',
+	'ramp'                    => 'Ramp',
+	'dock_high'               => 'Dock High',
+	'e_tracks'                => 'E-tracks',
+);
 
 ?>
 
 <nav class="navbar mb-5 mt-3 navbar-expand-lg navbar-light">
     <div class="container-fluid p-0">
-        <a class="navbar-brand" href="#">Drivers</a>
-        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNavDarkDropdown"
-                aria-controls="navbarNavDarkDropdown" aria-expanded="false" aria-label="Toggle navigation">
-            <span class="navbar-toggler-icon"></span>
-        </button>
-        <form class="collapse navbar-collapse flex-column align-items-end justify-content-end gap-1"
+        <div class="d-flex justify-content-between align-items-start w-100">
+        <div class="d-flex flex-column align-items-start gap-1">
+            <h4 class="navbar-brand">Drivers</h4>
+            <div class="d-flex align-items-center gap-1 flex-1 no-wrap">
+                <div class="text-small text-nowrap">Available: <span class="text-primary"><?php echo $drivers_stats['available']; ?></span></div>
+                <div class="text-small text-nowrap">Available on: <span class="text-primary"><?php echo $drivers_stats['available_on']; ?></span></div>
+                <div class="text-small text-nowrap">Not updated: <span class="text-primary"><?php echo $drivers_stats['not_updated']; ?></span></div>
+            </div>
+        </div>
+    
+        
+        <form class="d-flex flex-column align-items-end justify-content-end gap-1 w-100"
               id="navbarNavDriverSearch">
             <div class="d-flex gap-1 align-items-center">
 
@@ -85,12 +100,49 @@ if ( ! empty( $extended_search ) ) {
                     <option value="500">500 miles</option>
                     <option value="600">600 miles</option>
                 </select>
+
+                <!-- Driver Capabilities Filter -->
+                <div class="dropdown">
+                    <button class="btn btn-outline-secondary dropdown-toggle" type="button" id="capabilitiesDropdown" 
+                            data-bs-toggle="dropdown" aria-expanded="false">
+                        Capabilities 
+                        <span class="badge bg-primary ms-1 js-capabilities-count">0</span>
+                    </button>
+                    <ul class="dropdown-menu js-capabilities-menu" aria-labelledby="capabilitiesDropdown">
+                        <?php foreach ( $driver_capabilities as $capability_key => $capability_label ): ?>
+                            <li>
+                                <label class="dropdown-item">
+                                    <input type="checkbox" name="capabilities[]" 
+                                           value="<?php echo esc_attr( $capability_key ); ?>"
+                                           class="js-capability-checkbox"
+                                           <?php echo in_array( $capability_key, $selected_capabilities ) ? 'checked' : ''; ?>>
+                                    <?php echo esc_html( $capability_label ); ?>
+                                </label>
+                            </li>
+                        <?php endforeach; ?>
+                    </ul>
+                </div>
 				
 				<?php if ( ! empty( $_GET ) ): ?>
                     <a class="btn btn-outline-danger" href="<?php echo get_the_permalink(); ?>">Reset</a>
 				<?php endif; ?>
             </div>
         </form>
+        </div>
     </div>
+
 </nav>
+
+<?php if ( ! empty( $search ) ): ?>
+        <!-- Quick Copy Block -->
+        <div class="quick-copy-block d-flex justify-content-between align-items-center mb-3">
+            <div class="text-small text-muted mb-2">QUICK COPY</div>
+            <div class="d-flex gap-1">
+                <button type="button" class="btn btn-sm btn-outline-success js-quick-copy" data-status="available">Available</button>
+                <button type="button" class="btn btn-sm btn-outline-success js-quick-copy" data-status="available_on">Available on</button>
+                <button type="button" class="btn btn-sm btn-outline-danger js-quick-copy" data-status="not_available">Not Available</button>
+                <button type="button" class="btn btn-sm btn-primary js-quick-copy" data-status="all">all</button>
+            </div>
+        </div>
+        <?php endif; ?>
 

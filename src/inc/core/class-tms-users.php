@@ -119,7 +119,6 @@ class  TMSUsers extends TMSReportsHelper {
 				$ex                            = array_map( 'strval', $ex );
 				$current_weekend_state[ $day ] = in_array( $dispatcher, $ex, true );
 			}
-			
 			$weekend_changes = $this->track_weekend_changes( $dispatcher, $move_to, $days, $current_weekend_state );
 			
 			$involved_users[] = [
@@ -163,6 +162,7 @@ class  TMSUsers extends TMSReportsHelper {
 			foreach ( $days as $day => $field_key ) {
 				$key     = 'exclude_' . $day . '_user_' . $dispatcher;
 				$checked = ! empty( $_POST[ $key ] );
+				
 				$ex      = get_field( $field_key, 'user_' . $move_to );
 				if ( ! is_array( $ex ) ) {
 					$ex = [];
@@ -522,6 +522,7 @@ class  TMSUsers extends TMSReportsHelper {
 			'moderator',
 			'tracking-tl',
 			'recruiter-tl',
+			'hr_manager',
 			'driver_updates',
 			'recruiter'
 		), true );

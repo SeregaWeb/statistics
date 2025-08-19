@@ -1124,7 +1124,6 @@ class TMSReports extends TMSReportsHelper {
 			'at-del'             => 0,
 			'total'              => 0,
 		];
-		
 		foreach ( $results as $row ) {
 			$dispatcher = $row[ 'dispatcher_initials' ] ?: 'Unknown';
 			$status     = $row[ 'load_status' ];
@@ -1141,6 +1140,7 @@ class TMSReports extends TMSReportsHelper {
 				];
 			}
 			
+			
 			// Если статус существует в массиве диспетчера — увеличиваем счетчик
 			if ( isset( $dispatcher_data[ 'user_' . $dispatcher ][ $status ] ) ) {
 				$dispatcher_data[ 'user_' . $dispatcher ][ $status ] += $count;
@@ -1151,6 +1151,8 @@ class TMSReports extends TMSReportsHelper {
 				$grand_total_data[ 'total' ] += $count;
 			}
 		}
+
+//		var_dump( $dispatcher_data );
 		
 		return [
 			'dispatchers' => $dispatcher_data,
@@ -1213,10 +1215,12 @@ class TMSReports extends TMSReportsHelper {
 	LEFT JOIN {$wpdb->usermeta} AS um_last ON u.ID = um_last.user_id AND um_last.meta_key = 'last_name'
 	WHERE (
 		ur.meta_value LIKE %s OR
+		ur.meta_value LIKE %s OR
+		ur.meta_value LIKE %s OR
 		ur.meta_value LIKE %s
 	)" . ( ! empty( $exclude ) ? " AND u.ID NOT IN (" . implode( ',', array_map( 'absint', $exclude ) ) . ") " : "" );
 		
-		$results = $wpdb->get_results( $wpdb->prepare( $sql, 'nightshift', 'my_team', 'initials_color', 'weekends', '%"tracking"%', '%"tracking-tl"%' ), ARRAY_A );
+		$results = $wpdb->get_results( $wpdb->prepare( $sql, 'nightshift', 'my_team', 'initials_color', 'weekends', '%"tracking"%', '%"tracking-tl"%', '%"morning_tracking"%', '%"nightshift_tracking"%' ), ARRAY_A );
 		
 		
 		$tracking_data = [
@@ -1236,15 +1240,16 @@ class TMSReports extends TMSReportsHelper {
 			
 			$office = get_field_value( $fields, 'work_location' );
 			
-			
-			$my_team = ! empty( $user[ 'my_team' ] ) ? maybe_unserialize( $user[ 'my_team' ] ) : [];
+			$my_team                  = ! empty( $user[ 'my_team' ] ) ? maybe_unserialize( $user[ 'my_team' ] ) : [];
+			$my_team_without_weekends = $my_team;
 			
 			if ( is_array( $exclude_drivers ) && ! empty( $exclude_drivers ) ) {
 				$exclude_drivers = array_map( 'intval', $exclude_drivers );
 			}
 			
 			if ( is_array( $my_team ) && ! empty( $my_team ) ) {
-				$my_team = array_map( 'intval', $my_team );
+				$my_team                  = array_map( 'intval', $my_team );
+				$my_team_without_weekends = array_map( 'intval', $my_team_without_weekends );
 			}
 			
 			if ( is_array( $exclude_drivers ) && ! empty( $exclude_drivers ) ) {
@@ -1255,8 +1260,8 @@ class TMSReports extends TMSReportsHelper {
 				$my_team = $filtered_team;
 			}
 			
-			$weekends = ! empty( $user[ 'weekends' ] ) ? maybe_unserialize( $user[ 'weekends' ] ) : [];
 			
+			$weekends = ! empty( $user[ 'weekends' ] ) ? maybe_unserialize( $user[ 'weekends' ] ) : [];
 			// Получаем текущий день недели в нижнем регистре, например: 'monday'
 			$today = strtolower( date( 'l' ) );
 			
@@ -1266,11 +1271,12 @@ class TMSReports extends TMSReportsHelper {
 			
 			
 			$user_data = [
-				'id'             => $user[ 'ID' ],
-				'name'           => $user[ 'display_name' ],
-				'my_team'        => is_array( $my_team ) ? $my_team : [],
-				'initials'       => $initials,
-				'initials_color' => $initials_color,
+				'id'                       => $user[ 'ID' ],
+				'name'                     => $user[ 'display_name' ],
+				'my_team'                  => is_array( $my_team ) ? $my_team : [],
+				'my_team_without_weekends' => is_array( $my_team_without_weekends ) ? $my_team_without_weekends : [],
+				'initials'                 => $initials,
+				'initials_color'           => $initials_color,
 			];
 			
 			// Пропустить пользователя, если сегодня его выходной
@@ -1279,6 +1285,8 @@ class TMSReports extends TMSReportsHelper {
 					$tracking_data[ 'tracking_move' ][] = $user_data;
 				}
 				continue;
+			} else {
+				$tracking_data[ 'weekends' ][] = $user_data;
 			}
 			
 			
@@ -2793,8 +2801,8 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 			}
 			
 			// Debug: Log driver fields
-			error_log('DEBUG: attached_driver = ' . ($MY_INPUT['attached_driver'] ?? 'NULL'));
-			error_log('DEBUG: attached_second_driver = ' . ($MY_INPUT['attached_second_driver'] ?? 'NULL'));
+			error_log( 'DEBUG: attached_driver = ' . ( $MY_INPUT[ 'attached_driver' ] ?? 'NULL' ) );
+			error_log( 'DEBUG: attached_second_driver = ' . ( $MY_INPUT[ 'attached_second_driver' ] ?? 'NULL' ) );
 			
 			$result = $this->add_load( $MY_INPUT );
 			
@@ -3155,18 +3163,19 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 		// Exit if not an AJAX request
 		wp_die();
 	}
-
+	
 	/**
 	 * Get driver by ID from internal database
 	 */
 	public function get_driver_by_id_internal() {
 		// Debug: Log that method is called
-		error_log('get_driver_by_id_internal method called');
+		error_log( 'get_driver_by_id_internal method called' );
 		
 		// Check if TMSDrivers class exists
-		if (!class_exists('TMSDrivers')) {
-			error_log('TMSDrivers class not found');
-			wp_send_json_error(['message' => 'TMSDrivers class not available']);
+		if ( ! class_exists( 'TMSDrivers' ) ) {
+			error_log( 'TMSDrivers class not found' );
+			wp_send_json_error( [ 'message' => 'TMSDrivers class not available' ] );
+			
 			return;
 		}
 		
@@ -3180,16 +3189,17 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 			
 			if ( empty( $driver_id ) ) {
 				wp_send_json_error( [ 'message' => 'Driver ID is required.' ] );
+				
 				return;
 			}
 			
 			// Get driver data from internal database
-			$drivers = new TMSDrivers();
+			$drivers     = new TMSDrivers();
 			$driver_data = $drivers->get_driver_by_id( $driver_id );
 			
 			if ( $driver_data && ! empty( $driver_data[ 'main' ] ) ) {
 				// Extract driver information
-				$driver_name = '';
+				$driver_name  = '';
 				$driver_phone = '';
 				
 				// Get driver name from meta data
@@ -3204,17 +3214,19 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 				
 				// If no name found in meta, try to construct from other fields
 				if ( empty( $driver_name ) ) {
-					$first_name = isset( $driver_data[ 'meta' ][ 'first_name' ] ) ? $driver_data[ 'meta' ][ 'first_name' ] : '';
-					$last_name = isset( $driver_data[ 'meta' ][ 'last_name' ] ) ? $driver_data[ 'meta' ][ 'last_name' ] : '';
+					$first_name  = isset( $driver_data[ 'meta' ][ 'first_name' ] )
+						? $driver_data[ 'meta' ][ 'first_name' ] : '';
+					$last_name   = isset( $driver_data[ 'meta' ][ 'last_name' ] )
+						? $driver_data[ 'meta' ][ 'last_name' ] : '';
 					$driver_name = trim( $first_name . ' ' . $last_name );
 				}
 				
 				// Format the response
 				$response_data = [
 					'driver' => $driver_name,
-					'phone' => $driver_phone,
-					'id' => $driver_id,
-					'data' => $driver_data
+					'phone'  => $driver_phone,
+					'id'     => $driver_id,
+					'data'   => $driver_data
 				];
 				
 				wp_send_json_success( $response_data );
@@ -4396,8 +4408,8 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 		$office_dispatcher = get_field( 'work_location', 'user_' . $data[ 'dispatcher_initials' ] );
 		
 		// Debug: Log driver fields in add_load
-		error_log('DEBUG add_load: attached_driver = ' . ($data['attached_driver'] ?? 'NULL'));
-		error_log('DEBUG add_load: attached_second_driver = ' . ($data['attached_second_driver'] ?? 'NULL'));
+		error_log( 'DEBUG add_load: attached_driver = ' . ( $data[ 'attached_driver' ] ?? 'NULL' ) );
+		error_log( 'DEBUG add_load: attached_second_driver = ' . ( $data[ 'attached_second_driver' ] ?? 'NULL' ) );
 		
 		$post_meta = array(
 			'load_status'             => $data[ 'load_status' ],
@@ -5974,7 +5986,6 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 		}
 	}
 	
-
 	
 	/**
 	 * AJAX handler for drivers tables optimization
@@ -6125,5 +6136,5 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 	}
 	
 	// CREATE TABLE AND UPDATE SQL END
-	}
+}
 	

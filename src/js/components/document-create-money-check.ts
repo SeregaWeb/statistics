@@ -154,3 +154,36 @@ export const createDocumentBolActions = (urlAjax) => {
         });
     }
 };
+
+export const createDocumentSettlementSummaryActions = (urlAjax) => {
+    const formInv = document.querySelector('.js-generate-settlement-summary');
+
+    if (formInv) {
+        formInv.addEventListener('submit', (event) => {
+            event.preventDefault();
+            const action = 'generate_settlement_summary';
+            const form = event.target;
+
+            if (form) {
+                // @ts-ignore
+                const formData = new FormData(form);
+                formData.append('action', action);
+
+                const options = {
+                    method: 'POST',
+                    body: formData,
+                };
+
+                fetch(urlAjax, options)
+                    .then((res) => res.json())
+                    .then((requestStatus) => {
+                        if (requestStatus.success) {
+                            window.open(requestStatus.data, '_blank');
+                        } else {
+                            console.log('error');
+                        } 
+                    });
+            }
+        });
+    }
+};

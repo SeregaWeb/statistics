@@ -140,7 +140,13 @@ export const cleanUrlByFilterDriverSearch = () => {
             if (mySearch?.value) params.append('my_search', mySearch.value);
             if (country?.value) params.append('country', country.value);
             if (radius?.value) params.append('radius', radius.value);
-            if (extendedSearch?.value) params.append('extended_search', extendedSearch.value); 
+            if (extendedSearch?.value) params.append('extended_search', extendedSearch.value);
+
+            // Добавляем выбранные возможности
+            const capabilityCheckboxes = form.querySelectorAll('input[name="capabilities[]"]:checked') as NodeListOf<HTMLInputElement>;
+            capabilityCheckboxes.forEach(checkbox => {
+                params.append('capabilities[]', checkbox.value);
+            });
 
             // Перенаправляем на URL с параметрами
             window.location.href = `?${params.toString()}`;

@@ -3,189 +3,191 @@
  * Template for displaying drivers on hold section
  */
 
-$drivers = new TMSDrivers();
-$helper = new TMSReportsHelper();
-$icons = new TMSReportsIcons();
+$drivers      = new TMSDrivers();
+$helper       = new TMSReportsHelper();
+$icons        = new TMSReportsIcons();
 $driverHelper = new TMSDriversHelper();
 global $global_options;
 $add_new_load = get_field_value( $global_options, 'add_new_driver' );
 
-// Get all drivers on hold using optimized method
+// Get all drivers on hold using an optimized method
 $hold_drivers = $drivers->get_drivers_on_hold();
 error_log( 'Template received drivers count: ' . count( $hold_drivers ) );
 if ( ! empty( $hold_drivers ) ) :
-?>
-<div class="hold-drivers-section mb-4">
-    <div class="d-flex justify-content-between align-items-center mb-3">
-        <h6 class="mb-0 d-flex align-items-center">
-            On hold now 
-            <span class="badge bg-primary ms-2" style="font-size: 0.75rem;"><?php echo count( $hold_drivers ); ?></span>
-        </h4>
-        <button class="btn btn-sm btn-outline-secondary js-toggle-hold-section">
-            <span class="button-text">Hide</span>
-        </button>
-    </div>
-    
-    <div class="hold-section-content">
-    
-    <table class="table mb-5 w-100">
-        <thead>
-        <tr>
-            <th scope="col">
-                Status
-            </th>
-            <th scope="col">
-                Date & Time
-            </th>
-            <th scope="col">
-                Location
-            </th>
-            <th scope="col">
-                Driver
-            </th>
-            <th scope="col">
-                Vehicle
-            </th>
-            <th scope="col">
-                Dimensions
-            </th>
-            <th scope="col">
-            </th>
-            <th scope="col">
-                Comments
-            </th>
-            <th scope="col">
-                Rating
-            </th>
-            <th scope="col">
-                Notes
-            </th>
-            <th scope="col"></th>
-        </tr>
-        </thead>
-        <tbody>
-            <?php foreach ( $hold_drivers as $driver ) : 
-                $meta = $driver['meta_data'];
-                $driver_name = get_field_value( $meta, 'driver_name' );
-                $languages = get_field_value( $meta, 'languages' );
-                $driver_phone = get_field_value( $meta, 'driver_phone' );
-                $vehicle_type = get_field_value( $meta, 'vehicle_type' );
-                $vehicle_year = get_field_value( $meta, 'vehicle_year' );
-                $vehicle_model = get_field_value( $meta, 'vehicle_model' );
-                $vehicle_make = get_field_value( $meta, 'vehicle_make' );
-                $dimensions = get_field_value( $meta, 'dimensions' );
-                $current_location = get_field_value( $meta, 'current_location' );
-                $current_city = get_field_value( $meta, 'current_city' );
-                $payload = get_field_value( $meta, 'payload' );
-                $hold_info = $driver['hold_info'];
-                $current_user_id = get_current_user_id();
-                $show_phone = ( $hold_info && $current_user_id == $hold_info['dispatcher_id'] );
-                
-                // Get driver statistics for rating
-                $driver_statistics = $drivers->get_driver_statistics( $driver['id'] );
-                
-                // Function to determine button color based on value
-                $get_button_color = function( $value ) {
-                    if ( ! is_numeric( $value ) || intval( $value ) === 0 ) {
-                        return 'btn-secondary';
-                    }
-                    if ( + $value <= 1 ) {
-                        return 'btn-danger';
-                    }
-                    if ( + $value <= 4 ) {
-                        return 'btn-warning';
-                    }
-                    if ( + $value > 4 ) {
-                        return 'btn-success';
-                    }
-                    return 'btn-secondary';
-                };
-            ?>
-            <tr>
-                <td style="width: 100px;" class="on_hold driver-status">On hold</td>
-                <td style="width: 85px; font-size: 12px;">
-                    <?php echo date( 'm/d/Y g:i a', strtotime( $driver['date_available'] ) ); ?>
-                </td>
-                <td class="table-column js-location-update">
-                    <?php echo ( isset( $current_location ) && isset( $current_city ) )
-                        ? $current_city . ', ' . $current_location : 'Need set this field'; ?>
-                </td>
-                <td>
-                    <div class="d-flex flex-column">
-                        <div>
-                            <?php echo '(' . $driver['id'] . ') ' . $driver_name; ?>
-                            <?php echo $icons->get_flags( $languages ); ?>
-                        </div>
-                        <span class="text-small">
+	?>
+    <div class="hold-drivers-section mb-4">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h6 class="mb-0 d-flex align-items-center">
+                On hold now
+                <span class="badge bg-primary ms-2"
+                      style="font-size: 0.75rem;"><?php echo count( $hold_drivers ); ?></span>
+            </h6>
+            <button class="btn btn-sm btn-outline-secondary js-toggle-hold-section">
+                <span class="button-text">Hide</span>
+            </button>
+        </div>
+
+        <div class="hold-section-content">
+
+            <table class="table mb-5 w-100">
+                <thead>
+                <tr>
+                    <th scope="col">
+                        Status
+                    </th>
+
+                    <th scope="col">
+                        Location & Date
+                    </th>
+                    <th scope="col">
+                        Driver
+                    </th>
+                    <th scope="col">
+                        Vehicle
+                    </th>
+                    <th scope="col">
+                        Dimensions
+                    </th>
+                    <th scope="col">
+                    </th>
+                    <th scope="col">
+                        Comments
+                    </th>
+                    <th scope="col">
+                        Rating
+                    </th>
+                    <th scope="col">
+                        Notes
+                    </th>
+                    <th scope="col"></th>
+                </tr>
+                </thead>
+                <tbody>
+				<?php foreach ( $hold_drivers as $driver ) :
+					$meta = $driver[ 'meta_data' ];
+					$driver_name = get_field_value( $meta, 'driver_name' );
+					$languages = get_field_value( $meta, 'languages' );
+					$driver_phone = get_field_value( $meta, 'driver_phone' );
+					$vehicle_type = get_field_value( $meta, 'vehicle_type' );
+					$vehicle_year = get_field_value( $meta, 'vehicle_year' );
+					$vehicle_model = get_field_value( $meta, 'vehicle_model' );
+					$vehicle_make = get_field_value( $meta, 'vehicle_make' );
+					$dimensions = get_field_value( $meta, 'dimensions' );
+					$current_location = get_field_value( $meta, 'current_location' );
+					$current_city = get_field_value( $meta, 'current_city' );
+					$payload = get_field_value( $meta, 'payload' );
+					$hold_info = $driver[ 'hold_info' ];
+					$current_user_id = get_current_user_id();
+					$show_phone = ( $hold_info && $current_user_id == $hold_info[ 'dispatcher_id' ] );
+					
+					// Get driver statistics for rating
+					$driver_statistics = $drivers->get_driver_statistics( $driver[ 'id' ] );
+					
+					// Function to determine button color based on value
+					$get_button_color = function( $value ) {
+						if ( ! is_numeric( $value ) || intval( $value ) === 0 ) {
+							return 'btn-secondary';
+						}
+						if ( + $value <= 1 ) {
+							return 'btn-danger';
+						}
+						if ( + $value <= 4 ) {
+							return 'btn-warning';
+						}
+						if ( + $value > 4 ) {
+							return 'btn-success';
+						}
+						
+						return 'btn-secondary';
+					};
+					?>
+                    <tr>
+                        <td style="width: 100px;" class="on_hold driver-status">On hold</td>
+
+                        <td class="table-column js-location-update" style="font-size: 12px; width: 270px;">
+							<?php echo ( isset( $current_location ) && isset( $current_city ) )
+								? $current_city . ', ' . $current_location . ' ' : 'Need to set this field '; ?>
+							<?php echo date( 'm/d/Y g:i a', strtotime( $driver[ 'date_available' ] ) ); ?>
+                        </td>
+                        <td>
+                            <div class="d-flex flex-column">
+                                <div>
+									<?php echo '(' . $driver[ 'id' ] . ') ' . $driver_name; ?>
+									<?php echo $icons->get_flags( $languages ); ?>
+                                </div>
+                                <span class="text-small">
                             <?php if ( $show_phone ) : ?>
-                                <?php echo $driver_phone; ?>
+	                            <?php echo $driver_phone; ?>
                             <?php else : ?>
                                 <span style="color: #999;">***-***-****</span>
                             <?php endif; ?>
                         </span>
-                    </div>
-                </td>
-                <td>
-                    <div class="d-flex flex-column">
-                        <?php echo $driverHelper->vehicle[ $vehicle_type ] ?? ''; ?>
-                        <span class="text-small">
+                            </div>
+                        </td>
+                        <td>
+                            <div class="d-flex flex-column">
+								<?php echo $driverHelper->vehicle[ $vehicle_type ] ?? ''; ?>
+                                <span class="text-small">
                             <?php
                             echo $vehicle_model;
                             echo ' ' . $vehicle_make;
                             echo ' ' . $vehicle_year;
                             ?>
                         </span>
-                    </div>
-                </td>
-                <td>
-                    <div class="d-flex flex-column">
-                        <?php echo $dimensions; ?>
-                        <span class="text-small">
+                            </div>
+                        </td>
+                        <td>
+                            <div class="d-flex flex-column">
+								<?php echo $dimensions; ?>
+                                <span class="text-small">
                             <?php echo $payload; ?> - lbs
                         </span>
-                    </div>
-                </td>
-                <td>
-                    <div class="table-tags d-flex flex-wrap">
-                        <?php if ( $hold_info ) : ?>
-                        <div style="font-size: 12px; color: #666; line-height: 1.2;">
-                            On hold by<br>
-                            <strong><?php echo esc_html( $hold_info['dispatcher_name'] ); ?></strong>
-                        </div>
-                        <?php else : ?>
-                        <div style="font-size: 12px; color: #999;">
-                            Hold expired
-                        </div>
-                        <?php endif; ?>
-                    </div>
-                </td>
-                <td style="width: 282px;">
-                    <?php if ( $hold_info ) : ?>
-                    Will be available in<br><?php echo $hold_info['minutes_left']; ?> min
-                    <?php else : ?>
-                    <span style="color: #999;">Expired</span>
-                    <?php endif; ?>
-                </td>
-                <td style="width: 86px;" >
-					<?php if ( $show_phone ) : ?>
-                    <a target="_blank"
-                       href="<?php echo $add_new_load . '?driver=' . $driver['id'] . '&tab=pills-driver-stats-tab'; ?>"
-                       class="btn <?php echo $get_button_color( $driver_statistics['rating']['avg_rating'] ); ?> btn-sm d-flex align-items-center justify-content-between gap-1">
-                        <?php echo $driver_statistics['rating']['avg_rating'] > 0
-                            ? $driver_statistics['rating']['avg_rating'] : '-'; ?>
-                        <svg fill="white" width="12" height="12" version="1.1" xmlns="http://www.w3.org/2000/svg"
-                             xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px" viewBox="0 0 460 460"
-                             style="enable-background:new 0 0 460 460;" xml:space="preserve">
+                            </div>
+                        </td>
+                        <td>
+                            <div class="table-tags d-flex flex-wrap">
+								<?php if ( $hold_info ) : ?>
+                                    <div style="font-size: 12px; color: #666; line-height: 1.2;">
+                                        On hold by<br>
+                                        <strong><?php echo esc_html( $hold_info[ 'dispatcher_name' ] ); ?></strong>
+                                    </div>
+								<?php else : ?>
+                                    <div style="font-size: 12px; color: #999;">
+                                        Hold expired
+                                    </div>
+								<?php endif; ?>
+                            </div>
+                        </td>
+                        <td style="width: 282px;">
+							<?php if ( $hold_info ) : ?>
+                                Will be available in<br><?php echo $hold_info[ 'minutes_left' ]; ?> min
+							<?php else : ?>
+                                <span style="color: #999;">Expired</span>
+							<?php endif; ?>
+                        </td>
+                        <td style="width: 86px;">
+							<?php if ( $show_phone ) : ?>
+                                <a target="_blank"
+                                   href="<?php echo $add_new_load . '?driver=' . $driver[ 'id' ] . '&tab=pills-driver-stats-tab'; ?>"
+                                   class="btn <?php echo $get_button_color( $driver_statistics[ 'rating' ][ 'avg_rating' ] ); ?> btn-sm d-flex align-items-center justify-content-between gap-1">
+									<?php echo $driver_statistics[ 'rating' ][ 'avg_rating' ] > 0
+										? $driver_statistics[ 'rating' ][ 'avg_rating' ] : '-'; ?>
+                                    <svg fill="white" width="12" height="12" version="1.1"
+                                         xmlns="http://www.w3.org/2000/svg"
+                                         xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px"
+                                         viewBox="0 0 460 460"
+                                         style="enable-background:new 0 0 460 460;" xml:space="preserve">
                             <path d="M230,0C102.975,0,0,102.975,0,230s102.975,230,230,230s230-102.974,230-230S357.025,0,230,0z M268.333,377.36
                                 c0,8.676-7.034,15.71-15.71,15.71h-43.101c-8.676,0-15.71-7.034-15.71-15.71V202.477c0-8.676,7.033-15.71,15.71-15.71h43.101
                                 c8.676,0,15.71,7.033,15.71,15.71V377.36z M230,157c-21.539,0-39-17.461-39-39s17.461-39,39-39s39,17.461,39,39
                                 S251.539,157,230,157z"></path>
                         </svg>
-                    </a>
-					<?php else : ?>
-                    <span class="btn <?php echo $get_button_color( $driver_statistics['rating']['avg_rating'] ); ?> btn-sm d-flex align-items-center justify-content-between gap-1 disabled" style="opacity: 0.5; pointer-events: none;">
-                        <?php echo $driver_statistics['rating']['avg_rating'] > 0
-                            ? $driver_statistics['rating']['avg_rating'] : '-'; ?>
+                                </a>
+							<?php else : ?>
+                                <span class="btn <?php echo $get_button_color( $driver_statistics[ 'rating' ][ 'avg_rating' ] ); ?> btn-sm d-flex align-items-center justify-content-between gap-1 disabled"
+                                      style="opacity: 0.5; pointer-events: none;">
+                        <?php echo $driver_statistics[ 'rating' ][ 'avg_rating' ] > 0
+	                        ? $driver_statistics[ 'rating' ][ 'avg_rating' ] : '-'; ?>
                         <svg fill="white" width="12" height="12" version="1.1" xmlns="http://www.w3.org/2000/svg"
                              xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px" viewBox="0 0 460 460"
                              style="enable-background:new 0 0 460 460;" xml:space="preserve">
@@ -195,15 +197,38 @@ if ( ! empty( $hold_drivers ) ) :
                                 S251.539,157,230,157z"></path>
                         </svg>
                     </span>
-					<?php endif; ?>
-                </td>
-                <td style="width: 86px;">
-					<?php if ( $show_phone ) : ?>
-                    <a target="_blank"
-                       href="<?php echo $add_new_load . '?driver=' . $driver['id'] . '&tab=pills-driver-stats-tab'; ?>"
-                       class="btn btn-primary btn-sm d-flex align-items-center justify-content-between gap-1">
-                        <?php echo $driver_statistics['notice']['count'] > 0
-                            ? $driver_statistics['notice']['count'] : '-'; ?>
+							<?php endif; ?>
+                        </td>
+                        <td style="width: 86px;">
+							<?php if ( $show_phone ) : ?>
+                                <a target="_blank"
+                                   href="<?php echo $add_new_load . '?driver=' . $driver[ 'id' ] . '&tab=pills-driver-stats-tab'; ?>"
+                                   class="btn btn-primary btn-sm d-flex align-items-center justify-content-between gap-1">
+									<?php echo $driver_statistics[ 'notice' ][ 'count' ] > 0
+										? $driver_statistics[ 'notice' ][ 'count' ] : '-'; ?>
+                                    <svg viewBox="-1 0 46 46" width="12" height="12" xmlns="http://www.w3.org/2000/svg"
+                                         fill="white">
+                                        <g id="_6" data-name="6" transform="translate(-832 -151.466)">
+                                            <g id="Group_263" data-name="Group 263">
+                                                <rect id="Rectangle_63" data-name="Rectangle 63" width="6" height="7"
+                                                      transform="translate(832 155.466)"></rect>
+                                                <path id="Path_188" data-name="Path 188"
+                                                      d="M832,191.827l3,5.419,3-5.419V163.466h-6Z"></path>
+                                                <g id="Group_262" data-name="Group 262">
+                                                    <g id="Group_261" data-name="Group 261">
+                                                        <path id="Path_189" data-name="Path 189"
+                                                              d="M864.907,155.466l-.3-1H862v-3h-6v3h-3.033l-.3,1H842v42h34v-42Zm9.093,40H844v-38h8.171l-.66,3h14.556l-.66-3H874Z"></path>
+                                                    </g>
+                                                </g>
+                                            </g>
+                                        </g>
+                                    </svg>
+                                </a>
+							<?php else : ?>
+                                <span class="btn btn-primary btn-sm d-flex align-items-center justify-content-between gap-1 disabled"
+                                      style="opacity: 0.5; pointer-events: none;">
+                        <?php echo $driver_statistics[ 'notice' ][ 'count' ] > 0
+	                        ? $driver_statistics[ 'notice' ][ 'count' ] : '-'; ?>
                         <svg viewBox="-1 0 46 46" width="12" height="12" xmlns="http://www.w3.org/2000/svg"
                              fill="white">
                             <g id="_6" data-name="6" transform="translate(-832 -151.466)">
@@ -221,41 +246,19 @@ if ( ! empty( $hold_drivers ) ) :
                                 </g>
                             </g>
                         </svg>
-                    </a>
-					<?php else : ?>
-                    <span class="btn btn-primary btn-sm d-flex align-items-center justify-content-between gap-1 disabled" style="opacity: 0.5; pointer-events: none;">
-                        <?php echo $driver_statistics['notice']['count'] > 0
-                            ? $driver_statistics['notice']['count'] : '-'; ?>
-                        <svg viewBox="-1 0 46 46" width="12" height="12" xmlns="http://www.w3.org/2000/svg"
-                             fill="white">
-                            <g id="_6" data-name="6" transform="translate(-832 -151.466)">
-                                <g id="Group_263" data-name="Group 263">
-                                    <rect id="Rectangle_63" data-name="Rectangle 63" width="6" height="7"
-                                          transform="translate(832 155.466)"></rect>
-                                    <path id="Path_188" data-name="Path 188"
-                                          d="M832,191.827l3,5.419,3-5.419V163.466h-6Z"></path>
-                                    <g id="Group_262" data-name="Group 262">
-                                        <g id="Group_261" data-name="Group 261">
-                                            <path id="Path_189" data-name="Path 189"
-                                                  d="M864.907,155.466l-.3-1H862v-3h-6v3h-3.033l-.3,1H842v42h34v-42Zm9.093,40H844v-38h8.171l-.66,3h14.556l-.66-3H874Z"></path>
-                                        </g>
-                                    </g>
-                                </g>
-                            </g>
-                        </svg>
                     </span>
-					<?php endif; ?>
-                </td>
-                <td style="width: 72px;">
-                    <div class="d-flex align-items-center">
-                        <button class="btn btn-sm h-100 d-flex align-items-center justify-content-center js-hold-driver"
-                                data-id="<?php echo $driver['id']; ?>"
-                                data-dispatcher="<?php echo get_current_user_id(); ?>"
-                                data-hold="<?php echo $hold_info ? $hold_info['dispatcher_id'] : 'null'; ?>">
-                            <svg style="width: 18px; height: 18px; pointer-events: none; enable-background:new 0 0 511.992 511.992;"
-                                 xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
-                                 version="1.1" id="Layer_1" x="0px" y="0px" viewBox="0 0 511.992 511.992"
-                                 xml:space="preserve" width="512" height="512">
+							<?php endif; ?>
+                        </td>
+                        <td style="width: 72px;">
+                            <div class="d-flex align-items-center">
+                                <button class="btn btn-sm h-100 d-flex align-items-center justify-content-center js-hold-driver"
+                                        data-id="<?php echo $driver[ 'id' ]; ?>"
+                                        data-dispatcher="<?php echo get_current_user_id(); ?>"
+                                        data-hold="<?php echo $hold_info ? $hold_info[ 'dispatcher_id' ] : 'null'; ?>">
+                                    <svg style="width: 18px; height: 18px; pointer-events: none; enable-background:new 0 0 511.992 511.992;"
+                                         xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
+                                         version="1.1" id="Layer_1" x="0px" y="0px" viewBox="0 0 511.992 511.992"
+                                         xml:space="preserve" width="512" height="512">
                                 <g id="XMLID_806_">
                                     <g id="XMLID_386_">
                                         <path id="XMLID_389_"
@@ -279,17 +282,17 @@ if ( ! empty( $hold_drivers ) ) :
                                     </g>
                                 </g>
                             </svg>
-                        </button>
-                        <?php echo esc_html( get_template_part( TEMPLATE_PATH . 'tables/control', 'dropdown-driver', [
-                            'id'       => $driver['id'],
-                            'is_draft' => false,
-                        ] ) ); ?>
-                    </div>
-                </td>
-            </tr>
-            <?php endforeach; ?>
-        </tbody>
-    </table>
+                                </button>
+								<?php echo esc_html( get_template_part( TEMPLATE_PATH . 'tables/control', 'dropdown-driver', [
+									'id'       => $driver[ 'id' ],
+									'is_draft' => false,
+								] ) ); ?>
+                            </div>
+                        </td>
+                    </tr>
+				<?php endforeach; ?>
+                </tbody>
+            </table>
+        </div>
     </div>
-</div>
 <?php endif; ?> 

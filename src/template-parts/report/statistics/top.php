@@ -15,7 +15,8 @@ $select_all_offices = $TMSUsers->check_user_role_access( array(
 	'administrator',
 	'recruiter',
 	'recruiter-tl',
-	'moderator'
+	'moderator',
+	'hr_manager',
 ), true );
 
 if ( ! $office_dispatcher ) {

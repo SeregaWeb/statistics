@@ -43,6 +43,7 @@ $sellect_all_offices = $TMSUsers->check_user_role_access( array(
 	'administrator',
 	'recruiter',
 	'recruiter-tl',
+	'hr_manager',
 	'moderator'
 ), true );
 

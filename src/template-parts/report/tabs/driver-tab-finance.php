@@ -6,6 +6,7 @@ $post_id        = get_field_value( $args, 'post_id' );
 
 $reports = new TMSReports();
 $driver  = new TMSDrivers();
+$TMSUsers = new TMSUsers();
 
 $main = get_field_value( $object_driver, 'main' );
 $meta = get_field_value( $object_driver, 'meta' );
@@ -114,10 +115,21 @@ $files = array(
 	),
 );
 
+$access_vehicle = $TMSUsers->check_user_role_access( [
+	'administrator',
+	'recruiter',
+	'recruiter-tl',
+	'hr_manager',
+	'accounting',
+	'billing',
+	'billing-tl',
+	'moderator',
+	
+], true );
 ?>
 
 <div class="container mt-4 pb-5">
-
+<?php if ( $access_vehicle ): ?>
     <div class="mb-3 d-flex justify-content-between align-items-center">
         <h2>Finance</h2>
 		<?php if ( $total_images > 2 ): ?>
@@ -456,5 +468,9 @@ $files = array(
 	foreach ( $popups_upload as $popup ):
 		echo esc_html( get_template_part( TEMPLATE_PATH . 'popups/upload', 'file', $popup ) );
 	endforeach;
-	?>
+
+else: ?> 
+    <div class="alert alert-info">You do not have permission to upload documents.</div>
+<?php endif; ?>
+	
 </div>

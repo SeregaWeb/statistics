@@ -16,11 +16,6 @@ $args     = array(
 	'status_post' => 'publish',
 );
 
-$access = $TMSUsers->check_user_role_access( [
-	'administrator',
-	'dispatcher-tl',
-], true );
-
 $args = $Drivers->set_filter_params_search( $args );
 
 $items = $Drivers->get_table_items_search( $args );
@@ -31,21 +26,13 @@ $items = $Drivers->get_table_items_search( $args );
             <div class="container">
                 <div class="row">
                     <div class="col-12 pt-3 pb-3">
-						<?php if ( $access ): 
-					
+						<?php
 						echo esc_html( get_template_part( TEMPLATE_PATH . 'filters/driver', 'search-filter' ) );
 						// Display hold drivers section first
 						echo esc_html( get_template_part( TEMPLATE_PATH . 'tables/driver', 'hold-section' ) );
-							
-						echo esc_html( get_template_part( TEMPLATE_PATH . 'tables/driver', 'search-table', $items ) );
 						
-						else: ?>
-                        <div class="col-12 col-lg-9 mt-3">
-							<?php
-							echo $helper->message_top( 'danger', $helper->messages_prepare( 'not-access' ) );
-							?>
-                        </div>
-					<?php endif; ?>
+						echo esc_html( get_template_part( TEMPLATE_PATH . 'tables/driver', 'search-table', $items ) );
+						?>
                     </div>
                 </div>
             </div>

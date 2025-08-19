@@ -1,0 +1,105 @@
+// Quick Copy Block Styles
+.quick-copy-block {
+    .btn {
+        font-size: 0.875rem;
+        padding: 0.25rem 0.5rem;
+        border-radius: 0.25rem;
+        transition: all 0.2s ease;
+        
+        &:hover {
+            transform: translateY(-1px);
+        }
+    }
+    
+    // Available button - green
+    .btn-outline-success {
+        border-color: rgb(0, 210, 0);
+        color: rgb(0, 210, 0);
+        
+        &:hover {
+            background-color: rgb(0, 210, 0);
+            border-color: rgb(0, 210, 0);
+            color: white;
+        }
+        
+        &.active {
+            background-color: rgb(0, 210, 0);
+            border-color: rgb(0, 210, 0);
+            color: white;
+        }
+    }
+    
+    // Available on button - light green
+    .btn-outline-success[data-status="available_on"] {
+        border-color: rgb(206, 254, 206);
+        color: rgb(0, 150, 0);
+        
+        &:hover {
+            background-color: rgb(206, 254, 206);
+            border-color: rgb(206, 254, 206);
+            color: rgb(0, 150, 0);
+        }
+        
+        &.active {
+            background-color: rgb(206, 254, 206);
+            border-color: rgb(206, 254, 206);
+            color: rgb(0, 150, 0);
+        }
+    }
+    
+    // Not Available button - red
+    .btn-outline-danger {
+        border-color: rgb(224, 102, 101);
+        color: rgb(224, 102, 101);
+        
+        &:hover {
+            background-color: rgb(224, 102, 101);
+            border-color: rgb(224, 102, 101);
+            color: white;
+        }
+        
+        &.active {
+            background-color: rgb(224, 102, 101);
+            border-color: rgb(224, 102, 101);
+            color: white;
+        }
+    }
+    
+    // All button - primary blue
+    .btn-primary {
+        background-color: var(--bs-primary);
+        border-color: var(--bs-primary);
+        
+        &:hover {
+            background-color: var(--bs-primary-dark);
+            border-color: var(--bs-primary-dark);
+        }
+        
+        &.active {
+            background-color: var(--bs-primary-dark);
+            border-color: var(--bs-primary-dark);
+        }
+    }
+}
+
+// Animation for copy feedback
+.quick-copy-block .btn {
+    &:active {
+        transform: scale(0.95);
+    }
+}
+
+// Responsive adjustments
+@media (max-width: 768px) {
+    .quick-copy-block {
+        .d-flex {
+            flex-wrap: wrap;
+            gap: 0.25rem;
+        }
+        
+        .btn {
+            font-size: 0.75rem;
+            padding: 0.2rem 0.4rem;
+        }
+    }
+}

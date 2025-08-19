@@ -13,7 +13,7 @@ $project       = ! empty( $args[ 'project' ] ) ? $args[ 'project' ] : null;
 
 $billing_info = $TMSUsers->check_user_role_access( array( 'administrator', 'billing', 'accounting' ), true );
 
-$required_file_for_user = $TMSUsers->check_user_role_access( array( 'billing', 'tracking' ), true );
+$required_file_for_user = $TMSUsers->check_user_role_access( array( 'billing', 'tracking', 'morning_tracking', 'nightshift_tracking' ), true );
 
 $required_file     = '';
 $others_files      = '';

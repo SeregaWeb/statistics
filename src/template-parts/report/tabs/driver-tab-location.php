@@ -4,7 +4,6 @@ $full_only_view = get_field_value( $args, 'full_view_only' );
 $object_driver  = get_field_value( $args, 'report_object' );
 $post_id        = get_field_value( $args, 'post_id' );
 
-
 $driver   = new TMSDrivers();
 $statuses = $driver->status;
 
@@ -19,9 +18,12 @@ $status_date      = get_field_value( $meta, 'status_date' );
 $current_location = get_field_value( $meta, 'current_location' );
 $current_city     = get_field_value( $meta, 'current_city' );
 $current_zipcode  = get_field_value( $meta, 'current_zipcode' );
-$latitud          = get_field_value( $meta, 'latitud' );
+$latitud          = get_field_value( $meta, 'latitude' );
 $longitude        = get_field_value( $meta, 'longitude' );
 $country          = get_field_value( $meta, 'country' );
+
+// Get updated_zipcode from main table
+$updated_zipcode = get_field_value( $main, 'updated_zipcode' );
 
 ?>
 
@@ -32,6 +34,7 @@ $country          = get_field_value( $meta, 'country' );
 		<?php else: ?>
         <form class="<?php echo $post_id ? 'js-update-location-driver' : ''; ?>">
 			<?php endif; ?>
+
 			<?php if ( $post_id ): ?>
                 <input type="hidden" class="js-id_driver" name="driver_id" value="<?php echo $post_id; ?>">
 			<?php endif; ?>
@@ -108,7 +111,7 @@ $country          = get_field_value( $meta, 'country' );
                     <div class="d-flex justify-content-end gap-1 align-items-center">
                         <p class="m-0 text-small text-danger">
                             Update without set new location <br>
-                            last update 06/29/2024 2:23 pm
+                            last update <?php echo $updated_zipcode ? date( 'm/d/Y g:i a', strtotime( $updated_zipcode ) ) : 'not set'; ?>
                         </p>
                         <button type="button" class="btn btn-outline-primary js-update-only-date">Update date</button>
                     </div>

@@ -23,7 +23,7 @@ export const moveDispatcher = (ajaxurl: string) => {
                 const userId = dispatcherOption.getAttribute('data-user-id') || '';
                 const userIdNumber = userId.replace('user_', '');
 
-                console.log(userIdNumber, userIdNumber);
+                console.log('userIdNumber', userIdNumber);
 
                 if (teamArray.includes(parseInt(userIdNumber, 10))) {
                     // eslint-disable-next-line no-param-reassign
@@ -80,7 +80,9 @@ export const moveDispatcher = (ajaxurl: string) => {
     function updateMoveToRadios() {
         const selectedMoveFrom = document.querySelector<HTMLInputElement>('input[name="move-from"]:checked');
         const selectedId = selectedMoveFrom ? selectedMoveFrom.value : null;
-        const selectedDispatchers = Array.from(document.querySelectorAll<HTMLInputElement>('input[name="dispatcher[]"]:checked')).map(cb => cb.value);
+        const selectedDispatchers = Array.from(
+            document.querySelectorAll<HTMLInputElement>('input[name="dispatcher[]"]:checked')
+        ).map((cb) => cb.value);
 
         moveToRadios.forEach((radio) => {
             if (radio.value === selectedId) {
@@ -99,6 +101,9 @@ export const moveDispatcher = (ajaxurl: string) => {
         const dispatcherSection = selectedDispatcherCheckbox.closest('.dispatcher-section');
         if (!dispatcherSection) return;
         const exclusionsDiv = dispatcherSection.querySelector<HTMLElement>('.weekend-exclusions');
+
+        console.log('exclusionsDiv', exclusionsDiv);
+
         if (exclusionsDiv) {
             exclusionsDiv.style.display = 'block';
         }

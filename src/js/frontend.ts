@@ -67,6 +67,7 @@ import {
     createDocumentBolActions,
     createDocumentInvoice,
     createDocumentInvoiceActions,
+    createDocumentSettlementSummaryActions,
 } from './components/document-create-money-check';
 import { driversActions, driverCoreInit } from './components/driver-core';
 import { initContactsHandler } from './components/contacts/contacts-init';
@@ -74,6 +75,9 @@ import { moveDispatcher } from './components/move-dispatcher';
 import { initialSearchDriver } from './components/search-driver/search-driver-core';
 import { driverHoldInit } from './components/driver-hold';
 import { holdSectionInit } from './components/common/hold-section';
+import { initCapabilitiesFilter } from './components/capabilities-filter';
+import './components/quick-copy';
+import './components/driver-popups';
 
 function ready() {
     console.log('ready');
@@ -136,6 +140,7 @@ function ready() {
     cleanUrlByFilterDriverSearch();
     driverHoldInit(urlAjax);
     driverCoreInit(urlAjax);
+    initCapabilitiesFilter();
 
     // DRIVER END
     additionalContactsInit();
@@ -173,6 +178,7 @@ function ready() {
     createDocumentInvoice();
     createDocumentInvoiceActions(urlAjax);
     createDocumentBolActions(urlAjax);
+    createDocumentSettlementSummaryActions(urlAjax);
     moveDispatcher(urlAjax);
     initContactsHandler(urlAjax);
     pinnedMessageInit(urlAjax);

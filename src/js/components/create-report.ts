@@ -983,6 +983,9 @@ const editShipperStopInit = () => {
                 const form = target.closest('.js-shipper');
 
                 if (form && card) {
+                    // Store the original position for reinsertion
+                    const originalStopType = card.getAttribute('data-stop-type');
+                    const originalPosition = Array.from(card.parentNode.children).indexOf(card);
                     card.classList.add('active');
                     const resultSearch = form.querySelector('.js-result-search');
                     const stopType = form.querySelector('.js-shipper-stop-type');
@@ -1009,6 +1012,8 @@ const editShipperStopInit = () => {
 
                     const templateInputEdit = `
                         <input type="hidden" class="js-full-address" data-current-address="${currentAddress.value}" data-short-address="${currentShortAddress.value}" name="shipper_id" value="${currentID.value}">
+                        <input type="hidden" class="js-original-stop-type" name="original_stop_type" value="${originalStopType}">
+                        <input type="hidden" class="js-original-position" name="original_position" value="${originalPosition}">
                     `;
 
                     if (!resultSearch) return;
@@ -1151,7 +1156,7 @@ export const addShipperPointInit = () => {
                     }
 
                     const template = `
-                <div class="row js-current-shipper card-shipper">
+                <div class="row js-current-shipper stopTypeValue card-shipper" data-stop-type="${stopTypeValue}">
                     <div class="d-none">
                         <input type="hidden" class="js-current-shipper_address_id" name="${stopTypeValue}_address_id[]" value="${addressValueID}" >
                         <input type="hidden" class="js-current-shipper_address" name="${stopTypeValue}_address[]" value="${addressValueFullAddrres}" >
@@ -1192,10 +1197,77 @@ export const addShipperPointInit = () => {
                     </div>
                 </div>
                 `;
-                    if (stopTypeValue === 'pick_up_location') {
-                        shipperContacts.innerHTML = template + shipperContacts.innerHTML;
+                    // Check if this is an edit operation
+                    const originalStopType = form.querySelector('.js-original-stop-type')?.value;
+                    const originalPosition = form.querySelector('.js-original-position')?.value;
+                    
+                    if (originalStopType && originalPosition !== undefined) {
+                        // This is an edit - insert at the original position within the same type group
+                        const stopTypeElements = Array.from(shipperContacts.querySelectorAll(`.stopTypeValue[data-stop-type="${originalStopType}"]`)) as HTMLElement[];
+                        const targetPosition = Math.min(parseInt(originalPosition), stopTypeElements.length);
+                        
+                        if (stopTypeElements.length > 0) {
+                            // Insert at the correct position within the same type group
+                            if (targetPosition === 0) {
+                                // Insert at the beginning of the type group
+                                stopTypeElements[0].insertAdjacentHTML('beforebegin', template);
+                            } else if (targetPosition >= stopTypeElements.length) {
+                                // Insert at the end of the type group
+                                stopTypeElements[stopTypeElements.length - 1].insertAdjacentHTML('afterend', template);
+                            } else {
+                                // Insert at the specific position
+                                stopTypeElements[targetPosition].insertAdjacentHTML('beforebegin', template);
+                            }
+                        } else {
+                            // No elements of this type, use normal insertion logic
+                            if (stopTypeValue === 'pick_up_location') {
+                                const firstDeliveryElement = shipperContacts.querySelector('.stopTypeValue[data-stop-type="delivery_location"]');
+                                if (firstDeliveryElement) {
+                                    firstDeliveryElement.insertAdjacentHTML('beforebegin', template);
+                                } else {
+                                    shipperContacts.innerHTML += template;
+                                }
+                            } else {
+                                shipperContacts.innerHTML += template;
+                            }
+                        }
                     } else {
-                        shipperContacts.innerHTML += template;
+                        // This is a new element - use normal insertion logic
+                        if (stopTypeValue === 'pick_up_location') {
+                            // Find the last pick_up_location element to insert after it
+                            const allElements = Array.from(shipperContacts.querySelectorAll('.js-current-shipper')) as HTMLElement[];
+                            let lastPickUpIndex = -1;
+                            
+                            console.log('All elements:', allElements.length);
+                            console.log('Container children:', shipperContacts.children.length);
+                            
+                            // Find the last pick_up_location element
+                            for (let i = allElements.length - 1; i >= 0; i--) {
+                                const typeInput = allElements[i].querySelector('input[name$="_type[]"]') as HTMLInputElement;
+                                const elementType = typeInput ? typeInput.value : null;
+                                console.log(`Element ${i}:`, elementType);
+                                if (elementType === 'pick_up_location') {
+                                    lastPickUpIndex = i;
+                                    console.log('Found last pick_up_location at index:', i);
+                                    break;
+                                }
+                            }
+                            
+                            console.log('Last pick up index:', lastPickUpIndex);
+                            
+                            if (lastPickUpIndex >= 0 && allElements[lastPickUpIndex]) {
+                                // Insert after the last pick_up_location
+                                console.log('Inserting after element:', allElements[lastPickUpIndex]);
+                                allElements[lastPickUpIndex].insertAdjacentHTML('afterend', template);
+                            } else {
+                                // If no pick_up_location elements, add to the beginning
+                                console.log('No pick_up_location found, adding to beginning');
+                                shipperContacts.insertAdjacentHTML('afterbegin', template);
+                            }
+                        } else {
+                            // For delivery_location, always add to the end
+                            shipperContacts.innerHTML += template;
+                        }
                     }
 
                     address.remove();

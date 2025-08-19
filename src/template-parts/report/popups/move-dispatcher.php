@@ -2,6 +2,8 @@
 $title             = $args[ 'title' ];
 $users             = $args[ 'users' ];
 $dispatchers_users = $args[ 'dispatchers_users' ];
+$weekends          = isset( $users[ 'weekends' ] ) ? $users[ 'weekends' ] : [];
+
 
 $exclude_users  = get_field( 'exclude_users_for_move', get_the_ID() );
 $users_tracking = $users[ 'tracking_move' ];
@@ -14,6 +16,12 @@ $filtered = array_filter( $users_tracking, function( $user ) use ( $exclude_user
 
 // Если нужен обычный индексированный массив:
 $filtered = array_values( $filtered );
+
+$weekends_add      = array_unique( array_merge( $filtered, $weekends ), SORT_REGULAR );
+$weekends_filtered = array_filter( $weekends_add, function( $user ) use ( $exclude_users ) {
+	return ! in_array( (int) $user[ 'id' ], $exclude_users, true );
+} );
+
 ?>
 
 
@@ -35,12 +43,12 @@ $filtered = array_values( $filtered );
                         <div class="tracking-statistics__move-container w-50">
                             <h4>From</h4>
                             <div class="d-flex gap-1 flex-column dispatcher-section">
-								<?php foreach ( $filtered as $user ) : ?>
+								<?php foreach ( $weekends_filtered as $user ) : ?>
                                     <label class="dispatcher-option">
                                         <input type="radio" name="move-from"
                                                value="<?php echo esc_attr( $user[ 'id' ] ); ?>"
-                                               data-team="<?php echo esc_attr( json_encode( isset( $user[ 'my_team' ] )
-											       ? $user[ 'my_team' ] : array() ) ); ?>">
+                                               data-team="<?php echo esc_attr( json_encode( isset( $user[ 'my_team_without_weekends' ] )
+											       ? $user[ 'my_team_without_weekends' ] : array() ) ); ?>">
                                         <span><?php echo esc_html( $user[ 'name' ] ); ?></span>
                                     </label>
 								<?php endforeach; ?>
@@ -69,10 +77,10 @@ $filtered = array_values( $filtered );
                                            data-user-id="<?php echo esc_attr( $user[ 'id' ] ); ?>">
                                         <input type="checkbox" name="dispatcher[]"
                                                value="<?php echo esc_attr( $user[ 'id' ] ); ?>">
-										<?php echo esc_html( $user[ 'name' ] ); ?>
+										<?php echo esc_html( $user[ 'fullname' ] ); ?>
                                     </label>
                                     <div class="weekend-exclusions mt-2" style="display: none;">
-                                        <h6 class="mb-2">Exclude <?php echo esc_html( $user[ 'name' ] ); ?> for certain
+                                        <h6 class="mb-2">Exclude <?php echo esc_html( $user[ 'fullname' ] ); ?> for certain
                                             days: </h6>
 										<?php
 										$days              = array(
@@ -84,10 +92,10 @@ $filtered = array_values( $filtered );
 											'saturday'  => 'Saturday',
 											'sunday'    => 'Sunday'
 										);
-										$current_user_id   = str_replace( 'user_', '', $user[ 'id' ] );
+										$current_user_id   = $user[ 'id' ];
+                                        $user[ 'id' ] = 'user_' . $current_user_id;
 										
 										echo '<div class="d-flex gap-2 flex-wrap">';
-										
 										foreach ( $days as $day_key => $day_name ) :
 											$exclude_field = 'exclude_' . $day_key;
 											$exclude_value = get_field( $exclude_field, 'user_' . $user[ 'id' ] );

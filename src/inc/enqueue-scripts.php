@@ -45,7 +45,8 @@ function px_site_scripts() {
 	$url_pelias                 = get_field_value( $global_options, 'url_pelias' );
 	$url_ors                    = get_field_value( $global_options, 'url_ors' );
 	$geocoder                   = get_field_value( $global_options, 'use_geocoder' );
-	
+	$add_new_driver             = get_field_value( $global_options, 'add_new_driver' );
+
 	$vars = array(
 		'ajax_url'                   => admin_url( 'admin-ajax.php' ),
 		'theme_path'                 => get_stylesheet_directory_uri(),
@@ -58,6 +59,7 @@ function px_site_scripts() {
 		'url_pelias'                 => $url_pelias,
 		'url_ors'                    => $url_ors,
 		'geocoder'                   => $geocoder,
+		'add_new_load_url'             => $add_new_driver,
 	);
 	
 	wp_localize_script( 'frontend_js', 'var_from_php', $vars );

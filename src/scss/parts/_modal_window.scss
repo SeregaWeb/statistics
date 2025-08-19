@@ -26,6 +26,8 @@ html {
     display: block;
 }
 
+
+
 .popup {
     top: 0;
     left: 0;
@@ -37,6 +39,12 @@ html {
     overflow-x: hidden;
     overflow-y: scroll;
     padding: 0 0 120px;
+
+    &.popup-active {
+        display: block !important;
+        opacity: 1 !important;
+        visibility: visible !important;
+    }
 
     &-container {
         background: #fff;
@@ -81,6 +89,11 @@ html {
         svg {
             pointer-events: none;
         }
+    }
+
+    &-content {
+        position: relative;
+        z-index: 2;
     }
     &__btn-close {
         background: url(data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzQiIGhlaWdodD0iMzQiIHZpZXdCb3g9IjAgMCAzNCAzNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48Y2lyY2xlIGN4PSIxNyIgY3k9IjE3IiByPSIxNyIgZmlsbD0iIzkyNzhGQiIvPjxsaW5lIHkxPSItMS4wMjI3MyIgeDI9IjE1LjcwODciIHkyPSItMS4wMjI3MyIgdHJhbnNmb3JtPSJtYXRyaXgoMC43MTAwMDMgMC43MDQxOTkgLTAuNzEwMDAzIDAuNzA0MTk5IDEwLjkyMzggMTIuNTM1NSkiIHN0cm9rZT0iI0ZGRkNFRCIgc3Ryb2tlLXdpZHRoPSIyLjA0NTQ1Ii8+PHBhdGggZD0iTTIyLjA3NjIgMTJMMTAuOTIyOSAyMy4wNjIxIiBzdHJva2U9IiNGRkZDRUQiIHN0cm9rZS13aWR0aD0iMi4wNDU0NSIvPjwvc3ZnPg==) center center no-repeat;

@@ -76,11 +76,12 @@ import { initialSearchDriver } from './components/search-driver/search-driver-co
 import { driverHoldInit } from './components/driver-hold';
 import { holdSectionInit } from './components/common/hold-section';
 import { initCapabilitiesFilter } from './components/capabilities-filter';
+import { initQuickStatusUpdate } from './components/quick-status-update';
 import './components/quick-copy';
 import './components/driver-popups';
 
 function ready() {
-    console.log('ready');
+    console.log('ready'); 
     // @ts-ignore
     const urlAjax = var_from_php.ajax_url;
     // @ts-ignore
@@ -97,7 +98,7 @@ function ready() {
 
     const useServices = {
         Odysseia: linkOdysseia,
-        Endurance: linkEndurance,
+        Endurance: linkEndurance, 
         Martlet: linkMartlet,
     };
 
@@ -141,6 +142,7 @@ function ready() {
     driverHoldInit(urlAjax);
     driverCoreInit(urlAjax);
     initCapabilitiesFilter();
+    initQuickStatusUpdate(urlAjax);
 
     // DRIVER END
     additionalContactsInit();
@@ -186,11 +188,32 @@ function ready() {
 
     applyZipCodeMask('.js-zip-code-mask');
 
+    // Remove preloader
     const preloaders = document.querySelectorAll('.js-preloader');
     preloaders &&
         preloaders.forEach((item) => {
             item.remove();
         });
+    
+    // Additional check for preloader removal (in case it appears later)
+    setTimeout(() => {
+        const delayedPreloaders = document.querySelectorAll('.js-preloader');
+        delayedPreloaders &&
+            delayedPreloaders.forEach((item) => {
+                item.remove();
+            });
+    }, 100);
+    
+    // Extra check for API monitor page specifically
+    if (document.body.classList.contains('page-drivers-api-monitor')) {
+        setTimeout(() => {
+            const apiPreloaders = document.querySelectorAll('.js-preloader');
+            apiPreloaders &&
+                apiPreloaders.forEach((item) => {
+                    item.remove();
+                });
+        }, 200);
+    }
 }
 
 window.document.addEventListener('DOMContentLoaded', ready);

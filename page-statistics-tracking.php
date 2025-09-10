@@ -67,9 +67,10 @@ $items = $TMSReports->get_table_items_tracking_statistics( $office_dispatcher );
 // Get users for statistics
 $users = $TMSReports->get_tracking_users_for_statistics( '', $office_dispatcher );
 
+
 // Get project and dispatchers with validation
-$project           = isset( $TMSReports->project ) ? $TMSReports->project : '';
-$dispatchers       = isset( $items[ 'dispatchers' ] ) ? $items[ 'dispatchers' ] : array();
+$project     = isset( $TMSReports->project ) ? $TMSReports->project : '';
+$dispatchers = isset( $items[ 'dispatchers' ] ) ? $items[ 'dispatchers' ] : array();
 
 $dispatchers_users = $TMSStatistics->get_dispatchers( $office_dispatcher, false );
 
@@ -200,11 +201,13 @@ $dispatchers_users = $TMSStatistics->get_dispatchers( $office_dispatcher, false 
                         <hr>
 
                         <div class="tracking-statistics__wrapper align-items-start">
-							<?php if ( isset( $users[ 'tracking' ] ) && is_array( $users[ 'tracking' ] ) ) : ?>
+							<?php
+							
+							if ( isset( $users[ 'tracking' ] ) && is_array( $users[ 'tracking' ] ) ) : ?>
 								<?php foreach ( $users[ 'tracking' ] as $user ) : ?>
 									<?php
 									$user_stats = $TMSReports->get_total_by_tracking_team( $user, $items );
-									
+//									var_dump( $user, $items );
 									echo get_template_part( TEMPLATE_PATH . 'common/card', 'statistics-tracking', array(
 										'user'       => $user,
 										'user_stats' => $user_stats,

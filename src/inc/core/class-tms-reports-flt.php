@@ -294,6 +294,9 @@ class TMSReportsFlt extends TMSReportsHelper {
 			LEFT JOIN $table_meta AS driver_rate
 				ON main.id = driver_rate.post_id
 				AND driver_rate.meta_key = 'driver_rate'
+			LEFT JOIN $table_meta AS second_driver_rate
+				ON main.id = second_driver_rate.post_id
+				AND second_driver_rate.meta_key = 'second_driver_rate'
 			LEFT JOIN $table_meta AS source
 				ON main.id = source.post_id
 				AND source.meta_key = 'source'
@@ -344,7 +347,13 @@ class TMSReportsFlt extends TMSReportsHelper {
 		}
 		
 		if ( isset( $args[ 'exclude_empty_rate' ] ) && $args[ 'exclude_empty_rate' ] ) {
-			$where_conditions[] = "driver_rate.meta_value IS NOT NULL AND driver_rate.meta_value != '' AND CAST(driver_rate.meta_value AS DECIMAL) > 0";
+			// Exclude loads where both driver rates are empty, null, or 0
+			// Include loads where at least one driver has a valid rate
+			$where_conditions[] = "(
+				(driver_rate.meta_value IS NOT NULL AND driver_rate.meta_value != '' AND CAST(driver_rate.meta_value AS DECIMAL) > 0)
+				OR 
+				(second_driver_rate.meta_value IS NOT NULL AND second_driver_rate.meta_value != '' AND CAST(second_driver_rate.meta_value AS DECIMAL) > 0)
+			)";
 		}
 		
 		if ( isset( $args[ 'ar_problem' ] ) && $args[ 'ar_problem' ] ) {

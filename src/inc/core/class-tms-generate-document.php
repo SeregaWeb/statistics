@@ -70,12 +70,18 @@ class TMSGenerateDocument extends TMSReports {
 	
 	public function init() {
 		$this->init_ajax();
+		$this->create_settlement_summary_table();
+		$this->create_parsing_progress_table();
 	}
 	
 	function init_ajax() {
 		add_action( 'wp_ajax_generate_invoice', array( $this, 'generate_invoice' ) );
 		add_action( 'wp_ajax_generate_bol', array( $this, 'generate_bol' ) );
 		add_action( 'wp_ajax_generate_settlement_summary', array( $this, 'generate_settlement_summary' ) );
+		add_action( 'wp_ajax_parse_settlement_csv', array( $this, 'ajax_parse_settlement_csv' ) );
+		add_action( 'wp_ajax_get_settlement_stats', array( $this, 'ajax_get_settlement_stats' ) );
+		add_action( 'wp_ajax_get_settlement_progress', array( $this, 'ajax_get_settlement_progress' ) );
+		add_action( 'wp_ajax_clear_settlement_data', array( $this, 'ajax_clear_settlement_data' ) );
 	}
 	
 	function generate_invoice() {
@@ -2214,5 +2220,1142 @@ class TMSGenerateDocument extends TMSReports {
         </table>
 		<?php
 		return ob_get_clean();
+	}
+	
+	/**
+	 * Create optimized settlement summary table for large datasets
+	 * Optimized for 1M+ records with proper indexing
+	 * @return void
+	 */
+	public function create_settlement_summary_table() {
+		global $wpdb;
+		
+		$table_name = $wpdb->prefix . 'settlement_summary';
+		$charset_collate = $wpdb->get_charset_collate();
+		
+		// Create table with optimized structure for large datasets (1M+ records)
+		$sql = "CREATE TABLE $table_name (
+			id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+			reference_number VARCHAR(50) NOT NULL,
+			shipper_location VARCHAR(255) NOT NULL,
+			receiver_location VARCHAR(255) NOT NULL,
+			id_driver VARCHAR(20) NOT NULL,
+			driver_name VARCHAR(255) NOT NULL,
+			driver_rate DECIMAL(10,2) NOT NULL DEFAULT 0.00,
+			load_status VARCHAR(50) NOT NULL DEFAULT 'Unknown',
+			pick_up_date DATE NULL,
+			delivery_date DATE NULL,
+			date_imported TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+			date_updated TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+			PRIMARY KEY (id),
+			INDEX idx_reference_number (reference_number),
+			INDEX idx_shipper_location (shipper_location),
+			INDEX idx_receiver_location (receiver_location),
+			INDEX idx_id_driver (id_driver),
+			INDEX idx_driver_name (driver_name),
+			INDEX idx_driver_rate (driver_rate),
+			INDEX idx_load_status (load_status),
+			INDEX idx_pick_up_date (pick_up_date),
+			INDEX idx_delivery_date (delivery_date),
+			INDEX idx_date_imported (date_imported),
+			INDEX idx_date_updated (date_updated),
+			INDEX idx_location_route (shipper_location, receiver_location),
+			INDEX idx_date_range (pick_up_date, delivery_date),
+			INDEX idx_status_date (load_status, pick_up_date),
+			INDEX idx_driver_date (id_driver, pick_up_date),
+			INDEX idx_rate_range (driver_rate),
+			INDEX idx_import_date (date_imported, date_updated),
+			INDEX idx_status_date_range (load_status, pick_up_date, delivery_date),
+			INDEX idx_driver_status_date (id_driver, load_status, pick_up_date),
+			INDEX idx_location_status (shipper_location, receiver_location, load_status),
+			INDEX idx_rate_status (driver_rate, load_status),
+			INDEX idx_date_status_rate (pick_up_date, load_status, driver_rate),
+			INDEX idx_import_status (date_imported, load_status)
+		) $charset_collate ENGINE=InnoDB;";
+		
+		dbDelta($sql);
+		
+		// Optimize table after creation
+		$wpdb->query("OPTIMIZE TABLE $table_name");
+		$wpdb->query("ANALYZE TABLE $table_name");
+	}
+	
+
+	
+	/**
+	 * Optimize settlement summary table for performance
+	 * Safe to run on existing data - no data loss
+	 * @return array
+	 */
+	public function optimize_settlement_summary_table() {
+		global $wpdb;
+		
+		$results = array();
+		$table_name = $wpdb->prefix . 'settlement_summary';
+		
+		$table_results = array(
+			'table' => $table_name,
+			'changes' => array()
+		);
+		
+		// Check if table exists
+		$table_exists = $wpdb->get_var("SHOW TABLES LIKE '$table_name'");
+		if (!$table_exists) {
+			$table_results['changes'][] = 'Table does not exist - creating new table';
+			$this->create_settlement_summary_table();
+			$results[] = $table_results;
+			return $results;
+		}
+		
+		// 1. Optimize table structure
+		$result = $wpdb->query("OPTIMIZE TABLE $table_name");
+		$table_results['changes'][] = 'Table optimized: ' . ($result ? 'success' : 'failed');
+		
+		// 2. Analyze table for better query planning
+		$result = $wpdb->query("ANALYZE TABLE $table_name");
+		$table_results['changes'][] = 'Table analyzed: ' . ($result ? 'success' : 'failed');
+		
+		// 3. Update table statistics
+		$result = $wpdb->query("ANALYZE TABLE $table_name UPDATE HISTOGRAM ON reference_number, shipper_location, receiver_location, unit_number_name, driver_rate, load_status, pick_up_date, delivery_date");
+		$table_results['changes'][] = 'Table statistics updated: ' . ($result ? 'success' : 'failed');
+		
+		$results[] = $table_results;
+		return $results;
+	}
+	
+	/**
+	 * Get table statistics for settlement summary
+	 * @return array
+	 */
+	public function get_settlement_summary_stats() {
+		global $wpdb;
+		
+		$table_name = $wpdb->prefix . 'settlement_summary';
+		
+		$stats = array(
+			'total_records' => 0,
+			'total_files' => 0,
+			'date_range' => array(),
+			'status_distribution' => array(),
+			'rate_statistics' => array(),
+			'top_drivers' => array(),
+			'top_routes' => array()
+		);
+		
+		// Check if table exists
+		$table_exists = $wpdb->get_var("SHOW TABLES LIKE '$table_name'");
+		if (!$table_exists) {
+			return $stats;
+		}
+		
+		// Total records
+		$stats['total_records'] = $wpdb->get_var("SELECT COUNT(*) FROM $table_name");
+		
+		// Total files - removed since file_source field doesn't exist
+		$stats['total_files'] = 0;
+		
+		// Date range
+		$date_range = $wpdb->get_row("SELECT MIN(pick_up_date) as min_date, MAX(pick_up_date) as max_date FROM $table_name");
+		$stats['date_range'] = array(
+			'min_date' => $date_range->min_date,
+			'max_date' => $date_range->max_date
+		);
+		
+		// Status distribution
+		$status_dist = $wpdb->get_results("SELECT load_status, COUNT(*) as count FROM $table_name GROUP BY load_status ORDER BY count DESC LIMIT 10");
+		$stats['status_distribution'] = $status_dist;
+		
+		// Rate statistics
+		$rate_stats = $wpdb->get_row("SELECT 
+			AVG(driver_rate) as avg_rate,
+			MIN(driver_rate) as min_rate,
+			MAX(driver_rate) as max_rate,
+			SUM(driver_rate) as total_rate
+		FROM $table_name WHERE driver_rate > 0");
+		$stats['rate_statistics'] = $rate_stats;
+		
+		// Top drivers
+		$top_drivers = $wpdb->get_results("SELECT unit_number_name, COUNT(*) as loads, SUM(driver_rate) as total_earnings 
+		FROM $table_name 
+		GROUP BY unit_number_name 
+		ORDER BY loads DESC 
+		LIMIT 10");
+		$stats['top_drivers'] = $top_drivers;
+		
+		// Top routes
+		$top_routes = $wpdb->get_results("SELECT 
+			shipper_location, 
+			receiver_location, 
+			COUNT(*) as loads, 
+			AVG(driver_rate) as avg_rate
+		FROM $table_name 
+		GROUP BY shipper_location, receiver_location 
+		ORDER BY loads DESC 
+		LIMIT 10");
+		$stats['top_routes'] = $top_routes;
+		
+		return $stats;
+	}
+	
+	/**
+	 * Import CSV data into settlement summary table
+	 * @param string $file_path Path to CSV file
+	 * @return array Import results
+	 */
+	public function import_settlement_summary_csv($file_path) {
+		global $wpdb;
+		
+		$results = array(
+			'total_rows' => 0,
+			'imported' => 0,
+			'skipped' => 0,
+			'errors' => array()
+		);
+		
+		$table_name = $wpdb->prefix . 'settlement_summary';
+		
+		// Check if table exists, create if not
+		$table_exists = $wpdb->get_var("SHOW TABLES LIKE '$table_name'");
+		if (!$table_exists) {
+			$this->create_settlement_summary_table();
+		}
+		
+		if (!file_exists($file_path)) {
+			$results['errors'][] = "File not found: $file_path";
+			return $results;
+		}
+		
+		// Read CSV file
+		$handle = fopen($file_path, 'r');
+		if (!$handle) {
+			$results['errors'][] = "Cannot open file: $file_path";
+			return $results;
+		}
+		
+		// Skip header row
+		$header = fgetcsv($handle);
+		$results['total_rows'] = 0;
+		
+		// Prepare batch insert
+		$batch_size = 1000;
+		$batch_data = array();
+		
+		while (($row = fgetcsv($handle)) !== false) {
+			$results['total_rows']++;
+			
+			// Skip empty rows
+			if (empty(array_filter($row))) {
+				$results['skipped']++;
+				continue;
+			}
+			
+			// Parse and validate data
+			$parsed_data = $this->parse_settlement_summary_row($row);
+			
+			if ($parsed_data === false) {
+				$results['skipped']++;
+				continue;
+			}
+			
+			$batch_data[] = $parsed_data;
+			
+			// Insert batch when it reaches the limit
+			if (count($batch_data) >= $batch_size) {
+				$batch_result = $this->insert_settlement_summary_batch($batch_data, $table_name);
+				$results['imported'] += $batch_result['imported'];
+				$results['skipped'] += $batch_result['skipped'];
+				$results['errors'] = array_merge($results['errors'], $batch_result['errors']);
+				$batch_data = array();
+			}
+		}
+		
+		// Insert remaining data
+		if (!empty($batch_data)) {
+			$batch_result = $this->insert_settlement_summary_batch($batch_data, $table_name);
+			$results['imported'] += $batch_result['imported'];
+			$results['skipped'] += $batch_result['skipped'];
+			$results['errors'] = array_merge($results['errors'], $batch_result['errors']);
+		}
+		
+		fclose($handle);
+		
+		// Optimize table after import
+		$wpdb->query("OPTIMIZE TABLE $table_name");
+		
+		return $results;
+	}
+	
+	/**
+	 * Parse a single row from CSV file
+	 * @param array $row CSV row data
+	 * @return array|false Parsed data or false if invalid
+	 */
+	private $column_mapping = null;
+	private $column_cache = array(); // Cache for column mappings by filename
+	
+	/**
+	 * Parse driver string to extract ID and name
+	 * @param string $driver_string String like "(2500) Fernando Cedeno"
+	 * @return array Array with 'id' and 'name' keys
+	 */
+	private function parse_driver_string($driver_string) {
+		$driver_string = trim($driver_string);
+		
+		// Debug: Log the driver string being parsed
+		static $debug_count = 0;
+		if ($debug_count < 10) {
+			error_log("Parsing driver string: '$driver_string'");
+			$debug_count++;
+		}
+		
+		// Pattern 1: Match "(number) name" with optional spaces (including space before closing bracket)
+		if (preg_match('/^\(\s*(\d+)\s*\)\s*(.+)$/', $driver_string, $matches)) {
+			$result = array(
+				'id' => trim($matches[1]),
+				'name' => trim($matches[2])
+			);
+			if ($debug_count <= 10) {
+				error_log("Driver parsed (pattern 1): " . json_encode($result));
+			}
+			return $result;
+		}
+		
+		// Pattern 2: Match "(( number ) name" with double brackets
+		if (preg_match('/^\(\s*\(\s*(\d+)\s*\)\s*(.+)$/', $driver_string, $matches)) {
+			$result = array(
+				'id' => trim($matches[1]),
+				'name' => trim($matches[2])
+			);
+			if ($debug_count <= 10) {
+				error_log("Driver parsed (pattern 2 - double brackets): " . json_encode($result));
+			}
+			return $result;
+		}
+		
+		// Pattern 3: Match "(number ) name" with space before closing bracket
+		if (preg_match('/^\(\s*(\d+)\s+\)\s*(.+)$/', $driver_string, $matches)) {
+			$result = array(
+				'id' => trim($matches[1]),
+				'name' => trim($matches[2])
+			);
+			if ($debug_count <= 10) {
+				error_log("Driver parsed (pattern 3 - space before bracket): " . json_encode($result));
+			}
+			return $result;
+		}
+		
+		// Pattern 3.5: Match "(number ) name" with space before closing bracket (more flexible)
+		if (preg_match('/^\(\s*(\d+)\s*\)\s*(.+)$/', $driver_string, $matches)) {
+			$result = array(
+				'id' => trim($matches[1]),
+				'name' => trim($matches[2])
+			);
+			if ($debug_count <= 10) {
+				error_log("Driver parsed (pattern 3.5 - flexible spaces): " . json_encode($result));
+			}
+			return $result;
+		}
+		
+		// Pattern 4: Match "number name" without brackets
+		if (preg_match('/^(\d+)\s+(.+)$/', $driver_string, $matches)) {
+			$result = array(
+				'id' => trim($matches[1]),
+				'name' => trim($matches[2])
+			);
+			if ($debug_count <= 10) {
+				error_log("Driver parsed (pattern 4 - no brackets): " . json_encode($result));
+			}
+			return $result;
+		}
+		
+		// If no pattern matches, return as is
+		$result = array(
+			'id' => '',
+			'name' => $driver_string
+		);
+		if ($debug_count <= 10) {
+			error_log("Driver parsed (fallback): " . json_encode($result));
+		}
+		return $result;
+	}
+	
+	private function parse_settlement_summary_row($row) {
+		// Expected columns: Reference number, Shipper location, Receiver location, Unit number & name, Driver rate, Load status, Pick Up Date, Delivery Date
+		if (count($row) < 8) {
+			return false;
+		}
+		
+		// Debug: Log the first few rows to understand the structure
+		static $debug_count = 0;
+		if ($debug_count < 3) {
+			error_log("CSV Row $debug_count: " . json_encode($row));
+			error_log("Parsing row $debug_count with mapping: " . json_encode($this->column_mapping));
+			error_log("Row data: " . json_encode($row));
+			$debug_count++;
+		}
+		
+		// Use column mapping if available
+		if ($this->column_mapping === null) {
+			error_log("Column mapping not set, using default positions");
+			return false;
+		}
+		
+		$reference_number = trim($row[$this->column_mapping['reference_number']]);
+		$shipper_location = trim($row[$this->column_mapping['shipper_location']]);
+		$receiver_location = trim($row[$this->column_mapping['receiver_location']]);
+		$unit_number_name = trim($row[$this->column_mapping['unit_number_name']]);
+		$driver_rate = trim($row[$this->column_mapping['driver_rate']]);
+		$pick_up_date = trim($row[$this->column_mapping['pick_up_date']]);
+		$delivery_date = trim($row[$this->column_mapping['delivery_date']]);
+		$load_status = trim($row[$this->column_mapping['load_status']]);
+		
+		// Parse driver string to extract ID and name
+		$driver_info = $this->parse_driver_string($unit_number_name);
+		$id_driver = $driver_info['id'];
+		$driver_name = $driver_info['name'];
+		
+		// Skip if essential data is missing
+		if (empty($reference_number) || empty($shipper_location) || empty($receiver_location)) {
+			// Debug: Log missing data
+			static $missing_debug_count = 0;
+			if ($missing_debug_count < 3) {
+				error_log("Missing essential data in row $missing_debug_count:");
+				error_log("Reference: '$reference_number', Shipper: '$shipper_location', Receiver: '$receiver_location'");
+				$missing_debug_count++;
+			}
+			return false;
+		}
+		
+		// Clean and format driver rate
+		$driver_rate = $this->clean_driver_rate($driver_rate);
+		
+		// Parse dates (can be null)
+		$pick_up_date = $this->parse_date($pick_up_date);
+		$delivery_date = $this->parse_date($delivery_date);
+		
+		return array(
+			'reference_number' => $reference_number,
+			'shipper_location' => $shipper_location,
+			'receiver_location' => $receiver_location,
+			'id_driver' => $id_driver,
+			'driver_name' => $driver_name,
+			'driver_rate' => $driver_rate,
+			'load_status' => $load_status ?: 'Unknown',
+			'pick_up_date' => $pick_up_date,
+			'delivery_date' => $delivery_date
+		);
+	}
+	
+	/**
+	 * Clean and format driver rate
+	 * @param string $rate Raw rate string
+	 * @return float Cleaned rate
+	 */
+	private function clean_driver_rate($rate) {
+		// Remove currency symbols, commas, and extra spaces
+		$rate = preg_replace('/[^\d.]/', '', $rate);
+		return floatval($rate);
+	}
+	
+	/**
+	 * Parse date string to MySQL format with error correction
+	 * Handles various date formats and common data entry errors
+	 * @param string $date_string Date string
+	 * @return string|null MySQL date format or null if invalid
+	 */
+	private function parse_date($date_string) {
+		// Return null if date is empty or whitespace only
+		if (empty(trim($date_string))) {
+			return null;
+		}
+		
+		// Clean the date string
+		$date_string = $this->clean_date_string($date_string);
+		
+		// If cleaning resulted in empty string, return null
+		if (empty($date_string)) {
+			return null;
+		}
+		
+		// Handle various date formats
+		$formats = array(
+			'm/d/Y', 'm/d/y', 'Y-m-d', 'd/m/Y', 'd/m/y'
+		);
+		
+		foreach ($formats as $format) {
+			$date = DateTime::createFromFormat($format, $date_string);
+			if ($date !== false) {
+				return $date->format('Y-m-d');
+			}
+		}
+		
+		// If no valid format found, return null
+		return null;
+	}
+	
+	/**
+	 * Clean date string by fixing common data entry errors
+	 * @param string $date_string Raw date string
+	 * @return string Cleaned date string
+	 */
+	private function clean_date_string($date_string) {
+		// Remove extra whitespace
+		$date_string = trim($date_string);
+		
+		// Replace multiple slashes with single slash
+		$date_string = preg_replace('/\/+/', '/', $date_string);
+		
+		// Replace dots with slashes (common error: 12.23.2024 -> 12/23/2024)
+		$date_string = preg_replace('/\./', '/', $date_string);
+		
+		// Split by slash
+		$parts = explode('/', $date_string);
+		
+		if (count($parts) !== 3) {
+			return '';
+		}
+		
+		$month = trim($parts[0]);
+		$day = trim($parts[1]);
+		$year = trim($parts[2]);
+		
+		// Fix month: if more than 2 digits, take only first 2
+		if (strlen($month) > 2) {
+			$month = substr($month, 0, 2);
+		}
+		
+		// Fix day: if more than 2 digits, take only first 2
+		if (strlen($day) > 2) {
+			$day = substr($day, 0, 2);
+		}
+		
+		// Fix year: if more than 4 digits, take only first 4
+		if (strlen($year) > 4) {
+			$year = substr($year, 0, 4);
+		}
+		
+		// Validate ranges
+		$month = intval($month);
+		$day = intval($day);
+		$year = intval($year);
+		
+		// Basic validation
+		if ($month < 1 || $month > 12) {
+			return '';
+		}
+		
+		if ($day < 1 || $day > 31) {
+			return '';
+		}
+		
+		if ($year < 1900 || $year > 2100) {
+			return '';
+		}
+		
+		// Format back to m/d/Y format
+		return sprintf('%02d/%02d/%04d', $month, $day, $year);
+	}
+	
+	/**
+	 * Insert batch of settlement summary data
+	 * @param array $batch_data Array of data to insert
+	 * @param string $table_name Table name
+	 * @return array Insert results
+	 */
+	private function insert_settlement_summary_batch($batch_data, $table_name) {
+		global $wpdb;
+		
+		$results = array(
+			'imported' => 0,
+			'skipped' => 0,
+			'errors' => array()
+		);
+		
+		// Use INSERT to handle all records (no unique constraint)
+		$sql = "INSERT INTO $table_name (
+			reference_number, shipper_location, receiver_location, id_driver, driver_name, 
+			driver_rate, load_status, pick_up_date, delivery_date
+		) VALUES ";
+		
+		$values = array();
+		$placeholders = array();
+		
+		foreach ($batch_data as $data) {
+			$placeholders[] = "(%s, %s, %s, %s, %s, %f, %s, %s, %s)";
+			$values[] = $data['reference_number'];
+			$values[] = $data['shipper_location'];
+			$values[] = $data['receiver_location'];
+			$values[] = $data['id_driver'];
+			$values[] = $data['driver_name'];
+			$values[] = $data['driver_rate'];
+			$values[] = $data['load_status'];
+			$values[] = $data['pick_up_date'] ?: null;
+			$values[] = $data['delivery_date'] ?: null;
+		}
+		
+		$sql .= implode(', ', $placeholders);
+		
+		$prepared_sql = $wpdb->prepare($sql, ...$values);
+		$result = $wpdb->query($prepared_sql);
+		
+		if ($result === false) {
+			$results['errors'][] = "Database error: " . $wpdb->last_error;
+		} else {
+			$results['imported'] = $result;
+		}
+		
+		return $results;
+	}
+	
+	/**
+	 * Test date parsing with various error cases
+	 * @return array Test results
+	 */
+	public function test_date_parsing() {
+		$test_cases = array(
+			'09//26/2024' => '09/26/2024',
+			'111/04/2024' => '11/04/2024',
+			'12.23.2024' => '12/23/2024',
+			'1/1/2024' => '01/01/2024',
+			'01/01/2024' => '01/01/2024',
+			'2024-01-01' => '2024-01-01',
+			'' => null,
+			'   ' => null,
+			'invalid' => null,
+			'99/99/2024' => null,
+			'13/01/2024' => null,
+			'01/32/2024' => null,
+			'01/01/1899' => null,
+			'01/01/2101' => null
+		);
+		
+		$results = array();
+		
+		foreach ($test_cases as $input => $expected) {
+			$result = $this->parse_date($input);
+			$results[] = array(
+				'input' => $input,
+				'expected' => $expected,
+				'result' => $result,
+				'passed' => ($result === $expected)
+			);
+		}
+		
+		return $results;
+	}
+	
+	/**
+	 * Analyze CSV headers and create column mapping
+	 * @param string $file_path Path to CSV file
+	 * @return array|false Column mapping or false if failed
+	 */
+	private function analyze_csv_headers($file_path) {
+		$filename = basename($file_path);
+		
+		// Check cache first
+		if (isset($this->column_cache[$filename])) {
+			error_log("Using cached column mapping for $filename: " . json_encode($this->column_cache[$filename]));
+			return $this->column_cache[$filename];
+		}
+		
+		if (!file_exists($file_path)) {
+			return false;
+		}
+		
+		$handle = fopen($file_path, 'r');
+		if (!$handle) {
+			return false;
+		}
+		
+		$header = fgetcsv($handle);
+		fclose($handle);
+		
+		if (!$header || count($header) < 8) {
+			return false;
+		}
+		
+		// Clean header values
+		$header = array_map(function($col) {
+			return strtolower(trim(str_replace(['"', "'"], '', $col)));
+		}, $header);
+		
+		error_log("CSV Headers for $filename: " . json_encode($header));
+		
+		$mapping = array();
+		
+		// Find columns by keywords
+		foreach ($header as $index => $column) {
+			$column_lower = strtolower($column);
+			
+			// Reference number
+			if (strpos($column_lower, 'reference') !== false || strpos($column_lower, 'ref') !== false) {
+				$mapping['reference_number'] = $index;
+			}
+			
+			// Shipper location
+			if (strpos($column_lower, 'shipper') !== false) {
+				$mapping['shipper_location'] = $index;
+			}
+			
+			// Receiver location
+			if (strpos($column_lower, 'receiver') !== false) {
+				$mapping['receiver_location'] = $index;
+			}
+			
+			// Unit number & name - more specific search
+			if (strpos($column_lower, 'unit number') !== false || strpos($column_lower, 'unit & name') !== false) {
+				$mapping['unit_number_name'] = $index;
+			}
+			
+			// Driver rate - more specific search
+			if (strpos($column_lower, 'driver rate') !== false || strpos($column_lower, 'rate') !== false) {
+				$mapping['driver_rate'] = $index;
+			}
+			
+			// Load status
+			if (strpos($column_lower, 'load status') !== false || strpos($column_lower, 'status') !== false) {
+				$mapping['load_status'] = $index;
+			}
+			
+			// Pick up date
+			if (strpos($column_lower, 'pick up') !== false || strpos($column_lower, 'pickup') !== false) {
+				$mapping['pick_up_date'] = $index;
+			}
+			
+			// Delivery date
+			if (strpos($column_lower, 'delivery') !== false) {
+				$mapping['delivery_date'] = $index;
+			}
+		}
+		
+		// Check if all required columns were found
+		$required_columns = ['reference_number', 'shipper_location', 'receiver_location', 'unit_number_name', 'driver_rate', 'load_status', 'pick_up_date', 'delivery_date'];
+		$missing_columns = array_diff($required_columns, array_keys($mapping));
+		
+		if (!empty($missing_columns)) {
+			error_log("Missing columns for $filename: " . json_encode($missing_columns));
+			error_log("Found mapping for $filename: " . json_encode($mapping));
+			return false;
+		}
+		
+		// Cache the mapping
+		$this->column_cache[$filename] = $mapping;
+		error_log("Column mapping created and cached for $filename: " . json_encode($mapping));
+		return $mapping;
+	}
+	
+	/**
+	 * Parse CSV file in batches with progress tracking
+	 * @param string $file_path Path to CSV file
+	 * @param int $offset Starting row offset
+	 * @param int $limit Number of rows to process
+	 * @return array Processing results
+	 */
+	public function parse_settlement_csv_batch($file_path, $offset = 0, $limit = 500) {
+		global $wpdb;
+		
+		$results = array(
+			'processed' => 0,
+			'imported' => 0,
+			'skipped' => 0,
+			'errors' => array(),
+			'has_more' => false,
+			'total_rows' => 0,
+			'current_offset' => $offset
+		);
+		
+		$table_name = $wpdb->prefix . 'settlement_summary';
+		
+		// Check if table exists, create if not
+		$table_exists = $wpdb->get_var("SHOW TABLES LIKE '$table_name'");
+		if (!$table_exists) {
+			$this->create_settlement_summary_table();
+		}
+		
+		if (!file_exists($file_path)) {
+			$results['errors'][] = "File not found: $file_path";
+			return $results;
+		}
+		
+		// Get column mapping (will use cache if available)
+		$this->column_mapping = $this->analyze_csv_headers($file_path);
+		if ($this->column_mapping === false) {
+			$results['errors'][] = "Failed to analyze CSV headers. Please check file format.";
+			return $results;
+		}
+		
+		// Count total rows first
+		$handle = fopen($file_path, 'r');
+		if (!$handle) {
+			$results['errors'][] = "Cannot open file: $file_path";
+			return $results;
+		}
+		
+		// Skip header and count rows
+		$header = fgetcsv($handle);
+		$total_rows = 0;
+		while (fgetcsv($handle) !== false) {
+			$total_rows++;
+		}
+		fclose($handle);
+		
+		$results['total_rows'] = $total_rows;
+		
+		// Check if we have more rows to process
+		$results['has_more'] = ($offset + $limit) < $total_rows;
+		
+		// Process batch
+		$handle = fopen($file_path, 'r');
+		$header = fgetcsv($handle);
+		
+		// Skip to offset
+		for ($i = 0; $i < $offset; $i++) {
+			fgetcsv($handle);
+		}
+		
+		$batch_data = array();
+		$processed = 0;
+		
+		while (($row = fgetcsv($handle)) !== false && $processed < $limit) {
+			$processed++;
+			$results['processed']++;
+			
+			// Skip empty rows
+			if (empty(array_filter($row))) {
+				$results['skipped']++;
+				continue;
+			}
+			
+			// Parse and validate data
+			$parsed_data = $this->parse_settlement_summary_row($row);
+			
+			if ($parsed_data === false) {
+				$results['skipped']++;
+				continue;
+			}
+			
+			$batch_data[] = $parsed_data;
+			
+			// Insert batch when it reaches 100 records
+			if (count($batch_data) >= 100) {
+				$batch_result = $this->insert_settlement_summary_batch($batch_data, $table_name);
+				$results['imported'] += $batch_result['imported'];
+				$results['skipped'] += $batch_result['skipped'];
+				$results['errors'] = array_merge($results['errors'], $batch_result['errors']);
+				$batch_data = array();
+			}
+		}
+		
+		// Insert remaining data
+		if (!empty($batch_data)) {
+			$batch_result = $this->insert_settlement_summary_batch($batch_data, $table_name);
+			$results['imported'] += $batch_result['imported'];
+			$results['skipped'] += $batch_result['skipped'];
+			$results['errors'] = array_merge($results['errors'], $batch_result['errors']);
+		}
+		
+		fclose($handle);
+		
+		// Update progress in database
+		$this->update_parsing_progress($file_path, $offset + $processed, $total_rows);
+		
+		return $results;
+	}
+	
+	/**
+	 * Get parsing progress for a specific file
+	 * @param string $file_path Path to CSV file
+	 * @return array Progress information
+	 */
+	public function get_file_parsing_progress($file_path) {
+		global $wpdb;
+		
+		$table_name = $wpdb->prefix . 'settlement_parsing_progress';
+		
+		// Create progress table if not exists
+		$this->create_parsing_progress_table();
+		
+		$file_hash = md5($file_path);
+		$progress = $wpdb->get_row($wpdb->prepare(
+			"SELECT * FROM $table_name WHERE file_hash = %s",
+			$file_hash
+		), ARRAY_A);
+		
+		if (!$progress) {
+			return array(
+				'file_path' => $file_path,
+				'processed_rows' => 0,
+				'total_rows' => 0,
+				'percentage' => 0,
+				'status' => 'not_started'
+			);
+		}
+		
+		$percentage = $progress['total_rows'] > 0 ? 
+			round(($progress['processed_rows'] / $progress['total_rows']) * 100, 2) : 0;
+		
+		return array(
+			'file_path' => $file_path,
+			'processed_rows' => intval($progress['processed_rows']),
+			'total_rows' => intval($progress['total_rows']),
+			'percentage' => $percentage,
+			'status' => $progress['status'],
+			'last_updated' => $progress['last_updated']
+		);
+	}
+	
+	/**
+	 * Update parsing progress for a file
+	 * @param string $file_path Path to CSV file
+	 * @param int $processed_rows Number of processed rows
+	 * @param int $total_rows Total number of rows
+	 */
+	private function update_parsing_progress($file_path, $processed_rows, $total_rows) {
+		global $wpdb;
+		
+		$table_name = $wpdb->prefix . 'settlement_parsing_progress';
+		$file_hash = md5($file_path);
+		
+		$status = ($processed_rows >= $total_rows) ? 'completed' : 'in_progress';
+		
+		$wpdb->replace($table_name, array(
+			'file_hash' => $file_hash,
+			'file_path' => $file_path,
+			'processed_rows' => $processed_rows,
+			'total_rows' => $total_rows,
+			'status' => $status,
+			'last_updated' => current_time('mysql')
+		));
+	}
+	
+	/**
+	 * Create progress tracking table
+	 */
+	private function create_parsing_progress_table() {
+		global $wpdb;
+		
+		$table_name = $wpdb->prefix . 'settlement_parsing_progress';
+		$charset_collate = $wpdb->get_charset_collate();
+		
+		$sql = "CREATE TABLE $table_name (
+			id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+			file_hash VARCHAR(32) NOT NULL,
+			file_path VARCHAR(500) NOT NULL,
+			processed_rows INT UNSIGNED NOT NULL DEFAULT 0,
+			total_rows INT UNSIGNED NOT NULL DEFAULT 0,
+			status VARCHAR(20) NOT NULL DEFAULT 'not_started',
+			last_updated TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+			PRIMARY KEY (id),
+			UNIQUE KEY file_hash (file_hash),
+			INDEX idx_status (status),
+			INDEX idx_last_updated (last_updated)
+		) $charset_collate;";
+		
+		dbDelta($sql);
+	}
+	
+	/**
+	 * Get list of available CSV files
+	 * @return array List of CSV files
+	 */
+	public function get_available_csv_files() {
+		$files = array();
+		$directory = THEME_DIR . '/summary-files/';
+		
+		if (!is_dir($directory)) {
+			return $files;
+		}
+		
+		$csv_files = glob($directory . '*.csv');
+		
+		foreach ($csv_files as $file) {
+			$file_info = array(
+				'path' => $file,
+				'name' => basename($file),
+				'size' => filesize($file),
+				'modified' => filemtime($file),
+				'progress' => $this->get_file_parsing_progress($file)
+			);
+			
+			$files[] = $file_info;
+		}
+		
+		return $files;
+	}
+	
+	/**
+	 * AJAX handler for parsing CSV files
+	 */
+	public function ajax_parse_settlement_csv() {
+		if (!defined('DOING_AJAX') || !DOING_AJAX) {
+			wp_die();
+		}
+		
+		// Check if user is logged in
+		if (!is_user_logged_in()) {
+			wp_send_json_error('User not logged in');
+		}
+		
+		// Debug: Log the received nonce
+		error_log('Received nonce: ' . (isset($_POST['nonce']) ? $_POST['nonce'] : 'NOT SET'));
+		error_log('Expected nonce action: settlement_csv_nonce');
+		error_log('User ID: ' . get_current_user_id());
+		
+		// Check nonce for security
+		if (!wp_verify_nonce($_POST['nonce'], 'settlement_csv_nonce')) {
+			wp_send_json_error('Security check failed - Nonce verification failed');
+		}
+		
+		$file_path = sanitize_text_field($_POST['file_path']);
+		$offset = isset($_POST['offset']) ? intval($_POST['offset']) : 0;
+		$limit = isset($_POST['limit']) ? intval($_POST['limit']) : 500;
+		
+		if (empty($file_path) || !file_exists($file_path)) {
+			wp_send_json_error('Invalid file path');
+		}
+		
+		try {
+			error_log("Starting batch processing: file=$file_path, offset=$offset, limit=$limit");
+			$result = $this->parse_settlement_csv_batch($file_path, $offset, $limit);
+			error_log("Batch processing completed: " . json_encode($result));
+			wp_send_json_success($result);
+		} catch (Exception $e) {
+			error_log("Error in batch processing: " . $e->getMessage());
+			wp_send_json_error('Error parsing file: ' . $e->getMessage());
+		}
+	}
+	
+	/**
+	 * AJAX handler for getting settlement statistics
+	 */
+	public function ajax_get_settlement_stats() {
+		if (!defined('DOING_AJAX') || !DOING_AJAX) {
+			wp_die();
+		}
+		
+		// Check nonce for security
+		if (!wp_verify_nonce($_POST['nonce'], 'settlement_csv_nonce')) {
+			wp_send_json_error('Security check failed');
+		}
+		
+		try {
+			global $wpdb;
+			$table_name = $wpdb->prefix . 'settlement_summary';
+			
+			// Check if table exists
+			$table_exists = $wpdb->get_var("SHOW TABLES LIKE '$table_name'") == $table_name;
+			
+			if (!$table_exists) {
+				// Create table if it doesn't exist
+				$this->create_settlement_summary_table();
+			}
+			
+			// Get total records
+			$total_records = $wpdb->get_var("SELECT COUNT(*) FROM $table_name");
+			$total_records = $total_records ? intval($total_records) : 0;
+			
+			// Get date range
+			$date_range = $wpdb->get_row("
+				SELECT 
+					MIN(pick_up_date) as min_date,
+					MAX(pick_up_date) as max_date
+				FROM $table_name 
+				WHERE pick_up_date IS NOT NULL AND pick_up_date != '0000-00-00'
+			");
+			
+			// Get load status distribution (exclude dates)
+			$load_status = $wpdb->get_results("
+				SELECT load_status, COUNT(*) as count
+				FROM $table_name 
+				WHERE load_status IS NOT NULL 
+				AND load_status != ''
+				AND load_status NOT REGEXP '^[0-9]{1,2}/[0-9]{1,2}/[0-9]{4}$'
+				AND load_status NOT REGEXP '^[0-9]{4}-[0-9]{2}-[0-9]{2}$'
+				GROUP BY load_status
+				ORDER BY count DESC
+			");
+			
+			$stats = array(
+				'total_records' => $total_records,
+				'date_range' => array(
+					'min_date' => $date_range ? $date_range->min_date : null,
+					'max_date' => $date_range ? $date_range->max_date : null
+				),
+				'status_distribution' => $load_status ? $load_status : array()
+			);
+			
+			wp_send_json_success($stats);
+		} catch (Exception $e) {
+			wp_send_json_error('Error getting statistics: ' . $e->getMessage());
+		}
+	}
+	
+	/**
+	 * AJAX handler for clearing settlement data
+	 */
+	public function ajax_clear_settlement_data() {
+		if (!defined('DOING_AJAX') || !DOING_AJAX) {
+			wp_die();
+		}
+		
+		// Check if user is logged in
+		if (!is_user_logged_in()) {
+			wp_send_json_error('User not logged in');
+		}
+		
+		// Check nonce for security
+		if (!wp_verify_nonce($_POST['nonce'], 'settlement_csv_nonce')) {
+			wp_send_json_error('Security check failed');
+		}
+		
+		try {
+			global $wpdb;
+			$table_name = $wpdb->prefix . 'settlement_summary';
+			
+			// Clear the table
+			$wpdb->query("TRUNCATE TABLE $table_name");
+			
+			// Clear progress table
+			$progress_table = $wpdb->prefix . 'settlement_parsing_progress';
+			$wpdb->query("TRUNCATE TABLE $progress_table");
+			
+					// Reset column mapping and cache
+		$this->column_mapping = null;
+		$this->column_cache = array();
+		
+		// Clear column cache for all files
+		$this->column_cache = array();
+			
+			wp_send_json_success('Data cleared successfully');
+		} catch (Exception $e) {
+			wp_send_json_error('Error clearing data: ' . $e->getMessage());
+		}
+	}
+	
+	/**
+	 * AJAX handler for getting parsing progress
+	 */
+	public function ajax_get_settlement_progress() {
+		if (!defined('DOING_AJAX') || !DOING_AJAX) {
+			wp_die();
+		}
+		
+		// Check nonce for security
+		if (!wp_verify_nonce($_POST['nonce'], 'settlement_csv_nonce')) {
+			wp_send_json_error('Security check failed');
+		}
+		
+		$file_path = sanitize_text_field($_POST['file_path']);
+		
+		if (empty($file_path)) {
+			wp_send_json_error('Invalid file path');
+		}
+		
+		try {
+			$progress = $this->get_file_parsing_progress($file_path);
+			wp_send_json_success($progress);
+		} catch (Exception $e) {
+			wp_send_json_error('Error getting progress: ' . $e->getMessage());
+		}
 	}
 }

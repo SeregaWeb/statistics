@@ -12,7 +12,7 @@ $add_new_load = get_field_value( $global_options, 'add_new_driver' );
 
 // Get all drivers on hold using an optimized method
 $hold_drivers = $drivers->get_drivers_on_hold();
-error_log( 'Template received drivers count: ' . count( $hold_drivers ) );
+
 if ( ! empty( $hold_drivers ) ) :
 	?>
     <div class="hold-drivers-section mb-4">
@@ -67,7 +67,8 @@ if ( ! empty( $hold_drivers ) ) :
 					$meta = $driver[ 'meta_data' ];
 					$driver_name = get_field_value( $meta, 'driver_name' );
 					$languages = get_field_value( $meta, 'languages' );
-					$driver_phone = get_field_value( $meta, 'driver_phone' );
+					$show_phone = get_field_value( $meta, 'show_phone' ) ?? 'driver_phone';
+			        $driver_phone = get_field_value( $meta, $show_phone );
 					$vehicle_type = get_field_value( $meta, 'vehicle_type' );
 					$vehicle_year = get_field_value( $meta, 'vehicle_year' );
 					$vehicle_model = get_field_value( $meta, 'vehicle_model' );

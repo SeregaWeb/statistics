@@ -55,6 +55,7 @@ $preferred_distance         = get_field_value( $meta, 'preferred_distance' );
 $cross_border               = get_field_value( $meta, 'cross_border' );
 $source                     = get_field_value( $meta, 'source' );
 $recruiter_add              = get_field_value( $meta, 'recruiter_add' );
+$show_phone                 = get_field_value( $meta, 'show_phone' );
 
 $mc_enabled          = get_field_value( $meta, 'mc_enabled' );
 $mc                  = get_field_value( $meta, 'mc' );
@@ -107,6 +108,17 @@ $access_vehicle = $TMSUsers->check_user_role_access( [
                     <input required type="email" class="form-control" name="driver_email"
                            value="<?php echo $driver_email; ?>">
                 </div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-4 mb-3">
+                    <label for="show_phone">Main contact</label>
+                    <select name="show_phone" class="form-control form-select">
+                        <option value="driver_phone" <?php echo $show_phone === 'driver_phone' ? 'selected' : ''; ?>>Driver phone</option>
+                        <option value="team_driver_phone" <?php echo $show_phone === 'team_driver_phone' ? 'selected' : ''; ?>>Team driver phone</option>
+                        <option value="owner_phone" <?php echo $show_phone === 'owner_phone' ? 'selected' : ''; ?>>Owner phone</option>
+                    </select>
+            </div>
             </div>
 
 
@@ -479,7 +491,7 @@ $access_vehicle = $TMSUsers->check_user_role_access( [
                     <label for="dispatcher_initials" class="form-label">Recruiter Initials</label>
 					
 					<?php
-					if ( current_user_can( 'recruiter' ) || current_user_can( 'recruiter-tl' ) || current_user_can( 'hr_manager' ) ) {
+					if ( current_user_can( 'recruiter' ) || current_user_can( 'hr_manager' ) ) {
 						if ( ! $recruiter_add ) {
 							$recruiter_add = get_current_user_id();
 							$user_name     = $helper->get_user_full_name_by_id( $recruiter_add );
@@ -487,14 +499,14 @@ $access_vehicle = $TMSUsers->check_user_role_access( [
 							?>
                             <input type="hidden" name="recruiter_add" value="<?php echo $recruiter_add; ?>"
                                    required>
-                            <p class="text-primary"><?php echo $user_name[ 'full_name' ]; ?></p>
+                            <p class="text-primary"><?php echo is_array( $user_name ) && isset( $user_name[ 'full_name' ] ) ? $user_name[ 'full_name' ] : 'Unknown User'; ?></p>
 							<?php
 						} else {
 							$user_name = $helper->get_user_full_name_by_id( $recruiter_add );
 							?>
                             <input type="hidden" name="recruiter_add" value="<?php echo $recruiter_add; ?>"
                                    required>
-                            <p class="text-primary"><?php echo $user_name[ 'full_name' ]; ?></p>
+                            <p class="text-primary"><?php echo is_array( $user_name ) && isset( $user_name[ 'full_name' ] ) ? $user_name[ 'full_name' ] : 'Unknown User'; ?></p>
 							<?php
 						}
 					} else { ?>

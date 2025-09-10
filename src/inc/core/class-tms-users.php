@@ -163,7 +163,7 @@ class  TMSUsers extends TMSReportsHelper {
 				$key     = 'exclude_' . $day . '_user_' . $dispatcher;
 				$checked = ! empty( $_POST[ $key ] );
 				
-				$ex      = get_field( $field_key, 'user_' . $move_to );
+				$ex = get_field( $field_key, 'user_' . $move_to );
 				if ( ! is_array( $ex ) ) {
 					$ex = [];
 				}
@@ -273,7 +273,8 @@ class  TMSUsers extends TMSReportsHelper {
 	}
 	
 	function is_bookmarked( $id, $is_flt = false ) {
-		$meta_key = $is_flt ? 'user_bookmarks_flt_' . $this->project_for_bookmark : 'user_bookmarks_' . $this->project_for_bookmark;
+		$meta_key       = $is_flt ? 'user_bookmarks_flt_' . $this->project_for_bookmark
+			: 'user_bookmarks_' . $this->project_for_bookmark;
 		$user_bookmarks = get_user_meta( get_current_user_id(), $meta_key, true ) ?: [];
 		$is_bookmarked  = in_array( $id, $user_bookmarks );
 		
@@ -281,7 +282,8 @@ class  TMSUsers extends TMSReportsHelper {
 	}
 	
 	function get_all_bookmarks( $is_flt = false ) {
-		$meta_key = $is_flt ? 'user_bookmarks_flt_' . $this->project_for_bookmark : 'user_bookmarks_' . $this->project_for_bookmark;
+		$meta_key       = $is_flt ? 'user_bookmarks_flt_' . $this->project_for_bookmark
+			: 'user_bookmarks_' . $this->project_for_bookmark;
 		$user_bookmarks = get_user_meta( get_current_user_id(), $meta_key, true ) ?: [];
 		
 		return $user_bookmarks;
@@ -297,8 +299,9 @@ class  TMSUsers extends TMSReportsHelper {
 			wp_send_json_error( [ 'message' => 'Invalid post ID.' ] );
 		}
 		
-		$is_flt = isset( $_POST[ 'is_flt' ] ) ? (bool) $_POST[ 'is_flt' ] : false;
-		$meta_key = $is_flt ? 'user_bookmarks_flt_' . $this->project_for_bookmark : 'user_bookmarks_' . $this->project_for_bookmark;
+		$is_flt   = isset( $_POST[ 'is_flt' ] ) ? (bool) $_POST[ 'is_flt' ] : false;
+		$meta_key = $is_flt ? 'user_bookmarks_flt_' . $this->project_for_bookmark
+			: 'user_bookmarks_' . $this->project_for_bookmark;
 		
 		$user_id        = get_current_user_id();
 		$user_bookmarks = get_user_meta( $user_id, $meta_key, true ) ?: [];
@@ -379,7 +382,7 @@ class  TMSUsers extends TMSReportsHelper {
 			'driver_updates'      => 'Driver Updates',
 		);
 		
-		return $array_labels[ $key ];
+		return isset( $array_labels[ $key ] ) ? $array_labels[ $key ] : 'Unknown';
 	}
 	
 	public function select_project() {

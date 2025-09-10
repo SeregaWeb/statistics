@@ -66,3 +66,63 @@ export const autoFillAddressHero = async (zipCode, apiKey, countrySearch = 'USA'
 
     return result;
 };
+
+/**
+ * Copy all driver phone numbers from the page to clipboard
+ */
+export const copyDriverPhones = () => {
+    // Collect all phone numbers from the page
+    const phoneElements = document.querySelectorAll('.driver-phone[data-phone]');
+    const phoneNumbers: string[] = [];
+    
+    phoneElements.forEach((element) => {
+        const phone = element.getAttribute('data-phone');
+        if (phone && phone.trim() !== '') {
+            phoneNumbers.push(phone.trim());
+        }
+    });
+    
+    if (phoneNumbers.length === 0) {
+        printMessage('No phone numbers found on this page.', 'warning', 3000);
+        return;
+    }
+    
+    // Join phone numbers with newlines
+    const phoneList = phoneNumbers.join('\n');
+    
+    // Copy to clipboard
+    navigator.clipboard.writeText(phoneList).then(() => {
+        // Show success message
+        const copyBtn = document.getElementById('copy-driver-phones-btn');
+        if (copyBtn) {
+            const originalText = copyBtn.innerHTML;
+            copyBtn.innerHTML = 'Copied!';
+            copyBtn.classList.remove('btn-outline-primary');
+            copyBtn.classList.add('btn-success');
+            
+            // Reset button after 2 seconds
+            setTimeout(() => {
+                copyBtn.innerHTML = originalText;
+                copyBtn.classList.remove('btn-success');
+                copyBtn.classList.add('btn-outline-primary');
+            }, 2000);
+        }
+        
+        printMessage(`Successfully copied ${phoneNumbers.length} phone numbers to clipboard.`, 'success', 3000);
+        
+    }).catch((err) => {
+        console.error('Failed to copy phone numbers: ', err);
+        printMessage('Failed to copy phone numbers to clipboard.', 'danger', 5000);
+    });
+};
+
+/**
+ * Initialize copy driver phones functionality
+ */
+export const initCopyDriverPhones = () => {
+    const copyBtn = document.getElementById('copy-driver-phones-btn');
+    
+    if (copyBtn) {
+        copyBtn.addEventListener('click', copyDriverPhones);
+    }
+};

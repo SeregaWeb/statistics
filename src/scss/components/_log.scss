@@ -12,6 +12,9 @@
         position: relative;
         display: block;
         min-height: max-content;
+        max-width: 100%;
+        overflow-wrap: anywhere;
+
         &__top {
             display: flex;
             justify-content: space-between;

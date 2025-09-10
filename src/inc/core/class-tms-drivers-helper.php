@@ -268,4 +268,190 @@ class TMSDriversHelper {
 		
 		return $changes;
 	}
+	
+	/**
+	 * Check if current user can change driver status
+	 * 
+	 * @param string $status_key Status key to check
+	 * @return bool True if user can change this status, false otherwise
+	 */
+	public function can_change_driver_status( $status_key ) {
+		// Restricted statuses that only Admin, Recruiter, Recruiter Team Leader can change
+		$restricted_statuses = array(
+			'no_Interview',
+			'expired_documents', 
+			'blocked'
+		);
+		
+		// If status is not restricted, anyone can change it
+		if ( !in_array( $status_key, $restricted_statuses ) ) {
+			return true;
+		}
+		
+		// Check if current user has permission to change restricted statuses
+		$current_user = wp_get_current_user();
+		$allowed_roles = array( 'administrator', 'recruiter', 'recruiter-tl' );
+		
+		foreach ( $allowed_roles as $role ) {
+			if ( in_array( $role, $current_user->roles ) ) {
+				return true;
+			}
+		}
+		
+		return false;
+	}
+	
+	/**
+	 * Get allowed statuses for current user
+	 * 
+	 * @return array Array of allowed status keys
+	 */
+	public function get_allowed_statuses() {
+		$current_user = wp_get_current_user();
+		$allowed_roles = array(   'administrator', 'recruiter', 'recruiter-tl', 'driver_updates' );
+		
+		$has_restricted_access = false;
+		foreach ( $allowed_roles as $role ) {
+			if ( in_array( $role, $current_user->roles ) ) {
+				$has_restricted_access = true;
+				break;
+			}
+		}
+		
+		// If user has restricted access, they can change all statuses
+		if ( $has_restricted_access ) {
+			return array_keys( $this->status );
+		}
+		
+		// Otherwise, exclude restricted statuses
+		$restricted_statuses = array(
+			'no_Interview',
+			'expired_documents', 
+			'blocked'
+		);
+		
+		return array_diff( array_keys( $this->status ), $restricted_statuses );
+	}
+	
+	/**
+	 * Get statuses that current user can change (not just see)
+	 * 
+	 * @return array Array of status keys that user can change
+	 */
+	public function get_changeable_statuses() {
+		$current_user = wp_get_current_user();
+		$allowed_roles = array( 'administrator', 'recruiter', 'recruiter-tl' );
+		
+		$has_restricted_access = false;
+		foreach ( $allowed_roles as $role ) {
+			if ( in_array( $role, $current_user->roles ) ) {
+				$has_restricted_access = true;
+				break;
+			}
+		}
+		
+		// If user has restricted access, they can change all statuses
+		if ( $has_restricted_access ) {
+			return array_keys( $this->status );
+		}
+		
+		// Otherwise, exclude restricted statuses
+		$restricted_statuses = array(
+			'no_Interview',
+			'expired_documents', 
+			'blocked'
+		);
+		
+		return array_diff( array_keys( $this->status ), $restricted_statuses );
+	}
+	
+	/**
+	 * Check if current user can copy driver phones
+	 * 
+	 * @return bool True if user can copy phones, false otherwise
+	 */
+	public function can_copy_driver_phones() {
+		$current_user = wp_get_current_user();
+		$allowed_roles = array( 'administrator', 'driver_updates', 'recruiter', 'recruiter-tl' );
+		
+		foreach ( $allowed_roles as $role ) {
+			if ( in_array( $role, $current_user->roles ) ) {
+				return true;
+			}
+		}
+		
+		return false;
+	}
+	
+	/**
+	 * Check if current user can see driver with specific status
+	 * 
+	 * @param string $status_key Driver status to check
+	 * @return bool True if user can see this driver, false otherwise
+	 */
+	public function can_see_driver_with_status( $status_key ) {
+		// Restricted statuses that only Admin, Recruiter, Recruiter Team Leader can see
+		$restricted_statuses = array(
+			'no_Interview',
+			'expired_documents', 
+			'blocked'
+		);
+		
+		// If status is not restricted, anyone can see it
+		if ( !in_array( $status_key, $restricted_statuses ) ) {
+			return true;
+		}
+		
+		// Check if current user has permission to see restricted status drivers
+		$current_user = wp_get_current_user();
+		$allowed_roles = array( 'administrator', 'recruiter', 'recruiter-tl', 'driver_updates' );
+		
+		foreach ( $allowed_roles as $role ) {
+			if ( in_array( $role, $current_user->roles ) ) {
+				return true;
+			}
+		}
+		
+		return false;
+	}
+	
+	/**
+	 * Get SQL WHERE condition for driver visibility based on user role
+	 * 
+	 * @return array Array with 'condition' and 'values' keys
+	 */
+	public function get_driver_visibility_condition() {
+		$current_user = wp_get_current_user();
+		$allowed_roles = array( 'administrator', 'recruiter', 'recruiter-tl', 'driver_updates' );
+		
+		$has_restricted_access = false;
+		foreach ( $allowed_roles as $role ) {
+			if ( in_array( $role, $current_user->roles ) ) {
+				$has_restricted_access = true;
+				break;
+			}
+		}
+		
+		// If user has restricted access, they can see all drivers
+		if ( $has_restricted_access ) {
+			return array(
+				'condition' => '',
+				'values' => array()
+			);
+		}
+		
+		// Otherwise, exclude drivers with restricted statuses
+		$restricted_statuses = array(
+			'no_Interview',
+			'expired_documents', 
+			'blocked'
+		);
+		
+		$condition = "(driver_status.meta_value IS NULL OR driver_status.meta_value NOT IN ('" . implode("', '", $restricted_statuses) . "'))";
+		
+		return array(
+			'condition' => $condition,
+			'values' => array()
+		);
+	}
 }

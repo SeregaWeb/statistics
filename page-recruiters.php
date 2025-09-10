@@ -24,6 +24,7 @@ $access = $TMSUsers->check_user_role_access( [
 	'recruiter-tl',
 	'hr_manager',
 	'accounting',
+	'billing',
 	'driver_updates'
 ], true );
 

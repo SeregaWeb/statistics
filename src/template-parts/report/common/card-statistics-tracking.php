@@ -32,7 +32,7 @@ if ( is_array( $user_stats ) ) {
 }
 
 // Only display card if user has statistics
-if ( $has_stats && isset( $user_stats[ 'total' ] ) && $user_stats[ 'total' ] > 0 ) :
+if ( $has_stats && isset( $user_stats[ 'total' ] ) ) :
 	
 	// Set total class for styling
 	if ( is_numeric( $total ) && $total <= $user_stats[ 'total' ] ) {
@@ -116,13 +116,13 @@ if ( $has_stats && isset( $user_stats[ 'total' ] ) && $user_stats[ 'total' ] > 0
 									$user_arr = false;
 								}
 								?>
-
-								<?php if (is_array( $user_arr )) : ?>
-                                <span data-bs-toggle="tooltip"
-                                      data-bs-placement="top"
-                                      title="<?php echo esc_attr( $user_arr[ 'full_name' ] ); ?>"
-                                      class="initials-circle"
-                                      style="background-color: <?php echo esc_attr( $color_initials ); ?>">
+								
+								<?php if ( is_array( $user_arr ) ) : ?>
+                                    <span data-bs-toggle="tooltip"
+                                          data-bs-placement="top"
+                                          title="<?php echo esc_attr( $user_arr[ 'full_name' ] ); ?>"
+                                          class="initials-circle"
+                                          style="background-color: <?php echo esc_attr( $color_initials ); ?>">
 									<?php echo esc_html( $user_arr[ 'initials' ] ); ?>
 								</span>
 								<?php endif; ?>

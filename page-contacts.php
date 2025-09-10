@@ -40,7 +40,7 @@ $access = $TMSUsers->check_user_role_access( array(
 $data          = $TMSContacts->get_all_contacts( $args );
 $results       = get_field_value( $data, 'data' );
 $total_pages   = get_field_value( $data[ 'pagination' ], 'total_pages' );
-$current_pages = get_field_value( $data[ 'pagination' ], 'current_pages' );
+$current_pages = get_field_value( $data[ 'pagination' ], 'current_page' );
 
 ?>
     <div class="container-fluid">
@@ -315,6 +315,8 @@ $current_pages = get_field_value( $data[ 'pagination' ], 'current_pages' );
                             </table>
 							
 							<?php
+							
+							
 							echo esc_html( get_template_part( TEMPLATE_PATH . 'report', 'pagination', array(
 								'total_pages'  => $total_pages,
 								'current_page' => $current_pages,

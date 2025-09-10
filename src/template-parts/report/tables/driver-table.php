@@ -10,6 +10,14 @@ $current_pages = get_field_value( $args, 'current_pages' );
 $is_draft      = get_field_value( $args, 'is_draft' );
 
 if ( ! empty( $results ) ) : ?>
+	
+	<?php if ( $driverHelper->can_copy_driver_phones() ): ?>
+        <div class="mb-3 d-flex justify-content-end">
+            <button type="button" class="btn btn-outline-primary" id="copy-driver-phones-btn">
+                Copy All Phone Numbers
+            </button>
+        </div>
+	<?php endif; ?>
 
     <table class="table mb-5 w-100">
         <thead>
@@ -20,6 +28,7 @@ if ( ! empty( $results ) ) : ?>
             <th scope="col">Vehicle</th>
             <th scope="col">Home location</th>
             <th scope="col">Additional</th>
+            <th scope="col">Status</th>
             <th scope="col"></th>
         </tr>
         </thead>
@@ -31,7 +40,6 @@ if ( ! empty( $results ) ) : ?>
 			$driver_name = get_field_value( $meta, 'driver_name' );
 			$languages = get_field_value( $meta, 'languages' );
 			$driver_email = get_field_value( $meta, 'driver_email' );
-			$driver_phone = get_field_value( $meta, 'driver_phone' );
 			$home_location = get_field_value( $meta, 'home_location' );
 			$city = get_field_value( $meta, 'city' );
 			$vehicle_type = get_field_value( $meta, 'vehicle_type' );
@@ -40,39 +48,12 @@ if ( ! empty( $results ) ) : ?>
 			$vehicle_make = get_field_value( $meta, 'vehicle_make' );
 			$dimensions = get_field_value( $meta, 'dimensions' );
 			$payload = get_field_value( $meta, 'payload' );
-			$preferred_distance = get_field_value( $meta, 'preferred_distance' );
-			$selected_distances = array_map( 'trim', explode( ',', $preferred_distance ) );
-			$cross_border = get_field_value( $meta, 'cross_border' );
-			$selected_cross_border = array_map( 'trim', explode( ',', $cross_border ) );
+			$driver_status = get_field_value( $meta, 'driver_status' );
 			
-			$driver_capabilities = array(
-				'twic.svg'               => get_field_value( $meta, 'twic' ),
-				'tsa.svg'                => get_field_value( $meta, 'tsa_approved' ),
-				'hazmat.svg'             => get_field_value( $meta, 'hazmat_certificate' ) || get_field_value( $meta, 'hazmat_endorsement' ),
-				'change-9.svg'           => get_field_value( $meta, 'change_9_training' ),
-				'tanker-endorsement.svg' => get_field_value( $meta, 'tanker_endorsement' ),
-				'background-check.svg'   => get_field_value( $meta, 'background_check' ),
-				'liftgate.svg'           => get_field_value( $meta, 'lift_gate' ),
-				'pallet-jack.svg'        => get_field_value( $meta, 'pallet_jack' ),
-				'dolly.svg'              => get_field_value( $meta, 'dolly' ),
-				'ppe.svg'                => get_field_value( $meta, 'ppe' ),
-				'e-track.svg'            => get_field_value( $meta, 'e_tracks' ),
-				'ramp.svg'               => get_field_value( $meta, 'ramp' ),
-				'printer.svg'            => get_field_value( $meta, 'printer' ),
-				'sleeper.svg'            => get_field_value( $meta, 'sleeper' ),
-				'load-bars.svg'          => get_field_value( $meta, 'load_bars' ),
-				'mc.svg'                 => get_field_value( $meta, 'mc' ),
-				'dot.svg'                => get_field_value( $meta, 'dot' ),
-				'real_id.svg'            => get_field_value( $meta, 'real_id' ),
-				'macropoint.png'         => get_field_value( $meta, 'macro_point' ),
-				'tucker-tools.png'       => get_field_value( $meta, 'trucker_tools' ),
-				'any.svg'                => is_numeric( array_search( 'any', $selected_distances ) ),
-				'otr.svg'                => is_numeric( array_search( 'otr', $selected_distances ) ),
-				'local.svg'              => is_numeric( array_search( 'local', $selected_distances ) ),
-				'regional.svg'           => is_numeric( array_search( 'regional', $selected_distances ) ),
-				'canada.svg'             => is_numeric( array_search( 'canada', $selected_cross_border ) ) || get_field_value( $meta, 'canada_transition_proof' ),
-				'mexico.svg'             => is_numeric( array_search( 'mexico', $selected_cross_border ) ),
-			);
+			$show_phone   = get_field_value( $meta, 'show_phone' ) ?? 'driver_phone';
+			$driver_phone = get_field_value( $meta, $show_phone );
+			
+			include( get_template_directory() . '/src/template-parts/report/common/driver-capabilities.php' );
 			
 			
 			$date_hired    = get_field_value( $row, 'date_created' );
@@ -91,9 +72,34 @@ if ( ! empty( $results ) ) : ?>
 //				$drivers->update_date_created( $row[ 'id' ] );
 //			}
 			
+			$driver_status = trim( $driver_status );
+			
+			if ( $driver_status && isset( $drivers->status[ $driver_status ] ) || $driver_status === 'on_hold' ) {
+				
+				if ( $driver_status === 'on_hold' ) {
+					$status_text = 'On hold';
+				} else {
+					$status_text = $drivers->status[ $driver_status ];
+				}
+			} else {
+				$status_text = "Need set status";
+			}
+			
+			// Get driver data for quick update button
+			$current_location = get_field_value( $meta, 'current_location' );
+			$current_city     = get_field_value( $meta, 'current_city' );
+			$current_zipcode  = get_field_value( $meta, 'current_zipcode' );
+			$latitud          = get_field_value( $meta, 'latitude' );
+			$longitude        = get_field_value( $meta, 'longitude' );
+			$country          = get_field_value( $meta, 'country' );
+			$status_date      = get_field_value( $meta, 'status_date' );
+			
+
+			// TODO: Remove this after testing
+			$class_hide = $row['id'] === '3343' ? 'd-none' : '';
 			?>
 
-            <tr>
+            <tr class="<?php echo $class_hide; ?>" data-driver-id="<?php echo $row[ 'id' ]; ?>">
                 <td><?php echo $date_hired; ?></td>
                 <td>
 
@@ -113,7 +119,8 @@ if ( ! empty( $results ) ) : ?>
 							<?php echo '(' . $row[ 'id' ] . ') ' . $driver_name; ?>
 							<?php echo $icons->get_flags( $languages ); ?>
                         </div>
-                        <span class="text-small"><?php echo $driver_phone; ?></span>
+                        <span class="text-small driver-phone"
+                              data-phone="<?php echo esc_attr( $driver_phone ); ?>"><?php echo $driver_phone; ?></span>
                     </div>
                 </td>
                 <td>
@@ -132,21 +139,32 @@ if ( ! empty( $results ) ) : ?>
 
                 <td>
                     <div class="table-tags d-flex flex-wrap">
-						<?php
-						$array_additionals = $icons->get_capabilities( $driver_capabilities );
-						if ( ! empty( $array_additionals ) ) {
-							foreach ( $array_additionals as $value ) {
-								?>
-                                <img width="24" height="24" src="<?php echo $value; ?>" alt="tag">
-								<?php
-							}
-						}
-						
-						?>
+						<?php include( get_template_directory() . '/src/template-parts/report/common/driver-capabilities-display.php' ); ?>
                     </div>
                 </td>
-                <td>
-                    <div class="d-flex">
+
+                <td style="width: 100px;" class="<?php echo $driver_status ? $driver_status
+					: 'text-danger'; ?> driver-status"><?php echo $status_text; ?></td>
+
+                <td style="width: 92px;">
+                    <div class="d-flex gap-1">
+                        <button class="btn btn-sm d-flex align-items-center justify-content-center js-quick-status-update"
+                                data-bs-toggle="modal"
+                                data-bs-target="#quickStatusUpdateModal"
+                                data-driver-id="<?php echo $row[ 'id' ]; ?>"
+                                data-driver-name="<?php echo esc_attr( $driver_name ); ?>"
+                                data-driver-status="<?php echo esc_attr( $driver_status ); ?>"
+                                data-current-location="<?php echo esc_attr( $current_location ); ?>"
+                                data-current-city="<?php echo esc_attr( $current_city ); ?>"
+                                data-current-zipcode="<?php echo esc_attr( $current_zipcode ); ?>"
+                                data-latitude="<?php echo esc_attr( $latitud ); ?>"
+                                data-longitude="<?php echo esc_attr( $longitude ); ?>"
+                                data-country="<?php echo esc_attr( $country ); ?>"
+                                data-status-date="<?php echo esc_attr( $status_date ); ?>"
+                                style="width: 28px; height: 28px; padding: 0;"
+                                title="Quick Status Update">
+							<?php echo $icons->get_icon_edit_2(); ?>
+                        </button>
 						<?php echo esc_html( get_template_part( TEMPLATE_PATH . 'tables/control', 'dropdown-driver', [
 							'id'       => $row[ 'id' ],
 							'is_draft' => $is_draft,
@@ -166,7 +184,10 @@ if ( ! empty( $results ) ) : ?>
 		'current_page' => $current_pages,
 	) ) );
 	?>
+	
+	<?php get_template_part( TEMPLATE_PATH . 'popups/quick-status-update-modal' ); ?>
+
 
 <?php else : ?>
-    <p>No loads found.</p>
+    <p>No drivers were found.</p>
 <?php endif; ?>

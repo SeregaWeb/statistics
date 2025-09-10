@@ -140,7 +140,7 @@ class TMSEmails extends TMSUsers {
 		$current_user_id = $user_id ? intval( $user_id ) : get_current_user_id(); // Get the current user ID
 		
 		$args = array(
-			'role'       => 'tracking',
+			'role__in'   => array('tracking', 'tracking-tl', 'morning_tracking', 'nightshift_tracking'),
 			'meta_query' => array(
 				'relation' => 'AND',
 				array(
@@ -160,6 +160,7 @@ class TMSEmails extends TMSUsers {
 		
 		$query    = new WP_User_Query( $args );
 		$tracking = $query->get_results();
+
 		$emails   = array();
 		
 		
@@ -178,6 +179,7 @@ class TMSEmails extends TMSUsers {
 				$emails[] = $leader->user_email;
 			}
 		}
+
 		
 		return implode( ',', $emails );
 	}

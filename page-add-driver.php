@@ -30,6 +30,8 @@ if ( $post_id && is_numeric( $post_id ) ) {
 	
 	$recruiter_add = get_field_value( $meta, 'recruiter_add' );
 	
+	$driver_name = get_field_value( $meta, 'driver_name' );
+	
 	$access_publish = ( + $user_id_added === + $current_user_id ) || ( + $recruiter_add === + $current_user_id ) || $TMSUsers->check_user_role_access( array(
 			'administrator',
 		), true );
@@ -74,6 +76,7 @@ if ( $post_id && is_numeric( $post_id ) ) {
 	if ( $TMSUsers->check_user_role_access( array(
 		'administrator',
 		'recruiter-tl',
+		'recruiter',
 		'hr_manager',
 	), true ) ) {
 		$full_only_view = false;
@@ -103,9 +106,14 @@ $access = $TMSUsers->check_user_role_access( [
 	'recruiter-tl',
 	'hr_manager',
 	'accounting',
+	'billing',
 	'driver_updates',
 	'dispatcher',
 	'dispatcher-tl',
+	'tracking',
+	'tracking-tl',
+	'morning_tracking',
+	'nightshift_tracking'
 ], true );
 
 
@@ -118,6 +126,10 @@ $access_only_location = $TMSUsers->check_user_role_access( [
 	'driver_updates',
 	'dispatcher',
 	'dispatcher-tl',
+	'tracking',
+	'tracking-tl',
+	'morning_tracking',
+	'nightshift_tracking'
 ], false );
 
 
@@ -129,7 +141,6 @@ $access_vehicle = $TMSUsers->check_user_role_access( [
 	'billing',
 	'billing-tl',
 	'moderator',
-
 ], true );
 
 
@@ -142,6 +153,17 @@ $access_vehicle = $TMSUsers->check_user_role_access( [
                 <div class="row js-logs-wrap">
 					
 					<?php if ( $access ): ?>
+
+                        <div class="col-12">
+                            <div class="row">
+                                <div class="col-12 mt-2 mb-2">
+                                    <h3>
+                                        (<?php echo $post_id; ?>) <?php echo $driver_name; ?>
+                                    </h3>
+                                </div>
+                            </div>
+                        </div>
+
                         <div class="col-12 js-logs-content <?php echo $logshowcontent; ?>">
 							<?php
 							
@@ -178,9 +200,10 @@ $access_vehicle = $TMSUsers->check_user_role_access( [
 								}
 							}
 							
-							if ( $full_only_view ) {
+							if ( $full_only_view && $access_vehicle ) {
 								echo $helper->message_top( 'warning', 'View only.', '', '' );
 							}
+							
 							?>
 							
 							<?php if ( ! $is_on_hold || $can_edit_on_hold ): ?>
@@ -189,7 +212,8 @@ $access_vehicle = $TMSUsers->check_user_role_access( [
 									<?php if ( $post_id ): ?>
                                         <li class="nav-item js-change-url-tab flex-grow-1" role="presentation">
                                             <button class="nav-link w-100 <?php echo $disabled_tabs;
-											echo $helper->change_active_tab( 'pills-driver-location-tab', 'show', 'drivers' ); ?> "
+											echo $helper->change_active_tab( 'pills-driver-location-tab', 'show', $access_vehicle
+												? 'drivers' : 'dispatchers' ); ?> "
                                                     id="pills-driver-location-tab"
                                                     data-bs-toggle="pill"
                                                     data-bs-target="#pills-driver-location" type="button" role="tab"
@@ -202,7 +226,8 @@ $access_vehicle = $TMSUsers->check_user_role_access( [
 									
 									<?php if ( $access_vehicle ): ?>
                                         <li class="nav-item js-change-url-tab flex-grow-1" role="presentation">
-                                            <button class="nav-link w-100 <?php echo $helper->change_active_tab( 'pills-driver-contact-tab', 'show', 'drivers' ); ?> "
+                                            <button class="nav-link w-100 <?php echo $helper->change_active_tab( 'pills-driver-contact-tab', 'show', $access_vehicle
+												? 'drivers' : 'dispatchers' ); ?> "
                                                     id="pills-driver-contact-tab" data-bs-toggle="pill"
                                                     data-bs-target="#pills-driver-contact" type="button" role="tab"
                                                     aria-controls="pills-driver-contact" aria-selected="true">Contact
@@ -210,7 +235,8 @@ $access_vehicle = $TMSUsers->check_user_role_access( [
                                         </li>
 
                                         <li class="nav-item js-change-url-tab flex-grow-1" role="presentation">
-                                            <button class="nav-link w-100 <?php echo $disabled_tabs; ?> <?php echo $helper->change_active_tab( 'pills-driver-vehicle-tab', 'show', 'drivers' ); ?> "
+                                            <button class="nav-link w-100 <?php echo $disabled_tabs; ?> <?php echo $helper->change_active_tab( 'pills-driver-vehicle-tab', 'show', $access_vehicle
+												? 'drivers' : 'dispatchers' ); ?> "
                                                     id="pills-driver-vehicle-tab"
                                                     data-bs-toggle="pill"
                                                     data-bs-target="#pills-driver-vehicle" type="button" role="tab"
@@ -221,7 +247,8 @@ $access_vehicle = $TMSUsers->check_user_role_access( [
 
                                         <li class="nav-item js-change-url-tab flex-grow-1" role="presentation">
                                             <button class="nav-link w-100 <?php echo $disabled_tabs;
-											echo $helper->change_active_tab( 'pills-driver-finance-tab', 'show', 'drivers' ); ?> "
+											echo $helper->change_active_tab( 'pills-driver-finance-tab', 'show', $access_vehicle
+												? 'drivers' : 'dispatchers' ); ?> "
                                                     id="pills-driver-finance-tab"
                                                     data-bs-toggle="pill"
                                                     data-bs-target="#pills-driver-finance" type="button" role="tab"
@@ -231,7 +258,8 @@ $access_vehicle = $TMSUsers->check_user_role_access( [
 
                                         <li class="nav-item js-change-url-tab flex-grow-1" role="presentation">
                                             <button class="nav-link w-100 <?php echo $disabled_tabs;
-											echo $helper->change_active_tab( 'pills-driver-documents-tab', 'show', 'drivers' ); ?> "
+											echo $helper->change_active_tab( 'pills-driver-documents-tab', 'show', $access_vehicle
+												? 'drivers' : 'dispatchers' ); ?> "
                                                     id="pills-driver-documents-tab"
                                                     data-bs-toggle="pill"
                                                     data-bs-target="#pills-driver-documents" type="button" role="tab"
@@ -239,13 +267,24 @@ $access_vehicle = $TMSUsers->check_user_role_access( [
                                                 Documents
                                             </button>
                                         </li>
-									
+									<?php else: ?>
+                                        <li class="nav-item js-change-url-tab flex-grow-1" role="presentation">
+                                            <button class="nav-link w-100 <?php echo $disabled_tabs; ?> <?php echo $helper->change_active_tab( 'pills-driver-vehicle-tab', 'show', $access_vehicle
+												? 'drivers' : 'dispatchers' ); ?> "
+                                                    id="pills-driver-vehicle-tab"
+                                                    data-bs-toggle="pill"
+                                                    data-bs-target="#pills-driver-vehicle" type="button" role="tab"
+                                                    aria-controls="pills-driver-vehicle"
+                                                    aria-selected="false">Information
+                                            </button>
+                                        </li>
 									<?php endif; ?>
 
 
                                     <li class="nav-item js-change-url-tab flex-grow-1" role="presentation">
                                         <button class="nav-link w-100 <?php echo $disabled_tabs;
-										echo $helper->change_active_tab( 'pills-driver-stats-tab', 'show', 'drivers' ); ?> "
+										echo $helper->change_active_tab( 'pills-driver-stats-tab', 'show', $access_vehicle
+											? 'drivers' : 'dispatchers' ); ?> "
                                                 id="pills-driver-stats-tab"
                                                 data-bs-toggle="pill"
                                                 data-bs-target="#pills-driver-stats" type="button" role="tab"
@@ -258,72 +297,90 @@ $access_vehicle = $TMSUsers->check_user_role_access( [
 							
 							<?php if ( ! $is_on_hold || $can_edit_on_hold ): ?>
                                 <div class="tab-content" id="pills-tabContent">
+									
+									<?php if ( $access_vehicle ): ?>
+                                        <div class="tab-pane fade <?php echo $helper->change_active_tab( 'pills-driver-contact-tab', 'show', $access_vehicle
+											? 'drivers' : '' ); ?>"
+                                             id="pills-driver-contact" role="tabpanel"
+                                             aria-labelledby="pills-driver-contact-tab">
+											<?php
+											
+											
+											echo esc_html( get_template_part( TEMPLATE_PATH . 'tabs/driver', 'tab-contact', array(
+												'full_view_only' => $full_only_view,
+												'report_object'  => $driver_object,
+												'post_id'        => $post_id
+											) ) );
+											?>
+                                        </div>
 
-                                    <div class="tab-pane fade <?php echo $helper->change_active_tab( 'pills-driver-contact-tab', 'show', 'drivers' ); ?>"
-                                         id="pills-driver-contact" role="tabpanel"
-                                         aria-labelledby="pills-driver-contact-tab">
-										<?php
-										
-										
-										echo esc_html( get_template_part( TEMPLATE_PATH . 'tabs/driver', 'tab-contact', array(
-											'full_view_only' => $full_only_view,
-											'report_object'  => $driver_object,
-											'post_id'        => $post_id
-										) ) );
-										?>
-                                    </div>
+                                        <div class="tab-pane fade <?php echo $helper->change_active_tab( 'pills-driver-vehicle-tab', 'show' ); ?>"
+                                             id="pills-driver-vehicle" role="tabpanel"
+                                             aria-labelledby="pills-driver-vehicle-tab">
+											<?php
+											echo esc_html( get_template_part( TEMPLATE_PATH . 'tabs/driver', 'tab-information', array(
+												'full_view_only' => $full_only_view,
+												'report_object'  => $driver_object,
+												'post_id'        => $post_id
+											) ) );
+											?>
+                                        </div>
 
-                                    <div class="tab-pane fade <?php echo $helper->change_active_tab( 'pills-driver-vehicle-tab', 'show' ); ?>"
-                                         id="pills-driver-vehicle" role="tabpanel"
-                                         aria-labelledby="pills-driver-vehicle-tab">
-										<?php
-										echo esc_html( get_template_part( TEMPLATE_PATH . 'tabs/driver', 'tab-information', array(
-											'full_view_only' => $full_only_view,
-											'report_object'  => $driver_object,
-											'post_id'        => $post_id
-										) ) );
-										?>
-                                    </div>
+                                        <div class="tab-pane fade <?php echo $helper->change_active_tab( 'pills-driver-finance-tab', 'show' ); ?>"
+                                             id="pills-driver-finance" role="tabpanel"
+                                             aria-labelledby="pills-driver-finance-tab">
+											<?php
+											
+											$not_access_for_finance = $full_only_view;
+											
+											if ( $TMSUsers->check_user_role_access( array( 'accounting' ), true ) ) {
+												$not_access_for_finance = false;
+											}
+											
+											// If user can edit on hold, allow finance editing
+											if ( $is_on_hold && $can_edit_on_hold ) {
+												$not_access_for_finance = false;
+											}
+											
+											echo esc_html( get_template_part( TEMPLATE_PATH . 'tabs/driver', 'tab-finance', array(
+												'full_view_only' => $not_access_for_finance,
+												'report_object'  => $driver_object,
+												'post_id'        => $post_id
+											) ) );
+											?>
 
-                                    <div class="tab-pane fade <?php echo $helper->change_active_tab( 'pills-driver-finance-tab', 'show' ); ?>"
-                                         id="pills-driver-finance" role="tabpanel"
-                                         aria-labelledby="pills-driver-finance-tab">
-										<?php
-										
-										$not_access_for_finance = $full_only_view;
-										
-										if ( $TMSUsers->check_user_role_access( array( 'accounting' ), true ) ) {
-											$not_access_for_finance = false;
-										}
-										
-										// If user can edit on hold, allow finance editing
-										if ( $is_on_hold && $can_edit_on_hold ) {
-											$not_access_for_finance = false;
-										}
-										
-										echo esc_html( get_template_part( TEMPLATE_PATH . 'tabs/driver', 'tab-finance', array(
-											'full_view_only' => $not_access_for_finance,
-											'report_object'  => $driver_object,
-											'post_id'        => $post_id
-										) ) );
-										?>
+                                        </div>
 
-                                    </div>
+                                        <div class="tab-pane fade <?php echo $helper->change_active_tab( 'pills-driver-documents-tab', 'show' ); ?>"
+                                             id="pills-driver-documents" role="tabpanel"
+                                             aria-labelledby="pills-driver-documents-tab">
+											
+											<?php
+											echo esc_html( get_template_part( TEMPLATE_PATH . 'tabs/driver', 'tab-document', array(
+												'full_view_only' => $full_only_view,
+												'report_object'  => $driver_object,
+												'post_id'        => $post_id
+											) ) );
+											?>
+                                        </div>
+									
+									
+									<?php else: ?>
+                                        <div class="tab-pane fade <?php echo $helper->change_active_tab( 'pills-driver-vehicle-tab', 'show' ); ?>"
+                                             id="pills-driver-vehicle" role="tabpanel"
+                                             aria-labelledby="pills-driver-vehicle-tab">
+											<?php
+											echo esc_html( get_template_part( TEMPLATE_PATH . 'tabs/driver', 'tab-information-disabled', array(
+												'full_view_only' => $full_only_view,
+												'report_object'  => $driver_object,
+												'post_id'        => $post_id
+											) ) );
+											?>
+                                        </div>
+									<?php endif; ?>
 
-                                    <div class="tab-pane fade <?php echo $helper->change_active_tab( 'pills-driver-documents-tab', 'show' ); ?>"
-                                         id="pills-driver-documents" role="tabpanel"
-                                         aria-labelledby="pills-driver-documents-tab">
-										
-										<?php
-										echo esc_html( get_template_part( TEMPLATE_PATH . 'tabs/driver', 'tab-document', array(
-											'full_view_only' => $full_only_view,
-											'report_object'  => $driver_object,
-											'post_id'        => $post_id
-										) ) );
-										?>
-                                    </div>
-
-                                    <div class="tab-pane fade <?php echo $helper->change_active_tab( 'pills-driver-location-tab', 'show', 'drivers' ); ?>"
+                                    <div class="tab-pane fade <?php echo $helper->change_active_tab( 'pills-driver-location-tab', 'show', ! $access_vehicle
+										? 'dispatchers' : '' ); ?>"
                                          id="pills-driver-location" role="tabpanel"
                                          aria-labelledby="pills-driver-location-tab">
 										<?php

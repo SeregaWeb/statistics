@@ -41,6 +41,7 @@ $load_bars               = get_field_value( $meta, 'load_bars' );
 $ramp                    = get_field_value( $meta, 'ramp' );
 $printer                 = get_field_value( $meta, 'printer' );
 $sleeper                 = get_field_value( $meta, 'sleeper' );
+$dock_high               = get_field_value( $meta, 'dock_high' );
 
 $dimension_arr = explode( '/', $dimensions );
 $dimensions_1  = $dimensions ? $dimension_arr[ 0 ] : '';
@@ -556,6 +557,15 @@ $access_vehicle = $TMSUsers->check_user_role_access( [
                         <input class="form-check-input" type="checkbox" name="sleeper" id="sleeper" <?php echo $sleeper
 							? 'checked' : ''; ?>>
                         <label class="form-check-label" for="sleeper">Sleeper</label>
+                    </div>
+                </div>
+
+                <div class="col-md-4 mb-3">
+                    <div class="form-check form-switch">
+                        <input class="form-check-input" type="checkbox" name="dock_high" 
+                        id="dock-high" <?php echo $dock_high
+							? 'checked' : ''; ?>>
+                        <label class="form-check-label" for="dock-high">Dock High</label>
                     </div>
                 </div>
 

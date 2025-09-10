@@ -49,25 +49,12 @@ $driver_capabilities = array(
 <nav class="navbar mb-5 mt-3 navbar-expand-lg navbar-light">
     <div class="container-fluid p-0">
         <div class="d-flex justify-content-between align-items-start w-100">
-        <div class="d-flex flex-column align-items-start gap-1">
-            <h4 class="navbar-brand">Drivers</h4>
-            <div class="d-flex align-items-center gap-1 flex-1 no-wrap">
-                <div class="text-small text-nowrap">Available: <span class="text-primary"><?php echo $drivers_stats['available']; ?></span></div>
-                <div class="text-small text-nowrap">Available on: <span class="text-primary"><?php echo $drivers_stats['available_on']; ?></span></div>
-                <div class="text-small text-nowrap">Not updated: <span class="text-primary"><?php echo $drivers_stats['not_updated']; ?></span></div>
-            </div>
-        </div>
+        
     
         
-        <form class="d-flex flex-column align-items-end justify-content-end gap-1 w-100"
+        <form class="d-flex flex-column align-items-start justify-content-end gap-1 w-100"
               id="navbarNavDriverSearch">
             <div class="d-flex gap-1 align-items-center">
-
-                <div class="form-check form-switch">
-                    <label class="form-check-label" for="search_type">Extended search</label>
-                    <input class="form-check-input" type="checkbox" id="search_type"
-                           <?php echo ! empty( $_GET['extended_search'] ) ? 'checked' : ''; ?>>
-                </div>
 
                 <input class="form-control w-auto js-toggle-search" type="search" name="extended_search"
                        id="extended_search_input"
@@ -81,25 +68,36 @@ $driver_capabilities = array(
                        value="<?php echo empty( $_GET['extended_search'] ) ? $search : ''; ?>" 
                        aria-label="Search"
                        <?php echo ! empty( $_GET['extended_search'] ) ? 'style="display: none;"' : ''; ?>>
-                <button class="btn btn-outline-dark" type="submit">Search</button>
-            </div>
-            <div class="d-flex gap-1">
 
-                <select class="form-select w-auto" name="country" aria-label=".form-select-sm example">
-                    <option value="USA">USA</option>
-                    <option value="CA">Canada</option>
+                       <select class="form-select w-auto" name="country" aria-label=".form-select-sm example">
+                    <option value="USA" <?php echo (isset($_GET['country']) && $_GET['country'] === 'USA') ? 'selected' : ''; ?>>USA</option>
+                    <option value="CA" <?php echo (isset($_GET['country']) && $_GET['country'] === 'CA') ? 'selected' : ''; ?>>Canada</option>
                 </select>
 
                 <select class="form-select w-auto" name="radius" aria-label=".form-select-sm example">
-                    <option value="100">100 miles</option>
-                    <option value="150">150 miles</option>
-                    <option value="200">200 miles</option>
-                    <option value="250">250 miles</option>
-                    <option value="300" selected>300 miles</option>
-                    <option value="400">400 miles</option>
-                    <option value="500">500 miles</option>
-                    <option value="600">600 miles</option>
+                    <option value="100" <?php echo (isset($_GET['radius']) && $_GET['radius'] === '100') ? 'selected' : ''; ?>>100 miles</option>
+                    <option value="150" <?php echo (isset($_GET['radius']) && $_GET['radius'] === '150') ? 'selected' : ''; ?>>150 miles</option>
+                    <option value="200" <?php echo (isset($_GET['radius']) && $_GET['radius'] === '200') ? 'selected' : ''; ?>>200 miles</option>
+                    <option value="250" <?php echo (isset($_GET['radius']) && $_GET['radius'] === '250') ? 'selected' : ''; ?>>250 miles</option>
+                    <option value="300" <?php echo (!isset($_GET['radius']) || $_GET['radius'] === '300') ? 'selected' : ''; ?>>300 miles</option>
+                    <option value="400" <?php echo (isset($_GET['radius']) && $_GET['radius'] === '400') ? 'selected' : ''; ?>>400 miles</option>
+                    <option value="500" <?php echo (isset($_GET['radius']) && $_GET['radius'] === '500') ? 'selected' : ''; ?>>500 miles</option>
+                    <option value="600" <?php echo (isset($_GET['radius']) && $_GET['radius'] === '600') ? 'selected' : ''; ?>>600 miles</option>
                 </select>
+
+                <button class="btn btn-outline-dark" type="submit">Search</button>
+
+                <?php if ( ! empty( $_GET ) ): ?>
+                    <a class="btn btn-outline-danger" href="<?php echo get_the_permalink(); ?>">Reset</a>
+				<?php endif; ?>
+            </div>
+            <div class="d-flex align-items-center gap-2">
+                <div class="form-check form-switch">
+                    <label class="form-check-label" for="search_type">Extended search</label>
+                    <input class="form-check-input" type="checkbox" id="search_type"
+                           <?php echo ! empty( $_GET['extended_search'] ) ? 'checked' : ''; ?>>
+                </div>
+                
 
                 <!-- Driver Capabilities Filter -->
                 <div class="dropdown">
@@ -123,11 +121,16 @@ $driver_capabilities = array(
                     </ul>
                 </div>
 				
-				<?php if ( ! empty( $_GET ) ): ?>
-                    <a class="btn btn-outline-danger" href="<?php echo get_the_permalink(); ?>">Reset</a>
-				<?php endif; ?>
             </div>
         </form>
+
+        <div class="d-flex flex-column align-items-end gap-1">
+            <div class="d-flex align-items-center gap-1 flex-1 no-wrap">
+                <div class="text-small text-nowrap">Available: <span class="text-primary"><?php echo $drivers_stats['available']; ?></span></div>
+                <div class="text-small text-nowrap">Available on: <span class="text-primary"><?php echo $drivers_stats['available_on']; ?></span></div>
+                <div class="text-small text-nowrap">Not updated: <span class="text-primary"><?php echo $drivers_stats['not_updated']; ?></span></div>
+            </div>
+        </div>
         </div>
     </div>
 

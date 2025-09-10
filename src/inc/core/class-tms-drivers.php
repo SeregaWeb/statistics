@@ -237,10 +237,14 @@ class TMSDrivers extends TMSDriversHelper {
 			$result = $this->update_driver_in_db( $update_data );
 			
 			if ( $result ) {
+				// Get updated driver data
+				$updated_driver_data = $this->get_driver_data_for_table_row( $driver_id );
+				
 				wp_send_json_success( [
 					'message'   => 'Driver location updated successfully',
 					'driver_id' => $driver_id,
-					'data'      => $update_data
+					'data'      => $update_data,
+					'updated_driver' => $updated_driver_data
 				] );
 			} else {
 				wp_send_json_error( [ 'message' => 'Failed to update driver location' ] );
@@ -248,6 +252,141 @@ class TMSDrivers extends TMSDriversHelper {
 		} else {
 			wp_send_json_error( [ 'message' => 'Invalid request' ] );
 		}
+	}
+	
+	/**
+	 * Get driver data for table row update
+	 */
+	private function get_driver_data_for_table_row( $driver_id ) {
+		global $wpdb;
+		
+		// Get main driver data
+		$main_data = $wpdb->get_row( $wpdb->prepare(
+			"SELECT * FROM {$wpdb->prefix}drivers WHERE id = %d",
+			$driver_id
+		), ARRAY_A );
+		
+		if ( ! $main_data ) {
+			return null;
+		}
+		
+		// Get meta data
+		$meta_data = $wpdb->get_results( $wpdb->prepare(
+			"SELECT meta_key, meta_value FROM {$wpdb->prefix}drivers_meta WHERE post_id = %d",
+			$driver_id
+		), ARRAY_A );
+		
+		$meta = array();
+		foreach ( $meta_data as $meta_row ) {
+			$meta[ $meta_row['meta_key'] ] = $meta_row['meta_value'];
+		}
+		
+		// Get status text
+		$driver_status = $meta['driver_status'] ?? '';
+		$status_text = "Need set status";
+		if ( $driver_status ) {
+			if ( isset( $this->status[ $driver_status ] ) ) {
+				$status_text = $this->status[ $driver_status ];
+			}
+		}
+		
+		// Get location HTML
+		$location_html = $this->get_location_cell_html( $meta, $main_data, $driver_status );
+		
+		// Prepare data for table row
+		$driver_data = array(
+			'id' => $driver_id,
+			'driver_name' => $meta['driver_name'] ?? '',
+			'driver_status' => $driver_status,
+			'status_text' => $status_text,
+			'status_class' => $driver_status ? $driver_status : 'text-danger',
+			'location_html' => $location_html,
+			'current_location' => $meta['current_location'] ?? '',
+			'current_city' => $meta['current_city'] ?? '',
+			'current_zipcode' => $meta['current_zipcode'] ?? '',
+			'latitude' => $meta['latitude'] ?? '',
+			'longitude' => $meta['longitude'] ?? '',
+			'country' => $meta['country'] ?? '',
+			'status_date' => $meta['status_date'] ?? '',
+			'updated_zipcode' => $main_data['updated_zipcode'] ?? '',
+			'date_available' => $meta['date_available'] ?? ''
+		);
+		
+		return $driver_data;
+	}
+	
+	/**
+	 * Generate location cell HTML (exact copy from template)
+	 */
+	private function get_location_cell_html( $meta, $main_data, $driver_status ) {
+		$current_location = $meta['current_location'] ?? '';
+		$current_city = $meta['current_city'] ?? '';
+		$date_available = $main_data['date_available'] ?? '';
+		$updated_zip_code = $main_data['updated_zipcode'] ?? '';  // Use same variable name as template
+		
+		
+		// Function to check if date is valid and not a default/invalid date (exact copy from template)
+		$is_valid_date = function( $date_string ) {
+			if ( empty( $date_string ) || $date_string === '0000-00-00 00:00:00' || $date_string === '0000-00-00' ) {
+				return false;
+			}
+			
+			$timestamp = strtotime( $date_string );
+			if ( $timestamp === false || $timestamp <= 0 ) {
+				return false;
+			}
+			
+			// Check for common invalid dates (Unix epoch, negative years, etc.)
+			$year = date( 'Y', $timestamp );
+			if ( $year < 1900 || $year > 2100 ) {
+				return false;
+			}
+			
+			return true;
+		};
+		
+		$date_status = '';
+		if ( $is_valid_date( $date_available ) ) {
+			$date_status = esc_html( date( 'm/d/Y g:i a', strtotime( $date_available ) ) );
+		}
+		
+		// Calculate update status (exact copy from template)
+		$updated = true;
+		$updated_text = '';
+		$timestamp = null;
+		$class_update_code = '';
+		$time = strtotime( current_time( 'mysql' ) . TIME_AVAILABLE_DRIVER );
+		$updated_zip_code_time = strtotime( $updated_zip_code );
+		
+		
+		if ( ! isset( $updated_zip_code_time ) || empty( $updated_zip_code_time ) ) {
+			$updated_text = 'Update date not set!';
+			$class_update_code = 'weiting';
+		} else {
+			if ( $time >= $updated_zip_code_time ) {
+				$class_update_code = 'need_update';
+				$updated_text = date( 'm/d/Y g:i a', $updated_zip_code_time );
+			}
+		}
+		
+		// Build HTML exactly like template
+		$state = explode( ',', $updated_zip_code );
+		$location_text = ( isset( $current_location ) && isset( $current_city ) )
+			? $current_city . ', ' . $current_location . ' ' : 'Need to set this field ';
+		
+		// Add date status if not available (exact copy from template)
+		if ( $driver_status !== 'available' ) {
+			$location_text .= $date_status;
+		}
+		
+		// Build full HTML exactly like template
+		$html = '<td class="table-column js-location-update ' . $class_update_code . '" style="font-size: 12px; width: 220px;">';
+		$html .= $location_text;
+		$html .= '<br>';
+		$html .= '<span>' . $updated_text . '</span>';
+		$html .= '</td>';
+		
+		return $html;
 	}
 	
 	public function remove_one_driver() {
@@ -268,6 +407,20 @@ class TMSDrivers extends TMSDriversHelper {
 			
 			// Получаем метаданные
 			$meta_data = $wpdb->get_results( $wpdb->prepare( "SELECT meta_key, meta_value FROM {$table_meta} WHERE post_id = %d", $id_load ), ARRAY_A );
+			
+			// Get driver info before deletion for email notification
+			$driver_name  = 'Unknown Driver';
+			$driver_phone = 'N/A';
+			
+			// Extract driver info from meta data
+			foreach ( $meta_data as $meta ) {
+				if ( $meta[ 'meta_key' ] === 'driver_name' ) {
+					$driver_name = $meta[ 'meta_value' ];
+				}
+				if ( $meta[ 'meta_key' ] === 'driver_phone' ) {
+					$driver_phone = $meta[ 'meta_value' ];
+				}
+			}
 			
 			// Удаляем файлы из метаданных
 			foreach ( $meta_data as $meta ) {
@@ -318,6 +471,29 @@ class TMSDrivers extends TMSDriversHelper {
 			
 			// Удаляем запись из основной таблицы
 			$wpdb->delete( $table_name, [ 'id' => $id_load ] );
+			
+			// Get user info
+			$user_id   = get_current_user_id();
+			$user_name = $this->get_user_full_name_by_id( $user_id );
+			$project   = get_field( 'current_select', 'user_' . $user_id );
+			
+			// Get admin email
+			$admin_email = get_option( 'admin_email' );
+			
+			// Send email notification about driver removal
+			$this->email_helper->send_custom_email( $admin_email, array(
+				'subject'      => 'Driver Removed: (' . $id_load . ') ' . $driver_name,
+				'project_name' => $project,
+				'subtitle'     => ( is_array( $user_name ) && isset( $user_name[ 'full_name' ] )
+						? $user_name[ 'full_name' ] : 'Unknown User' ) . ' has removed a driver from our system',
+				'message'      => "Driver ID: " . $id_load . "<br>
+					Driver Name: " . $driver_name . "<br>
+					Driver Phone: " . $driver_phone . "<br>
+					Removed by: " . ( is_array( $user_name ) && isset( $user_name[ 'full_name' ] )
+						? $user_name[ 'full_name' ] : 'Unknown User' ) . "<br>
+					Removal Date: " . current_time( 'mysql' ) . "<br><br>
+					This driver has been permanently removed from the system along with all associated files and data."
+			) );
 			
 			wp_send_json_success( [ 'message' => 'Load and associated files removed successfully' ] );
 		} else {
@@ -422,6 +598,8 @@ class TMSDrivers extends TMSDriversHelper {
 				ON main.id = motor_cargo_insurer.post_id AND motor_cargo_insurer.meta_key = 'motor_cargo_insurer'
 			LEFT JOIN $table_meta AS source
 				ON main.id = source.post_id AND source.meta_key = 'source'
+			LEFT JOIN $table_meta AS driver_status
+				ON main.id = driver_status.post_id AND driver_status.meta_key = 'driver_status'
 		";
 		
 		$where_conditions = array();
@@ -496,6 +674,12 @@ class TMSDrivers extends TMSDriversHelper {
 			$where_values[]     = $args[ 'month' ];
 		}
 		
+		// Add driver visibility condition based on user role
+		$driverHelper    = new TMSDriversHelper();
+		$visibility_data = $driverHelper->get_driver_visibility_condition();
+		if ( ! empty( $visibility_data[ 'condition' ] ) ) {
+			$where_conditions[] = $visibility_data[ 'condition' ];
+		}
 		
 		// Применяем фильтры к запросу
 		if ( ! empty( $where_conditions ) ) {
@@ -578,8 +762,6 @@ class TMSDrivers extends TMSDriversHelper {
 	public function get_table_items_search( $args = array() ) {
 		global $wpdb;
 		
-		// Debug: Log incoming arguments
-		error_log( 'DEBUG: get_table_items_search called with args = ' . print_r( $args, true ) );
 		
 		$table_main = $wpdb->prefix . $this->table_main;
 		$table_meta = $wpdb->prefix . $this->table_meta;
@@ -594,6 +776,8 @@ class TMSDrivers extends TMSDriversHelper {
 			: 'DESC';
 		
 		// Check if we have a search address for geocoding
+		
+		
 		if ( isset( $args[ 'my_search' ] ) && $args[ 'my_search' ] ) {
 			global $global_options;
 			
@@ -629,7 +813,6 @@ class TMSDrivers extends TMSDriversHelper {
 				$max_distance  = isset( $args[ 'radius' ] ) ? intval( $args[ 'radius' ] ) : 300;
 				$capabilities  = isset( $args[ 'capabilities' ] ) ? $args[ 'capabilities' ] : array();
 				$valid_drivers = $this->filter_and_sort_drivers_by_distance( $all_drivers, $search_coordinates[ 'lat' ], $search_coordinates[ 'lng' ], $max_distance, $capabilities );
-				
 				// Get real road distances using mapping service
 				if ( ! empty( $valid_drivers ) ) {
 					$MapController = new Map_Controller();
@@ -677,12 +860,23 @@ class TMSDrivers extends TMSDriversHelper {
 					
 					// Sort drivers by status priority
 					$valid_drivers = $this->sort_drivers_by_status_priority( $valid_drivers, $search_coordinates );
+					
+					// Filter drivers by max_distance after getting real distances
+					$filtered_by_distance = array();
+					foreach ( $valid_drivers as $key => $driver ) {
+						if ( isset( $driver[ 'distance' ] ) && is_numeric( $driver[ 'distance' ] ) && $driver[ 'distance' ] <= $max_distance ) {
+							$filtered_by_distance[ $key ] = $driver;
+						}
+					}
+					$valid_drivers = $filtered_by_distance;
 				}
 				// Store filtered drivers for template use (even if empty)
 				$args[ 'filtered_drivers' ]       = $valid_drivers;
 				$args[ 'total_filtered_drivers' ] = count( $valid_drivers );
 				$args[ 'has_distance_data' ]      = true;
 				$args[ 'search_coordinates' ]     = $search_coordinates;
+				
+				
 			}
 		}
 		
@@ -774,6 +968,8 @@ class TMSDrivers extends TMSDriversHelper {
 		}
 		
 		// Check if we have filtered drivers from distance-based search
+		
+		
 		if ( isset( $args[ 'has_distance_data' ] ) && $args[ 'has_distance_data' ] && ! empty( $args[ 'filtered_drivers' ] ) ) {
 			// For distance-based search, return all filtered drivers without pagination
 			$filtered_driver_ids = array_keys( $args[ 'filtered_drivers' ] );
@@ -793,8 +989,8 @@ class TMSDrivers extends TMSDriversHelper {
 					'current_pages' => 1,
 				);
 			}
-		} else {
-			// Regular search without distance filtering
+		} else if ( ! isset( $args[ 'my_search' ] ) || empty( $args[ 'my_search' ] ) ) {
+			// Regular search without distance filtering (only if no my_search)
 			if ( ! empty( $args[ 'status_post' ] ) ) {
 				$where_conditions[] = "main.status_post = %s";
 				$where_values[]     = $args[ 'status_post' ];
@@ -865,6 +1061,21 @@ class TMSDrivers extends TMSDriversHelper {
 					}
 				}
 			}
+		} else {
+			// Distance search was performed but no results found - return empty results
+			return array(
+				'results'       => array(),
+				'total_pages'   => 0,
+				'total_posts'   => 0,
+				'current_pages' => 1,
+			);
+		}
+		
+		// Add driver visibility condition based on user role
+		$driverHelper    = new TMSDriversHelper();
+		$visibility_data = $driverHelper->get_driver_visibility_condition();
+		if ( ! empty( $visibility_data[ 'condition' ] ) ) {
+			$where_conditions[] = $visibility_data[ 'condition' ];
 		}
 		
 		// Основной запрос
@@ -912,10 +1123,6 @@ class TMSDrivers extends TMSDriversHelper {
 		$where_values[] = $offset;
 		$where_values[] = $per_page;
 		
-		// Debug: Log the final SQL query
-		error_log( 'DEBUG: Final SQL query = ' . $wpdb->prepare( $sql, ...$where_values ) );
-		error_log( 'DEBUG: Where conditions = ' . print_r( $where_conditions, true ) );
-		error_log( 'DEBUG: Where values = ' . print_r( $where_values, true ) );
 		
 		// Выполняем запрос
 		$main_results = $wpdb->get_results( $wpdb->prepare( $sql, ...$where_values ), ARRAY_A );
@@ -1009,6 +1216,7 @@ class TMSDrivers extends TMSDriversHelper {
 		$vehicle_type  = get_field_value( $meta, 'vehicle_type' ) ?? '';
 		$vehicle_model = get_field_value( $meta, 'vehicle_model' ) ?? '';
 		$vehicle_make  = get_field_value( $meta, 'vehicle_make' );
+		$vehicle_year  = get_field_value( $meta, 'vehicle_year' );
 		$dimensions    = get_field_value( $meta, 'dimensions' );
 		$payload       = get_field_value( $meta, 'payload' );
 		$home_location = get_field_value( $meta, 'home_location' );
@@ -1048,11 +1256,23 @@ class TMSDrivers extends TMSDriversHelper {
 			$available_labels_str = implode( ', ', $available_labels );
 			$str                  = "\nAdditional details: " . $available_labels_str;
 		}
-		$vehicle_type = $driverHelper->vehicle[ $vehicle_type ] . ', ' . $vehicle_make . ' ' . $vehicle_model ?? '';
+		$vehicle_parts   = array();
+		$vehicle_parts[] = $this->vehicle[ $vehicle_type ];
+		$vehicle_parts[] = $vehicle_make;
+		$vehicle_parts[] = $vehicle_model;
+		$vehicle_parts[] = $vehicle_year;
+		
+		// Filter out empty values and join with spaces
+		$vehicle_parts = array_filter( $vehicle_parts, function( $part ) {
+			return ! empty( trim( $part ) );
+		} );
+		
+		$vehicle_type = implode( ' ', $vehicle_parts );
 		
 		if ( $add_new_driver ) {
 			$link = '<a href="' . $add_new_driver . '?post_id=' . $ID_DRIVER . '">' . '(' . $ID_DRIVER . ') ' . $driver_name . '</a>';
 		}
+		
 		
 		$this->email_helper->send_custom_email( $select_emails, array(
 			'subject'      => 'New Driver added:' . ' (' . $ID_DRIVER . ') ' . $driver_name,
@@ -1060,7 +1280,7 @@ class TMSDrivers extends TMSDriversHelper {
 			'subtitle'     => $user_name[ 'full_name' ] . ' has added the new driver to our system ' . $link,
 			'message'      => "Contact phone number: " . $driver_phone . "<br>
 				Vehicle: " . $vehicle_type . "<br>
-				Cargo space details: " . $dimensions . " inches, " . $payload . "<br>
+				Cargo space details: " . $dimensions . " inches, " . $payload . " lbs.<br>
 				Home location: " . $city . ', ' . $home_location . "<br>
 				" . $str . "<br><br>
 				Don't forget to rate your experience with this driver in our system if you happen to book a load for this unit."
@@ -1125,16 +1345,16 @@ class TMSDrivers extends TMSDriversHelper {
 			if ( $existing !== null ) {
 				// Обновляем существующую запись
 				$result_meta = $wpdb->update( $table_meta, array( 'meta_value' => $data[ 'driver_status' ] ), array(
-						'post_id'  => $driver_id,
-						'meta_key' => 'driver_status'
-					), array( '%s' ), array( '%d', '%s' ) );
+					'post_id'  => $driver_id,
+					'meta_key' => 'driver_status'
+				), array( '%s' ), array( '%d', '%s' ) );
 			} else {
 				// Создаем новую запись
 				$result_meta = $wpdb->insert( $table_meta, array(
-						'post_id'    => $driver_id,
-						'meta_key'   => 'driver_status',
-						'meta_value' => $data[ 'driver_status' ]
-					), array( '%d', '%s', '%s' ) );
+					'post_id'    => $driver_id,
+					'meta_key'   => 'driver_status',
+					'meta_value' => $data[ 'driver_status' ]
+				), array( '%d', '%s', '%s' ) );
 			}
 		}
 		
@@ -1271,7 +1491,7 @@ class TMSDrivers extends TMSDriversHelper {
 					) );
 				}
 				
-				return true; // Успешное обновление
+				return true; // Успешное обновление 
 			} else {
 				return new WP_Error( 'db_update_failed', 'Failed to update the database.' );
 			}
@@ -1517,7 +1737,7 @@ class TMSDrivers extends TMSDriversHelper {
 					? sanitize_text_field( $_POST[ 'driver_name' ] ) : '',
 				'driver_phone'               => isset( $_POST[ 'driver_phone' ] )
 					? sanitize_text_field( $_POST[ 'driver_phone' ] ) : '',
-				'driver_email'               => isset( $_POST[ 'driver_emawil' ] )
+				'driver_email'               => isset( $_POST[ 'driver_email' ] )
 					? sanitize_email( $_POST[ 'driver_email' ] ) : '',
 				'home_location'              => isset( $_POST[ 'home_location' ] )
 					? sanitize_text_field( $_POST[ 'home_location' ] ) : '',
@@ -1558,6 +1778,8 @@ class TMSDrivers extends TMSDriversHelper {
 					? sanitize_text_field( $_POST[ 'owner_name' ] ) : '',
 				'owner_phone'                => isset( $_POST[ 'owner_phone' ] )
 					? sanitize_text_field( $_POST[ 'owner_phone' ] ) : '',
+				'show_phone'                 => isset( $_POST[ 'show_phone' ] )
+					? sanitize_text_field( $_POST[ 'show_phone' ] ) : '',
 				'owner_email'                => isset( $_POST[ 'owner_email' ] )
 					? sanitize_email( $_POST[ 'owner_email' ] ) : '',
 				'owner_dob'                  => isset( $_POST[ 'owner_dob' ] )
@@ -1664,6 +1886,8 @@ class TMSDrivers extends TMSDriversHelper {
 					? sanitize_text_field( $_POST[ 'owner_name' ] ) : '',
 				'owner_phone'                => isset( $_POST[ 'owner_phone' ] )
 					? sanitize_text_field( $_POST[ 'owner_phone' ] ) : '',
+				'show_phone'                 => isset( $_POST[ 'show_phone' ] )
+					? sanitize_text_field( $_POST[ 'show_phone' ] ) : '',
 				'owner_email'                => isset( $_POST[ 'owner_email' ] )
 					? sanitize_email( $_POST[ 'owner_email' ] ) : '',
 				'owner_dob'                  => isset( $_POST[ 'owner_dob' ] )
@@ -1894,6 +2118,7 @@ class TMSDrivers extends TMSDriversHelper {
 				'pallet_jack'             => sanitize_text_field( get_field_value( $_POST, 'pallet_jack' ) ),
 				'lift_gate'               => sanitize_text_field( get_field_value( $_POST, 'lift_gate' ) ),
 				'dolly'                   => sanitize_text_field( get_field_value( $_POST, 'dolly' ) ),
+				'dock_high'               => sanitize_text_field( get_field_value( $_POST, 'dock_high' ) ),
 				'load_bars'               => sanitize_text_field( get_field_value( $_POST, 'load_bars' ) ),
 				'ramp'                    => sanitize_text_field( get_field_value( $_POST, 'ramp' ) ),
 				'printer'                 => sanitize_text_field( get_field_value( $_POST, 'printer' ) ),
@@ -3748,23 +3973,40 @@ class TMSDrivers extends TMSDriversHelper {
 	public function filter_and_sort_drivers_by_distance(
 		$all_drivers, $search_lat, $search_lng, $max_distance, $capabilities = array()
 	) {
+		
+		
 		if ( ! is_array( $all_drivers ) || empty( $all_drivers ) ) {
+			error_log( "filter_and_sort_drivers_by_distance - No drivers to process" );
+			
 			return array();
 		}
 		
 		$valid_drivers = array();
 		
+		$processed_count       = 0;
+		$within_distance_count = 0;
+		
+		// Check driver visibility based on user role
+		$driverHelper = new TMSDriversHelper();
+		
 		foreach ( $all_drivers as $driver ) {
+			$processed_count ++;
 			$lat_t   = floatval( $driver[ 'lat' ] );
 			$lon_t   = floatval( $driver[ 'lon' ] );
 			$updated = $driver[ 'updated' ];
 			$status  = $driver[ 'status' ];
+			
+			// Check if current user can see this driver based on status
+			if ( ! $driverHelper->can_see_driver_with_status( $status ) ) {
+				continue; // Skip this driver if user can't see it
+			}
 			
 			// Calculate distance
 			$distance = $this->calculate_distance( $search_lat, $search_lng, $lat_t, $lon_t );
 			
 			// Check if driver is within specified distance
 			if ( $distance <= $max_distance ) {
+				$within_distance_count ++;
 				// Check capabilities if specified
 				$has_required_capabilities = true;
 				if ( ! empty( $capabilities ) && is_array( $capabilities ) ) {
@@ -3780,6 +4022,8 @@ class TMSDrivers extends TMSDriversHelper {
 						'status'   => $status,
 						'post_id'  => $driver[ 'post_id' ]
 					);
+				} else {
+					error_log( "Driver " . $driver[ 'post_id' ] . " failed capabilities check but is within distance" );
 				}
 			}
 		}
@@ -3788,6 +4032,7 @@ class TMSDrivers extends TMSDriversHelper {
 		uasort( $valid_drivers, function( $item1, $item2 ) {
 			return $item1[ 'distance' ] <=> $item2[ 'distance' ];
 		} );
+		
 		
 		return $valid_drivers;
 	}
@@ -3950,6 +4195,7 @@ class TMSDrivers extends TMSDriversHelper {
 		
 		$table_meta = $wpdb->prefix . $this->table_meta;
 		
+		
 		// Prepare meta keys for database query (handle special cases)
 		$meta_keys_to_query = array();
 		foreach ( $required_capabilities as $capability ) {
@@ -3969,15 +4215,18 @@ class TMSDrivers extends TMSDriversHelper {
 		
 		$driver_capabilities = $wpdb->get_results( $capabilities_sql, ARRAY_A );
 		
+		
 		// Convert to associative array
 		$capabilities_map = array();
 		foreach ( $driver_capabilities as $cap ) {
 			$capabilities_map[ $cap[ 'meta_key' ] ] = $cap[ 'meta_value' ];
 		}
 		
+		
 		// Check if driver has all required capabilities
 		foreach ( $required_capabilities as $capability ) {
 			$has_capability = false;
+			
 			
 			switch ( $capability ) {
 				case 'cross_border_canada':
@@ -4270,10 +4519,6 @@ class TMSDrivers extends TMSDriversHelper {
 			ORDER BY update_date ASC
 		", $current_user_id, $current_time ) );
 		
-		// Debug info
-		error_log( 'Hold drivers count: ' . count( $driver_ids ) );
-		error_log( 'Current time: ' . $current_time );
-		error_log( 'Driver IDs: ' . implode( ', ', $driver_ids ) );
 		
 		if ( empty( $driver_ids ) ) {
 			return array();
@@ -4293,7 +4538,6 @@ class TMSDrivers extends TMSDriversHelper {
 		foreach ( $results as $driver ) {
 			// Проверяем, что этот водитель действительно в списке запрошенных ID
 			if ( ! in_array( $driver[ 'id' ], $driver_ids ) ) {
-				error_log( "Skipping driver {$driver['id']} - not in requested IDs" );
 				continue;
 			}
 			
@@ -4304,13 +4548,9 @@ class TMSDrivers extends TMSDriversHelper {
 			if ( $hold_info ) {
 				$driver[ 'hold_info' ] = $hold_info;
 				$drivers_on_hold[]     = $driver;
-				error_log( "Added driver {$driver['id']} to hold list" );
-			} else {
-				error_log( "Driver {$driver['id']} has no active hold" );
 			}
 		}
 		
-		error_log( 'Final drivers on hold count: ' . count( $drivers_on_hold ) );
 		
 		return $drivers_on_hold;
 	}
@@ -4395,9 +4635,9 @@ class TMSDrivers extends TMSDriversHelper {
 		$new_time     = date( 'Y-m-d H:i:s', strtotime( $current_time ) + ( $this->hold_time * 60 ) );
 		
 		$result = $wpdb->update( $table_name, array( 'update_date' => $new_time ), array(
-				'driver_id'     => $driver_id,
-				'dispatcher_id' => $dispatcher_id
-			), array( '%s' ), array( '%d', '%d' ) );
+			'driver_id'     => $driver_id,
+			'dispatcher_id' => $dispatcher_id
+		), array( '%s' ), array( '%d', '%d' ) );
 		
 		// Clear drivers cache when hold time is extended
 		$this->clear_drivers_cache();

@@ -13,14 +13,18 @@ $states = $helper->get_states();
 $main = get_field_value( $object_driver, 'main' );
 $meta = get_field_value( $object_driver, 'meta' );
 
-$driver_status    = get_field_value( $meta, 'driver_status' );
-$status_date      = get_field_value( $meta, 'status_date' );
-$current_location = get_field_value( $meta, 'current_location' );
-$current_city     = get_field_value( $meta, 'current_city' );
-$current_zipcode  = get_field_value( $meta, 'current_zipcode' );
-$latitud          = get_field_value( $meta, 'latitude' );
-$longitude        = get_field_value( $meta, 'longitude' );
-$country          = get_field_value( $meta, 'country' );
+$driver_status = get_field_value( $meta, 'driver_status' );
+
+// Check if current user can change the current driver status (after $driver_status is defined)
+$can_change_current_status = $driver->can_change_driver_status( $driver_status );
+$allowed_statuses          = $driver->get_allowed_statuses();
+$status_date               = get_field_value( $meta, 'status_date' );
+$current_location          = get_field_value( $meta, 'current_location' );
+$current_city              = get_field_value( $meta, 'current_city' );
+$current_zipcode           = get_field_value( $meta, 'current_zipcode' );
+$latitud                   = get_field_value( $meta, 'latitude' );
+$longitude                 = get_field_value( $meta, 'longitude' );
+$country                   = get_field_value( $meta, 'country' );
 
 // Get updated_zipcode from main table
 $updated_zipcode = get_field_value( $main, 'updated_zipcode' );
@@ -34,7 +38,7 @@ $updated_zipcode = get_field_value( $main, 'updated_zipcode' );
 		<?php else: ?>
         <form class="<?php echo $post_id ? 'js-update-location-driver' : ''; ?>">
 			<?php endif; ?>
-
+			
 			<?php if ( $post_id ): ?>
                 <input type="hidden" class="js-id_driver" name="driver_id" value="<?php echo $post_id; ?>">
 			<?php endif; ?>
@@ -43,17 +47,30 @@ $updated_zipcode = get_field_value( $main, 'updated_zipcode' );
             <div class="row">
                 <div class="col-12 col-md-6 mb-3">
                     <label class="form-label">Status<span class="required-star text-danger">*</span></label>
-                    <select name="driver_status" required class="form-control form-select js-state">
-						<?php if ( is_array( $statuses ) ):
-							foreach ( $statuses as $key => $status ):
-								?>
-                                <option value="<?php echo $key; ?>" <?php echo $key === $driver_status ? 'selected'
-									: '' ?>><?php echo $status; ?></option>
-							<?php
-							endforeach;
-						endif;
-						?>
-                    </select>
+					<?php if ( $can_change_current_status ): ?>
+                        <!-- User can change status - show select dropdown -->
+                        <select name="driver_status" required class="form-control form-select js-state">
+							<?php if ( is_array( $statuses ) ):
+								foreach ( $statuses as $key => $status ):
+									// Only show allowed statuses
+									if ( in_array( $key, $allowed_statuses ) ):
+										?>
+                                        <option value="<?php echo $key; ?>" <?php echo $key === $driver_status
+											? 'selected' : '' ?>><?php echo $status; ?></option>
+									<?php
+									endif;
+								endforeach;
+							endif;
+							?>
+                        </select>
+					<?php else: ?>
+                        <!-- User cannot change status - show read-only display with hidden input -->
+                        <p class="form-control-plaintext p-1 bg-light">
+                            <strong><?php echo isset( $statuses[ $driver_status ] ) ? $statuses[ $driver_status ]
+									: $driver_status; ?></strong>
+                        </p>
+                        <input type="hidden" name="driver_status" value="<?php echo $driver_status; ?>">
+					<?php endif; ?>
                 </div>
                 <div class="col-12 col-md-6 mb-3">
                     <label class="form-label">Date<span class="required-star text-danger">*</span>
@@ -83,7 +100,7 @@ $updated_zipcode = get_field_value( $main, 'updated_zipcode' );
                            value="<?php echo $current_city; ?>">
                 </div>
                 <div class="col-md-4 mb-3">
-                    <label class="form-label">Zipcode<span class="required-star text-danger">*</span></label>
+                    <label class="form-label">Zip code<span class="required-star text-danger">*</span></label>
                     <input required type="text" class="form-control js-zip-code" name="current_zipcode"
                            value="<?php echo $current_zipcode; ?>">
                 </div>
@@ -111,7 +128,8 @@ $updated_zipcode = get_field_value( $main, 'updated_zipcode' );
                     <div class="d-flex justify-content-end gap-1 align-items-center">
                         <p class="m-0 text-small text-danger">
                             Update without set new location <br>
-                            last update <?php echo $updated_zipcode ? date( 'm/d/Y g:i a', strtotime( $updated_zipcode ) ) : 'not set'; ?>
+                            last update <?php echo $updated_zipcode
+								? date( 'm/d/Y g:i a', strtotime( $updated_zipcode ) ) : 'not set'; ?>
                         </p>
                         <button type="button" class="btn btn-outline-primary js-update-only-date">Update date</button>
                     </div>

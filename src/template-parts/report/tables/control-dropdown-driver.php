@@ -9,7 +9,7 @@ $TMSHelper    = new TMSReportsHelper();
 $TMSUsers     = new TMSUsers();
 $TMSIcons     = new TMSReportsIcons();
 
-$is_admin = $TMSUsers->check_user_role_access( array( 'administrator' ), true );
+$is_admin = $TMSUsers->check_user_role_access( array( 'administrator', 'recruiter-tl' ), true );
 ?>
 
 <?php if ( $is_admin || $is_draft ): ?>

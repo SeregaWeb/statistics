@@ -38,6 +38,7 @@ $logo         = ! empty( $texts[ 'logo' ] ) ? $texts[ 'logo' ] : '';
 
 		.content-title {
 			margin-top: 0;
+			font-size: 26px;
 		}
     </style>
 </head>
@@ -51,8 +52,8 @@ $logo         = ! empty( $texts[ 'logo' ] ) ? $texts[ 'logo' ] : '';
 
 <div class='content'>
     <h3 class="content-title"><?php echo $project_name; ?></h3>
-    <h4><?php echo $subtitle; ?></h4>
-    <p><?php echo $message; ?></p>
+    <h4 style="font-size: 22px;"><?php echo $subtitle; ?></h4>
+    <p style="font-size: 18px;"><?php echo $message; ?></p>
 </div>
 </body>
 </html>

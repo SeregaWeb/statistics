@@ -11,7 +11,7 @@ interface DriverRow {
 class QuickCopy {
     private tableSelector: string = '.table tbody tr';
     private statusColumnSelector: string = '.driver-status';
-    private phoneColumnSelector: string = '.text-small';
+    private phoneColumnSelector: string = '.js-phone-driver';
 
     constructor() {
         this.init();
@@ -67,13 +67,11 @@ class QuickCopy {
             const statusElement = row.querySelector(this.statusColumnSelector) as HTMLElement;
             if (!statusElement) return null;
 
-            // Find phone element (in the driver column, second span)
-            const driverColumn = row.querySelector('td:nth-child(4)') as HTMLElement; // Driver column
-            if (!driverColumn) return null;
-            
-            const phoneElement = driverColumn.querySelector(this.phoneColumnSelector) as HTMLElement;
+            // Find phone element directly by class
+            const phoneElement = row.querySelector(this.phoneColumnSelector) as HTMLElement;
             if (!phoneElement) return null;
 
+            console.log(statusElement.textContent?.trim(), phoneElement.textContent?.trim());
             const status = this.normalizeStatus(statusElement.textContent?.trim() || '');
             const phone = phoneElement.textContent?.trim() || '';
 
@@ -96,13 +94,14 @@ class QuickCopy {
             'on hold': 'available', // on_hold counts as available
             'available on': 'available_on',
             'available_on': 'available_on',
+            'loaded & enroute': 'available_on',
             'not available': 'not_available',
             'no updates': 'not_available',
             'blocked': 'not_available',
             'banned': 'not_available',
             'expired documents': 'not_available',
             'expired_documents': 'not_available',
-            'need set status': 'not_available'
+            'need set status': 'not_available' 
         };
 
         const normalized = status.toLowerCase();

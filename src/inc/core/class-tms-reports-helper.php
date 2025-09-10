@@ -733,7 +733,6 @@ class TMSReportsHelper extends TMSReportsIcons {
 		
 		// Теперь ищем tracking, исключая nightshift_user
 		$tracking_user = $this->find_user_by_emails( $tracking_email, $nightshift_user ? $nightshift_user->ID : null );
-		
 		// Проверяем, что пользователи найдены
 		if ( ! $tracking_user ) {
 			return 'Tracking user not found.';
@@ -784,7 +783,8 @@ class TMSReportsHelper extends TMSReportsIcons {
 		$dispatcher_initials    = get_field_value( $meta, 'dispatcher_initials' );
 		$nightshift             = get_field( 'nightshift_tracking', 'user_' . $dispatcher_initials );
 		$tracking               = $emails->get_tracking_email( $dispatcher_initials );
-		$last_message           = $this->get_tracking_message( $tracking, $nightshift );
+		
+		$last_message = $this->get_tracking_message( $tracking, $nightshift );
 		
 		$driver_rate             = esc_html( '$' . $this->format_currency( $driver_rate_raw ) );
 		$get_instructions_values = $this->get_instructions_values( $instructions );
@@ -1302,6 +1302,8 @@ Kindly confirm once you've received this message." ) . "\n";
 				$active_tab = 'pills-customer-tab';
 			} else if ( $default_tab === 'drivers' ) {
 				$active_tab = 'pills-driver-contact-tab';
+			} else if ( $default_tab === 'dispatchers' ) {
+				$active_tab = 'pills-driver-location-tab';
 			}
 		}
 		
@@ -1559,8 +1561,9 @@ Kindly confirm once you've received this message." ) . "\n";
 	
 	/**
 	 * Clean and decode JSON string with proper quote handling
-	 * 
+	 *
 	 * @param string $json_string The JSON string to clean and decode
+	 *
 	 * @return array|null Decoded array or null if failed
 	 */
 	private function cleanAndDecodeJson( $json_string ) {
@@ -1571,19 +1574,20 @@ Kindly confirm once you've received this message." ) . "\n";
 		// Clean up escaped quotes before JSON decode
 		$clean_json = stripslashes( $json_string );
 		// Replace apostrophes with a different character to avoid JSON issues
-		$clean_json = str_replace("'", "`", $clean_json);
+		$clean_json = str_replace( "'", "`", $clean_json );
 		// Also handle escaped double quotes
-		$clean_json = str_replace('\"', '"', $clean_json);
+		$clean_json = str_replace( '\"', '"', $clean_json );
 		// Handle escaped backticks
-		$clean_json = str_replace('\`', '`', $clean_json);
+		$clean_json = str_replace( '\`', '`', $clean_json );
 		
 		return json_decode( $clean_json, true );
 	}
-
+	
 	/**
 	 * Extract short addresses from location array
-	 * 
+	 *
 	 * @param array|null $location_array Array of location data
+	 *
 	 * @return array Array of short addresses
 	 */
 	private function extractShortAddresses( $location_array ) {
@@ -1599,7 +1603,7 @@ Kindly confirm once you've received this message." ) . "\n";
 		
 		return $addresses;
 	}
-
+	
 	function buildHeaderAddReport( $meta ) {
 		
 		if ( ! $meta ) {
@@ -1612,17 +1616,16 @@ Kindly confirm once you've received this message." ) . "\n";
 		
 		$template_p = [];
 		$template_d = [];
-
 		
 		
 		if ( ! empty( $pick_up_location ) ) {
 			$pick_up_location_array = $this->cleanAndDecodeJson( $pick_up_location );
-			$template_p = $this->extractShortAddresses( $pick_up_location_array );
+			$template_p             = $this->extractShortAddresses( $pick_up_location_array );
 		}
 		
 		if ( ! empty( $delivery_location ) ) {
 			$delivery_location_array = $this->cleanAndDecodeJson( $delivery_location );
-			$template_d = $this->extractShortAddresses( $delivery_location_array );
+			$template_d              = $this->extractShortAddresses( $delivery_location_array );
 		}
 		
 		$subject = sprintf( '%s %s - %s ', $reference_number, implode( ', ', $template_p ), implode( ', ', $template_d ) );
@@ -1641,7 +1644,7 @@ Kindly confirm once you've received this message." ) . "\n";
 	
 	/**
 	 * Get current date in EST timezone for form inputs
-	 * 
+	 *
 	 * @return string
 	 */
 	function getCurrentDateForAmerica() {

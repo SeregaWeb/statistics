@@ -7584,7 +7584,7 @@ var QuickCopy = /*#__PURE__*/function () {
     _classCallCheck(this, QuickCopy);
     this.tableSelector = '.table tbody tr';
     this.statusColumnSelector = '.driver-status';
-    this.phoneColumnSelector = '.text-small';
+    this.phoneColumnSelector = '.js-phone-driver';
     this.init();
   }
   return _createClass(QuickCopy, [{
@@ -7634,16 +7634,15 @@ var QuickCopy = /*#__PURE__*/function () {
   }, {
     key: "extractDriverData",
     value: function extractDriverData(row) {
-      var _a, _b;
+      var _a, _b, _c, _d;
       try {
         var statusElement = row.querySelector(this.statusColumnSelector);
         if (!statusElement) return null;
-        var driverColumn = row.querySelector('td:nth-child(4)');
-        if (!driverColumn) return null;
-        var phoneElement = driverColumn.querySelector(this.phoneColumnSelector);
+        var phoneElement = row.querySelector(this.phoneColumnSelector);
         if (!phoneElement) return null;
-        var status = this.normalizeStatus(((_a = statusElement.textContent) === null || _a === void 0 ? void 0 : _a.trim()) || '');
-        var phone = ((_b = phoneElement.textContent) === null || _b === void 0 ? void 0 : _b.trim()) || '';
+        console.log((_a = statusElement.textContent) === null || _a === void 0 ? void 0 : _a.trim(), (_b = phoneElement.textContent) === null || _b === void 0 ? void 0 : _b.trim());
+        var status = this.normalizeStatus(((_c = statusElement.textContent) === null || _c === void 0 ? void 0 : _c.trim()) || '');
+        var phone = ((_d = phoneElement.textContent) === null || _d === void 0 ? void 0 : _d.trim()) || '';
         if (phone.includes('***')) {
           return null;
         }
@@ -7664,6 +7663,7 @@ var QuickCopy = /*#__PURE__*/function () {
         'on hold': 'available',
         'available on': 'available_on',
         'available_on': 'available_on',
+        'loaded & enroute': 'available_on',
         'not available': 'not_available',
         'no updates': 'not_available',
         'blocked': 'not_available',
@@ -7749,6 +7749,387 @@ document.addEventListener('DOMContentLoaded', function () {
   new QuickCopy();
 });
 /* harmony default export */ __webpack_exports__["default"] = (QuickCopy);
+
+/***/ }),
+
+/***/ "./src/js/components/quick-status-update.ts":
+/*!**************************************************!*\
+  !*** ./src/js/components/quick-status-update.ts ***!
+  \**************************************************/
+/***/ (function(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   initQuickStatusUpdate: function() { return /* binding */ initQuickStatusUpdate; }
+/* harmony export */ });
+/* harmony import */ var _info_messages__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./info-messages */ "./src/js/components/info-messages.ts");
+/* harmony import */ var _tooltip_start__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./tooltip-start */ "./src/js/components/tooltip-start.ts");
+function _typeof(o) { "@babel/helpers - typeof"; return _typeof = "function" == typeof Symbol && "symbol" == typeof Symbol.iterator ? function (o) { return typeof o; } : function (o) { return o && "function" == typeof Symbol && o.constructor === Symbol && o !== Symbol.prototype ? "symbol" : typeof o; }, _typeof(o); }
+function _slicedToArray(r, e) { return _arrayWithHoles(r) || _iterableToArrayLimit(r, e) || _unsupportedIterableToArray(r, e) || _nonIterableRest(); }
+function _nonIterableRest() { throw new TypeError("Invalid attempt to destructure non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method."); }
+function _iterableToArrayLimit(r, l) { var t = null == r ? null : "undefined" != typeof Symbol && r[Symbol.iterator] || r["@@iterator"]; if (null != t) { var e, n, i, u, a = [], f = !0, o = !1; try { if (i = (t = t.call(r)).next, 0 === l) { if (Object(t) !== t) return; f = !1; } else for (; !(f = (e = i.call(t)).done) && (a.push(e.value), a.length !== l); f = !0); } catch (r) { o = !0, n = r; } finally { try { if (!f && null != t.return && (u = t.return(), Object(u) !== u)) return; } finally { if (o) throw n; } } return a; } }
+function _arrayWithHoles(r) { if (Array.isArray(r)) return r; }
+function _createForOfIteratorHelper(r, e) { var t = "undefined" != typeof Symbol && r[Symbol.iterator] || r["@@iterator"]; if (!t) { if (Array.isArray(r) || (t = _unsupportedIterableToArray(r)) || e && r && "number" == typeof r.length) { t && (r = t); var _n = 0, F = function F() {}; return { s: F, n: function n() { return _n >= r.length ? { done: !0 } : { done: !1, value: r[_n++] }; }, e: function e(r) { throw r; }, f: F }; } throw new TypeError("Invalid attempt to iterate non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method."); } var o, a = !0, u = !1; return { s: function s() { t = t.call(r); }, n: function n() { var r = t.next(); return a = r.done, r; }, e: function e(r) { u = !0, o = r; }, f: function f() { try { a || null == t.return || t.return(); } finally { if (u) throw o; } } }; }
+function _unsupportedIterableToArray(r, a) { if (r) { if ("string" == typeof r) return _arrayLikeToArray(r, a); var t = {}.toString.call(r).slice(8, -1); return "Object" === t && r.constructor && (t = r.constructor.name), "Map" === t || "Set" === t ? Array.from(r) : "Arguments" === t || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(t) ? _arrayLikeToArray(r, a) : void 0; } }
+function _arrayLikeToArray(r, a) { (null == a || a > r.length) && (a = r.length); for (var e = 0, n = Array(a); e < a; e++) n[e] = r[e]; return n; }
+function _classCallCheck(a, n) { if (!(a instanceof n)) throw new TypeError("Cannot call a class as a function"); }
+function _defineProperties(e, r) { for (var t = 0; t < r.length; t++) { var o = r[t]; o.enumerable = o.enumerable || !1, o.configurable = !0, "value" in o && (o.writable = !0), Object.defineProperty(e, _toPropertyKey(o.key), o); } }
+function _createClass(e, r, t) { return r && _defineProperties(e.prototype, r), t && _defineProperties(e, t), Object.defineProperty(e, "prototype", { writable: !1 }), e; }
+function _toPropertyKey(t) { var i = _toPrimitive(t, "string"); return "symbol" == _typeof(i) ? i : i + ""; }
+function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e = t[Symbol.toPrimitive]; if (void 0 !== e) { var i = e.call(t, r || "default"); if ("object" != _typeof(i)) return i; throw new TypeError("@@toPrimitive must return a primitive value."); } return ("string" === r ? String : Number)(t); }
+
+
+var QuickStatusUpdate = /*#__PURE__*/function () {
+  function QuickStatusUpdate(ajaxUrl) {
+    _classCallCheck(this, QuickStatusUpdate);
+    this.modal = null;
+    this.form = null;
+    this.submitButton = null;
+    this.isInitialized = false;
+    this.ajaxUrl = ajaxUrl;
+    this.init();
+  }
+  return _createClass(QuickStatusUpdate, [{
+    key: "init",
+    value: function init() {
+      var _this = this;
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', function () {
+          return _this.setupEventListeners();
+        });
+      } else {
+        this.setupEventListeners();
+      }
+    }
+  }, {
+    key: "setupEventListeners",
+    value: function setupEventListeners() {
+      var _this2 = this;
+      if (this.isInitialized) {
+        return;
+      }
+      this.modal = document.getElementById('quickStatusUpdateModal');
+      this.form = document.querySelector('.js-quick-update-location-driver');
+      this.submitButton = document.querySelector('.js-submit-quick-update');
+      if (!this.modal || !this.form || !this.submitButton) {
+        console.warn('Quick Status Update: Modal elements not found');
+        return;
+      }
+      this.modal.addEventListener('show.bs.modal', function (event) {
+        var button = event.relatedTarget;
+        if (button && button.classList.contains('js-quick-status-update')) {
+          _this2.populateForm(button);
+        }
+      });
+      this.submitButton.addEventListener('click', function (event) {
+        event.preventDefault();
+        _this2.submitForm();
+      });
+      var fillLocationButton = this.form.querySelector('.js-fill-new-location');
+      if (fillLocationButton) {
+        fillLocationButton.addEventListener('click', function (event) {
+          event.preventDefault();
+          _this2.fillLocationByZipcode();
+        });
+      }
+      this.isInitialized = true;
+    }
+  }, {
+    key: "closeModal",
+    value: function closeModal() {
+      if (!this.modal) return;
+      try {
+        var windowAny = window;
+        if (windowAny.bootstrap && windowAny.bootstrap.Modal) {
+          var modalInstance = windowAny.bootstrap.Modal.getInstance(this.modal);
+          if (modalInstance) {
+            modalInstance.hide();
+            return;
+          }
+        }
+        if (windowAny.$ && windowAny.$(this.modal).modal) {
+          windowAny.$(this.modal).modal('hide');
+          return;
+        }
+        var closeButton = this.modal.querySelector('[data-bs-dismiss="modal"]');
+        if (closeButton) {
+          closeButton.click();
+          return;
+        }
+        this.modal.classList.remove('show');
+        this.modal.style.display = 'none';
+        this.modal.setAttribute('aria-hidden', 'true');
+        this.modal.removeAttribute('aria-modal');
+        var backdrop = document.querySelector('.modal-backdrop');
+        if (backdrop) {
+          backdrop.remove();
+        }
+        document.body.classList.remove('modal-open');
+        document.body.style.overflow = '';
+      } catch (error) {
+        console.warn('Error closing modal:', error);
+      }
+    }
+  }, {
+    key: "updateTableRow",
+    value: function updateTableRow(driverData) {
+      if (!driverData) return;
+      var driverId = driverData.id;
+      var tableRow = document.querySelector("tr[data-driver-id=\"".concat(driverId, "\"]"));
+      if (!tableRow) {
+        console.warn('Table row not found for driver ID:', driverId);
+        return;
+      }
+      var statusCell = tableRow.querySelector('.driver-status');
+      if (statusCell && driverData.status_text) {
+        statusCell.textContent = driverData.status_text;
+        statusCell.className = "driver-status ".concat(driverData.status_class);
+      }
+      var locationCell = tableRow.querySelector('.js-location-update');
+      if (locationCell && driverData.location_html) {
+        var htmlMatch = driverData.location_html.match(/<td[^>]*>([\s\S]*?)<\/td>/);
+        if (htmlMatch) {
+          var innerContent = htmlMatch[1];
+          locationCell.innerHTML = innerContent;
+          var classMatch = driverData.location_html.match(/class="([^"]*)"/);
+          if (classMatch) {
+            locationCell.className = classMatch[1];
+          }
+        } else {
+          var tempDiv = document.createElement('div');
+          tempDiv.innerHTML = driverData.location_html;
+          var tempTd = tempDiv.querySelector('td');
+          if (tempTd) {
+            var _innerContent = tempTd.innerHTML;
+            locationCell.innerHTML = _innerContent;
+            locationCell.className = tempTd.className;
+          } else {
+            var textMatch = driverData.location_html.match(/>([^<]+(?:<[^>]*>[^<]*)*)<\/td>/);
+            if (textMatch) {
+              locationCell.innerHTML = textMatch[1];
+            }
+          }
+        }
+      }
+      var updateButton = tableRow.querySelector('.js-quick-status-update');
+      if (updateButton) {
+        updateButton.setAttribute('data-driver-status', driverData.driver_status || '');
+        updateButton.setAttribute('data-current-location', driverData.current_location || '');
+        updateButton.setAttribute('data-current-city', driverData.current_city || '');
+        updateButton.setAttribute('data-current-zipcode', driverData.current_zipcode || '');
+        updateButton.setAttribute('data-latitude', driverData.latitude || '');
+        updateButton.setAttribute('data-longitude', driverData.longitude || '');
+        updateButton.setAttribute('data-country', driverData.country || '');
+        updateButton.setAttribute('data-status-date', driverData.status_date || '');
+      }
+      (0,_tooltip_start__WEBPACK_IMPORTED_MODULE_1__.updateTooltip)();
+    }
+  }, {
+    key: "populateForm",
+    value: function populateForm(button) {
+      if (!this.form) return;
+      var driverId = button.getAttribute('data-driver-id');
+      var driverName = button.getAttribute('data-driver-name');
+      var driverStatus = button.getAttribute('data-driver-status');
+      var currentLocation = button.getAttribute('data-current-location');
+      var currentCity = button.getAttribute('data-current-city');
+      var currentZipcode = button.getAttribute('data-current-zipcode');
+      var latitude = button.getAttribute('data-latitude');
+      var longitude = button.getAttribute('data-longitude');
+      var country = button.getAttribute('data-country');
+      var statusDate = button.getAttribute('data-status-date');
+      var modalTitle = document.getElementById('quickStatusUpdateModalLabel');
+      if (modalTitle && driverName) {
+        modalTitle.textContent = "Quick Status Update - ".concat(driverName);
+      }
+      var driverIdInput = this.form.querySelector('.js-id_driver');
+      if (driverIdInput && driverId) {
+        driverIdInput.value = driverId;
+      }
+      this.handleStatusField(driverStatus);
+      var statusDateInput = this.form.querySelector('input[name="status_date"]');
+      if (statusDateInput && statusDate) {
+        statusDateInput.value = statusDate;
+      }
+      var locationSelect = this.form.querySelector('select[name="current_location"]');
+      if (locationSelect && currentLocation) {
+        locationSelect.value = currentLocation;
+      }
+      var cityInput = this.form.querySelector('input[name="current_city"]');
+      if (cityInput && currentCity) {
+        cityInput.value = currentCity;
+      }
+      var zipcodeInput = this.form.querySelector('input[name="current_zipcode"]');
+      if (zipcodeInput && currentZipcode) {
+        zipcodeInput.value = currentZipcode;
+      }
+      var latitudeInput = this.form.querySelector('input[name="latitude"]');
+      if (latitudeInput && latitude) {
+        latitudeInput.value = latitude;
+      }
+      var longitudeInput = this.form.querySelector('input[name="longitude"]');
+      if (longitudeInput && longitude) {
+        longitudeInput.value = longitude;
+      }
+      var countryInput = this.form.querySelector('input[name="country"]');
+      if (countryInput && country) {
+        countryInput.value = country;
+      }
+    }
+  }, {
+    key: "fillLocationByZipcode",
+    value: function fillLocationByZipcode() {
+      if (!this.form) return;
+      var zipcodeInput = this.form.querySelector('input[name="current_zipcode"]');
+      var countrySelect = this.form.querySelector('select[name="current_country"]');
+      var cityInput = this.form.querySelector('input[name="current_city"]');
+      var stateSelect = this.form.querySelector('select[name="current_location"]');
+      var latitudeInput = this.form.querySelector('input[name="latitude"]');
+      var longitudeInput = this.form.querySelector('input[name="longitude"]');
+      var countryInput = this.form.querySelector('input[name="country"]');
+      if (!zipcodeInput || !countrySelect) return;
+      var zipcode = zipcodeInput.value.trim();
+      var country = countrySelect.value || 'USA';
+      if (!zipcode) {
+        (0,_info_messages__WEBPACK_IMPORTED_MODULE_0__.printMessage)('Please enter a zip code first', 'warning', 3000);
+        return;
+      }
+      console.log('Filling location for zipcode:', zipcode, 'country:', country);
+      (0,_info_messages__WEBPACK_IMPORTED_MODULE_0__.printMessage)('Location filling feature will be implemented', 'info', 3000);
+    }
+  }, {
+    key: "submitForm",
+    value: function submitForm() {
+      var _this3 = this;
+      if (!this.form) return;
+      var requiredFields = this.form.querySelectorAll('[required]');
+      var isValid = true;
+      requiredFields.forEach(function (field) {
+        var input = field;
+        if (!input.value.trim()) {
+          isValid = false;
+          input.classList.add('is-invalid');
+        } else {
+          input.classList.remove('is-invalid');
+        }
+      });
+      if (!isValid) {
+        (0,_info_messages__WEBPACK_IMPORTED_MODULE_0__.printMessage)('Please fill in all required fields', 'warning', 3000);
+        return;
+      }
+      var formData = new FormData(this.form);
+      formData.append('action', 'update_location_driver');
+      var statusReadonly = this.form.querySelector('.js-status-readonly');
+      var statusHidden = this.form.querySelector('.js-status-hidden');
+      if (statusReadonly && statusReadonly.style.display !== 'none' && statusHidden && statusHidden.value) {
+        formData.delete('driver_status');
+        formData.append('driver_status', statusHidden.value);
+        console.log('Using readonly status value:', statusHidden.value);
+      }
+      console.log('Form data being sent:');
+      var _iterator = _createForOfIteratorHelper(formData.entries()),
+        _step;
+      try {
+        for (_iterator.s(); !(_step = _iterator.n()).done;) {
+          var _step$value = _slicedToArray(_step.value, 2),
+            key = _step$value[0],
+            value = _step$value[1];
+          console.log(key, ':', value);
+        }
+      } catch (err) {
+        _iterator.e(err);
+      } finally {
+        _iterator.f();
+      }
+      if (this.submitButton) {
+        this.submitButton.textContent = 'Updating...';
+        this.submitButton.disabled = true;
+      }
+      var options = {
+        method: 'POST',
+        body: formData
+      };
+      fetch(this.ajaxUrl, options).then(function (res) {
+        return res.json();
+      }).then(function (requestStatus) {
+        if (requestStatus.success) {
+          (0,_info_messages__WEBPACK_IMPORTED_MODULE_0__.printMessage)(requestStatus.data.message, 'success', 8000);
+          if (_this3.modal) {
+            _this3.closeModal();
+          }
+          _this3.updateTableRow(requestStatus.data.updated_driver);
+        } else {
+          (0,_info_messages__WEBPACK_IMPORTED_MODULE_0__.printMessage)("Error updating status: ".concat(requestStatus.data.message), 'danger', 8000);
+        }
+      }).catch(function (error) {
+        (0,_info_messages__WEBPACK_IMPORTED_MODULE_0__.printMessage)("Request failed: ".concat(error), 'danger', 8000);
+        console.error('Quick update request failed:', error);
+      }).finally(function () {
+        if (_this3.submitButton) {
+          _this3.submitButton.textContent = 'Update Status';
+          _this3.submitButton.disabled = false;
+        }
+      });
+    }
+  }, {
+    key: "handleStatusField",
+    value: function handleStatusField(driverStatus) {
+      var _a;
+      if (!this.form || !driverStatus) return;
+      var statusSelect = this.form.querySelector('select[name="driver_status"]');
+      var statusReadonly = this.form.querySelector('.js-status-readonly');
+      var statusText = this.form.querySelector('.js-status-text');
+      var statusHidden = this.form.querySelector('.js-status-hidden');
+      if (!statusSelect || !statusReadonly || !statusText || !statusHidden) return;
+      console.log('handleStatusField - driverStatus:', driverStatus);
+      console.log('Available options in select:', Array.from(statusSelect.options).map(function (opt) {
+        return opt.value;
+      }));
+      var restrictedStatuses = ['no_Interview', 'expired_documents', 'blocked'];
+      var isRestrictedStatus = restrictedStatuses.includes(driverStatus);
+      console.log('isRestrictedStatus:', isRestrictedStatus);
+      if (isRestrictedStatus) {
+        var canChangeStatus = Array.from(statusSelect.options).some(function (option) {
+          return option.value === driverStatus && option.value !== '';
+        });
+        console.log('canChangeStatus:', canChangeStatus);
+        if (!canChangeStatus) {
+          console.log('Showing readonly status:', driverStatus);
+          statusSelect.style.display = 'none';
+          statusSelect.removeAttribute('required');
+          statusReadonly.style.display = 'block';
+          statusHidden.setAttribute('required', 'required');
+          statusText.textContent = ((_a = statusSelect.options[Array.from(statusSelect.options).findIndex(function (opt) {
+            return opt.value === driverStatus;
+          })]) === null || _a === void 0 ? void 0 : _a.textContent) || driverStatus;
+          statusHidden.value = driverStatus;
+          console.log('Set statusHidden.value to:', statusHidden.value);
+        } else {
+          console.log('Showing select for restricted status:', driverStatus);
+          statusSelect.style.display = 'block';
+          statusSelect.setAttribute('required', 'required');
+          statusReadonly.style.display = 'none';
+          statusHidden.removeAttribute('required');
+          statusSelect.value = driverStatus;
+        }
+      } else {
+        console.log('Showing select for normal status:', driverStatus);
+        statusSelect.style.display = 'block';
+        statusSelect.setAttribute('required', 'required');
+        statusReadonly.style.display = 'none';
+        statusHidden.removeAttribute('required');
+        statusSelect.value = driverStatus;
+      }
+    }
+  }]);
+}();
+var quickStatusUpdateInstance = null;
+var initQuickStatusUpdate = function initQuickStatusUpdate(ajaxUrl) {
+  if (!quickStatusUpdateInstance) {
+    quickStatusUpdateInstance = new QuickStatusUpdate(ajaxUrl);
+  }
+};
 
 /***/ }),
 
@@ -8000,7 +8381,9 @@ var addSearchAction = function addSearchAction(ajaxUrl) {
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   autoFillAddressHero: function() { return /* binding */ autoFillAddressHero; },
-/* harmony export */   getLocationDataByZipCodeHero: function() { return /* binding */ getLocationDataByZipCodeHero; }
+/* harmony export */   copyDriverPhones: function() { return /* binding */ copyDriverPhones; },
+/* harmony export */   getLocationDataByZipCodeHero: function() { return /* binding */ getLocationDataByZipCodeHero; },
+/* harmony export */   initCopyDriverPhones: function() { return /* binding */ initCopyDriverPhones; }
 /* harmony export */ });
 /* harmony import */ var _info_messages__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ../info-messages */ "./src/js/components/info-messages.ts");
 function _typeof(o) { "@babel/helpers - typeof"; return _typeof = "function" == typeof Symbol && "symbol" == typeof Symbol.iterator ? function (o) { return typeof o; } : function (o) { return o && "function" == typeof Symbol && o.constructor === Symbol && o !== Symbol.prototype ? "symbol" : typeof o; }, _typeof(o); }
@@ -8130,6 +8513,45 @@ var autoFillAddressHero = function autoFillAddressHero(zipCode, apiKey) {
     }, _callee2, null, [[2, 9]]);
   }));
 };
+var copyDriverPhones = function copyDriverPhones() {
+  var phoneElements = document.querySelectorAll('.driver-phone[data-phone]');
+  var phoneNumbers = [];
+  phoneElements.forEach(function (element) {
+    var phone = element.getAttribute('data-phone');
+    if (phone && phone.trim() !== '') {
+      phoneNumbers.push(phone.trim());
+    }
+  });
+  if (phoneNumbers.length === 0) {
+    (0,_info_messages__WEBPACK_IMPORTED_MODULE_0__.printMessage)('No phone numbers found on this page.', 'warning', 3000);
+    return;
+  }
+  var phoneList = phoneNumbers.join('\n');
+  navigator.clipboard.writeText(phoneList).then(function () {
+    var copyBtn = document.getElementById('copy-driver-phones-btn');
+    if (copyBtn) {
+      var originalText = copyBtn.innerHTML;
+      copyBtn.innerHTML = 'Copied!';
+      copyBtn.classList.remove('btn-outline-primary');
+      copyBtn.classList.add('btn-success');
+      setTimeout(function () {
+        copyBtn.innerHTML = originalText;
+        copyBtn.classList.remove('btn-success');
+        copyBtn.classList.add('btn-outline-primary');
+      }, 2000);
+    }
+    (0,_info_messages__WEBPACK_IMPORTED_MODULE_0__.printMessage)("Successfully copied ".concat(phoneNumbers.length, " phone numbers to clipboard."), 'success', 3000);
+  }).catch(function (err) {
+    console.error('Failed to copy phone numbers: ', err);
+    (0,_info_messages__WEBPACK_IMPORTED_MODULE_0__.printMessage)('Failed to copy phone numbers to clipboard.', 'danger', 5000);
+  });
+};
+var initCopyDriverPhones = function initCopyDriverPhones() {
+  var copyBtn = document.getElementById('copy-driver-phones-btn');
+  if (copyBtn) {
+    copyBtn.addEventListener('click', copyDriverPhones);
+  }
+};
 
 /***/ }),
 
@@ -8244,6 +8666,7 @@ var initialSearchDriver = function initialSearchDriver(varFromPhp) {
       updateSearchInput();
     });
   }
+  (0,_driver_hero__WEBPACK_IMPORTED_MODULE_0__.initCopyDriverPhones)();
 };
 
 /***/ }),
@@ -21347,8 +21770,10 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _components_driver_hold__WEBPACK_IMPORTED_MODULE_30__ = __webpack_require__(/*! ./components/driver-hold */ "./src/js/components/driver-hold.ts");
 /* harmony import */ var _components_common_hold_section__WEBPACK_IMPORTED_MODULE_31__ = __webpack_require__(/*! ./components/common/hold-section */ "./src/js/components/common/hold-section.ts");
 /* harmony import */ var _components_capabilities_filter__WEBPACK_IMPORTED_MODULE_32__ = __webpack_require__(/*! ./components/capabilities-filter */ "./src/js/components/capabilities-filter.ts");
-/* harmony import */ var _components_quick_copy__WEBPACK_IMPORTED_MODULE_33__ = __webpack_require__(/*! ./components/quick-copy */ "./src/js/components/quick-copy.ts");
-/* harmony import */ var _components_driver_popups__WEBPACK_IMPORTED_MODULE_34__ = __webpack_require__(/*! ./components/driver-popups */ "./src/js/components/driver-popups.ts");
+/* harmony import */ var _components_quick_status_update__WEBPACK_IMPORTED_MODULE_33__ = __webpack_require__(/*! ./components/quick-status-update */ "./src/js/components/quick-status-update.ts");
+/* harmony import */ var _components_quick_copy__WEBPACK_IMPORTED_MODULE_34__ = __webpack_require__(/*! ./components/quick-copy */ "./src/js/components/quick-copy.ts");
+/* harmony import */ var _components_driver_popups__WEBPACK_IMPORTED_MODULE_35__ = __webpack_require__(/*! ./components/driver-popups */ "./src/js/components/driver-popups.ts");
+
 
 
 
@@ -21432,6 +21857,7 @@ function ready() {
   (0,_components_driver_hold__WEBPACK_IMPORTED_MODULE_30__.driverHoldInit)(urlAjax);
   (0,_components_driver_core__WEBPACK_IMPORTED_MODULE_26__.driverCoreInit)(urlAjax);
   (0,_components_capabilities_filter__WEBPACK_IMPORTED_MODULE_32__.initCapabilitiesFilter)();
+  (0,_components_quick_status_update__WEBPACK_IMPORTED_MODULE_33__.initQuickStatusUpdate)(urlAjax);
   (0,_components_create_report__WEBPACK_IMPORTED_MODULE_3__.additionalContactsInit)();
   (0,_components_create_report__WEBPACK_IMPORTED_MODULE_3__.addShipperPointInit)();
   (0,_components_input_helpers__WEBPACK_IMPORTED_MODULE_2__.initMoneyMask)();
@@ -21475,6 +21901,20 @@ function ready() {
   preloaders && preloaders.forEach(function (item) {
     item.remove();
   });
+  setTimeout(function () {
+    var delayedPreloaders = document.querySelectorAll('.js-preloader');
+    delayedPreloaders && delayedPreloaders.forEach(function (item) {
+      item.remove();
+    });
+  }, 100);
+  if (document.body.classList.contains('page-drivers-api-monitor')) {
+    setTimeout(function () {
+      var apiPreloaders = document.querySelectorAll('.js-preloader');
+      apiPreloaders && apiPreloaders.forEach(function (item) {
+        item.remove();
+      });
+    }, 200);
+  }
 }
 window.document.addEventListener('DOMContentLoaded', ready);
 }();

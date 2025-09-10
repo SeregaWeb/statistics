@@ -360,7 +360,7 @@ function import_drivers( $drivers, $page = 1 ) {
 	}
 }
 
-// import_drivers_from_json( 5 );
+// import_drivers_from_json( 4 );
 
 // Get drivers data from old site endpoint
 function get_drivers_from_old_site() {
@@ -559,6 +559,63 @@ function update_drivers_from_old_site() {
 	echo "<p><strong>Total processed:</strong> " . count( $filtered_drivers ) . " drivers</p>";
 }
 
+// Delete drivers data that was updated from old site
+function delete_drivers_from_old_site() {
+	global $wpdb;
+	
+	// Array of driver IDs that were updated
+	$updated_driver_ids = [
+		// 3274, 3288, 3289, 3290, 3291, 3297, 3321, 3336, 3318, 3335, 
+		// 3317, 3334, 3292, 3293, 3303, 3304, 3294, 3295, 3296, 3298, 
+		// 3299, 3300, 3301, 3302, 3305, 3308, 3306, 3307, 3312, 3311, 
+		// 3309, 3310, 3315, 3331, 3313, 3333, 3314, 3332, 3319, 3320, 
+		// 3322, 3323, 3324, 3325, 3326, 3327, 3328, 3329, 3266, 3260, 
+		// 3259, 3257, 3254, 3277, 3271, 3273, 3281, 3284, 3275, 3276, 
+		// 3278, 3279, 3280, 3282, 3285, 3286, 3287, 3261
+	];
+	
+	echo "<h2>Deleting Drivers Data</h2>";
+	echo "<p><strong>Drivers to delete:</strong> " . count( $updated_driver_ids ) . "</p>";
+	
+	$deleted_count = 0;
+	$error_count   = 0;
+	
+	// Get current project tables
+	
+	$table_drivers      = $wpdb->prefix . 'drivers';
+	$table_drivers_meta = $wpdb->prefix . 'drivers_meta';
+	
+	foreach ( $updated_driver_ids as $driver_id ) {
+		try {
+			// Delete from drivers table
+			$drivers_result = $wpdb->delete( $table_drivers, array( 'id' => $driver_id ), array( '%d' ) );
+			
+			// Delete from drivers meta table
+			$meta_result = $wpdb->delete( $table_drivers_meta, array( 'post_id' => $driver_id ), array( '%d' ) );
+			
+			if ( $drivers_result !== false && $meta_result !== false ) {
+				$deleted_count ++;
+				echo "<div style='color: green; font-size: 12px;'>✓ Deleted driver ID: $driver_id</div>";
+			} else {
+				$error_count ++;
+				echo "<div style='color: red; font-size: 12px;'>✗ Failed to delete driver ID: $driver_id</div>";
+			}
+			
+		}
+		catch ( Exception $e ) {
+			$error_count ++;
+			echo "<div style='color: red; font-size: 12px;'>✗ Error deleting driver ID $driver_id: " . $e->getMessage() . "</div>";
+		}
+	}
+	
+	echo "<h3>Delete Summary</h3>";
+	echo "<p><strong>Successfully deleted:</strong> $deleted_count drivers</p>";
+	echo "<p><strong>Errors:</strong> $error_count drivers</p>";
+	echo "<p><strong>Total processed:</strong> " . count( $updated_driver_ids ) . " drivers</p>";
+}
+
+// delete_drivers_from_old_site();
+
 // Uncomment the line below to update drivers data from old site
 // update_drivers_from_old_site();
 
@@ -566,12 +623,10 @@ function update_drivers_from_old_site() {
 function replace_driver_ids() {
 	global $wpdb;
 	// Define ID mappings: old_id => new_id
+	
+	
 	$id_mappings = [
-		3251 => 419,
-		3253 => 345,
-		3252 => 268,
-		// Add more mappings here as needed
-		// old_id => new_id,
+		'3342' => '3283',
 	];
 	
 	$total_updated = 0;
@@ -689,3 +744,410 @@ add_action( 'admin_init', function() {
 		exit;
 	}
 } );
+
+/**
+ * Import driver ratings from array in chunks, avoiding duplicates
+ *
+ * @param array $ratings_array Array with driver ratings data
+ * @param int $chunk_size Number of ratings to process per chunk (default: 500)
+ *
+ * @return array Results of import operation
+ */
+function import_driver_ratings( $ratings_array, $chunk_size = 500 ) {
+	global $wpdb;
+	
+	$table_rating = $wpdb->prefix . 'drivers_raiting';
+	$results      = [
+		'total_processed'  => 0,
+		'added'            => 0,
+		'skipped'          => 0,
+		'errors'           => [],
+		'chunks_processed' => 0
+	];
+	
+	// Convert array to flat list for chunking
+	$all_ratings = [];
+	foreach ( $ratings_array as $driver_id => $ratings ) {
+		if ( ! is_array( $ratings ) ) {
+			continue;
+		}
+		
+		$driver_id = (int) $driver_id;
+		foreach ( $ratings as $rating ) {
+			$all_ratings[] = [
+				'driver_id' => $driver_id,
+				'rating'    => $rating
+			];
+		}
+	}
+	
+	// Process in chunks
+	$chunks = array_chunk( $all_ratings, $chunk_size );
+	
+	foreach ( $chunks as $chunk_index => $chunk ) {
+		$results[ 'chunks_processed' ] ++;
+		
+		// Start transaction for this chunk
+		$wpdb->query( 'START TRANSACTION' );
+		
+		try {
+			foreach ( $chunk as $item ) {
+				$driver_id = $item[ 'driver_id' ];
+				$rating    = $item[ 'rating' ];
+				
+				$results[ 'total_processed' ] ++;
+				
+				// Extract rating data
+				$name         = sanitize_text_field( $rating[ 'name' ] ?? '' );
+				$time         = (int) ( $rating[ 'time' ] ?? 0 );
+				$reit         = (int) ( $rating[ 'reit' ] ?? 0 );
+				$message      = sanitize_textarea_field( $rating[ 'mess' ] ?? '' );
+				$order_number = sanitize_text_field( $rating[ 'order_number' ] ?? '' );
+				
+				// Validate required fields
+				if ( empty( $name ) || $time <= 0 || $reit < 1 || $reit > 5 ) {
+					$results[ 'skipped' ] ++;
+					continue;
+				}
+				
+				// Check for duplicate rating (same driver, name, time, and message)
+				$duplicate_check = $wpdb->get_var( $wpdb->prepare( "SELECT id FROM $table_rating
+					WHERE driver_id = %d 
+					AND name = %s 
+					AND time = %d 
+					AND message = %s", $driver_id, $name, $time, $message ) );
+				
+				if ( $duplicate_check ) {
+					$results[ 'skipped' ] ++;
+					continue;
+				}
+				
+				// Insert new rating
+				$insert_result = $wpdb->insert( $table_rating, [
+					'driver_id'    => $driver_id,
+					'name'         => $name,
+					'time'         => $time,
+					'reit'         => $reit,
+					'message'      => $message,
+					'order_number' => $order_number
+				], [ '%d', '%s', '%d', '%d', '%s', '%s' ] );
+				
+				if ( $insert_result ) {
+					$results[ 'added' ] ++;
+				} else {
+					$results[ 'errors' ][] = "Failed to insert rating for driver $driver_id: " . $wpdb->last_error;
+				}
+			}
+			
+			// Commit this chunk
+			$wpdb->query( 'COMMIT' );
+			
+		}
+		catch ( Exception $e ) {
+			// Rollback this chunk on error
+			$wpdb->query( 'ROLLBACK' );
+			$results[ 'errors' ][] = "Chunk " . ( $chunk_index + 1 ) . " failed: " . $e->getMessage();
+		}
+		
+		// Clear memory after each chunk
+		unset( $chunk );
+		gc_collect_cycles();
+	}
+	
+	return $results;
+}
+
+/**
+ * Alternative approach: Clear all ratings and import fresh data
+ *
+ * @param array $ratings_array Array with driver ratings data
+ *
+ * @return array Results of import operation
+ */
+function import_driver_ratings_fresh( $ratings_array, $chunk_size = 500 ) {
+	global $wpdb;
+	
+	$table_rating = $wpdb->prefix . 'drivers_raiting';
+	$results      = [
+		'total_processed'  => 0,
+		'added'            => 0,
+		'deleted'          => 0,
+		'errors'           => [],
+		'chunks_processed' => 0
+	];
+	
+	// Clear all existing ratings first
+	$wpdb->query( 'START TRANSACTION' );
+	try {
+		$deleted_count        = $wpdb->query( "DELETE FROM $table_rating" );
+		$results[ 'deleted' ] = $deleted_count;
+		$wpdb->query( 'COMMIT' );
+	}
+	catch ( Exception $e ) {
+		$wpdb->query( 'ROLLBACK' );
+		$results[ 'errors' ][] = "Failed to clear existing ratings: " . $e->getMessage();
+		
+		return $results;
+	}
+	
+	// Convert array to flat list for chunking
+	$all_ratings = [];
+	foreach ( $ratings_array as $driver_id => $ratings ) {
+		if ( ! is_array( $ratings ) ) {
+			continue;
+		}
+		
+		$driver_id = (int) $driver_id;
+		foreach ( $ratings as $rating ) {
+			$all_ratings[] = [
+				'driver_id' => $driver_id,
+				'rating'    => $rating
+			];
+		}
+	}
+	
+	// Process in chunks
+	$chunks = array_chunk( $all_ratings, $chunk_size );
+	
+	foreach ( $chunks as $chunk_index => $chunk ) {
+		$results[ 'chunks_processed' ] ++;
+		
+		// Start transaction for this chunk
+		$wpdb->query( 'START TRANSACTION' );
+		
+		try {
+			foreach ( $chunk as $item ) {
+				$driver_id = $item[ 'driver_id' ];
+				$rating    = $item[ 'rating' ];
+				
+				$results[ 'total_processed' ] ++;
+				
+				// Extract rating data
+				$name         = sanitize_text_field( $rating[ 'name' ] ?? '' );
+				$time         = (int) ( $rating[ 'time' ] ?? 0 );
+				$reit         = (int) ( $rating[ 'reit' ] ?? 0 );
+				$message      = sanitize_textarea_field( $rating[ 'mess' ] ?? '' );
+				$order_number = sanitize_text_field( $rating[ 'order_number' ] ?? '' );
+				
+				// Validate required fields
+				if ( empty( $name ) || $time <= 0 || $reit < 1 || $reit > 5 ) {
+					continue;
+				}
+				
+				// Insert rating
+				$insert_result = $wpdb->insert( $table_rating, [
+					'driver_id'    => $driver_id,
+					'name'         => $name,
+					'time'         => $time,
+					'reit'         => $reit,
+					'message'      => $message,
+					'order_number' => $order_number
+				], [ '%d', '%s', '%d', '%d', '%s', '%s' ] );
+				
+				if ( $insert_result ) {
+					$results[ 'added' ] ++;
+				} else {
+					$results[ 'errors' ][] = "Failed to insert rating for driver $driver_id: " . $wpdb->last_error;
+				}
+			}
+			
+			// Commit this chunk
+			$wpdb->query( 'COMMIT' );
+			
+		}
+		catch ( Exception $e ) {
+			// Rollback this chunk on error
+			$wpdb->query( 'ROLLBACK' );
+			$results[ 'errors' ][] = "Chunk " . ( $chunk_index + 1 ) . " failed: " . $e->getMessage();
+		}
+		
+		// Clear memory after each chunk
+		unset( $chunk );
+		gc_collect_cycles();
+	}
+	
+	return $results;
+}
+
+/**
+ * Import driver ratings from array with offset for step-by-step processing
+ *
+ * @param array $ratings_array Array with driver ratings data
+ * @param int $offset Starting position (0, 500, 1000, etc.)
+ * @param int $limit Number of ratings to process per step (default: 500)
+ *
+ * @return array Results of import operation
+ */
+function import_driver_ratings_step( $ratings_array, $offset = 0, $limit = 500 ) {
+	global $wpdb;
+	
+	$table_rating = $wpdb->prefix . 'drivers_raiting';
+	$results      = [
+		'total_processed' => 0,
+		'added'           => 0,
+		'skipped'         => 0,
+		'errors'          => [],
+		'offset'          => $offset,
+		'limit'           => $limit,
+		'has_more'        => false,
+		'total_available' => 0
+	];
+	
+	// Convert array to flat list
+	$all_ratings = [];
+	foreach ( $ratings_array as $driver_id => $ratings ) {
+		if ( ! is_array( $ratings ) ) {
+			continue;
+		}
+		
+		$driver_id = (int) $driver_id;
+		foreach ( $ratings as $rating ) {
+			$all_ratings[] = [
+				'driver_id' => $driver_id,
+				'rating'    => $rating
+			];
+		}
+	}
+	
+	$results[ 'total_available' ] = count( $all_ratings );
+	
+	// Get slice for current step
+	$current_batch         = array_slice( $all_ratings, $offset, $limit );
+	$results[ 'has_more' ] = ( $offset + $limit ) < count( $all_ratings );
+	
+	if ( empty( $current_batch ) ) {
+		$results[ 'errors' ][] = "No data available for offset $offset";
+		
+		return $results;
+	}
+	
+	// Start transaction for this batch
+	$wpdb->query( 'START TRANSACTION' );
+	
+	try {
+		foreach ( $current_batch as $item ) {
+			$driver_id = $item[ 'driver_id' ];
+			$rating    = $item[ 'rating' ];
+			
+			$results[ 'total_processed' ] ++;
+			
+			// Extract rating data
+			$name         = sanitize_text_field( $rating[ 'name' ] ?? '' );
+			$time         = (int) ( $rating[ 'time' ] ?? 0 );
+			$reit         = (int) ( $rating[ 'reit' ] ?? 0 );
+			$message      = sanitize_textarea_field( $rating[ 'mess' ] ?? '' );
+			$order_number = sanitize_text_field( $rating[ 'order_number' ] ?? '' );
+			
+			// Validate required fields
+			if ( empty( $name ) || $time <= 0 || $reit < 1 || $reit > 5 ) {
+				$results[ 'skipped' ] ++;
+				continue;
+			}
+			
+			// Check for duplicate rating
+			$duplicate_check = $wpdb->get_var( $wpdb->prepare( "SELECT id FROM $table_rating
+				WHERE driver_id = %d 
+				AND name = %s 
+				AND time = %d 
+				AND message = %s", $driver_id, $name, $time, $message ) );
+			
+			if ( $duplicate_check ) {
+				$results[ 'skipped' ] ++;
+				continue;
+			}
+			
+			// Insert new rating
+			$insert_result = $wpdb->insert( $table_rating, [
+				'driver_id'    => $driver_id,
+				'name'         => $name,
+				'time'         => $time,
+				'reit'         => $reit,
+				'message'      => $message,
+				'order_number' => $order_number
+			], [ '%d', '%s', '%d', '%d', '%s', '%s' ] );
+			
+			if ( $insert_result ) {
+				$results[ 'added' ] ++;
+			} else {
+				$results[ 'errors' ][] = "Failed to insert rating for driver $driver_id: " . $wpdb->last_error;
+			}
+		}
+		
+		// Commit this batch
+		$wpdb->query( 'COMMIT' );
+		
+	}
+	catch ( Exception $e ) {
+		// Rollback on error
+		$wpdb->query( 'ROLLBACK' );
+		$results[ 'errors' ][] = "Batch failed: " . $e->getMessage();
+	}
+	
+	return $results;
+}
+
+/**
+ * Test function to import ratings from the provided array
+ * Call this function to import your ratings data
+ */
+function test_import_ratings() {
+	// Your ratings array (replace with your actual data)
+	$ratings_array = [
+		62 => [
+			[
+				'name' => 'Andriy Moore',
+				'time' => 1664566020,
+				'reit' => '5',
+				'mess' => 'Load #22189294'
+			],
+			[
+				'name' => 'Dave Oldman',
+				'time' => 1667419620,
+				'reit' => '5',
+				'mess' => ''
+			],
+			// Add more ratings here...
+		],
+		// Add more drivers here...
+	];
+	
+	echo "<h2>Importing Driver Ratings</h2>";
+	echo "<pre>";
+	
+	// Choose which method to use:
+	// Method 1: Import avoiding duplicates
+	$results = import_driver_ratings( $ratings_array );
+	
+	// Method 2: Clear all and import fresh (uncomment if needed)
+	// $results = import_driver_ratings_fresh($ratings_array);
+	
+	echo "Import Results:\n";
+	echo "Total processed: " . $results[ 'total_processed' ] . "\n";
+	echo "Added: " . $results[ 'added' ] . "\n";
+	echo "Skipped: " . $results[ 'skipped' ] . "\n";
+	echo "Chunks processed: " . $results[ 'chunks_processed' ] . "\n";
+	
+	if ( isset( $results[ 'deleted' ] ) ) {
+		echo "Deleted: " . $results[ 'deleted' ] . "\n";
+	}
+	
+	if ( ! empty( $results[ 'errors' ] ) ) {
+		echo "Errors:\n";
+		foreach ( $results[ 'errors' ] as $error ) {
+			echo "- " . $error . "\n";
+		}
+	}
+	
+	echo "</pre>";
+}
+
+/**
+ * Pretty print ratings array as JSON
+ * Use this to format your ratings data for import
+ */
+function pretty_print_ratings_json( $ratings_array ) {
+	echo "<h2>Ratings Array (JSON Format)</h2>";
+	echo "<pre>";
+	echo json_encode( $ratings_array, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE );
+	echo "</pre>";
+}

@@ -3,6 +3,9 @@ $drivers      = new TMSDrivers();
 $helper       = new TMSReportsHelper();
 $icons        = new TMSReportsIcons();
 $driverHelper = new TMSDriversHelper();
+$TMSUsers     = new TMSUsers();
+
+$access_hold = $TMSUsers->check_user_role_access( array( 'administrator', 'dispatcher-tl', 'dispatcher' ), true );
 global $global_options;
 
 $results       = get_field_value( $args, 'results' );
@@ -10,6 +13,7 @@ $total_pages   = get_field_value( $args, 'total_pages' );
 $current_pages = get_field_value( $args, 'current_pages' );
 $is_draft      = get_field_value( $args, 'is_draft' );
 $add_new_load  = get_field_value( $global_options, 'add_new_driver' );
+
 
 // Debug: Show sorting result if we have filtered_drivers
 if ( isset( $args[ 'filtered_drivers' ] ) && ! empty( $args[ 'filtered_drivers' ] ) ) {
@@ -81,18 +85,24 @@ if ( ! empty( $results ) ) :
 			$driver_name = get_field_value( $meta, 'driver_name' );
 			$languages = get_field_value( $meta, 'languages' );
 			$driver_email = get_field_value( $meta, 'driver_email' );
-			$driver_phone = get_field_value( $meta, 'driver_phone' );
+			$show_phone = get_field_value( $meta, 'show_phone' ) ?? 'driver_phone';
+			$driver_phone = get_field_value( $meta, $show_phone );
 			$home_location = get_field_value( $meta, 'home_location' );
 			$city = get_field_value( $meta, 'city' );
-			$vehicle_type = get_field_value( $meta, 'vehicle_type' );
-			$vehicle_year = get_field_value( $meta, 'vehicle_year' );
-			$vehicle_model = get_field_value( $meta, 'vehicle_model' );
-			$vehicle_make = get_field_value( $meta, 'vehicle_make' );
-			$dimensions = get_field_value( $meta, 'dimensions' );
+			
+			$vehicle_type     = get_field_value( $meta, 'vehicle_type' );
+			$vehicle_year     = get_field_value( $meta, 'vehicle_year' );
+			$vehicle_model    = get_field_value( $meta, 'vehicle_model' );
+			$vehicle_make     = get_field_value( $meta, 'vehicle_make' );
+			$dimensions       = get_field_value( $meta, 'dimensions' );
 			$current_location = get_field_value( $meta, 'current_location' );
-			$current_city = get_field_value( $meta, 'current_city' );
-			$current_zipcode = get_field_value( $meta, 'current_zipcode' );
-			$notes = get_field_value( $meta, 'notes' );
+			$current_city     = get_field_value( $meta, 'current_city' );
+			$current_zipcode  = get_field_value( $meta, 'current_zipcode' );
+			$latitud          = get_field_value( $meta, 'latitude' );
+			$longitude        = get_field_value( $meta, 'longitude' );
+			$country          = get_field_value( $meta, 'country' );
+			$status_date      = get_field_value( $meta, 'status_date' );
+			$notes            = get_field_value( $meta, 'notes' );
 			
 			// Get hold information if driver is on hold
 			$hold_info       = null;
@@ -110,39 +120,7 @@ if ( ! empty( $results ) ) :
 			}
 			
 			$payload               = get_field_value( $meta, 'payload' );
-			$preferred_distance    = get_field_value( $meta, 'preferred_distance' );
-			$selected_distances    = array_map( 'trim', explode( ',', $preferred_distance ) );
-			$cross_border          = get_field_value( $meta, 'cross_border' );
-			$selected_cross_border = array_map( 'trim', explode( ',', $cross_border ) );
-			
-			$driver_capabilities = array(
-				'twic.svg'               => get_field_value( $meta, 'twic' ),
-				'tsa.svg'                => get_field_value( $meta, 'tsa_approved' ),
-				'hazmat.svg'             => get_field_value( $meta, 'hazmat_certificate' ) || get_field_value( $meta, 'hazmat_endorsement' ),
-				'change-9.svg'           => get_field_value( $meta, 'change_9_training' ),
-				'tanker-endorsement.svg' => get_field_value( $meta, 'tanker_endorsement' ),
-				'background-check.svg'   => get_field_value( $meta, 'background_check' ),
-				'liftgate.svg'           => get_field_value( $meta, 'lift_gate' ),
-				'pallet-jack.svg'        => get_field_value( $meta, 'pallet_jack' ),
-				'dolly.svg'              => get_field_value( $meta, 'dolly' ),
-				'ppe.svg'                => get_field_value( $meta, 'ppe' ),
-				'e-track.svg'            => get_field_value( $meta, 'e_tracks' ),
-				'ramp.svg'               => get_field_value( $meta, 'ramp' ),
-				'printer.svg'            => get_field_value( $meta, 'printer' ),
-				'sleeper.svg'            => get_field_value( $meta, 'sleeper' ),
-				'load-bars.svg'          => get_field_value( $meta, 'load_bars' ),
-				'mc.svg'                 => get_field_value( $meta, 'mc' ),
-				'dot.svg'                => get_field_value( $meta, 'dot' ),
-				'real_id.svg'            => get_field_value( $meta, 'real_id' ),
-				'macropoint.png'         => get_field_value( $meta, 'macro_point' ),
-				'tucker-tools.png'       => get_field_value( $meta, 'trucker_tools' ),
-				'any.svg'                => is_numeric( array_search( 'any', $selected_distances ) ),
-				'otr.svg'                => is_numeric( array_search( 'otr', $selected_distances ) ),
-				'local.svg'              => is_numeric( array_search( 'local', $selected_distances ) ),
-				'regional.svg'           => is_numeric( array_search( 'regional', $selected_distances ) ),
-				'canada.svg'             => is_numeric( array_search( 'canada', $selected_cross_border ) ) || get_field_value( $meta, 'canada_transition_proof' ),
-				'mexico.svg'             => is_numeric( array_search( 'mexico', $selected_cross_border ) ),
-			);
+			include( get_template_directory() . '/src/template-parts/report/common/driver-capabilities.php' );
 			
 			
 			$date_available = get_field_value( $row, 'date_available' );
@@ -218,10 +196,11 @@ if ( ! empty( $results ) ) :
 			} else {
 				$status_text = "Need set status";
 			}
-			
+			// TODO: Remove this after testing
+			$class_hide = $row['id'] === '3343' ? 'd-none' : '';
 			?>
 
-            <tr>
+            <tr class="<?php echo $class_hide; ?>" data-driver-id="<?php echo $row[ 'id' ]; ?>">
                 <td style="width: 100px;" class="<?php echo $driver_status ? $driver_status
 					: 'text-danger'; ?> driver-status"><?php echo $status_text; ?></td>
 				
@@ -245,7 +224,7 @@ if ( ! empty( $results ) ) :
 				
 				?>
                 <td class="table-column js-location-update <?php echo $class_update_code; ?>"
-                    style="font-size: 12px; width: 270px;">
+                    style="font-size: 13px; width: 220px;">
 					<?php
 					
 					$state = explode( ',', $updated_zip_code );
@@ -287,12 +266,17 @@ if ( ! empty( $results ) ) :
 				<?php endif; ?>
 
                 <td>
-                    <div class="d-flex  flex-column">
-                        <div>
-							<?php echo '(' . $row[ 'id' ] . ') ' . $driver_name; ?>
-							<?php echo $icons->get_flags( $languages ); ?>
+                    <div class="d-flex  flex-column w-100">
+                        <div class="d-flex justify-content-between gap-1">
+                            <div>
+								<?php echo '(' . $row[ 'id' ] . ') ' . $driver_name; ?>
+								<?php echo $icons->get_flags( $languages ); ?>
+                            </div>
+                            <div class="text-small text-right">
+								<?php echo $city . ', ' . $home_location; ?>
+                            </div>
                         </div>
-                        <span class="text-small">
+                        <span class="text-small js-phone-driver">
 							<?php if ( $show_phone ) : ?>
 								<?php echo $driver_phone; ?>
 							<?php else : ?>
@@ -325,29 +309,22 @@ if ( ! empty( $results ) ) :
                     </div>
                 </td>
                 <td>
-                    <div class="table-tags d-flex flex-wrap">
+                    <div class="table-tags d-flex flex-wrap" style="min-width: 120px;">
 						<?php
 						if ( $hold_info ) {
 							// Show hold information instead of capabilities
-							echo '<div style="font-size: 12px; color: #666; line-height: 1.2;">';
+							echo '<div style="font-size: 13px; color: #666; line-height: 1.2;">';
 							echo 'On hold by<br>';
 							echo '<strong>' . esc_html( $hold_info[ 'dispatcher_name' ] ) . '</strong>';
 							echo '</div>';
 						} else {
-							$array_additionals = $icons->get_capabilities( $driver_capabilities );
-							if ( ! empty( $array_additionals ) ) {
-								foreach ( $array_additionals as $value ) {
-									?>
-                                    <img width="24" height="24" src="<?php echo $value; ?>" alt="tag">
-									<?php
-								}
-							}
+							include( get_template_directory() . '/src/template-parts/report/common/driver-capabilities-display.php' );
 						}
 						?>
                     </div>
                 </td>
 
-                <td style="width: 282px;">
+                <td style="width: 252px;">
 					<?php
 					if ( $hold_info ) {
 						echo 'Will be available in<br>' . $hold_info[ 'minutes_left' ] . ' min';
@@ -397,10 +374,10 @@ if ( ! empty( $results ) ) :
                 <td style="width: 86px;">
 					<?php if ( $show_controls ) : ?>
                         <button type="button"
-                           class="btn btn-primary w-100 btn-sm d-flex align-items-center justify-content-between gap-1 js-driver-notice-btn"
-                           data-driver-id="<?php echo $row[ 'id' ]; ?>"
-                           data-driver-name="<?php echo esc_attr( $driver_name ); ?>"
-                           data-notice-count="<?php echo $driver_statistics[ 'notice' ][ 'count' ]; ?>">
+                                class="btn btn-primary w-100 btn-sm d-flex align-items-center justify-content-between gap-1 js-driver-notice-btn"
+                                data-driver-id="<?php echo $row[ 'id' ]; ?>"
+                                data-driver-name="<?php echo esc_attr( $driver_name ); ?>"
+                                data-notice-count="<?php echo $driver_statistics[ 'notice' ][ 'count' ]; ?>">
 							<?php echo $driver_statistics[ 'notice' ][ 'count' ] > 0
 								? $driver_statistics[ 'notice' ][ 'count' ] : '-'; ?>
                             <svg viewBox="-1 0 46 46" width="12" height="12" xmlns="http://www.w3.org/2000/svg"
@@ -448,42 +425,39 @@ if ( ! empty( $results ) ) :
 
                 </td>
 
-                <td style="width: 72px;">
+                <td style="width: 92px;">
 					<?php if ( $show_controls ) : ?>
                         <div class="d-flex align-items-center">
+							
+							<?php if ( $access_hold ): ?>
+                                <button class="btn btn-sm d-flex align-items-center justify-content-center js-hold-driver"
+                                        data-id="<?php echo $row[ 'id' ]; ?>"
+                                        data-dispatcher="<?php echo get_current_user_id(); ?>"
+                                        data-hold="null"
+                                        style="width: 28px; height: 28px; padding: 0;">
+									<?php echo $icons->get_icon_hold(); ?>
+                                </button>
+							<?php endif; ?>
 
-                            <button class="btn btn-sm w-100 d-flex align-items-center justify-content-center h-100 js-hold-driver"
-                                    data-id="<?php echo $row[ 'id' ]; ?>"
-                                    data-dispatcher="<?php echo get_current_user_id(); ?>"
-                                    data-hold="null">
-                                <svg style="width: 18px; height: 18px; pointer-events: none; enable-background:new 0 0 511.992 511.992;"
-                                     xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
-                                     version="1.1" id="Layer_1" x="0px" y="0px" viewBox="0 0 511.992 511.992"
-                                     xml:space="preserve" width="512" height="512">
-                                    <g id="XMLID_806_">
-                                        <g id="XMLID_386_">
-                                            <path id="XMLID_389_"
-                                                  d="M511.005,279.646c-4.597-46.238-25.254-89.829-58.168-122.744    c-28.128-28.127-62.556-46.202-98.782-54.239V77.255c14.796-3.681,25.794-17.074,25.794-32.993c0-18.748-15.252-34-34-34h-72    c-18.748,0-34,15.252-34,34c0,15.918,10.998,29.311,25.793,32.993v25.479c-36.115,8.071-70.429,26.121-98.477,54.169    c-6.138,6.138-11.798,12.577-16.979,19.269c-0.251-0.019-0.502-0.038-0.758-0.038H78.167c-5.522,0-10,4.477-10,10s4.478,10,10,10    h58.412c-7.332,12.275-13.244,25.166-17.744,38.436H10c-5.522,0-10,4.477-10,10s4.478,10,10,10h103.184    c-2.882,12.651-4.536,25.526-4.963,38.437H64c-5.522,0-10,4.477-10,10s4.478,10,10,10h44.54    c0.844,12.944,2.925,25.82,6.244,38.437H50c-5.522,0-10,4.477-10,10s4.478,10,10,10h71.166    c9.81,25.951,25.141,50.274,45.999,71.132c32.946,32.946,76.582,53.608,122.868,58.181c6.606,0.652,13.217,0.975,19.819,0.975    c39.022,0,77.548-11.293,110.238-32.581c4.628-3.014,5.937-9.209,2.923-13.837s-9.209-5.937-13.837-2.923    c-71.557,46.597-167.39,36.522-227.869-23.957c-70.962-70.962-70.962-186.425,0-257.388c70.961-70.961,186.424-70.961,257.387,0    c60.399,60.4,70.529,156.151,24.086,227.673c-3.008,4.632-1.691,10.826,2.94,13.833c4.634,3.008,10.826,1.691,13.833-2.941    C504.367,371.396,515.537,325.241,511.005,279.646z M259.849,44.263c0-7.72,6.28-14,14-14h72c7.72,0,14,6.28,14,14s-6.28,14-14,14    h-1.794h-68.413h-1.793C266.129,58.263,259.849,51.982,259.849,44.263z M285.642,99.296V78.263h48.413v20.997    C317.979,97.348,301.715,97.36,285.642,99.296z"/>
-                                            <path id="XMLID_391_"
-                                                  d="M445.77,425.5c-2.64,0-5.21,1.07-7.069,2.93c-1.87,1.86-2.931,4.44-2.931,7.07    c0,2.63,1.061,5.21,2.931,7.07c1.859,1.87,4.43,2.93,7.069,2.93c2.63,0,5.2-1.06,7.07-2.93c1.86-1.86,2.93-4.44,2.93-7.07    c0-2.63-1.069-5.21-2.93-7.07C450.97,426.57,448.399,425.5,445.77,425.5z"/>
-                                            <path id="XMLID_394_"
-                                                  d="M310.001,144.609c-85.538,0-155.129,69.59-155.129,155.129s69.591,155.129,155.129,155.129    s155.129-69.59,155.129-155.129S395.539,144.609,310.001,144.609z M310.001,434.867c-74.511,0-135.129-60.619-135.129-135.129    s60.618-135.129,135.129-135.129S445.13,225.228,445.13,299.738S384.512,434.867,310.001,434.867z"/>
-                                            <path id="XMLID_397_"
-                                                  d="M373.257,222.34l-49.53,49.529c-4.142-2.048-8.801-3.205-13.726-3.205c-4.926,0-9.584,1.157-13.726,3.205    l-22.167-22.167c-3.906-3.905-10.236-3.905-14.143,0c-3.905,3.905-3.905,10.237,0,14.142l22.167,22.167    c-2.049,4.142-3.205,8.801-3.205,13.726c0,17.134,13.939,31.074,31.074,31.074s31.074-13.94,31.074-31.074    c0-4.925-1.157-9.584-3.205-13.726l48.076-48.076v0l1.453-1.453c3.905-3.905,3.905-10.237,0-14.142    S377.164,218.435,373.257,222.34z M310.001,310.812c-6.106,0-11.074-4.968-11.074-11.074s4.968-11.074,11.074-11.074    s11.074,4.968,11.074,11.074S316.107,310.812,310.001,310.812z"/>
-                                            <path id="XMLID_398_"
-                                                  d="M416.92,289.86h-9.265c-5.522,0-10,4.477-10,10s4.478,10,10,10h9.265c5.522,0,10-4.477,10-10    S422.442,289.86,416.92,289.86z"/>
-                                            <path id="XMLID_399_"
-                                                  d="M212.346,289.616h-9.264c-5.522,0-10,4.477-10,10s4.478,10,10,10h9.264c5.522,0,10-4.477,10-10    S217.868,289.616,212.346,289.616z"/>
-                                            <path id="XMLID_400_"
-                                                  d="M310.123,212.083c5.522,0,10-4.477,10-10v-9.264c0-5.523-4.478-10-10-10s-10,4.477-10,10v9.264    C300.123,207.606,304.601,212.083,310.123,212.083z"/>
-                                            <path id="XMLID_424_"
-                                                  d="M309.879,387.393c-5.522,0-10,4.477-10,10v9.264c0,5.523,4.478,10,10,10s10-4.477,10-10v-9.264    C319.879,391.87,315.401,387.393,309.879,387.393z"/>
-                                            <path id="XMLID_425_"
-                                                  d="M10,351.44c-2.63,0-5.21,1.07-7.07,2.93c-1.86,1.86-2.93,4.44-2.93,7.07c0,2.64,1.069,5.21,2.93,7.07    s4.44,2.93,7.07,2.93s5.21-1.07,7.069-2.93c1.86-1.86,2.931-4.44,2.931-7.07s-1.07-5.21-2.931-7.07    C15.21,352.51,12.63,351.44,10,351.44z"/>
-                                        </g>
-                                    </g>
-                                </svg>
+                            <!-- Quick Status Update Button -->
+                            <button class="btn btn-sm d-flex align-items-center justify-content-center js-quick-status-update"
+                                    data-bs-toggle="modal"
+                                    data-bs-target="#quickStatusUpdateModal"
+                                    data-driver-id="<?php echo $row[ 'id' ]; ?>"
+                                    data-driver-name="<?php echo esc_attr( $driver_name ); ?>"
+                                    data-driver-status="<?php echo esc_attr( $driver_status ); ?>"
+                                    data-current-location="<?php echo esc_attr( $current_location ); ?>"
+                                    data-current-city="<?php echo esc_attr( $current_city ); ?>"
+                                    data-current-zipcode="<?php echo esc_attr( $current_zipcode ); ?>"
+                                    data-latitude="<?php echo esc_attr( $latitud ); ?>"
+                                    data-longitude="<?php echo esc_attr( $longitude ); ?>"
+                                    data-country="<?php echo esc_attr( $country ); ?>"
+                                    data-status-date="<?php echo esc_attr( $status_date ); ?>"
+                                    style="width: 28px; height: 28px; padding: 0;"
+                                    title="Quick Status Update">
+								<?php echo $icons->get_icon_edit_2(); ?>
                             </button>
+							
 							<?php echo esc_html( get_template_part( TEMPLATE_PATH . 'tables/control', 'dropdown-driver', [
 								'id'       => $row[ 'id' ],
 								'is_draft' => $is_draft,
@@ -506,67 +480,132 @@ if ( ! empty( $results ) ) :
 	?>
 
 <?php else : ?>
-    <p>No loads found.</p>
+    <p>No drivers were found.</p>
 <?php endif; ?>
 
-<!-- Driver Rating Popup -->
-<div class="popup" id="driver-rating-popup">
-    <div class="my_overlay js-popup-close"></div>
-    <div class="popup__wrapper-inner">
-        <div class="popup-container">
-            <button class="popup-close js-popup-close">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                </svg>
-            </button>
-            <div class="popup-content">
-                <h3 class="mb-3">Driver Ratings</h3>
-                <div class="d-flex justify-content-between align-items-center mb-3">
-                    <h6 class="mb-0" id="driverRatingName"></h6>
-                    <span class="badge bg-primary" id="driverRatingScore"></span>
-                </div>
-                <div id="driverRatingContent">
-                    <div class="text-center">
-                        <div class="spinner-border" role="status">
-                            <span class="visually-hidden">Loading...</span>
-                        </div>
-                    </div>
-                </div>
-                <div class="mt-4 text-end">
-                    <a href="#" class="btn btn-primary" id="driverRatingFullPage" target="_blank">Go to Full Page</a>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
+<?php get_template_part( TEMPLATE_PATH . 'popups/quick-status-update-modal' ); ?>
 
-<!-- Driver Notice Popup -->
-<div class="popup" id="driver-notice-popup">
-    <div class="my_overlay js-popup-close"></div>
-    <div class="popup__wrapper-inner">
-        <div class="popup-container">
-            <button class="popup-close js-popup-close">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                </svg>
-            </button>
-            <div class="popup-content">
-                <h3 class="mb-3">Driver Notices</h3>
-                <div class="d-flex justify-content-between align-items-center mb-3">
-                    <h6 class="mb-0" id="driverNoticeName"></h6>
-                    <span class="badge bg-primary" id="driverNoticeCount"></span>
-                </div>
-                <div id="driverNoticeContent">
-                    <div class="text-center">
-                        <div class="spinner-border" role="status">
-                            <span class="visually-hidden">Loading...</span>
+    <!-- Driver Rating Popup -->
+    <div class="popup" id="driver-rating-popup">
+        <div class="my_overlay js-popup-close"></div>
+        <div class="popup__wrapper-inner">
+            <div class="popup-container">
+                <button class="popup-close js-popup-close">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                              stroke-linejoin="round"/>
+                    </svg>
+                </button>
+                <div class="popup-content">
+                    <h3 class="mb-3">Driver Ratings</h3>
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h6 class="mb-0" id="driverRatingName"></h6>
+                        <span class="badge bg-primary" id="driverRatingScore"></span>
+                    </div>
+                    <div id="driverRatingContent">
+                        <div class="text-center">
+                            <div class="spinner-border" role="status">
+                                <span class="visually-hidden">Loading...</span>
+                            </div>
                         </div>
                     </div>
-                </div>
-                <div class="mt-4 text-end">
-                    <a href="#" class="btn btn-primary" id="driverNoticeFullPage" target="_blank">Go to Full Page</a>
+                    <div class="mt-4 text-end">
+                        <a href="#" class="btn btn-primary" id="driverRatingFullPage" target="_blank">Go to Full
+                            Page</a>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
-</div>
+
+    <!-- Driver Notice Popup -->
+    <div class="popup" id="driver-notice-popup">
+        <div class="my_overlay js-popup-close"></div>
+        <div class="popup__wrapper-inner">
+            <div class="popup-container">
+                <button class="popup-close js-popup-close">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                              stroke-linejoin="round"/>
+                    </svg>
+                </button>
+                <div class="popup-content">
+                    <h3 class="mb-3">Driver Notices</h3>
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h6 class="mb-0" id="driverNoticeName"></h6>
+                        <span class="badge bg-primary" id="driverNoticeCount"></span>
+                    </div>
+                    <div id="driverNoticeContent">
+                        <div class="text-center">
+                            <div class="spinner-border" role="status">
+                                <span class="visually-hidden">Loading...</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mt-4 text-end">
+                        <a href="#" class="btn btn-primary" id="driverNoticeFullPage" target="_blank">Go to Full
+                            Page</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+<?php
+// TODO need add json $data for import driver ratings
+// Import driver ratings from the data array
+// if (isset($data['data']['drivers']) && is_array($data['data']['drivers'])) {
+
+// 	echo "<div style='background: #f5f5f5; padding: 20px; margin: 20px 0; border: 1px solid #ddd;'>";
+// 	echo "<h3>Driver Ratings Import</h3>";
+
+// 	// Get current offset from URL parameter
+// 	$current_offset = isset($_GET['import_offset']) ? (int) $_GET['import_offset'] : 0;
+// 	$step_size = 500;
+
+// 	// Import current batch
+// 	$import_results = import_driver_ratings_step($data['data']['drivers'], $current_offset, $step_size);
+
+// 	echo "<h4>Import Results (Batch " . ($current_offset / $step_size + 1) . "):</h4>";
+// 	echo "<ul>";
+// 	echo "<li><strong>Total available:</strong> " . $import_results['total_available'] . "</li>";
+// 	echo "<li><strong>Current batch:</strong> " . $import_results['total_processed'] . " processed</li>";
+// 	echo "<li><strong>Added:</strong> " . $import_results['added'] . "</li>";
+// 	echo "<li><strong>Skipped (duplicates):</strong> " . $import_results['skipped'] . "</li>";
+// 	echo "<li><strong>Progress:</strong> " . ($current_offset + $import_results['total_processed']) . " / " . $import_results['total_available'] . "</li>";
+
+// 	if (!empty($import_results['errors'])) {
+// 		echo "<li><strong>Errors:</strong> " . count($import_results['errors']) . "</li>";
+// 		echo "<ul>";
+// 		foreach ($import_results['errors'] as $error) {
+// 			echo "<li style='color: red;'>" . esc_html($error) . "</li>";
+// 		}
+// 		echo "</ul>";
+// 	}
+// 	echo "</ul>";
+
+// 	// Navigation buttons
+// 	echo "<div style='margin-top: 20px;'>";
+
+// 	if ($current_offset > 0) {
+// 		$prev_offset = max(0, $current_offset - $step_size);
+// 		echo "<a href='?import_offset=" . $prev_offset . "' class='button button-secondary' style='margin-right: 10px;'>← Previous Batch</a>";
+// 	}
+
+// 	if ($import_results['has_more']) {
+// 		$next_offset = $current_offset + $step_size;
+// 		echo "<a href='?import_offset=" . $next_offset . "' class='button button-primary'>Next Batch →</a>";
+// 	} else {
+// 		echo "<span style='color: green; font-weight: bold;'>✓ Import completed!</span>";
+// 	}
+
+// 	echo "</div>";
+
+// 	echo "<p><em>Processing in batches of $step_size records. Use navigation buttons to continue.</em></p>";
+// 	echo "</div>";
+// } else {
+// 	echo "<div style='background: #fff3cd; padding: 10px; margin: 10px 0; border: 1px solid #ffeaa7;'>";
+// 	echo "<strong>No driver ratings data found to import.</strong>";
+// 	echo "</div>";
+// }
+?>

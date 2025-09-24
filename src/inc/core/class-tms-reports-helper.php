@@ -329,7 +329,7 @@ class TMSReportsHelper extends TMSReportsIcons {
 		$project = $report->project;
 		
 		$args = array(
-			'role__in' => array( 'dispatcher', 'dispatcher-tl' ),
+			'role__in' => array( 'dispatcher', 'dispatcher-tl', 'expedite_manager' ),
 			'orderby'  => 'display_name',
 			'order'    => 'ASC',
 		);
@@ -447,7 +447,7 @@ class TMSReportsHelper extends TMSReportsIcons {
 		$current_select  = $project ?? get_field( 'current_select', 'user_' . $current_user_id );
 		
 		$args = array(
-			'role'       => 'dispatcher-tl',
+			'role__in'   => array( 'dispatcher-tl', 'expedite_manager' ),
 			'meta_query' => array(
 				'relation' => 'AND',
 				array(
@@ -473,6 +473,50 @@ class TMSReportsHelper extends TMSReportsIcons {
 		if ( ! empty( $team_leaders ) ) {
 			foreach ( $team_leaders as $leader ) {
 				$ids[] = $leader->ID;
+			}
+		}
+		
+		return $ids;
+	}
+
+	/**
+	 * Get expedite managers for the current user
+	 * 
+	 * @param int|null $user_id User ID, defaults to current user
+	 * @param string|null $project Project name, defaults to current_select field
+	 * @return array Array of expedite manager IDs
+	 */
+	function get_my_expedite_manager( $user_id = null, $project = null ) {
+		$current_user_id = $user_id ? intval( $user_id ) : get_current_user_id(); // Get the current user ID
+		$current_select  = $project ?? get_field( 'current_select', 'user_' . $current_user_id );
+		
+		$args = array(
+			'role'       => 'expedite_manager',
+			'meta_query' => array(
+				'relation' => 'AND',
+				array(
+					'key'     => 'my_team',
+					'value'   => '"' . $current_user_id . '"',
+					// Ensure the ID is treated as a whole number in serialized arrays
+					'compare' => 'LIKE'
+				),
+				array(
+					'key'     => 'permission_view',
+					'value'   => '"' . $current_select . '"',
+					// Encapsulate in quotes to match serialized array elements
+					'compare' => 'LIKE'
+				)
+			)
+		);
+		
+		
+		$query             = new WP_User_Query( $args );
+		$expedite_managers = $query->get_results();
+		$ids               = array();
+		
+		if ( ! empty( $expedite_managers ) ) {
+			foreach ( $expedite_managers as $manager ) {
+				$ids[] = $manager->ID;
 			}
 		}
 		

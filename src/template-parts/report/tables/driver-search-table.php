@@ -5,7 +5,7 @@ $icons        = new TMSReportsIcons();
 $driverHelper = new TMSDriversHelper();
 $TMSUsers     = new TMSUsers();
 
-$access_hold = $TMSUsers->check_user_role_access( array( 'administrator', 'dispatcher-tl', 'dispatcher' ), true );
+$access_hold = $TMSUsers->check_user_role_access( array( 'administrator', 'expedite_manager', 'dispatcher-tl', 'dispatcher' ), true );
 global $global_options;
 
 $results       = get_field_value( $args, 'results' );
@@ -30,10 +30,7 @@ if ( isset( $args[ 'filtered_drivers' ] ) && ! empty( $args[ 'filtered_drivers' 
 	echo '</div>';
 }
 
-if ( ! empty( $results ) ) :
-	// Debug: Show total count and first few results
-	echo "<!-- Debug: Total drivers: " . count( $results ) . " -->";
-	?>
+if ( ! empty( $results ) ) : ?>
 
     <table class="table mb-5 w-100">
         <thead>
@@ -89,6 +86,7 @@ if ( ! empty( $results ) ) :
 			$driver_phone = get_field_value( $meta, $show_phone );
 			$home_location = get_field_value( $meta, 'home_location' );
 			$city = get_field_value( $meta, 'city' );
+			$available_date = get_field_value( $row, 'date_available' );
 			
 			$vehicle_type     = get_field_value( $meta, 'vehicle_type' );
 			$vehicle_year     = get_field_value( $meta, 'vehicle_year' );
@@ -101,16 +99,20 @@ if ( ! empty( $results ) ) :
 			$latitud          = get_field_value( $meta, 'latitude' );
 			$longitude        = get_field_value( $meta, 'longitude' );
 			$country          = get_field_value( $meta, 'country' );
-			$status_date      = get_field_value( $meta, 'status_date' );
+			// Convert MySQL datetime format to flatpickr format (m/d/Y H:i) for modal
+			$status_date = TMSDriversHelper::convert_mysql_to_flatpickr_date( $available_date );
 			$notes            = get_field_value( $meta, 'notes' );
+			$last_user_update = get_field_value( $meta, 'last_user_update' );
 			
 			// Get hold information if driver is on hold
 			$hold_info       = null;
 			$current_user_id = get_current_user_id();
 			$show_phone      = true;
 			$show_controls   = true;
+
+            $is_hold = $driver_status === 'on_hold';
 			
-			if ( $driver_status === 'on_hold' ) {
+			if ( $is_hold ) {
 				$hold_info = $drivers->get_driver_hold_info( $row[ 'id' ] );
 				if ( $hold_info ) {
 					// Hide phone number and controls from other users
@@ -209,9 +211,14 @@ if ( ! empty( $results ) ) :
 				$updated_text          = '';
 				$timestamp             = null;
 				$class_update_code     = '';
-				$time                  = strtotime( current_time( 'mysql' ) . TIME_AVAILABLE_DRIVER );
+
+                $ny_timezone = new DateTimeZone('America/New_York');
+                $ny_time = new DateTime('now', $ny_timezone);
+                $time = strtotime( $ny_time->format('Y-m-d H:i:s') . TIME_AVAILABLE_DRIVER );
 				$updated_zip_code_time = strtotime( $updated_zip_code );
-				if ( ! isset( $updated_zip_code_time ) || empty( $updated_zip_code_time ) ) {
+			
+            
+                if ( ! isset( $updated_zip_code_time ) || empty( $updated_zip_code_time ) ) {
 					$updated_text      = 'Update date not set!';
 					$class_update_code = 'weiting';
 				} else {
@@ -224,16 +231,16 @@ if ( ! empty( $results ) ) :
 				
 				?>
                 <td class="table-column js-location-update <?php echo $class_update_code; ?>"
-                    style="font-size: 13px; width: 220px;">
+                    style="font-size: 13px; width: 200px;">
 					<?php
 					
 					$state = explode( ',', $updated_zip_code );
 					echo ( isset( $current_location ) && isset( $current_city ) )
 						? $current_city . ', ' . $current_location . ' ' : 'Need to set this field ';
-					echo $driver_status !== 'available' ? $date_status : '';
+					echo $driver_status !== 'available' ? '<br>' . $date_status . '<br>' : '<br>';
 					?>
-                    <br>
-                    <span><?php echo $updated_text; ?></span>
+                    
+                    <span style="font-size: 10px;"><?php echo $updated_text; ?></span>
                 </td>
 				
 				<?php if ( isset( $args[ 'has_distance_data' ] ) && $args[ 'has_distance_data' ] ) : ?>
@@ -309,7 +316,7 @@ if ( ! empty( $results ) ) :
                     </div>
                 </td>
                 <td>
-                    <div class="table-tags d-flex flex-wrap" style="min-width: 120px;">
+                    <div class="table-tags d-flex flex-wrap" style="min-width: 186px;">
 						<?php
 						if ( $hold_info ) {
 							// Show hold information instead of capabilities
@@ -324,7 +331,7 @@ if ( ! empty( $results ) ) :
                     </div>
                 </td>
 
-                <td style="width: 252px;">
+                <td style="width: 252px;" class="js-notes-td">
 					<?php
 					if ( $hold_info ) {
 						echo 'Will be available in<br>' . $hold_info[ 'minutes_left' ] . ' min';
@@ -427,9 +434,10 @@ if ( ! empty( $results ) ) :
 
                 <td style="width: 92px;">
 					<?php if ( $show_controls ) : ?>
-                        <div class="d-flex align-items-center">
+                        <div class="d-flex align-items-center justify-content-end">
 							
-							<?php if ( $access_hold ): ?>
+							<?php 
+                            if ( $access_hold ): ?>
                                 <button class="btn btn-sm d-flex align-items-center justify-content-center js-hold-driver"
                                         data-id="<?php echo $row[ 'id' ]; ?>"
                                         data-dispatcher="<?php echo get_current_user_id(); ?>"
@@ -439,24 +447,28 @@ if ( ! empty( $results ) ) :
                                 </button>
 							<?php endif; ?>
 
-                            <!-- Quick Status Update Button -->
-                            <button class="btn btn-sm d-flex align-items-center justify-content-center js-quick-status-update"
-                                    data-bs-toggle="modal"
-                                    data-bs-target="#quickStatusUpdateModal"
-                                    data-driver-id="<?php echo $row[ 'id' ]; ?>"
-                                    data-driver-name="<?php echo esc_attr( $driver_name ); ?>"
-                                    data-driver-status="<?php echo esc_attr( $driver_status ); ?>"
-                                    data-current-location="<?php echo esc_attr( $current_location ); ?>"
-                                    data-current-city="<?php echo esc_attr( $current_city ); ?>"
-                                    data-current-zipcode="<?php echo esc_attr( $current_zipcode ); ?>"
-                                    data-latitude="<?php echo esc_attr( $latitud ); ?>"
-                                    data-longitude="<?php echo esc_attr( $longitude ); ?>"
-                                    data-country="<?php echo esc_attr( $country ); ?>"
-                                    data-status-date="<?php echo esc_attr( $status_date ); ?>"
-                                    style="width: 28px; height: 28px; padding: 0;"
-                                    title="Quick Status Update">
-								<?php echo $icons->get_icon_edit_2(); ?>
-                            </button>
+                            <?php if ( !$is_hold ): ?>
+                                <!-- Quick Status Update Button -->
+                                <button class="btn btn-sm d-flex align-items-center justify-content-center js-quick-status-update"
+                                        data-bs-toggle="modal"
+                                        data-bs-target="#quickStatusUpdateModal"
+                                        data-driver-id="<?php echo $row[ 'id' ]; ?>"
+                                        data-driver-name="<?php echo esc_attr( $driver_name ); ?>"
+                                        data-driver-status="<?php echo esc_attr( $driver_status ); ?>"
+                                        data-current-location="<?php echo esc_attr( $current_location ); ?>"
+                                        data-current-city="<?php echo esc_attr( $current_city ); ?>"
+                                        data-current-zipcode="<?php echo esc_attr( $current_zipcode ); ?>"
+                                        data-latitude="<?php echo esc_attr( $latitud ); ?>"
+                                        data-longitude="<?php echo esc_attr( $longitude ); ?>"
+                                        data-country="<?php echo esc_attr( $country ); ?>"
+                                        data-status-date="<?php echo esc_attr( $status_date ); ?>"
+                                        data-last-user-update="<?php echo esc_attr( $last_user_update ); ?>"
+                                        data-notes="<?php echo esc_attr( $notes ); ?>"
+                                        style="width: 28px; height: 28px; padding: 0;"
+                                        title="Quick Status Update">
+                                    <?php echo $icons->get_icon_edit_2(); ?>
+                                </button>
+                            <?php endif; ?>
 							
 							<?php echo esc_html( get_template_part( TEMPLATE_PATH . 'tables/control', 'dropdown-driver', [
 								'id'       => $row[ 'id' ],

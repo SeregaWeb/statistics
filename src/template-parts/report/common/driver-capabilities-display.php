@@ -50,7 +50,7 @@ if ( ! empty( $array_additionals ) ) {
 		$tooltip_text = isset( $capability_names[ $filename ] ) ? $capability_names[ $filename ] : $filename;
 		
 		?>
-		<img width="24" height="24" 
+		<img width="34" height="34" 
 			 src="<?php echo $icon_url; ?>" 
 			 alt="<?php echo esc_attr( $tooltip_text ); ?>"
 			 title="<?php echo esc_attr( $tooltip_text ); ?>"

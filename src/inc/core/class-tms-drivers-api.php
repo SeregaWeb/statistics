@@ -24,6 +24,7 @@ class TMSDriversAPI {
     const ENDPOINT_DRIVERS = 'drivers';
     const ENDPOINT_DRIVER_LOADS = 'driver/loads';
     const ENDPOINT_LOAD_DETAIL = 'load';
+    const ENDPOINT_USERS = 'users';
 
     private $drivers;
     private $loads;
@@ -207,6 +208,36 @@ class TMSDriversAPI {
                     'default' => false,
                     'validate_callback' => function($param, $request, $key) {
                         return in_array($param, array('true', 'false', '1', '0', true, false));
+                    }
+                )
+            )
+        ));
+        
+        // Users endpoint
+        register_rest_route(self::API_NAMESPACE, '/' . self::ENDPOINT_USERS, array(
+            'methods' => 'GET',
+            'callback' => array($this, 'get_users'),
+            'permission_callback' => array($this, 'check_api_permission'),
+            'args' => array(
+                'page' => array(
+                    'required' => false,
+                    'default' => 1,
+                    'validate_callback' => function($param, $request, $key) {
+                        return is_numeric($param) && $param > 0;
+                    }
+                ),
+                'per_page' => array(
+                    'required' => false,
+                    'default' => 20,
+                    'validate_callback' => function($param, $request, $key) {
+                        return is_numeric($param) && $param > 0 && $param <= 100;
+                    }
+                ),
+                'search' => array(
+                    'required' => false,
+                    'default' => '',
+                    'validate_callback' => function($param, $request, $key) {
+                        return is_string($param);
                     }
                 )
             )
@@ -890,14 +921,15 @@ class TMSDriversAPI {
      */
     private function get_current_location_data($main_result, $meta_data) {
         return array(
+            'status' => $meta_data['driver_status'] ?? null,
+            'available_date' => $main_result['date_available'] ?? null,
             'zipcode' => $meta_data['current_zipcode'] ?? $meta_data['updated_zipcode'] ?? null,
             'city' => $meta_data['current_city'] ?? null,
             'state' => $meta_data['current_location'] ?? null,
             'coordinates' => array(
                 'lat' => $meta_data['latitude'] ?? null,
                 'lng' => $meta_data['longitude'] ?? null
-            ),
-            'last_updated' => $main_result['date_updated'] ?? null
+            )
         );
     }
     
@@ -1402,8 +1434,8 @@ class TMSDriversAPI {
             foreach ($results as $driver) {
                 $formatted_results[] = array(
                     'id' => intval($driver['id']),
-                    'driver_name' => $this->clean_empty_value($driver['driver_name']),
                     'role' => 'driver', // Fixed role as requested
+                    'driver_name' => $this->clean_empty_value($driver['driver_name']),
                     'driver_email' => $this->clean_empty_value($driver['driver_email']),
                     'driver_phone' => $this->clean_empty_value($driver['driver_phone']),
                     'home_location' => $this->clean_empty_value($driver['home_location']),
@@ -2407,7 +2439,7 @@ class TMSDriversAPI {
                 'city' => 'current_city',
                 'state' => 'current_location',
                 'coordinates' => array('lat' => 'latitude', 'lng' => 'longitude'),
-                'last_updated' => 'status_date'
+                'status' => 'driver_status'
             );
             
             foreach ($location_fields as $api_field => $db_field) {
@@ -2462,6 +2494,60 @@ class TMSDriversAPI {
                         }
                     }
                 }
+            }
+            
+            // Handle available_date separately (update main table, not meta table)
+            if (isset($location_data['available_date'])) {
+                $new_available_date = $location_data['available_date'];
+                
+                // Get current value from main table
+                $main_table = $wpdb->prefix . 'drivers';
+                $current_available_date = $wpdb->get_var($wpdb->prepare(
+                    "SELECT date_available FROM $main_table WHERE id = %d",
+                    $driver_id
+                ));
+                
+                if ($current_available_date != $new_available_date) {
+                    $result = $wpdb->update(
+                        $main_table,
+                        array('date_available' => $new_available_date),
+                        array('id' => $driver_id),
+                        array('%s'),
+                        array('%d')
+                    );
+                    
+                    if ($result !== false) {
+                        $changed_fields[] = array(
+                            'field' => 'date_available',
+                            'old_value' => $current_available_date ?: '',
+                            'new_value' => $new_available_date
+                        );
+                    }
+                }
+            }
+            
+            // Auto-update status_date if zipcode or coordinates were changed
+            $location_changed = false;
+            foreach ($changed_fields as $change) {
+                if (in_array($change['field'], ['current_zipcode', 'latitude', 'longitude'])) {
+                    $location_changed = true;
+                    break;
+                }
+            }
+            
+            if ($location_changed) {
+                // Get current time in New York timezone
+                $ny_timezone = new DateTimeZone('America/New_York');
+                $ny_time = new DateTime('now', $ny_timezone);
+                $current_time = $ny_time->format('Y-m-d H:i:s');
+                
+                $wpdb->update(
+                    $wpdb->prefix . 'drivers_meta',
+                    array('meta_value' => $current_time),
+                    array('post_id' => $driver_id, 'meta_key' => 'status_date'),
+                    array('%s'),
+                    array('%d', '%s')
+                );
             }
             
             return array(
@@ -2902,6 +2988,90 @@ class TMSDriversAPI {
      */
     private function format_field_name($field) {
         return ucwords(str_replace('_', ' ', $field));
+    }
+    
+    /**
+     * Get all users with their basic info and ACF fields
+     * 
+     * @param WP_REST_Request $request
+     * @return WP_REST_Response|WP_Error
+     */
+    public function get_users($request) {
+        try {
+            $page = $request->get_param('page');
+            $per_page = $request->get_param('per_page');
+            $search = $request->get_param('search');
+            
+            // Calculate offset
+            $offset = ($page - 1) * $per_page;
+            
+            // Build query args
+            $args = array(
+                'number' => $per_page,
+                'offset' => $offset,
+                'orderby' => 'display_name',
+                'order' => 'ASC'
+            );
+            
+            // Add search if provided
+            if (!empty($search)) {
+                $args['search'] = '*' . $search . '*';
+                $args['search_columns'] = array('user_login', 'user_email', 'display_name', 'first_name', 'last_name');
+            }
+            
+            // Get users
+            $user_query = new WP_User_Query($args);
+            $users = $user_query->get_results();
+            
+            // Get total count
+            $total_args = $args;
+            unset($total_args['number'], $total_args['offset']);
+            $total_query = new WP_User_Query($total_args);
+            $total_users = $total_query->get_total();
+            
+            // Format user data
+            $formatted_users = array();
+            foreach ($users as $user) {
+                $user_data = array(
+                    'id' => $user->ID,
+                    'user_email' => $user->user_email,
+                    'display_name' => $user->display_name,
+                    'first_name' => $user->first_name,
+                    'last_name' => $user->last_name,
+                    'roles' => $user->roles,
+                    'user_registered' => $user->user_registered,
+                    'acf_fields' => array(
+                        'permission_view' => get_field('permission_view', 'user_' . $user->ID),
+                        'initials_color' => get_field('initials_color', 'user_' . $user->ID),
+                        'work_location' => get_field('work_location', 'user_' . $user->ID),
+                        'phone_number' => get_field('phone_number', 'user_' . $user->ID),
+                        'flt' => get_field('flt', 'user_' . $user->ID)
+                    )
+                );
+                
+                $formatted_users[] = $user_data;
+            }
+            
+            return new WP_REST_Response(array(
+                'success' => true,
+                'data' => $formatted_users,
+                'pagination' => array(
+                    'current_page' => $page,
+                    'per_page' => $per_page,
+                    'total_users' => $total_users,
+                    'total_pages' => ceil($total_users / $per_page)
+                ),
+                'timestamp' => current_time('mysql'),
+                'api_version' => '1.0'
+            ), 200);
+            
+        } catch (Exception $e) {
+            return new WP_Error(
+                'api_error',
+                'An error occurred while fetching users: ' . $e->getMessage(),
+                array('status' => 500)
+            );
+        }
     }
 }
 

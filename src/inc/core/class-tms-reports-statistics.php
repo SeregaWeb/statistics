@@ -584,7 +584,9 @@ class  TMSStatistics extends TMSReportsHelper {
 		        SUM(CAST(IFNULL(percent_quick_pay_value.meta_value, 0) AS DECIMAL(10,2))) AS total_percent_quick_pay_value,
 		        SUM(CAST(IFNULL(quick_pay_driver_amount.meta_value, 0) AS DECIMAL(10,2))) AS total_quick_pay_driver_amount,
 		        SUM(CAST(IFNULL(booked_rate_modify.meta_value, 0) AS DECIMAL(10,2))) AS total_booked_rate_modify,
-		        SUM(CAST(IFNULL(percent_booked_rate.meta_value, 0) AS DECIMAL(10,2))) AS total_percent_booked_rate
+		        SUM(CAST(IFNULL(percent_booked_rate.meta_value, 0) AS DECIMAL(10,2))) AS total_percent_booked_rate,
+		        SUM(CASE WHEN factoring_status.meta_value IN ('processed', 'paid') THEN CAST(IFNULL(booked_rate.meta_value, 0) AS DECIMAL(10,2)) ELSE 0 END) AS total_processed_invoices,
+		        SUM(CASE WHEN driver_pay_statuses.meta_value = 'paid' THEN CAST(IFNULL(driver_rate.meta_value, 0) AS DECIMAL(10,2)) ELSE 0 END) AS total_paid_loads
 		    FROM $table_reports reports
 		    LEFT JOIN $table_meta profit ON reports.id = profit.post_id AND profit.meta_key = 'profit'
 		    LEFT JOIN $table_meta percent_booked_rate ON reports.id = percent_booked_rate.post_id AND percent_booked_rate.meta_key = 'percent_booked_rate'
@@ -596,7 +598,9 @@ class  TMSStatistics extends TMSReportsHelper {
 		    LEFT JOIN $table_meta processing_fees ON reports.id = processing_fees.post_id AND processing_fees.meta_key = 'processing_fees'
 		    LEFT JOIN $table_meta true_profit ON reports.id = true_profit.post_id AND true_profit.meta_key = 'true_profit'
 		    LEFT JOIN $table_meta booked_rate_modify ON reports.id = booked_rate_modify.post_id AND booked_rate_modify.meta_key = 'booked_rate_modify'
-		     LEFT JOIN $table_meta office_dispatcher ON reports.id = office_dispatcher.post_id AND office_dispatcher.meta_key = 'office_dispatcher'
+		    LEFT JOIN $table_meta office_dispatcher ON reports.id = office_dispatcher.post_id AND office_dispatcher.meta_key = 'office_dispatcher'
+		    LEFT JOIN $table_meta factoring_status ON reports.id = factoring_status.post_id AND factoring_status.meta_key = 'factoring_status'
+		    LEFT JOIN $table_meta driver_pay_statuses ON reports.id = driver_pay_statuses.post_id AND driver_pay_statuses.meta_key = 'driver_pay_statuses'
 		";
 		
 		
@@ -631,6 +635,8 @@ class  TMSStatistics extends TMSReportsHelper {
 			'percent_quick_pay_value'       => 0.00,
 			'total_quick_pay_driver_amount' => 0.00,
 			'total_percent_booked_rate'     => 0.00,
+			'total_processed_invoices'      => 0.00,
+			'total_paid_loads'              => 0.00,
 		];
 		
 		// Populate the result with actual data if available
@@ -646,6 +652,8 @@ class  TMSStatistics extends TMSReportsHelper {
 			$monthly_stats[ 'percent_quick_pay_value' ]       = $results[ 0 ][ 'percent_quick_pay_value' ] ?? 0.00;
 			$monthly_stats[ 'total_quick_pay_driver_amount' ] = $results[ 0 ][ 'total_quick_pay_driver_amount' ] ?? 0.00;
 			$monthly_stats[ 'total_percent_booked_rate' ]     = $results[ 0 ][ 'total_percent_booked_rate' ] ?? 0.00;
+			$monthly_stats[ 'total_processed_invoices' ]      = $results[ 0 ][ 'total_processed_invoices' ] ?? 0.00;
+			$monthly_stats[ 'total_paid_loads' ]              = $results[ 0 ][ 'total_paid_loads' ] ?? 0.00;
 		}
 		
 		// Return the monthly statistics
@@ -660,17 +668,23 @@ class  TMSStatistics extends TMSReportsHelper {
 	 *
 	 * @return array
 	 */
-	public function get_dispatchers( $office_user = null, $is_flt = false ) {
+	public function get_dispatchers( $office_user = null, $is_flt = false , $include_expedite_manager = false ) {
 		// Аргументы для получения пользователей с ролью 'dispatcher'
 		
 		$report  = new TMSReports();
 		$project = $report->project;
+
 		
+
 		$args = array(
-			'role__in' => array( 'dispatcher', 'dispatcher-tl' ),
+			'role__in' => array( 'dispatcher', 'dispatcher-tl'),
 			'orderby'  => 'display_name',
 			'order'    => 'ASC',
 		);
+
+		if ( $include_expedite_manager ) {
+			$args['role__in'][] = 'expedite_manager';
+		}
 		
 		// Получаем пользователей с заданной ролью
 		$users = get_users( $args );
@@ -735,6 +749,67 @@ class  TMSStatistics extends TMSReportsHelper {
 		// Аргументы для получения пользователей с ролью 'dispatcher-tl'
 		$args = array(
 			'role__in' => array( 'dispatcher-tl' ),
+			'orderby'  => 'display_name',
+			'order'    => 'ASC',
+		);
+		
+		// Получаем пользователей с заданной ролью
+		$users = get_users( $args );
+		
+		// Массив для хранения информации о пользователях
+		$dispatchers = array();
+		
+		// Перебираем каждого пользователя
+		foreach ( $users as $user ) {
+			// Получаем имя и фамилию пользователя
+			$first_name = get_user_meta( $user->ID, 'first_name', true );
+			$last_name  = get_user_meta( $user->ID, 'last_name', true );
+			$office     = get_field( 'work_location', "user_" . $user->ID );
+			$flt_access = get_field( 'flt', 'user_' . $user->ID );
+			
+			// Фильтруем по FLT доступу
+			if ( $is_flt && ! $flt_access ) {
+				continue;
+			}
+			
+			// Если не FLT режим, исключаем пользователей с FLT доступом
+			if ( ! $is_flt && $flt_access ) {
+				continue;
+			}
+			
+			// Фильтруем по офису
+			if ( is_null( $office_user ) ) {
+				$dispatchers[] = array(
+					'id'       => $user->ID,
+					'fullname' => trim( $first_name . ' ' . $last_name ),
+					'office'   => $office,
+				);
+			} else {
+				if ( $office_user === $office ) {
+					$dispatchers[] = array(
+						'id'       => $user->ID,
+						'fullname' => trim( $first_name . ' ' . $last_name ),
+						'office'   => $office,
+					);
+				}
+			}
+		}
+		
+		return $dispatchers;
+	}
+
+	/**
+	 * Get expedite managers with FLT access filtering
+	 *
+	 * @param string|null $office_user - office filter
+	 * @param bool $is_flt - whether to filter by FLT access
+	 *
+	 * @return array
+	 */
+	public function get_expedite_managers( $office_user = null, $is_flt = false ) {
+		// Аргументы для получения пользователей с ролью 'dispatcher-tl'
+		$args = array(
+			'role__in' => array( 'expedite_manager' ),
 			'orderby'  => 'display_name',
 			'order'    => 'ASC',
 		);

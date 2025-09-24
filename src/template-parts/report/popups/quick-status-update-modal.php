@@ -105,11 +105,23 @@
                             </div>
                         </div>
                     </div>
+
+                    <div class="row">
+                        <div class="col-12 mb-3">
+                            <label class="form-label">Notes</label>
+                            <textarea class="form-control js-notes" name="notes" rows="3" placeholder="Add notes about this status update..."></textarea>
+                        </div>
+                    </div>
+
+                    <p class="text-center m-0 js-last-user-update">
+                    
+                    </p>
                 </form>
+                
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                <button type="button" class="btn btn-primary js-submit-quick-update">Update Status</button>
+                <button type="button" class="btn btn-primary js-submit-quick-update">Update</button>
             </div>
         </div>
     </div>

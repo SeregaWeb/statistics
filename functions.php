@@ -40,6 +40,9 @@ require THEME_DIR . '/src/inc/core/class-tms-drivers-helper.php';
 require THEME_DIR . '/src/inc/core/class-tms-drivers.php';
 require THEME_DIR . '/src/inc/core/class-tms-drivers-recruiter.php';
 require THEME_DIR . '/src/inc/core/class-tms-drivers-api.php';
+require THEME_DIR . '/src/inc/core/class-tms-user-sync-api.php';
+require THEME_DIR . '/src/inc/hooks/user-sync-hooks.php';
+require THEME_DIR . '/src/inc/admin/user-sync-admin.php';
 require THEME_DIR . '/src/inc/core/class-tms-contacts.php';
 require THEME_DIR . '/src/inc/cron/driver-status-cron.php';
 require THEME_DIR . '/src/inc/initial-setup.php';
@@ -86,6 +89,7 @@ add_action( 'template_redirect', function() {
 		exit;
 	}
 } );
+
 
 //$reports = new TMSReports();
 //$reports->update_contacts_for_new_user( 5, 1 );

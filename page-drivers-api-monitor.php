@@ -79,6 +79,10 @@ $access = true;
                                                     <strong>GET</strong> <?php echo home_url('/wp-json/tms/v1/load/{load_id}?project={project}&is_flt={is_flt}'); ?>
                                                     <br><small class="text-muted">Get specific load details by load ID</small>
                                                 </li>
+                                                <li class="list-group-item">
+                                                    <strong>GET</strong> <?php echo home_url('/wp-json/tms/v1/users?page={page}&per_page={per_page}&search={search}'); ?>
+                                                    <br><small class="text-muted">Get all WordPress users with ACF fields (default: 20 per page)</small>
+                                                </li>
                                             </ul>
                                         </div>
                                     </div>
@@ -207,7 +211,8 @@ curl -X POST \
         "lat": "33.37484",
         "lng": "-84.80047"
       },
-      "last_updated": "2025-09-09 23:59:14"
+      "status": "available",
+      "available_date": "2025-09-10 15:30:00"
     },
     "contact": {
       "driver_name": "Amare Tekalin",
@@ -906,9 +911,138 @@ curl -X GET \
                                     resultDiv.innerHTML = '<div class="alert alert-danger"><h6>Drivers List API Error:</h6><pre style="word-wrap: break-word; overflow-x: auto; white-space: pre-wrap;">' + error.message + '</pre></div>';
                                 });
                             }
+                            
+                            function testUsersAPI() {
+                                const page = document.getElementById('test-page-users').value;
+                                const perPage = document.getElementById('test-per-page-users').value;
+                                const search = document.getElementById('test-search-users').value;
+                                const resultDiv = document.getElementById('api-test-result-users');
+                                
+                                let url = '<?php echo home_url('/wp-json/tms/v1/users'); ?>';
+                                const params = new URLSearchParams();
+                                if (page) params.append('page', page);
+                                if (perPage) params.append('per_page', perPage);
+                                if (search) params.append('search', search);
+                                
+                                if (params.toString()) {
+                                    url += '?' + params.toString();
+                                }
+                                
+                                resultDiv.innerHTML = '<div class="alert alert-info">Loading users...</div>';
+                                
+                                fetch(url, {
+                                    method: 'GET',
+                                    headers: {
+                                        'X-API-Key': 'tms_api_key_2024_driver_access',
+                                        'Content-Type': 'application/json'
+                                    }
+                                })
+                                .then(response => {
+                                    if (!response.ok) {
+                                        throw new Error('HTTP error! status: ' + response.status);
+                                    }
+                                    return response.json();
+                                })
+                                .then(data => {
+                                    resultDiv.innerHTML = '<div class="alert alert-success"><h6>Users API Response:</h6><pre style="word-wrap: break-word; overflow-x: auto; white-space: pre-wrap;">' + JSON.stringify(data, null, 2) + '</pre></div>';
+                                })
+                                .catch(error => {
+                                    resultDiv.innerHTML = '<div class="alert alert-danger"><h6>Users API Error:</h6><pre style="word-wrap: break-word; overflow-x: auto; white-space: pre-wrap;">' + error.message + '</pre></div>';
+                                });
+                            }
                             </script>
                             
                         <?php endif; ?>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Users API Section -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">Users API - Get All Users</h5>
+                    </div>
+                    <div class="card-body">
+                        <p><strong>Description:</strong> Retrieve all WordPress users with their basic information and ACF fields.</p>
+                        
+                        <p><strong>Endpoint:</strong> <code>GET /wp-json/tms/v1/users</code></p>
+                        
+                        <p><strong>Parameters:</strong></p>
+                        <ul>
+                            <li><code>X-API-Key</code> (required) - API authentication key in header</li>
+                            <li><code>page</code> (optional) - Page number (default: 1)</li>
+                            <li><code>per_page</code> (optional) - Users per page (default: 20, max: 100)</li>
+                            <li><code>search</code> (optional) - Search term for user names, emails, or login</li>
+                        </ul>
+                        
+                        <p><strong>Example Request:</strong></p>
+                        <pre class="bg-light p-3 rounded" style="word-wrap: break-word; overflow-x: auto; white-space: pre-wrap;">curl -X GET "<?php echo home_url('/wp-json/tms/v1/users'); ?>?page=1&per_page=20&search=admin" \
+  -H "X-API-Key: tms_api_key_2024_driver_access" \
+  -H "Content-Type: application/json"</pre>
+                        
+                        <p><strong>Example Response:</strong></p>
+                        <pre class="bg-light p-3 rounded" style="word-wrap: break-word; overflow-x: auto; white-space: pre-wrap;">{
+  "success": true,
+  "data": [
+    {
+      "id": 1,
+      "user_email": "admin@example.com",
+      "display_name": "Administrator",
+      "first_name": "Admin",
+      "last_name": "User",
+      "roles": ["administrator"],
+      "user_registered": "2024-01-01 00:00:00",
+      "acf_fields": {
+        "permission_view": true,
+        "initials_color": "#ff0000",
+        "work_location": "office",
+        "phone_number": "+1234567890",
+        "flt": true
+      }
+    }
+  ],
+  "pagination": {
+    "current_page": 1,
+    "per_page": 20,
+    "total_users": 50,
+    "total_pages": 3
+  },
+  "timestamp": "2025-09-10 15:30:00",
+  "api_version": "1.0"
+}</pre>
+                        
+                        <p><strong>Test Users API:</strong></p>
+                        <div class="row">
+                            <div class="col-md-3">
+                                <div class="form-group mb-3">
+                                    <label for="test-page-users">Page:</label>
+                                    <input type="number" class="form-control" id="test-page-users" placeholder="Page number" value="1" min="1">
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="form-group mb-3">
+                                    <label for="test-per-page-users">Per Page:</label>
+                                    <input type="number" class="form-control" id="test-per-page-users" placeholder="Users per page" value="20" min="1" max="100">
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-group mb-3">
+                                    <label for="test-search-users">Search:</label>
+                                    <input type="text" class="form-control" id="test-search-users" placeholder="Search users...">
+                                </div>
+                            </div>
+                            <div class="col-md-2">
+                                <div class="form-group mb-3">
+                                    <label>&nbsp;</label>
+                                    <button type="button" class="btn btn-primary d-block" onclick="testUsersAPI()">Test API</button>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div id="api-test-result-users"></div>
                     </div>
                 </div>
             </div>

@@ -626,7 +626,7 @@ function replace_driver_ids() {
 	
 	
 	$id_mappings = [
-		'3342' => '3283',
+		// '3258' => '3343',
 	];
 	
 	$total_updated = 0;
@@ -707,7 +707,7 @@ function replace_driver_ids() {
 }
 
 // Uncomment the line below to replace driver IDs
-//replace_driver_ids();
+// replace_driver_ids();
 
 /**
  * Sanitize uploaded file name

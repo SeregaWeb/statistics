@@ -18,16 +18,21 @@ $driver_status = get_field_value( $meta, 'driver_status' );
 // Check if current user can change the current driver status (after $driver_status is defined)
 $can_change_current_status = $driver->can_change_driver_status( $driver_status );
 $allowed_statuses          = $driver->get_allowed_statuses();
-$status_date               = get_field_value( $meta, 'status_date' );
+$status_date_raw = get_field_value( $main, 'date_available' );
+$status_date = TMSDriversHelper::convert_mysql_to_flatpickr_date( $status_date_raw );
 $current_location          = get_field_value( $meta, 'current_location' );
 $current_city              = get_field_value( $meta, 'current_city' );
 $current_zipcode           = get_field_value( $meta, 'current_zipcode' );
 $latitud                   = get_field_value( $meta, 'latitude' );
 $longitude                 = get_field_value( $meta, 'longitude' );
 $country                   = get_field_value( $meta, 'country' );
+$last_user_update          = get_field_value( $meta, 'last_user_update' );
+
 
 // Get updated_zipcode from main table
 $updated_zipcode = get_field_value( $main, 'updated_zipcode' );
+
+$is_hold = $driver_status === 'on_hold';
 
 ?>
 
@@ -133,14 +138,21 @@ $updated_zipcode = get_field_value( $main, 'updated_zipcode' );
                         </p>
                         <button type="button" class="btn btn-outline-primary js-update-only-date">Update date</button>
                     </div>
+
+                    <?php if ( $last_user_update ): ?>
+                    <p class="text-center mt-3">
+                        <?php echo $last_user_update; ?>
+                    </p>
+                    <?php endif; ?>
                 </div>
             </div>
 
+            <?php if ( !$is_hold ): ?>
             <div class="row">
                 <div class="col-12">
                     <button type="submit" class="btn btn-primary">Update</button>
                 </div>
             </div>
-
+            <?php endif; ?>
         </form>
 </div>

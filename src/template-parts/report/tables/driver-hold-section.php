@@ -251,15 +251,16 @@ if ( ! empty( $hold_drivers ) ) :
 							<?php endif; ?>
                         </td>
                         <td style="width: 72px;">
-                            <div class="d-flex align-items-center">
-                                <button class="btn btn-sm h-100 d-flex align-items-center justify-content-center js-hold-driver"
+                            <div class="d-flex align-items-center justify-content-end">
+                                <button class="btn btn-sm d-flex align-items-center justify-content-center js-hold-driver"
+                                        style="width: 28px; height: 28px; padding: 0;"
                                         data-id="<?php echo $driver[ 'id' ]; ?>"
                                         data-dispatcher="<?php echo get_current_user_id(); ?>"
                                         data-hold="<?php echo $hold_info ? $hold_info[ 'dispatcher_id' ] : 'null'; ?>">
-                                    <svg style="width: 18px; height: 18px; pointer-events: none; enable-background:new 0 0 511.992 511.992;"
+                                    <svg style="width: 16px; height: 16px; pointer-events: none; enable-background:new 0 0 511.992 511.992;"
                                          xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
                                          version="1.1" id="Layer_1" x="0px" y="0px" viewBox="0 0 511.992 511.992"
-                                         xml:space="preserve" width="512" height="512">
+                                         xml:space="preserve" width="512" height="512" fill="red">
                                 <g id="XMLID_806_">
                                     <g id="XMLID_386_">
                                         <path id="XMLID_389_"

@@ -527,7 +527,8 @@ class  TMSUsers extends TMSReportsHelper {
 			'recruiter-tl',
 			'hr_manager',
 			'driver_updates',
-			'recruiter'
+			'recruiter',
+			'expedite_manager',
 		), true );
 		
 		if ( $allowed_role || intval( $current_user_id ) === intval( $id_user ) || $is_draft ) {

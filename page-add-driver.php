@@ -113,7 +113,9 @@ $access = $TMSUsers->check_user_role_access( [
 	'tracking',
 	'tracking-tl',
 	'morning_tracking',
-	'nightshift_tracking'
+	'nightshift_tracking',
+	'hr_manager',
+	'expedite_manager',
 ], true );
 
 
@@ -121,7 +123,6 @@ $access_only_location = $TMSUsers->check_user_role_access( [
 	'administrator',
 	'recruiter',
 	'recruiter-tl',
-	'hr_manager',
 	'accounting',
 	'driver_updates',
 	'dispatcher',
@@ -129,7 +130,8 @@ $access_only_location = $TMSUsers->check_user_role_access( [
 	'tracking',
 	'tracking-tl',
 	'morning_tracking',
-	'nightshift_tracking'
+	'nightshift_tracking',
+	'expedite_manager',
 ], false );
 
 
@@ -137,6 +139,7 @@ $access_vehicle = $TMSUsers->check_user_role_access( [
 	'administrator',
 	'recruiter',
 	'recruiter-tl',
+	'hr_manager',
 	'accounting',
 	'billing',
 	'billing-tl',

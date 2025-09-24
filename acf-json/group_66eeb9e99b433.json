@@ -177,6 +177,26 @@
             "ui_on_text": "",
             "ui_off_text": "",
             "ui": 1
+        },
+        {
+            "key": "field_68c4136ec5cb8",
+            "label": "Deactivate Account",
+            "name": "deactivate_account",
+            "aria-label": "",
+            "type": "true_false",
+            "instructions": "",
+            "required": 0,
+            "conditional_logic": 0,
+            "wrapper": {
+                "width": "",
+                "class": "",
+                "id": ""
+            },
+            "message": "Deactivate account in this system and chat application",
+            "default_value": 0,
+            "ui": 0,
+            "ui_on_text": "",
+            "ui_off_text": ""
         }
     ],
     "location": [
@@ -197,5 +217,5 @@
     "active": true,
     "description": "",
     "show_in_rest": 0,
-    "modified": 1753052809
+    "modified": 1757680583
 }

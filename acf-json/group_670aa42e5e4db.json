@@ -39,6 +39,13 @@
                 "operator": "==",
                 "value": "dispatcher-tl"
             }
+        ],
+        [
+            {
+                "param": "user_role",
+                "operator": "==",
+                "value": "expedite_manager"
+            }
         ]
     ],
     "menu_order": 0,
@@ -50,5 +57,5 @@
     "active": true,
     "description": "",
     "show_in_rest": 0,
-    "modified": 1728750743
+    "modified": 1758544137
 }

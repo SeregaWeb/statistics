@@ -10,6 +10,16 @@ class  TMSAuth {
 	
 	public function init() {
 		$this->ajax_actions();
+		$this->init_wp_admin_protection();
+	}
+	
+	/**
+	 * Initialize WordPress admin protection hooks
+	 */
+	public function init_wp_admin_protection() {
+		add_filter( 'wp_authenticate_user', array( $this, 'check_deactivated_account_wp_admin' ), 10, 2 );
+		add_action( 'admin_init', array( $this, 'check_deactivated_account_admin_access' ) );
+		add_filter( 'login_message', array( $this, 'display_deactivated_account_message' ) );
 	}
 	
 	function verify_code_and_login() {
@@ -56,6 +66,12 @@ class  TMSAuth {
 		if ( ! $user || ! wp_check_password( $password, $user->user_pass, $user->ID ) ) {
 			wp_send_json_error( [ 'message' => 'Invalid email or password' ] );
 		}
+
+		$deactivate_account = get_field( 'deactivate_account', 'user_' . $user->ID );
+		if ( $deactivate_account ) {
+			wp_send_json_error( [ 'message' => 'Account is deactivated' ] );
+		}
+
 		$first_name = get_user_meta( $user->ID, 'first_name', true );
 		$last_name  = get_user_meta( $user->ID, 'last_name', true );
 		$full_name  = trim( $first_name . ' ' . $last_name );
@@ -72,6 +88,58 @@ class  TMSAuth {
 			'name'    => $full_name,
 		) );
 		wp_send_json_success( [ 'message' => 'Verification code sent to your email' ] );
+	}
+	
+	/**
+	 * Check if user account is deactivated before allowing wp-admin login
+	 * 
+	 * @param WP_User $user User object
+	 * @param string $password User password
+	 * @return WP_User|WP_Error User object or error
+	 */
+	public function check_deactivated_account_wp_admin( $user, $password ) {
+		// Check if account is deactivated
+		$deactivate_account = get_field( 'deactivate_account', 'user_' . $user->ID );
+		if ( $deactivate_account ) {
+			// Return WP_Error to prevent login
+			return new WP_Error( 'account_deactivated', 'Your account has been deactivated. Please contact administrator.' );
+		}
+		
+		return $user;
+	}
+	
+	/**
+	 * Check if logged-in user account is deactivated and prevent admin access
+	 */
+	public function check_deactivated_account_admin_access() {
+		// Only check for logged-in users
+		if ( ! is_user_logged_in() ) {
+			return;
+		}
+		
+		$user_id = get_current_user_id();
+		$deactivate_account = get_field( 'deactivate_account', 'user_' . $user_id );
+		
+		if ( $deactivate_account ) {
+			// Log out the user and redirect to login page with error message
+			wp_logout();
+			wp_redirect( add_query_arg( 'login', 'deactivated', wp_login_url() ) );
+			exit;
+		}
+	}
+	
+	/**
+	 * Display deactivated account message on login page
+	 * 
+	 * @param string $message Current login message
+	 * @return string Modified message
+	 */
+	public function display_deactivated_account_message( $message ) {
+		if ( isset( $_GET['login'] ) && $_GET['login'] === 'deactivated' ) {
+			$message = '<div id="login_error">Your account has been deactivated. Please contact administrator.</div>';
+		}
+		
+		return $message;
 	}
 	
 }

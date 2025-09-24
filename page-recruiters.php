@@ -25,7 +25,11 @@ $access = $TMSUsers->check_user_role_access( [
 	'hr_manager',
 	'accounting',
 	'billing',
-	'driver_updates'
+	'driver_updates',
+	'expedite_manager',
+	'tracking-tl',
+	'morning_tracking',
+	'nightshift_tracking',
 ], true );
 
 

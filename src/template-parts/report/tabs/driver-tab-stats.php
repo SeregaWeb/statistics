@@ -92,6 +92,7 @@ $driver_statistics = $driver->get_driver_statistics( $post_id, true );
                                                 <td>
                                                     <?php 
                                                     $rating_value = $rating['reit'];
+                                                    $order_number = $rating['order_number'];
                                                     $get_rating_color = function( $value ) {
                                                         if ( ! is_numeric( $value ) || intval( $value ) === 0 ) {
                                                             return 'bg-secondary'; // grey
@@ -110,7 +111,12 @@ $driver_statistics = $driver->get_driver_statistics( $post_id, true );
                                                     ?>
                                                     <span class="badge <?php echo $get_rating_color( $rating_value ); ?>"><?php echo $rating_value; ?></span>
                                                 </td>
-                                                <td><?php echo esc_html( $rating['message'] ); ?></td>
+                                                <td>
+                                                    <?php if ( $order_number ) : ?>
+                                                        <span class="text-small">Order: <?php echo esc_html( $order_number ); ?></strong>
+                                                        <br>
+                                                    <?php endif; ?>
+                                                <?php echo esc_html( $rating['message'] ); ?></td>
                                             </tr>
                                         <?php endforeach; ?>
                                     </tbody>

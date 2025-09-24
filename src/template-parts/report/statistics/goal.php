@@ -17,23 +17,76 @@ $show_only_my_office = $TMSUsers->check_user_role_access( array(
 
 $office_dispatcher = get_field( 'work_location', 'user_' . get_current_user_id() );
 
+// Check if user has both team leader and expedite manager
+$my_teamlead = $statistics->get_my_team_leader();
+$my_expedite_manager = $statistics->get_my_expedite_manager();
+$has_both_managers = ! empty( $my_teamlead ) && ! empty( $my_expedite_manager );
+
 $dispatchers_tl = $statistics->get_dispatchers_tl( $show_only_my_office ? $office_dispatcher : null );
-$dispatchers    = $statistics->get_dispatchers( $show_only_my_office ? $office_dispatcher : null );
+$expedite_managers = $statistics->get_expedite_managers( $show_only_my_office ? $office_dispatcher : null );
 
+$dispatchers_tl = array_merge( $dispatchers_tl, $expedite_managers );
 
-if ( ! $dispatcher_tl_initials ) {
-	$dispatcher_tl_initials = $dispatchers_tl[ 0 ][ 'id' ];
-}
-
-if ( ! $hide_filter ) {
-	$my_teamlead = $statistics->get_my_team_leader();
-	if ( ! empty( $my_teamlead ) && is_array( $my_teamlead ) && count( $my_teamlead ) > 0 ) {
-		$dispatcher_tl_initials = $my_teamlead[ 0 ];
+// Security check: if user tries to access manager not in their list, reset to null
+$available_manager_ids = array_column( $dispatchers_tl, 'id' );
+if ( $dispatcher_tl_initials ) {
+	if ( ! in_array( $dispatcher_tl_initials, $available_manager_ids ) ) {
+		$dispatcher_tl_initials = null;
 	}
 }
 
-$my_team        = get_field( 'my_team', 'user_' . $dispatcher_tl_initials );
-$my_team[]      = $dispatcher_tl_initials;
+
+// If user has both managers, filter to show only their managers
+if ( $has_both_managers ) {
+	$my_manager_ids = array_merge( $my_teamlead, $my_expedite_manager );
+	$filtered_managers = array();
+	
+	foreach ( $dispatchers_tl as $manager ) {
+		if ( in_array( $manager['id'], $my_manager_ids ) ) {
+			$filtered_managers[] = $manager;
+		}
+	}
+	
+	$dispatchers_tl = $filtered_managers;
+}
+
+
+$dispatchers    = $statistics->get_dispatchers( $show_only_my_office ? $office_dispatcher : null, false, true );
+
+
+if ( ! $dispatcher_tl_initials ) {
+	if ( ! $hide_filter ) {
+		// Priority: team leader first, then expedite manager
+		if ( ! empty( $my_teamlead ) && is_array( $my_teamlead ) && count( $my_teamlead ) > 0 ) {
+			$dispatcher_tl_initials = $my_teamlead[ 0 ];
+		} elseif ( ! empty( $my_expedite_manager ) && is_array( $my_expedite_manager ) && count( $my_expedite_manager ) > 0 ) {
+			$dispatcher_tl_initials = $my_expedite_manager[ 0 ];
+		}
+	}
+	
+	// Fallback to first available manager if still no value
+	if ( ! $dispatcher_tl_initials && ! empty( $dispatchers_tl ) ) {
+		$dispatcher_tl_initials = $dispatchers_tl[ 0 ][ 'id' ];
+	}
+}
+
+// If user has both managers, allow them to switch between them
+if ( $has_both_managers ) {
+	$hide_filter = true;
+}
+
+
+// Get team members from the selected manager/leader only
+$my_team = array();
+$my_team[] = $dispatcher_tl_initials; // Add the selected manager/leader for statistics calculation
+
+// Get team from the selected manager/leader
+$manager_team = get_field( 'my_team', 'user_' . $dispatcher_tl_initials );
+if ( ! empty( $manager_team ) && is_array( $manager_team ) ) {
+	$my_team = array_merge( $my_team, $manager_team );
+}
+
+
 $dispatcher_arr = $statistics->get_dispatcher_statistics_current_month( $my_team );
 
 $dispatcher_stats_indexed = [];
@@ -84,6 +137,7 @@ echo '</tr>';
 
 // Проходим по массиву диспетчеров, чтобы гарантировать вывод всех диспетчеров
 foreach ( $dispatchers as $dispatcher ) {
+	// Show dispatcher if they are in the team
 	if ( $my_team !== null && is_array( $my_team ) && in_array( $dispatcher[ 'id' ], $my_team ) ) {
 		$fullname = $dispatcher[ 'fullname' ];
 		$stat     = [];

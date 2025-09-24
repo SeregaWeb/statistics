@@ -5867,18 +5867,11 @@ var updateStatusDriver = function updateStatusDriver(ajaxUrl) {
       fetch(ajaxUrl, options).then(function (res) {
         return res.json();
       }).then(function (requestStatus) {
-        var _a, _b, _c;
         if (requestStatus.success) {
           (0,_info_messages__WEBPACK_IMPORTED_MODULE_0__.printMessage)(requestStatus.data.message, 'success', 8000);
-          if ((_a = requestStatus.data.send_email) === null || _a === void 0 ? void 0 : _a.success) {
-            console.log(requestStatus.data);
-            (0,_info_messages__WEBPACK_IMPORTED_MODULE_0__.printMessage)((_b = requestStatus.data.send_email) === null || _b === void 0 ? void 0 : _b.message, 'success', 8000);
-            setTimeout(function () {
-              window.location.reload();
-            }, 4000);
-          } else {
-            (0,_info_messages__WEBPACK_IMPORTED_MODULE_0__.printMessage)((_c = requestStatus.data.send_email) === null || _c === void 0 ? void 0 : _c.message, 'danger', 8000);
-          }
+          setTimeout(function () {
+            window.location.reload();
+          }, 4000);
           var container = document.querySelector('.js-update-status');
           if (!container) return;
           container.innerHTML = '';
@@ -6353,12 +6346,8 @@ var driverHoldInit = function driverHoldInit(ajaxUrl) {
               if (result.success) {
                 console.log('Driver hold status updated successfully:', result.data);
                 if (holdUserId && holdUserId !== 'null') {
-                  target.classList.remove('active', 'btn-primary');
-                  target.classList.add('btn-primary');
                   target.setAttribute('data-hold', 'null');
                 } else {
-                  target.classList.remove('btn-primary');
-                  target.classList.add('active', 'btn-primary');
                   target.setAttribute('data-hold', dispatcherId);
                 }
                 (0,_info_messages__WEBPACK_IMPORTED_MODULE_0__.printMessage)(result.data || 'Статус водителя обновлен', 'success', 8000);
@@ -7912,6 +7901,10 @@ var QuickStatusUpdate = /*#__PURE__*/function () {
           }
         }
       }
+      var notesCell = tableRow.querySelector('.js-notes-td');
+      if (notesCell && driverData.notes !== undefined) {
+        notesCell.textContent = driverData.notes || '';
+      }
       var updateButton = tableRow.querySelector('.js-quick-status-update');
       if (updateButton) {
         updateButton.setAttribute('data-driver-status', driverData.driver_status || '');
@@ -7922,6 +7915,8 @@ var QuickStatusUpdate = /*#__PURE__*/function () {
         updateButton.setAttribute('data-longitude', driverData.longitude || '');
         updateButton.setAttribute('data-country', driverData.country || '');
         updateButton.setAttribute('data-status-date', driverData.status_date || '');
+        updateButton.setAttribute('data-last-user-update', driverData.last_user_update || '');
+        updateButton.setAttribute('data-notes', driverData.notes || '');
       }
       (0,_tooltip_start__WEBPACK_IMPORTED_MODULE_1__.updateTooltip)();
     }
@@ -7929,6 +7924,11 @@ var QuickStatusUpdate = /*#__PURE__*/function () {
     key: "populateForm",
     value: function populateForm(button) {
       if (!this.form) return;
+      this.form.reset();
+      var paragraphLastUserUpdate = this.form.querySelector('.js-last-user-update');
+      if (paragraphLastUserUpdate) {
+        paragraphLastUserUpdate.textContent = '';
+      }
       var driverId = button.getAttribute('data-driver-id');
       var driverName = button.getAttribute('data-driver-name');
       var driverStatus = button.getAttribute('data-driver-status');
@@ -7939,6 +7939,8 @@ var QuickStatusUpdate = /*#__PURE__*/function () {
       var longitude = button.getAttribute('data-longitude');
       var country = button.getAttribute('data-country');
       var statusDate = button.getAttribute('data-status-date');
+      var lastUserUpdate = button.getAttribute('data-last-user-update');
+      var notes = button.getAttribute('data-notes');
       var modalTitle = document.getElementById('quickStatusUpdateModalLabel');
       if (modalTitle && driverName) {
         modalTitle.textContent = "Quick Status Update - ".concat(driverName);
@@ -7975,6 +7977,13 @@ var QuickStatusUpdate = /*#__PURE__*/function () {
       var countryInput = this.form.querySelector('input[name="country"]');
       if (countryInput && country) {
         countryInput.value = country;
+      }
+      var notesTextarea = this.form.querySelector('textarea[name="notes"]');
+      if (notesTextarea && notes) {
+        notesTextarea.value = notes;
+      }
+      if (paragraphLastUserUpdate && lastUserUpdate) {
+        paragraphLastUserUpdate.textContent = lastUserUpdate;
       }
     }
   }, {
@@ -8067,7 +8076,7 @@ var QuickStatusUpdate = /*#__PURE__*/function () {
         console.error('Quick update request failed:', error);
       }).finally(function () {
         if (_this3.submitButton) {
-          _this3.submitButton.textContent = 'Update Status';
+          _this3.submitButton.textContent = 'Update';
           _this3.submitButton.disabled = false;
         }
       });

@@ -1207,36 +1207,38 @@ class TMSReports extends TMSReportsHelper {
 		global $wpdb;
 		
 		$sql = "
-	SELECT u.ID, u.display_name,
-		   COALESCE(nightshift.meta_value, '0') AS nightshift,
-		   COALESCE(my_team.meta_value, '') AS my_team,
-		   COALESCE(initials_color.meta_value, '') AS initials_color,
-		   COALESCE(weekends.meta_value, '0') AS weekends,
-		   um_first.meta_value AS first_name,
-		   um_last.meta_value AS last_name
-	FROM {$wpdb->users} AS u
-	INNER JOIN {$wpdb->usermeta} AS ur ON u.ID = ur.user_id AND ur.meta_key = '{$wpdb->prefix}capabilities'
-	LEFT JOIN {$wpdb->usermeta} AS nightshift ON u.ID = nightshift.user_id AND nightshift.meta_key = %s
-	LEFT JOIN {$wpdb->usermeta} AS my_team ON u.ID = my_team.user_id AND my_team.meta_key = %s
-	LEFT JOIN {$wpdb->usermeta} AS initials_color ON u.ID = initials_color.user_id AND initials_color.meta_key = %s
-	LEFT JOIN {$wpdb->usermeta} AS weekends ON u.ID = weekends.user_id AND weekends.meta_key = %s
-	LEFT JOIN {$wpdb->usermeta} AS um_first ON u.ID = um_first.user_id AND um_first.meta_key = 'first_name'
-	LEFT JOIN {$wpdb->usermeta} AS um_last ON u.ID = um_last.user_id AND um_last.meta_key = 'last_name'
-	WHERE (
-		ur.meta_value LIKE %s OR
-		ur.meta_value LIKE %s OR
-		ur.meta_value LIKE %s OR
-		ur.meta_value LIKE %s
-	)" . ( ! empty( $exclude ) ? " AND u.ID NOT IN (" . implode( ',', array_map( 'absint', $exclude ) ) . ") " : "" );
+		SELECT u.ID, u.display_name,
+			COALESCE(nightshift.meta_value, '0') AS nightshift,
+			COALESCE(my_team.meta_value, '') AS my_team,
+			COALESCE(initials_color.meta_value, '') AS initials_color,
+			COALESCE(weekends.meta_value, '0') AS weekends,
+			um_first.meta_value AS first_name,
+			um_last.meta_value AS last_name
+		FROM {$wpdb->users} AS u
+		INNER JOIN {$wpdb->usermeta} AS ur ON u.ID = ur.user_id AND ur.meta_key = '{$wpdb->prefix}capabilities'
+		LEFT JOIN {$wpdb->usermeta} AS nightshift ON u.ID = nightshift.user_id AND nightshift.meta_key = %s
+		LEFT JOIN {$wpdb->usermeta} AS my_team ON u.ID = my_team.user_id AND my_team.meta_key = %s
+		LEFT JOIN {$wpdb->usermeta} AS initials_color ON u.ID = initials_color.user_id AND initials_color.meta_key = %s
+		LEFT JOIN {$wpdb->usermeta} AS weekends ON u.ID = weekends.user_id AND weekends.meta_key = %s
+		LEFT JOIN {$wpdb->usermeta} AS um_first ON u.ID = um_first.user_id AND um_first.meta_key = 'first_name'
+		LEFT JOIN {$wpdb->usermeta} AS um_last ON u.ID = um_last.user_id AND um_last.meta_key = 'last_name'
+		WHERE (
+			ur.meta_value LIKE %s OR
+			ur.meta_value LIKE %s OR
+			ur.meta_value LIKE %s OR
+			ur.meta_value LIKE %s
+		)" . ( ! empty( $exclude ) ? " AND u.ID NOT IN (" . implode( ',', array_map( 'absint', $exclude ) ) . ") " : "" );
 		
 		$results = $wpdb->get_results( $wpdb->prepare( $sql, 'nightshift', 'my_team', 'initials_color', 'weekends', '%"tracking"%', '%"tracking-tl"%', '%"morning_tracking"%', '%"nightshift_tracking"%' ), ARRAY_A );
 		
 		
 		$tracking_data = [
 			'nightshift' => [],
+			'morning_tracking' => [],
 			'tracking'   => []
 		];
 		
+
 		foreach ( $results as $user ) {
 			$first_name      = trim( $user[ 'first_name' ] ?? '' );
 			$last_name       = trim( $user[ 'last_name' ] ?? '' );
@@ -1288,20 +1290,26 @@ class TMSReports extends TMSReportsHelper {
 				'initials_color'           => $initials_color,
 			];
 			
+			// Get user roles to determine shift type
+			$user_roles = get_userdata( $user[ 'ID' ] )->roles ?? [];
+			
 			// Пропустить пользователя, если сегодня его выходной
 			if ( is_array( $weekends ) && in_array( $today, $weekends, true ) ) {
-				if ( $user[ 'nightshift' ] !== '1' ) {
-					$tracking_data[ 'tracking_move' ][] = $user_data;
-				}
+				$tracking_data[ 'tracking_move' ][] = $user_data;
 				continue;
 			} else {
 				$tracking_data[ 'weekends' ][] = $user_data;
 			}
 			
-			
-			if ( $user[ 'nightshift' ] === '1' ) {
+			// Determine user shift based on roles
+			if ( in_array( 'nightshift_tracking', $user_roles ) ) {
 				$tracking_data[ 'nightshift' ][] = $user_data;
+				$tracking_data[ 'tracking_move' ][] = $user_data;
+			} elseif ( in_array( 'morning_tracking', $user_roles ) ) {
+				$tracking_data[ 'morning_tracking' ][] = $user_data;
+				$tracking_data[ 'tracking_move' ][] = $user_data;
 			} else {
+				// Regular tracking users (tracking, tracking-tl)
 				$tracking_data[ 'tracking_move' ][] = $user_data;
 				$tracking_data[ 'tracking' ][]      = $user_data;
 			}
@@ -5740,7 +5748,9 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 	function handle_dispatcher_deletion( $user_id ) {
 		// Проверяем, является ли удаляемый пользователь диспетчером
 		$user = get_user_by( 'ID', $user_id );
-		if ( $user && in_array( 'dispatcher', $user->roles ) || $user && in_array( 'dispatcher-tl', $user->roles ) ) {
+		if ( $user && in_array( 'dispatcher', $user->roles ) 
+			|| $user && in_array( 'dispatcher-tl', $user->roles ) 
+			|| $user && in_array( 'expedite_manager', $user->roles ) ) {
 			
 			// Выполняем перенос лодов на нового диспетчера
 			$result = $this->move_loads_for_new_dispatcher( $user_id );

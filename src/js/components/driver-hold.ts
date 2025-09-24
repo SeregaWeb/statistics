@@ -48,13 +48,9 @@ export const driverHoldInit = (ajaxUrl: string) => {
                     // Например, изменить цвет кнопки или добавить класс
                     if (holdUserId && holdUserId !== 'null') {
                         // Водитель освобожден
-                        target.classList.remove('active', 'btn-primary');
-                        target.classList.add('btn-primary');
                         target.setAttribute('data-hold', 'null');
                     } else {
                         // Водитель удержан
-                        target.classList.remove('btn-primary');
-                        target.classList.add('active', 'btn-primary');
                         target.setAttribute('data-hold', dispatcherId);
                     }
                     

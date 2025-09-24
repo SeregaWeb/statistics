@@ -202,6 +202,20 @@
                 "operator": "==",
                 "value": "tracking-tl"
             }
+        ],
+        [
+            {
+                "param": "user_role",
+                "operator": "==",
+                "value": "morning_tracking"
+            }
+        ],
+        [
+            {
+                "param": "user_role",
+                "operator": "==",
+                "value": "nightshift_tracking"
+            }
         ]
     ],
     "menu_order": 0,
@@ -213,5 +227,5 @@
     "active": true,
     "description": "",
     "show_in_rest": 0,
-    "modified": 1749725456
+    "modified": 1758397634
 }

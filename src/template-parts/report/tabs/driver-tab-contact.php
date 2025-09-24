@@ -356,7 +356,7 @@ $access_vehicle = $TMSUsers->check_user_role_access( [
                 <div class="col-12 d-flex align-items-center gap-4">
 					<?php
 					
-					$selected_cross_border = array_map( 'trim', explode( ',', $cross_border ) );
+					$selected_cross_border = $cross_border ? array_map( 'trim', explode( ',', $cross_border ) ) : array();
 					
 					if ( is_array( $labels_border ) ):
 						foreach ( $labels_border as $key => $label ):

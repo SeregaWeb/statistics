@@ -13,11 +13,13 @@ class TMSDrivers extends TMSDriversHelper {
 	
 	public $helper       = false;
 	public $email_helper = false;
+	public $user_sync_api = false;
 	
 	public function __construct() {
 		$this->log_controller = new TMSLogs();
 		$this->helper         = new TMSCommonHelper();
 		$this->email_helper   = new TMSEmails();
+		$this->user_sync_api  = new TMSUserSyncAPI();
 	}
 	
 	public function init() {
@@ -203,6 +205,7 @@ class TMSDrivers extends TMSDriversHelper {
 				"longitude"        => FILTER_SANITIZE_STRING,
 				"country"          => FILTER_SANITIZE_STRING,
 				"current_country"  => FILTER_SANITIZE_STRING,
+				"notes"            => FILTER_SANITIZE_STRING,
 			] );
 			
 			// Проверяем, что driver_id передан
@@ -228,11 +231,26 @@ class TMSDrivers extends TMSDriversHelper {
 				'current_country'  => $MY_INPUT[ 'current_country' ] ?? '',
 			];
 			
+			// Добавляем notes только если они переданы в запросе
+			if ( isset( $MY_INPUT[ 'notes' ] ) ) {
+				$update_data[ 'notes' ] = $MY_INPUT[ 'notes' ];
+			}
 			
 			if ( $update_data[ 'latitude' ] === '' || $update_data[ 'longitude' ] === '' ) {
 				wp_send_json_error( [ 'message' => 'Latitude or longitude is required, please check the address.' ] );
 			}
+
+
+			$user_id = get_current_user_id();
+			$name_user = $this->get_user_full_name_by_id( $user_id );
 			
+			// Get current time in New York timezone and format it properly
+			$ny_timezone = new DateTimeZone('America/New_York');
+			$ny_time = new DateTime('now', $ny_timezone);
+			$formatted_time = $ny_time->format('m/d/Y g:i a');
+			
+			$update_data[ 'last_user_update' ] = 'Last update: '.$name_user['full_name'] . ' - ' . $formatted_time;
+
 			// Обновляем данные водителя
 			$result = $this->update_driver_in_db( $update_data );
 			
@@ -309,7 +327,9 @@ class TMSDrivers extends TMSDriversHelper {
 			'country' => $meta['country'] ?? '',
 			'status_date' => $meta['status_date'] ?? '',
 			'updated_zipcode' => $main_data['updated_zipcode'] ?? '',
-			'date_available' => $meta['date_available'] ?? ''
+			'date_available' => $meta['date_available'] ?? '',
+			'last_user_update' => $meta['last_user_update'] ?? '',
+			'notes' => $meta['notes'] ?? ''
 		);
 		
 		return $driver_data;
@@ -355,7 +375,11 @@ class TMSDrivers extends TMSDriversHelper {
 		$updated_text = '';
 		$timestamp = null;
 		$class_update_code = '';
-		$time = strtotime( current_time( 'mysql' ) . TIME_AVAILABLE_DRIVER );
+
+		$ny_timezone = new DateTimeZone('America/New_York');
+		$ny_time = new DateTime('now', $ny_timezone);
+
+		$time = strtotime( $ny_time->format('Y-m-d H:i:s') . TIME_AVAILABLE_DRIVER );
 		$updated_zip_code_time = strtotime( $updated_zip_code );
 		
 		
@@ -376,11 +400,11 @@ class TMSDrivers extends TMSDriversHelper {
 		
 		// Add date status if not available (exact copy from template)
 		if ( $driver_status !== 'available' ) {
-			$location_text .= $date_status;
+			$location_text .= '<br>'. $date_status;
 		}
 		
 		// Build full HTML exactly like template
-		$html = '<td class="table-column js-location-update ' . $class_update_code . '" style="font-size: 12px; width: 220px;">';
+		$html = '<td class="table-column js-location-update ' . $class_update_code . '" style="font-size: 12px; width: 200px;">';
 		$html .= $location_text;
 		$html .= '<br>';
 		$html .= '<span>' . $updated_text . '</span>';
@@ -413,6 +437,11 @@ class TMSDrivers extends TMSDriversHelper {
 			$driver_phone = 'N/A';
 			
 			// Extract driver info from meta data
+			$driver_email = 'N/A';
+			$home_location = 'N/A';
+			$vehicle_type = 'N/A';
+			$vin = 'N/A';
+			
 			foreach ( $meta_data as $meta ) {
 				if ( $meta[ 'meta_key' ] === 'driver_name' ) {
 					$driver_name = $meta[ 'meta_value' ];
@@ -420,7 +449,31 @@ class TMSDrivers extends TMSDriversHelper {
 				if ( $meta[ 'meta_key' ] === 'driver_phone' ) {
 					$driver_phone = $meta[ 'meta_value' ];
 				}
+				if ( $meta[ 'meta_key' ] === 'driver_email' ) {
+					$driver_email = $meta[ 'meta_value' ];
+				}
+				if ( $meta[ 'meta_key' ] === 'home_location' ) {
+					$home_location = $meta[ 'meta_value' ];
+				}
+				if ( $meta[ 'meta_key' ] === 'vehicle_type' ) {
+					$vehicle_type = $meta[ 'meta_value' ];
+				}
+				if ( $meta[ 'meta_key' ] === 'vin' ) {
+					$vin = $meta[ 'meta_value' ];
+				}
 			}
+			
+			// Sync driver deletion before removing data
+			$driver_sync_data = array(
+				'driver_id' => $id_load,
+				'driver_name' => $driver_name,
+				'driver_email' => $driver_email,
+				'driver_phone' => $driver_phone,
+				'home_location' => $home_location,
+				'vehicle_type' => $vehicle_type,
+				'vin' => $vin
+			);
+			$this->user_sync_api->sync_user( 'delete', $driver_sync_data, 'driver' );
 			
 			// Удаляем файлы из метаданных
 			foreach ( $meta_data as $meta ) {
@@ -644,11 +697,28 @@ class TMSDrivers extends TMSDriversHelper {
 		// Фильтрация по reference_number
 		//		motor_cargo_insurer auto_liability_insurer entity_name plates
 		if ( ! empty( $args[ 'my_search' ] ) ) {
-			$where_conditions[] = "(" . "main.id LIKE %s OR " . "driver_name.meta_value LIKE %s OR " . "driver_phone.meta_value LIKE %s OR " . "driver_email.meta_value LIKE %s OR " . "motor_cargo_insurer.meta_value LIKE %s OR " . "auto_liability_insurer.meta_value LIKE %s OR " . "entity_name.meta_value LIKE %s OR " . "plates.meta_value LIKE %s OR " . "vin.meta_value LIKE %s " . ")";
+			$search_term = $args[ 'my_search' ];
 			
-			$search_value = '%' . $wpdb->esc_like( $args[ 'my_search' ] ) . '%';
-			for ( $i = 0; $i < 9; $i ++ ) {
-				$where_values[] = $search_value;
+			// Check if search term is a phone number (formatted or unformatted)
+			$phone_detected = $this->is_phone_number( $search_term );
+			
+			if ( $phone_detected ) {
+				// Format phone number and search in driver_phone field
+				$formatted_phone = $this->format_phone_number( $search_term );
+				$where_conditions[] = "driver_phone.meta_value = %s";
+				$where_values[] = $formatted_phone;
+			} elseif ( is_numeric( $search_term ) ) {
+				// For numeric search that's not a phone, search by ID
+				$where_conditions[] = "main.id = %s";
+				$where_values[] = $search_term;
+			} else {
+				// Search in text fields (name, email, insurance, entity, plates, vin)
+				$where_conditions[] = "(" . "driver_name.meta_value LIKE %s OR " . "driver_email.meta_value LIKE %s OR " . "motor_cargo_insurer.meta_value LIKE %s OR " . "auto_liability_insurer.meta_value LIKE %s OR " . "entity_name.meta_value LIKE %s OR " . "plates.meta_value LIKE %s OR " . "vin.meta_value LIKE %s " . ")";
+				
+				$search_value = '%' . $wpdb->esc_like( $search_term ) . '%';
+				for ( $i = 0; $i < 7; $i ++ ) {
+					$where_values[] = $search_value;
+				}
 			}
 		}
 		
@@ -886,6 +956,8 @@ class TMSDrivers extends TMSDriversHelper {
 				ON main.id = driver_name.post_id AND driver_name.meta_key = 'driver_name'
 			LEFT JOIN $table_meta AS driver_phone
 				ON main.id = driver_phone.post_id AND driver_phone.meta_key = 'driver_phone'
+			LEFT JOIN $table_meta AS driver_email
+				ON main.id = driver_email.post_id AND driver_email.meta_key = 'driver_email'
 			LEFT JOIN $table_meta AS vehicle_type
 				ON main.id = vehicle_type.post_id AND vehicle_type.meta_key = 'vehicle_type'
 			LEFT JOIN $table_meta AS mc
@@ -1037,23 +1109,25 @@ class TMSDrivers extends TMSDriversHelper {
 							$where_conditions[] = "driver_status.meta_value = %s";
 							$where_values[]     = $status_key;
 						} else {
-							// Check if search term is numeric (ID search)
-							if ( is_numeric( $search_term ) ) {
-								// Search in all fields including ID
-								$where_conditions[] = "(" . "main.id LIKE %s OR " . "driver_name.meta_value LIKE %s OR " . "driver_phone.meta_value LIKE %s OR " . "vehicle_type.meta_value LIKE %s OR " . "mc.meta_value LIKE %s OR " . "dot.meta_value LIKE %s" . ")";
-								
-								$search_value = '%' . $wpdb->esc_like( $search_term ) . '%';
-								// Add 6 values for the 6 placeholders in the search condition
-								for ( $i = 0; $i < 6; $i ++ ) {
-									$where_values[] = $search_value;
-								}
+							// Check if search term is a phone number (formatted or unformatted)
+							$phone_detected = $this->is_phone_number( $search_term );
+							
+							if ( $phone_detected ) {
+								// Format phone number and search in driver_phone field
+								$formatted_phone = $this->format_phone_number( $search_term );
+								$where_conditions[] = "driver_phone.meta_value = %s";
+								$where_values[] = $formatted_phone;
+							} elseif ( is_numeric( $search_term ) ) {
+								// For numeric search that's not a phone, search by ID
+								$where_conditions[] = "main.id = %s";
+								$where_values[] = $search_term;
 							} else {
 								// Search only in text fields (name, phone, vehicle, mc, dot), not in ID
-								$where_conditions[] = "(" . "driver_name.meta_value LIKE %s OR " . "driver_phone.meta_value LIKE %s OR " . "vehicle_type.meta_value LIKE %s OR " . "mc.meta_value LIKE %s OR " . "dot.meta_value LIKE %s" . ")";
+								$where_conditions[] = "(" . "driver_name.meta_value LIKE %s OR " . "driver_email.meta_value LIKE %s OR " . "driver_phone.meta_value LIKE %s OR " . "vehicle_type.meta_value LIKE %s OR " . "mc.meta_value LIKE %s OR " . "dot.meta_value LIKE %s" . ")";
 								
 								$search_value = '%' . $wpdb->esc_like( $search_term ) . '%';
 								// Add 5 values for the 5 placeholders in the search condition
-								for ( $i = 0; $i < 5; $i ++ ) {
+								for ( $i = 0; $i < 6; $i ++ ) {
 									$where_values[] = $search_value;
 								}
 							}
@@ -1300,6 +1374,13 @@ class TMSDrivers extends TMSDriversHelper {
 			
 			if ( $result ) {
 				$this->send_email_new_driver( $MY_INPUT[ 'post_id' ] );
+				
+				// Sync driver data after successful publication
+				$driver_sync_data = $this->get_driver_sync_data( $MY_INPUT[ 'post_id' ] );
+				if ( $driver_sync_data ) {
+					$this->user_sync_api->sync_user( 'add', $driver_sync_data, 'driver' );
+				}
+				
 				wp_send_json_success( [ 'message' => 'Published', 'data' => $MY_INPUT ] );
 			}
 			
@@ -1729,6 +1810,32 @@ class TMSDrivers extends TMSDriversHelper {
 		return null; // Если нет результатов
 	}
 	
+	/**
+	 * Get driver data for synchronization
+	 * 
+	 * @param int $driver_id Driver ID
+	 * @return array Driver data for sync
+	 */
+	public function get_driver_sync_data($driver_id) {
+		$driver_data = $this->get_driver_by_id($driver_id);
+		
+		if (!$driver_data) {
+			return null;
+		}
+		
+		$meta = $driver_data['meta'];
+		
+		return array(
+			'driver_id' => $driver_id,
+			'driver_name' => isset($meta['driver_name']) ? $meta['driver_name'] : '',
+			'driver_email' => isset($meta['driver_email']) ? $meta['driver_email'] : '',
+			'driver_phone' => isset($meta['driver_phone']) ? $meta['driver_phone'] : '',
+			'home_location' => isset($meta['home_location']) ? $meta['home_location'] : '',
+			'vehicle_type' => isset($meta['vehicle_type']) ? $meta['vehicle_type'] : '',
+			'vin' => isset($meta['vin']) ? $meta['vin'] : ''
+		);
+	}
+	
 	public function add_driver() {
 		if ( defined( 'DOING_AJAX' ) && DOING_AJAX ) {
 			// Sanitize incoming data
@@ -1963,6 +2070,12 @@ class TMSDrivers extends TMSDriversHelper {
 					) );
 				}
 				
+				// Sync driver update for contact fields (driver_name, driver_email, driver_phone, home_location)
+				$driver_sync_data = $this->get_driver_sync_data( $data[ 'driver_id' ] );
+				if ( $driver_sync_data ) {
+					$this->user_sync_api->sync_user( 'update', $driver_sync_data, 'driver' );
+				}
+				
 				wp_send_json_success( [ 'message' => 'Driver successfully added', 'id_driver' => $result ] );
 			}
 			
@@ -2174,6 +2287,13 @@ class TMSDrivers extends TMSDriversHelper {
 						'post_type' => 'driver',
 					) );
 				}
+				
+				// Sync driver update for vehicle_type and vin fields
+				$driver_sync_data = $this->get_driver_sync_data( $data[ 'driver_id' ] );
+				if ( $driver_sync_data ) {
+					$this->user_sync_api->sync_user( 'update', $driver_sync_data, 'driver' );
+				}
+				
 				wp_send_json_success( [ 'message' => 'Driver successfully added', 'id_driver' => $result ] );
 			}
 			
@@ -3801,7 +3921,13 @@ class TMSDrivers extends TMSDriversHelper {
 	 */
 	public function get_drivers_available() {
 		$time_threshold = defined( 'TIME_AVAILABLE_DRIVER' ) ? TIME_AVAILABLE_DRIVER : '-12 hours';
-		$b              = strtotime( current_time( 'mysql' ) . $time_threshold );
+		
+		// Get current time in New York timezone
+		$ny_timezone = new DateTimeZone('America/New_York');
+		$ny_time = new DateTime('now', $ny_timezone);
+		$ny_mysql_time = $ny_time->format('Y-m-d H:i:s');
+		
+		$b = strtotime( $ny_mysql_time . $time_threshold );
 		
 		global $wpdb;
 		$table_main = $wpdb->prefix . $this->table_main;
@@ -3929,6 +4055,90 @@ class TMSDrivers extends TMSDriversHelper {
 		
 		// Если значение найдено, возвращаем ключ, иначе возвращаем null
 		return $key !== false ? $key : null;
+	}
+	
+	/**
+	 * Determine if numeric search term is a phone number or driver ID
+	 *
+	 * @param string $search_term Numeric search term
+	 * @return string 'phone' or 'id'
+	 */
+	private function determine_search_type( $search_term ) {
+		// Remove any non-numeric characters
+		$clean_number = preg_replace( '/[^0-9]/', '', $search_term );
+		
+		// Phone numbers are typically 10 digits (US format)
+		// Driver IDs are typically shorter (1-6 digits)
+		if ( strlen( $clean_number ) >= 10 ) {
+			return 'phone';
+		} else {
+			return 'id';
+		}
+	}
+	
+	/**
+	 * Check if search term is a phone number in any format
+	 *
+	 * @param string $search_term Search term
+	 * @return bool True if it's a phone number
+	 */
+	private function is_phone_number( $search_term ) {
+		// Remove any non-numeric characters
+		$clean_number = preg_replace( '/[^0-9]/', '', $search_term );
+		
+		// Check if it's 10 digits (US phone format)
+		if ( strlen( $clean_number ) === 10 ) {
+			return true;
+		}
+		
+		// Check if it's 11 digits starting with 1
+		if ( strlen( $clean_number ) === 11 && substr( $clean_number, 0, 1 ) === '1' ) {
+			return true;
+		}
+		
+		// Check if it matches common phone patterns
+		$phone_patterns = [
+			'/^\(\d{3}\)\s\d{3}-\d{4}$/',  // (123) 456-7890
+			'/^\(\d{3}\)\d{3}-\d{4}$/',    // (123)456-7890
+			'/^\(\d{3}\)\s\d{7}$/',        // (123) 4567890
+			'/^\(\d{3}\)\d{7}$/',          // (123)4567890
+			'/^\d{3}-\d{3}-\d{4}$/',       // 123-456-7890
+			'/^\d{3}\.\d{3}\.\d{4}$/',     // 123.456.7890
+			'/^\d{3}\s\d{3}\s\d{4}$/',     // 123 456 7890
+		];
+		
+		foreach ( $phone_patterns as $pattern ) {
+			if ( preg_match( $pattern, $search_term ) ) {
+				return true;
+			}
+		}
+		
+		return false;
+	}
+	
+	/**
+	 * Format phone number to standard format (800) 625-7805
+	 *
+	 * @param string $phone_number Phone number in any format
+	 * @return string Formatted phone number
+	 */
+	private function format_phone_number( $phone_number ) {
+		// Remove any non-numeric characters
+		$clean_number = preg_replace( '/[^0-9]/', '', $phone_number );
+		
+		// If it's 10 digits, format as (XXX) XXX-XXXX
+		if ( strlen( $clean_number ) === 10 ) {
+			return '(' . substr( $clean_number, 0, 3 ) . ') ' . substr( $clean_number, 3, 3 ) . '-' . substr( $clean_number, 6, 4 );
+		}
+		
+		// If it's 11 digits and starts with 1, remove the 1 and format
+		if ( strlen( $clean_number ) === 11 && substr( $clean_number, 0, 1 ) === '1' ) {
+			$clean_number = substr( $clean_number, 1 );
+			return '(' . substr( $clean_number, 0, 3 ) . ') ' . substr( $clean_number, 3, 3 ) . '-' . substr( $clean_number, 6, 4 );
+		}
+		
+		// If it doesn't match expected formats, return as is
+		return $phone_number;
 	}
 	
 	/**

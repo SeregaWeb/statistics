@@ -145,9 +145,7 @@ We will immediately let you know once the truck is on-site.
                                 $current_page = $current_url_base === $menu_url_base ? 'current-page' : '';
                                 $exclude = array_search($role, $menu['exclude_role']);
                                 $flt_access = $menu['flt_access'];
-                                
-                                if ($flt_access && !$flt_user_access && !$is_admin) {continue;}
-                                
+                
                                 if (!is_numeric($exclude)) :
                                 
                                 $popup_use = $menu['popup_use'];

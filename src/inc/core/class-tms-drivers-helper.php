@@ -372,7 +372,15 @@ class TMSDriversHelper {
 	 */
 	public function can_copy_driver_phones() {
 		$current_user = wp_get_current_user();
-		$allowed_roles = array( 'administrator', 'driver_updates', 'recruiter', 'recruiter-tl' );
+		$allowed_roles = array( 
+			'administrator', 
+			'driver_updates', 
+			'recruiter', 
+			'recruiter-tl', 
+			'tracking-tl', 
+			'morning_tracking', 
+			'nightshift_tracking' 
+		);
 		
 		foreach ( $allowed_roles as $role ) {
 			if ( in_array( $role, $current_user->roles ) ) {
@@ -453,5 +461,25 @@ class TMSDriversHelper {
 			'condition' => $condition,
 			'values' => array()
 		);
+	}
+	
+	/**
+	 * Convert MySQL datetime format to flatpickr format
+	 * 
+	 * @param string $mysql_date Date in MySQL format (Y-m-d H:i:s)
+	 * @return string Date in flatpickr format (m/d/Y H:i) or empty string
+	 */
+	public static function convert_mysql_to_flatpickr_date($mysql_date) {
+		if (empty($mysql_date)) {
+			return '';
+		}
+		
+		$date_obj = DateTime::createFromFormat('Y-m-d H:i:s', $mysql_date);
+		if ($date_obj) {
+			return $date_obj->format('m/d/Y H:i');
+		}
+		
+		// If parsing failed, return original value
+		return $mysql_date;
 	}
 }

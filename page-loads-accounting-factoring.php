@@ -148,6 +148,8 @@ if ( ! $show_filter_by_office ) {
 								$general_true_profit       = $general_profit - $paid_to_factoring;
 								$after_factoring           = floatval( $data[ 'total_booked_rate' ] ) - $paid_to_factoring;
 								$driver_rate               = floatval( $data[ 'total_driver_rate' ] ) + $second_driver_rate;
+								$processed_invoices        = floatval( $data[ 'total_processed_invoices' ] );
+								$paid_loads                = floatval( $data[ 'total_paid_loads' ] );
 								
 								?>
 
@@ -157,11 +159,13 @@ if ( ! $show_filter_by_office ) {
 										<?php echo esc_html( '$' . $statistics->format_currency( $data[ 'total_booked_rate' ] ) ); ?>
                                     </div>
 
+
                                     <div class="table-values-col">
                                         <p>Driver rate</p>
 										<?php echo esc_html( '$' . $statistics->format_currency( $driver_rate ) ); ?>
                                     </div>
 
+                                
                                     <div class="table-values-col">
                                         <p>After Factoring</p>
 										<?php echo esc_html( '$' . $statistics->format_currency( $after_factoring ) ); ?>
@@ -178,10 +182,17 @@ if ( ! $show_filter_by_office ) {
 										<?php echo esc_html( '$' . $statistics->format_currency( $general_true_profit ) ); ?>
                                     </div>
 
-                                    <div></div>
-                                    <div></div>
                                     <div class="table-values-col">
-                                        <p>Paid to Factoring</p>
+                                        <p class="text-small">Processed invoices</p>
+										<?php echo esc_html( '$' . $statistics->format_currency( $processed_invoices ) ); ?>
+                                    </div>
+
+                                    <div class="table-values-col">
+                                        <p class="text-small">Paid loads</p>
+										<?php echo esc_html( '$' . $statistics->format_currency( $paid_loads ) ); ?>
+                                    </div>
+                                    <div class="table-values-col">
+                                        <p class="text-small">Paid to Factoring</p>
 										<?php echo esc_html( '$' . $statistics->format_currency( $paid_to_factoring ) ); ?>
                                     </div>
 

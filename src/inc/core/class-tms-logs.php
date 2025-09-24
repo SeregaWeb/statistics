@@ -484,6 +484,9 @@ class TMSLogs extends TMSReports {
 	public function get_table_by_post_type( $post_type = 'report' ) {
 		global $wpdb;
 		
+		// Initialize with default table
+		$logs_table = $wpdb->prefix . 'reports_logs_' . strtolower( $this->use_project );
+		
 		if ( $post_type === 'report' ) {
 			$logs_table = $wpdb->prefix . 'reports_logs_' . strtolower( $this->use_project );
 		}

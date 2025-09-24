@@ -25,8 +25,9 @@ $entity_name         = get_field_value( $meta, 'entity_name' );
 $ein                 = get_field_value( $meta, 'ein' );
 $authorized_email    = get_field_value( $meta, 'authorized_email' );
 
-$bank_payees_str = str_replace( ' ', '', get_field_value( $meta, 'bank_payees' ) );
-$bank_payees_val = explode( ',', $bank_payees_str );
+$bank_payees_raw = get_field_value( $meta, 'bank_payees' );
+$bank_payees_str = $bank_payees_raw ? str_replace( ' ', '', $bank_payees_raw ) : '';
+$bank_payees_val = $bank_payees_str ? explode( ',', $bank_payees_str ) : array();
 
 $payment_file = get_field_value( $meta, 'payment_file' );
 $w9_file      = get_field_value( $meta, 'w9_file' );

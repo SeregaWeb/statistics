@@ -22,7 +22,7 @@ $is_flt = $type === 'flt';
 // Создаем класс с нужным режимом
 $performance = new TMSReportsPerformance( $is_flt );
 
-$dispatchers    = $statistics->get_dispatchers( null, $is_flt );
+$dispatchers    = $statistics->get_dispatchers( null, $is_flt, true );
 $dispatchers_tl = $statistics->get_dispatchers_tl( null, $is_flt );
 
 $exclude_dispatchers = $helper->get_empty_dispatcher();

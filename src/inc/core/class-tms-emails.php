@@ -100,7 +100,7 @@ class TMSEmails extends TMSUsers {
 		$current_select  = $project ?? get_field_value( $this->user_fields, 'current_select' );
 		$current_user_id = $user_id ? intval( $user_id ) : get_current_user_id(); // Get the current user ID
 		$args            = array(
-			'role'       => 'dispatcher-tl',
+			'role__in'   => array( 'dispatcher-tl', 'expedite_manager' ),
 			'meta_query' => array(
 				'relation' => 'AND',
 				array(

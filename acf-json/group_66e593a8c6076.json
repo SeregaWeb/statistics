@@ -90,7 +90,12 @@
                         "recruiter": "Recruiter",
                         "recruiter-tl": "Recruiter Team Leader",
                         "accounting": "Accounting",
-                        "moderator": "Moderator"
+                        "moderator": "Moderator",
+                        "morning_tracking": "Morning Tracking",
+                        "nightshift_tracking": "Nightshift Tracking",
+                        "expedite_manager": "Expedite Manager",
+                        "hr_manager": "HR Manager",
+                        "driver_updates": "Driver Updates"
                     },
                     "default_value": [],
                     "return_format": "value",
@@ -220,7 +225,13 @@
                                 "recruiter": "Recruiter",
                                 "recruiter-tl": "Recruiter Team Leader",
                                 "accounting": "Accounting",
-                                "moderator": "Moderator"
+                                "moderator": "Moderator",
+                                "morning_tracking": "Morning Tracking",
+                                "nightshift_tracking": "Nightshift Tracking",
+                                "expedite_manager": "Expedite Manager",
+                                "hr_manager": "HR Manager",
+                                "driver_updates": "Driver Updates",
+                                "administrator": "Admin"
                             },
                             "default_value": [],
                             "return_format": "value",
@@ -1369,5 +1380,5 @@
     "active": true,
     "description": "",
     "show_in_rest": 0,
-    "modified": 1753653407
+    "modified": 1758048914
 }

@@ -178,6 +178,12 @@ class QuickStatusUpdate {
             }
         }
 
+        // Update notes cell
+        const notesCell = tableRow.querySelector('.js-notes-td') as HTMLElement;
+        if (notesCell && driverData.notes !== undefined) {
+            notesCell.textContent = driverData.notes || '';
+        }
+
         // Update button data attributes
         const updateButton = tableRow.querySelector('.js-quick-status-update') as HTMLElement;
         if (updateButton) {
@@ -189,6 +195,8 @@ class QuickStatusUpdate {
             updateButton.setAttribute('data-longitude', driverData.longitude || '');
             updateButton.setAttribute('data-country', driverData.country || '');
             updateButton.setAttribute('data-status-date', driverData.status_date || '');
+            updateButton.setAttribute('data-last-user-update', driverData.last_user_update || '');
+            updateButton.setAttribute('data-notes', driverData.notes || '');
         }
 
         // Initialize tooltips for any new capability icons
@@ -198,6 +206,11 @@ class QuickStatusUpdate {
     private populateForm(button: HTMLElement): void {
         if (!this.form) return;
 
+        this.form.reset();
+        const paragraphLastUserUpdate = this.form.querySelector('.js-last-user-update') as HTMLElement;
+        if (paragraphLastUserUpdate) {
+            paragraphLastUserUpdate.textContent = '';
+        }
         // Get driver data from button data attributes
         const driverId = button.getAttribute('data-driver-id');
         const driverName = button.getAttribute('data-driver-name');
@@ -209,6 +222,8 @@ class QuickStatusUpdate {
         const longitude = button.getAttribute('data-longitude');
         const country = button.getAttribute('data-country');
         const statusDate = button.getAttribute('data-status-date');
+        const lastUserUpdate = button.getAttribute('data-last-user-update');
+        const notes = button.getAttribute('data-notes');
 
         // Update modal title
         const modalTitle = document.getElementById('quickStatusUpdateModalLabel');
@@ -258,6 +273,15 @@ class QuickStatusUpdate {
         const countryInput = this.form.querySelector('input[name="country"]') as HTMLInputElement;
         if (countryInput && country) {
             countryInput.value = country;
+        }
+
+        const notesTextarea = this.form.querySelector('textarea[name="notes"]') as HTMLTextAreaElement;
+        if (notesTextarea && notes) {
+            notesTextarea.value = notes;
+        }
+
+        if (paragraphLastUserUpdate && lastUserUpdate) {
+            paragraphLastUserUpdate.textContent = lastUserUpdate;
         }
     }
 
@@ -370,7 +394,7 @@ class QuickStatusUpdate {
             .finally(() => {
                 // Reset button state
                 if (this.submitButton) {
-                    this.submitButton.textContent = 'Update Status';
+                    this.submitButton.textContent = 'Update';
                     (this.submitButton as HTMLButtonElement).disabled = false;
                 }
             });

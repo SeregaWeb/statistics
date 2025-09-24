@@ -299,15 +299,10 @@ export const updateStatusDriver = (ajaxUrl) => {
                     .then((requestStatus) => {
                         if (requestStatus.success) {
                             printMessage(requestStatus.data.message, 'success', 8000);
-                            if (requestStatus.data.send_email?.success) {
-                                console.log(requestStatus.data);
-                                printMessage(requestStatus.data.send_email?.message, 'success', 8000);
-                                setTimeout(() => {
-                                    window.location.reload();
-                                }, 4000);
-                            } else {
-                                printMessage(requestStatus.data.send_email?.message, 'danger', 8000);
-                            }
+
+                            setTimeout(() => {
+                                window.location.reload();
+                            }, 4000);
 
                             const container = document.querySelector('.js-update-status');
 

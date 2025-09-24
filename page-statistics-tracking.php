@@ -67,12 +67,11 @@ $items = $TMSReports->get_table_items_tracking_statistics( $office_dispatcher );
 // Get users for statistics
 $users = $TMSReports->get_tracking_users_for_statistics( '', $office_dispatcher );
 
-
 // Get project and dispatchers with validation
 $project     = isset( $TMSReports->project ) ? $TMSReports->project : '';
 $dispatchers = isset( $items[ 'dispatchers' ] ) ? $items[ 'dispatchers' ] : array();
 
-$dispatchers_users = $TMSStatistics->get_dispatchers( $office_dispatcher, false );
+$dispatchers_users = $TMSStatistics->get_dispatchers( $office_dispatcher, false, true );
 
 ?>
     <div class="container-fluid tracking-statistics">
@@ -226,10 +225,27 @@ $dispatchers_users = $TMSStatistics->get_dispatchers( $office_dispatcher, false 
 							) );
 						endif; ?>
 
+
                         <h3>Nightshift</h3>
                         <div class="tracking-statistics__wrapper">
 							<?php if ( isset( $users[ 'nightshift' ] ) && is_array( $users[ 'nightshift' ] ) ) : ?>
 								<?php foreach ( $users[ 'nightshift' ] as $user ) : ?>
+									<?php
+									$user_stats = $TMSReports->get_total_by_tracking_team( $user, $items );
+									echo get_template_part( TEMPLATE_PATH . 'common/card', 'statistics-tracking', array(
+										'user'       => $user,
+										'user_stats' => $user_stats,
+									) );
+									?>
+								<?php endforeach; ?>
+							<?php endif; ?>
+                        </div>
+
+
+                        <h3>Morning shift</h3>
+                        <div class="tracking-statistics__wrapper">
+							<?php if ( isset( $users[ 'morning_tracking' ] ) && is_array( $users[ 'morning_tracking' ] ) ) : ?>
+								<?php foreach ( $users[ 'morning_tracking' ] as $user ) : ?>
 									<?php
 									$user_stats = $TMSReports->get_total_by_tracking_team( $user, $items );
 									echo get_template_part( TEMPLATE_PATH . 'common/card', 'statistics-tracking', array(

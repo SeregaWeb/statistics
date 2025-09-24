@@ -37,6 +37,7 @@ if ( ! empty( $results ) ) : ?>
 		
 		foreach ( $results as $row ) :
 			$meta = get_field_value( $row, 'meta_data' );
+            $available_date = get_field_value( $row, 'date_available' );
 			$driver_name = get_field_value( $meta, 'driver_name' );
 			$languages = get_field_value( $meta, 'languages' );
 			$driver_email = get_field_value( $meta, 'driver_email' );
@@ -73,6 +74,7 @@ if ( ! empty( $results ) ) : ?>
 //			}
 			
 			$driver_status = trim( $driver_status );
+			$is_hold = $driver_status === 'on_hold';
 			
 			if ( $driver_status && isset( $drivers->status[ $driver_status ] ) || $driver_status === 'on_hold' ) {
 				
@@ -92,8 +94,10 @@ if ( ! empty( $results ) ) : ?>
 			$latitud          = get_field_value( $meta, 'latitude' );
 			$longitude        = get_field_value( $meta, 'longitude' );
 			$country          = get_field_value( $meta, 'country' );
-			$status_date      = get_field_value( $meta, 'status_date' );
-			
+			// Convert MySQL datetime format to flatpickr format (m/d/Y H:i) for modal
+			$status_date = TMSDriversHelper::convert_mysql_to_flatpickr_date( $available_date );
+			$last_user_update = get_field_value( $meta, 'last_user_update' );
+			$notes = get_field_value( $meta, 'notes' );
 
 			// TODO: Remove this after testing
 			$class_hide = $row['id'] === '3343' ? 'd-none' : '';
@@ -147,7 +151,8 @@ if ( ! empty( $results ) ) : ?>
 					: 'text-danger'; ?> driver-status"><?php echo $status_text; ?></td>
 
                 <td style="width: 92px;">
-                    <div class="d-flex gap-1">
+                    <div class="d-flex gap-1 align-items-center justify-content-end">
+                        <?php if ( !$is_hold ): ?>
                         <button class="btn btn-sm d-flex align-items-center justify-content-center js-quick-status-update"
                                 data-bs-toggle="modal"
                                 data-bs-target="#quickStatusUpdateModal"
@@ -161,10 +166,13 @@ if ( ! empty( $results ) ) : ?>
                                 data-longitude="<?php echo esc_attr( $longitude ); ?>"
                                 data-country="<?php echo esc_attr( $country ); ?>"
                                 data-status-date="<?php echo esc_attr( $status_date ); ?>"
+                                data-last-user-update="<?php echo esc_attr( $last_user_update ); ?>"
+                                data-notes="<?php echo esc_attr( $notes ); ?>"
                                 style="width: 28px; height: 28px; padding: 0;"
                                 title="Quick Status Update">
 							<?php echo $icons->get_icon_edit_2(); ?>
                         </button>
+                        <?php endif; ?>
 						<?php echo esc_html( get_template_part( TEMPLATE_PATH . 'tables/control', 'dropdown-driver', [
 							'id'       => $row[ 'id' ],
 							'is_draft' => $is_draft,

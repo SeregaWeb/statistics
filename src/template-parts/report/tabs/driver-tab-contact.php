@@ -57,6 +57,9 @@ $source                     = get_field_value( $meta, 'source' );
 $recruiter_add              = get_field_value( $meta, 'recruiter_add' );
 $show_phone                 = get_field_value( $meta, 'show_phone' );
 
+$interview_file            = get_field_value( $meta, 'interview_file' );
+$interview_file_arr        = $driver->process_file_attachment( $interview_file );
+
 $mc_enabled          = get_field_value( $meta, 'mc_enabled' );
 $mc                  = get_field_value( $meta, 'mc' );
 $dot_enabled         = get_field_value( $meta, 'dot_enabled' );
@@ -67,6 +70,15 @@ $clear_background    = get_field_value( $meta, 'clear_background' );
 // Get clean_check_date from main table
 $clean_check_date = get_field_value( $main, 'clean_check_date' );
 
+$files = array(
+	array(
+		'file_arr'       => $interview_file_arr,
+		'file'           => $interview_file,
+		'full_only_view' => $full_only_view,
+		'post_id'        => $post_id,
+    ), 
+);
+
 $access_vehicle = $TMSUsers->check_user_role_access( [
 	'administrator',
 	'recruiter',
@@ -76,8 +88,9 @@ $access_vehicle = $TMSUsers->check_user_role_access( [
 	'billing',
 	'billing-tl',
 	'moderator',
-
 ], true );
+
+
 ?>
 
 <div class="container mt-4 pb-5">
@@ -417,8 +430,7 @@ $access_vehicle = $TMSUsers->check_user_role_access( [
             </div>
 
             <div class="row">
-
-                <div class="col-md-4 mb-3">
+                <div class="col-12 col-md-4 mb-3">
                     <label class="form-label">Source<span
                                 class="required-star text-danger">*</span></label>
                     <select name="source" required class="form-control form-select js-source">
@@ -434,6 +446,46 @@ $access_vehicle = $TMSUsers->check_user_role_access( [
 						<?php endif ?>
                     </select>
                 </div>
+
+                <div class="col-12 col-md-8 mb-3">
+
+                    <label class="form-label d-flex align-items-center gap-1">
+                        Interview
+                    </label>
+
+                    <?php if ( !$interview_file_arr ): ?>
+                        <div class="js-interview-file-driver">
+                            <?php if ( ! $full_only_view ): ?>
+                                <button data-href="#popup_upload_interview_file"
+                                        class="btn btn-success js-open-popup-activator">
+                                    Upload file
+                                </button>
+                            <?php else: ?>
+                                <p>-</p>
+                            <?php endif; ?>
+                        </div>
+                    <?php else: ?>
+                    
+
+                    <div class="<?php echo 'js-remove-one-no-form'; ?> d-flex align-items-center gap-1 <?php echo 'interview-file'; ?>" data-tab="<?php echo 'pills-driver-contact-tab'; ?>">
+                        <input type="hidden" name="image-id" value="<?php echo $interview_file_arr[ 'id' ]; ?>">
+                        <input type="hidden" name="image-fields" value="<?php echo 'interview_file' ?>">
+                        <input type="hidden" name="post_id" value="<?php echo $post_id; ?>">
+
+                        <audio controls class="w-100">
+                            <source src="<?php echo $interview_file_arr[ 'url' ]; ?>" type="audio/mpeg">
+                        </audio>
+
+                        <?php if ( ! $full_only_view ): ?> 
+                            <button class="btn btn-transparent btn-remove-file js-remove-one-no-form-btn">
+                                <?php echo $helper->get_close_icon(); ?>
+                            </button>
+                        <?php endif; ?>
+                    </div>
+
+                    
+                <?php endif; ?>
+            </div>
 
                 <div class="col-12 mb-3">
                     <div class="form-check form-switch">
@@ -548,7 +600,21 @@ $access_vehicle = $TMSUsers->check_user_role_access( [
             </div>
         </form>
 		
-		
+		<?php 
+        $popups_upload = array(
+            array(
+                'title'     => 'Upload Interview file',
+                'file_name' => 'interview_file',
+                'multiply'  => false,
+                'driver_id' => $post_id,
+            ),
+        );
+
+        foreach ( $popups_upload as $popup ):
+            echo esc_html( get_template_part( TEMPLATE_PATH . 'popups/upload', 'file', $popup ) );
+        endforeach;
+
+        ?>
 		<?php else: ?>
             <div class="alert alert-info">You do not have permission to upload documents.</div>
 		<?php endif; ?>

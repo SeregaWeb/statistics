@@ -220,7 +220,9 @@ export const updateDriverDocument = (urlAjax) => {
 
 export const removeOneFileInitial = (ajaxUrl) => {
     const deleteForms = document.querySelectorAll('.js-remove-one-driver');
+    const deleteFormsNoFormBtn = document.querySelectorAll('.js-remove-one-no-form-btn');
 
+    // Handle form-based deletion (existing functionality)
     deleteForms &&
         deleteForms.forEach((item) => {
             item.addEventListener('submit', (event) => {
@@ -258,6 +260,63 @@ export const removeOneFileInitial = (ajaxUrl) => {
                         printMessage(`Request failed: ${error}`, 'danger', 8000);
                         // @ts-ignore
                         disabledBtnInForm(target, true);
+                        console.error('Request failed:', error);
+                    });
+            });
+        });
+
+    // Handle div-based deletion (new functionality)
+    deleteFormsNoFormBtn &&
+        deleteFormsNoFormBtn.forEach((button) => {
+            button.addEventListener('click', (event) => {
+                event.preventDefault();
+                
+                // Find the parent div with data
+                const parentDiv = button.closest('.js-remove-one-no-form');
+                if (!parentDiv) return;
+
+                // Disable the button (cast to HTMLButtonElement for type safety)
+                (button as HTMLButtonElement).disabled = true;
+
+                // Collect data from hidden inputs in the div
+                const formData = new FormData();
+                const hiddenInputs = parentDiv.querySelectorAll<HTMLInputElement>('input[type="hidden"]');
+                
+                hiddenInputs.forEach((input) => {
+                    formData.append(input.name, input.value);
+                });
+
+                const action = 'delete_open_image_driver';
+                formData.append('action', action);
+
+                const options = {
+                    method: 'POST',
+                    body: formData,
+                };
+
+                fetch(ajaxUrl, options)
+                    .then((res) => res.json())
+                    .then((requestStatus) => {
+                        if (requestStatus.success) {
+                            printMessage(requestStatus.data.message, 'success', 8000);
+                            // Re-enable button (cast to HTMLButtonElement for type safety)
+                            (button as HTMLButtonElement).disabled = false;
+                            // Update tab in URL if data-tab exists
+                            if ((parentDiv as HTMLElement).dataset && (parentDiv as HTMLElement).dataset.tab) {
+                                // @ts-ignore
+                                setUpTabInUrl((parentDiv as HTMLElement).dataset.tab);
+                            }
+                            // Re-enable button
+                            (button as HTMLButtonElement).disabled = false;
+                        } else {
+                            (button as HTMLButtonElement).disabled = false;
+                            printMessage(requestStatus.data.message, 'danger', 8000);
+                        }
+                    })
+                    .catch((error) => {
+                        printMessage(`Request failed: ${error}`, 'danger', 8000);
+                        // Re-enable button
+                        (button as HTMLButtonElement).disabled = false;
                         console.error('Request failed:', error);
                     });
             });
@@ -477,7 +536,7 @@ export const uploadFileDriver = (ajaxUrl) => {
                         popupInstance.forceCloseAllPopup();
                     } else {
                         // eslint-disable-next-line no-alert
-                        printMessage(`Error remove Driver:${requestStatus.data.message}`, 'danger', 8000);
+                        printMessage(`Error upload file: ${requestStatus.data.message}`, 'danger', 8000);
                     }
                 })
                 .catch((error) => {

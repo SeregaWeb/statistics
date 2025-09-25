@@ -49,9 +49,12 @@ $dimensions_2  = $dimensions ? ( isset( $dimension_arr[ 1 ] ) ? $dimension_arr[ 
 $dimensions_3  = $dimensions ? ( isset( $dimension_arr[ 2 ] ) ? $dimension_arr[ 2 ] : '' ) : '';
 
 $overall_dimensions_arr = explode( '/', $overall_dimensions );
-$overall_dimensions_1   = $overall_dimensions ? ( isset( $overall_dimensions_arr[ 0 ] ) ? $overall_dimensions_arr[ 0 ] : '' ) : '';
-$overall_dimensions_2   = $overall_dimensions ? ( isset( $overall_dimensions_arr[ 1 ] ) ? $overall_dimensions_arr[ 1 ] : '' ) : '';
-$overall_dimensions_3   = $overall_dimensions ? ( isset( $overall_dimensions_arr[ 2 ] ) ? $overall_dimensions_arr[ 2 ] : '' ) : '';
+$overall_dimensions_1   = $overall_dimensions ? ( isset( $overall_dimensions_arr[ 0 ] ) ? $overall_dimensions_arr[ 0 ]
+	: '' ) : '';
+$overall_dimensions_2   = $overall_dimensions ? ( isset( $overall_dimensions_arr[ 1 ] ) ? $overall_dimensions_arr[ 1 ]
+	: '' ) : '';
+$overall_dimensions_3   = $overall_dimensions ? ( isset( $overall_dimensions_arr[ 2 ] ) ? $overall_dimensions_arr[ 2 ]
+	: '' ) : '';
 
 
 $side_door_arr = explode( '/', $side_door );
@@ -442,12 +445,12 @@ $access_vehicle = $TMSUsers->check_user_role_access( [
                 <div class="col-12 col-md-4 mb-3 d-flex align-items-end">
                     <div class="d-flex gap-1 align-items-center">
                         <div class="form-check form-switch">
-                            <input class="form-check-input js-toggle <?php echo $e_tracks_file ? 'disabled' : ''; ?>"
+                            <input class="form-check-input js-toggle"
                                    data-block-toggle="js-side-door-driver"
                                    type="checkbox" name="side_door_on"
                                    id="side_door_on" <?php echo $side_door_on ? 'checked' : ''; ?>>
                             <label class="form-check-label text-nowrap" for="side_door_on">
-                                Side door.
+                                Side door
                             </label>
                         </div>
                         <div class="js-side-door-driver <?php echo $side_door_on ? '' : 'd-none'; ?>">
@@ -562,9 +565,8 @@ $access_vehicle = $TMSUsers->check_user_role_access( [
 
                 <div class="col-md-4 mb-3">
                     <div class="form-check form-switch">
-                        <input class="form-check-input" type="checkbox" name="dock_high" 
-                        id="dock-high" <?php echo $dock_high
-							? 'checked' : ''; ?>>
+                        <input class="form-check-input" type="checkbox" name="dock_high"
+                               id="dock-high" <?php echo $dock_high ? 'checked' : ''; ?>>
                         <label class="form-check-label" for="dock-high">Dock High</label>
                     </div>
                 </div>

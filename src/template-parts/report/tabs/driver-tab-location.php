@@ -27,7 +27,7 @@ $latitud                   = get_field_value( $meta, 'latitude' );
 $longitude                 = get_field_value( $meta, 'longitude' );
 $country                   = get_field_value( $meta, 'country' );
 $last_user_update          = get_field_value( $meta, 'last_user_update' );
-
+$notes                     = get_field_value( $meta, 'notes' );
 
 // Get updated_zipcode from main table
 $updated_zipcode = get_field_value( $main, 'updated_zipcode' );
@@ -137,6 +137,13 @@ $is_hold = $driver_status === 'on_hold';
 								? date( 'm/d/Y g:i a', strtotime( $updated_zipcode ) ) : 'not set'; ?>
                         </p>
                         <button type="button" class="btn btn-outline-primary js-update-only-date">Update date</button>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-12 mb-3">
+                                <label class="form-label">Notes</label>
+                                <textarea class="form-control js-notes" name="notes" rows="3" placeholder="Add notes about this status update..."><?php echo esc_html(trim($notes)); ?></textarea>
+                        </div>
                     </div>
 
                     <?php if ( $last_user_update ): ?>

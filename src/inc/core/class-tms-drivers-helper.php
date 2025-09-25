@@ -96,6 +96,7 @@ class TMSDriversHelper {
 		'change-9'           => 'Change 9',
 		'sleeper'            => 'Sleeper',
 		'printer'            => 'Printer',
+		'side_door'          => 'Side door',
 	);
 	
 	public $labels_border   = array(
@@ -271,25 +272,26 @@ class TMSDriversHelper {
 	
 	/**
 	 * Check if current user can change driver status
-	 * 
+	 *
 	 * @param string $status_key Status key to check
+	 *
 	 * @return bool True if user can change this status, false otherwise
 	 */
 	public function can_change_driver_status( $status_key ) {
 		// Restricted statuses that only Admin, Recruiter, Recruiter Team Leader can change
 		$restricted_statuses = array(
 			'no_Interview',
-			'expired_documents', 
+			'expired_documents',
 			'blocked'
 		);
 		
 		// If status is not restricted, anyone can change it
-		if ( !in_array( $status_key, $restricted_statuses ) ) {
+		if ( ! in_array( $status_key, $restricted_statuses ) ) {
 			return true;
 		}
 		
 		// Check if current user has permission to change restricted statuses
-		$current_user = wp_get_current_user();
+		$current_user  = wp_get_current_user();
 		$allowed_roles = array( 'administrator', 'recruiter', 'recruiter-tl' );
 		
 		foreach ( $allowed_roles as $role ) {
@@ -303,12 +305,12 @@ class TMSDriversHelper {
 	
 	/**
 	 * Get allowed statuses for current user
-	 * 
+	 *
 	 * @return array Array of allowed status keys
 	 */
 	public function get_allowed_statuses() {
-		$current_user = wp_get_current_user();
-		$allowed_roles = array(   'administrator', 'recruiter', 'recruiter-tl', 'driver_updates' );
+		$current_user  = wp_get_current_user();
+		$allowed_roles = array( 'administrator', 'recruiter', 'recruiter-tl', 'driver_updates' );
 		
 		$has_restricted_access = false;
 		foreach ( $allowed_roles as $role ) {
@@ -326,7 +328,7 @@ class TMSDriversHelper {
 		// Otherwise, exclude restricted statuses
 		$restricted_statuses = array(
 			'no_Interview',
-			'expired_documents', 
+			'expired_documents',
 			'blocked'
 		);
 		
@@ -335,11 +337,11 @@ class TMSDriversHelper {
 	
 	/**
 	 * Get statuses that current user can change (not just see)
-	 * 
+	 *
 	 * @return array Array of status keys that user can change
 	 */
 	public function get_changeable_statuses() {
-		$current_user = wp_get_current_user();
+		$current_user  = wp_get_current_user();
 		$allowed_roles = array( 'administrator', 'recruiter', 'recruiter-tl' );
 		
 		$has_restricted_access = false;
@@ -358,7 +360,7 @@ class TMSDriversHelper {
 		// Otherwise, exclude restricted statuses
 		$restricted_statuses = array(
 			'no_Interview',
-			'expired_documents', 
+			'expired_documents',
 			'blocked'
 		);
 		
@@ -367,19 +369,19 @@ class TMSDriversHelper {
 	
 	/**
 	 * Check if current user can copy driver phones
-	 * 
+	 *
 	 * @return bool True if user can copy phones, false otherwise
 	 */
 	public function can_copy_driver_phones() {
-		$current_user = wp_get_current_user();
-		$allowed_roles = array( 
-			'administrator', 
-			'driver_updates', 
-			'recruiter', 
-			'recruiter-tl', 
-			'tracking-tl', 
-			'morning_tracking', 
-			'nightshift_tracking' 
+		$current_user  = wp_get_current_user();
+		$allowed_roles = array(
+			'administrator',
+			'driver_updates',
+			'recruiter',
+			'recruiter-tl',
+			'tracking-tl',
+			'morning_tracking',
+			'nightshift_tracking'
 		);
 		
 		foreach ( $allowed_roles as $role ) {
@@ -393,25 +395,26 @@ class TMSDriversHelper {
 	
 	/**
 	 * Check if current user can see driver with specific status
-	 * 
+	 *
 	 * @param string $status_key Driver status to check
+	 *
 	 * @return bool True if user can see this driver, false otherwise
 	 */
 	public function can_see_driver_with_status( $status_key ) {
 		// Restricted statuses that only Admin, Recruiter, Recruiter Team Leader can see
 		$restricted_statuses = array(
 			'no_Interview',
-			'expired_documents', 
+			'expired_documents',
 			'blocked'
 		);
 		
 		// If status is not restricted, anyone can see it
-		if ( !in_array( $status_key, $restricted_statuses ) ) {
+		if ( ! in_array( $status_key, $restricted_statuses ) ) {
 			return true;
 		}
 		
 		// Check if current user has permission to see restricted status drivers
-		$current_user = wp_get_current_user();
+		$current_user  = wp_get_current_user();
 		$allowed_roles = array( 'administrator', 'recruiter', 'recruiter-tl', 'driver_updates' );
 		
 		foreach ( $allowed_roles as $role ) {
@@ -425,11 +428,11 @@ class TMSDriversHelper {
 	
 	/**
 	 * Get SQL WHERE condition for driver visibility based on user role
-	 * 
+	 *
 	 * @return array Array with 'condition' and 'values' keys
 	 */
 	public function get_driver_visibility_condition() {
-		$current_user = wp_get_current_user();
+		$current_user  = wp_get_current_user();
 		$allowed_roles = array( 'administrator', 'recruiter', 'recruiter-tl', 'driver_updates' );
 		
 		$has_restricted_access = false;
@@ -444,39 +447,40 @@ class TMSDriversHelper {
 		if ( $has_restricted_access ) {
 			return array(
 				'condition' => '',
-				'values' => array()
+				'values'    => array()
 			);
 		}
 		
 		// Otherwise, exclude drivers with restricted statuses
 		$restricted_statuses = array(
 			'no_Interview',
-			'expired_documents', 
+			'expired_documents',
 			'blocked'
 		);
 		
-		$condition = "(driver_status.meta_value IS NULL OR driver_status.meta_value NOT IN ('" . implode("', '", $restricted_statuses) . "'))";
+		$condition = "(driver_status.meta_value IS NULL OR driver_status.meta_value NOT IN ('" . implode( "', '", $restricted_statuses ) . "'))";
 		
 		return array(
 			'condition' => $condition,
-			'values' => array()
+			'values'    => array()
 		);
 	}
 	
 	/**
 	 * Convert MySQL datetime format to flatpickr format
-	 * 
+	 *
 	 * @param string $mysql_date Date in MySQL format (Y-m-d H:i:s)
+	 *
 	 * @return string Date in flatpickr format (m/d/Y H:i) or empty string
 	 */
-	public static function convert_mysql_to_flatpickr_date($mysql_date) {
-		if (empty($mysql_date)) {
+	public static function convert_mysql_to_flatpickr_date( $mysql_date ) {
+		if ( empty( $mysql_date ) ) {
 			return '';
 		}
 		
-		$date_obj = DateTime::createFromFormat('Y-m-d H:i:s', $mysql_date);
-		if ($date_obj) {
-			return $date_obj->format('m/d/Y H:i');
+		$date_obj = DateTime::createFromFormat( 'Y-m-d H:i:s', $mysql_date );
+		if ( $date_obj ) {
+			return $date_obj->format( 'm/d/Y H:i' );
 		}
 		
 		// If parsing failed, return original value

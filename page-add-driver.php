@@ -87,6 +87,23 @@ if ( $post_id && is_numeric( $post_id ) ) {
 		$full_only_view = false;
 	}
 	
+	// Check required fields for driver publication
+	$message_arr    = $dtiver->check_empty_fields( $post_id, $meta );
+	$print_status   = true;
+	$status_type    = $message_arr[ 'status' ];
+	$status_message = $message_arr[ 'message' ];
+	
+	// If required fields are not filled and driver is published, change status to draft
+	// COMMENTED OUT: To avoid affecting already published drivers
+	/*
+	if ( ! $status_type && $status_publish === "publish" ) {
+		$res = $dtiver->update_post_status_in_db( array( 'post_status' => 'draft', 'post_id' => $post_id ) );
+		if ( $res ) {
+			$status_publish = 'draft';
+		}
+	}
+	*/
+	
 	
 }
 
@@ -170,6 +187,15 @@ $access_vehicle = $TMSUsers->check_user_role_access( [
                         <div class="col-12 js-logs-content <?php echo $logshowcontent; ?>">
 							<?php
 							
+							// Show required fields validation message
+							// COMMENTED OUT: Message moved to publish button block for better UX
+							/*
+							if ( $print_status ) {
+								$message_type = $status_type ? 'success' : 'warning';
+								echo $helper->message_top( $message_type, $status_message, '', '' );
+							}
+							*/
+							
 							// Show hold message if driver is on hold
 							if ( isset( $is_on_hold ) && $is_on_hold ) {
 								$hold_message = 'This driver is currently on hold.';
@@ -199,7 +225,13 @@ $access_vehicle = $TMSUsers->check_user_role_access( [
 							
 							if ( isset( $status_publish ) && $status_publish === 'draft' ) {
 								if ( $access_publish ) {
-									echo $helper->message_top( 'success', 'Publish this driver ?', 'js-update-driver-status', 'Publish' );
+									// Only show publish button if all required fields are filled
+									if ( $status_type ) {
+										echo $helper->message_top( 'success', 'Publish this driver ?', 'js-update-driver-status', 'Publish' );
+									} else {
+										// Show detailed message with empty fields list
+										echo $helper->message_top( 'warning', $status_message, '', '' );
+									}
 								}
 							}
 							

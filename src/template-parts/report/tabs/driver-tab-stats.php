@@ -85,7 +85,7 @@ $driver_statistics = $driver->get_driver_statistics( $post_id, true );
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        <?php foreach ( array_slice( $driver_statistics['rating']['data'], 0, 5 ) as $rating ) : ?>
+                                        <?php foreach ( $driver_statistics['rating']['data'] as $rating ) : ?>
                                             <tr>
                                                 <td><?php echo esc_html( $rating['name'] ); ?></td>
                                                 <td><?php echo date( 'm/d/Y g:i a', $rating['time'] ); ?></td>
@@ -159,7 +159,7 @@ $driver_statistics = $driver->get_driver_statistics( $post_id, true );
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        <?php foreach ( array_slice( $driver_statistics['notice']['data'], 0, 5 ) as $notice ) : ?>
+                                        <?php foreach ( $driver_statistics['notice']['data'] as $notice ) : ?>
                                             <tr class="<?php echo $notice['status'] == 1 ? 'table-success' : ''; ?>">
                                                 <td><?php echo esc_html( $notice['name'] ); ?></td>
                                                 <td><?php echo date( 'm/d/Y g:i a', $notice['date'] ); ?></td>

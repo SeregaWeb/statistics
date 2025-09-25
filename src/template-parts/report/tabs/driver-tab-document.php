@@ -56,6 +56,7 @@ $change_9_file             = get_field_value( $meta, 'change_9_file' );
 $canada_transition_file    = get_field_value( $meta, 'canada_transition_file' );
 $immigration_file          = get_field_value( $meta, 'immigration_file' );
 $background_file           = get_field_value( $meta, 'background_file' );
+$legal_document_expiration = get_field_value( $meta, 'legal_document_expiration' );
 
 // Initialize total images count
 $total_images = 0;
@@ -569,7 +570,14 @@ $access_vehicle = $TMSUsers->check_user_role_access( [
 
                         </div>
                     </div>
-                    <div class="col-12 col-md-6  ">
+
+                    <div class="col-12 col-md-6 mb-2">
+                        <label class="form-label">Expiration date</label>
+                        <input type="text" class="form-control js-new-format-date" name="legal_document_expiration"
+                               value="<?php echo $legal_document_expiration; ?>">
+                    </div>
+
+                    <div class="col-12 offset-md-6 col-md-6">
                         <label class="form-label">Nationality</label>
                         <input type="text" value="<?php echo $nationality; ?>" class="form-control" name="nationality">
                     </div>
@@ -871,7 +879,7 @@ $access_vehicle = $TMSUsers->check_user_role_access( [
             <!-- Notes -->
             <div class="col-12 mb-3">
                 <label class="form-label">Notes</label>
-                <textarea class="form-control" name="notes"><?php echo $notes; ?></textarea>
+                <textarea class="form-control" name="notes"><?php echo esc_html(trim($notes)); ?></textarea>
             </div>
         </div>
 

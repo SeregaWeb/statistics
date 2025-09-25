@@ -11,8 +11,8 @@ class TMSDrivers extends TMSDriversHelper {
 	
 	public $log_controller = false;
 	
-	public $helper       = false;
-	public $email_helper = false;
+	public $helper        = false;
+	public $email_helper  = false;
 	public $user_sync_api = false;
 	
 	public function __construct() {
@@ -239,18 +239,18 @@ class TMSDrivers extends TMSDriversHelper {
 			if ( $update_data[ 'latitude' ] === '' || $update_data[ 'longitude' ] === '' ) {
 				wp_send_json_error( [ 'message' => 'Latitude or longitude is required, please check the address.' ] );
 			}
-
-
-			$user_id = get_current_user_id();
+			
+			
+			$user_id   = get_current_user_id();
 			$name_user = $this->get_user_full_name_by_id( $user_id );
 			
 			// Get current time in New York timezone and format it properly
-			$ny_timezone = new DateTimeZone('America/New_York');
-			$ny_time = new DateTime('now', $ny_timezone);
-			$formatted_time = $ny_time->format('m/d/Y g:i a');
+			$ny_timezone    = new DateTimeZone( 'America/New_York' );
+			$ny_time        = new DateTime( 'now', $ny_timezone );
+			$formatted_time = $ny_time->format( 'm/d/Y g:i a' );
 			
-			$update_data[ 'last_user_update' ] = 'Last update: '.$name_user['full_name'] . ' - ' . $formatted_time;
-
+			$update_data[ 'last_user_update' ] = 'Last update: ' . $name_user[ 'full_name' ] . ' - ' . $formatted_time;
+			
 			// Обновляем данные водителя
 			$result = $this->update_driver_in_db( $update_data );
 			
@@ -259,9 +259,9 @@ class TMSDrivers extends TMSDriversHelper {
 				$updated_driver_data = $this->get_driver_data_for_table_row( $driver_id );
 				
 				wp_send_json_success( [
-					'message'   => 'Driver location updated successfully',
-					'driver_id' => $driver_id,
-					'data'      => $update_data,
+					'message'        => 'Driver location updated successfully',
+					'driver_id'      => $driver_id,
+					'data'           => $update_data,
 					'updated_driver' => $updated_driver_data
 				] );
 			} else {
@@ -279,29 +279,23 @@ class TMSDrivers extends TMSDriversHelper {
 		global $wpdb;
 		
 		// Get main driver data
-		$main_data = $wpdb->get_row( $wpdb->prepare(
-			"SELECT * FROM {$wpdb->prefix}drivers WHERE id = %d",
-			$driver_id
-		), ARRAY_A );
+		$main_data = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM {$wpdb->prefix}drivers WHERE id = %d", $driver_id ), ARRAY_A );
 		
 		if ( ! $main_data ) {
 			return null;
 		}
 		
 		// Get meta data
-		$meta_data = $wpdb->get_results( $wpdb->prepare(
-			"SELECT meta_key, meta_value FROM {$wpdb->prefix}drivers_meta WHERE post_id = %d",
-			$driver_id
-		), ARRAY_A );
+		$meta_data = $wpdb->get_results( $wpdb->prepare( "SELECT meta_key, meta_value FROM {$wpdb->prefix}drivers_meta WHERE post_id = %d", $driver_id ), ARRAY_A );
 		
 		$meta = array();
 		foreach ( $meta_data as $meta_row ) {
-			$meta[ $meta_row['meta_key'] ] = $meta_row['meta_value'];
+			$meta[ $meta_row[ 'meta_key' ] ] = $meta_row[ 'meta_value' ];
 		}
 		
 		// Get status text
-		$driver_status = $meta['driver_status'] ?? '';
-		$status_text = "Need set status";
+		$driver_status = $meta[ 'driver_status' ] ?? '';
+		$status_text   = "Need set status";
 		if ( $driver_status ) {
 			if ( isset( $this->status[ $driver_status ] ) ) {
 				$status_text = $this->status[ $driver_status ];
@@ -313,23 +307,23 @@ class TMSDrivers extends TMSDriversHelper {
 		
 		// Prepare data for table row
 		$driver_data = array(
-			'id' => $driver_id,
-			'driver_name' => $meta['driver_name'] ?? '',
-			'driver_status' => $driver_status,
-			'status_text' => $status_text,
-			'status_class' => $driver_status ? $driver_status : 'text-danger',
-			'location_html' => $location_html,
-			'current_location' => $meta['current_location'] ?? '',
-			'current_city' => $meta['current_city'] ?? '',
-			'current_zipcode' => $meta['current_zipcode'] ?? '',
-			'latitude' => $meta['latitude'] ?? '',
-			'longitude' => $meta['longitude'] ?? '',
-			'country' => $meta['country'] ?? '',
-			'status_date' => $meta['status_date'] ?? '',
-			'updated_zipcode' => $main_data['updated_zipcode'] ?? '',
-			'date_available' => $meta['date_available'] ?? '',
-			'last_user_update' => $meta['last_user_update'] ?? '',
-			'notes' => $meta['notes'] ?? ''
+			'id'               => $driver_id,
+			'driver_name'      => $meta[ 'driver_name' ] ?? '',
+			'driver_status'    => $driver_status,
+			'status_text'      => $status_text,
+			'status_class'     => $driver_status ? $driver_status : 'text-danger',
+			'location_html'    => $location_html,
+			'current_location' => $meta[ 'current_location' ] ?? '',
+			'current_city'     => $meta[ 'current_city' ] ?? '',
+			'current_zipcode'  => $meta[ 'current_zipcode' ] ?? '',
+			'latitude'         => $meta[ 'latitude' ] ?? '',
+			'longitude'        => $meta[ 'longitude' ] ?? '',
+			'country'          => $meta[ 'country' ] ?? '',
+			'status_date'      => $meta[ 'status_date' ] ?? '',
+			'updated_zipcode'  => $main_data[ 'updated_zipcode' ] ?? '',
+			'date_available'   => $meta[ 'date_available' ] ?? '',
+			'last_user_update' => $meta[ 'last_user_update' ] ?? '',
+			'notes'            => $meta[ 'notes' ] ?? ''
 		);
 		
 		return $driver_data;
@@ -339,10 +333,10 @@ class TMSDrivers extends TMSDriversHelper {
 	 * Generate location cell HTML (exact copy from template)
 	 */
 	private function get_location_cell_html( $meta, $main_data, $driver_status ) {
-		$current_location = $meta['current_location'] ?? '';
-		$current_city = $meta['current_city'] ?? '';
-		$date_available = $main_data['date_available'] ?? '';
-		$updated_zip_code = $main_data['updated_zipcode'] ?? '';  // Use same variable name as template
+		$current_location = $meta[ 'current_location' ] ?? '';
+		$current_city     = $meta[ 'current_city' ] ?? '';
+		$date_available   = $main_data[ 'date_available' ] ?? '';
+		$updated_zip_code = $main_data[ 'updated_zipcode' ] ?? '';  // Use same variable name as template
 		
 		
 		// Function to check if date is valid and not a default/invalid date (exact copy from template)
@@ -371,36 +365,36 @@ class TMSDrivers extends TMSDriversHelper {
 		}
 		
 		// Calculate update status (exact copy from template)
-		$updated = true;
-		$updated_text = '';
-		$timestamp = null;
+		$updated           = true;
+		$updated_text      = '';
+		$timestamp         = null;
 		$class_update_code = '';
-
-		$ny_timezone = new DateTimeZone('America/New_York');
-		$ny_time = new DateTime('now', $ny_timezone);
-
-		$time = strtotime( $ny_time->format('Y-m-d H:i:s') . TIME_AVAILABLE_DRIVER );
+		
+		$ny_timezone = new DateTimeZone( 'America/New_York' );
+		$ny_time     = new DateTime( 'now', $ny_timezone );
+		
+		$time                  = strtotime( $ny_time->format( 'Y-m-d H:i:s' ) . TIME_AVAILABLE_DRIVER );
 		$updated_zip_code_time = strtotime( $updated_zip_code );
 		
 		
 		if ( ! isset( $updated_zip_code_time ) || empty( $updated_zip_code_time ) ) {
-			$updated_text = 'Update date not set!';
+			$updated_text      = 'Update date not set!';
 			$class_update_code = 'weiting';
 		} else {
 			if ( $time >= $updated_zip_code_time ) {
 				$class_update_code = 'need_update';
-				$updated_text = date( 'm/d/Y g:i a', $updated_zip_code_time );
+				$updated_text      = date( 'm/d/Y g:i a', $updated_zip_code_time );
 			}
 		}
 		
 		// Build HTML exactly like template
-		$state = explode( ',', $updated_zip_code );
+		$state         = explode( ',', $updated_zip_code );
 		$location_text = ( isset( $current_location ) && isset( $current_city ) )
 			? $current_city . ', ' . $current_location . ' ' : 'Need to set this field ';
 		
 		// Add date status if not available (exact copy from template)
 		if ( $driver_status !== 'available' ) {
-			$location_text .= '<br>'. $date_status;
+			$location_text .= '<br>' . $date_status;
 		}
 		
 		// Build full HTML exactly like template
@@ -437,10 +431,10 @@ class TMSDrivers extends TMSDriversHelper {
 			$driver_phone = 'N/A';
 			
 			// Extract driver info from meta data
-			$driver_email = 'N/A';
+			$driver_email  = 'N/A';
 			$home_location = 'N/A';
-			$vehicle_type = 'N/A';
-			$vin = 'N/A';
+			$vehicle_type  = 'N/A';
+			$vin           = 'N/A';
 			
 			foreach ( $meta_data as $meta ) {
 				if ( $meta[ 'meta_key' ] === 'driver_name' ) {
@@ -465,13 +459,13 @@ class TMSDrivers extends TMSDriversHelper {
 			
 			// Sync driver deletion before removing data
 			$driver_sync_data = array(
-				'driver_id' => $id_load,
-				'driver_name' => $driver_name,
-				'driver_email' => $driver_email,
-				'driver_phone' => $driver_phone,
+				'driver_id'     => $id_load,
+				'driver_name'   => $driver_name,
+				'driver_email'  => $driver_email,
+				'driver_phone'  => $driver_phone,
 				'home_location' => $home_location,
-				'vehicle_type' => $vehicle_type,
-				'vin' => $vin
+				'vehicle_type'  => $vehicle_type,
+				'vin'           => $vin
 			);
 			$this->user_sync_api->sync_user( 'delete', $driver_sync_data, 'driver' );
 			
@@ -507,6 +501,7 @@ class TMSDrivers extends TMSDriversHelper {
 					'canada_transition_file',
 					'immigration_file',
 					'background_file',
+					'interview_file',
 				] ) ) {
 					// Если это множественные файлы (attached_files), разбиваем на массив
 					$files = explode( ',', $meta[ 'meta_value' ] );
@@ -704,13 +699,13 @@ class TMSDrivers extends TMSDriversHelper {
 			
 			if ( $phone_detected ) {
 				// Format phone number and search in driver_phone field
-				$formatted_phone = $this->format_phone_number( $search_term );
+				$formatted_phone    = $this->format_phone_number( $search_term );
 				$where_conditions[] = "driver_phone.meta_value = %s";
-				$where_values[] = $formatted_phone;
+				$where_values[]     = $formatted_phone;
 			} elseif ( is_numeric( $search_term ) ) {
 				// For numeric search that's not a phone, search by ID
 				$where_conditions[] = "main.id = %s";
-				$where_values[] = $search_term;
+				$where_values[]     = $search_term;
 			} else {
 				// Search in text fields (name, email, insurance, entity, plates, vin)
 				$where_conditions[] = "(" . "driver_name.meta_value LIKE %s OR " . "driver_email.meta_value LIKE %s OR " . "motor_cargo_insurer.meta_value LIKE %s OR " . "auto_liability_insurer.meta_value LIKE %s OR " . "entity_name.meta_value LIKE %s OR " . "plates.meta_value LIKE %s OR " . "vin.meta_value LIKE %s " . ")";
@@ -970,6 +965,8 @@ class TMSDrivers extends TMSDriversHelper {
 				ON main.id = mc_dot_human_tested.post_id AND mc_dot_human_tested.meta_key = 'mc_dot_human_tested'
 			LEFT JOIN $table_meta AS clear_background
 				ON main.id = clear_background.post_id AND clear_background.meta_key = 'clear_background'
+			LEFT JOIN $table_meta AS vin
+				ON main.id = vin.post_id AND vin.meta_key = 'vin'
 		";
 		
 		// Add JOINs for capabilities filtering
@@ -1114,20 +1111,20 @@ class TMSDrivers extends TMSDriversHelper {
 							
 							if ( $phone_detected ) {
 								// Format phone number and search in driver_phone field
-								$formatted_phone = $this->format_phone_number( $search_term );
+								$formatted_phone    = $this->format_phone_number( $search_term );
 								$where_conditions[] = "driver_phone.meta_value = %s";
-								$where_values[] = $formatted_phone;
+								$where_values[]     = $formatted_phone;
 							} elseif ( is_numeric( $search_term ) ) {
 								// For numeric search that's not a phone, search by ID
 								$where_conditions[] = "main.id = %s";
-								$where_values[] = $search_term;
+								$where_values[]     = $search_term;
 							} else {
 								// Search only in text fields (name, phone, vehicle, mc, dot), not in ID
-								$where_conditions[] = "(" . "driver_name.meta_value LIKE %s OR " . "driver_email.meta_value LIKE %s OR " . "driver_phone.meta_value LIKE %s OR " . "vehicle_type.meta_value LIKE %s OR " . "mc.meta_value LIKE %s OR " . "dot.meta_value LIKE %s" . ")";
+								$where_conditions[] = "(" . "driver_name.meta_value LIKE %s OR " . "vin.meta_value LIKE %s OR " . "driver_email.meta_value LIKE %s OR " . "driver_phone.meta_value LIKE %s OR " . "vehicle_type.meta_value LIKE %s OR " . "mc.meta_value LIKE %s OR " . "dot.meta_value LIKE %s" . ")";
 								
 								$search_value = '%' . $wpdb->esc_like( $search_term ) . '%';
 								// Add 5 values for the 5 placeholders in the search condition
-								for ( $i = 0; $i < 6; $i ++ ) {
+								for ( $i = 0; $i < 7; $i ++ ) {
 									$where_values[] = $search_value;
 								}
 							}
@@ -1296,6 +1293,12 @@ class TMSDrivers extends TMSDriversHelper {
 		$home_location = get_field_value( $meta, 'home_location' );
 		$city          = get_field_value( $meta, 'city' );
 		
+		$cross_border          = get_field_value( $meta, 'cross_border' );
+		$selected_cross_border = array_map( 'trim', explode( ',', $cross_border ) );
+		
+		$driver_licence_type_cdl = get_field_value( $meta, 'driver_licence_type' );
+		$driver_licence_type_cdl = $driver_licence_type_cdl === 'cdl';
+		
 		$driver_capabilities = array(
 			'twic'               => get_field_value( $meta, 'twic' ),
 			'tsa'                => get_field_value( $meta, 'tsa_approved' ),
@@ -1317,6 +1320,11 @@ class TMSDrivers extends TMSDriversHelper {
 			'real_id'            => get_field_value( $meta, 'real_id' ),
 			'macropoint'         => get_field_value( $meta, 'macro_point' ),
 			'tucker-tools'       => get_field_value( $meta, 'trucker_tools' ),
+			'canada'             => is_numeric( array_search( 'canada', $selected_cross_border ) ) || get_field_value( $meta, 'canada_transition_proof' ),
+			'mexico'             => is_numeric( array_search( 'mexico', $selected_cross_border ) ),
+			'cdl'                => $driver_licence_type_cdl,
+			'dock-high'          => get_field_value( $meta, 'dock_high' ),
+			'side_door'          => get_field_value( $meta, 'side_door_on' ),
 		);
 		
 		$labels = $this->labels;
@@ -1347,6 +1355,18 @@ class TMSDrivers extends TMSDriversHelper {
 			$link = '<a href="' . $add_new_driver . '?post_id=' . $ID_DRIVER . '">' . '(' . $ID_DRIVER . ') ' . $driver_name . '</a>';
 		}
 		
+		// var_dump( $select_emails, array(
+		// 	'subject'      => 'New Driver added:' . ' (' . $ID_DRIVER . ') ' . $driver_name,
+		// 	'project_name' => $project,
+		// 	'subtitle'     => $user_name[ 'full_name' ] . ' has added the new driver to our system ' . $link,
+		// 	'message'      => "Contact phone number: " . $driver_phone . "<br>
+		// 		Vehicle: " . $vehicle_type . "<br>
+		// 		Cargo space details: " . $dimensions . " inches, " . $payload . " lbs.<br>
+		// 		Home location: " . $city . ', ' . $home_location . "<br>
+		// 		" . $str . "<br><br>
+		// 		Don't forget to rate your experience with this driver in our system if you happen to book a load for this unit."
+		// ) );
+		// die;
 		
 		$this->email_helper->send_custom_email( $select_emails, array(
 			'subject'      => 'New Driver added:' . ' (' . $ID_DRIVER . ') ' . $driver_name,
@@ -1531,6 +1551,8 @@ class TMSDrivers extends TMSDriversHelper {
 				'canada_transition_file',
 				'immigration_file',
 				'background_file',
+				'interview_file',
+
 			], true ) ) {
 				// Для полей attached_file_required и updated_rate_confirmation
 				if ( $current_value == $image_id ) {
@@ -1595,7 +1617,33 @@ class TMSDrivers extends TMSDriversHelper {
 			'xml',
 			'xlsx',
 			'svg',
+			'mp3',
 		);
+	}
+
+	/**
+	 * Get allowed formats for specific field types
+	 * 
+	 * @param string $field_name The field name to get formats for
+	 * @return array Array of allowed file extensions
+	 */
+	function get_allowed_formats_for_field( $field_name = '' ) {
+		// Define specific formats for different field types
+		$field_specific_formats = array(
+			'interview_file' => array( 'mp3', 'wav', 'm4a', 'aac' ), // Audio formats for interview files
+			// Add more field-specific formats here as needed
+			// 'document_file' => array( 'pdf', 'doc', 'docx' ), // Document formats
+			// 'image_file' => array( 'jpg', 'jpeg', 'png', 'gif' ), // Image formats
+			// 'spreadsheet_file' => array( 'xls', 'xlsx', 'csv' ), // Spreadsheet formats
+		);
+
+		// If field has specific formats, return them
+		if ( isset( $field_specific_formats[ $field_name ] ) ) {
+			return $field_specific_formats[ $field_name ];
+		}
+
+		// Otherwise return default formats
+		return $this->get_allowed_formats();
 	}
 	
 	function multy_upload_files( $fields_name ) {
@@ -1622,10 +1670,11 @@ class TMSDrivers extends TMSDriversHelper {
 			// Validate file type
 			$file_info     = pathinfo( $original_name );
 			$extension     = isset( $file_info[ 'extension' ] ) ? strtolower( $file_info[ 'extension' ] ) : '';
-			$allowed_types = $this->get_allowed_formats();                                          // Allowed formats
+			$allowed_types = $this->get_allowed_formats_for_field( $fields_name ); // Get field-specific or default formats
 			
 			if ( ! in_array( $extension, $allowed_types ) ) {
-				$errors[] = "Unsupported file format: " . $original_name;
+				$allowed_formats_str = implode( ', ', $allowed_types );
+				$errors[] = "Unsupported file format: " . $original_name . ". Allowed formats: " . $allowed_formats_str;
 				continue;
 			}
 			
@@ -1695,7 +1744,7 @@ class TMSDrivers extends TMSDriversHelper {
 		return $uploaded_files;
 	}
 	
-	function upload_one_file( $file ) {
+	function upload_one_file( $file, $field_name = '' ) {
 		if ( ! isset( $file ) || empty( $file[ 'size' ] ) ) {
 			return false; // No file uploaded
 		}
@@ -1708,10 +1757,11 @@ class TMSDrivers extends TMSDriversHelper {
 		// Validate file type
 		$file_info     = pathinfo( $file[ 'name' ] );
 		$extension     = isset( $file_info[ 'extension' ] ) ? strtolower( $file_info[ 'extension' ] ) : '';
-		$allowed_types = $this->get_allowed_formats(); // Allowed formats
+		$allowed_types = $this->get_allowed_formats_for_field( $field_name ); // Get field-specific or default formats
 		
 		if ( ! in_array( $extension, $allowed_types ) ) {
-			wp_send_json_error( [ 'message' => 'Unsupported file format: ' . $file[ 'name' ] ] );
+			$allowed_formats_str = implode( ', ', $allowed_types );
+			wp_send_json_error( [ 'message' => 'Unsupported file format: ' . $file[ 'name' ] . '. Allowed formats: ' . $allowed_formats_str ] );
 		}
 		
 		// Validate file size (max 50MB)
@@ -1812,27 +1862,28 @@ class TMSDrivers extends TMSDriversHelper {
 	
 	/**
 	 * Get driver data for synchronization
-	 * 
+	 *
 	 * @param int $driver_id Driver ID
+	 *
 	 * @return array Driver data for sync
 	 */
-	public function get_driver_sync_data($driver_id) {
-		$driver_data = $this->get_driver_by_id($driver_id);
+	public function get_driver_sync_data( $driver_id ) {
+		$driver_data = $this->get_driver_by_id( $driver_id );
 		
-		if (!$driver_data) {
+		if ( ! $driver_data ) {
 			return null;
 		}
 		
-		$meta = $driver_data['meta'];
+		$meta = $driver_data[ 'meta' ];
 		
 		return array(
-			'driver_id' => $driver_id,
-			'driver_name' => isset($meta['driver_name']) ? $meta['driver_name'] : '',
-			'driver_email' => isset($meta['driver_email']) ? $meta['driver_email'] : '',
-			'driver_phone' => isset($meta['driver_phone']) ? $meta['driver_phone'] : '',
-			'home_location' => isset($meta['home_location']) ? $meta['home_location'] : '',
-			'vehicle_type' => isset($meta['vehicle_type']) ? $meta['vehicle_type'] : '',
-			'vin' => isset($meta['vin']) ? $meta['vin'] : ''
+			'driver_id'     => $driver_id,
+			'driver_name'   => isset( $meta[ 'driver_name' ] ) ? $meta[ 'driver_name' ] : '',
+			'driver_email'  => isset( $meta[ 'driver_email' ] ) ? $meta[ 'driver_email' ] : '',
+			'driver_phone'  => isset( $meta[ 'driver_phone' ] ) ? $meta[ 'driver_phone' ] : '',
+			'home_location' => isset( $meta[ 'home_location' ] ) ? $meta[ 'home_location' ] : '',
+			'vehicle_type'  => isset( $meta[ 'vehicle_type' ] ) ? $meta[ 'vehicle_type' ] : '',
+			'vin'           => isset( $meta[ 'vin' ] ) ? $meta[ 'vin' ] : ''
 		);
 	}
 	
@@ -2335,6 +2386,8 @@ class TMSDrivers extends TMSDriversHelper {
 				? sanitize_text_field( $_POST[ 'tsa_expiration' ] ) : '';
 			$legal_document_type = isset( $_POST[ 'legal_document_type' ] )
 				? sanitize_text_field( $_POST[ 'legal_document_type' ] ) : '';
+			$legal_document_expiration = isset( $_POST[ 'legal_document_expiration' ] )
+				? sanitize_text_field( $_POST[ 'legal_document_expiration' ] ) : '';
 			
 			$nationality             = isset( $_POST[ 'nationality' ] ) ? sanitize_text_field( $_POST[ 'nationality' ] )
 				: '';
@@ -2392,6 +2445,7 @@ class TMSDrivers extends TMSDriversHelper {
 				'tsa_approved'              => $tsa_approved,
 				'tsa_expiration'            => $tsa_expiration,
 				'legal_document_type'       => $legal_document_type,
+				'legal_document_expiration' => $legal_document_expiration,
 				'nationality'               => $nationality,
 				'immigration_letter'        => $immigration_letter,
 				'immigration_expiration'    => $immigration_expiration,
@@ -2433,6 +2487,7 @@ class TMSDrivers extends TMSDriversHelper {
 				'tsa_approved',
 				'tsa_expiration',
 				'legal_document_type',
+				'legal_document_expiration',
 				'nationality',
 				'immigration_letter',
 				'immigration_expiration',
@@ -2542,11 +2597,12 @@ class TMSDrivers extends TMSDriversHelper {
 				'canada_transition_file',
 				'immigration_file',
 				'background_file',
+				'interview_file',
 			);
 			
 			foreach ( $keys_names as $key_name ) {
 				if ( ! empty( $_FILES[ $key_name ] && $_FILES[ $key_name ][ 'size' ] > 0 ) ) {
-					$id_uploaded       = $this->upload_one_file( $_FILES[ $key_name ] );
+					$id_uploaded       = $this->upload_one_file( $_FILES[ $key_name ], $key_name );
 					$data[ $key_name ] = is_numeric( $id_uploaded ) ? $id_uploaded : '';
 					
 					if ( $post_status === 'publish' ) {
@@ -3923,9 +3979,9 @@ class TMSDrivers extends TMSDriversHelper {
 		$time_threshold = defined( 'TIME_AVAILABLE_DRIVER' ) ? TIME_AVAILABLE_DRIVER : '-12 hours';
 		
 		// Get current time in New York timezone
-		$ny_timezone = new DateTimeZone('America/New_York');
-		$ny_time = new DateTime('now', $ny_timezone);
-		$ny_mysql_time = $ny_time->format('Y-m-d H:i:s');
+		$ny_timezone   = new DateTimeZone( 'America/New_York' );
+		$ny_time       = new DateTime( 'now', $ny_timezone );
+		$ny_mysql_time = $ny_time->format( 'Y-m-d H:i:s' );
 		
 		$b = strtotime( $ny_mysql_time . $time_threshold );
 		
@@ -4061,6 +4117,7 @@ class TMSDrivers extends TMSDriversHelper {
 	 * Determine if numeric search term is a phone number or driver ID
 	 *
 	 * @param string $search_term Numeric search term
+	 *
 	 * @return string 'phone' or 'id'
 	 */
 	private function determine_search_type( $search_term ) {
@@ -4080,6 +4137,7 @@ class TMSDrivers extends TMSDriversHelper {
 	 * Check if search term is a phone number in any format
 	 *
 	 * @param string $search_term Search term
+	 *
 	 * @return bool True if it's a phone number
 	 */
 	private function is_phone_number( $search_term ) {
@@ -4120,6 +4178,7 @@ class TMSDrivers extends TMSDriversHelper {
 	 * Format phone number to standard format (800) 625-7805
 	 *
 	 * @param string $phone_number Phone number in any format
+	 *
 	 * @return string Formatted phone number
 	 */
 	private function format_phone_number( $phone_number ) {
@@ -4134,6 +4193,7 @@ class TMSDrivers extends TMSDriversHelper {
 		// If it's 11 digits and starts with 1, remove the 1 and format
 		if ( strlen( $clean_number ) === 11 && substr( $clean_number, 0, 1 ) === '1' ) {
 			$clean_number = substr( $clean_number, 1 );
+			
 			return '(' . substr( $clean_number, 0, 3 ) . ') ' . substr( $clean_number, 3, 3 ) . '-' . substr( $clean_number, 6, 4 );
 		}
 		
@@ -5063,6 +5123,129 @@ class TMSDrivers extends TMSDriversHelper {
 			} else {
 				wp_send_json_error( [ 'message' => 'Failed to update driver zipcode date' ] );
 			}
+		}
+	}
+
+	/**
+	 * Check required fields for driver before publication
+	 * 
+	 * @param int $driver_id Driver ID
+	 * @param array $meta Optional meta data array
+	 * @return array Array with status and message
+	 */
+	public function check_empty_fields( $driver_id, $meta = false ) {
+		global $wpdb;
+		
+		// Table for meta data
+		$table_meta_name = $wpdb->prefix . $this->table_meta;
+		
+		// List of required fields for driver validation
+		$required_fields = [
+			'driver_name'           => 'Driver Name',
+			'driver_phone'          => 'Phone',
+			'driver_email'          => 'Email',
+			'interview_file'        => 'Interview File',
+			'home_location'         => 'Home Location',
+			'city'                  => 'City',
+			'dob'                   => 'Date of Birth',
+			'languages'             => 'Languages',
+			'emergency_contact_name' => 'Emergency Contact Name',
+			'emergency_contact_phone' => 'Emergency Contact Phone',
+			'emergency_contact_relation' => 'Emergency Contact Relation',
+			'source' => 'Source',
+			'vehicle_type' => 'Vehicle Type',
+			'vehicle_year' => 'Vehicle Year',
+			'vehicle_make' => 'Vehicle Make',
+			'vehicle_model' => 'Vehicle Model',
+			'payload' => 'Payload',
+			'dimensions' => 'Dimensions',
+			'vin' => 'Vin',
+			'registration_type' => 'Registration Type',	
+			'registration_status' => 'Registration Status',
+			'registration_expiration' => 'Registration Expiration',
+			'plates' => 'Plates',
+			'plates_status' => 'Plates Status',
+			'plates_expiration' => 'Plates Expiration',
+			'account_type' => 'Account Type',
+			'account_name' => 'Account Name',
+			'payment_instruction' => 'Payment Instruction',
+			'w9_classification' => 'W9 Classification',
+			'legal_document_type' => 'Legal Document Type',
+			'legal_document_expiration' => 'Legal Document Expiration',
+			'nationality' => 'Nationality',
+			// Add more required fields here as needed
+			// 'driver_license'      => 'Driver License',
+			// 'ssn'                 => 'SSN',
+			// 'address'             => 'Address',
+		];
+		
+		// Form array of meta keys for validation
+		$meta_keys    = array_keys( $required_fields );
+		$placeholders = implode( ',', array_fill( 0, count( $meta_keys ), '%s' ) );
+		
+		// Get all field values in one query
+		$query = $wpdb->prepare( "
+			SELECT meta_key, meta_value
+			FROM $table_meta_name
+			WHERE post_id = %d
+			  AND meta_key IN ($placeholders)
+		", array_merge( [ $driver_id ], $meta_keys ) );
+		
+		$results = $wpdb->get_results( $query, OBJECT_K );
+		
+		$empty_fields = [];
+		
+		// Check results for empty values or invalid data
+		foreach ( $required_fields as $meta_key => $label ) {
+			if ( ! isset( $results[ $meta_key ] ) || empty( $results[ $meta_key ]->meta_value ) || $results[ $meta_key ]->meta_value === '0000-00-00' || ( $results[ $meta_key ]->meta_value === '0.00' && $meta_key !== 'driver_status' ) ) {
+				$empty_fields[] = '<strong>' . $label . '</strong>';
+			}
+		}
+		
+		// Return message about empty fields
+		if ( ! empty( $empty_fields ) ) {
+			return array(
+				'message' => "The following fields are empty: " . implode( ', ', $empty_fields ),
+				'status'  => false
+			);
+		} else {
+			return array( 'message' => "All required fields are filled.", 'status' => true );
+		}
+	}
+
+	/**
+	 * Update post status in database
+	 * 
+	 * @param array $data Array containing post_id and post_status
+	 * @return bool True if successful, false otherwise
+	 */
+	public function update_post_status_in_db( $data ) {
+		global $wpdb;
+		
+		$table_name = $wpdb->prefix . $this->table_main;
+		$user_id    = get_current_user_id();
+		
+		$update_params = array(
+			'user_id_updated' => $user_id,
+			'date_updated'    => current_time( 'mysql' ),
+			'status_post'     => $data[ 'post_status' ],
+		);
+		
+		// Specify the condition (WHERE clause) - assuming post_id is passed in the data array
+		$where = array( 'id' => $data[ 'post_id' ] );
+		// Perform the update
+		$result = $wpdb->update( $table_name, $update_params, $where, array(
+			'%d',  // user_id_updated
+			'%s',  // date_updated
+			'%s',  // post_status
+		), array( '%d' ) // The data type of the where clause (id is an integer)
+		);
+		
+		// Check if the update was successful
+		if ( $result !== false ) {
+			return true; // Update was successful
+		} else {
+			return false; // Error occurred during the update
 		}
 	}
 }

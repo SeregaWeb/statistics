@@ -5814,6 +5814,7 @@ var updateDriverDocument = function updateDriverDocument(urlAjax) {
 };
 var removeOneFileInitial = function removeOneFileInitial(ajaxUrl) {
   var deleteForms = document.querySelectorAll('.js-remove-one-driver');
+  var deleteFormsNoFormBtn = document.querySelectorAll('.js-remove-one-no-form-btn');
   deleteForms && deleteForms.forEach(function (item) {
     item.addEventListener('submit', function (event) {
       event.preventDefault();
@@ -5840,6 +5841,44 @@ var removeOneFileInitial = function removeOneFileInitial(ajaxUrl) {
       }).catch(function (error) {
         (0,_info_messages__WEBPACK_IMPORTED_MODULE_0__.printMessage)("Request failed: ".concat(error), 'danger', 8000);
         (0,_disabled_btn_in_form__WEBPACK_IMPORTED_MODULE_2__.disabledBtnInForm)(target, true);
+        console.error('Request failed:', error);
+      });
+    });
+  });
+  deleteFormsNoFormBtn && deleteFormsNoFormBtn.forEach(function (button) {
+    button.addEventListener('click', function (event) {
+      event.preventDefault();
+      var parentDiv = button.closest('.js-remove-one-no-form');
+      if (!parentDiv) return;
+      button.disabled = true;
+      var formData = new FormData();
+      var hiddenInputs = parentDiv.querySelectorAll('input[type="hidden"]');
+      hiddenInputs.forEach(function (input) {
+        formData.append(input.name, input.value);
+      });
+      var action = 'delete_open_image_driver';
+      formData.append('action', action);
+      var options = {
+        method: 'POST',
+        body: formData
+      };
+      fetch(ajaxUrl, options).then(function (res) {
+        return res.json();
+      }).then(function (requestStatus) {
+        if (requestStatus.success) {
+          (0,_info_messages__WEBPACK_IMPORTED_MODULE_0__.printMessage)(requestStatus.data.message, 'success', 8000);
+          button.disabled = false;
+          if (parentDiv.dataset && parentDiv.dataset.tab) {
+            (0,_create_report__WEBPACK_IMPORTED_MODULE_1__.setUpTabInUrl)(parentDiv.dataset.tab);
+          }
+          button.disabled = false;
+        } else {
+          button.disabled = false;
+          (0,_info_messages__WEBPACK_IMPORTED_MODULE_0__.printMessage)(requestStatus.data.message, 'danger', 8000);
+        }
+      }).catch(function (error) {
+        (0,_info_messages__WEBPACK_IMPORTED_MODULE_0__.printMessage)("Request failed: ".concat(error), 'danger', 8000);
+        button.disabled = false;
         console.error('Request failed:', error);
       });
     });
@@ -6005,7 +6044,7 @@ var uploadFileDriver = function uploadFileDriver(ajaxUrl) {
           }
           popupInstance.forceCloseAllPopup();
         } else {
-          (0,_info_messages__WEBPACK_IMPORTED_MODULE_0__.printMessage)("Error remove Driver:".concat(requestStatus.data.message), 'danger', 8000);
+          (0,_info_messages__WEBPACK_IMPORTED_MODULE_0__.printMessage)("Error upload file: ".concat(requestStatus.data.message), 'danger', 8000);
         }
       }).catch(function (error) {
         (0,_info_messages__WEBPACK_IMPORTED_MODULE_0__.printMessage)("Request failed: ".concat(error), 'danger', 8000);

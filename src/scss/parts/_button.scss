@@ -91,3 +91,35 @@
         }
     }
 }
+
+.btn-remove-file {
+    padding: 0;
+    margin: 0;
+    border: 0;
+    background: transparent;
+
+    outline: none !important;
+    padding: 0;
+    display: flex;
+    background-color: transparent;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 12px;
+    border-radius: 4px;
+    text-decoration: none;
+    svg {
+        path {
+            fill: $--system-error-red !important;
+        }
+        width: 34px;
+        height: 34px;
+    }
+
+    &:hover {
+        svg {
+            path {
+                opacity: 0.8;
+            }
+        }
+    }
+}

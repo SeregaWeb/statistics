@@ -187,20 +187,21 @@ class TMSReportsShipper extends TMSReportsHelper {
 		// Check if it's an AJAX request (simple defense)
 		if ( defined( 'DOING_AJAX' ) && DOING_AJAX ) {
 			// Sanitize input data
-			$MY_INPUT = filter_var_array( $_POST, [
-				"shipper_id"   => FILTER_SANITIZE_STRING,
-				"shipper_name" => FILTER_SANITIZE_STRING,
-				"country"      => FILTER_SANITIZE_STRING,
-				"Addr1"        => FILTER_SANITIZE_STRING,
-				"Addr2"        => FILTER_SANITIZE_STRING,
-				"City"         => FILTER_SANITIZE_STRING,
-				"State"        => FILTER_SANITIZE_STRING,
-				"ZipCode"      => FILTER_SANITIZE_STRING,
-				"FirstName"    => FILTER_SANITIZE_STRING,
-				"LastName"     => FILTER_SANITIZE_STRING,
-				"Phone"        => FILTER_SANITIZE_STRING,
-				"Email"        => FILTER_SANITIZE_EMAIL,
-			] );
+			// Sanitize input data - using wp_unslash to remove WordPress magic quotes
+			$MY_INPUT = [
+				"shipper_id"   => sanitize_text_field( wp_unslash( $_POST['shipper_id'] ?? '' ) ),
+				"shipper_name" => sanitize_text_field( wp_unslash( $_POST['shipper_name'] ?? '' ) ),
+				"country"      => sanitize_text_field( wp_unslash( $_POST['country'] ?? '' ) ),
+				"Addr1"        => sanitize_text_field( wp_unslash( $_POST['Addr1'] ?? '' ) ),
+				"Addr2"        => sanitize_text_field( wp_unslash( $_POST['Addr2'] ?? '' ) ),
+				"City"         => sanitize_text_field( wp_unslash( $_POST['City'] ?? '' ) ),
+				"State"        => sanitize_text_field( wp_unslash( $_POST['State'] ?? '' ) ),
+				"ZipCode"      => sanitize_text_field( wp_unslash( $_POST['ZipCode'] ?? '' ) ),
+				"FirstName"    => sanitize_text_field( wp_unslash( $_POST['FirstName'] ?? '' ) ),
+				"LastName"     => sanitize_text_field( wp_unslash( $_POST['LastName'] ?? '' ) ),
+				"Phone"        => sanitize_text_field( wp_unslash( $_POST['Phone'] ?? '' ) ),
+				"Email"        => sanitize_email( wp_unslash( $_POST['Email'] ?? '' ) ),
+			];
 			
 			$st      = ! empty( $MY_INPUT[ 'Addr1' ] ) ? $MY_INPUT[ 'Addr1' ] . ', ' : '';
 			$city    = ! empty( $MY_INPUT[ 'City' ] ) ? $MY_INPUT[ 'City' ] . ', ' : '';
@@ -394,9 +395,10 @@ class TMSReportsShipper extends TMSReportsHelper {
 	
 	public function search_shipper() {
 		if ( defined( 'DOING_AJAX' ) && DOING_AJAX ) {
-			$MY_INPUT = filter_var_array( $_POST, [
-				"search" => FILTER_SANITIZE_STRING
-			] );
+			// Sanitize input data - using wp_unslash to remove WordPress magic quotes
+			$MY_INPUT = [
+				"search" => sanitize_text_field( wp_unslash( $_POST['search'] ?? '' ) )
+			];
 			
 			$tmp = '';
 			

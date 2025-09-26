@@ -94,9 +94,10 @@ class TMSReportsCompany extends TMSReportsHelper {
 	
 	public function search_company() {
 		if ( defined( 'DOING_AJAX' ) && DOING_AJAX ) {
-			$MY_INPUT = filter_var_array( $_POST, [
-				"search" => FILTER_SANITIZE_STRING
-			] );
+			// Sanitize input data - using wp_unslash to remove WordPress magic quotes
+			$MY_INPUT = [
+				"search" => sanitize_text_field( wp_unslash( $_POST['search'] ?? '' ) )
+			];
 			
 			$tmp = '';
 			
@@ -329,40 +330,38 @@ class TMSReportsCompany extends TMSReportsHelper {
 	public function update_company() {
 		// Check if it's an AJAX request (simple defense)
 		if ( defined( 'DOING_AJAX' ) && DOING_AJAX ) {
-			// Sanitize input data
-			$MY_INPUT = filter_var_array( $_POST, [
-				"select_project"      => FILTER_SANITIZE_STRING,
-				"broker_id"           => FILTER_SANITIZE_STRING,
-				"company_name"        => FILTER_SANITIZE_STRING,
-				"country"             => FILTER_SANITIZE_STRING,
-				"Addr1"               => FILTER_SANITIZE_STRING,
-				"Addr2"               => FILTER_SANITIZE_STRING,
-				"City"                => FILTER_SANITIZE_STRING,
-				"State"               => FILTER_SANITIZE_STRING,
-				"ZipCode"             => FILTER_SANITIZE_STRING,
-				"FirstName"           => FILTER_SANITIZE_STRING,
-				"LastName"            => FILTER_SANITIZE_STRING,
-				"Phone"               => FILTER_SANITIZE_STRING,
-				"Email"               => FILTER_SANITIZE_EMAIL,
-				"MotorCarrNo"         => FILTER_SANITIZE_STRING,
-				"DotNo"               => FILTER_SANITIZE_STRING,
-				"set_up"              => FILTER_SANITIZE_STRING,
-				"set_up_platform"     => FILTER_SANITIZE_STRING,
-				"notes"               => FILTER_SANITIZE_STRING,
-				"work_with_odysseia"  => FILTER_VALIDATE_BOOLEAN,
-				"work_with_martlet"   => FILTER_VALIDATE_BOOLEAN,
-				"work_with_endurance" => FILTER_VALIDATE_BOOLEAN,
+			// Sanitize input data - using wp_unslash to remove WordPress magic quotes
+			$MY_INPUT = [
+				"select_project"      => sanitize_text_field( wp_unslash( $_POST['select_project'] ?? '' ) ),
+				"broker_id"           => sanitize_text_field( wp_unslash( $_POST['broker_id'] ?? '' ) ),
+				"company_name"        => sanitize_text_field( wp_unslash( $_POST['company_name'] ?? '' ) ),
+				"country"             => sanitize_text_field( wp_unslash( $_POST['country'] ?? '' ) ),
+				"Addr1"               => sanitize_text_field( wp_unslash( $_POST['Addr1'] ?? '' ) ),
+				"Addr2"               => sanitize_text_field( wp_unslash( $_POST['Addr2'] ?? '' ) ),
+				"City"                => sanitize_text_field( wp_unslash( $_POST['City'] ?? '' ) ),
+				"State"               => sanitize_text_field( wp_unslash( $_POST['State'] ?? '' ) ),
+				"ZipCode"             => sanitize_text_field( wp_unslash( $_POST['ZipCode'] ?? '' ) ),
+				"FirstName"           => sanitize_text_field( wp_unslash( $_POST['FirstName'] ?? '' ) ),
+				"LastName"            => sanitize_text_field( wp_unslash( $_POST['LastName'] ?? '' ) ),
+				"Phone"               => sanitize_text_field( wp_unslash( $_POST['Phone'] ?? '' ) ),
+				"Email"               => sanitize_email( wp_unslash( $_POST['Email'] ?? '' ) ),
+				"MotorCarrNo"         => sanitize_text_field( wp_unslash( $_POST['MotorCarrNo'] ?? '' ) ),
+				"DotNo"               => sanitize_text_field( wp_unslash( $_POST['DotNo'] ?? '' ) ),
+				"set_up"              => sanitize_text_field( wp_unslash( $_POST['set_up'] ?? '' ) ),
+				"set_up_platform"     => sanitize_text_field( wp_unslash( $_POST['set_up_platform'] ?? '' ) ),
+				"notes"               => sanitize_textarea_field( wp_unslash( $_POST['notes'] ?? '' ) ),
+				"work_with_odysseia"  => filter_var( $_POST['work_with_odysseia'] ?? false, FILTER_VALIDATE_BOOLEAN ),
+				"work_with_martlet"   => filter_var( $_POST['work_with_martlet'] ?? false, FILTER_VALIDATE_BOOLEAN ),
+				"work_with_endurance" => filter_var( $_POST['work_with_endurance'] ?? false, FILTER_VALIDATE_BOOLEAN ),
 				
-				"factoring_broker"  => FILTER_SANITIZE_STRING,
-				"accounting_phone"  => FILTER_SANITIZE_STRING,
-				"accounting_email"  => FILTER_SANITIZE_STRING,
-				"days_to_pay"       => FILTER_SANITIZE_STRING,
-				"quick_pay_option"  => FILTER_VALIDATE_BOOLEAN,
-				"quick_pay_percent" => FILTER_SANITIZE_STRING,
-				"company_status"    => FILTER_SANITIZE_STRING,
-			
-			
-			] );
+				"factoring_broker"  => sanitize_text_field( wp_unslash( $_POST['factoring_broker'] ?? '' ) ),
+				"accounting_phone"  => sanitize_text_field( wp_unslash( $_POST['accounting_phone'] ?? '' ) ),
+				"accounting_email"  => sanitize_email( wp_unslash( $_POST['accounting_email'] ?? '' ) ),
+				"days_to_pay"       => sanitize_text_field( wp_unslash( $_POST['days_to_pay'] ?? '' ) ),
+				"quick_pay_option"  => filter_var( $_POST['quick_pay_option'] ?? false, FILTER_VALIDATE_BOOLEAN ),
+				"quick_pay_percent" => sanitize_text_field( wp_unslash( $_POST['quick_pay_percent'] ?? '' ) ),
+				"company_status"    => sanitize_text_field( wp_unslash( $_POST['company_status'] ?? '' ) ),
+			];
 			
 			$post_meta = array(
 				"notes"               => $MY_INPUT[ "notes" ],
@@ -387,14 +386,15 @@ class TMSReportsCompany extends TMSReportsHelper {
 			$json_input  = str_replace( '"null"', 'null', $_POST[ 'json-set-up' ] );
 			$json_input2 = str_replace( '"null"', 'null', $_POST[ 'json-completed' ] );
 			
-			$set_up_array           = json_decode( stripslashes( $json_input ), true );
-			$set_up_completed_array = json_decode( stripslashes( $json_input2 ), true );
+			$set_up_array           = json_decode( $json_input, true );
+			$set_up_completed_array = json_decode( $json_input2, true );
 			
 			$set_up_array[ $MY_INPUT[ 'select_project' ] ]           = $MY_INPUT[ 'set_up' ];
 			$set_up_completed_array[ $MY_INPUT[ 'select_project' ] ] = $set_up_timestamp;
 			
 			$MY_INPUT[ 'set_up' ]    = json_encode( $set_up_array );
 			$MY_INPUT[ 'completed' ] = json_encode( $set_up_completed_array );
+
 			$result                  = $this->update_company_in_db( $MY_INPUT );
 			
 			if ( $result ) {
@@ -422,47 +422,47 @@ class TMSReportsCompany extends TMSReportsHelper {
 		
 		$result = $wpdb->update( $table_name, // Table name
 			array(       // Columns to update
-			             'company_name'         => $data[ 'company_name' ],
-			             'country'              => $data[ 'country' ],
-			             'address1'             => $data[ 'Addr1' ],
-			             'address2'             => $data[ 'Addr2' ],
-			             'city'                 => $data[ 'City' ],
-			             'state'                => $data[ 'State' ],
-			             'zip_code'             => $data[ 'ZipCode' ],
-			             'contact_first_name'   => $data[ 'FirstName' ],
-			             'contact_last_name'    => $data[ 'LastName' ],
-			             'phone_number'         => $data[ 'Phone' ],
-			             'email'                => $data[ 'Email' ],
-			             'mc_number'            => $data[ 'MotorCarrNo' ],
-			             'dot_number'           => $data[ 'DotNo' ],
-			             'user_id_updated'      => $user_id,
-			             'date_updated'         => current_time( 'mysql' ),
-			             'set_up'               => $data[ 'set_up' ],
-			             'set_up_platform'      => $data[ 'set_up_platform' ],
-			             'date_set_up_compleat' => $data[ 'completed' ],
+				'company_name'         => $data[ 'company_name' ],
+				'country'              => $data[ 'country' ],
+				'address1'             => $data[ 'Addr1' ],
+				'address2'             => $data[ 'Addr2' ],
+				'city'                 => $data[ 'City' ],
+				'state'                => $data[ 'State' ],
+				'zip_code'             => $data[ 'ZipCode' ],
+				'contact_first_name'   => $data[ 'FirstName' ],
+				'contact_last_name'    => $data[ 'LastName' ],
+				'phone_number'         => $data[ 'Phone' ],
+				'email'                => $data[ 'Email' ],
+				'mc_number'            => $data[ 'MotorCarrNo' ],
+				'dot_number'           => $data[ 'DotNo' ],
+				'user_id_updated'      => $user_id,
+				'date_updated'         => current_time( 'mysql' ),
+				'set_up'               => $data[ 'set_up' ],
+				'set_up_platform'      => $data[ 'set_up_platform' ],
+				'date_set_up_compleat' => $data[ 'completed' ],
 			), array(       // WHERE condition
-			                'id' => $record_id, // Assuming 'id' is the primary key for identifying records
+				'id' => $record_id, // Assuming 'id' is the primary key for identifying records
 			), array(       // Format for columns being updated
-			                '%s',
-			                '%s',
-			                '%s',
-			                '%s',
-			                '%s',
-			                '%s',
-			                '%s',
-			                '%s',
-			                '%s',
-			                '%s',
-			                '%s',
-			                '%s',
-			                '%s',
-			                '%d',
-			                '%s',
-			                '%s',
-			                '%s',
-			                '%s',
+				'%s',
+				'%s',
+				'%s',
+				'%s',
+				'%s',
+				'%s',
+				'%s',
+				'%s',
+				'%s',
+				'%s',
+				'%s',
+				'%s',
+				'%s',
+				'%d',
+				'%s',
+				'%s',
+				'%s',
+				'%s',
 			), array(       // Format for WHERE condition
-			                '%d',
+				'%d',
 			) );
 		
 		

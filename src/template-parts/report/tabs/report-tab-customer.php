@@ -245,6 +245,7 @@ if ( $report_object ) {
                     <div class="js-additional-contact-wrap">
 						
 						<?php
+
 						if ( isset( $additional_contacts ) && is_array( $additional_contacts ) ):
 							foreach ( $additional_contacts as $contact_val ):
 								?>

@@ -322,7 +322,7 @@ function setPreset() {
                 if (additionalContainer && additionalResult) {
                     if (templates) {
                         additionalContainer?.classList.remove('d-none');
-                        additionalResult.innerHTML = templates;
+                        additionalResult.innerHTML = finalTemplate;
                         addActionsDeleteUniversalCard('.js-remove-contact', '.js-additional-card');
                         addActionsEditAdditionalCard();
                     } else {

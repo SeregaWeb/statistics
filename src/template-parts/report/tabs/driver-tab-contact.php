@@ -465,8 +465,6 @@ $access_vehicle = $TMSUsers->check_user_role_access( [
                             <?php endif; ?>
                         </div>
                     <?php else: ?>
-                    
-
                     <div class="<?php echo 'js-remove-one-no-form'; ?> d-flex align-items-center gap-1 <?php echo 'interview-file'; ?>" data-tab="<?php echo 'pills-driver-contact-tab'; ?>">
                         <input type="hidden" name="image-id" value="<?php echo $interview_file_arr[ 'id' ]; ?>">
                         <input type="hidden" name="image-fields" value="<?php echo 'interview_file' ?>">
@@ -482,9 +480,7 @@ $access_vehicle = $TMSUsers->check_user_role_access( [
                             </button>
                         <?php endif; ?>
                     </div>
-
-                    
-                <?php endif; ?>
+                    <?php endif; ?>
             </div>
 
                 <div class="col-12 mb-3">

@@ -194,19 +194,20 @@ class TMSDrivers extends TMSDriversHelper {
 	
 	public function update_location_driver() {
 		if ( defined( 'DOING_AJAX' ) && DOING_AJAX ) {
-			$MY_INPUT = filter_var_array( $_POST, [
-				"driver_id"        => FILTER_SANITIZE_STRING,
-				"driver_status"    => FILTER_SANITIZE_STRING,
-				"status_date"      => FILTER_SANITIZE_STRING,
-				"current_location" => FILTER_SANITIZE_STRING,
-				"current_city"     => FILTER_SANITIZE_STRING,
-				"current_zipcode"  => FILTER_SANITIZE_STRING,
-				"latitude"         => FILTER_SANITIZE_STRING,
-				"longitude"        => FILTER_SANITIZE_STRING,
-				"country"          => FILTER_SANITIZE_STRING,
-				"current_country"  => FILTER_SANITIZE_STRING,
-				"notes"            => FILTER_SANITIZE_STRING,
-			] );
+			// Sanitize input data - using wp_unslash to remove WordPress magic quotes
+			$MY_INPUT = [
+				"driver_id"        => sanitize_text_field( wp_unslash( $_POST['driver_id'] ?? '' ) ),
+				"driver_status"    => sanitize_text_field( wp_unslash( $_POST['driver_status'] ?? '' ) ),
+				"status_date"      => sanitize_text_field( wp_unslash( $_POST['status_date'] ?? '' ) ),
+				"current_location" => sanitize_text_field( wp_unslash( $_POST['current_location'] ?? '' ) ),
+				"current_city"     => sanitize_text_field( wp_unslash( $_POST['current_city'] ?? '' ) ),
+				"current_zipcode"  => sanitize_text_field( wp_unslash( $_POST['current_zipcode'] ?? '' ) ),
+				"latitude"         => sanitize_text_field( wp_unslash( $_POST['latitude'] ?? '' ) ),
+				"longitude"        => sanitize_text_field( wp_unslash( $_POST['longitude'] ?? '' ) ),
+				"country"          => sanitize_text_field( wp_unslash( $_POST['country'] ?? '' ) ),
+				"current_country"  => sanitize_text_field( wp_unslash( $_POST['current_country'] ?? '' ) ),
+				"notes"            => sanitize_textarea_field( wp_unslash( $_POST['notes'] ?? '' ) ),
+			];
 			
 			// Проверяем, что driver_id передан
 			if ( empty( $MY_INPUT[ 'driver_id' ] ) ) {
@@ -502,6 +503,25 @@ class TMSDrivers extends TMSDriversHelper {
 					'immigration_file',
 					'background_file',
 					'interview_file',
+					'martlet_ic_agreement',
+					'endurance_ic_agreement',
+					'martlet_coi',
+					'endurance_coi',
+					'change_9_file',
+					'canada_transition_file',
+					'immigration_file',
+					'background_file',
+					'interview_file',
+					'team_driver_driving_record',
+					'immigration_file_team_driver',
+					'legal_document_team_driver',
+					'driver_licence_team_driver',
+					'canada_transition_file_team_driver',
+					'background_file_team_driver',
+					'change_9_file_team_driver',
+					'interview_martlet',
+					'interview_endurance',
+
 				] ) ) {
 					// Если это множественные файлы (attached_files), разбиваем на массив
 					$files = explode( ',', $meta[ 'meta_value' ] );
@@ -1480,6 +1500,9 @@ class TMSDrivers extends TMSDriversHelper {
 				"post_id"          => FILTER_SANITIZE_STRING,
 				"reference_number" => FILTER_SANITIZE_STRING,
 			] );
+
+
+
 			$result   = $this->remove_one_image_in_db( $MY_INPUT );
 			
 			if ( $result === true ) {
@@ -1502,6 +1525,7 @@ class TMSDrivers extends TMSDriversHelper {
 		$image_field = sanitize_text_field( $data[ 'image-fields' ] );
 		$post_id     = intval( $data[ 'post_id' ] );
 		
+	
 		// Проверяем корректность входных данных
 		if ( ! $image_id || ! $image_field || ! $post_id ) {
 			return new WP_Error( 'invalid_input', 'Invalid image ID, field name or post ID.' );
@@ -1543,6 +1567,10 @@ class TMSDrivers extends TMSDriversHelper {
 				'driver_licence',
 				'legal_document',
 				'twic_file',
+				'martlet_coi',
+				'endurance_coi',
+				'martlet_ic_agreement',
+				'endurance_ic_agreement',
 				'tsa_file',
 				'motor_cargo_coi',
 				'auto_liability_coi',
@@ -1552,7 +1580,15 @@ class TMSDrivers extends TMSDriversHelper {
 				'immigration_file',
 				'background_file',
 				'interview_file',
-
+				'team_driver_driving_record',
+				'immigration_file_team_driver',
+				'legal_document_team_driver',
+				'driver_licence_team_driver',
+				'canada_transition_file_team_driver',
+				'background_file_team_driver',
+				'change_9_file_team_driver',
+				'interview_martlet',
+				'interview_endurance',
 			], true ) ) {
 				// Для полей attached_file_required и updated_rate_confirmation
 				if ( $current_value == $image_id ) {
@@ -1620,11 +1656,12 @@ class TMSDrivers extends TMSDriversHelper {
 			'mp3',
 		);
 	}
-
+	
 	/**
 	 * Get allowed formats for specific field types
-	 * 
+	 *
 	 * @param string $field_name The field name to get formats for
+	 *
 	 * @return array Array of allowed file extensions
 	 */
 	function get_allowed_formats_for_field( $field_name = '' ) {
@@ -1636,12 +1673,12 @@ class TMSDrivers extends TMSDriversHelper {
 			// 'image_file' => array( 'jpg', 'jpeg', 'png', 'gif' ), // Image formats
 			// 'spreadsheet_file' => array( 'xls', 'xlsx', 'csv' ), // Spreadsheet formats
 		);
-
+		
 		// If field has specific formats, return them
 		if ( isset( $field_specific_formats[ $field_name ] ) ) {
 			return $field_specific_formats[ $field_name ];
 		}
-
+		
 		// Otherwise return default formats
 		return $this->get_allowed_formats();
 	}
@@ -1674,7 +1711,7 @@ class TMSDrivers extends TMSDriversHelper {
 			
 			if ( ! in_array( $extension, $allowed_types ) ) {
 				$allowed_formats_str = implode( ', ', $allowed_types );
-				$errors[] = "Unsupported file format: " . $original_name . ". Allowed formats: " . $allowed_formats_str;
+				$errors[]            = "Unsupported file format: " . $original_name . ". Allowed formats: " . $allowed_formats_str;
 				continue;
 			}
 			
@@ -1765,7 +1802,7 @@ class TMSDrivers extends TMSDriversHelper {
 		}
 		
 		// Validate file size (max 50MB)
-		$max_size = 50 * 1024 * 1024;                  // 50MB
+		$max_size = 50 * 1024 * 1024;                                         // 50MB
 		if ( $file[ 'size' ] > $max_size ) {
 			wp_send_json_error( [ 'message' => 'File is too large (max 50MB): ' . $file[ 'name' ] ] );
 		}
@@ -2375,16 +2412,16 @@ class TMSDrivers extends TMSDriversHelper {
 			$hazmat_certificate = isset( $_POST[ 'hazmat_certificate' ] )
 				? sanitize_text_field( $_POST[ 'hazmat_certificate' ] ) : '';
 			
-			$hazmat_expiration   = isset( $_POST[ 'hazmat_expiration' ] )
+			$hazmat_expiration         = isset( $_POST[ 'hazmat_expiration' ] )
 				? sanitize_text_field( $_POST[ 'hazmat_expiration' ] ) : '';
-			$twic                = isset( $_POST[ 'twic' ] ) ? sanitize_text_field( $_POST[ 'twic' ] ) : '';
-			$twic_expiration     = isset( $_POST[ 'twic_expiration' ] )
+			$twic                      = isset( $_POST[ 'twic' ] ) ? sanitize_text_field( $_POST[ 'twic' ] ) : '';
+			$twic_expiration           = isset( $_POST[ 'twic_expiration' ] )
 				? sanitize_text_field( $_POST[ 'twic_expiration' ] ) : '';
-			$tsa_approved        = isset( $_POST[ 'tsa_approved' ] ) ? sanitize_text_field( $_POST[ 'tsa_approved' ] )
-				: '';
-			$tsa_expiration      = isset( $_POST[ 'tsa_expiration' ] )
+			$tsa_approved              = isset( $_POST[ 'tsa_approved' ] )
+				? sanitize_text_field( $_POST[ 'tsa_approved' ] ) : '';
+			$tsa_expiration            = isset( $_POST[ 'tsa_expiration' ] )
 				? sanitize_text_field( $_POST[ 'tsa_expiration' ] ) : '';
-			$legal_document_type = isset( $_POST[ 'legal_document_type' ] )
+			$legal_document_type       = isset( $_POST[ 'legal_document_type' ] )
 				? sanitize_text_field( $_POST[ 'legal_document_type' ] ) : '';
 			$legal_document_expiration = isset( $_POST[ 'legal_document_expiration' ] )
 				? sanitize_text_field( $_POST[ 'legal_document_expiration' ] ) : '';
@@ -2423,6 +2460,23 @@ class TMSDrivers extends TMSDriversHelper {
 			$motor_cargo_insurer    = isset( $_POST[ 'motor_cargo_insurer' ] )
 				? sanitize_text_field( $_POST[ 'motor_cargo_insurer' ] ) : '';
 			
+			$martlet_ic_agreement_on   = isset( $_POST[ 'martlet_ic_agreement_on' ] )
+				? sanitize_text_field( $_POST[ 'martlet_ic_agreement_on' ] ) : '';
+			$endurance_ic_agreement_on = isset( $_POST[ 'endurance_ic_agreement_on' ] )
+				? sanitize_text_field( $_POST[ 'endurance_ic_agreement_on' ] ) : '';
+			
+			$martlet_coi_on   = isset( $_POST[ 'martlet_coi_on' ] ) ? sanitize_text_field( $_POST[ 'martlet_coi_on' ] )
+				: '';
+			$endurance_coi_on = isset( $_POST[ 'endurance_coi_on' ] )
+				? sanitize_text_field( $_POST[ 'endurance_coi_on' ] ) : '';
+			
+			
+			$team_driver_driving_record = isset( $_POST[ 'team_driver_driving_record' ] )
+				? sanitize_text_field( $_POST[ 'team_driver_driving_record' ] ) : '';
+			
+			$record_notes_team_driver = isset( $_POST[ 'record_notes_team_driver' ] )
+				? sanitize_text_field( $_POST[ 'record_notes_team_driver' ] ) : '';
+			
 			$status                = isset( $_POST[ 'status' ] ) ? sanitize_text_field( $_POST[ 'status' ] ) : '';
 			$cancellation_date     = isset( $_POST[ 'cancellation_date' ] )
 				? sanitize_text_field( $_POST[ 'cancellation_date' ] ) : '';
@@ -2430,43 +2484,131 @@ class TMSDrivers extends TMSDriversHelper {
 				? sanitize_text_field( $_POST[ 'insurance_declaration' ] ) : '';
 			$notes                 = isset( $_POST[ 'notes' ] ) ? sanitize_textarea_field( $_POST[ 'notes' ] ) : '';
 			
+			$driver_licence_type_team_driver = isset( $_POST[ 'driver_licence_type_team_driver' ] )
+				? sanitize_text_field( $_POST[ 'driver_licence_type_team_driver' ] ) : '';
+			
+			$real_id_team_driver = isset( $_POST[ 'real_id_team_driver' ] )
+				? sanitize_text_field( $_POST[ 'real_id_team_driver' ] ) : '';
+			
+			$driver_licence_expiration_team_driver = isset( $_POST[ 'driver_licence_expiration_team_driver' ] )
+				? sanitize_text_field( $_POST[ 'driver_licence_expiration_team_driver' ] ) : '';
+			
+			$tanker_endorsement_team_driver = isset( $_POST[ 'tanker_endorsement_team_driver' ] )
+				? sanitize_text_field( $_POST[ 'tanker_endorsement_team_driver' ] ) : '';
+			
+			$hazmat_endorsement_team_driver = isset( $_POST[ 'hazmat_endorsement_team_driver' ] )
+				? sanitize_text_field( $_POST[ 'hazmat_endorsement_team_driver' ] ) : '';
+			
+			$immigration_letter_team_driver = isset( $_POST[ 'immigration_letter_team_driver' ] )
+				? sanitize_text_field( $_POST[ 'immigration_letter_team_driver' ] ) : '';
+			
+			$immigration_file_team_driver = isset( $_POST[ 'immigration_file_team_driver' ] )
+				? sanitize_text_field( $_POST[ 'immigration_file_team_driver' ] ) : '';
+			
+			$immigration_expiration_team_driver = isset( $_POST[ 'immigration_expiration_team_driver' ] )
+				? sanitize_text_field( $_POST[ 'immigration_expiration_team_driver' ] ) : '';
+			
+			$legal_document_team_driver = isset( $_POST[ 'legal_document_team_driver' ] )
+				? sanitize_text_field( $_POST[ 'legal_document_team_driver' ] ) : '';
+			
+			$legal_document_expiration_team_driver = isset( $_POST[ 'legal_document_expiration_team_driver' ] )
+				? sanitize_text_field( $_POST[ 'legal_document_expiration_team_driver' ] ) : '';
+			
+			$nationality_team_driver = isset( $_POST[ 'nationality_team_driver' ] )
+				? sanitize_text_field( $_POST[ 'nationality_team_driver' ] ) : '';
+			
+			$driver_licence_team_driver = isset( $_POST[ 'driver_licence_team_driver' ] )
+				? sanitize_text_field( $_POST[ 'driver_licence_team_driver' ] ) : '';
+			
+			$legal_document_type_team_driver = isset( $_POST[ 'legal_document_type_team_driver' ] )
+				? sanitize_text_field( $_POST[ 'legal_document_type_team_driver' ] ) : '';
+			
+			
+			$canada_transition_date_team_driver = isset( $_POST[ 'canada_transition_date_team_driver' ] )
+				? sanitize_text_field( $_POST[ 'canada_transition_date_team_driver' ] ) : '';
+			
+			$canada_transition_proof_team_driver = isset( $_POST[ 'canada_transition_proof_team_driver' ] )
+				? sanitize_text_field( $_POST[ 'canada_transition_proof_team_driver' ] ) : '';
+			
+			$background_date_team_driver = isset( $_POST[ 'background_date_team_driver' ] )
+				? sanitize_text_field( $_POST[ 'background_date_team_driver' ] ) : '';
+			
+			$background_check_team_driver = isset( $_POST[ 'background_check_team_driver' ] )
+				? sanitize_text_field( $_POST[ 'background_check_team_driver' ] ) : '';
+			
+			$change_9_date_team_driver = isset( $_POST[ 'change_9_date_team_driver' ] )
+				? sanitize_text_field( $_POST[ 'change_9_date_team_driver' ] ) : '';
+			
+			$change_9_training_team_driver = isset( $_POST[ 'change_9_training_team_driver' ] )
+				? sanitize_text_field( $_POST[ 'change_9_training_team_driver' ] ) : '';
+
+			$martlet_coi_expired_date = isset( $_POST[ 'martlet_coi_expired_date' ] )
+				? sanitize_text_field( $_POST[ 'martlet_coi_expired_date' ] ) : '';
+
+			$endurance_coi_expired_date = isset( $_POST[ 'endurance_coi_expired_date' ] )
+				? sanitize_text_field( $_POST[ 'endurance_coi_expired_date' ] ) : '';
+			
 			$data = [
-				'driver_id'                 => $driver_id,
-				'record_notes'              => $record_notes,
-				'driver_licence_type'       => $driver_licence_type,
-				'real_id'                   => $real_id,
-				'driver_licence_expiration' => $driver_licence_expiration,
-				'tanker_endorsement'        => $tanker_endorsement,
-				'hazmat_endorsement'        => $hazmat_endorsement,
-				'hazmat_certificate'        => $hazmat_certificate,
-				'hazmat_expiration'         => $hazmat_expiration,
-				'twic'                      => $twic,
-				'twic_expiration'           => $twic_expiration,
-				'tsa_approved'              => $tsa_approved,
-				'tsa_expiration'            => $tsa_expiration,
-				'legal_document_type'       => $legal_document_type,
-				'legal_document_expiration' => $legal_document_expiration,
-				'nationality'               => $nationality,
-				'immigration_letter'        => $immigration_letter,
-				'immigration_expiration'    => $immigration_expiration,
-				'background_check'          => $background_check,
-				'background_date'           => $background_date,
-				'canada_transition_proof'   => $canada_transition_proof,
-				'canada_transition_date'    => $canada_transition_date,
-				'change_9_training'         => $change_9_training,
-				'change_9_date'             => $change_9_date,
-				'insured'                   => $insured,
-				'auto_liability_policy'     => $auto_liability_policy,
-				'auto_liability_expiration' => $auto_liability_expiration,
-				'auto_liability_insurer'    => $auto_liability_insurer,
-				'motor_cargo_policy'        => $motor_cargo_policy,
-				'motor_cargo_expiration'    => $motor_cargo_expiration,
-				'motor_cargo_insurer'       => $motor_cargo_insurer,
-				'status'                    => $status,
-				'cancellation_date'         => $cancellation_date,
-				'insurance_declaration'     => $insurance_declaration,
-				'notes'                     => $notes,
+				'driver_id'                             => $driver_id,
+				'record_notes'                          => $record_notes,
+				'driver_licence_type'                   => $driver_licence_type,
+				'real_id'                               => $real_id,
+				'driver_licence_expiration'             => $driver_licence_expiration,
+				'tanker_endorsement'                    => $tanker_endorsement,
+				'hazmat_endorsement'                    => $hazmat_endorsement,
+				'hazmat_certificate'                    => $hazmat_certificate,
+				'hazmat_expiration'                     => $hazmat_expiration,
+				'twic'                                  => $twic,
+				'twic_expiration'                       => $twic_expiration,
+				'tsa_approved'                          => $tsa_approved,
+				'tsa_expiration'                        => $tsa_expiration,
+				'legal_document_type'                   => $legal_document_type,
+				'legal_document_expiration'             => $legal_document_expiration,
+				'nationality'                           => $nationality,
+				'immigration_letter'                    => $immigration_letter,
+				'immigration_expiration'                => $immigration_expiration,
+				'background_check'                      => $background_check,
+				'background_date'                       => $background_date,
+				'canada_transition_proof'               => $canada_transition_proof,
+				'canada_transition_date'                => $canada_transition_date,
+				'change_9_training'                     => $change_9_training,
+				'change_9_date'                         => $change_9_date,
+				'insured'                               => $insured,
+				'auto_liability_policy'                 => $auto_liability_policy,
+				'auto_liability_expiration'             => $auto_liability_expiration,
+				'auto_liability_insurer'                => $auto_liability_insurer,
+				'motor_cargo_policy'                    => $motor_cargo_policy,
+				'motor_cargo_expiration'                => $motor_cargo_expiration,
+				'motor_cargo_insurer'                   => $motor_cargo_insurer,
+				'martlet_ic_agreement_on'               => $martlet_ic_agreement_on,
+				'endurance_ic_agreement_on'             => $endurance_ic_agreement_on,
+				'martlet_coi_on'                        => $martlet_coi_on,
+				'endurance_coi_on'                      => $endurance_coi_on,
+				'status'                                => $status,
+				'cancellation_date'                     => $cancellation_date,
+				'insurance_declaration'                 => $insurance_declaration,
+				'notes'                                 => $notes,
+				'record_notes_team_driver'              => $record_notes_team_driver,
+				'driver_licence_type_team_driver'       => $driver_licence_type_team_driver,
+				'real_id_team_driver'                   => $real_id_team_driver,
+				'driver_licence_expiration_team_driver' => $driver_licence_expiration_team_driver,
+				'tanker_endorsement_team_driver'        => $tanker_endorsement_team_driver,
+				'hazmat_endorsement_team_driver'        => $hazmat_endorsement_team_driver,
+				'immigration_letter_team_driver'        => $immigration_letter_team_driver,
+				'immigration_expiration_team_driver'    => $immigration_expiration_team_driver,
+				'legal_document_expiration_team_driver' => $legal_document_expiration_team_driver,
+				'nationality_team_driver'               => $nationality_team_driver,
+				'legal_document_type_team_driver'       => $legal_document_type_team_driver,
+				'canada_transition_date_team_driver'    => $canada_transition_date_team_driver,
+				'canada_transition_proof_team_driver'   => $canada_transition_proof_team_driver,
+				'background_date_team_driver'           => $background_date_team_driver,
+				'background_check_team_driver'          => $background_check_team_driver,
+				'change_9_date_team_driver'             => $change_9_date_team_driver,
+				'change_9_training_team_driver'         => $change_9_training_team_driver,
+				'martlet_coi_expired_date'              => $martlet_coi_expired_date,
+				'endurance_coi_expired_date'             => $endurance_coi_expired_date,
 			];
+			
 			
 			$driver_object = $this->get_driver_by_id( $data[ 'driver_id' ] );
 			$meta          = get_field_value( $driver_object, 'meta' );
@@ -2504,9 +2646,30 @@ class TMSDrivers extends TMSDriversHelper {
 				'motor_cargo_policy',
 				'motor_cargo_expiration',
 				'motor_cargo_insurer',
+				'martlet_ic_agreement_on',
+				'endurance_ic_agreement_on',
+				'martlet_coi_on',
+				'endurance_coi_on',
 				'status',
 				'cancellation_date',
 				'insurance_declaration',
+				'record_notes_team_driver',
+				'driver_licence_type_team_driver',
+				'real_id_team_driver',
+				'driver_licence_expiration_team_driver',
+				'tanker_endorsement_team_driver',
+				'hazmat_endorsement_team_driver',
+				'immigration_letter_team_driver',
+				'immigration_expiration_team_driver',
+				'legal_document_expiration_team_driver',
+				'nationality_team_driver',
+				'legal_document_type_team_driver',
+				'canada_transition_date_team_driver',
+				'canada_transition_proof_team_driver',
+				'background_date_team_driver',
+				'background_check_team_driver',
+				'change_9_date_team_driver',
+				'change_9_training_team_driver',
 			);
 			
 			if ( $post_status === 'publish' ) {
@@ -2593,12 +2756,26 @@ class TMSDrivers extends TMSDriversHelper {
 				'motor_cargo_coi',
 				'auto_liability_coi',
 				'ic_agreement',
+				'martlet_ic_agreement',
+				'endurance_ic_agreement',
+				'martlet_coi',
+				'endurance_coi',
 				'change_9_file',
 				'canada_transition_file',
 				'immigration_file',
 				'background_file',
 				'interview_file',
+				'team_driver_driving_record',
+				'immigration_file_team_driver',
+				'legal_document_team_driver',
+				'driver_licence_team_driver',
+				'canada_transition_file_team_driver',
+				'background_file_team_driver',
+				'change_9_file_team_driver',
+				'interview_martlet',
+				'interview_endurance',
 			);
+			
 			
 			foreach ( $keys_names as $key_name ) {
 				if ( ! empty( $_FILES[ $key_name ] && $_FILES[ $key_name ][ 'size' ] > 0 ) ) {
@@ -5059,6 +5236,7 @@ class TMSDrivers extends TMSDriversHelper {
 			$MY_INPUT = filter_var_array( $_POST, [
 				"driver_id"       => FILTER_SANITIZE_NUMBER_INT,
 				"checkbox_status" => FILTER_SANITIZE_STRING,
+				"team_driver"     => FILTER_SANITIZE_STRING,
 			] );
 			
 			if ( ! isset( $MY_INPUT[ 'driver_id' ] ) || empty( $MY_INPUT[ 'driver_id' ] ) ) {
@@ -5068,13 +5246,22 @@ class TMSDrivers extends TMSDriversHelper {
 			$driver_id = (int) $MY_INPUT[ 'driver_id' ];
 			
 			// Update background_check and background_date in meta table
-			$checkbox_status = isset( $MY_INPUT[ 'checkbox_status' ] ) ? $MY_INPUT[ 'checkbox_status' ] : '';
-			$current_date    = date( "m/d/Y" );
+			$checkbox_status             = isset( $MY_INPUT[ 'checkbox_status' ] ) ? $MY_INPUT[ 'checkbox_status' ]
+				: '';
+			$checkbox_status_team_driver = isset( $MY_INPUT[ 'checkbox_status_team_driver' ] )
+				? $MY_INPUT[ 'checkbox_status_team_driver' ] : '';
+			$team_driver                 = isset( $MY_INPUT[ 'team_driver' ] ) ? $MY_INPUT[ 'team_driver' ] : '';
+			$current_date                = date( "m/d/Y" );
+			$meta_data                   = array();
 			
-			$meta_data = array(
-				'background_check' => $checkbox_status,
-				'background_date'  => $current_date,
-			);
+			if ( $team_driver == '1' ) {
+				$meta_data[ 'background_check_team_driver' ] = $checkbox_status_team_driver;
+				$meta_data[ 'background_date_team_driver' ]  = $current_date;
+			} else {
+				$meta_data[ 'background_check' ] = $checkbox_status;
+				$meta_data[ 'background_date' ]  = $current_date;
+			}
+			
 			$this->update_post_meta_data( $driver_id, $meta_data );
 			
 			// Clear drivers cache when driver data is updated
@@ -5125,12 +5312,13 @@ class TMSDrivers extends TMSDriversHelper {
 			}
 		}
 	}
-
+	
 	/**
 	 * Check required fields for driver before publication
-	 * 
+	 *
 	 * @param int $driver_id Driver ID
 	 * @param array $meta Optional meta data array
+	 *
 	 * @return array Array with status and message
 	 */
 	public function check_empty_fields( $driver_id, $meta = false ) {
@@ -5141,38 +5329,38 @@ class TMSDrivers extends TMSDriversHelper {
 		
 		// List of required fields for driver validation
 		$required_fields = [
-			'driver_name'           => 'Driver Name',
-			'driver_phone'          => 'Phone',
-			'driver_email'          => 'Email',
-			'interview_file'        => 'Interview File',
-			'home_location'         => 'Home Location',
-			'city'                  => 'City',
-			'dob'                   => 'Date of Birth',
-			'languages'             => 'Languages',
-			'emergency_contact_name' => 'Emergency Contact Name',
-			'emergency_contact_phone' => 'Emergency Contact Phone',
+			'driver_name'                => 'Driver Name',
+			'driver_phone'               => 'Phone',
+			'driver_email'               => 'Email',
+			'interview_file'             => 'Interview File',
+			'home_location'              => 'Home Location',
+			'city'                       => 'City',
+			'dob'                        => 'Date of Birth',
+			'languages'                  => 'Languages',
+			'emergency_contact_name'     => 'Emergency Contact Name',
+			'emergency_contact_phone'    => 'Emergency Contact Phone',
 			'emergency_contact_relation' => 'Emergency Contact Relation',
-			'source' => 'Source',
-			'vehicle_type' => 'Vehicle Type',
-			'vehicle_year' => 'Vehicle Year',
-			'vehicle_make' => 'Vehicle Make',
-			'vehicle_model' => 'Vehicle Model',
-			'payload' => 'Payload',
-			'dimensions' => 'Dimensions',
-			'vin' => 'Vin',
-			'registration_type' => 'Registration Type',	
-			'registration_status' => 'Registration Status',
-			'registration_expiration' => 'Registration Expiration',
-			'plates' => 'Plates',
-			'plates_status' => 'Plates Status',
-			'plates_expiration' => 'Plates Expiration',
-			'account_type' => 'Account Type',
-			'account_name' => 'Account Name',
-			'payment_instruction' => 'Payment Instruction',
-			'w9_classification' => 'W9 Classification',
-			'legal_document_type' => 'Legal Document Type',
-			'legal_document_expiration' => 'Legal Document Expiration',
-			'nationality' => 'Nationality',
+			'source'                     => 'Source',
+			'vehicle_type'               => 'Vehicle Type',
+			'vehicle_year'               => 'Vehicle Year',
+			'vehicle_make'               => 'Vehicle Make',
+			'vehicle_model'              => 'Vehicle Model',
+			'payload'                    => 'Payload',
+			'dimensions'                 => 'Dimensions',
+			'vin'                        => 'Vin',
+			'registration_type'          => 'Registration Type',
+			'registration_status'        => 'Registration Status',
+			'registration_expiration'    => 'Registration Expiration',
+			'plates'                     => 'Plates',
+			'plates_status'              => 'Plates Status',
+			'plates_expiration'          => 'Plates Expiration',
+			'account_type'               => 'Account Type',
+			'account_name'               => 'Account Name',
+			'payment_instruction'        => 'Payment Instruction',
+			'w9_classification'          => 'W9 Classification',
+			'legal_document_type'        => 'Legal Document Type',
+			'legal_document_expiration'  => 'Legal Document Expiration',
+			'nationality'                => 'Nationality',
 			// Add more required fields here as needed
 			// 'driver_license'      => 'Driver License',
 			// 'ssn'                 => 'SSN',
@@ -5212,11 +5400,12 @@ class TMSDrivers extends TMSDriversHelper {
 			return array( 'message' => "All required fields are filled.", 'status' => true );
 		}
 	}
-
+	
 	/**
 	 * Update post status in database
-	 * 
+	 *
 	 * @param array $data Array containing post_id and post_status
+	 *
 	 * @return bool True if successful, false otherwise
 	 */
 	public function update_post_status_in_db( $data ) {

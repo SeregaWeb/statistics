@@ -3513,6 +3513,79 @@ var disabledValuesInSelectInit = function disabledValuesInSelectInit() {
 
 /***/ }),
 
+/***/ "./src/js/components/common/audio-helper.ts":
+/*!**************************************************!*\
+  !*** ./src/js/components/common/audio-helper.ts ***!
+  \**************************************************/
+/***/ (function(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+function _typeof(o) { "@babel/helpers - typeof"; return _typeof = "function" == typeof Symbol && "symbol" == typeof Symbol.iterator ? function (o) { return typeof o; } : function (o) { return o && "function" == typeof Symbol && o.constructor === Symbol && o !== Symbol.prototype ? "symbol" : typeof o; }, _typeof(o); }
+function _classCallCheck(a, n) { if (!(a instanceof n)) throw new TypeError("Cannot call a class as a function"); }
+function _defineProperties(e, r) { for (var t = 0; t < r.length; t++) { var o = r[t]; o.enumerable = o.enumerable || !1, o.configurable = !0, "value" in o && (o.writable = !0), Object.defineProperty(e, _toPropertyKey(o.key), o); } }
+function _createClass(e, r, t) { return r && _defineProperties(e.prototype, r), t && _defineProperties(e, t), Object.defineProperty(e, "prototype", { writable: !1 }), e; }
+function _toPropertyKey(t) { var i = _toPrimitive(t, "string"); return "symbol" == _typeof(i) ? i : i + ""; }
+function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e = t[Symbol.toPrimitive]; if (void 0 !== e) { var i = e.call(t, r || "default"); if ("object" != _typeof(i)) return i; throw new TypeError("@@toPrimitive must return a primitive value."); } return ("string" === r ? String : Number)(t); }
+var AudioHelper = /*#__PURE__*/function () {
+  function AudioHelper() {
+    _classCallCheck(this, AudioHelper);
+    this.currentAudio = null;
+    this.init();
+  }
+  return _createClass(AudioHelper, [{
+    key: "init",
+    value: function init() {
+      var _this = this;
+      document.addEventListener('play', function (event) {
+        var audio = event.target;
+        if (audio.tagName === 'AUDIO') {
+          _this.handleAudioPlay(audio);
+        }
+      }, true);
+    }
+  }, {
+    key: "handleAudioPlay",
+    value: function handleAudioPlay(audio) {
+      var _this2 = this;
+      if (this.currentAudio !== audio) {
+        this.stopCurrentAudio();
+        this.currentAudio = audio;
+        audio.addEventListener('ended', function () {
+          _this2.currentAudio = null;
+        });
+      }
+    }
+  }, {
+    key: "stopCurrentAudio",
+    value: function stopCurrentAudio() {
+      if (this.currentAudio && !this.currentAudio.paused) {
+        this.currentAudio.pause();
+      }
+    }
+  }, {
+    key: "stopAll",
+    value: function stopAll() {
+      this.stopCurrentAudio();
+      this.currentAudio = null;
+    }
+  }], [{
+    key: "getInstance",
+    value: function getInstance() {
+      if (!AudioHelper.instance) {
+        AudioHelper.instance = new AudioHelper();
+      }
+      return AudioHelper.instance;
+    }
+  }]);
+}();
+document.addEventListener('DOMContentLoaded', function () {
+  AudioHelper.getInstance();
+});
+/* harmony default export */ __webpack_exports__["default"] = (AudioHelper);
+
+/***/ }),
+
 /***/ "./src/js/components/common/customer-tamplate.ts":
 /*!*******************************************************!*\
   !*** ./src/js/components/common/customer-tamplate.ts ***!
@@ -3854,7 +3927,7 @@ function setPreset() {
       if (additionalContainer && additionalResult) {
         if (templates) {
           additionalContainer === null || additionalContainer === void 0 ? void 0 : additionalContainer.classList.remove('d-none');
-          additionalResult.innerHTML = templates;
+          additionalResult.innerHTML = finalTemplate;
           (0,_create_report__WEBPACK_IMPORTED_MODULE_7__.addActionsDeleteUniversalCard)('.js-remove-contact', '.js-additional-card');
           (0,_create_report__WEBPACK_IMPORTED_MODULE_7__.addActionsEditAdditionalCard)();
         } else {
@@ -6220,41 +6293,61 @@ var driverCoreInit = function driverCoreInit(urlAjax) {
       });
     });
   });
-  var updateBackgroundDateBtn = document.querySelector('.js-update-background-date');
-  if (updateBackgroundDateBtn) {
-    updateBackgroundDateBtn.addEventListener('click', function () {
-      var driverId = document.querySelector('input[name="driver_id"]');
-      if (!driverId || !driverId.value) {
-        (0,_info_messages__WEBPACK_IMPORTED_MODULE_0__.printMessage)('Driver ID not found', 'danger', 3000);
-        return;
-      }
-      var checkbox = document.querySelector('input[name="background_check"]');
-      if (!checkbox) {
-        (0,_info_messages__WEBPACK_IMPORTED_MODULE_0__.printMessage)('Background check checkbox not found', 'danger', 3000);
-        return;
-      }
-      var formData = new FormData();
-      formData.append('action', 'update_background_check_date');
-      formData.append('driver_id', driverId.value);
-      formData.append('checkbox_status', checkbox.checked ? 'on' : '');
-      fetch(urlAjax, {
-        method: 'POST',
-        body: formData
-      }).then(function (response) {
-        return response.json();
-      }).then(function (data) {
-        if (data.success) {
-          (0,_info_messages__WEBPACK_IMPORTED_MODULE_0__.printMessage)(data.data.message, 'success', 3000);
-          var dateInput = document.querySelector('input[name="background_date"]');
-          if (dateInput) {
-            dateInput.value = data.data.date;
-          }
-        } else {
-          (0,_info_messages__WEBPACK_IMPORTED_MODULE_0__.printMessage)(data.data.message, 'danger', 3000);
+  var updateBackgroundDateBtn = document.querySelectorAll('.js-update-background-date');
+  if (updateBackgroundDateBtn.length > 0) {
+    updateBackgroundDateBtn.forEach(function (btn) {
+      btn.addEventListener('click', function (e) {
+        var driverId = document.querySelector('input[name="driver_id"]');
+        if (!driverId || !driverId.value) {
+          (0,_info_messages__WEBPACK_IMPORTED_MODULE_0__.printMessage)('Driver ID not found', 'danger', 3000);
+          return;
         }
-      }).catch(function (error) {
-        console.error('Error:', error);
-        (0,_info_messages__WEBPACK_IMPORTED_MODULE_0__.printMessage)('An error occurred while updating background check date.', 'danger', 3000);
+        var checkbox = document.querySelector('input[name="background_check"]');
+        if (!checkbox) {
+          (0,_info_messages__WEBPACK_IMPORTED_MODULE_0__.printMessage)('Background check checkbox not found', 'danger', 3000);
+          return;
+        }
+        var target = e.target;
+        var formData = new FormData();
+        formData.append('action', 'update_background_check_date');
+        formData.append('driver_id', driverId.value);
+        formData.append('checkbox_status', checkbox.checked ? 'on' : '');
+        var isTeamDriver = target.classList.contains('js-team-driver');
+        if (isTeamDriver) {
+          var checkboxTeamDriver = document.querySelector('input[name="background_check_team_driver"]');
+          if (!checkboxTeamDriver) {
+            (0,_info_messages__WEBPACK_IMPORTED_MODULE_0__.printMessage)('Background check checkbox not found', 'danger', 3000);
+            return;
+          }
+          formData.append('checkbox_status_team_driver', checkboxTeamDriver.checked ? 'on' : '');
+          formData.append('team_driver', '1');
+        }
+        fetch(urlAjax, {
+          method: 'POST',
+          body: formData
+        }).then(function (response) {
+          return response.json();
+        }).then(function (data) {
+          if (data.success) {
+            (0,_info_messages__WEBPACK_IMPORTED_MODULE_0__.printMessage)(data.data.message, 'success', 3000);
+            if (isTeamDriver) {
+              var dateInput = document.querySelector('input[name="background_date_team_driver"]');
+              if (dateInput) {
+                dateInput.value = data.data.date;
+              }
+            } else {
+              var _dateInput = document.querySelector('input[name="background_date"]');
+              if (_dateInput) {
+                _dateInput.value = data.data.date;
+              }
+            }
+          } else {
+            (0,_info_messages__WEBPACK_IMPORTED_MODULE_0__.printMessage)(data.data.message, 'danger', 3000);
+          }
+        }).catch(function (error) {
+          console.error('Error:', error);
+          (0,_info_messages__WEBPACK_IMPORTED_MODULE_0__.printMessage)('An error occurred while updating background check date.', 'danger', 3000);
+        });
       });
     });
   }
@@ -21821,6 +21914,8 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _components_quick_status_update__WEBPACK_IMPORTED_MODULE_33__ = __webpack_require__(/*! ./components/quick-status-update */ "./src/js/components/quick-status-update.ts");
 /* harmony import */ var _components_quick_copy__WEBPACK_IMPORTED_MODULE_34__ = __webpack_require__(/*! ./components/quick-copy */ "./src/js/components/quick-copy.ts");
 /* harmony import */ var _components_driver_popups__WEBPACK_IMPORTED_MODULE_35__ = __webpack_require__(/*! ./components/driver-popups */ "./src/js/components/driver-popups.ts");
+/* harmony import */ var _components_common_audio_helper__WEBPACK_IMPORTED_MODULE_36__ = __webpack_require__(/*! ./components/common/audio-helper */ "./src/js/components/common/audio-helper.ts");
+
 
 
 
@@ -21872,6 +21967,7 @@ function ready() {
   };
   var popupInstance = new _parts_popup_window__WEBPACK_IMPORTED_MODULE_1__["default"]();
   popupInstance.init();
+  _components_common_audio_helper__WEBPACK_IMPORTED_MODULE_36__["default"].getInstance();
   (0,_components_create_report__WEBPACK_IMPORTED_MODULE_3__.actionCreateReportInit)(urlAjax);
   (0,_components_create_report__WEBPACK_IMPORTED_MODULE_3__.createDraftPosts)(urlAjax);
   (0,_components_create_report__WEBPACK_IMPORTED_MODULE_3__.updateFilesReportInit)(urlAjax);

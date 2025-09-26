@@ -759,9 +759,10 @@ export const driverCoreInit = (urlAjax) => {
     });
     
     // Update background date button functionality
-    const updateBackgroundDateBtn = document.querySelector('.js-update-background-date') as HTMLButtonElement;
-    if (updateBackgroundDateBtn) {
-        updateBackgroundDateBtn.addEventListener('click', function() {
+    const updateBackgroundDateBtn = document.querySelectorAll('.js-update-background-date') as NodeListOf<HTMLButtonElement>;
+    if (updateBackgroundDateBtn.length > 0) {
+        updateBackgroundDateBtn.forEach(btn => {
+            btn.addEventListener('click', function(e) {
             const driverId = document.querySelector('input[name="driver_id"]') as HTMLInputElement;
             if (!driverId || !driverId.value) {
                 printMessage('Driver ID not found', 'danger', 3000);
@@ -773,11 +774,27 @@ export const driverCoreInit = (urlAjax) => {
                 printMessage('Background check checkbox not found', 'danger', 3000);
                 return;
             }
+
+            const target = e.target as HTMLButtonElement;
+            
             
             const formData = new FormData();
             formData.append('action', 'update_background_check_date'); 
             formData.append('driver_id', driverId.value);
             formData.append('checkbox_status', checkbox.checked ? 'on' : '');
+
+            const isTeamDriver = target.classList.contains('js-team-driver');
+
+            if (isTeamDriver) {
+                const checkboxTeamDriver = document.querySelector('input[name="background_check_team_driver"]') as HTMLInputElement;
+                if (!checkboxTeamDriver) {
+                    printMessage('Background check checkbox not found', 'danger', 3000);
+                    return;
+                }
+
+                formData.append('checkbox_status_team_driver', checkboxTeamDriver.checked ? 'on' : '');
+                formData.append('team_driver', '1');
+            }
             
             fetch(urlAjax, {
                 method: 'POST',
@@ -789,9 +806,18 @@ export const driverCoreInit = (urlAjax) => {
                     printMessage(data.data.message, 'success', 3000);
                     
                     // Update the date input field
-                    const dateInput = document.querySelector('input[name="background_date"]') as HTMLInputElement;
-                    if (dateInput) {
-                        dateInput.value = data.data.date;
+
+
+                    if (isTeamDriver) {
+                        const dateInput = document.querySelector('input[name="background_date_team_driver"]') as HTMLInputElement;
+                        if (dateInput) {
+                            dateInput.value = data.data.date;
+                        }
+                    } else {    
+                        const dateInput = document.querySelector('input[name="background_date"]') as HTMLInputElement;
+                        if (dateInput) {
+                            dateInput.value = data.data.date;
+                        }
                     }
                 } else {
                     printMessage(data.data.message, 'danger', 3000);
@@ -800,6 +826,7 @@ export const driverCoreInit = (urlAjax) => {
             .catch(error => {
                 console.error('Error:', error);
                 printMessage('An error occurred while updating background check date.', 'danger', 3000);
+            });
             });
         });
     }

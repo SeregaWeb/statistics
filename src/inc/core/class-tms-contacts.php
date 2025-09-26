@@ -69,9 +69,10 @@ class TMSContacts extends TMSDriversHelper {
 			
 			$current_user_id = get_current_user_id();
 			
-			$MY_INPUT = filter_var_array( $_POST, [
-				"search" => FILTER_SANITIZE_STRING,
-			] );
+			// Sanitize input data - using wp_unslash to remove WordPress magic quotes
+			$MY_INPUT = [
+				"search" => sanitize_text_field( wp_unslash( $_POST['search'] ?? '' ) )
+			];
 			
 			if ( empty( $MY_INPUT[ 'search' ] ) ) {
 				wp_send_json_success( '' );
@@ -149,22 +150,20 @@ class TMSContacts extends TMSDriversHelper {
 		if ( defined( 'DOING_AJAX' ) && DOING_AJAX ) {
 			global $wpdb;
 			
-			$MY_INPUT = filter_var_array( $_POST, [
-				"customer_id"         => FILTER_SANITIZE_NUMBER_INT,
-				'name'                => FILTER_SANITIZE_STRING,
-				'office_number'       => FILTER_SANITIZE_STRING,
-				'direct_number'       => FILTER_SANITIZE_STRING,
-				'direct_ext'          => FILTER_SANITIZE_STRING,
-				'email'               => FILTER_SANITIZE_EMAIL,
-				'support_contact'     => FILTER_SANITIZE_STRING,
-				'support_phone'       => FILTER_SANITIZE_STRING,
-				'support_ext'         => FILTER_SANITIZE_STRING,
-				'support_email'       => FILTER_SANITIZE_EMAIL,
-				'additional_contacts' => [
-					'filter' => FILTER_DEFAULT,
-					'flags'  => FILTER_REQUIRE_ARRAY
-				]
-			] );
+			// Sanitize input data - using wp_unslash to remove WordPress magic quotes
+			$MY_INPUT = [
+				"customer_id"         => filter_var( $_POST['customer_id'] ?? 0, FILTER_SANITIZE_NUMBER_INT ),
+				'name'                => sanitize_text_field( wp_unslash( $_POST['name'] ?? '' ) ),
+				'office_number'       => sanitize_text_field( wp_unslash( $_POST['office_number'] ?? '' ) ),
+				'direct_number'       => sanitize_text_field( wp_unslash( $_POST['direct_number'] ?? '' ) ),
+				'direct_ext'          => sanitize_text_field( wp_unslash( $_POST['direct_ext'] ?? '' ) ),
+				'email'               => sanitize_email( wp_unslash( $_POST['email'] ?? '' ) ),
+				'support_contact'     => sanitize_text_field( wp_unslash( $_POST['support_contact'] ?? '' ) ),
+				'support_phone'       => sanitize_text_field( wp_unslash( $_POST['support_phone'] ?? '' ) ),
+				'support_ext'         => sanitize_text_field( wp_unslash( $_POST['support_ext'] ?? '' ) ),
+				'support_email'       => sanitize_email( wp_unslash( $_POST['support_email'] ?? '' ) ),
+				'additional_contacts' => $_POST['additional_contacts'] ?? []
+			];
 			
 			$table_main       = $wpdb->prefix . $this->table_main;
 			$table_additional = $wpdb->prefix . $this->additional_contact;
@@ -207,10 +206,10 @@ class TMSContacts extends TMSDriversHelper {
 					
 					$wpdb->insert( $table_additional, [
 						'contact_id'    => $contact_id,
-						'contact_name'  => sanitize_text_field( $contact[ 'name' ] ),
-						'contact_phone' => sanitize_text_field( $contact[ 'phone' ] ),
-						'contact_ext'   => sanitize_text_field( $contact[ 'ext' ] ),
-						'contact_email' => sanitize_email( $contact[ 'email' ] ),
+						'contact_name'  => sanitize_text_field( wp_unslash( $contact[ 'name' ] ) ),
+						'contact_phone' => sanitize_text_field( wp_unslash( $contact[ 'phone' ] ) ),
+						'contact_ext'   => sanitize_text_field( wp_unslash( $contact[ 'ext' ] ) ),
+						'contact_email' => sanitize_email( wp_unslash( $contact[ 'email' ] ) ),
 					], [
 						'%d',
 						'%s',
@@ -229,23 +228,21 @@ class TMSContacts extends TMSDriversHelper {
 		if ( defined( 'DOING_AJAX' ) && DOING_AJAX ) {
 			global $wpdb;
 			
-			$MY_INPUT = filter_var_array( $_POST, [
-				'main_id'             => FILTER_SANITIZE_NUMBER_INT,
-				"customer_id"         => FILTER_SANITIZE_NUMBER_INT,
-				'name'                => FILTER_SANITIZE_STRING,
-				'office_number'       => FILTER_SANITIZE_STRING,
-				'direct_number'       => FILTER_SANITIZE_STRING,
-				'direct_ext'          => FILTER_SANITIZE_STRING,
-				'email'               => FILTER_SANITIZE_EMAIL,
-				'support_contact'     => FILTER_SANITIZE_STRING,
-				'support_phone'       => FILTER_SANITIZE_STRING,
-				'support_ext'         => FILTER_SANITIZE_STRING,
-				'support_email'       => FILTER_SANITIZE_EMAIL,
-				'additional_contacts' => [
-					'filter' => FILTER_DEFAULT,
-					'flags'  => FILTER_REQUIRE_ARRAY
-				]
-			] );
+			// Sanitize input data - using wp_unslash to remove WordPress magic quotes
+			$MY_INPUT = [
+				'main_id'             => filter_var( $_POST['main_id'] ?? 0, FILTER_SANITIZE_NUMBER_INT ),
+				"customer_id"         => filter_var( $_POST['customer_id'] ?? 0, FILTER_SANITIZE_NUMBER_INT ),
+				'name'                => sanitize_text_field( wp_unslash( $_POST['name'] ?? '' ) ),
+				'office_number'       => sanitize_text_field( wp_unslash( $_POST['office_number'] ?? '' ) ),
+				'direct_number'       => sanitize_text_field( wp_unslash( $_POST['direct_number'] ?? '' ) ),
+				'direct_ext'          => sanitize_text_field( wp_unslash( $_POST['direct_ext'] ?? '' ) ),
+				'email'               => sanitize_email( wp_unslash( $_POST['email'] ?? '' ) ),
+				'support_contact'     => sanitize_text_field( wp_unslash( $_POST['support_contact'] ?? '' ) ),
+				'support_phone'       => sanitize_text_field( wp_unslash( $_POST['support_phone'] ?? '' ) ),
+				'support_ext'         => sanitize_text_field( wp_unslash( $_POST['support_ext'] ?? '' ) ),
+				'support_email'       => sanitize_email( wp_unslash( $_POST['support_email'] ?? '' ) ),
+				'additional_contacts' => $_POST['additional_contacts'] ?? []
+			];
 			
 			
 			$table_main       = $wpdb->prefix . $this->table_main;
@@ -291,10 +288,10 @@ class TMSContacts extends TMSDriversHelper {
 					
 					$wpdb->insert( $table_additional, [
 						'contact_id'    => $contact_id,
-						'contact_name'  => sanitize_text_field( $contact[ 'name' ] ),
-						'contact_phone' => sanitize_text_field( $contact[ 'phone' ] ),
-						'contact_ext'   => sanitize_text_field( $contact[ 'ext' ] ),
-						'contact_email' => sanitize_email( $contact[ 'email' ] ),
+						'contact_name'  => sanitize_text_field( wp_unslash( $contact[ 'name' ] ) ),
+						'contact_phone' => sanitize_text_field( wp_unslash( $contact[ 'phone' ] ) ),
+						'contact_ext'   => sanitize_text_field( wp_unslash( $contact[ 'ext' ] ) ),
+						'contact_email' => sanitize_email( wp_unslash( $contact[ 'email' ] ) ),
 					], [ '%d', '%s', '%s', '%s', '%s' ] );
 				}
 			}

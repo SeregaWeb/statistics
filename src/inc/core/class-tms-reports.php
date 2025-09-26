@@ -2095,17 +2095,18 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 		// Check if it's an AJAX request (simple defense)
 		if ( defined( 'DOING_AJAX' ) && DOING_AJAX ) {
 			// Sanitize input data
-			$MY_INPUT = filter_var_array( $_POST, [
-				"customer_id"       => FILTER_SANITIZE_STRING,
-				"contact_name"      => FILTER_SANITIZE_STRING,
-				"contact_phone"     => FILTER_SANITIZE_STRING,
-				"contact_phone_ext" => FILTER_SANITIZE_STRING,
-				"contact_email"     => FILTER_SANITIZE_STRING,
-				"post_id"           => FILTER_SANITIZE_STRING,
-				"read_only"         => FILTER_SANITIZE_STRING,
-				"preset-select"     => FILTER_SANITIZE_STRING,
-				"project"           => FILTER_SANITIZE_STRING,
-			] );
+			// Sanitize input data - using wp_unslash to remove WordPress magic quotes
+			$MY_INPUT = [
+				"customer_id"       => sanitize_text_field( wp_unslash( $_POST['customer_id'] ?? '' ) ),
+				"contact_name"      => sanitize_text_field( wp_unslash( $_POST['contact_name'] ?? '' ) ),
+				"contact_phone"     => sanitize_text_field( wp_unslash( $_POST['contact_phone'] ?? '' ) ),
+				"contact_phone_ext" => sanitize_text_field( wp_unslash( $_POST['contact_phone_ext'] ?? '' ) ),
+				"contact_email"     => sanitize_email( wp_unslash( $_POST['contact_email'] ?? '' ) ),
+				"post_id"           => sanitize_text_field( wp_unslash( $_POST['post_id'] ?? '' ) ),
+				"read_only"         => filter_var( wp_unslash( $_POST['read_only'] ?? false ), FILTER_VALIDATE_BOOLEAN ),
+				"preset-select"     => sanitize_text_field( wp_unslash( $_POST['preset-select'] ?? '' ) ),
+				"project"           => sanitize_text_field( wp_unslash( $_POST['project'] ?? '' ) ),
+			];
 			
 			if ( isset( $MY_INPUT[ 'project' ] ) && $MY_INPUT[ 'project' ] !== $this->project ) {
 				wp_send_json_error( [
@@ -2115,17 +2116,29 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 			}
 			
 			
-			if ( isset( $MY_INPUT[ 'read_only' ] ) ) {
+			if ( $MY_INPUT[ 'read_only' ] ) {
 				wp_send_json_success();
 			}
 			
 			$additional_contacts = [];
 			if ( ! empty( $_POST[ 'additional_contact_name' ] ) && ! empty( $_POST[ 'additional_contact_phone' ] ) && ! empty( $_POST[ 'additional_contact_email' ] ) ) {
 				
-				$additional_names      = filter_var_array( $_POST[ 'additional_contact_name' ], FILTER_SANITIZE_STRING );
-				$additional_phones     = filter_var_array( $_POST[ 'additional_contact_phone' ], FILTER_SANITIZE_STRING );
-				$additional_phones_ext = filter_var_array( $_POST[ 'additional_contact_phone_ext' ], FILTER_SANITIZE_STRING );
-				$additional_emails     = filter_var_array( $_POST[ 'additional_contact_email' ], FILTER_SANITIZE_EMAIL );
+				// Sanitize additional contacts data - be careful with JSON encoding
+				$additional_names      = array_map( function($name) { 
+					return sanitize_text_field( wp_unslash( $name ) ); 
+				}, $_POST[ 'additional_contact_name' ] ?? [] );
+				
+				$additional_phones     = array_map( function($phone) { 
+					return sanitize_text_field( wp_unslash( $phone ) ); 
+				}, $_POST[ 'additional_contact_phone' ] ?? [] );
+				
+				$additional_phones_ext = array_map( function($ext) { 
+					return sanitize_text_field( wp_unslash( $ext ) ); 
+				}, $_POST[ 'additional_contact_phone_ext' ] ?? [] );
+				
+				$additional_emails     = array_map( function($email) { 
+					return sanitize_email( wp_unslash( $email ) ); 
+				}, $_POST[ 'additional_contact_email' ] ?? [] );
 				
 				foreach ( $additional_names as $index => $name ) {
 					$additional_contacts[] = [
@@ -2352,15 +2365,16 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 		// Check if it's an AJAX request (simple defense)
 		if ( defined( 'DOING_AJAX' ) && DOING_AJAX ) {
 			// Sanitize input data
-			$MY_INPUT = filter_var_array( $_POST, [
-				"customer_id"       => FILTER_SANITIZE_STRING,
-				"contact_name"      => FILTER_SANITIZE_STRING,
-				"contact_phone"     => FILTER_SANITIZE_STRING,
-				"contact_phone_ext" => FILTER_SANITIZE_STRING,
-				"contact_email"     => FILTER_SANITIZE_STRING,
-				"preset-select"     => FILTER_SANITIZE_STRING,
-				"project"           => FILTER_SANITIZE_STRING,
-			] );
+			// Sanitize input data - using wp_unslash to remove WordPress magic quotes
+			$MY_INPUT = [
+				"customer_id"       => sanitize_text_field( wp_unslash( $_POST['customer_id'] ?? '' ) ),
+				"contact_name"      => sanitize_text_field( wp_unslash( $_POST['contact_name'] ?? '' ) ),
+				"contact_phone"     => sanitize_text_field( wp_unslash( $_POST['contact_phone'] ?? '' ) ),
+				"contact_phone_ext" => sanitize_text_field( wp_unslash( $_POST['contact_phone_ext'] ?? '' ) ),
+				"contact_email"     => sanitize_email( wp_unslash( $_POST['contact_email'] ?? '' ) ),
+				"preset-select"     => sanitize_text_field( wp_unslash( $_POST['preset-select'] ?? '' ) ),
+				"project"           => sanitize_text_field( wp_unslash( $_POST['project'] ?? '' ) ),
+			];
 			
 			if ( isset( $MY_INPUT[ 'project' ] ) && $MY_INPUT[ 'project' ] !== $this->project ) {
 				wp_send_json_error( [
@@ -2372,10 +2386,22 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 			$additional_contacts = [];
 			if ( ! empty( $_POST[ 'additional_contact_name' ] ) && ! empty( $_POST[ 'additional_contact_phone' ] ) && ! empty( $_POST[ 'additional_contact_email' ] ) ) {
 				
-				$additional_names  = filter_var_array( $_POST[ 'additional_contact_name' ], FILTER_SANITIZE_STRING );
-				$additional_phones = filter_var_array( $_POST[ 'additional_contact_phone' ], FILTER_SANITIZE_STRING );
-				$additional_emails = filter_var_array( $_POST[ 'additional_contact_email' ], FILTER_SANITIZE_EMAIL );
-				$additional_ext    = filter_var_array( $_POST[ 'additional_contact_phone_ext' ], FILTER_SANITIZE_STRING );
+				// Sanitize additional contacts data - be careful with JSON encoding
+				$additional_names  = array_map( function($name) { 
+					return sanitize_text_field( wp_unslash( $name ) ); 
+				}, $_POST[ 'additional_contact_name' ] ?? [] );
+				
+				$additional_phones = array_map( function($phone) { 
+					return sanitize_text_field( wp_unslash( $phone ) ); 
+				}, $_POST[ 'additional_contact_phone' ] ?? [] );
+				
+				$additional_emails = array_map( function($email) { 
+					return sanitize_email( wp_unslash( $email ) ); 
+				}, $_POST[ 'additional_contact_email' ] ?? [] );
+				
+				$additional_ext    = array_map( function($ext) { 
+					return sanitize_text_field( wp_unslash( $ext ) ); 
+				}, $_POST[ 'additional_contact_phone_ext' ] ?? [] );
 				
 				foreach ( $additional_names as $index => $name ) {
 					$additional_contacts[] = [
@@ -2386,10 +2412,11 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 					];
 				}
 			}
-			
+
 			// Convert the additional contacts array to JSON format
 			$MY_INPUT[ 'additional_contacts' ] = json_encode( $additional_contacts );
-			
+
+
 			// Check if 'set_up' is 'completed' and set the timestamp
 			$set_up_timestamp = null;
 			if ( isset( $MY_INPUT[ 'set_up' ] ) && $MY_INPUT[ 'set_up' ] === 'completed' ) {
@@ -2780,7 +2807,7 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 				"notes"                   => FILTER_SANITIZE_STRING,
 				"post_id"                 => FILTER_SANITIZE_STRING,
 				"post_status"             => FILTER_SANITIZE_STRING,
-				"read_only"               => FILTER_SANITIZE_STRING,
+				"read_only"               => FILTER_VALIDATE_BOOLEAN,
 				"second_unit_number_name" => FILTER_SANITIZE_STRING,
 				"second_driver_rate"      => FILTER_SANITIZE_STRING,
 				"second_driver_phone"     => FILTER_SANITIZE_STRING,

@@ -79,6 +79,7 @@ import { initCapabilitiesFilter } from './components/capabilities-filter';
 import { initQuickStatusUpdate } from './components/quick-status-update';
 import './components/quick-copy';
 import './components/driver-popups';
+import AudioHelper from './components/common/audio-helper';
 
 function ready() {
     console.log('ready'); 
@@ -104,6 +105,9 @@ function ready() {
 
     const popupInstance = new Popup();
     popupInstance.init();
+
+    // Initialize Audio Helper for managing audio playback
+    AudioHelper.getInstance();
 
     // Ajax Actions
     actionCreateReportInit(urlAjax);

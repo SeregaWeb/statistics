@@ -3,6 +3,10 @@ global $global_options;
 
 $add_new_load = get_field_value( $global_options, 'add_new_load' );
 $flt          = get_field_value( $args, 'flt' );
+$user_id = get_current_user_id();
+$curent_project        = get_field( 'current_select', 'user_' . $user_id );
+
+$hide_time_controls = get_field_value( $args, 'hide_time_controls' );
 
 $TMSUsers   = new TMSUsers();
 $TMSBroker  = new TMSReportsCompany();
@@ -13,6 +17,10 @@ $TMSReports = new TMSReports();
 if ( $flt ) {
 	$TMSReports = new TMSReportsFlt();
 }
+
+
+$TMSReportsTimer = new TMSReportsTimer();
+
 
 $results       = get_field_value( $args, 'results' );
 $total_pages   = get_field_value( $args, 'total_pages' );
@@ -26,7 +34,9 @@ $current_user_id = get_current_user_id();
 $my_team      = $TMSUsers->check_group_access();
 $all_statuses = $helper->get_statuses();
 
-$blocked_update = $TMSUsers->check_user_role_access( array( 'driver_updates' ) );
+$blocked_update = $TMSUsers->check_user_role_access( array( 'driver_updates', 'expedite_manager', 'dispatcher-tl' ) );
+
+$access_timer = $TMSUsers->check_user_role_access( array( 'administrator', 'tracking-tl', 'tracking', 'morning_tracking', 'nightshift_tracking' ), true );
 
 
 if ( ! empty( $results ) ) :
@@ -69,6 +79,9 @@ if ( ! empty( $results ) ) :
     <table class="table mb-5 w-100 js-table-tracking">
         <thead>
         <tr>
+            <?php if ( $access_timer && !$archive ): ?>
+            <th>Timer</th>
+            <?php endif; ?>
             <th scope="col">
                 LOAD NO
             </th>
@@ -134,6 +147,12 @@ if ( ! empty( $results ) ) :
 			?>
 
             <tr class="<?php echo 'status-tracking-' . $status; ?> <?php echo $tbd ? 'tbd' : ''; ?>">
+
+                <?php if ( $access_timer && !$archive ): ?>
+                <td>
+                    <?php echo $TMSReportsTimer->get_timer_status( $row[ 'id' ] ); ?>
+                </td>
+                <?php endif; ?>
 
                 <td>
                     <div class="d-flex gap-1 align-items-center">
@@ -212,6 +231,17 @@ if ( ! empty( $results ) ) :
                     <td>
                         <div class="d-flex">
 
+                            <?php if ( $access_timer && !$archive ): ?>
+                                <button class="btn btn-sm d-flex align-items-center justify-content-center js-timer-tracking"
+                                        data-id="<?php echo $row[ 'id' ]; ?>"
+                                        data-tracking="<?php echo get_current_user_id(); ?>"
+                                        data-flt="<?php echo isset( $flt ) ? ( $flt ? '1' : '0' ) : '0'; ?>"
+                                        data-project="<?php echo esc_attr( $curent_project ); ?>"
+                                        style="width: 28px; height: 28px; padding: 0;">
+									<?php echo $TMSReports->get_icon_hold(); ?>
+                                </button>
+							<?php endif; ?>
+
                             <button class="btn-bookmark js-btn-bookmark <?php echo $TMSUsers->is_bookmarked( $row[ 'id' ], isset( $flt )
 								? $flt : false ) ? 'active' : ''; ?>" data-id="<?php echo $row[ 'id' ]; ?>"
                                     data-flt="<?php echo isset( $flt ) ? ( $flt ? '1' : '0' ) : '0'; ?>">
@@ -256,3 +286,6 @@ if ( ! empty( $results ) ) :
 <?php else : ?>
     <p>No reports found.</p>
 <?php endif; ?>
+
+<!-- Timer Control Modal -->
+<?php echo esc_html( get_template_part( TEMPLATE_PATH . 'popups/timer', 'control-modal' ) ); ?>

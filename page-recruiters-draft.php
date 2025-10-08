@@ -16,8 +16,9 @@ $args     = array(
 	'recruiter'   => get_current_user_id(),
 );
 
-$args  = $Drivers->set_filter_params( $args );
-$items = $Drivers->get_table_items( $args );
+$args                = $Drivers->set_filter_params( $args );
+$items               = $Drivers->get_table_items( $args );
+$items[ 'is_draft' ] = true;
 
 $access = $TMSUsers->check_user_role_access( [ 'administrator', 'recruiter', 'recruiter-tl', 'hr_manager' ], true );
 

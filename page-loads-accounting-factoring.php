@@ -150,11 +150,12 @@ if ( ! $show_filter_by_office ) {
 								$driver_rate               = floatval( $data[ 'total_driver_rate' ] ) + $second_driver_rate;
 								$processed_invoices        = floatval( $data[ 'total_processed_invoices' ] );
 								$paid_loads                = floatval( $data[ 'total_paid_loads' ] );
+                                $total_loads               = floatval( $data[ 'post_count' ] );
 								
 								?>
 
                                 <div class="table-values">
-                                    <div class="table-values-col">
+                                    <div class="table-values-col" title="Total loads: <?php echo $total_loads; ?>">
                                         <p>Gross</p>
 										<?php echo esc_html( '$' . $statistics->format_currency( $data[ 'total_booked_rate' ] ) ); ?>
                                     </div>

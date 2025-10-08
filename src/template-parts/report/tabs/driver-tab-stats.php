@@ -226,12 +226,12 @@ $driver_statistics = $driver->get_driver_statistics( $post_id, true );
                     
                     <div class="mb-3">
                         <label for="loadNumber" class="form-label">Load number</label>
-                        <input type="text" class="form-control" id="loadNumber" name="load_number">
+                        <input type="text" class="form-control" id="loadNumber" required name="load_number">
                     </div>
                     
                     <div class="mb-3">
                         <label for="comments" class="form-label">Comments</label>
-                        <textarea class="form-control" id="comments" name="comments" rows="3"></textarea>
+                        <textarea class="form-control" id="comments" name="comments" required rows="3"></textarea>
                     </div>
                 </div>
                 <div class="modal-footer">

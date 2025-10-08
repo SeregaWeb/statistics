@@ -214,23 +214,32 @@ if ( ! empty( $results ) ) : ?>
 
                 $ny_timezone = new DateTimeZone('America/New_York');
                 $ny_time = new DateTime('now', $ny_timezone);
-                $time = strtotime( $ny_time->format('Y-m-d H:i:s') . TIME_AVAILABLE_DRIVER );
-				$updated_zip_code_time = strtotime( $updated_zip_code );
-			
+                $ny_time_original = clone $ny_time;
+                $ny_time->modify( TIME_AVAILABLE_DRIVER );
+                $time_threshold = $ny_time->getTimestamp();
+                
+                // Convert updated_zip_code to NY timezone for proper comparison
+                if ( ! empty( $updated_zip_code ) ) {
+                    $updated_zip_datetime = new DateTime( $updated_zip_code, new DateTimeZone( 'America/New_York' ) );
+                    $updated_zip_datetime->setTimezone( $ny_timezone );
+                    $updated_zip_code_time = $updated_zip_datetime->getTimestamp();
+                } else {
+                    $updated_zip_code_time = null;
+                }
             
                 if ( ! isset( $updated_zip_code_time ) || empty( $updated_zip_code_time ) ) {
 					$updated_text      = 'Update date not set!';
 					$class_update_code = 'weiting';
 				} else {
-					if ( $time >= $updated_zip_code_time ) {
+					if ( $time_threshold >= $updated_zip_code_time ) {
 						$class_update_code = 'need_update';
-						$updated_text      = date( 'm/d/Y g:i a', $updated_zip_code_time );
+						$updated_text      = $updated_zip_datetime->format( 'm/d/Y g:i a' );
 					}
 				}
 				
 				
 				?>
-                <td class="table-column js-location-update <?php echo $class_update_code; ?>"
+                <td title="<?php echo 'NY Time: ' . $ny_time->format('Y-m-d H:i:s') . ' ' . 'Updated Zipcode: ' . $updated_zip_code; ?> <?php echo 'NY Time Original: ' . $ny_time_original->format('Y-m-d H:i:s'); ?>" class="table-column js-location-update <?php echo $class_update_code; ?>"
                     style="font-size: 13px; width: 200px;">
 					<?php
 					
@@ -510,17 +519,68 @@ if ( ! empty( $results ) ) : ?>
                 </button>
                 <div class="popup-content">
                     <h3 class="mb-3">Driver Ratings</h3>
+
+    <!-- Add Rating Form -->
+    <div class="mb-3">
+                        <form id="ratingForm" class="row g-3">
+                            <input type="hidden" name="driver_id" id="ratingDriverId">
+                            <?php wp_nonce_field( 'tms_add_rating', 'tms_rating_nonce' ); ?>
+                            
+                            <div class="col-12">
+                                <label class="form-label">Select Rating</label>
+                                <div class="d-flex gap-2">
+                                    <?php 
+                                    $get_rating_btn_color = function( $value ) {
+                                        if ( + $value <= 1 ) {
+                                            return 'btn-outline-danger'; // red
+                                        }
+                                        if ( + $value <= 4 ) {
+                                            return 'btn-outline-warning'; // orange
+                                        }
+                                        if ( + $value > 4 ) {
+                                            return 'btn-outline-success'; // green
+                                        }
+                                        return 'btn-outline-secondary'; // default grey
+                                    };
+                                    
+                                    for ( $i = 1; $i <= 5; $i++ ) : ?>
+                                        <button type="button" class="btn <?php echo $get_rating_btn_color( $i ); ?> rating-btn" data-rating="<?php echo $i; ?>">
+                                            <?php echo $i; ?>
+                                        </button>
+                                    <?php endfor; ?>
+                                </div>
+                                <input type="hidden" name="rating" id="selectedRating" required>
+                            </div>
+                            
+                            <div class="col-12">
+                                <label for="loadNumber" class="form-label">Load number</label>
+                                <input type="text" class="form-control" id="loadNumber" required name="load_number">
+                            </div>
+                            
+                            <div class="col-12">
+                                <label for="comments" class="form-label">Comments</label>
+                                <textarea class="form-control" id="comments" name="comments" required rows="2"></textarea>
+                            </div>
+                            
+                            <div class="col-12">
+                                <button type="submit" class="btn btn-success btn-sm">Add Rating</button>
+                            </div>
+                        </form>
+                    </div>
+
                     <div class="d-flex justify-content-between align-items-center mb-3">
                         <h6 class="mb-0" id="driverRatingName"></h6>
                         <span class="badge bg-primary" id="driverRatingScore"></span>
                     </div>
-                    <div id="driverRatingContent">
+                    <div id="driverRatingContent" >
                         <div class="text-center">
                             <div class="spinner-border" role="status">
                                 <span class="visually-hidden">Loading...</span>
                             </div>
                         </div>
                     </div>
+                
+                    
                     <div class="mt-4 text-end">
                         <a href="#" class="btn btn-primary" id="driverRatingFullPage" target="_blank">Go to Full
                             Page</a>
@@ -543,6 +603,24 @@ if ( ! empty( $results ) ) : ?>
                 </button>
                 <div class="popup-content">
                     <h3 class="mb-3">Driver Notices</h3>
+
+                    <!-- Add Notice Form -->
+                    <div class="mb-3">
+                        <form id="noticeForm" class="row g-3">
+                            <input type="hidden" name="driver_id" id="noticeDriverId">
+                            <?php wp_nonce_field( 'tms_add_notice', 'tms_notice_nonce' ); ?>
+                            
+                            <div class="col-12">
+                                <label for="message" class="form-label">Comments</label>
+                                <textarea class="form-control" id="message" name="message" rows="3" required></textarea>
+                            </div>
+                            
+                            <div class="col-12">
+                                <button type="submit" class="btn btn-success btn-sm">Add Notice</button>
+                            </div>
+                        </form>
+                    </div>
+
                     <div class="d-flex justify-content-between align-items-center mb-3">
                         <h6 class="mb-0" id="driverNoticeName"></h6>
                         <span class="badge bg-primary" id="driverNoticeCount"></span>
@@ -554,6 +632,8 @@ if ( ! empty( $results ) ) : ?>
                             </div>
                         </div>
                     </div>
+                
+                    
                     <div class="mt-4 text-end">
                         <a href="#" class="btn btn-primary" id="driverNoticeFullPage" target="_blank">Go to Full
                             Page</a>
@@ -620,4 +700,3 @@ if ( ! empty( $results ) ) : ?>
 // 	echo "<strong>No driver ratings data found to import.</strong>";
 // 	echo "</div>";
 // }
-?>

@@ -89,6 +89,10 @@ if ( ! empty( $manager_team ) && is_array( $manager_team ) ) {
 
 $dispatcher_arr = $statistics->get_dispatcher_statistics_current_month( $my_team );
 
+// if (current_user_can('administrator')) {
+// 	var_dump($my_team);
+// }
+
 $dispatcher_stats_indexed = [];
 if ( is_array( $dispatcher_arr ) && ! empty( $dispatcher_arr ) ) {
 	foreach ( $dispatcher_arr as $dispatcher_stat ) {
@@ -136,6 +140,11 @@ echo '<th>Completed</th>';
 echo '</tr>';
 
 // Проходим по массиву диспетчеров, чтобы гарантировать вывод всех диспетчеров
+
+// if (current_user_can('administrator')) {
+// 	var_dump($dispatcher_stats_indexed);
+// }
+
 foreach ( $dispatchers as $dispatcher ) {
 	// Show dispatcher if they are in the team
 	if ( $my_team !== null && is_array( $my_team ) && in_array( $dispatcher[ 'id' ], $my_team ) ) {
@@ -143,6 +152,10 @@ foreach ( $dispatchers as $dispatcher ) {
 		$stat     = [];
 		// Если данные по диспетчеру есть в $dispatcher_stats_indexed, используем их, иначе нули
 		
+		// if (current_user_can('administrator')) {
+		// 	var_dump($fullname);
+		// }
+
 		if ( isset( $dispatcher_stats_indexed[ $fullname ] ) ) {
 			$stat           = $dispatcher_stats_indexed[ $fullname ];
 			$post_count     = $stat[ 'post_count' ];
@@ -159,12 +172,14 @@ foreach ( $dispatchers as $dispatcher ) {
 			}
 			
 			if ( is_numeric( $goal ) && $goal > 0 ) {
-				$value_pr = ( $stat[ 'total_profit' ] / + $goal ) * 100;
+				$profit = isset( $stat['total_profit'] ) ? (float) $stat['total_profit'] : 0.0;
+				$goal_v = (float) $goal;
+				$value_pr = $goal_v > 0 ? ( $profit / $goal_v ) * 100 : 0;
 				
 				$goal_completion = number_format( $value_pr, 2 );
 				
 				
-				if ( $value_pr > 0 && $value_pr <= 80 ) {
+				if ( $value_pr >= 0 && $value_pr <= 80 ) {
 					$compleat_color = '#ff0000';
 					$text_color     = '#ffffff';
 				} else if ( $value_pr > 80 && $value_pr <= 90 ) {
@@ -173,7 +188,7 @@ foreach ( $dispatchers as $dispatcher ) {
 				} else if ( $value_pr > 90 && $value_pr <= 99.99 ) {
 					$compleat_color = '#ff8989';
 					$text_color     = '#ffffff';
-				} else {
+				 } else {
 					$compleat_color = '#b2d963';
 				}
 				

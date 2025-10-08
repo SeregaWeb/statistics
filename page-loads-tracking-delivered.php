@@ -8,10 +8,15 @@
 
 get_header();
 
+$TMSUsers = new TMSUsers();
+
 // Проверяем доступ к FLT
 $flt_user_access = get_field( 'flt', 'user_' . get_current_user_id() );
 $is_admin = current_user_can( 'administrator' );
 $show_flt_tabs = $flt_user_access || $is_admin;
+
+// Get user team for filtering dispatchers
+$my_team = $TMSUsers->check_group_access();
 
 // Определяем тип данных для загрузки
 $type = get_field_value( $_GET, 'type' );
@@ -67,7 +72,7 @@ if ( $is_flt ) {
                         ?>
                         
 						<?php
-						echo esc_html( get_template_part( TEMPLATE_PATH . 'filters/report', 'filter-tracking', array( 'hide_status' => true ) ) );
+						echo esc_html( get_template_part( TEMPLATE_PATH . 'filters/report', 'filter-tracking', array( 'hide_status' => true, 'my_team' => $my_team ) ) );
 						
 						echo esc_html( get_template_part( TEMPLATE_PATH . 'tables/report', 'table-tracking', $items ) );
 						?>

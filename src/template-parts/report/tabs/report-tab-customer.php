@@ -69,6 +69,10 @@ if ( $report_object ) {
 		}
 	}
 	$read_only = $TMSUsers->check_read_only( $post_status );
+
+     if ($full_view_only) {
+        $read_only = true;
+     }
 }
 
 ?>

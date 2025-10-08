@@ -146,6 +146,8 @@ We will immediately let you know once the truck is on-site.
                                 $exclude = array_search($role, $menu['exclude_role']);
                                 $flt_access = $menu['flt_access'];
                 
+                                if ($flt_access && !$flt_user_access && !$is_admin) {continue;}
+
                                 if (!is_numeric($exclude)) :
                                 
                                 $popup_use = $menu['popup_use'];

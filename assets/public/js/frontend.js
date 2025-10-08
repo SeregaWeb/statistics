@@ -6206,54 +6206,6 @@ var driverCoreInit = function driverCoreInit(urlAjax) {
       });
     });
   }
-  var ratingForm = document.getElementById('ratingForm');
-  if (ratingForm) {
-    ratingForm.addEventListener('submit', function (e) {
-      e.preventDefault();
-      var formData = new FormData(this);
-      formData.append('action', 'add_driver_rating');
-      fetch(urlAjax, {
-        method: 'POST',
-        body: formData
-      }).then(function (response) {
-        return response.json();
-      }).then(function (data) {
-        if (data.success) {
-          (0,_info_messages__WEBPACK_IMPORTED_MODULE_0__.printMessage)('Rating added successfully!', 'success', 3000);
-          location.reload();
-        } else {
-          (0,_info_messages__WEBPACK_IMPORTED_MODULE_0__.printMessage)('Error: ' + data.data, 'danger', 3000);
-        }
-      }).catch(function (error) {
-        console.error('Error:', error);
-        (0,_info_messages__WEBPACK_IMPORTED_MODULE_0__.printMessage)('An error occurred while adding the rating.', 'danger', 3000);
-      });
-    });
-  }
-  var noticeForm = document.getElementById('noticeForm');
-  if (noticeForm) {
-    noticeForm.addEventListener('submit', function (e) {
-      e.preventDefault();
-      var formData = new FormData(this);
-      formData.append('action', 'add_driver_notice');
-      fetch(urlAjax, {
-        method: 'POST',
-        body: formData
-      }).then(function (response) {
-        return response.json();
-      }).then(function (data) {
-        if (data.success) {
-          (0,_info_messages__WEBPACK_IMPORTED_MODULE_0__.printMessage)('Notice added successfully!', 'success', 3000);
-          location.reload();
-        } else {
-          (0,_info_messages__WEBPACK_IMPORTED_MODULE_0__.printMessage)('Error: ' + data.data, 'danger', 3000);
-        }
-      }).catch(function (error) {
-        console.error('Error:', error);
-        (0,_info_messages__WEBPACK_IMPORTED_MODULE_0__.printMessage)('An error occurred while adding the notice.', 'danger', 3000);
-      });
-    });
-  }
   var noticeCheckboxes = document.querySelectorAll('.notice-status-checkbox');
   noticeCheckboxes.forEach(function (checkbox) {
     checkbox.addEventListener('change', function () {
@@ -6506,6 +6458,262 @@ var driverHoldInit = function driverHoldInit(ajaxUrl) {
 
 /***/ }),
 
+/***/ "./src/js/components/driver-popup-forms.ts":
+/*!*************************************************!*\
+  !*** ./src/js/components/driver-popup-forms.ts ***!
+  \*************************************************/
+/***/ (function(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony import */ var _info_messages__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./info-messages */ "./src/js/components/info-messages.ts");
+/* harmony import */ var _driver_popups__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./driver-popups */ "./src/js/components/driver-popups.ts");
+function _typeof(o) { "@babel/helpers - typeof"; return _typeof = "function" == typeof Symbol && "symbol" == typeof Symbol.iterator ? function (o) { return typeof o; } : function (o) { return o && "function" == typeof Symbol && o.constructor === Symbol && o !== Symbol.prototype ? "symbol" : typeof o; }, _typeof(o); }
+function _classCallCheck(a, n) { if (!(a instanceof n)) throw new TypeError("Cannot call a class as a function"); }
+function _defineProperties(e, r) { for (var t = 0; t < r.length; t++) { var o = r[t]; o.enumerable = o.enumerable || !1, o.configurable = !0, "value" in o && (o.writable = !0), Object.defineProperty(e, _toPropertyKey(o.key), o); } }
+function _createClass(e, r, t) { return r && _defineProperties(e.prototype, r), t && _defineProperties(e, t), Object.defineProperty(e, "prototype", { writable: !1 }), e; }
+function _toPropertyKey(t) { var i = _toPrimitive(t, "string"); return "symbol" == _typeof(i) ? i : i + ""; }
+function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e = t[Symbol.toPrimitive]; if (void 0 !== e) { var i = e.call(t, r || "default"); if ("object" != _typeof(i)) return i; throw new TypeError("@@toPrimitive must return a primitive value."); } return ("string" === r ? String : Number)(t); }
+
+
+var DriverPopupForms = /*#__PURE__*/function () {
+  function DriverPopupForms(ajaxUrl) {
+    _classCallCheck(this, DriverPopupForms);
+    this.currentDriverId = null;
+    this.ajaxUrl = ajaxUrl;
+    this.init();
+  }
+  return _createClass(DriverPopupForms, [{
+    key: "init",
+    value: function init() {
+      this.handleRatingButtons();
+      this.handleRatingForm();
+      this.handleNoticeForm();
+      this.listenForPopupOpen();
+    }
+  }, {
+    key: "listenForPopupOpen",
+    value: function listenForPopupOpen() {
+      var _this = this;
+      document.addEventListener('click', function (e) {
+        var target = e.target;
+        if (target.closest('[data-driver-id]')) {
+          var button = target.closest('[data-driver-id]');
+          var driverId = button.getAttribute('data-driver-id');
+          if (driverId) {
+            _this.currentDriverId = driverId;
+          }
+        }
+      });
+    }
+  }, {
+    key: "handleRatingButtons",
+    value: function handleRatingButtons() {
+      document.querySelectorAll('.rating-btn').forEach(function (btn) {
+        btn.addEventListener('click', function (e) {
+          var target = e.target;
+          document.querySelectorAll('.rating-btn').forEach(function (b) {
+            return b.classList.remove('active');
+          });
+          target.classList.add('active');
+          var selectedRating = document.getElementById('selectedRating');
+          if (selectedRating) {
+            selectedRating.value = target.dataset.rating || '';
+          }
+        });
+      });
+    }
+  }, {
+    key: "handleRatingForm",
+    value: function handleRatingForm() {
+      var _this2 = this;
+      var form = document.getElementById('ratingForm');
+      if (!form) {
+        return;
+      }
+      form.addEventListener('submit', function (e) {
+        e.preventDefault();
+        var existingDriverId = form.querySelector('input[name="driver_id"]');
+        var driverId = existingDriverId ? existingDriverId.value : null;
+        if (!driverId) {
+          driverId = _this2.currentDriverId || _this2.getDriverIdFromPopup('driverRatingName');
+          var driverIdField = document.getElementById('ratingDriverId');
+          if (driverIdField && driverId) {
+            driverIdField.value = driverId;
+          }
+        }
+        if (driverId) {
+          var formData = new FormData(form);
+          formData.set('action', 'add_driver_rating');
+          _this2.submitForm(formData, 'rating');
+        } else {
+          (0,_info_messages__WEBPACK_IMPORTED_MODULE_0__.printMessage)('No driver ID found!', 'danger', 3000);
+          return;
+        }
+      });
+    }
+  }, {
+    key: "handleNoticeForm",
+    value: function handleNoticeForm() {
+      var _this3 = this;
+      var form = document.getElementById('noticeForm');
+      if (!form) return;
+      form.addEventListener('submit', function (e) {
+        e.preventDefault();
+        var existingDriverId = form.querySelector('input[name="driver_id"]');
+        var driverId = existingDriverId ? existingDriverId.value : null;
+        if (!driverId) {
+          driverId = _this3.currentDriverId || _this3.getDriverIdFromPopup('driverNoticeName');
+          var driverIdField = document.getElementById('noticeDriverId');
+          if (driverIdField && driverId) {
+            driverIdField.value = driverId;
+          }
+        }
+        if (driverId) {
+          var formData = new FormData(form);
+          formData.set('action', 'add_driver_notice');
+          _this3.submitForm(formData, 'notice');
+        } else {
+          (0,_info_messages__WEBPACK_IMPORTED_MODULE_0__.printMessage)('No driver ID found!', 'danger', 3000);
+          return;
+        }
+      });
+    }
+  }, {
+    key: "getDriverIdFromPopup",
+    value: function getDriverIdFromPopup(elementId) {
+      var element = document.getElementById(elementId);
+      var driverId = element ? element.getAttribute('data-driver-id') : null;
+      return driverId;
+    }
+  }, {
+    key: "submitForm",
+    value: function submitForm(formData, type) {
+      var _this4 = this;
+      fetch(this.ajaxUrl, {
+        method: 'POST',
+        body: formData
+      }).then(function (response) {
+        if (!response.ok) {
+          throw new Error("HTTP error! status: ".concat(response.status));
+        }
+        return response.text().then(function (text) {
+          try {
+            return JSON.parse(text);
+          } catch (e) {
+            (0,_info_messages__WEBPACK_IMPORTED_MODULE_0__.printMessage)('Failed to parse server response', 'danger', 3000);
+            throw new Error('Invalid JSON response');
+          }
+        });
+      }).then(function (data) {
+        if (data.success) {
+          _this4.handleSuccess(type);
+        } else {
+          _this4.handleError(type, data.data || 'Unknown error');
+        }
+      }).catch(function (error) {
+        (0,_info_messages__WEBPACK_IMPORTED_MODULE_0__.printMessage)('Network error occurred', 'danger', 3000);
+        _this4.handleError(type, error.message || 'Network error');
+      });
+    }
+  }, {
+    key: "handleSuccess",
+    value: function handleSuccess(type) {
+      var formId = type === 'rating' ? 'ratingForm' : 'noticeForm';
+      var form = document.getElementById(formId);
+      if (form) {
+        form.reset();
+        if (type === 'rating') {
+          document.querySelectorAll('.rating-btn').forEach(function (b) {
+            return b.classList.remove('active');
+          });
+        }
+      }
+      this.showMessage("".concat(type === 'rating' ? 'Rating' : 'Notice', " added successfully!"), 'success');
+      var isInPopup = this.isInPopupContext();
+      if (isInPopup) {
+        this.updatePopupData(type);
+      } else {
+        setTimeout(function () {
+          location.reload();
+        }, 1000);
+      }
+    }
+  }, {
+    key: "handleError",
+    value: function handleError(type, error) {
+      this.showMessage("Error adding ".concat(type, ": ").concat(error), 'error');
+    }
+  }, {
+    key: "isInPopupContext",
+    value: function isInPopupContext() {
+      var ratingPopup = document.getElementById('driver-rating-popup');
+      var noticePopup = document.getElementById('driver-notice-popup');
+      return !!(ratingPopup || noticePopup);
+    }
+  }, {
+    key: "updatePopupData",
+    value: function updatePopupData(type) {
+      var _this5 = this;
+      var driverId = this.currentDriverId || this.getDriverIdFromPopup(type === 'rating' ? 'driverRatingName' : 'driverNoticeName');
+      if (!driverId) {
+        console.error('No driver ID found for popup update');
+        return;
+      }
+      var action = type === 'rating' ? 'get_driver_ratings' : 'get_driver_notices';
+      var formData = new FormData();
+      formData.append('action', action);
+      formData.append('driver_id', driverId);
+      fetch(this.ajaxUrl, {
+        method: 'POST',
+        body: formData
+      }).then(function (response) {
+        return response.json();
+      }).then(function (data) {
+        if (data.success) {
+          _this5.updatePopupContent(type, data.data);
+        }
+      }).catch(function (error) {
+        console.error('Error updating popup data:', error);
+      });
+    }
+  }, {
+    key: "updatePopupContent",
+    value: function updatePopupContent(type, data) {
+      if (type === 'rating') {
+        this.updateRatingPopup(data);
+      } else {
+        this.updateNoticePopup(data);
+      }
+    }
+  }, {
+    key: "updateRatingPopup",
+    value: function updateRatingPopup(data) {
+      var ratingsContainer = document.getElementById('driverRatingContent');
+      if (ratingsContainer && _driver_popups__WEBPACK_IMPORTED_MODULE_1__.driverPopupsInstance) {
+        _driver_popups__WEBPACK_IMPORTED_MODULE_1__.driverPopupsInstance.displayRatings(data, ratingsContainer);
+      }
+    }
+  }, {
+    key: "updateNoticePopup",
+    value: function updateNoticePopup(data) {
+      var noticesContainer = document.getElementById('driverNoticeContent');
+      if (noticesContainer && _driver_popups__WEBPACK_IMPORTED_MODULE_1__.driverPopupsInstance) {
+        _driver_popups__WEBPACK_IMPORTED_MODULE_1__.driverPopupsInstance.displayNotices(data, noticesContainer);
+      }
+    }
+  }, {
+    key: "showMessage",
+    value: function showMessage(message, type) {
+      var messageType = type === 'error' ? 'danger' : type;
+      (0,_info_messages__WEBPACK_IMPORTED_MODULE_0__.printMessage)(message, messageType, 3000);
+    }
+  }]);
+}();
+/* harmony default export */ __webpack_exports__["default"] = (DriverPopupForms);
+
+/***/ }),
+
 /***/ "./src/js/components/driver-popups.ts":
 /*!********************************************!*\
   !*** ./src/js/components/driver-popups.ts ***!
@@ -6514,6 +6722,9 @@ var driverHoldInit = function driverHoldInit(ajaxUrl) {
 
 "use strict";
 __webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   driverPopupsInstance: function() { return /* binding */ driverPopupsInstance; }
+/* harmony export */ });
 function _typeof(o) { "@babel/helpers - typeof"; return _typeof = "function" == typeof Symbol && "symbol" == typeof Symbol.iterator ? function (o) { return typeof o; } : function (o) { return o && "function" == typeof Symbol && o.constructor === Symbol && o !== Symbol.prototype ? "symbol" : typeof o; }, _typeof(o); }
 function _regeneratorRuntime() { "use strict"; /*! regenerator-runtime -- Copyright (c) 2014-present, Facebook, Inc. -- license (MIT): https://github.com/facebook/regenerator/blob/main/LICENSE */ _regeneratorRuntime = function _regeneratorRuntime() { return e; }; var t, e = {}, r = Object.prototype, n = r.hasOwnProperty, o = Object.defineProperty || function (t, e, r) { t[e] = r.value; }, i = "function" == typeof Symbol ? Symbol : {}, a = i.iterator || "@@iterator", c = i.asyncIterator || "@@asyncIterator", u = i.toStringTag || "@@toStringTag"; function define(t, e, r) { return Object.defineProperty(t, e, { value: r, enumerable: !0, configurable: !0, writable: !0 }), t[e]; } try { define({}, ""); } catch (t) { define = function define(t, e, r) { return t[e] = r; }; } function wrap(t, e, r, n) { var i = e && e.prototype instanceof Generator ? e : Generator, a = Object.create(i.prototype), c = new Context(n || []); return o(a, "_invoke", { value: makeInvokeMethod(t, r, c) }), a; } function tryCatch(t, e, r) { try { return { type: "normal", arg: t.call(e, r) }; } catch (t) { return { type: "throw", arg: t }; } } e.wrap = wrap; var h = "suspendedStart", l = "suspendedYield", f = "executing", s = "completed", y = {}; function Generator() {} function GeneratorFunction() {} function GeneratorFunctionPrototype() {} var p = {}; define(p, a, function () { return this; }); var d = Object.getPrototypeOf, v = d && d(d(values([]))); v && v !== r && n.call(v, a) && (p = v); var g = GeneratorFunctionPrototype.prototype = Generator.prototype = Object.create(p); function defineIteratorMethods(t) { ["next", "throw", "return"].forEach(function (e) { define(t, e, function (t) { return this._invoke(e, t); }); }); } function AsyncIterator(t, e) { function invoke(r, o, i, a) { var c = tryCatch(t[r], t, o); if ("throw" !== c.type) { var u = c.arg, h = u.value; return h && "object" == _typeof(h) && n.call(h, "__await") ? e.resolve(h.__await).then(function (t) { invoke("next", t, i, a); }, function (t) { invoke("throw", t, i, a); }) : e.resolve(h).then(function (t) { u.value = t, i(u); }, function (t) { return invoke("throw", t, i, a); }); } a(c.arg); } var r; o(this, "_invoke", { value: function value(t, n) { function callInvokeWithMethodAndArg() { return new e(function (e, r) { invoke(t, n, e, r); }); } return r = r ? r.then(callInvokeWithMethodAndArg, callInvokeWithMethodAndArg) : callInvokeWithMethodAndArg(); } }); } function makeInvokeMethod(e, r, n) { var o = h; return function (i, a) { if (o === f) throw Error("Generator is already running"); if (o === s) { if ("throw" === i) throw a; return { value: t, done: !0 }; } for (n.method = i, n.arg = a;;) { var c = n.delegate; if (c) { var u = maybeInvokeDelegate(c, n); if (u) { if (u === y) continue; return u; } } if ("next" === n.method) n.sent = n._sent = n.arg;else if ("throw" === n.method) { if (o === h) throw o = s, n.arg; n.dispatchException(n.arg); } else "return" === n.method && n.abrupt("return", n.arg); o = f; var p = tryCatch(e, r, n); if ("normal" === p.type) { if (o = n.done ? s : l, p.arg === y) continue; return { value: p.arg, done: n.done }; } "throw" === p.type && (o = s, n.method = "throw", n.arg = p.arg); } }; } function maybeInvokeDelegate(e, r) { var n = r.method, o = e.iterator[n]; if (o === t) return r.delegate = null, "throw" === n && e.iterator.return && (r.method = "return", r.arg = t, maybeInvokeDelegate(e, r), "throw" === r.method) || "return" !== n && (r.method = "throw", r.arg = new TypeError("The iterator does not provide a '" + n + "' method")), y; var i = tryCatch(o, e.iterator, r.arg); if ("throw" === i.type) return r.method = "throw", r.arg = i.arg, r.delegate = null, y; var a = i.arg; return a ? a.done ? (r[e.resultName] = a.value, r.next = e.nextLoc, "return" !== r.method && (r.method = "next", r.arg = t), r.delegate = null, y) : a : (r.method = "throw", r.arg = new TypeError("iterator result is not an object"), r.delegate = null, y); } function pushTryEntry(t) { var e = { tryLoc: t[0] }; 1 in t && (e.catchLoc = t[1]), 2 in t && (e.finallyLoc = t[2], e.afterLoc = t[3]), this.tryEntries.push(e); } function resetTryEntry(t) { var e = t.completion || {}; e.type = "normal", delete e.arg, t.completion = e; } function Context(t) { this.tryEntries = [{ tryLoc: "root" }], t.forEach(pushTryEntry, this), this.reset(!0); } function values(e) { if (e || "" === e) { var r = e[a]; if (r) return r.call(e); if ("function" == typeof e.next) return e; if (!isNaN(e.length)) { var o = -1, i = function next() { for (; ++o < e.length;) if (n.call(e, o)) return next.value = e[o], next.done = !1, next; return next.value = t, next.done = !0, next; }; return i.next = i; } } throw new TypeError(_typeof(e) + " is not iterable"); } return GeneratorFunction.prototype = GeneratorFunctionPrototype, o(g, "constructor", { value: GeneratorFunctionPrototype, configurable: !0 }), o(GeneratorFunctionPrototype, "constructor", { value: GeneratorFunction, configurable: !0 }), GeneratorFunction.displayName = define(GeneratorFunctionPrototype, u, "GeneratorFunction"), e.isGeneratorFunction = function (t) { var e = "function" == typeof t && t.constructor; return !!e && (e === GeneratorFunction || "GeneratorFunction" === (e.displayName || e.name)); }, e.mark = function (t) { return Object.setPrototypeOf ? Object.setPrototypeOf(t, GeneratorFunctionPrototype) : (t.__proto__ = GeneratorFunctionPrototype, define(t, u, "GeneratorFunction")), t.prototype = Object.create(g), t; }, e.awrap = function (t) { return { __await: t }; }, defineIteratorMethods(AsyncIterator.prototype), define(AsyncIterator.prototype, c, function () { return this; }), e.AsyncIterator = AsyncIterator, e.async = function (t, r, n, o, i) { void 0 === i && (i = Promise); var a = new AsyncIterator(wrap(t, r, n, o), i); return e.isGeneratorFunction(r) ? a : a.next().then(function (t) { return t.done ? t.value : a.next(); }); }, defineIteratorMethods(g), define(g, u, "Generator"), define(g, a, function () { return this; }), define(g, "toString", function () { return "[object Generator]"; }), e.keys = function (t) { var e = Object(t), r = []; for (var n in e) r.push(n); return r.reverse(), function next() { for (; r.length;) { var t = r.pop(); if (t in e) return next.value = t, next.done = !1, next; } return next.done = !0, next; }; }, e.values = values, Context.prototype = { constructor: Context, reset: function reset(e) { if (this.prev = 0, this.next = 0, this.sent = this._sent = t, this.done = !1, this.delegate = null, this.method = "next", this.arg = t, this.tryEntries.forEach(resetTryEntry), !e) for (var r in this) "t" === r.charAt(0) && n.call(this, r) && !isNaN(+r.slice(1)) && (this[r] = t); }, stop: function stop() { this.done = !0; var t = this.tryEntries[0].completion; if ("throw" === t.type) throw t.arg; return this.rval; }, dispatchException: function dispatchException(e) { if (this.done) throw e; var r = this; function handle(n, o) { return a.type = "throw", a.arg = e, r.next = n, o && (r.method = "next", r.arg = t), !!o; } for (var o = this.tryEntries.length - 1; o >= 0; --o) { var i = this.tryEntries[o], a = i.completion; if ("root" === i.tryLoc) return handle("end"); if (i.tryLoc <= this.prev) { var c = n.call(i, "catchLoc"), u = n.call(i, "finallyLoc"); if (c && u) { if (this.prev < i.catchLoc) return handle(i.catchLoc, !0); if (this.prev < i.finallyLoc) return handle(i.finallyLoc); } else if (c) { if (this.prev < i.catchLoc) return handle(i.catchLoc, !0); } else { if (!u) throw Error("try statement without catch or finally"); if (this.prev < i.finallyLoc) return handle(i.finallyLoc); } } } }, abrupt: function abrupt(t, e) { for (var r = this.tryEntries.length - 1; r >= 0; --r) { var o = this.tryEntries[r]; if (o.tryLoc <= this.prev && n.call(o, "finallyLoc") && this.prev < o.finallyLoc) { var i = o; break; } } i && ("break" === t || "continue" === t) && i.tryLoc <= e && e <= i.finallyLoc && (i = null); var a = i ? i.completion : {}; return a.type = t, a.arg = e, i ? (this.method = "next", this.next = i.finallyLoc, y) : this.complete(a); }, complete: function complete(t, e) { if ("throw" === t.type) throw t.arg; return "break" === t.type || "continue" === t.type ? this.next = t.arg : "return" === t.type ? (this.rval = this.arg = t.arg, this.method = "return", this.next = "end") : "normal" === t.type && e && (this.next = e), y; }, finish: function finish(t) { for (var e = this.tryEntries.length - 1; e >= 0; --e) { var r = this.tryEntries[e]; if (r.finallyLoc === t) return this.complete(r.completion, r.afterLoc), resetTryEntry(r), y; } }, catch: function _catch(t) { for (var e = this.tryEntries.length - 1; e >= 0; --e) { var r = this.tryEntries[e]; if (r.tryLoc === t) { var n = r.completion; if ("throw" === n.type) { var o = n.arg; resetTryEntry(r); } return o; } } throw Error("illegal catch attempt"); }, delegateYield: function delegateYield(e, r, n) { return this.delegate = { iterator: values(e), resultName: r, nextLoc: n }, "next" === this.method && (this.arg = t), y; } }, e; }
 function _classCallCheck(a, n) { if (!(a instanceof n)) throw new TypeError("Cannot call a class as a function"); }
@@ -6638,6 +6849,10 @@ var DriverPopups = /*#__PURE__*/function () {
       var driverId = button.getAttribute('data-driver-id');
       var driverName = button.getAttribute('data-driver-name');
       var rating = button.getAttribute('data-rating');
+      console.log('Rating button clicked:', button);
+      console.log('Driver ID from button:', driverId);
+      console.log('Driver name from button:', driverName);
+      console.log('Rating from button:', rating);
       if (!driverId) {
         this.showMessage('Driver ID not found', 'danger');
         return;
@@ -6645,7 +6860,12 @@ var DriverPopups = /*#__PURE__*/function () {
       var nameElement = document.getElementById('driverRatingName');
       var scoreElement = document.getElementById('driverRatingScore');
       var fullPageLink = document.getElementById('driverRatingFullPage');
-      if (nameElement) nameElement.textContent = driverName || 'Unknown Driver';
+      if (nameElement) {
+        nameElement.textContent = driverName || 'Unknown Driver';
+        nameElement.setAttribute('data-driver-id', driverId);
+        console.log('Setting driver ID for ratings:', driverId);
+        console.log('Element after setting:', nameElement);
+      }
       if (scoreElement) scoreElement.textContent = rating || '0';
       if (fullPageLink) {
         fullPageLink.href = "".concat(this.addNewLoadUrl, "?driver=").concat(driverId, "&tab=pills-driver-stats-tab");
@@ -6663,6 +6883,10 @@ var DriverPopups = /*#__PURE__*/function () {
       var driverId = button.getAttribute('data-driver-id');
       var driverName = button.getAttribute('data-driver-name');
       var noticeCount = button.getAttribute('data-notice-count');
+      console.log('Notice button clicked:', button);
+      console.log('Driver ID from button:', driverId);
+      console.log('Driver name from button:', driverName);
+      console.log('Notice count from button:', noticeCount);
       if (!driverId) {
         this.showMessage('Driver ID not found', 'danger');
         return;
@@ -6670,7 +6894,12 @@ var DriverPopups = /*#__PURE__*/function () {
       var nameElement = document.getElementById('driverNoticeName');
       var countElement = document.getElementById('driverNoticeCount');
       var fullPageLink = document.getElementById('driverNoticeFullPage');
-      if (nameElement) nameElement.textContent = driverName || 'Unknown Driver';
+      if (nameElement) {
+        nameElement.textContent = driverName || 'Unknown Driver';
+        nameElement.setAttribute('data-driver-id', driverId);
+        console.log('Setting driver ID for notices:', driverId);
+        console.log('Element after setting:', nameElement);
+      }
       if (countElement) countElement.textContent = noticeCount || '0';
       if (fullPageLink) {
         fullPageLink.href = "".concat(this.addNewLoadUrl, "?driver=").concat(driverId, "&tab=pills-driver-stats-tab");
@@ -6817,7 +7046,7 @@ var DriverPopups = /*#__PURE__*/function () {
         return;
       }
       var noticesHtml = notices.map(function (notice) {
-        return "\n            <div class=\"card mb-3\">\n                <div class=\"card-body\">\n                    <div class=\"d-flex justify-content-between align-items-start mb-2\">\n                        <div>\n                            <strong>".concat(notice.name, "</strong>\n                        </div>\n                        <div class=\"text-end\">\n                            <span class=\"badge bg-").concat(notice.status ? 'success' : 'warning', "\">\n                                ").concat(notice.status ? 'Resolved' : 'Pending', "\n                            </span>\n                            <small class=\"text-muted d-block\">").concat(_this3.formatDate(notice.date), "</small>\n                        </div>\n                    </div>\n                    ").concat(notice.message ? "<p class=\"mb-0\">".concat(notice.message, "</p>") : '', "\n                </div>\n            </div>\n        ");
+        return "\n            <div class=\"card mb-3\">\n                <div class=\"card-body\">\n                    <div class=\"d-flex justify-content-between align-items-start mb-2\">\n                        <div>\n                            <strong>".concat(notice.name, "</strong>\n                        </div>\n                        <div class=\"text-end\">\n                            <span class=\"badge bg-").concat(+notice.status === 1 ? 'success' : 'warning', "\">\n                                ").concat(+notice.status === 1 ? 'Resolved' : 'Pending', "\n                            </span>\n                            <small class=\"text-muted d-block\">").concat(_this3.formatDate(notice.date), "</small>\n                        </div>\n                    </div>\n                    ").concat(notice.message ? "<p class=\"mb-0\">".concat(notice.message, "</p>") : '', "\n                </div>\n            </div>\n        ");
       }).join('');
       container.innerHTML = noticesHtml;
     }
@@ -6845,10 +7074,10 @@ var DriverPopups = /*#__PURE__*/function () {
     }
   }]);
 }();
-document.addEventListener('DOMContentLoaded', function () {
-  new DriverPopups();
-});
+var driverPopupsInstance = null;
+driverPopupsInstance = new DriverPopups();
 /* harmony default export */ __webpack_exports__["default"] = (DriverPopups);
+
 
 /***/ }),
 
@@ -9084,6 +9313,1212 @@ var masksAllSite = function masksAllSite() {
     });
   }
 };
+
+/***/ }),
+
+/***/ "./src/js/components/timer-analytics.ts":
+/*!**********************************************!*\
+  !*** ./src/js/components/timer-analytics.ts ***!
+  \**********************************************/
+/***/ (function(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   TimerAnalytics: function() { return /* binding */ TimerAnalytics; }
+/* harmony export */ });
+function _typeof(o) { "@babel/helpers - typeof"; return _typeof = "function" == typeof Symbol && "symbol" == typeof Symbol.iterator ? function (o) { return typeof o; } : function (o) { return o && "function" == typeof Symbol && o.constructor === Symbol && o !== Symbol.prototype ? "symbol" : typeof o; }, _typeof(o); }
+function _regeneratorRuntime() { "use strict"; /*! regenerator-runtime -- Copyright (c) 2014-present, Facebook, Inc. -- license (MIT): https://github.com/facebook/regenerator/blob/main/LICENSE */ _regeneratorRuntime = function _regeneratorRuntime() { return e; }; var t, e = {}, r = Object.prototype, n = r.hasOwnProperty, o = Object.defineProperty || function (t, e, r) { t[e] = r.value; }, i = "function" == typeof Symbol ? Symbol : {}, a = i.iterator || "@@iterator", c = i.asyncIterator || "@@asyncIterator", u = i.toStringTag || "@@toStringTag"; function define(t, e, r) { return Object.defineProperty(t, e, { value: r, enumerable: !0, configurable: !0, writable: !0 }), t[e]; } try { define({}, ""); } catch (t) { define = function define(t, e, r) { return t[e] = r; }; } function wrap(t, e, r, n) { var i = e && e.prototype instanceof Generator ? e : Generator, a = Object.create(i.prototype), c = new Context(n || []); return o(a, "_invoke", { value: makeInvokeMethod(t, r, c) }), a; } function tryCatch(t, e, r) { try { return { type: "normal", arg: t.call(e, r) }; } catch (t) { return { type: "throw", arg: t }; } } e.wrap = wrap; var h = "suspendedStart", l = "suspendedYield", f = "executing", s = "completed", y = {}; function Generator() {} function GeneratorFunction() {} function GeneratorFunctionPrototype() {} var p = {}; define(p, a, function () { return this; }); var d = Object.getPrototypeOf, v = d && d(d(values([]))); v && v !== r && n.call(v, a) && (p = v); var g = GeneratorFunctionPrototype.prototype = Generator.prototype = Object.create(p); function defineIteratorMethods(t) { ["next", "throw", "return"].forEach(function (e) { define(t, e, function (t) { return this._invoke(e, t); }); }); } function AsyncIterator(t, e) { function invoke(r, o, i, a) { var c = tryCatch(t[r], t, o); if ("throw" !== c.type) { var u = c.arg, h = u.value; return h && "object" == _typeof(h) && n.call(h, "__await") ? e.resolve(h.__await).then(function (t) { invoke("next", t, i, a); }, function (t) { invoke("throw", t, i, a); }) : e.resolve(h).then(function (t) { u.value = t, i(u); }, function (t) { return invoke("throw", t, i, a); }); } a(c.arg); } var r; o(this, "_invoke", { value: function value(t, n) { function callInvokeWithMethodAndArg() { return new e(function (e, r) { invoke(t, n, e, r); }); } return r = r ? r.then(callInvokeWithMethodAndArg, callInvokeWithMethodAndArg) : callInvokeWithMethodAndArg(); } }); } function makeInvokeMethod(e, r, n) { var o = h; return function (i, a) { if (o === f) throw Error("Generator is already running"); if (o === s) { if ("throw" === i) throw a; return { value: t, done: !0 }; } for (n.method = i, n.arg = a;;) { var c = n.delegate; if (c) { var u = maybeInvokeDelegate(c, n); if (u) { if (u === y) continue; return u; } } if ("next" === n.method) n.sent = n._sent = n.arg;else if ("throw" === n.method) { if (o === h) throw o = s, n.arg; n.dispatchException(n.arg); } else "return" === n.method && n.abrupt("return", n.arg); o = f; var p = tryCatch(e, r, n); if ("normal" === p.type) { if (o = n.done ? s : l, p.arg === y) continue; return { value: p.arg, done: n.done }; } "throw" === p.type && (o = s, n.method = "throw", n.arg = p.arg); } }; } function maybeInvokeDelegate(e, r) { var n = r.method, o = e.iterator[n]; if (o === t) return r.delegate = null, "throw" === n && e.iterator.return && (r.method = "return", r.arg = t, maybeInvokeDelegate(e, r), "throw" === r.method) || "return" !== n && (r.method = "throw", r.arg = new TypeError("The iterator does not provide a '" + n + "' method")), y; var i = tryCatch(o, e.iterator, r.arg); if ("throw" === i.type) return r.method = "throw", r.arg = i.arg, r.delegate = null, y; var a = i.arg; return a ? a.done ? (r[e.resultName] = a.value, r.next = e.nextLoc, "return" !== r.method && (r.method = "next", r.arg = t), r.delegate = null, y) : a : (r.method = "throw", r.arg = new TypeError("iterator result is not an object"), r.delegate = null, y); } function pushTryEntry(t) { var e = { tryLoc: t[0] }; 1 in t && (e.catchLoc = t[1]), 2 in t && (e.finallyLoc = t[2], e.afterLoc = t[3]), this.tryEntries.push(e); } function resetTryEntry(t) { var e = t.completion || {}; e.type = "normal", delete e.arg, t.completion = e; } function Context(t) { this.tryEntries = [{ tryLoc: "root" }], t.forEach(pushTryEntry, this), this.reset(!0); } function values(e) { if (e || "" === e) { var r = e[a]; if (r) return r.call(e); if ("function" == typeof e.next) return e; if (!isNaN(e.length)) { var o = -1, i = function next() { for (; ++o < e.length;) if (n.call(e, o)) return next.value = e[o], next.done = !1, next; return next.value = t, next.done = !0, next; }; return i.next = i; } } throw new TypeError(_typeof(e) + " is not iterable"); } return GeneratorFunction.prototype = GeneratorFunctionPrototype, o(g, "constructor", { value: GeneratorFunctionPrototype, configurable: !0 }), o(GeneratorFunctionPrototype, "constructor", { value: GeneratorFunction, configurable: !0 }), GeneratorFunction.displayName = define(GeneratorFunctionPrototype, u, "GeneratorFunction"), e.isGeneratorFunction = function (t) { var e = "function" == typeof t && t.constructor; return !!e && (e === GeneratorFunction || "GeneratorFunction" === (e.displayName || e.name)); }, e.mark = function (t) { return Object.setPrototypeOf ? Object.setPrototypeOf(t, GeneratorFunctionPrototype) : (t.__proto__ = GeneratorFunctionPrototype, define(t, u, "GeneratorFunction")), t.prototype = Object.create(g), t; }, e.awrap = function (t) { return { __await: t }; }, defineIteratorMethods(AsyncIterator.prototype), define(AsyncIterator.prototype, c, function () { return this; }), e.AsyncIterator = AsyncIterator, e.async = function (t, r, n, o, i) { void 0 === i && (i = Promise); var a = new AsyncIterator(wrap(t, r, n, o), i); return e.isGeneratorFunction(r) ? a : a.next().then(function (t) { return t.done ? t.value : a.next(); }); }, defineIteratorMethods(g), define(g, u, "Generator"), define(g, a, function () { return this; }), define(g, "toString", function () { return "[object Generator]"; }), e.keys = function (t) { var e = Object(t), r = []; for (var n in e) r.push(n); return r.reverse(), function next() { for (; r.length;) { var t = r.pop(); if (t in e) return next.value = t, next.done = !1, next; } return next.done = !0, next; }; }, e.values = values, Context.prototype = { constructor: Context, reset: function reset(e) { if (this.prev = 0, this.next = 0, this.sent = this._sent = t, this.done = !1, this.delegate = null, this.method = "next", this.arg = t, this.tryEntries.forEach(resetTryEntry), !e) for (var r in this) "t" === r.charAt(0) && n.call(this, r) && !isNaN(+r.slice(1)) && (this[r] = t); }, stop: function stop() { this.done = !0; var t = this.tryEntries[0].completion; if ("throw" === t.type) throw t.arg; return this.rval; }, dispatchException: function dispatchException(e) { if (this.done) throw e; var r = this; function handle(n, o) { return a.type = "throw", a.arg = e, r.next = n, o && (r.method = "next", r.arg = t), !!o; } for (var o = this.tryEntries.length - 1; o >= 0; --o) { var i = this.tryEntries[o], a = i.completion; if ("root" === i.tryLoc) return handle("end"); if (i.tryLoc <= this.prev) { var c = n.call(i, "catchLoc"), u = n.call(i, "finallyLoc"); if (c && u) { if (this.prev < i.catchLoc) return handle(i.catchLoc, !0); if (this.prev < i.finallyLoc) return handle(i.finallyLoc); } else if (c) { if (this.prev < i.catchLoc) return handle(i.catchLoc, !0); } else { if (!u) throw Error("try statement without catch or finally"); if (this.prev < i.finallyLoc) return handle(i.finallyLoc); } } } }, abrupt: function abrupt(t, e) { for (var r = this.tryEntries.length - 1; r >= 0; --r) { var o = this.tryEntries[r]; if (o.tryLoc <= this.prev && n.call(o, "finallyLoc") && this.prev < o.finallyLoc) { var i = o; break; } } i && ("break" === t || "continue" === t) && i.tryLoc <= e && e <= i.finallyLoc && (i = null); var a = i ? i.completion : {}; return a.type = t, a.arg = e, i ? (this.method = "next", this.next = i.finallyLoc, y) : this.complete(a); }, complete: function complete(t, e) { if ("throw" === t.type) throw t.arg; return "break" === t.type || "continue" === t.type ? this.next = t.arg : "return" === t.type ? (this.rval = this.arg = t.arg, this.method = "return", this.next = "end") : "normal" === t.type && e && (this.next = e), y; }, finish: function finish(t) { for (var e = this.tryEntries.length - 1; e >= 0; --e) { var r = this.tryEntries[e]; if (r.finallyLoc === t) return this.complete(r.completion, r.afterLoc), resetTryEntry(r), y; } }, catch: function _catch(t) { for (var e = this.tryEntries.length - 1; e >= 0; --e) { var r = this.tryEntries[e]; if (r.tryLoc === t) { var n = r.completion; if ("throw" === n.type) { var o = n.arg; resetTryEntry(r); } return o; } } throw Error("illegal catch attempt"); }, delegateYield: function delegateYield(e, r, n) { return this.delegate = { iterator: values(e), resultName: r, nextLoc: n }, "next" === this.method && (this.arg = t), y; } }, e; }
+function _slicedToArray(r, e) { return _arrayWithHoles(r) || _iterableToArrayLimit(r, e) || _unsupportedIterableToArray(r, e) || _nonIterableRest(); }
+function _nonIterableRest() { throw new TypeError("Invalid attempt to destructure non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method."); }
+function _iterableToArrayLimit(r, l) { var t = null == r ? null : "undefined" != typeof Symbol && r[Symbol.iterator] || r["@@iterator"]; if (null != t) { var e, n, i, u, a = [], f = !0, o = !1; try { if (i = (t = t.call(r)).next, 0 === l) { if (Object(t) !== t) return; f = !1; } else for (; !(f = (e = i.call(t)).done) && (a.push(e.value), a.length !== l); f = !0); } catch (r) { o = !0, n = r; } finally { try { if (!f && null != t.return && (u = t.return(), Object(u) !== u)) return; } finally { if (o) throw n; } } return a; } }
+function _arrayWithHoles(r) { if (Array.isArray(r)) return r; }
+function _createForOfIteratorHelper(r, e) { var t = "undefined" != typeof Symbol && r[Symbol.iterator] || r["@@iterator"]; if (!t) { if (Array.isArray(r) || (t = _unsupportedIterableToArray(r)) || e && r && "number" == typeof r.length) { t && (r = t); var _n = 0, F = function F() {}; return { s: F, n: function n() { return _n >= r.length ? { done: !0 } : { done: !1, value: r[_n++] }; }, e: function e(r) { throw r; }, f: F }; } throw new TypeError("Invalid attempt to iterate non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method."); } var o, a = !0, u = !1; return { s: function s() { t = t.call(r); }, n: function n() { var r = t.next(); return a = r.done, r; }, e: function e(r) { u = !0, o = r; }, f: function f() { try { a || null == t.return || t.return(); } finally { if (u) throw o; } } }; }
+function _unsupportedIterableToArray(r, a) { if (r) { if ("string" == typeof r) return _arrayLikeToArray(r, a); var t = {}.toString.call(r).slice(8, -1); return "Object" === t && r.constructor && (t = r.constructor.name), "Map" === t || "Set" === t ? Array.from(r) : "Arguments" === t || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(t) ? _arrayLikeToArray(r, a) : void 0; } }
+function _arrayLikeToArray(r, a) { (null == a || a > r.length) && (a = r.length); for (var e = 0, n = Array(a); e < a; e++) n[e] = r[e]; return n; }
+function _classCallCheck(a, n) { if (!(a instanceof n)) throw new TypeError("Cannot call a class as a function"); }
+function _defineProperties(e, r) { for (var t = 0; t < r.length; t++) { var o = r[t]; o.enumerable = o.enumerable || !1, o.configurable = !0, "value" in o && (o.writable = !0), Object.defineProperty(e, _toPropertyKey(o.key), o); } }
+function _createClass(e, r, t) { return r && _defineProperties(e.prototype, r), t && _defineProperties(e, t), Object.defineProperty(e, "prototype", { writable: !1 }), e; }
+function _toPropertyKey(t) { var i = _toPrimitive(t, "string"); return "symbol" == _typeof(i) ? i : i + ""; }
+function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e = t[Symbol.toPrimitive]; if (void 0 !== e) { var i = e.call(t, r || "default"); if ("object" != _typeof(i)) return i; throw new TypeError("@@toPrimitive must return a primitive value."); } return ("string" === r ? String : Number)(t); }
+var __awaiter = undefined && undefined.__awaiter || function (thisArg, _arguments, P, generator) {
+  function adopt(value) {
+    return value instanceof P ? value : new P(function (resolve) {
+      resolve(value);
+    });
+  }
+  return new (P || (P = Promise))(function (resolve, reject) {
+    function fulfilled(value) {
+      try {
+        step(generator.next(value));
+      } catch (e) {
+        reject(e);
+      }
+    }
+    function rejected(value) {
+      try {
+        step(generator["throw"](value));
+      } catch (e) {
+        reject(e);
+      }
+    }
+    function step(result) {
+      result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected);
+    }
+    step((generator = generator.apply(thisArg, _arguments || [])).next());
+  });
+};
+var TimerAnalytics = /*#__PURE__*/function () {
+  function TimerAnalytics(ajaxUrl) {
+    _classCallCheck(this, TimerAnalytics);
+    this.currentLogsOffset = 0;
+    this.logsPerPage = 20;
+    this.hasMoreLogs = true;
+    this.ajaxUrl = ajaxUrl;
+    this.init();
+  }
+  return _createClass(TimerAnalytics, [{
+    key: "init",
+    value: function init() {
+      this.setupEventListeners();
+    }
+  }, {
+    key: "setupEventListeners",
+    value: function setupEventListeners() {
+      var _this = this;
+      var form = document.getElementById('analyticsFilters');
+      if (form) {
+        form.addEventListener('submit', function (e) {
+          e.preventDefault();
+          _this.loadAnalytics();
+        });
+      }
+      var exportBtn = document.getElementById('exportAnalytics');
+      if (exportBtn) {
+        exportBtn.addEventListener('click', function () {
+          _this.exportAnalytics();
+        });
+      }
+      var loadLogsBtn = document.getElementById('loadTimerLogs');
+      if (loadLogsBtn) {
+        loadLogsBtn.addEventListener('click', function () {
+          _this.loadTimerLogs();
+        });
+      }
+      var loadMoreLogsBtn = document.getElementById('loadMoreLogs');
+      if (loadMoreLogsBtn) {
+        loadMoreLogsBtn.addEventListener('click', function () {
+          _this.loadMoreTimerLogs();
+        });
+      }
+    }
+  }, {
+    key: "loadAnalytics",
+    value: function loadAnalytics() {
+      var _a;
+      return __awaiter(this, void 0, void 0, /*#__PURE__*/_regeneratorRuntime().mark(function _callee() {
+        var form, formData, params, _iterator, _step, _step$value, key, value, response, data;
+        return _regeneratorRuntime().wrap(function _callee$(_context) {
+          while (1) switch (_context.prev = _context.next) {
+            case 0:
+              form = document.getElementById('analyticsFilters');
+              if (form) {
+                _context.next = 3;
+                break;
+              }
+              return _context.abrupt("return");
+            case 3:
+              formData = new FormData(form);
+              params = new URLSearchParams();
+              _iterator = _createForOfIteratorHelper(formData.entries());
+              try {
+                for (_iterator.s(); !(_step = _iterator.n()).done;) {
+                  _step$value = _slicedToArray(_step.value, 2), key = _step$value[0], value = _step$value[1];
+                  if (value) {
+                    params.append(key, value.toString());
+                  }
+                }
+              } catch (err) {
+                _iterator.e(err);
+              } finally {
+                _iterator.f();
+              }
+              this.showLoading(true);
+              this.hideResults();
+              this.resetLogsPagination();
+              this.clearTimerLogsTable();
+              _context.prev = 11;
+              _context.next = 14;
+              return fetch(this.ajaxUrl, {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/x-www-form-urlencoded'
+                },
+                body: params.toString() + '&action=get_timer_analytics'
+              });
+            case 14:
+              response = _context.sent;
+              _context.next = 17;
+              return response.json();
+            case 17:
+              data = _context.sent;
+              if (data.success) {
+                this.displayAnalytics(data.data);
+              } else {
+                this.showError(((_a = data.data) === null || _a === void 0 ? void 0 : _a.message) || 'Failed to load analytics');
+              }
+              _context.next = 25;
+              break;
+            case 21:
+              _context.prev = 21;
+              _context.t0 = _context["catch"](11);
+              console.error('Error loading analytics:', _context.t0);
+              this.showError('Network error occurred');
+            case 25:
+              _context.prev = 25;
+              this.showLoading(false);
+              return _context.finish(25);
+            case 28:
+            case "end":
+              return _context.stop();
+          }
+        }, _callee, this, [[11, 21, 25, 28]]);
+      }));
+    }
+  }, {
+    key: "exportAnalytics",
+    value: function exportAnalytics() {
+      var _a;
+      return __awaiter(this, void 0, void 0, /*#__PURE__*/_regeneratorRuntime().mark(function _callee2() {
+        var form, formData, params, _iterator2, _step2, _step2$value, key, value, response, data;
+        return _regeneratorRuntime().wrap(function _callee2$(_context2) {
+          while (1) switch (_context2.prev = _context2.next) {
+            case 0:
+              form = document.getElementById('analyticsFilters');
+              if (form) {
+                _context2.next = 3;
+                break;
+              }
+              return _context2.abrupt("return");
+            case 3:
+              formData = new FormData(form);
+              params = new URLSearchParams();
+              _iterator2 = _createForOfIteratorHelper(formData.entries());
+              try {
+                for (_iterator2.s(); !(_step2 = _iterator2.n()).done;) {
+                  _step2$value = _slicedToArray(_step2.value, 2), key = _step2$value[0], value = _step2$value[1];
+                  if (value) {
+                    params.append(key, value.toString());
+                  }
+                }
+              } catch (err) {
+                _iterator2.e(err);
+              } finally {
+                _iterator2.f();
+              }
+              _context2.prev = 7;
+              console.log('Exporting analytics with params:', params.toString());
+              _context2.next = 11;
+              return fetch(this.ajaxUrl, {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/x-www-form-urlencoded'
+                },
+                body: params.toString() + '&action=export_timer_analytics'
+              });
+            case 11:
+              response = _context2.sent;
+              _context2.next = 14;
+              return response.json();
+            case 14:
+              data = _context2.sent;
+              console.log('Export response:', data);
+              if (data.success) {
+                this.downloadFile(data.data.file_url);
+              } else {
+                this.showError(((_a = data.data) === null || _a === void 0 ? void 0 : _a.message) || 'Failed to export analytics');
+              }
+              _context2.next = 23;
+              break;
+            case 19:
+              _context2.prev = 19;
+              _context2.t0 = _context2["catch"](7);
+              console.error('Error exporting analytics:', _context2.t0);
+              this.showError('Network error occurred');
+            case 23:
+            case "end":
+              return _context2.stop();
+          }
+        }, _callee2, this, [[7, 19]]);
+      }));
+    }
+  }, {
+    key: "displayAnalytics",
+    value: function displayAnalytics(data) {
+      this.displayOverallStats(data.analytics);
+      this.displayZoneDistribution(data.analytics);
+      this.displayUserAnalytics(data.user_analytics);
+      this.showResults();
+    }
+  }, {
+    key: "displayOverallStats",
+    value: function displayOverallStats(analytics) {
+      var container = document.getElementById('overallStats');
+      if (!container) return;
+      container.innerHTML = "\n            <div class=\"col-md-6\">\n                <div class=\"card bg-info text-white\">\n                    <div class=\"card-body\">\n                        <h5 class=\"card-title\">Timer Uses</h5>\n                        <h3>".concat(analytics.total_timer_uses || 0, "</h3>\n                    </div>\n                </div>\n            </div>\n            <div class=\"col-md-6\">\n                <div class=\"card bg-warning text-white\">\n                    <div class=\"card-body\">\n                        <h5 class=\"card-title\">Total Updates</h5>\n                        <h3>").concat(analytics.total_updates || 0, "</h3>\n                    </div>\n                </div>\n            </div>\n        ");
+    }
+  }, {
+    key: "displayZoneDistribution",
+    value: function displayZoneDistribution(analytics) {
+      var container = document.getElementById('zoneDistribution');
+      if (!container) return;
+      var total = (analytics.yellow_zone_count || 0) + (analytics.red_zone_count || 0) + (analytics.black_zone_count || 0);
+      if (total === 0) {
+        container.innerHTML = '<p class="text-muted">No timer data available</p>';
+        return;
+      }
+      container.innerHTML = "\n            <div class=\"mb-2\">\n                <div class=\"d-flex justify-content-between\">\n                    <span>Yellow Zone (1-2h)</span>\n                    <span>".concat(analytics.yellow_zone_count || 0, " (").concat(analytics.yellow_zone_percentage || 0, "%)</span>\n                </div>\n                <div class=\"progress mb-2\">\n                    <div class=\"progress-bar bg-warning\" style=\"width: ").concat(analytics.yellow_zone_percentage || 0, "%\"></div>\n                </div>\n            </div>\n            <div class=\"mb-2\">\n                <div class=\"d-flex justify-content-between\">\n                    <span>Red Zone (2-4h)</span>\n                    <span>").concat(analytics.red_zone_count || 0, " (").concat(analytics.red_zone_percentage || 0, "%)</span>\n                </div>\n                <div class=\"progress mb-2\">\n                    <div class=\"progress-bar bg-danger\" style=\"width: ").concat(analytics.red_zone_percentage || 0, "%\"></div>\n                </div>\n            </div>\n            <div class=\"mb-2\">\n                <div class=\"d-flex justify-content-between\">\n                    <span>Black Zone (4h+)</span>\n                    <span>").concat(analytics.black_zone_count || 0, " (").concat(analytics.black_zone_percentage || 0, "%)</span>\n                </div>\n                <div class=\"progress mb-2\">\n                    <div class=\"progress-bar bg-dark\" style=\"width: ").concat(analytics.black_zone_percentage || 0, "%\"></div>\n                </div>\n            </div>\n        ");
+    }
+  }, {
+    key: "displayTimerUsage",
+    value: function displayTimerUsage(analytics) {
+      var container = document.getElementById('timerUsage');
+      if (!container) return;
+      var total = analytics.total_loads || 0;
+      var withoutTimer = analytics.loads_without_timer || 0;
+      var withOneTimer = analytics.loads_with_one_timer || 0;
+      var withMultipleTimers = analytics.loads_with_multiple_timers || 0;
+      if (total === 0) {
+        container.innerHTML = '<p class="text-muted">No data available</p>';
+        return;
+      }
+      container.innerHTML = "\n            <div class=\"mb-2\">\n                <div class=\"d-flex justify-content-between\">\n                    <span>Without Timer</span>\n                    <span>".concat(withoutTimer, " (").concat(Math.round(withoutTimer / total * 100), "%)</span>\n                </div>\n                <div class=\"progress mb-2\">\n                    <div class=\"progress-bar bg-secondary\" style=\"width: ").concat(Math.round(withoutTimer / total * 100), "%\"></div>\n                </div>\n            </div>\n            <div class=\"mb-2\">\n                <div class=\"d-flex justify-content-between\">\n                    <span>With One Timer</span>\n                    <span>").concat(withOneTimer, " (").concat(Math.round(withOneTimer / total * 100), "%)</span>\n                </div>\n                <div class=\"progress mb-2\">\n                    <div class=\"progress-bar bg-info\" style=\"width: ").concat(Math.round(withOneTimer / total * 100), "%\"></div>\n                </div>\n            </div>\n            <div class=\"mb-2\">\n                <div class=\"d-flex justify-content-between\">\n                    <span>With Multiple Timers</span>\n                    <span>").concat(withMultipleTimers, " (").concat(Math.round(withMultipleTimers / total * 100), "%)</span>\n                </div>\n                <div class=\"progress mb-2\">\n                    <div class=\"progress-bar bg-primary\" style=\"width: ").concat(Math.round(withMultipleTimers / total * 100), "%\"></div>\n                </div>\n            </div>\n        ");
+    }
+  }, {
+    key: "displayUserAnalytics",
+    value: function displayUserAnalytics(userAnalytics) {
+      var tbody = document.querySelector('#userAnalyticsTable tbody');
+      if (!tbody) return;
+      if (!userAnalytics || userAnalytics.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted">No user data available</td></tr>';
+        return;
+      }
+      tbody.innerHTML = userAnalytics.map(function (user) {
+        return "\n            <tr>\n                <td>".concat(user.user_name || "User ".concat(user.id_user), "</td>\n                <td>").concat(user.total_timer_uses || 0, "</td>\n                <td>").concat(user.total_updates || 0, "</td>\n                <td><span class=\"badge bg-warning\">").concat(user.yellow_zone_count || 0, "</span></td>\n                <td><span class=\"badge bg-danger\">").concat(user.red_zone_count || 0, "</span></td>\n                <td><span class=\"badge bg-dark\">").concat(user.black_zone_count || 0, "</span></td>\n            </tr>\n        ");
+      }).join('');
+    }
+  }, {
+    key: "getUserName",
+    value: function getUserName(userId) {
+      var userSelect = document.getElementById('analyticsUser');
+      if (userSelect) {
+        var option = userSelect.querySelector("option[value=\"".concat(userId, "\"]"));
+        if (option) {
+          return option.textContent || "User ".concat(userId);
+        }
+      }
+      return "User ".concat(userId);
+    }
+  }, {
+    key: "formatDuration",
+    value: function formatDuration(minutes) {
+      if (minutes < 60) {
+        return "".concat(Math.round(minutes), "m");
+      } else {
+        var hours = Math.floor(minutes / 60);
+        var mins = Math.round(minutes % 60);
+        return "".concat(hours, "h ").concat(mins, "m");
+      }
+    }
+  }, {
+    key: "showLoading",
+    value: function showLoading(show) {
+      var loading = document.getElementById('analyticsLoading');
+      if (loading) {
+        loading.style.display = show ? 'block' : 'none';
+      }
+    }
+  }, {
+    key: "showResults",
+    value: function showResults() {
+      var results = document.getElementById('analyticsResults');
+      if (results) {
+        results.style.display = 'block';
+      }
+    }
+  }, {
+    key: "hideResults",
+    value: function hideResults() {
+      var results = document.getElementById('analyticsResults');
+      if (results) {
+        results.style.display = 'none';
+      }
+    }
+  }, {
+    key: "showError",
+    value: function showError(message) {
+      alert('Error: ' + message);
+    }
+  }, {
+    key: "downloadFile",
+    value: function downloadFile(fileUrl) {
+      console.log('Downloading file from URL:', fileUrl);
+      var filename = fileUrl.split('/').pop() || 'export.xlsx';
+      var link = document.createElement('a');
+      link.href = fileUrl;
+      link.download = filename;
+      link.target = '_blank';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+  }, {
+    key: "loadTimerLogs",
+    value: function loadTimerLogs() {
+      return __awaiter(this, void 0, void 0, /*#__PURE__*/_regeneratorRuntime().mark(function _callee3() {
+        var form, formData, params, _iterator3, _step3, _step3$value, key, value, actionSelect, response, data;
+        return _regeneratorRuntime().wrap(function _callee3$(_context3) {
+          while (1) switch (_context3.prev = _context3.next) {
+            case 0:
+              this.resetLogsPagination();
+              form = document.getElementById('analyticsFilters');
+              if (form) {
+                _context3.next = 4;
+                break;
+              }
+              return _context3.abrupt("return");
+            case 4:
+              formData = new FormData(form);
+              params = new URLSearchParams();
+              _iterator3 = _createForOfIteratorHelper(formData.entries());
+              try {
+                for (_iterator3.s(); !(_step3 = _iterator3.n()).done;) {
+                  _step3$value = _slicedToArray(_step3.value, 2), key = _step3$value[0], value = _step3$value[1];
+                  if (value && key !== 'action') {
+                    params.append(key, value.toString());
+                  }
+                }
+              } catch (err) {
+                _iterator3.e(err);
+              } finally {
+                _iterator3.f();
+              }
+              actionSelect = form.querySelector('#analyticsAction');
+              if (actionSelect && actionSelect.value) {
+                params.append('timer_action', actionSelect.value);
+              }
+              params.append('offset', this.currentLogsOffset.toString());
+              params.append('limit', this.logsPerPage.toString());
+              params.append('action', 'get_timer_logs_analytics');
+              _context3.prev = 13;
+              this.showLoading(true);
+              _context3.next = 17;
+              return fetch(this.ajaxUrl, {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/x-www-form-urlencoded'
+                },
+                body: params.toString()
+              });
+            case 17:
+              response = _context3.sent;
+              _context3.next = 20;
+              return response.json();
+            case 20:
+              data = _context3.sent;
+              if (data.success) {
+                console.log('Timer logs response:', data.data);
+                this.displayTimerLogs(data.data.logs, true);
+                this.updateLoadMoreButton(data.data.logs.length, data.data.total_logs);
+              } else {
+                this.showError(data.data.message || 'Failed to load timer logs');
+              }
+              _context3.next = 28;
+              break;
+            case 24:
+              _context3.prev = 24;
+              _context3.t0 = _context3["catch"](13);
+              console.error('Error loading timer logs:', _context3.t0);
+              this.showError('Network error occurred');
+            case 28:
+              _context3.prev = 28;
+              this.showLoading(false);
+              return _context3.finish(28);
+            case 31:
+            case "end":
+              return _context3.stop();
+          }
+        }, _callee3, this, [[13, 24, 28, 31]]);
+      }));
+    }
+  }, {
+    key: "displayTimerLogs",
+    value: function displayTimerLogs(logs) {
+      var _this2 = this;
+      var replace = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : false;
+      var tbody = document.querySelector('#timerLogsTable tbody');
+      if (!tbody) return;
+      if (replace) {
+        tbody.innerHTML = '';
+      }
+      if (logs.length === 0 && replace) {
+        var row = document.createElement('tr');
+        row.innerHTML = '<td colspan="7" class="text-center">No timer logs found</td>';
+        tbody.appendChild(row);
+        return;
+      }
+      logs.forEach(function (log) {
+        var row = document.createElement('tr');
+        var actionBadge = _this2.getActionBadge(log.action);
+        var loadType = log.flt === 1 || log.flt === '1' ? 'FLT' : 'Regular';
+        row.innerHTML = "\n                <td>".concat(log.formatted_time, "</td>\n                <td>").concat(log.user_name, "</td>\n                <td>").concat(log.load_id, "</td>\n                <td>").concat(actionBadge, "</td>\n                <td>").concat(log.comment || '-', "</td>\n                <td>").concat(log.project, "</td>\n                <td>").concat(loadType, "</td>\n            ");
+        tbody.appendChild(row);
+      });
+    }
+  }, {
+    key: "getActionBadge",
+    value: function getActionBadge(action) {
+      var badges = {
+        'start': '<span class="badge bg-success">Start</span>',
+        'pause': '<span class="badge bg-warning">Pause</span>',
+        'resume': '<span class="badge bg-info">Resume</span>',
+        'stop': '<span class="badge bg-danger">Stop</span>',
+        'update': '<span class="badge bg-primary">Update</span>'
+      };
+      return badges[action] || "<span class=\"badge bg-secondary\">".concat(action, "</span>");
+    }
+  }, {
+    key: "clearTimerLogsTable",
+    value: function clearTimerLogsTable() {
+      var tbody = document.querySelector('#timerLogsTable tbody');
+      if (tbody) {
+        tbody.innerHTML = '';
+      }
+    }
+  }, {
+    key: "resetLogsPagination",
+    value: function resetLogsPagination() {
+      this.currentLogsOffset = 0;
+      this.hasMoreLogs = true;
+      var loadMoreBtn = document.getElementById('loadMoreLogs');
+      if (loadMoreBtn) {
+        loadMoreBtn.style.display = 'none';
+        loadMoreBtn.textContent = 'Load More Logs';
+      }
+      console.log('Timer Analytics: Reset logs pagination state');
+    }
+  }, {
+    key: "loadMoreTimerLogs",
+    value: function loadMoreTimerLogs() {
+      return __awaiter(this, void 0, void 0, /*#__PURE__*/_regeneratorRuntime().mark(function _callee4() {
+        var form, formData, params, _iterator4, _step4, _step4$value, key, value, actionSelect, loadMoreBtn, response, data, _loadMoreBtn;
+        return _regeneratorRuntime().wrap(function _callee4$(_context4) {
+          while (1) switch (_context4.prev = _context4.next) {
+            case 0:
+              if (this.hasMoreLogs) {
+                _context4.next = 2;
+                break;
+              }
+              return _context4.abrupt("return");
+            case 2:
+              this.currentLogsOffset += this.logsPerPage;
+              form = document.getElementById('analyticsFilters');
+              if (form) {
+                _context4.next = 6;
+                break;
+              }
+              return _context4.abrupt("return");
+            case 6:
+              formData = new FormData(form);
+              params = new URLSearchParams();
+              _iterator4 = _createForOfIteratorHelper(formData.entries());
+              try {
+                for (_iterator4.s(); !(_step4 = _iterator4.n()).done;) {
+                  _step4$value = _slicedToArray(_step4.value, 2), key = _step4$value[0], value = _step4$value[1];
+                  if (value && key !== 'action') {
+                    params.append(key, value.toString());
+                  }
+                }
+              } catch (err) {
+                _iterator4.e(err);
+              } finally {
+                _iterator4.f();
+              }
+              actionSelect = form.querySelector('#analyticsAction');
+              if (actionSelect && actionSelect.value) {
+                params.append('timer_action', actionSelect.value);
+              }
+              params.append('offset', this.currentLogsOffset.toString());
+              params.append('limit', this.logsPerPage.toString());
+              params.append('action', 'get_timer_logs_analytics');
+              _context4.prev = 15;
+              loadMoreBtn = document.getElementById('loadMoreLogs');
+              if (loadMoreBtn) {
+                loadMoreBtn.disabled = true;
+                loadMoreBtn.textContent = 'Loading...';
+              }
+              _context4.next = 20;
+              return fetch(this.ajaxUrl, {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/x-www-form-urlencoded'
+                },
+                body: params.toString()
+              });
+            case 20:
+              response = _context4.sent;
+              _context4.next = 23;
+              return response.json();
+            case 23:
+              data = _context4.sent;
+              if (data.success) {
+                this.displayTimerLogs(data.data.logs, false);
+                this.updateLoadMoreButton(data.data.logs.length, data.data.total_logs);
+              } else {
+                this.showError(data.data.message || 'Failed to load more timer logs');
+              }
+              _context4.next = 31;
+              break;
+            case 27:
+              _context4.prev = 27;
+              _context4.t0 = _context4["catch"](15);
+              console.error('Error loading more timer logs:', _context4.t0);
+              this.showError('Network error occurred');
+            case 31:
+              _context4.prev = 31;
+              _loadMoreBtn = document.getElementById('loadMoreLogs');
+              if (_loadMoreBtn) {
+                _loadMoreBtn.disabled = false;
+              }
+              return _context4.finish(31);
+            case 35:
+            case "end":
+              return _context4.stop();
+          }
+        }, _callee4, this, [[15, 27, 31, 35]]);
+      }));
+    }
+  }, {
+    key: "updateLoadMoreButton",
+    value: function updateLoadMoreButton(loadedCount, totalLogs) {
+      var loadMoreBtn = document.getElementById('loadMoreLogs');
+      if (!loadMoreBtn) return;
+      var totalDisplayed = this.currentLogsOffset + loadedCount;
+      console.log('updateLoadMoreButton:', {
+        loadedCount: loadedCount,
+        totalLogs: totalLogs,
+        currentLogsOffset: this.currentLogsOffset,
+        totalDisplayed: totalDisplayed,
+        logsPerPage: this.logsPerPage,
+        hasMoreLogs: this.hasMoreLogs
+      });
+      if (loadedCount < this.logsPerPage || totalDisplayed >= totalLogs) {
+        this.hasMoreLogs = false;
+        loadMoreBtn.style.display = 'none';
+        console.log('Hiding Load More button - no more logs');
+      } else {
+        this.hasMoreLogs = true;
+        loadMoreBtn.style.display = 'inline-block';
+        loadMoreBtn.textContent = "Load More Logs (".concat(totalDisplayed, "/").concat(totalLogs, ")");
+        console.log('Showing Load More button with count:', "".concat(totalDisplayed, "/").concat(totalLogs));
+      }
+    }
+  }]);
+}();
+
+/***/ }),
+
+/***/ "./src/js/components/timer-control.ts":
+/*!********************************************!*\
+  !*** ./src/js/components/timer-control.ts ***!
+  \********************************************/
+/***/ (function(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   TimerControl: function() { return /* binding */ TimerControl; }
+/* harmony export */ });
+/* harmony import */ var _info_messages__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./info-messages */ "./src/js/components/info-messages.ts");
+function _typeof(o) { "@babel/helpers - typeof"; return _typeof = "function" == typeof Symbol && "symbol" == typeof Symbol.iterator ? function (o) { return typeof o; } : function (o) { return o && "function" == typeof Symbol && o.constructor === Symbol && o !== Symbol.prototype ? "symbol" : typeof o; }, _typeof(o); }
+function _slicedToArray(r, e) { return _arrayWithHoles(r) || _iterableToArrayLimit(r, e) || _unsupportedIterableToArray(r, e) || _nonIterableRest(); }
+function _nonIterableRest() { throw new TypeError("Invalid attempt to destructure non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method."); }
+function _unsupportedIterableToArray(r, a) { if (r) { if ("string" == typeof r) return _arrayLikeToArray(r, a); var t = {}.toString.call(r).slice(8, -1); return "Object" === t && r.constructor && (t = r.constructor.name), "Map" === t || "Set" === t ? Array.from(r) : "Arguments" === t || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(t) ? _arrayLikeToArray(r, a) : void 0; } }
+function _arrayLikeToArray(r, a) { (null == a || a > r.length) && (a = r.length); for (var e = 0, n = Array(a); e < a; e++) n[e] = r[e]; return n; }
+function _iterableToArrayLimit(r, l) { var t = null == r ? null : "undefined" != typeof Symbol && r[Symbol.iterator] || r["@@iterator"]; if (null != t) { var e, n, i, u, a = [], f = !0, o = !1; try { if (i = (t = t.call(r)).next, 0 === l) { if (Object(t) !== t) return; f = !1; } else for (; !(f = (e = i.call(t)).done) && (a.push(e.value), a.length !== l); f = !0); } catch (r) { o = !0, n = r; } finally { try { if (!f && null != t.return && (u = t.return(), Object(u) !== u)) return; } finally { if (o) throw n; } } return a; } }
+function _arrayWithHoles(r) { if (Array.isArray(r)) return r; }
+function _regeneratorRuntime() { "use strict"; /*! regenerator-runtime -- Copyright (c) 2014-present, Facebook, Inc. -- license (MIT): https://github.com/facebook/regenerator/blob/main/LICENSE */ _regeneratorRuntime = function _regeneratorRuntime() { return e; }; var t, e = {}, r = Object.prototype, n = r.hasOwnProperty, o = Object.defineProperty || function (t, e, r) { t[e] = r.value; }, i = "function" == typeof Symbol ? Symbol : {}, a = i.iterator || "@@iterator", c = i.asyncIterator || "@@asyncIterator", u = i.toStringTag || "@@toStringTag"; function define(t, e, r) { return Object.defineProperty(t, e, { value: r, enumerable: !0, configurable: !0, writable: !0 }), t[e]; } try { define({}, ""); } catch (t) { define = function define(t, e, r) { return t[e] = r; }; } function wrap(t, e, r, n) { var i = e && e.prototype instanceof Generator ? e : Generator, a = Object.create(i.prototype), c = new Context(n || []); return o(a, "_invoke", { value: makeInvokeMethod(t, r, c) }), a; } function tryCatch(t, e, r) { try { return { type: "normal", arg: t.call(e, r) }; } catch (t) { return { type: "throw", arg: t }; } } e.wrap = wrap; var h = "suspendedStart", l = "suspendedYield", f = "executing", s = "completed", y = {}; function Generator() {} function GeneratorFunction() {} function GeneratorFunctionPrototype() {} var p = {}; define(p, a, function () { return this; }); var d = Object.getPrototypeOf, v = d && d(d(values([]))); v && v !== r && n.call(v, a) && (p = v); var g = GeneratorFunctionPrototype.prototype = Generator.prototype = Object.create(p); function defineIteratorMethods(t) { ["next", "throw", "return"].forEach(function (e) { define(t, e, function (t) { return this._invoke(e, t); }); }); } function AsyncIterator(t, e) { function invoke(r, o, i, a) { var c = tryCatch(t[r], t, o); if ("throw" !== c.type) { var u = c.arg, h = u.value; return h && "object" == _typeof(h) && n.call(h, "__await") ? e.resolve(h.__await).then(function (t) { invoke("next", t, i, a); }, function (t) { invoke("throw", t, i, a); }) : e.resolve(h).then(function (t) { u.value = t, i(u); }, function (t) { return invoke("throw", t, i, a); }); } a(c.arg); } var r; o(this, "_invoke", { value: function value(t, n) { function callInvokeWithMethodAndArg() { return new e(function (e, r) { invoke(t, n, e, r); }); } return r = r ? r.then(callInvokeWithMethodAndArg, callInvokeWithMethodAndArg) : callInvokeWithMethodAndArg(); } }); } function makeInvokeMethod(e, r, n) { var o = h; return function (i, a) { if (o === f) throw Error("Generator is already running"); if (o === s) { if ("throw" === i) throw a; return { value: t, done: !0 }; } for (n.method = i, n.arg = a;;) { var c = n.delegate; if (c) { var u = maybeInvokeDelegate(c, n); if (u) { if (u === y) continue; return u; } } if ("next" === n.method) n.sent = n._sent = n.arg;else if ("throw" === n.method) { if (o === h) throw o = s, n.arg; n.dispatchException(n.arg); } else "return" === n.method && n.abrupt("return", n.arg); o = f; var p = tryCatch(e, r, n); if ("normal" === p.type) { if (o = n.done ? s : l, p.arg === y) continue; return { value: p.arg, done: n.done }; } "throw" === p.type && (o = s, n.method = "throw", n.arg = p.arg); } }; } function maybeInvokeDelegate(e, r) { var n = r.method, o = e.iterator[n]; if (o === t) return r.delegate = null, "throw" === n && e.iterator.return && (r.method = "return", r.arg = t, maybeInvokeDelegate(e, r), "throw" === r.method) || "return" !== n && (r.method = "throw", r.arg = new TypeError("The iterator does not provide a '" + n + "' method")), y; var i = tryCatch(o, e.iterator, r.arg); if ("throw" === i.type) return r.method = "throw", r.arg = i.arg, r.delegate = null, y; var a = i.arg; return a ? a.done ? (r[e.resultName] = a.value, r.next = e.nextLoc, "return" !== r.method && (r.method = "next", r.arg = t), r.delegate = null, y) : a : (r.method = "throw", r.arg = new TypeError("iterator result is not an object"), r.delegate = null, y); } function pushTryEntry(t) { var e = { tryLoc: t[0] }; 1 in t && (e.catchLoc = t[1]), 2 in t && (e.finallyLoc = t[2], e.afterLoc = t[3]), this.tryEntries.push(e); } function resetTryEntry(t) { var e = t.completion || {}; e.type = "normal", delete e.arg, t.completion = e; } function Context(t) { this.tryEntries = [{ tryLoc: "root" }], t.forEach(pushTryEntry, this), this.reset(!0); } function values(e) { if (e || "" === e) { var r = e[a]; if (r) return r.call(e); if ("function" == typeof e.next) return e; if (!isNaN(e.length)) { var o = -1, i = function next() { for (; ++o < e.length;) if (n.call(e, o)) return next.value = e[o], next.done = !1, next; return next.value = t, next.done = !0, next; }; return i.next = i; } } throw new TypeError(_typeof(e) + " is not iterable"); } return GeneratorFunction.prototype = GeneratorFunctionPrototype, o(g, "constructor", { value: GeneratorFunctionPrototype, configurable: !0 }), o(GeneratorFunctionPrototype, "constructor", { value: GeneratorFunction, configurable: !0 }), GeneratorFunction.displayName = define(GeneratorFunctionPrototype, u, "GeneratorFunction"), e.isGeneratorFunction = function (t) { var e = "function" == typeof t && t.constructor; return !!e && (e === GeneratorFunction || "GeneratorFunction" === (e.displayName || e.name)); }, e.mark = function (t) { return Object.setPrototypeOf ? Object.setPrototypeOf(t, GeneratorFunctionPrototype) : (t.__proto__ = GeneratorFunctionPrototype, define(t, u, "GeneratorFunction")), t.prototype = Object.create(g), t; }, e.awrap = function (t) { return { __await: t }; }, defineIteratorMethods(AsyncIterator.prototype), define(AsyncIterator.prototype, c, function () { return this; }), e.AsyncIterator = AsyncIterator, e.async = function (t, r, n, o, i) { void 0 === i && (i = Promise); var a = new AsyncIterator(wrap(t, r, n, o), i); return e.isGeneratorFunction(r) ? a : a.next().then(function (t) { return t.done ? t.value : a.next(); }); }, defineIteratorMethods(g), define(g, u, "Generator"), define(g, a, function () { return this; }), define(g, "toString", function () { return "[object Generator]"; }), e.keys = function (t) { var e = Object(t), r = []; for (var n in e) r.push(n); return r.reverse(), function next() { for (; r.length;) { var t = r.pop(); if (t in e) return next.value = t, next.done = !1, next; } return next.done = !0, next; }; }, e.values = values, Context.prototype = { constructor: Context, reset: function reset(e) { if (this.prev = 0, this.next = 0, this.sent = this._sent = t, this.done = !1, this.delegate = null, this.method = "next", this.arg = t, this.tryEntries.forEach(resetTryEntry), !e) for (var r in this) "t" === r.charAt(0) && n.call(this, r) && !isNaN(+r.slice(1)) && (this[r] = t); }, stop: function stop() { this.done = !0; var t = this.tryEntries[0].completion; if ("throw" === t.type) throw t.arg; return this.rval; }, dispatchException: function dispatchException(e) { if (this.done) throw e; var r = this; function handle(n, o) { return a.type = "throw", a.arg = e, r.next = n, o && (r.method = "next", r.arg = t), !!o; } for (var o = this.tryEntries.length - 1; o >= 0; --o) { var i = this.tryEntries[o], a = i.completion; if ("root" === i.tryLoc) return handle("end"); if (i.tryLoc <= this.prev) { var c = n.call(i, "catchLoc"), u = n.call(i, "finallyLoc"); if (c && u) { if (this.prev < i.catchLoc) return handle(i.catchLoc, !0); if (this.prev < i.finallyLoc) return handle(i.finallyLoc); } else if (c) { if (this.prev < i.catchLoc) return handle(i.catchLoc, !0); } else { if (!u) throw Error("try statement without catch or finally"); if (this.prev < i.finallyLoc) return handle(i.finallyLoc); } } } }, abrupt: function abrupt(t, e) { for (var r = this.tryEntries.length - 1; r >= 0; --r) { var o = this.tryEntries[r]; if (o.tryLoc <= this.prev && n.call(o, "finallyLoc") && this.prev < o.finallyLoc) { var i = o; break; } } i && ("break" === t || "continue" === t) && i.tryLoc <= e && e <= i.finallyLoc && (i = null); var a = i ? i.completion : {}; return a.type = t, a.arg = e, i ? (this.method = "next", this.next = i.finallyLoc, y) : this.complete(a); }, complete: function complete(t, e) { if ("throw" === t.type) throw t.arg; return "break" === t.type || "continue" === t.type ? this.next = t.arg : "return" === t.type ? (this.rval = this.arg = t.arg, this.method = "return", this.next = "end") : "normal" === t.type && e && (this.next = e), y; }, finish: function finish(t) { for (var e = this.tryEntries.length - 1; e >= 0; --e) { var r = this.tryEntries[e]; if (r.finallyLoc === t) return this.complete(r.completion, r.afterLoc), resetTryEntry(r), y; } }, catch: function _catch(t) { for (var e = this.tryEntries.length - 1; e >= 0; --e) { var r = this.tryEntries[e]; if (r.tryLoc === t) { var n = r.completion; if ("throw" === n.type) { var o = n.arg; resetTryEntry(r); } return o; } } throw Error("illegal catch attempt"); }, delegateYield: function delegateYield(e, r, n) { return this.delegate = { iterator: values(e), resultName: r, nextLoc: n }, "next" === this.method && (this.arg = t), y; } }, e; }
+function _classCallCheck(a, n) { if (!(a instanceof n)) throw new TypeError("Cannot call a class as a function"); }
+function _defineProperties(e, r) { for (var t = 0; t < r.length; t++) { var o = r[t]; o.enumerable = o.enumerable || !1, o.configurable = !0, "value" in o && (o.writable = !0), Object.defineProperty(e, _toPropertyKey(o.key), o); } }
+function _createClass(e, r, t) { return r && _defineProperties(e.prototype, r), t && _defineProperties(e, t), Object.defineProperty(e, "prototype", { writable: !1 }), e; }
+function _toPropertyKey(t) { var i = _toPrimitive(t, "string"); return "symbol" == _typeof(i) ? i : i + ""; }
+function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e = t[Symbol.toPrimitive]; if (void 0 !== e) { var i = e.call(t, r || "default"); if ("object" != _typeof(i)) return i; throw new TypeError("@@toPrimitive must return a primitive value."); } return ("string" === r ? String : Number)(t); }
+var __awaiter = undefined && undefined.__awaiter || function (thisArg, _arguments, P, generator) {
+  function adopt(value) {
+    return value instanceof P ? value : new P(function (resolve) {
+      resolve(value);
+    });
+  }
+  return new (P || (P = Promise))(function (resolve, reject) {
+    function fulfilled(value) {
+      try {
+        step(generator.next(value));
+      } catch (e) {
+        reject(e);
+      }
+    }
+    function rejected(value) {
+      try {
+        step(generator["throw"](value));
+      } catch (e) {
+        reject(e);
+      }
+    }
+    function step(result) {
+      result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected);
+    }
+    step((generator = generator.apply(thisArg, _arguments || [])).next());
+  });
+};
+
+var TimerControl = /*#__PURE__*/function () {
+  function TimerControl(ajaxUrl) {
+    _classCallCheck(this, TimerControl);
+    this.modal = null;
+    this.form = null;
+    this.currentLoadId = null;
+    this.currentTimer = null;
+    this.currentFlt = null;
+    this.currentProject = null;
+    this.ajaxUrl = ajaxUrl;
+    this.init();
+  }
+  return _createClass(TimerControl, [{
+    key: "init",
+    value: function init() {
+      var _a;
+      this.modal = document.getElementById('timerControlModal');
+      this.form = (_a = this.modal) === null || _a === void 0 ? void 0 : _a.querySelector('.js-timer-control-form');
+      if (!this.modal || !this.form) {
+        console.warn('Timer control modal not found - timer functionality will not be available');
+        return;
+      }
+      this.setupEventListeners();
+    }
+  }, {
+    key: "setupEventListeners",
+    value: function setupEventListeners() {
+      var _this = this;
+      var _a, _b, _c, _d, _e, _f, _g, _h;
+      document.addEventListener('click', function (e) {
+        var target = e.target;
+        var timerBtn = target.closest('.js-timer-tracking');
+        if (timerBtn) {
+          e.preventDefault();
+          _this.openModal(timerBtn);
+        }
+      });
+      var startBtn = (_a = this.modal) === null || _a === void 0 ? void 0 : _a.querySelector('.js-timer-start');
+      var pauseBtn = (_b = this.modal) === null || _b === void 0 ? void 0 : _b.querySelector('.js-timer-pause');
+      var resumeBtn = (_c = this.modal) === null || _c === void 0 ? void 0 : _c.querySelector('.js-timer-resume');
+      var stopBtn = (_d = this.modal) === null || _d === void 0 ? void 0 : _d.querySelector('.js-timer-stop');
+      var updateBtn = (_e = this.modal) === null || _e === void 0 ? void 0 : _e.querySelector('.js-timer-update');
+      startBtn === null || startBtn === void 0 ? void 0 : startBtn.addEventListener('click', function () {
+        return _this.handleTimerAction('start');
+      });
+      pauseBtn === null || pauseBtn === void 0 ? void 0 : pauseBtn.addEventListener('click', function () {
+        return _this.handleTimerAction('pause');
+      });
+      resumeBtn === null || resumeBtn === void 0 ? void 0 : resumeBtn.addEventListener('click', function () {
+        return _this.handleTimerAction('resume');
+      });
+      stopBtn === null || stopBtn === void 0 ? void 0 : stopBtn.addEventListener('click', function () {
+        return _this.handleTimerAction('stop');
+      });
+      updateBtn === null || updateBtn === void 0 ? void 0 : updateBtn.addEventListener('click', function () {
+        return _this.handleTimerAction('update');
+      });
+      var commentField = (_f = this.modal) === null || _f === void 0 ? void 0 : _f.querySelector('.js-timer-comment');
+      commentField === null || commentField === void 0 ? void 0 : commentField.addEventListener('input', function () {
+        return _this.validateComment();
+      });
+      var closeBtn = (_g = this.modal) === null || _g === void 0 ? void 0 : _g.querySelector('.btn-close');
+      closeBtn === null || closeBtn === void 0 ? void 0 : closeBtn.addEventListener('click', function () {
+        return _this.hideModal();
+      });
+      var footerCloseBtn = (_h = this.modal) === null || _h === void 0 ? void 0 : _h.querySelector('.modal-footer .btn-secondary');
+      footerCloseBtn === null || footerCloseBtn === void 0 ? void 0 : footerCloseBtn.addEventListener('click', function () {
+        return _this.hideModal();
+      });
+    }
+  }, {
+    key: "openModal",
+    value: function openModal(button) {
+      var _a;
+      return __awaiter(this, void 0, void 0, /*#__PURE__*/_regeneratorRuntime().mark(function _callee() {
+        var loadIdInput;
+        return _regeneratorRuntime().wrap(function _callee$(_context) {
+          while (1) switch (_context.prev = _context.next) {
+            case 0:
+              if (this.modal) {
+                _context.next = 3;
+                break;
+              }
+              (0,_info_messages__WEBPACK_IMPORTED_MODULE_0__.printMessage)('Timer modal not available', 'danger', 3000);
+              return _context.abrupt("return");
+            case 3:
+              this.currentLoadId = button.dataset.id || null;
+              this.currentFlt = button.dataset.flt || null;
+              this.currentProject = button.dataset.project || null;
+              if (this.currentLoadId) {
+                _context.next = 9;
+                break;
+              }
+              (0,_info_messages__WEBPACK_IMPORTED_MODULE_0__.printMessage)('Load ID not found', 'danger', 3000);
+              return _context.abrupt("return");
+            case 9:
+              loadIdInput = (_a = this.form) === null || _a === void 0 ? void 0 : _a.querySelector('.js-load-id');
+              if (loadIdInput) {
+                loadIdInput.value = this.currentLoadId;
+              }
+              _context.next = 13;
+              return this.loadTimerStatus();
+            case 13:
+              this.showModal();
+            case 14:
+            case "end":
+              return _context.stop();
+          }
+        }, _callee, this);
+      }));
+    }
+  }, {
+    key: "showModal",
+    value: function showModal() {
+      var _this2 = this;
+      if (!this.modal) return;
+      try {
+        if (typeof window.bootstrap !== 'undefined' && window.bootstrap.Modal) {
+          var modalInstance = new window.bootstrap.Modal(this.modal);
+          modalInstance.show();
+          return;
+        }
+      } catch (error) {
+        console.warn('Bootstrap 5 Modal failed:', error);
+      }
+      try {
+        if (typeof window.$ !== 'undefined' && window.$.fn.modal) {
+          window.$(this.modal).modal('show');
+          return;
+        }
+      } catch (error) {
+        console.warn('jQuery Bootstrap Modal failed:', error);
+      }
+      this.modal.style.display = 'block';
+      this.modal.classList.add('show');
+      this.modal.setAttribute('aria-hidden', 'false');
+      document.body.classList.add('modal-open');
+      var backdrop = document.createElement('div');
+      backdrop.className = 'modal-backdrop fade show';
+      backdrop.id = 'timer-modal-backdrop';
+      document.body.appendChild(backdrop);
+      backdrop.addEventListener('click', function () {
+        return _this2.hideModal();
+      });
+      var _escapeHandler = function escapeHandler(e) {
+        if (e.key === 'Escape') {
+          _this2.hideModal();
+          document.removeEventListener('keydown', _escapeHandler);
+        }
+      };
+      document.addEventListener('keydown', _escapeHandler);
+    }
+  }, {
+    key: "hideModal",
+    value: function hideModal() {
+      if (!this.modal) return;
+      try {
+        if (typeof window.bootstrap !== 'undefined' && window.bootstrap.Modal) {
+          var modalInstance = window.bootstrap.Modal.getInstance(this.modal);
+          if (modalInstance) {
+            modalInstance.hide();
+            return;
+          }
+        }
+      } catch (error) {
+        console.warn('Bootstrap 5 Modal hide failed:', error);
+      }
+      try {
+        if (typeof window.$ !== 'undefined' && window.$.fn.modal) {
+          window.$(this.modal).modal('hide');
+          return;
+        }
+      } catch (error) {
+        console.warn('jQuery Bootstrap Modal hide failed:', error);
+      }
+      this.modal.style.display = 'none';
+      this.modal.classList.remove('show');
+      this.modal.setAttribute('aria-hidden', 'true');
+      document.body.classList.remove('modal-open');
+      var backdrop = document.getElementById('timer-modal-backdrop');
+      if (backdrop) {
+        backdrop.remove();
+      }
+    }
+  }, {
+    key: "loadTimerStatus",
+    value: function loadTimerStatus() {
+      return __awaiter(this, void 0, void 0, /*#__PURE__*/_regeneratorRuntime().mark(function _callee2() {
+        var formData, response, result;
+        return _regeneratorRuntime().wrap(function _callee2$(_context2) {
+          while (1) switch (_context2.prev = _context2.next) {
+            case 0:
+              if (this.currentLoadId) {
+                _context2.next = 2;
+                break;
+              }
+              return _context2.abrupt("return");
+            case 2:
+              _context2.prev = 2;
+              formData = new FormData();
+              formData.append('action', 'get_timer_status');
+              formData.append('load_id', this.currentLoadId);
+              _context2.next = 8;
+              return fetch(this.ajaxUrl, {
+                method: 'POST',
+                body: formData
+              });
+            case 8:
+              response = _context2.sent;
+              _context2.next = 11;
+              return response.json();
+            case 11:
+              result = _context2.sent;
+              if (!result.success) {
+                _context2.next = 20;
+                break;
+              }
+              this.currentTimer = result.data.timer;
+              if (this.currentTimer && this.currentTimer.debug) {
+                console.log('Timer Debug Info:', this.currentTimer.debug);
+                console.log('Current Timer:', this.currentTimer);
+              }
+              this.updateUI();
+              _context2.next = 18;
+              return this.loadTimerHistory();
+            case 18:
+              _context2.next = 22;
+              break;
+            case 20:
+              this.currentTimer = null;
+              this.updateUI();
+            case 22:
+              _context2.next = 28;
+              break;
+            case 24:
+              _context2.prev = 24;
+              _context2.t0 = _context2["catch"](2);
+              (0,_info_messages__WEBPACK_IMPORTED_MODULE_0__.printMessage)("Error loading timer status: ".concat(_context2.t0), 'danger', 3000);
+              console.error('Error loading timer status:', _context2.t0);
+            case 28:
+            case "end":
+              return _context2.stop();
+          }
+        }, _callee2, this, [[2, 24]]);
+      }));
+    }
+  }, {
+    key: "updateUI",
+    value: function updateUI() {
+      var _a, _b, _c, _d, _e, _f, _g, _h, _j;
+      var statusDisplay = (_a = this.modal) === null || _a === void 0 ? void 0 : _a.querySelector('.js-timer-status-display');
+      var currentStatus = (_b = this.modal) === null || _b === void 0 ? void 0 : _b.querySelector('.js-current-status');
+      var startTime = (_c = this.modal) === null || _c === void 0 ? void 0 : _c.querySelector('.js-timer-start-time');
+      var duration = (_d = this.modal) === null || _d === void 0 ? void 0 : _d.querySelector('.js-timer-duration');
+      var startBtn = (_e = this.modal) === null || _e === void 0 ? void 0 : _e.querySelector('.js-timer-start');
+      var pauseBtn = (_f = this.modal) === null || _f === void 0 ? void 0 : _f.querySelector('.js-timer-pause');
+      var resumeBtn = (_g = this.modal) === null || _g === void 0 ? void 0 : _g.querySelector('.js-timer-resume');
+      var stopBtn = (_h = this.modal) === null || _h === void 0 ? void 0 : _h.querySelector('.js-timer-stop');
+      var updateBtn = (_j = this.modal) === null || _j === void 0 ? void 0 : _j.querySelector('.js-timer-update');
+      [startBtn, pauseBtn, resumeBtn, stopBtn, updateBtn].forEach(function (btn) {
+        if (btn) btn.style.display = 'none';
+      });
+      if (this.currentTimer) {
+        statusDisplay.style.display = 'block';
+        currentStatus.textContent = this.currentTimer.status;
+        startTime.textContent = this.formatDateTime(this.currentTimer.create_timer);
+        if (this.currentTimer.status === 'active') {
+          duration.textContent = this.calculateCurrentDuration();
+          pauseBtn.style.display = 'inline-block';
+          stopBtn.style.display = 'inline-block';
+          updateBtn.style.display = 'inline-block';
+        } else if (this.currentTimer.status === 'paused') {
+          duration.textContent = this.formatDuration(this.currentTimer.duration || 0);
+          resumeBtn.style.display = 'inline-block';
+          stopBtn.style.display = 'inline-block';
+          updateBtn.style.display = 'inline-block';
+        } else if (this.currentTimer.status === 'stopped') {
+          duration.textContent = this.formatDuration(this.currentTimer.duration || 0);
+          startBtn.style.display = 'inline-block';
+        }
+      } else {
+        statusDisplay.style.display = 'none';
+        startBtn.style.display = 'inline-block';
+      }
+    }
+  }, {
+    key: "handleTimerAction",
+    value: function handleTimerAction(action) {
+      var _a, _b;
+      return __awaiter(this, void 0, void 0, /*#__PURE__*/_regeneratorRuntime().mark(function _callee3() {
+        var commentField, comment, formData, response, result;
+        return _regeneratorRuntime().wrap(function _callee3$(_context3) {
+          while (1) switch (_context3.prev = _context3.next) {
+            case 0:
+              if (this.currentLoadId) {
+                _context3.next = 2;
+                break;
+              }
+              return _context3.abrupt("return");
+            case 2:
+              commentField = (_a = this.modal) === null || _a === void 0 ? void 0 : _a.querySelector('.js-timer-comment');
+              comment = (commentField === null || commentField === void 0 ? void 0 : commentField.value.trim()) || '';
+              if (!(action === 'pause' && !comment)) {
+                _context3.next = 7;
+                break;
+              }
+              this.showCommentRequired();
+              return _context3.abrupt("return");
+            case 7:
+              _context3.prev = 7;
+              formData = new FormData();
+              formData.append('action', "".concat(action, "_timer"));
+              formData.append('load_id', this.currentLoadId);
+              formData.append('comment', comment);
+              if (this.currentFlt !== null) {
+                formData.append('flt', this.currentFlt);
+              }
+              if (this.currentProject !== null) {
+                formData.append('project', this.currentProject);
+              }
+              console.log('Timer Control Debug - Sending data for action:', action);
+              console.log('  - load_id:', this.currentLoadId);
+              console.log('  - flt:', this.currentFlt);
+              console.log('  - project:', this.currentProject);
+              console.log('  - comment:', comment);
+              console.log('  - FormData entries:', Array.from(formData.entries()));
+              _context3.next = 22;
+              return fetch(this.ajaxUrl, {
+                method: 'POST',
+                body: formData
+              });
+            case 22:
+              response = _context3.sent;
+              _context3.next = 25;
+              return response.json();
+            case 25:
+              result = _context3.sent;
+              if (!result.success) {
+                _context3.next = 34;
+                break;
+              }
+              (0,_info_messages__WEBPACK_IMPORTED_MODULE_0__.printMessage)(result.data.message || "Timer ".concat(action, "ed successfully"), 'success', 3000);
+              if (commentField) commentField.value = '';
+              _context3.next = 31;
+              return this.loadTimerStatus();
+            case 31:
+              if (action === 'stop') {
+                this.hideModal();
+              }
+              _context3.next = 35;
+              break;
+            case 34:
+              (0,_info_messages__WEBPACK_IMPORTED_MODULE_0__.printMessage)(((_b = result.data) === null || _b === void 0 ? void 0 : _b.message) || "Failed to ".concat(action, " timer"), 'danger', 3000);
+            case 35:
+              _context3.next = 41;
+              break;
+            case 37:
+              _context3.prev = 37;
+              _context3.t0 = _context3["catch"](7);
+              (0,_info_messages__WEBPACK_IMPORTED_MODULE_0__.printMessage)("Error ".concat(action, "ing timer: ").concat(_context3.t0), 'danger', 3000);
+              console.error("Error ".concat(action, "ing timer:"), _context3.t0);
+            case 41:
+            case "end":
+              return _context3.stop();
+          }
+        }, _callee3, this, [[7, 37]]);
+      }));
+    }
+  }, {
+    key: "loadTimerHistory",
+    value: function loadTimerHistory() {
+      return __awaiter(this, void 0, void 0, /*#__PURE__*/_regeneratorRuntime().mark(function _callee4() {
+        var formData, response, result;
+        return _regeneratorRuntime().wrap(function _callee4$(_context4) {
+          while (1) switch (_context4.prev = _context4.next) {
+            case 0:
+              if (this.currentLoadId) {
+                _context4.next = 2;
+                break;
+              }
+              return _context4.abrupt("return");
+            case 2:
+              _context4.prev = 2;
+              formData = new FormData();
+              formData.append('action', 'get_timer_logs');
+              formData.append('load_id', this.currentLoadId);
+              _context4.next = 8;
+              return fetch(this.ajaxUrl, {
+                method: 'POST',
+                body: formData
+              });
+            case 8:
+              response = _context4.sent;
+              _context4.next = 11;
+              return response.json();
+            case 11:
+              result = _context4.sent;
+              if (result.success) {
+                this.displayTimerHistory(result.data.logs || []);
+              }
+              _context4.next = 18;
+              break;
+            case 15:
+              _context4.prev = 15;
+              _context4.t0 = _context4["catch"](2);
+              console.error('Error loading timer history:', _context4.t0);
+            case 18:
+            case "end":
+              return _context4.stop();
+          }
+        }, _callee4, this, [[2, 15]]);
+      }));
+    }
+  }, {
+    key: "displayTimerHistory",
+    value: function displayTimerHistory(logs) {
+      var _this3 = this;
+      var _a;
+      var historyContainer = (_a = this.modal) === null || _a === void 0 ? void 0 : _a.querySelector('.js-timer-history');
+      if (!historyContainer) return;
+      if (logs.length === 0) {
+        historyContainer.innerHTML = '<p class="text-muted">No timer history available</p>';
+        return;
+      }
+      var historyHTML = logs.map(function (log) {
+        return "\n            <div class=\"d-flex justify-content-between align-items-start border-bottom py-2\">\n                <div>\n                    <strong>".concat(_this3.capitalizeFirst(log.action), "</strong>\n                    ").concat(log.comment ? "<br><small class=\"text-muted\">".concat(log.comment, "</small>") : '', "\n                    ").concat(log.user_name ? "<br><small class=\"text-info\">by ".concat(log.user_name, "</small>") : '', "\n                </div>\n                <small class=\"text-muted text-right\">").concat(_this3.formatDateTime(log.created_at), "</small>\n            </div>\n        ");
+      }).join('');
+      historyContainer.innerHTML = historyHTML;
+    }
+  }, {
+    key: "validateComment",
+    value: function validateComment() {
+      var _a, _b;
+      var commentField = (_a = this.modal) === null || _a === void 0 ? void 0 : _a.querySelector('.js-timer-comment');
+      var commentRequired = (_b = this.modal) === null || _b === void 0 ? void 0 : _b.querySelector('.js-comment-required');
+      if (commentField && commentRequired) {
+        if (commentField.value.trim()) {
+          commentRequired.style.display = 'none';
+          commentField.classList.remove('is-invalid');
+        } else {
+          commentRequired.style.display = 'block';
+          commentField.classList.add('is-invalid');
+        }
+      }
+    }
+  }, {
+    key: "showCommentRequired",
+    value: function showCommentRequired() {
+      var _a, _b;
+      var commentField = (_a = this.modal) === null || _a === void 0 ? void 0 : _a.querySelector('.js-timer-comment');
+      var commentRequired = (_b = this.modal) === null || _b === void 0 ? void 0 : _b.querySelector('.js-comment-required');
+      if (commentField && commentRequired) {
+        commentRequired.style.display = 'block';
+        commentField.classList.add('is-invalid');
+        commentField.focus();
+      }
+    }
+  }, {
+    key: "calculateCurrentDuration",
+    value: function calculateCurrentDuration() {
+      if (!this.currentTimer) return '0h 0m';
+      var startTimeString = this.currentTimer.create_timer;
+      var _startTimeString$spli = startTimeString.split(' '),
+        _startTimeString$spli2 = _slicedToArray(_startTimeString$spli, 2),
+        datePart = _startTimeString$spli2[0],
+        timePart = _startTimeString$spli2[1];
+      var _datePart$split$map = datePart.split('-').map(Number),
+        _datePart$split$map2 = _slicedToArray(_datePart$split$map, 3),
+        year = _datePart$split$map2[0],
+        month = _datePart$split$map2[1],
+        day = _datePart$split$map2[2];
+      var _timePart$split$map = timePart.split(':').map(Number),
+        _timePart$split$map2 = _slicedToArray(_timePart$split$map, 3),
+        hour = _timePart$split$map2[0],
+        minute = _timePart$split$map2[1],
+        second = _timePart$split$map2[2];
+      var startTime = new Date();
+      startTime.setFullYear(year, month - 1, day);
+      startTime.setHours(hour, minute, second, 0);
+      var currentTime;
+      if (this.currentTimer.debug && this.currentTimer.debug.current_ny_time) {
+        var _this$currentTimer$de = this.currentTimer.debug.current_ny_time.split(' '),
+          _this$currentTimer$de2 = _slicedToArray(_this$currentTimer$de, 2),
+          currentDatePart = _this$currentTimer$de2[0],
+          currentTimePart = _this$currentTimer$de2[1];
+        var _currentDatePart$spli = currentDatePart.split('-').map(Number),
+          _currentDatePart$spli2 = _slicedToArray(_currentDatePart$spli, 3),
+          currentYear = _currentDatePart$spli2[0],
+          currentMonth = _currentDatePart$spli2[1],
+          currentDay = _currentDatePart$spli2[2];
+        var _currentTimePart$spli = currentTimePart.split(':').map(Number),
+          _currentTimePart$spli2 = _slicedToArray(_currentTimePart$spli, 3),
+          currentHour = _currentTimePart$spli2[0],
+          currentMinute = _currentTimePart$spli2[1],
+          currentSecond = _currentTimePart$spli2[2];
+        currentTime = new Date();
+        currentTime.setFullYear(currentYear, currentMonth - 1, currentDay);
+        currentTime.setHours(currentHour, currentMinute, currentSecond, 0);
+      } else {
+        currentTime = new Date();
+      }
+      var diffMs = currentTime.getTime() - startTime.getTime();
+      var diffMinutes = Math.floor(diffMs / (1000 * 60));
+      return this.formatDuration(diffMinutes);
+    }
+  }, {
+    key: "formatDuration",
+    value: function formatDuration(minutes) {
+      var hours = Math.floor(minutes / 60);
+      var mins = minutes % 60;
+      return "".concat(hours, "h ").concat(mins, "m");
+    }
+  }, {
+    key: "formatDateTime",
+    value: function formatDateTime(dateString) {
+      var _dateString$split = dateString.split(' '),
+        _dateString$split2 = _slicedToArray(_dateString$split, 2),
+        datePart = _dateString$split2[0],
+        timePart = _dateString$split2[1];
+      var _datePart$split = datePart.split('-'),
+        _datePart$split2 = _slicedToArray(_datePart$split, 3),
+        year = _datePart$split2[0],
+        month = _datePart$split2[1],
+        day = _datePart$split2[2];
+      var _timePart$split = timePart.split(':'),
+        _timePart$split2 = _slicedToArray(_timePart$split, 3),
+        hour = _timePart$split2[0],
+        minute = _timePart$split2[1],
+        second = _timePart$split2[2];
+      return "".concat(month, "/").concat(day, "/").concat(year, ", ").concat(hour, ":").concat(minute, ":").concat(second);
+    }
+  }, {
+    key: "capitalizeFirst",
+    value: function capitalizeFirst(str) {
+      return str.charAt(0).toUpperCase() + str.slice(1);
+    }
+  }]);
+}();
 
 /***/ }),
 
@@ -21914,7 +23349,13 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _components_quick_status_update__WEBPACK_IMPORTED_MODULE_33__ = __webpack_require__(/*! ./components/quick-status-update */ "./src/js/components/quick-status-update.ts");
 /* harmony import */ var _components_quick_copy__WEBPACK_IMPORTED_MODULE_34__ = __webpack_require__(/*! ./components/quick-copy */ "./src/js/components/quick-copy.ts");
 /* harmony import */ var _components_driver_popups__WEBPACK_IMPORTED_MODULE_35__ = __webpack_require__(/*! ./components/driver-popups */ "./src/js/components/driver-popups.ts");
-/* harmony import */ var _components_common_audio_helper__WEBPACK_IMPORTED_MODULE_36__ = __webpack_require__(/*! ./components/common/audio-helper */ "./src/js/components/common/audio-helper.ts");
+/* harmony import */ var _components_driver_popup_forms__WEBPACK_IMPORTED_MODULE_36__ = __webpack_require__(/*! ./components/driver-popup-forms */ "./src/js/components/driver-popup-forms.ts");
+/* harmony import */ var _components_common_audio_helper__WEBPACK_IMPORTED_MODULE_37__ = __webpack_require__(/*! ./components/common/audio-helper */ "./src/js/components/common/audio-helper.ts");
+/* harmony import */ var _components_timer_control__WEBPACK_IMPORTED_MODULE_38__ = __webpack_require__(/*! ./components/timer-control */ "./src/js/components/timer-control.ts");
+/* harmony import */ var _components_timer_analytics__WEBPACK_IMPORTED_MODULE_39__ = __webpack_require__(/*! ./components/timer-analytics */ "./src/js/components/timer-analytics.ts");
+
+
+
 
 
 
@@ -21967,7 +23408,10 @@ function ready() {
   };
   var popupInstance = new _parts_popup_window__WEBPACK_IMPORTED_MODULE_1__["default"]();
   popupInstance.init();
-  _components_common_audio_helper__WEBPACK_IMPORTED_MODULE_36__["default"].getInstance();
+  _components_common_audio_helper__WEBPACK_IMPORTED_MODULE_37__["default"].getInstance();
+  new _components_driver_popup_forms__WEBPACK_IMPORTED_MODULE_36__["default"](urlAjax);
+  new _components_timer_control__WEBPACK_IMPORTED_MODULE_38__.TimerControl(urlAjax);
+  new _components_timer_analytics__WEBPACK_IMPORTED_MODULE_39__.TimerAnalytics(urlAjax);
   (0,_components_create_report__WEBPACK_IMPORTED_MODULE_3__.actionCreateReportInit)(urlAjax);
   (0,_components_create_report__WEBPACK_IMPORTED_MODULE_3__.createDraftPosts)(urlAjax);
   (0,_components_create_report__WEBPACK_IMPORTED_MODULE_3__.updateFilesReportInit)(urlAjax);

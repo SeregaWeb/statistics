@@ -78,13 +78,19 @@ function tms_auto_update_driver_status_function() {
         );
         
         if ( $update_result !== false ) {
-            // Update date_available to current time
-            $current_time = current_time( 'mysql' );
+            // Update date_available to current New York time
+            $ny_timezone = new DateTimeZone( 'America/New_York' );
+            $ny_time = new DateTime( 'now', $ny_timezone );
+            $current_time = $ny_time->format( 'Y-m-d H:i:s' );
+            
             $wpdb->update(
                 $wpdb->prefix . 'drivers',
-                array( 'date_available' => $current_time ),
+                array( 
+                    'date_available' => null,
+                    'updated_zipcode' => $current_time
+                ),
                 array( 'id' => $driver_id ),
-                array( '%s' ),
+                array( null, '%s' ),
                 array( '%d' )
             );
             

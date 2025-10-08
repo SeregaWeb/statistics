@@ -43,7 +43,7 @@
                                 </select>
                                 <div class="js-status-readonly" style="display: none;">
                                     <p class="form-control-static js-status-text"></p>
-                                    <input type="hidden" name="driver_status_readonly" class="js-status-hidden" required>
+                                    <input type="hidden" name="driver_status_readonly" class="js-status-hidden">
                                 </div>
                             </div>
                         </div>

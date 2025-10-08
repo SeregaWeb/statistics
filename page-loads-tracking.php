@@ -8,12 +8,18 @@
 
 get_header();
 
+// Analytics caching now uses WordPress transients (no session needed)
+
 $TMSUsers = new TMSUsers();
+$TMSReportsTimer = new TMSReportsTimer();
 
 // Проверяем доступ к FLT
 $flt_user_access = get_field( 'flt', 'user_' . get_current_user_id() );
 $is_admin = current_user_can( 'administrator' );
 $show_flt_tabs = $flt_user_access || $is_admin;
+
+// Get user team for filtering dispatchers
+$my_team = $TMSUsers->check_group_access();
 
 // Определяем тип данных для загрузки
 $type = get_field_value( $_GET, 'type' );
@@ -55,9 +61,15 @@ $args                 = $reports->set_filter_params( $args, $office_dispatcher )
 $items                = $reports->get_table_items_tracking( $args );
 $post_tp              = 'tracking';
 $items[ 'page_type' ] = $post_tp;
+$items['hide_time_controls'] = true;
 if ( $is_flt ) {
 	$items[ 'flt' ] = true;
 }
+
+// Initialize smart analytics for current user
+$current_project = $is_flt ? 'flt' : '';
+$smart_analytics = $TMSReportsTimer->get_smart_analytics( $current_project, $is_flt );
+$items['smart_analytics'] = $smart_analytics;
 
 ?>
     <div class="container-fluid">
@@ -83,7 +95,7 @@ if ( $is_flt ) {
                         ?>
                         
 						<?php
-						echo esc_html( get_template_part( TEMPLATE_PATH . 'filters/report', 'filter-tracking' ) );
+						echo esc_html( get_template_part( TEMPLATE_PATH . 'filters/report', 'filter-tracking', array( 'my_team' => $my_team ) ) );
 						
 						echo esc_html( get_template_part( TEMPLATE_PATH . 'tables/report', 'table-tracking', $items ) );
 						?>

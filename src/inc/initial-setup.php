@@ -84,7 +84,10 @@ $TMSDrivers->init();
 $TMSContact = new TMSContacts();
 $TMSContact->init();
 
-// $tms_recruiter = new TMSDriversRecruiter();
+$reportsTimer = new TMSReportsTimer();
+$reportsTimer->init();
+
+$tms_recruiter = new TMSDriversRecruiter();
 
 function import_drivers_from_json( $page = 1 ) {
 	$theme_dir  = get_stylesheet_directory();

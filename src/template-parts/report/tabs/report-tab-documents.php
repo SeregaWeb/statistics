@@ -198,7 +198,20 @@ if ( $report_object ) {
     <input type="hidden" name="flt" value="<?php echo $flt; ?>">
 <?php endif; ?>
 
-<?php if ( ( $others_files || $freight_pictures || $required_file || $screen_picture || $update_rate_conf || $proof_of_delivery ) && isset( $post_id ) ): ?>
+
+
+<?php 
+
+// if (current_user_can('administrator')) {
+// 	var_dump($required_file_arr);
+// 	var_dump($others_files_arr);
+// 	var_dump($freight_pictures_arr);
+// 	var_dump($screen_picture_arr);
+// 	var_dump($update_rate_conf_arr);
+// 	var_dump($proof_of_delivery_arr);
+// }
+
+if ( ( $others_files || $freight_pictures || $required_file || $screen_picture || $update_rate_conf || $proof_of_delivery ) && isset( $post_id ) ): ?>
     <div class="container-uploads <?php echo $full_view_only ? "read-only" : '' ?>">
 		<?php
 		if ( isset( $required_file_arr ) && $required_file ): ?>
@@ -208,13 +221,19 @@ if ( $report_object ) {
                 <span class="required-label">Rate Confirmation</span>
                 <figure class="card-upload__figure">
 					<?php
-					if ( ! isset( $required_file_arr[ 'file_name' ] ) ) : ?>
-                        <img class="card-upload__img" src="<?php echo $required_file_arr[ 'url' ] ?>" alt="img">
-					<?php else: ?>
-						<?php echo $reports->get_file_icon(); ?>
-                        <p><?php echo $required_file_arr[ 'file_name' ]; ?></p>
-					<?php endif; ?>
 
+					if (!$required_file_arr[ 'url' ]){
+                        ?>
+                        <p class="text-danger" style="font-size: 18px;">Error uploaded</p>
+                        <?php
+                    } else {
+                        if ( ! isset( $required_file_arr[ 'file_name' ] ) ) : ?>
+                            <img class="card-upload__img" src="<?php echo $required_file_arr[ 'url' ] ?>" alt="img">
+                        <?php else: ?>
+                            <?php echo $reports->get_file_icon(); ?>
+                            <p><?php echo $required_file_arr[ 'file_name' ]; ?></p>
+                        <?php endif;
+                    }?>
                 </figure>
                 <input type="hidden" name="status_post" value="<?php echo $post_status ?>">
                 <input type="hidden" name="image-id" value="<?php echo $required_file_arr[ 'id' ]; ?>">
@@ -243,12 +262,21 @@ if ( $report_object ) {
                 <figure class="card-upload__figure">
 					
 					<?php
+
+                    if (!$update_rate_conf_arr[ 'url' ]){
+                        ?>
+                        <p class="text-danger" style="font-size: 18px;">Error uploaded</p>
+                        <?php
+                    } else {
+
 					if ( ! isset( $update_rate_conf_arr[ 'file_name' ] ) ) : ?>
                         <img class="card-upload__img" src="<?php echo $update_rate_conf_arr[ 'url' ] ?>" alt="img">
 					<?php else: ?>
 						<?php echo $reports->get_file_icon(); ?>
                         <p><?php echo $update_rate_conf_arr[ 'file_name' ]; ?></p>
-					<?php endif; ?>
+					<?php endif;
+                    }?>
+            }?>
 
                 </figure>
                 <input type="hidden" name="image-id" value="<?php echo $update_rate_conf_arr[ 'id' ]; ?>">
@@ -273,14 +301,20 @@ if ( $report_object ) {
                    href="<?php echo $screen_picture_arr[ 'url' ]; ?>"><?php echo $reports->get_icon_view( 'view' ); ?></a>
                 <span class="required-label">Dispatch message</span>
                 <figure class="card-upload__figure">
-					
+                    
 					<?php
+                    if (!$screen_picture_arr[ 'url' ]){
+                        ?>
+                        <p class="text-danger" style="font-size: 18px;">Error uploaded</p>
+                        <?php
+                    } else {
 					if ( ! isset( $screen_picture_arr[ 'file_name' ] ) ) : ?>
                         <img class="card-upload__img" src="<?php echo $screen_picture_arr[ 'url' ] ?>" alt="img">
 					<?php else: ?>
 						<?php echo $reports->get_file_icon(); ?>
                         <p><?php echo $screen_picture_arr[ 'file_name' ]; ?></p>
-					<?php endif; ?>
+					<?php endif; 
+                    }?>
 
                 </figure>
                 <input type="hidden" name="image-id" value="<?php echo $screen_picture_arr[ 'id' ]; ?>">
@@ -308,12 +342,18 @@ if ( $report_object ) {
                 <figure class="card-upload__figure">
 					
 					<?php
+					if (!$proof_of_delivery_arr[ 'url' ]){
+                        ?>
+                        <p class="text-danger" style="font-size: 18px;">Error uploaded</p>
+                        <?php
+                    } else {
 					if ( ! isset( $proof_of_delivery_arr[ 'file_name' ] ) ) : ?>
                         <img class="card-upload__img" src="<?php echo $proof_of_delivery_arr[ 'url' ] ?>" alt="img">
 					<?php else: ?>
 						<?php echo $reports->get_file_icon(); ?>
                         <p><?php echo $proof_of_delivery_arr[ 'file_name' ]; ?></p>
-					<?php endif; ?>
+					<?php endif; 
+                    }?>
 
                 </figure>
                 <input type="hidden" name="image-id" value="<?php echo $proof_of_delivery_arr[ 'id' ]; ?>">
@@ -340,12 +380,18 @@ if ( $report_object ) {
                     <span class="required-label">Other files</span>
                     <figure class="card-upload__figure">
 						<?php
+						if (!$value[ 'url' ]){
+                            ?>
+                            <p class="text-danger" style="font-size: 18px;">Error uploaded</p>
+                            <?php
+                        } else {
 						if ( ! isset( $value[ 'file_name' ] ) ) : ?>
                             <img class="card-upload__img" src="<?php echo $value[ 'url' ] ?>" alt="img">
 						<?php else: ?>
 							<?php echo $reports->get_file_icon(); ?>
                             <p><?php echo $value[ 'file_name' ]; ?></p>
-						<?php endif; ?>
+						<?php endif; 
+                        }?>
 
                     </figure>
                     <input type="hidden" name="image-id"
@@ -370,17 +416,24 @@ if ( $report_object ) {
 			foreach ( $freight_pictures_arr as $value ):?>
                 <form class="js-remove-one card-upload freight_pictures">
                     <a class="view-document" target="_blank"
-                       href="<?php echo $value[ 'url' ]; ?>"><?php echo $reports->get_icon_view( 'view' ); ?></a>
+                       href="<?php echo $value[ 'url' ]; ?>">
+                       <?php echo $reports->get_icon_view( 'view' ); ?></a>
                     <span class="required-label">Freight Picture</span>
                     <figure class="card-upload__figure">
 						
 						<?php
+						if (!$value[ 'url' ]){
+                            ?>
+                            <p class="text-danger" style="font-size: 18px;">Error uploaded</p>
+                            <?php
+                        } else {
 						if ( ! isset( $value[ 'file_name' ] ) ) : ?>
                             <img class="card-upload__img" src="<?php echo $value[ 'url' ] ?>" alt="img">
 						<?php else: ?>
 							<?php echo $reports->get_file_icon(); ?>
                             <p><?php echo $value[ 'file_name' ]; ?></p>
-						<?php endif; ?>
+						<?php endif; 
+                        }?>
 
                     </figure>
                     <input type="hidden" name="image-id"

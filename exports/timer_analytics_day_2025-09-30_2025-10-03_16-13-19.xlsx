@@ -1,0 +1,58 @@
+﻿Timer Analytics Export
+Period: day
+Date: 2025-09-30
+Generated: 2025-10-03 16:13:19
+
+
+OVERALL STATISTICS
+Metric,Value
+Total Timer Uses,17
+Total Updates,9
+Yellow Zone Count,2
+Yellow Zone Percentage,11.76%
+Red Zone Count,0
+Red Zone Percentage,0%
+Black Zone Count,4
+Black Zone Percentage,23.53%
+
+USER PERFORMANCE
+User Name,User Email,Timer Uses,Updates,Yellow Zone,Red Zone,Black Zone
+"tracking tracking","No Email",14,7,2,0,2
+"Milchenko Serhii","No Email",3,2,0,0,2
+
+TIMER LOGS
+Load ID,User Name,User Email,Action,Comment,Project,FLT,Dispatcher ID,Created At
+4754,"tracking tracking","traching@gmail.com","start","Timer started","Odysseia","No","N/A","2025-09-30 12:40:38"
+4674,"Milchenko Serhii","milchenko2k16@gmail.com","start","Timer started","Odysseia","No","N/A","2025-09-30 12:37:41"
+1280,"tracking tracking","traching@gmail.com","stop","Stopped for update","Odysseia","No","N/A","2025-09-30 12:06:23"
+1280,"tracking tracking","traching@gmail.com","start","Timer started","Odysseia","No","N/A","2025-09-30 12:06:23"
+1280,"tracking tracking","traching@gmail.com","update","Load updated - timer restarted","Odysseia","No","N/A","2025-09-30 12:06:23"
+1280,"tracking tracking","traching@gmail.com","stop","Stopped for update","Odysseia","No","N/A","2025-09-30 12:03:31"
+1280,"tracking tracking","traching@gmail.com","start","Timer started","Odysseia","No","N/A","2025-09-30 12:03:31"
+1280,"tracking tracking","traching@gmail.com","update","Load updated - timer restarted","Odysseia","No","N/A","2025-09-30 12:03:31"
+4674,"tracking tracking","traching@gmail.com","stop","Stopped for update","Odysseia","No","N/A","2025-09-30 12:01:27"
+4674,"tracking tracking","traching@gmail.com","start","Timer started","Odysseia","No","N/A","2025-09-30 12:01:27"
+4674,"tracking tracking","traching@gmail.com","update","Load updated - timer restarted","Odysseia","No","N/A","2025-09-30 12:01:27"
+1280,"tracking tracking","traching@gmail.com","start","Timer started","Odysseia","No","N/A","2025-09-30 11:14:30"
+795,"tracking tracking","traching@gmail.com","stop","Stopped for update","Odysseia","No","N/A","2025-09-30 11:10:32"
+795,"tracking tracking","traching@gmail.com","start","Timer started","Odysseia","No","N/A","2025-09-30 11:10:32"
+795,"tracking tracking","traching@gmail.com","update","Load updated - timer restarted","Odysseia","No","N/A","2025-09-30 11:10:32"
+291,"tracking tracking","traching@gmail.com","start","Timer started","Odysseia","No","N/A","2025-09-30 11:10:17"
+5008,"tracking tracking","traching@gmail.com","stop","Stopped for update","Odysseia","No","N/A","2025-09-30 11:00:00"
+5008,"tracking tracking","traching@gmail.com","start","Timer started","Odysseia","No","N/A","2025-09-30 11:00:00"
+5008,"tracking tracking","traching@gmail.com","update","Load updated - timer restarted","Odysseia","No","N/A","2025-09-30 11:00:00"
+4382,"Milchenko Serhii","milchenko2k16@gmail.com","start","Timer started","Odysseia","No","N/A","2025-09-30 10:57:26"
+4382,"Milchenko Serhii","milchenko2k16@gmail.com","update","Load updated - timer restarted","Odysseia","No","N/A","2025-09-30 10:57:26"
+3340,"tracking tracking","traching@gmail.com","start","Timer started","Odysseia","No","N/A","2025-09-30 10:51:49"
+5008,"tracking tracking","traching@gmail.com","stop","Stopped for update","Odysseia","No","N/A","2025-09-30 10:50:59"
+5008,"tracking tracking","traching@gmail.com","start","Timer started","Odysseia","No","N/A","2025-09-30 10:50:59"
+5008,"tracking tracking","traching@gmail.com","update","Load updated - timer restarted","Odysseia","No","N/A","2025-09-30 10:50:59"
+3262,"Milchenko Serhii","milchenko2k16@gmail.com","stop","Stopped for update","Odysseia","No","N/A","2025-09-30 10:48:56"
+3262,"Milchenko Serhii","milchenko2k16@gmail.com","start","Timer started","Odysseia","No","N/A","2025-09-30 10:48:56"
+3262,"Milchenko Serhii","milchenko2k16@gmail.com","update","Load updated - timer restarted","Odysseia","No","N/A","2025-09-30 10:48:56"
+5008,"tracking tracking","traching@gmail.com","start","Timer started","Odysseia","No","N/A","2025-09-30 10:39:45"
+4975,"tracking tracking","traching@gmail.com","start","Timer started","Odysseia","No","N/A","2025-09-30 10:36:52"
+3602,"tracking tracking","traching@gmail.com","stop","Stopped for update","Odysseia","No","N/A","2025-09-30 10:36:40"
+3602,"tracking tracking","traching@gmail.com","start","Timer started","Odysseia","No","N/A","2025-09-30 10:36:40"
+3602,"tracking tracking","traching@gmail.com","update","Load updated - timer restarted","Odysseia","No","N/A","2025-09-30 10:36:40"
+3602,"tracking tracking","traching@gmail.com","start","Timer started","Odysseia","No","N/A","2025-09-30 10:36:32"

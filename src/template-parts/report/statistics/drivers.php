@@ -92,7 +92,7 @@ $reefer_all       = 0;
 									}
 									?>
 									<p class="card-tracking-stats__user"
-									   title="<?php echo esc_attr( $user['full_name'] ); ?>"
+									   title="<?php echo esc_attr( $user['full_name'] ); ?> (<?php echo esc_attr( $statistic['user_id_added'] ); ?>)"
 									   style="background-color: <?php echo esc_attr( $color_initials ); ?>;">
 										<?php echo esc_html( $user['initials'] ); ?>
 									</p>

@@ -1242,10 +1242,10 @@ Kindly confirm once you've received this message." ) . "\n";
 		return preg_replace( '/\s+/', ' ', trim( $string ) );
 	}
 	
-	function format_currency( $value ) {
+	function format_currency( $value, $remove_zero = true ) {
 		$cleaned   = str_replace( ',', '', $value ?? '' );
 		$formatted = number_format( (float) $cleaned, 2, '.', ',' );
-		if ( str_ends_with( $formatted, '.00' ) ) {
+		if ( str_ends_with( $formatted, '.00' ) && $remove_zero ) {
 			return substr( $formatted, 0, - 3 );
 		}
 		
@@ -1732,6 +1732,66 @@ Kindly confirm once you've received this message." ) . "\n";
 		}
 		
 		return null;
+	}
+	
+	/**
+	 * Check if user has meaningful statistics
+	 * 
+	 * @param array $stats User statistics array
+	 * @return bool True if user has meaningful statistics
+	 */
+	public function has_meaningful_stats( $stats ) {
+		if ( ! is_array( $stats ) ) {
+			return false;
+		}
+		
+		foreach ( $stats as $stat_value ) {
+			if ( is_numeric( $stat_value ) && $stat_value > 0 ) {
+				return true;
+			}
+		}
+		
+		return false;
+	}
+	
+	/**
+	 * Get user color with fallback
+	 * 
+	 * @param int $user_id User ID
+	 * @return string User color or default color
+	 */
+	public function get_user_color( $user_id ) {
+		$color = get_field( 'initials_color', 'user_' . $user_id );
+		return $color ?: '#030303';
+	}
+	
+	/**
+	 * Clean up invalid team members
+	 * 
+	 * @param int $user_id User ID
+	 * @param array $team_members Array of team member IDs
+	 * @return array Array of valid team member IDs
+	 */
+	public function cleanup_invalid_team_members( $user_id, $team_members ) {
+		$TMSUser = new TMSUsers();
+		$valid_members = array();
+		
+		foreach ( $team_members as $member_id ) {
+			$user_data = $TMSUser->get_user_full_name_by_id( $member_id );
+			
+			if ( $user_data && is_array( $user_data ) ) {
+				$valid_members[] = $member_id;
+			} else {
+				// Remove invalid user from ACF field
+				$current_team = get_field( 'field_66f9240398a70', 'user_' . $user_id );
+				if ( is_array( $current_team ) ) {
+					$updated_team = array_diff( $current_team, array( $member_id ) );
+					update_field( 'field_66f9240398a70', $updated_team, 'user_' . $user_id );
+				}
+			}
+		}
+		
+		return $valid_members;
 	}
 	
 }

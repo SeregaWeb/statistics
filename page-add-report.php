@@ -61,8 +61,6 @@ $full_only_view = false;
 if ( $TMSUsers->check_user_role_access( array(
 		'dispatcher-tl',
 		'tracking',
-		'morning_tracking',
-		'nightshift_tracking',
 	), true ) && isset( $meta ) ) {
 	$dispatcher_initials = get_field_value( $meta, 'dispatcher_initials' );
 	$user_id_added       = get_field_value( $main, 'user_id_added' );
@@ -93,6 +91,11 @@ $accounting_info = $TMSUsers->check_user_role_access( array( 'administrator', 'b
 $tracking_tl = false;
 if ( $TMSUsers->check_user_role_access( array( 'tracking-tl' ), true ) && isset( $meta ) ) {
 	$full_only_view = true;
+	$tracking_tl    = true;
+}
+
+if ( $TMSUsers->check_user_role_access( array( 'morning_tracking', 'nightshift_tracking' ), true ) && isset( $meta ) ) {
+	$full_only_view = false;
 	$tracking_tl    = true;
 }
 
@@ -290,8 +293,24 @@ $logshowcontent = isset( $_COOKIE[ 'logshow' ] ) && + $_COOKIE[ 'logshow' ] !== 
                                      id="pills-customer" role="tabpanel"
                                      aria-labelledby="pills-customer-tab">
 									<?php
+
+                                             $view_mode_for_customer = false;
+
+									if ($TMSUsers->check_user_role_access( array(
+										'tracking-tl',
+										'tracking',
+										'morning_tracking',
+										'nightshift_tracking'
+									), true ) ) {
+										$view_mode_for_customer = true;
+									} else {
+										$view_mode_for_customer = $full_only_view;
+									}
+
+
+
 									echo esc_html( get_template_part( TEMPLATE_PATH . 'tabs/report', 'tab-customer', array(
-										'full_view_only' => $full_only_view,
+										'full_view_only' => $view_mode_for_customer,
 										'report_object'  => $report_object,
 										'post_id'        => $post_id,
 										'project'        => $reports->project,

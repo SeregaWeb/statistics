@@ -447,7 +447,7 @@ NWI86507,"ELK GROVE VILLAGE, IL","TINLEY PARK, IL",(963) Brandon Rivera,$85.00,D
 5286583,"PORTLAND, OR","TUALATIN, OR",(989) Roberto Bernabe,$75.00,Delivered,4/19/2023,04/19/2023
 1404131,"Hamilton, MI ","Bessemer, AL",(905) Damon Perine,$750.00,Delivered,4/19/2023,04/20/2023
 1087773,SALEM OR,Fort Collins CO,(1090) Noel Valdes,"$1,000.00",Delivered,4/19/2023,04/20/2023
-0430765 ,"Aberdeen, MD","Newark, DE",ODYSSEIA,$290.00,Delivered,4/20/2023,4/20/2023
+0430765 ,"Aberdeen, MD","Newark, DE",Novokhatkin,$290.00,Delivered,4/20/2023,4/20/2023
 1483432,"AUSTIN, TX","AUBURN HLS, MI",(1178) Layth Al Janabi,$800.00,Delivered,4/18/2023,04/21/2023
 68759,"Blytheville, AR","Osceola, AR ",(885)  Adrian Byrd,$150.00,Delivered,4/21/2023,04/21/2023
 60104918484,"Oklahoma City, OK","Oklahoma City, OK",(832) Mike Marendes,$100.00,Delivered,4/21/2023,04/21/2023
@@ -858,7 +858,8 @@ S-70827,"Erlanger, KY","Indianapolis, IN",(1009) Robert Hadnot (driver Aaron Par
 12179,"Atlanta, GA","Lake Panasoffkee, FL",(408) Melis Menta,$350.00,Delivered,08/16/2023,08/17/2023
 13685535,"Lewisville, TX","San Antonio, TX",(1127) El Amin Najmah (driver is Damerron Jackson),$350.00,Delivered,08/16/2023,08/17/2023
 46989,"Houston, TX","Midland, TX","(121) Babatunde Smith Ismail
-(1337) Shermon Fultz",$550.00,Delivered,08/16/2023,08/17/2023
+",$50.00,Delivered,08/16/2023,08/17/2023
+46989,"Houston, TX","Midland, TX",(1337) Shermon Fultz,$500.00,Delivered,08/16/2023,08/17/2023
 DDL-36326 ,"Milwaukee, WI","Shelbyville, KY",(1048) Robert Kelly (Glen driver) ,$600.00,Delivered,08/16/2023,08/17/2023
 13686076,"Evansville, IN","Medina, OH",(1307) Reinier Novelle,$600.00,Delivered,08/17/2023,08/17/2023
 9814562 ,"OMAHA, NE ","OMAHA, NE ",(679) Singh Kulvir,$100.00,Delivered,08/17/2023,08/17/2023
@@ -937,7 +938,7 @@ OR196283,"Corona, CA","Randolph, NJ",(1172) Patrick Mundia,"$1,850.00",Delivered
 LDS14373944 ,"Folcroft, PA","Malvern, PA",(1239) Roshain Mudrock ,$225.00,Delivered,08/28/2023,08/29/2023
 1752896,"BRANCHBURG, NJ","MAMARONECK, NY 
 HICKSVILLE, NY","(480) Agustin Vivar (Lopez Castillo
-(908) 884-5207)",$100.00,Delivered,08/28/2023,08/29/2023
+",$100.00,Delivered,08/28/2023,08/29/2023
 1331374,"HOUSTON, TX","MIDLAND, TX",(1337) Shermon Fultz,$550.00,Delivered,08/29/2023,08/29/2023
 1348281 ,"STONE MOUNTAIN, GA","Holyoke, CO",(1355) Lee Traver,"$1,200.00",Delivered,08/28/2023,08/30/2023
 31401-49358,"Eastman, GA","Omaha, NE",(1326) Quartterio Hill,"$1,300.00",Delivered,08/29/2023,08/30/2023
@@ -1154,7 +1155,7 @@ LDS14407990,"South Plainfield, NJ","Newark, NJ",(1211) Shahiem Edwards (driver R
 2. TULSA, OK","COUNCIL BLFS, IA",(1398) Eddie Sisomsun,$650.00,Delivered,10/05/2023,10/06/2023
 2194771,"Kendallville, IN","ANDERSON, SC",(181) Werku Belachew,$650.00,Delivered,10/05/2023,10/06/2023
 JTS17685 ,"DALLAS, TX","MCGREGOR, TX",(1127) El Amin Najmah (driver Damerron),$250.00,Delivered,10/05/2023,10/06/2023
-9194433,JESSUP MD,COLUMBUS OH,1348) Siam Khai,$400.00,Delivered,10/05/2023,10/06/2023
+9194433,JESSUP MD,COLUMBUS OH,(1348) Siam Khai,$400.00,Delivered,10/05/2023,10/06/2023
 60106021825 ,"Phoenix, AZ","San Luis, AZ",(1213) Moses Falaiye (driver Luis),$300.00,Delivered,10/05/2023,10/06/2023
 60106021909,"Phoenix, AZ","Gonzales, CA ",(813) Bob & Beth Wiliamson,$600.00,Delivered,10/05/2023,10/06/2023
 4030632,"MIAMI, FL ","JACKSONVILLE, FL",(912) Lamont Frye,$350.00,Delivered,10/05/2023,10/06/2023

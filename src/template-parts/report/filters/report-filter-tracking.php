@@ -1,15 +1,25 @@
 <?php
 $helper   = new TMSReportsHelper();
 $statuses = $helper->get_statuses();
+$dispatchers = $helper->get_dispatchers();
 
 $search      = get_field_value( $_GET, 'my_search' );
 $load_status = get_field_value( $_GET, 'load_status' );
 $type        = get_field_value( $_GET, 'type' );
+$dispatcher  = get_field_value( $_GET, 'dispatcher' );
 
 $hide_status = get_field_value( $args, 'hide_status' );
+$my_team     = get_field_value( $args, 'my_team' );
 
 $office  = get_field_value( $_GET, 'office' );
 $offices = $helper->get_offices_from_acf();
+
+// Filter dispatchers by team if my_team is provided
+if ( is_array( $my_team ) && ! empty( $my_team ) ) {
+	$dispatchers = array_filter( $dispatchers, function( $dispatcher_item ) use ( $my_team ) {
+		return in_array( $dispatcher_item['id'], $my_team );
+	});
+}
 ?>
 
 <nav class="navbar mb-5 mt-3 navbar-expand-lg navbar-light">
@@ -36,6 +46,17 @@ $offices = $helper->get_offices_from_acf();
 						<?php foreach ( $offices[ 'choices' ] as $key => $val ): ?>
                             <option value="<?php echo $key; ?>" <?php echo $office === $key ? 'selected' : '' ?> >
 								<?php echo $val; ?>
+                            </option>
+						<?php endforeach; ?>
+					<?php endif; ?>
+                </select>
+				
+				<select class="form-select w-auto" name="dispatcher" aria-label=".form-select-sm example">
+                    <option value="">Dispatcher</option>
+					<?php if ( is_array( $dispatchers ) ): ?>
+						<?php foreach ( $dispatchers as $dispatcher_item ): ?>
+                            <option value="<?php echo $dispatcher_item[ 'id' ]; ?>" <?php echo strval( $dispatcher ) === strval( $dispatcher_item[ 'id' ] ) ? 'selected' : ''; ?> >
+								<?php echo $dispatcher_item[ 'fullname' ]; ?>
                             </option>
 						<?php endforeach; ?>
 					<?php endif; ?>

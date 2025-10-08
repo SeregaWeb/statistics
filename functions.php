@@ -45,6 +45,8 @@ require THEME_DIR . '/src/inc/hooks/user-sync-hooks.php';
 require THEME_DIR . '/src/inc/admin/user-sync-admin.php';
 require THEME_DIR . '/src/inc/core/class-tms-contacts.php';
 require THEME_DIR . '/src/inc/cron/driver-status-cron.php';
+require THEME_DIR . '/src/inc/core/class-tms-timer-logs.php';
+require THEME_DIR . '/src/inc/core/class-tms-reports-timer.php';
 require THEME_DIR . '/src/inc/initial-setup.php';
 require THEME_DIR . '/src/inc/enqueue-scripts.php';
 require THEME_DIR . '/src/inc/acf-setting.php';

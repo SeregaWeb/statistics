@@ -374,8 +374,16 @@ class TMSDrivers extends TMSDriversHelper {
 		$ny_timezone = new DateTimeZone( 'America/New_York' );
 		$ny_time     = new DateTime( 'now', $ny_timezone );
 		
-		$time                  = strtotime( $ny_time->format( 'Y-m-d H:i:s' ) . TIME_AVAILABLE_DRIVER );
-		$updated_zip_code_time = strtotime( $updated_zip_code );
+		$ny_time->modify( TIME_AVAILABLE_DRIVER );
+		$time = $ny_time->getTimestamp();
+		
+		// Convert updated_zip_code to NY timezone for proper comparison
+		if ( ! empty( $updated_zip_code ) ) {
+			$updated_zip_datetime = new DateTime( $updated_zip_code, $ny_timezone );
+			$updated_zip_code_time = $updated_zip_datetime->getTimestamp();
+		} else {
+			$updated_zip_code_time = null;
+		}
 		
 		
 		if ( ! isset( $updated_zip_code_time ) || empty( $updated_zip_code_time ) ) {
@@ -893,11 +901,13 @@ class TMSDrivers extends TMSDriversHelper {
 					// Cache for 15 minutes (900 seconds)
 					set_transient( $cache_key, $all_drivers, 5 * MINUTE_IN_SECONDS );
 				}
-				
+
 				// Filter and sort drivers by distance
 				$max_distance  = isset( $args[ 'radius' ] ) ? intval( $args[ 'radius' ] ) : 300;
 				$capabilities  = isset( $args[ 'capabilities' ] ) ? $args[ 'capabilities' ] : array();
+				
 				$valid_drivers = $this->filter_and_sort_drivers_by_distance( $all_drivers, $search_coordinates[ 'lat' ], $search_coordinates[ 'lng' ], $max_distance, $capabilities );
+				
 				// Get real road distances using mapping service
 				if ( ! empty( $valid_drivers ) ) {
 					$MapController = new Map_Controller();
@@ -943,6 +953,17 @@ class TMSDrivers extends TMSDriversHelper {
 						}
 					}
 					
+					// $user = wp_get_current_user();
+					// if (current_user_can('administrator')) {
+					// 	$time_threshold = defined( 'TIME_AVAILABLE_DRIVER' ) ? TIME_AVAILABLE_DRIVER : '-12 hours';
+					// 	$ny_timezone = new DateTimeZone( 'America/New_York' );
+					// 	$ny_time = new DateTime( 'now', $ny_timezone );
+					// 	$ny_time->modify( $time_threshold );
+
+					// 	var_dump($ny_time->format( 'Y-m-d H:i:s' ));
+
+					// 	var_dump($valid_drivers);
+					// }
 					// Sort drivers by status priority
 					$valid_drivers = $this->sort_drivers_by_status_priority( $valid_drivers, $search_coordinates );
 					
@@ -960,7 +981,6 @@ class TMSDrivers extends TMSDriversHelper {
 				$args[ 'total_filtered_drivers' ] = count( $valid_drivers );
 				$args[ 'has_distance_data' ]      = true;
 				$args[ 'search_coordinates' ]     = $search_coordinates;
-				
 				
 			}
 		}
@@ -2922,7 +2942,13 @@ class TMSDrivers extends TMSDriversHelper {
 		$data_main[ 'date_updated' ]    = current_time( 'mysql' );
 		
 		if ( isset( $data[ 'current_zipcode' ] ) ) {
-			$data_main[ 'updated_zipcode' ] = current_time( 'mysql' );
+			// Set New York timezone for updated_zipcode
+			$ny_timezone = new DateTimeZone( 'America/New_York' );
+			$ny_time = new DateTime( 'now', $ny_timezone );
+			$data_main[ 'updated_zipcode' ] = $ny_time->format( 'Y-m-d H:i:s' );
+			
+			// Log for debugging
+			error_log( 'Updated zipcode timestamp: ' . $data_main[ 'updated_zipcode' ] );
 		}
 		
 		if ( isset( $data[ 'status_date' ] ) && ! empty( $data[ 'status_date' ] ) ) {
@@ -2938,6 +2964,9 @@ class TMSDrivers extends TMSDriversHelper {
 				}
 			}
 		}
+		
+		// Log data being updated for debugging
+		error_log( 'Updating driver data: ' . print_r( $data_main, true ) );
 		
 		$update_result = $wpdb->update( $table_name, $data_main, array( 'id' => $driver_id ) );
 		
@@ -3776,8 +3805,12 @@ class TMSDrivers extends TMSDriversHelper {
 	 * AJAX handler for adding driver rating
 	 */
 	public function ajax_add_driver_rating() {
+		// Debug logging
+		error_log( 'ajax_add_driver_rating called with POST data: ' . print_r( $_POST, true ) );
+		
 		// Check nonce for security
 		if ( ! wp_verify_nonce( $_POST[ 'tms_rating_nonce' ], 'tms_add_rating' ) ) {
+			error_log( 'Nonce verification failed' );
 			wp_send_json_error( 'Security check failed' );
 		}
 		
@@ -3786,16 +3819,51 @@ class TMSDrivers extends TMSDriversHelper {
 		$load_number = sanitize_text_field( $_POST[ 'load_number' ] ?? '' );
 		$comments    = sanitize_textarea_field( $_POST[ 'comments' ] ?? '' );
 		
+		error_log( "Processed data - driver_id: $driver_id, rating: $rating, load_number: $load_number, comments: $comments" );
+		
 		if ( empty( $driver_id ) || $rating < 1 || $rating > 5 ) {
+			error_log( 'Validation failed - driver_id is empty or rating is invalid' );
 			wp_send_json_error( 'Invalid data provided' );
 		}
 		
+
 		$result = $this->add_driver_rating( $driver_id, $rating, $load_number, $comments );
 		
 		if ( $result ) {
+
+			global $global_options;
+			$add_new_driver = get_field_value( $global_options, 'add_new_driver' );
+
+			$current_user_id = get_current_user_id();
+			$project        = get_field( 'current_select', 'user_' . $current_user_id );
+
+			$driver_current = $this->get_driver_by_id( $driver_id );
+			$meta = get_field_value( $driver_current, 'meta' );
+			$recruiter_add = get_field_value( $meta, 'recruiter_add' );
+			$driver_name = get_field_value( $meta, 'driver_name' );
+
+			$user_data = get_userdata( $recruiter_add );
+			$select_emails = $user_data ? $user_data->user_email : '';
+			$user_name      = $this->get_user_full_name_by_id( $current_user_id );
+
+			if ( $add_new_driver ) {
+				$link = '<a href="' . $add_new_driver . '?post_id=' . $driver_id . '">' . '(' . $driver_id . ') ' . $driver_name . '</a>';
+			}
+
+			$this->email_helper->send_custom_email( $select_emails, array(
+				'subject'      => 'New rating added' . ' (' . $driver_id . ') ' . $driver_name,
+				'project_name' => $project,
+				'subtitle'     => $user_name[ 'full_name' ] . ' has added driver rating ' . $link,
+				'message'      => "Rating: " . $rating . "<br>
+					Comments: " . $comments . "<br>
+					Load number: " . $load_number . "<br>"
+			) );
+
 			wp_send_json_success( 'Rating added successfully' );
+			exit;
 		} else {
 			wp_send_json_error( 'Failed to add rating' );
+			exit;
 		}
 	}
 	
@@ -3803,24 +3871,62 @@ class TMSDrivers extends TMSDriversHelper {
 	 * AJAX handler for adding driver notice
 	 */
 	public function ajax_add_driver_notice() {
+		// Debug logging
+		error_log( 'ajax_add_driver_notice called with POST data: ' . print_r( $_POST, true ) );
+		
 		// Check nonce for security
 		if ( ! wp_verify_nonce( $_POST[ 'tms_notice_nonce' ], 'tms_add_notice' ) ) {
+			error_log( 'Nonce verification failed' );
 			wp_send_json_error( 'Security check failed' );
 		}
 		
 		$driver_id = intval( $_POST[ 'driver_id' ] ?? 0 );
 		$message   = sanitize_textarea_field( $_POST[ 'message' ] ?? '' );
 		
+		error_log( "Processed data - driver_id: $driver_id, message: $message" );
+		
 		if ( empty( $driver_id ) || empty( $message ) ) {
+			error_log( 'Validation failed - driver_id or message is empty' );
 			wp_send_json_error( 'Invalid data provided' );
 		}
 		
 		$result = $this->add_driver_notice( $driver_id, $message );
 		
 		if ( $result ) {
+
+			global $global_options;
+			$add_new_driver = get_field_value( $global_options, 'add_new_driver' );
+
+			$current_user_id = get_current_user_id();
+			$project        = get_field( 'current_select', 'user_' . $current_user_id );
+
+			$driver_current = $this->get_driver_by_id( $driver_id );
+			$meta = get_field_value( $driver_current, 'meta' );
+			$recruiter_add = get_field_value( $meta, 'recruiter_add' );
+			$driver_name = get_field_value( $meta, 'driver_name' );
+
+			$user_data = get_userdata( $recruiter_add );
+			$select_emails = $user_data ? $user_data->user_email : '';
+			$user_name      = $this->get_user_full_name_by_id( $current_user_id );
+
+			if ( $add_new_driver ) {
+				$link = '<a href="' . $add_new_driver . '?post_id=' . $driver_id . '">' . '(' . $driver_id . ') ' . $driver_name . '</a>';
+			}
+
+			$this->email_helper->send_custom_email( $select_emails, array(
+				'subject'      => 'New notice added' . ' (' . $driver_id . ') ' . $driver_name,
+				'project_name' => $project,
+				'subtitle'     => $user_name[ 'full_name' ] . ' has added driver notice ' . $link,
+				'message'      => "Notice: " . $message . "<br>"
+			) );
+
+			error_log( 'Notice added successfully'. $select_emails . ' ' . $user_name[ 'full_name' ] . ' ' . $link . ' ' . $message );
+
 			wp_send_json_success( 'Notice added successfully' );
+			exit;
 		} else {
 			wp_send_json_error( 'Failed to add notice' );
+			exit;
 		}
 	}
 	
@@ -3828,10 +3934,6 @@ class TMSDrivers extends TMSDriversHelper {
 	 * AJAX handler for updating notice status
 	 */
 	public function ajax_update_notice_status() {
-		// Check nonce for security
-		if ( ! wp_verify_nonce( $_POST[ 'tms_notice_status_nonce' ], 'tms_update_notice_status' ) ) {
-			wp_send_json_error( 'Security check failed' );
-		}
 		
 		$notice_id = intval( $_POST[ 'notice_id' ] ?? 0 );
 		
@@ -4158,40 +4260,98 @@ class TMSDrivers extends TMSDriversHelper {
 		// Get current time in New York timezone
 		$ny_timezone   = new DateTimeZone( 'America/New_York' );
 		$ny_time       = new DateTime( 'now', $ny_timezone );
-		$ny_mysql_time = $ny_time->format( 'Y-m-d H:i:s' );
-		
-		$b = strtotime( $ny_mysql_time . $time_threshold );
+		$ny_time->modify( $time_threshold );
+		$threshold_ny_time = $ny_time->format( 'Y-m-d H:i:s' );
 		
 		global $wpdb;
 		$table_main = $wpdb->prefix . $this->table_main;
 		$table_meta = $wpdb->prefix . $this->table_meta;
 		
+		// Debug: Check database timezone settings and time comparisons
+		// if ( current_user_can('administrator') ) {
+		// 	$timezone_info = $wpdb->get_results( "SELECT @@global.time_zone, @@session.time_zone, NOW() as db_time, UTC_TIMESTAMP() as utc_time" );
+		// 	$sample_updated = $wpdb->get_var( "SELECT updated_zipcode FROM $table_main WHERE updated_zipcode IS NOT NULL LIMIT 1" );
+			
+		// 	// Get current NY time
+		// 	$current_ny_time = (new DateTime('now', $ny_timezone))->format('Y-m-d H:i:s');
+			
+		// 	echo '<div style="background: #e1f5fe; padding: 10px; margin: 10px 0; border: 1px solid #2196F3;">';
+		// 	echo '<strong>Driver Availability Debug:</strong><br>';
+		// 	echo 'Global timezone: ' . $timezone_info[0]->{'@@global.time_zone'} . '<br>';
+		// 	echo 'Session timezone: ' . $timezone_info[0]->{'@@session.time_zone'} . '<br>';
+		// 	echo 'Database current time: ' . $timezone_info[0]->db_time . '<br>';
+		// 	echo 'Database UTC time: ' . $timezone_info[0]->utc_time . '<br>';
+		// 	echo '<strong>NY Time Calculations:</strong><br>';
+		// 	echo 'Current NY time: ' . $current_ny_time . '<br>';
+		// 	echo 'NY threshold time (NY - 12h): ' . $threshold_ny_time . '<br>';
+		// 	echo 'Sample updated_zipcode from DB: ' . $sample_updated . '<br>';
+			
+		// 	// Test CONVERT_TZ with different assumptions
+		// 	if ( $sample_updated ) {
+		// 		$convert_tests = $wpdb->get_results( $wpdb->prepare( "
+		// 			SELECT 
+		// 				CONVERT_TZ(%s, '+00:00', '-05:00') as est_time,
+		// 				CONVERT_TZ(%s, '+00:00', '-04:00') as edt_time,
+		// 				CONVERT_TZ(%s, '+00:00', 'America/New_York') as ny_time,
+		// 				CONVERT_TZ(%s, 'America/New_York', '+00:00') as as_utc_from_ny,
+		// 				CONVERT_TZ(%s, 'America/New_York', 'America/New_York') as as_ny_from_ny
+		// 		", $sample_updated, $sample_updated, $sample_updated, $sample_updated, $sample_updated ) );
+				
+		// 		echo '<strong>CONVERT_TZ Tests (assuming DB stores as UTC):</strong><br>';
+		// 		echo 'EST (-05:00): ' . $convert_tests[0]->est_time . '<br>';
+		// 		echo 'EDT (-04:00): ' . $convert_tests[0]->edt_time . '<br>';
+		// 		echo 'America/New_York: ' . $convert_tests[0]->ny_time . '<br>';
+		// 		echo '<strong>CONVERT_TZ Tests (assuming DB stores as NY time):</strong><br>';
+		// 		echo 'As UTC from NY: ' . $convert_tests[0]->as_utc_from_ny . '<br>';
+		// 		echo 'As NY from NY: ' . $convert_tests[0]->as_ny_from_ny . '<br>';
+				
+		// 		// Test direct comparison
+		// 		echo '<strong>Direct Comparisons:</strong><br>';
+		// 		echo 'Sample >= Threshold (DB stores NY time): ' . ($sample_updated >= $threshold_ny_time ? 'YES' : 'NO') . '<br>';
+		// 		echo 'Sample time: ' . $sample_updated . '<br>';
+		// 		echo 'Threshold time: ' . $threshold_ny_time . '<br>';
+		// 		echo 'Time difference: ' . (strtotime($sample_updated) - strtotime($threshold_ny_time)) . ' seconds<br>';
+		// 	}
+		// 	echo '</div>';
+		// }
+		
 		// Count available drivers (available, on_hold) with recent updates
-		$result = $wpdb->get_results( "
+		// Note: updated_zipcode is already stored in NY timezone, no conversion needed
+		$result = $wpdb->get_results( $wpdb->prepare( "
 			SELECT COUNT(DISTINCT main.id) as count
 			FROM $table_main main
 			LEFT JOIN $table_meta status ON main.id = status.post_id AND status.meta_key = 'driver_status'
 			WHERE status.meta_value IN('available','on_hold')
-			AND main.updated_zipcode >= FROM_UNIXTIME($b)
-		" );
+			AND main.updated_zipcode >= %s
+		", $threshold_ny_time ) );
 		
 		// Count available_on drivers with recent updates
-		$result3 = $wpdb->get_results( "
+		$result3 = $wpdb->get_results( $wpdb->prepare( "
 			SELECT COUNT(DISTINCT main.id) as count
 			FROM $table_main main
 			LEFT JOIN $table_meta status ON main.id = status.post_id AND status.meta_key = 'driver_status'
 			WHERE status.meta_value IN('available_on')
-			AND main.updated_zipcode >= FROM_UNIXTIME($b)
-		" );
+			AND main.updated_zipcode >= %s
+		", $threshold_ny_time ) );
 		
 		// Count not updated drivers (not banned, blocked, expired_documents) with old updates or NULL
-		$result2 = $wpdb->get_results( "
+		$result2 = $wpdb->get_results( $wpdb->prepare( "
 			SELECT COUNT(DISTINCT main.id) as count
 			FROM $table_main main
 			LEFT JOIN $table_meta status ON main.id = status.post_id AND status.meta_key = 'driver_status'
 			WHERE status.meta_value NOT IN ('blocked','banned', 'expired_documents')
-			AND (main.updated_zipcode < FROM_UNIXTIME($b) OR main.updated_zipcode IS NULL)
-		" );
+			AND (main.updated_zipcode < %s OR main.updated_zipcode IS NULL)
+		", $threshold_ny_time ) );
+		
+		// Debug: Show query results for administrators
+		// if ( current_user_can('administrator') ) {
+		// 	echo '<div style="background: #fff3cd; padding: 10px; margin: 10px 0; border: 1px solid #ffeaa7;">';
+		// 	echo '<strong>Query Results:</strong><br>';
+		// 	echo 'Available drivers (available, on_hold with recent updates): ' . (isset( $result[ 0 ]->count ) ? (int) $result[ 0 ]->count : 0) . '<br>';
+		// 	echo 'Available_on drivers (available_on with recent updates): ' . (isset( $result3[ 0 ]->count ) ? (int) $result3[ 0 ]->count : 0) . '<br>';
+		// 	echo 'Not updated drivers (old updates or NULL): ' . (isset( $result2[ 0 ]->count ) ? (int) $result2[ 0 ]->count : 0) . '<br>';
+		// 	echo '</div>';
+		// }
 		
 		return array(
 			'available'    => isset( $result[ 0 ]->count ) ? (int) $result[ 0 ]->count : 0,
@@ -4245,7 +4405,12 @@ class TMSDrivers extends TMSDriversHelper {
 		if ( $only_updated ) {
 			// Define time threshold for recently updated drivers
 			$time_threshold = defined( 'TIME_AVAILABLE_DRIVER' ) ? TIME_AVAILABLE_DRIVER : '-12 hours';
-			$b              = strtotime( $time_threshold );
+			
+			// Get current time in New York timezone and calculate threshold
+			$ny_timezone   = new DateTimeZone( 'America/New_York' );
+			$ny_time       = new DateTime( 'now', $ny_timezone );
+			$ny_time->modify( $time_threshold );
+			$b = $ny_time->format( 'Y-m-d H:i:s' );
 			$query_start    .= "AND main.updated_zipcode >= '" . $b . "'";
 			
 			// Add UNION for banned drivers if only_updated is true
@@ -4532,9 +4697,14 @@ class TMSDrivers extends TMSDriversHelper {
 			return $valid_drivers;
 		}
 		
-		// Define time threshold for recently updated drivers
+		// Define time threshold for recently updated drivers (New York time)
 		$time_threshold = defined( 'TIME_AVAILABLE_DRIVER' ) ? TIME_AVAILABLE_DRIVER : '-12 hours';
-		$time           = strtotime( $time_threshold );
+		$ny_timezone = new DateTimeZone( 'America/New_York' );
+		$ny_time = new DateTime( 'now', $ny_timezone );
+		$ny_time->modify( $time_threshold );
+		$time = $ny_time->getTimestamp();
+
+		
 		
 		// Filter out drivers with null distances
 		$last_filter_array = array();
@@ -4550,14 +4720,31 @@ class TMSDrivers extends TMSDriversHelper {
 		$available_others_arr = array();
 		
 		foreach ( $last_filter_array as $key => $driver ) {
+
 			$updated = true;
 			
 			// Check if driver was updated recently
 			if ( isset( $driver[ 'updated' ] ) ) {
-				$driver_updated_time = strtotime( $driver[ 'updated' ] );
+				// Driver updated time is already in NY timezone (as we discovered)
+				$driver_updated_datetime = new DateTime( $driver[ 'updated' ], $ny_timezone );
+				$driver_updated_time = $driver_updated_datetime->getTimestamp();
+				
 				if ( $driver_updated_time && $driver_updated_time < $time ) {
 					$updated = false;
 				}
+				
+				// Debug for administrators
+				// if ( current_user_can('administrator') ) {
+				// 	echo '<div style="background: #fff3cd; padding: 5px; margin: 2px; border: 1px solid #ffeaa7;">';
+				// 	echo '<strong>Driver Debug:</strong><br>';
+				// 	echo 'NY Time (threshold): ' . $ny_time->format('Y-m-d H:i:s') . '<br>';
+				// 	echo 'Driver Updated (NY): ' . $driver_updated_datetime->format('Y-m-d H:i:s') . '<br>';
+				// 	echo 'Driver Updated (Original): ' . $driver[ 'updated' ] . '<br>';
+				// 	echo 'Updated Status: ' . ($updated ? 'YES' : 'NO') . '<br>';
+				// 	echo 'Time Diff: ' . ($ny_time->getTimestamp() - $driver_updated_time) . ' seconds<br>';
+				// 	echo 'Status: ' . $driver[ 'status' ] . '<br>';
+				// 	echo '</div>';
+				// }
 			}
 			
 			
@@ -4607,6 +4794,10 @@ class TMSDrivers extends TMSDriversHelper {
 		uasort( $available_others_arr, function( $item1, $item2 ) {
 			return $item1[ 'distance' ] <=> $item2[ 'distance' ];
 		} );
+
+		// if (current_user_can('administrator')) {
+		// 	var_dump($available_others_arr);
+		// }
 		
 		// Combine arrays in priority order
 		$order_status = array();
@@ -4721,7 +4912,11 @@ class TMSDrivers extends TMSDriversHelper {
 			return $drivers;
 		}
 		
-		$time         = strtotime( current_time( 'mysql' ) . '-12 hours' );
+		// Get New York time minus 12 hours
+		$ny_timezone = new DateTimeZone( 'America/New_York' );
+		$ny_time = new DateTime( 'now', $ny_timezone );
+		$ny_time->modify( '-12 hours' );
+		$time = $ny_time->getTimestamp();
 		$available    = [];
 		$available_on = [];
 		$others       = [];
@@ -4732,7 +4927,9 @@ class TMSDrivers extends TMSDriversHelper {
 			$updated_zipcode = isset( $driver[ 'updated_zipcode' ] ) ? $driver[ 'updated_zipcode' ] : '';
 			$updated         = true;
 			if ( $updated_zipcode ) {
-				$updated_time = strtotime( $updated_zipcode );
+				// updated_zipcode is already in NY timezone, create DateTime object with NY timezone
+				$updated_datetime = new DateTime( $updated_zipcode, $ny_timezone );
+				$updated_time = $updated_datetime->getTimestamp();
 				if ( $updated_time && $time >= $updated_time ) {
 					$updated = false;
 				}

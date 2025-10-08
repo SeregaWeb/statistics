@@ -14,7 +14,7 @@ class TMSGenerateDocument extends TMSReports {
 	 */
 	private $use_wordpress = true;
 	
-	private $logo                   = 'http://www.odysseia-tms.kiev.ua/wp-content/uploads/2023/11/photo-2023-11-05-100451.jpeg';
+	private $logo                   = 'https://www.endurance-tms.com/wp-content/uploads/logos/odysseia.jpeg';
 	private $company_name           = 'ODYSSEIA INC';
 	private $company_phone          = '(800) 922-0760';
 	private $company_email          = 'accounting@odysseia.one';
@@ -793,6 +793,611 @@ class TMSGenerateDocument extends TMSReports {
         </table>
 		<?php
 		return ob_get_clean();
+	}
+
+	/**
+	 * Generate Settlement Summary PDFs per month for a given driver.
+	 * Creates directory: theme/summary-invoices/{id_driver}/{year}/ and files: SettlementSummary{Month}.pdf
+	 *
+	 * @param string|int $id_driver
+	 * @return array List of created file URLs indexed by year => [ [ 'month' => 'January', 'path' => '/abs/path', 'url' => 'https://...', ], ... ]
+	 */
+	public function generate_driver_settlement_pdfs( $id_driver ) {
+		global $wpdb;
+		$table_name = $wpdb->prefix . 'settlement_summary';
+		$id_driver  = sanitize_text_field( (string) $id_driver );
+
+		$rows = $wpdb->get_results(
+			$wpdb->prepare(
+				"SELECT id, reference_number, shipper_location, receiver_location, id_driver, driver_name, driver_rate, load_status, pick_up_date, delivery_date
+				 FROM {$table_name}
+				 WHERE id_driver = %s
+				 ORDER BY
+				   CASE WHEN delivery_date IS NULL OR delivery_date = '' OR delivery_date = '0000-00-00' THEN 1 ELSE 0 END,
+				   delivery_date ASC,
+				   id ASC",
+				$id_driver
+			),
+			ARRAY_A
+		);
+
+		if ( empty( $rows ) ) {
+			return array();
+		}
+
+		// Group by YYYY-MM
+		$grouped = array();
+		$driver_name = '';
+		foreach ( $rows as $r ) {
+			$driver_name = $r['driver_name'];
+			$date_raw = ! empty( $r['delivery_date'] ) ? (string) $r['delivery_date'] : ( ! empty( $r['pick_up_date'] ) ? (string) $r['pick_up_date'] : '' );
+			$key = 'unknown';
+			if ( $date_raw !== '' ) {
+				$dt = DateTime::createFromFormat( 'Y-m-d', $date_raw );
+				if ( $dt instanceof DateTime ) {
+					$key = $dt->format( 'Y-m' );
+				} else {
+					$ts = strtotime( $date_raw );
+					if ( $ts ) { $key = date( 'Y-m', $ts ); }
+				}
+			}
+			if ( ! isset( $grouped[ $key ] ) ) { $grouped[ $key ] = array(); }
+			$grouped[ $key ][] = $r;
+		}
+
+		uksort( $grouped, function( $a, $b ) { return strcmp( $a, $b ); } );
+
+		$created = array();
+		foreach ( $grouped as $monthKey => $items ) {
+			if ( $monthKey === 'unknown' ) { continue; }
+			$year = substr( $monthKey, 0, 4 );
+			$month_ts = strtotime( $monthKey . '-01' );
+			$month_name = $month_ts ? date( 'F', $month_ts ) : $monthKey;
+
+			// Build dirs: theme/summary-invoices/{id_driver}/{year}/
+			$base_dir = trailingslashit( get_theme_file_path() ) . 'summary-invoices/';
+			$driver_dir = $base_dir . $id_driver . '/';
+			$year_dir = $driver_dir . $year . '/';
+			if ( ! is_dir( $year_dir ) ) {
+				if ( ! is_dir( $base_dir ) ) { mkdir( $base_dir, 0777, true ); }
+				if ( ! is_dir( $driver_dir ) ) { mkdir( $driver_dir, 0777, true ); }
+				mkdir( $year_dir, 0777, true );
+			}
+
+			// File name
+			$file_name = 'SettlementSummary' . $month_name . '.pdf';
+			$file_path = $year_dir . $file_name;
+			$file_url  = trailingslashit( get_theme_file_uri() ) . 'summary-invoices/' . rawurlencode( $id_driver ) . '/' . rawurlencode( $year ) . '/' . rawurlencode( $file_name );
+
+			// HTML for this month
+			$html = $this->render_settlement_month_html( $id_driver, $driver_name, $monthKey, $items );
+
+			try {
+				$mpdf = new \Mpdf\Mpdf();
+				$mpdf->AddPage( '', '', '', '', '', 5, 5, 5, 5, 5, 5 );
+				$mpdf->WriteHTML( $html );
+				$mpdf->Output( $file_path, 'F' );
+				$created[ $year ][] = array(
+					'month' => $month_name,
+					'path'  => $file_path,
+					'url'   => $file_url,
+				);
+			} catch ( \Exception $e ) {
+				// skip on error
+			}
+		}
+
+		return $created;
+	}
+
+	/**
+	 * Render HTML for a single month's Settlement Summary block for a driver
+	 *
+	 * @param string $id_driver
+	 * @param string $driver_name
+	 * @param string $monthKey YYYY-MM
+	 * @param array  $items    Rows for this month
+	 * @return string
+	 */
+	private function render_settlement_month_html( $id_driver, $driver_name, $monthKey, $items ) {
+		$helper = new TMSReportsHelper();
+		$month_ts    = strtotime( $monthKey . '-01' );
+		$label       = $month_ts ? date( 'F Y', $month_ts ) : 'Unknown month';
+		$period_from = $month_ts ? date( 'm/d/Y', strtotime( 'first day of this month', $month_ts ) ) : '';
+		$period_to   = $month_ts ? date( 'm/d/Y', strtotime( 'last day of this month', $month_ts ) ) : '';
+		$check_date  = $period_to;
+		$settlement  = $id_driver . ' - ' . $driver_name;
+
+		$split_location = function( $location ) {
+			$location = (string) $location;
+			$parts = array_map( 'trim', explode( '-', $location ) );
+			$city  = isset( $parts[0] ) ? $parts[0] : '';
+			$state = isset( $parts[1] ) ? $parts[1] : '';
+			return array( $city, $state );
+		};
+
+		ob_start();
+		?>
+		<div class="card mb-3">
+			<div class="card-body">
+				<h5 class="card-title" style="margin-bottom: 10px;"><?php echo esc_html( $label ); ?></h5>
+				<table style="font-family: sans-serif; border-collapse: collapse; border-spacing: 0; margin-bottom: 10px;" border="0" width="100%">
+					<tr style="width: 100%;">
+						<td width="150px"><p style="margin:0;">&nbsp;<?php echo esc_html( $check_date ); ?></p></td>
+						<td width="100%" style="text-align: center">
+							<p style="font-size:22px;color:#000;margin:15px 0;font-weight:600;">Settlement Summary</p>
+						</td>
+						<td width="150px"><img height="120" width="120" style="height:120px;width:120px;" src="<?php echo esc_url( $this->logo ); ?>" alt="logo"></td>
+					</tr>
+				</table>
+
+				<table style="font-family: sans-serif; border-collapse: collapse; border-spacing: 0; margin-bottom: 10px;" border="0" width="100%">
+					<tr>
+						<td width="100%" style="text-align: center"><p style="text-align: center;margin: 0;"><?php echo esc_html( $this->company_name ); ?></p></td>
+					</tr>
+					<tr>
+						<td width="100%" style="text-align: center"><p style="text-align: center;margin: 0;"><?php echo esc_html( $this->company_address . ', ' . $this->company_sity_state_zip . ', phone: ' . $this->company_phone ); ?></p></td>
+					</tr>
+				</table>
+
+				<table style="font-family: sans-serif; border-collapse: collapse; border-spacing: 0; font-size: 14px; margin-bottom: 10px;" border="0" width="100%">
+					<tr>
+						<td width="33.33%"><p style="text-align:left;margin:0;font-size:14px;font-weight:bold;">For: <strong style="margin-right:20px;"><?php echo esc_html( $period_from ); ?></strong></p></td>
+						<td width="33.33%"><p style="text-align:center;margin:0;font-size:14px;font-weight:bold;">Period ending: <?php echo esc_html( $period_to ); ?></p></td>
+						<td width="33.33%"><p style="text-align:right;font-size:14px;margin:0;font-weight:bold;">Check #: <strong style="width:120px;display:inline-block;text-align:left;"></strong></p><p style="text-align:right;font-size:14px;margin:0;font-weight:bold;">Check date: <strong style="width:120px;display:inline-block;text-align:left;">&nbsp;<?php echo esc_html( $check_date ); ?></strong></p></td>
+					</tr>
+				</table>
+				<table style="font-family: sans-serif; border-collapse: collapse; width: 100%; border-top: 1px solid #000000; border-bottom: 1px solid #000000;">
+					<tr>
+						<td width="22%" style=" font-size: 14px; padding-top: 10px;padding-bottom:10px;"><strong>Origin</strong></td>
+						<td width="22%" style=" font-size: 14px; padding-top: 10px;padding-bottom:10px;"><strong>Destination</strong></td>
+						<td width="10%" style=" font-size: 14px; padding-top: 10px;padding-bottom:10px;"><strong>Loaded</strong></td>
+						<td width="10%" style=" font-size: 14px; padding-top: 10px;padding-bottom:10px;"><strong>Miles</strong></td>
+						<td width="10%" style=" font-size: 14px; padding-top: 10px;padding-bottom:10px;"><strong>Invoice</strong></td>
+						<td width="16%" style=" font-size: 14px; padding-top: 10px;padding-bottom:10px;"><strong>Date Received</strong></td>
+						<td width="10%" style=" font-size: 14px; padding-top: 10px;padding-bottom:10px; text-align: right;"><strong>Net Pay</strong></td>
+					</tr>
+				</table>
+				<table style="font-family: sans-serif; border-collapse: collapse; width: 100%; border-top: 1px solid #000000; margin-top: 10px;">
+					<tr>
+						<td width="22%" colspan="2" style="padding-top: 10px;padding-bottom:10px;"><strong>SETTLEMENT </strong><strong><?php echo esc_html( $settlement ); ?></strong></td>
+					</tr>
+					<?php $month_total = 0.0; foreach ( $items as $row ) { list( $from_city, $from_state ) = $split_location( $row['shipper_location'] ); list( $to_city, $to_state ) = $split_location( $row['receiver_location'] ); $date_val = ! empty( $row['delivery_date'] ) ? $row['delivery_date'] : ( ! empty( $row['pick_up_date'] ) ? $row['pick_up_date'] : date('Y-m-d') ); $rate = (float) $row['driver_rate']; $month_total += $rate; ?>
+					<tr>
+						<td width="22%" style="  font-size: 14px; padding-top: 10px;padding-bottom:10px;">&nbsp;<?php echo esc_html( $from_city ); ?></td>
+						<td width="22%" style=" font-size: 14px; padding-top: 10px;padding-bottom:10px;">&nbsp;<?php echo esc_html( $to_city ); ?></td>
+						<td width="10%" style=" font-size: 14px; padding-top: 10px;padding-bottom:10px;">Loaded</td>
+						<td width="10%" style=" font-size: 14px; padding-top: 10px;padding-bottom:10px;"></td>
+						<td width="10%" style=" font-size: 14px; padding-top: 10px;padding-bottom:10px;">&nbsp;<?php echo esc_html( (string) $row['reference_number'] ); ?></td>
+						<td width="16%" style=" font-size: 14px; padding-top: 10px;padding-bottom:10px;">&nbsp;<?php echo esc_html( date( 'm/d/Y', strtotime( $date_val ) ) ); ?></td>
+						<td width="10%" style=" font-size: 14px; padding-top: 10px;padding-bottom:10px; text-align: right; border-bottom: 1px solid #000000"><strong><?php echo esc_html( '$' . $helper->format_currency( $rate, false ) ); ?></strong></td>
+					</tr>
+					<?php } ?>
+					<tr>
+						<td width="22%"></td>
+						<td width="22%"></td>
+						<td width="10%"></td>
+						<td width="10%"></td>
+						<td width="10%"></td>
+						<td width="16%" style="text-align:right;"><strong>ORDER TOTAL</strong></td>
+						<td width="10%" style="text-align:right; font-size: 14px; padding-top: 10px;padding-bottom:10px; text-align: right;"><strong><?php echo esc_html( '$' . $helper->format_currency( $month_total, false ) ); ?></strong></td>
+					</tr>
+				</table>
+				<table style=" font-size: 14px; font-family: sans-serif; border-collapse: collapse; width: 100%; border-top: 1px solid #000000; margin-top: 10px;">
+					<tr>
+						<td width="50%"><strong>PAY SUMMARY</strong></td>
+						<td width="40%" style="text-align:right; padding-top: 10px;padding-bottom:10px;">ORDER PAY:</td>
+						<td width="10%" style="text-align:right; padding-top: 10px;padding-bottom:10px;">&nbsp;<?php echo esc_html( '$' . $helper->format_currency( $month_total, false ) ); ?></td>
+					</tr>
+					<tr>
+						<td width="50%"></td>
+						<td width="40%" style="text-align:right; padding-top: 10px;padding-bottom:10px;">TOTAL GROSS EARNINGS:</td>
+						<td width="10%" style="text-align:right; padding-top: 10px;padding-bottom:10px;">&nbsp;<?php echo esc_html( '$' . $helper->format_currency( $month_total, false ) ); ?></td>
+					</tr>
+					<tr>
+						<td width="50%"></td>
+						<td width="40%" style="text-align:right; padding-top: 10px;padding-bottom:10px;">NET PAY:</td>
+						<td width="10%" style="text-align:right; padding-top: 10px;padding-bottom:10px;">&nbsp;<?php echo esc_html( '$' . $helper->format_currency( $month_total, false ) ); ?></td>
+					</tr>
+				</table>
+
+				<table style=" font-size: 14px; margin-top: 20px; font-family: sans-serif; border-collapse: collapse; width: 100%; border-top: 1px solid #000000; border-bottom: 1px solid #000000;">
+					<tr width="100%">
+						<td width="100%" style=" font-size: 14px; text-align: center; padding-top: 10px;padding-bottom:10px;">
+							<p style=" font-size: 14px; width: 100%; display: block; color: #000000; text-align: center; font-family: sans-serif, areal; font-weight: 600;"><strong>DIRECT DEPOSIT DISTRIBUTION</strong></p>
+						</td>
+					</tr>
+				</table>
+				<table style=" font-size: 18px;font-family: sans-serif; border-collapse: collapse; width: 100%;">
+					<tr>
+						<td width="22.5%" style=" font-size: 14px;text-align: center">Acct type</td>
+						<td width="22.5%" style=" font-size: 14px;text-align: center">Bank ABA #</td>
+						<td width="22.5%" style=" font-size: 14px;text-align: center">Acct number</td>
+						<td width="22.5%" style=" font-size: 14px;text-align: right;">Acct distribution</td>
+						<td width="10%" style=" font-size: 14px;padding-top: 10px;padding-bottom:10px; text-align: right;">&nbsp;<?php echo esc_html( '$' . $helper->format_currency( $month_total, false ) ); ?></td>
+					</tr>
+					<tr>
+						<td width="22.5%" style=" font-size: 14px;text-align: center">Checking</td>
+						<td width="22.5%" style=" font-size: 14px;text-align: center"></td>
+						<td width="22.5%" style=" font-size: 14px;text-align: center">******</td>
+						<td width="22.5%" style=" font-size: 14px;text-align: right;">100%</td>
+						<td width="10%" style=" font-size: 14px;padding-top: 10px;padding-bottom:10px; text-align: right;">&nbsp;<?php echo esc_html( '$' . $helper->format_currency( $month_total, false ) ); ?></td>
+					</tr>
+				</table>
+
+				<table style=" font-size: 14px;margin-top: 20px; font-family: sans-serif; border-collapse: collapse; width: 100%; border-top: 1px solid #000000; border-bottom: 1px solid #000000;">
+					<tr width="100%">
+						<td width="100%" style=" font-size: 14px;text-align: center; padding-top: 10px;padding-bottom:10px;"><p style=" font-size: 14px; width: 100%; display: block; color: #000000; text-align: center; font-family: sans-serif, areal; font-weight: 600;"><strong>DISPATCH SUMMARY</strong></p></td>
+					</tr>
+				</table>
+				<table style=" font-size: 14px; font-family: sans-serif; border-collapse: collapse; width: 100%;">
+					<tr>
+						<td width="90%" style=" font-size: 14px; padding-top: 10px;padding-bottom:10px; text-align: right;">ORDERS:</td>
+						<td width="10%" style=" font-size: 14px; padding-top: 10px;padding-bottom:10px; text-align: right;">&nbsp;<?php echo esc_html( (string) sizeof( $items ) ); ?></td>
+					</tr>
+					<tr>
+						<td width="90%" style=" font-size: 14px; padding-top: 10px;padding-bottom:10px; text-align: right;">LOADED MILES:</td>
+						<td width="10%" style=" font-size: 14px; padding-top: 10px;padding-bottom:10px; text-align: right;"></td>
+					</tr>
+					<tr>
+						<td width="90%" style=" font-size: 14px; padding-top: 10px;padding-bottom:10px; text-align: right;">EMPTY MILES:</td>
+						<td width="10%" style=" font-size: 14px; padding-top: 10px;padding-bottom:10px; text-align: right;">0</td>
+					</tr>
+					<tr>
+						<td width="90%" style=" font-size: 14px; padding-top: 10px;padding-bottom:10px; text-align: right;">TOTAL MILES:</td>
+						<td width="10%" style=" font-size: 14px; padding-top: 10px;padding-bottom:10px; text-align: right;"></td>
+					</tr>
+				</table>
+
+				<table style=" font-size: 14px;margin-top: 20px; font-family: sans-serif; border-collapse: collapse; width: 100%; border-top: 1px solid #000000; border-bottom: 1px solid #000000;">
+					<tr width="100%">
+						<td width="100%" style=" font-size: 14px;text-align: center; padding-top: 10px;padding-bottom:10px;">
+							<p style=" font-size: 14px; width: 100%; display: block; color: #000000; text-align: center; font-family: sans-serif, areal; font-weight: 600;"><strong>YTD SUMMARY</strong></p>
+						</td>
+					</tr>
+				</table>
+
+				<table style=" font-size: 14px; font-family: sans-serif; border-collapse: collapse; width: 100%;">
+					<tr>
+						<td width="85%" style="font-size: 14px; padding-top: 10px;padding-bottom:10px; text-align: right;"><strong>EARNINGS:</strong></td>
+						<td width="15%" style=" font-size: 14px; padding-top: 10px;padding-bottom:10px; text-align: right;"><strong>&nbsp;<?php echo esc_html( '$' . $helper->format_currency( $month_total, false ) ); ?></strong></td>
+					</tr>
+					<tr>
+						<td width="85%" style="font-size: 14px; padding-top: 10px;padding-bottom:10px; text-align: left;"><p><?php echo $this->company_name; ?></p><p>c/o TAFS, Inc. (Master File)</p><p>P.O. Box 872632</p><p>Kansas City MO 64187</p></td>
+					</tr>
+				</table>
+			</div>
+		</div>
+		<?php
+		return ob_get_clean();
+	}
+
+	/**
+	 * Render driver settlement rows grouped by month for automatic generation
+	 * Fills inputs similar to manual template without affecting existing generator
+	 *
+	 * @param string $id_driver
+	 * @return string HTML
+	 */
+	public function render_driver_settlement_by_month( $id_driver ) {
+		global $wpdb;
+		$table_name = $wpdb->prefix . 'settlement_summary';
+		$id_driver  = sanitize_text_field( (string) $id_driver );
+
+		$settlement = $id_driver . ' - ';
+		// Fetch records for driver, prefer delivery_date
+		$rows = $wpdb->get_results(
+			$wpdb->prepare(
+				"SELECT id, reference_number, shipper_location, receiver_location, id_driver, driver_name, driver_rate, load_status, pick_up_date, delivery_date
+				 FROM {$table_name}
+				 WHERE id_driver = %s
+				 ORDER BY
+				   CASE WHEN delivery_date IS NULL OR delivery_date = '' OR delivery_date = '0000-00-00' THEN 1 ELSE 0 END,
+				   delivery_date ASC,
+				   id ASC",
+				$id_driver
+			),
+			ARRAY_A
+		);
+
+		if ( empty( $rows ) ) {
+			return '<div class="alert alert-info">No records found for this driver.</div>';
+		}
+
+		$driver_name = '';
+		// Group by YYYY-MM using delivery_date fallback to pick_up_date
+		$grouped = array();
+		foreach ( $rows as $r ) {
+			$date_raw = ! empty( $r['delivery_date'] ) ? (string) $r['delivery_date'] : ( ! empty( $r['pick_up_date'] ) ? (string) $r['pick_up_date'] : '' );
+			$key = 'unknown';
+
+
+			$driver_name = $r['driver_name'];
+
+			if ( $date_raw !== '' ) {
+				$dt = DateTime::createFromFormat( 'Y-m-d', $date_raw );
+				if ( $dt instanceof DateTime ) {
+					$key = $dt->format( 'Y-m' );
+				} else {
+					$ts = strtotime( $date_raw );
+					if ( $ts ) { $key = date( 'Y-m', $ts ); }
+				}
+			}
+			if ( ! isset( $grouped[ $key ] ) ) { $grouped[ $key ] = array(); }
+			$grouped[ $key ][] = $r;
+		}
+
+		$settlement = $settlement . $driver_name;
+
+
+		// Helper to split location "City - ST" into [city, state]
+		$split_location = function( $location ) {
+			$location = (string) $location;
+			$parts = array_map( 'trim', explode( '-', $location ) );
+			$city  = isset( $parts[0] ) ? $parts[0] : '';
+			$state = isset( $parts[1] ) ? $parts[1] : '';
+			return array( $city, $state );
+		};
+
+        uksort( $grouped, function( $a, $b ) { return strcmp( $a, $b ); } ); // ascending by month
+
+        // Currency formatter
+        $helper = new TMSReportsHelper();
+
+        ob_start();
+        foreach ( $grouped as $monthKey => $items ) {
+            $month_ts    = strtotime( $monthKey . '-01' );
+            $label       = $monthKey !== 'unknown' && $month_ts ? date( 'F Y', $month_ts ) : 'Unknown month';
+            $period_from = $month_ts ? date( 'm/d/Y', strtotime( 'first day of this month', $month_ts ) ) : '';
+            $period_to   = $month_ts ? date( 'm/d/Y', strtotime( 'last day of this month', $month_ts ) ) : '';
+            $check_date  = $period_to;
+            $month_total = 0.0;
+            ?>
+            <div class="card mb-3">
+                <div class="card-body">
+                    <h5 class="card-title" style="margin-bottom: 10px;"><?php echo esc_html( $label ); ?></h5>
+                    <table style="font-family: sans-serif; border-collapse: collapse; border-spacing: 0; margin-bottom: 10px;" border="0" width="100%">
+                        <tr style="width: 100%;">
+                            <td width="150px"><p style="margin:0;"><?php echo esc_html( $check_date ); ?></p></td>
+                            <td width="100%" style="text-align: center">
+                                <p style="font-size:22px;color:#000;margin:15px 0;font-weight:600;">Settlement Summary</p>
+                            </td>
+                            <td width="150px"><img height="120" width="120" style="height:120px;width:120px;" src="<?php echo esc_url( $this->logo ); ?>" alt="logo"></td>
+                        </tr>
+                    </table>
+
+				<table style="font-family: sans-serif; border-collapse: collapse;
+    border-spacing: 0; margin-bottom: 10px;" border="0" width="100%">
+					<tr>
+						<td width="100%" style="text-align: center">
+							<p style="text-align: center;margin: 0;">
+							<?php echo esc_html( $this->company_name ); ?>
+							</p>
+						</td>
+					</tr>
+					<tr>
+						<td width="100%" style="text-align: center">
+							<p style="text-align: center;margin: 0;">
+							<?php echo esc_html( $this->company_address . ', ' . $this->company_sity_state_zip . ', phone: ' . $this->company_phone ); ?>
+							</p>
+						</td>
+					</tr>
+				</table>
+
+                    <table style="font-family: sans-serif; border-collapse: collapse; border-spacing: 0; font-size: 14px; margin-bottom: 10px;" border="0" width="100%">
+                        <tr>
+                            <td width="33.33%"><p style="text-align:left;margin:0;font-size:14px;font-weight:bold;">For: <strong style="margin-right:20px;"><?php echo esc_html( $period_from ); ?></strong></p></td>
+                            <td width="33.33%"><p style="text-align:center;margin:0;font-size:14px;font-weight:bold;">Period ending: <?php echo esc_html( $period_to ); ?></p></td>
+                            <td width="33.33%"><p style="text-align:right;font-size:14px;margin:0;font-weight:bold;">Check #: <strong style="width:120px;display:inline-block;text-align:left;"></strong></p><p style="text-align:right;font-size:14px;margin:0;font-weight:bold;">Check date: <strong style="width:120px;display:inline-block;text-align:left;"><?php echo esc_html( $check_date ); ?></strong></p></td>
+                        </tr>
+                    </table>
+                    <table style="font-family: sans-serif; border-collapse: collapse; width: 100%; border-top: 1px solid #000000; border-bottom: 1px solid #000000;">
+                        <tr>
+                            <td width="22%" style=" font-size: 14px; padding-top: 10px;padding-bottom:10px;"><strong>Origin</strong></td>
+                            <td width="22%" style=" font-size: 14px; padding-top: 10px;padding-bottom:10px;"><strong>Destination</strong></td>
+                            <td width="10%" style=" font-size: 14px; padding-top: 10px;padding-bottom:10px;"><strong>Loaded</strong></td>
+                            <td width="10%" style=" font-size: 14px; padding-top: 10px;padding-bottom:10px;"><strong>Miles</strong></td>
+                            <td width="10%" style=" font-size: 14px; padding-top: 10px;padding-bottom:10px;"><strong>Invoice</strong></td>
+                            <td width="16%" style=" font-size: 14px; padding-top: 10px;padding-bottom:10px;"><strong>Date Received</strong></td>
+                            <td width="10%" style=" font-size: 14px; padding-top: 10px;padding-bottom:10px; text-align: right;"><strong>Net Pay</strong></td>
+                        </tr>
+                    </table>
+                    <table style="font-family: sans-serif; border-collapse: collapse; width: 100%; border-top: 1px solid #000000; margin-top: 10px;">
+				<tr>
+					<td width="22%" colspan="2" style="padding-top: 10px;padding-bottom:10px;">
+						<strong>SETTLEMENT </strong><strong><?php echo esc_html( $settlement ); ?></strong></td>
+				</tr>   
+				
+				<?php foreach ( $items as $row ) { list( $from_city, $from_state ) = $split_location( $row['shipper_location'] ); list( $to_city, $to_state ) = $split_location( $row['receiver_location'] ); $date_val = ! empty( $row['delivery_date'] ) ? $row['delivery_date'] : ( ! empty( $row['pick_up_date'] ) ? $row['pick_up_date'] : date('Y-m-d') ); $rate = (float) $row['driver_rate']; $month_total += $rate; ?>
+                        <tr>
+                            <td width="22%" style="  font-size: 14px; padding-top: 10px;padding-bottom:10px;"><?php echo esc_html( $from_city ); ?></td>
+                            <td width="22%" style=" font-size: 14px; padding-top: 10px;padding-bottom:10px;"><?php echo esc_html( $to_city ); ?></td>
+                            <td width="10%" style=" font-size: 14px; padding-top: 10px;padding-bottom:10px;">Loaded</td>
+                            <td width="10%" style=" font-size: 14px; padding-top: 10px;padding-bottom:10px;"></td>
+                            <td width="10%" style=" font-size: 14px; padding-top: 10px;padding-bottom:10px;"><?php echo esc_html( (string) $row['reference_number'] ); ?></td>
+                            <td width="16%" style=" font-size: 14px; padding-top: 10px;padding-bottom:10px;"><?php echo esc_html( date( 'm/d/Y', strtotime( $date_val ) ) ); ?></td>
+                            <td width="10%" style=" font-size: 14px; padding-top: 10px;padding-bottom:10px; text-align: right; border-bottom: 1px solid #000000"><strong><?php echo esc_html( '$' . $helper->format_currency( $rate, false ) ); ?></strong></td>
+                        </tr>
+                        <?php } ?>
+                        <tr>
+                            <td width="22%"></td>
+                            <td width="22%"></td>
+                            <td width="10%"></td>
+                            <td width="10%"></td>
+                            <td width="10%"></td>
+                            <td width="16%" style="text-align:right;"><strong>ORDER TOTAL</strong></td>
+                            <td width="10%" style="text-align:right; font-size: 14px; padding-top: 10px;padding-bottom:10px; text-align: right;"><strong><?php echo esc_html( '$' . $helper->format_currency( $month_total, false ) ); ?></strong></td>
+                        </tr>
+                    </table>
+                    <table style=" font-size: 14px; font-family: sans-serif; border-collapse: collapse; width: 100%; border-top: 1px solid #000000; margin-top: 10px;">
+                        <tr>
+                            <td width="50%"><strong>PAY SUMMARY</strong></td>
+                            <td width="40%" style="text-align:right; padding-top: 10px;padding-bottom:10px;">ORDER PAY:</td>
+                            <td width="10%" style="text-align:right; padding-top: 10px;padding-bottom:10px;">&nbsp;<?php echo esc_html( '$' . $helper->format_currency( $month_total, false ) ); ?></td>
+                        </tr>
+                        <tr>
+                            <td width="50%"></td>
+                            <td width="40%" style="text-align:right; padding-top: 10px;padding-bottom:10px;">TOTAL GROSS EARNINGS:</td>
+                            <td width="10%" style="text-align:right; padding-top: 10px;padding-bottom:10px;">&nbsp;<?php echo esc_html( '$' . $helper->format_currency( $month_total, false ) ); ?></td>
+                        </tr>
+                        <tr>
+                            <td width="50%"></td>
+                            <td width="40%" style="text-align:right; padding-top: 10px;padding-bottom:10px;">NET PAY:</td>
+                            <td width="10%" style="text-align:right; padding-top: 10px;padding-bottom:10px;">&nbsp;<?php echo esc_html( '$' . $helper->format_currency( $month_total, false ) ); ?></td>
+                        </tr>
+                    </table>
+
+				<table
+                style=" font-size: 14px; margin-top: 20px; font-family: sans-serif; border-collapse: collapse; width: 100%; border-top: 1px solid #000000; border-bottom: 1px solid #000000;">
+            <tr width="100%">
+                <td width="100%" style=" font-size: 14px; text-align: center; padding-top: 10px;padding-bottom:10px;">
+                    <p style=" font-size: 14px;
+						width: 100%;
+						display: block;
+					    color: #000000;
+					    text-align: center;
+					    font-family: sans-serif, areal;
+					    font-weight: 600;">
+                        <strong>
+                            DIRECT DEPOSIT DISTRIBUTION
+                        </strong>
+                    </p>
+                </td>
+            </tr>
+
+        </table>
+
+        <table style=" font-size: 18px;font-family: sans-serif; border-collapse: collapse; width: 100%;">
+            <tr>
+                <td width="22.5%" style=" font-size: 14px;text-align: center">Acct type</td>
+                <td width="22.5%" style=" font-size: 14px;text-align: center">Bank ABA #</td>
+                <td width="22.5%" style=" font-size: 14px;text-align: center">Acct number</td>
+                <td width="22.5%" style=" font-size: 14px;text-align: right;">Acct distribution</td>
+                <td width="10%" style=" font-size: 14px;padding-top: 10px;padding-bottom:10px; text-align: right;">
+                    <?php echo esc_html( '$' . $helper->format_currency( $month_total, false ) ); ?>
+                </td>
+            </tr>
+            <tr>
+                <td width="22.5%" style=" font-size: 14px;text-align: center">
+			 Checking
+                </td>
+                <td width="22.5%" style=" font-size: 14px;text-align: center">
+				
+                </td>
+                <td width="22.5%" style=" font-size: 14px;text-align: center">******
+				
+                </td>
+                <td width="22.5%" style=" font-size: 14px;text-align: right;">
+				100%
+                </td>
+                <td width="10%" style=" font-size: 14px;padding-top: 10px;padding-bottom:10px; text-align: right;">
+                    <?php echo esc_html( '$' . $helper->format_currency( $month_total, false ) ); ?>
+                </td>
+            </tr>
+        </table>
+
+        <table
+                style=" font-size: 14px;margin-top: 20px; font-family: sans-serif; border-collapse: collapse; width: 100%; border-top: 1px solid #000000; border-bottom: 1px solid #000000;">
+            <tr width="100%">
+                <td width="100%" style=" font-size: 14px;text-align: center; padding-top: 10px;padding-bottom:10px;">
+                    <p style=" font-size: 14px;
+						width: 100%;
+						display: block;
+					    color: #000000;
+					    text-align: center;
+					    font-family: sans-serif, areal;
+					    font-weight: 600;">
+                        <strong>
+                            DISPATCH SUMMARY
+                        </strong>
+                    </p>
+                </td>
+            </tr>
+        </table>
+        <table style=" font-size: 14px; font-family: sans-serif; border-collapse: collapse; width: 100%;">
+            <tr>
+                <td width="90%" style=" font-size: 14px; padding-top: 10px;padding-bottom:10px; text-align: right;">
+                    ORDERS:
+                </td>
+                <td width="10%" style=" font-size: 14px; padding-top: 10px;padding-bottom:10px; text-align: right;">
+					<?php echo esc_html( sizeof( $items ) ); ?>
+                </td>
+            </tr>
+            <tr>
+                <td width="90%" style=" font-size: 14px; padding-top: 10px;padding-bottom:10px; text-align: right;">
+                    LOADED MILES:
+                </td>
+                <td width="10%" style=" font-size: 14px; padding-top: 10px;padding-bottom:10px; text-align: right;">
+				
+                </td>
+            </tr>
+            <tr>
+                <td width="90%" style=" font-size: 14px; padding-top: 10px;padding-bottom:10px; text-align: right;">
+                    EMPTY MILES:
+                </td>
+                <td width="10%" style=" font-size: 14px; padding-top: 10px;padding-bottom:10px; text-align: right;">
+					0
+                </td>
+            </tr>
+            <tr>
+                <td width="90%" style=" font-size: 14px; padding-top: 10px;padding-bottom:10px; text-align: right;">
+                    TOTAL MILES:
+                </td>
+                <td width="10%" style=" font-size: 14px; padding-top: 10px;padding-bottom:10px; text-align: right;">
+				
+                </td>
+            </tr>
+        </table>
+
+        <table
+                style=" font-size: 14px;margin-top: 20px; font-family: sans-serif; border-collapse: collapse; width: 100%; border-top: 1px solid #000000; border-bottom: 1px solid #000000;">
+            <tr width="100%">
+                <td width="100%" style=" font-size: 14px;text-align: center; padding-top: 10px;padding-bottom:10px;">
+                    <p style=" font-size: 14px;
+						width: 100%;
+						display: block;
+					    color: #000000;
+					    text-align: center;
+					    font-family: sans-serif, areal;
+					    font-weight: 600;">
+                        <strong>
+                            YTD SUMMARY
+                        </strong>
+                    </p>
+                </td>
+            </tr>
+        </table>
+
+        <table style=" font-size: 14px; font-family: sans-serif; border-collapse: collapse; width: 100%;">
+            <tr>
+                <td width="85%" style="font-size: 14px; padding-top: 10px;padding-bottom:10px; text-align: right;">
+                    <strong>EARNINGS:</strong>
+                </td>
+                <td width="15%" style=" font-size: 14px; padding-top: 10px;padding-bottom:10px; text-align: right;">
+                    <strong>
+                <?php echo esc_html( '$' . $helper->format_currency( $month_total, false ) ); ?>
+                    </strong></td>
+            </tr>
+            <tr>
+                <td width="85%" style="font-size: 14px; padding-top: 10px;padding-bottom:10px; text-align: left;">
+                    <p>
+				ODYSSEIA INC
+                    </p>
+                    <p>
+				521 S Port St.
+                    </p>
+                    <p>
+				Baltimore, MD 21224
+                    </p>
+                </td>
+            </tr>
+        </table>
+                </div>
+            </div>
+            <?php
+        }
+
+        return ob_get_clean();
 	}
 	
 	public function get_template_invoice( $input = false ) {

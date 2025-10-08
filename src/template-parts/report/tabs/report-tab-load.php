@@ -280,7 +280,7 @@ $read_only = $TMSUsers->check_read_only( $post_status );
         <div class="mb-2 col-12 col-md-6 col-xl-4">
             <label for="dispatcher_initials" class="form-label">Dispatcher Initials</label>
 			
-			<?php if ( $full_view_only && intval( $dispatcher_initials ) ):
+			<?php if ( ($full_view_only && intval( $dispatcher_initials ) ) || $tracking_tl ):
 				$user_name = $helper->get_user_full_name_by_id( $dispatcher_initials );
 				?>
                 <p class="m-0"><strong><?php echo $user_name[ 'full_name' ]; ?></strong></p>
@@ -288,7 +288,9 @@ $read_only = $TMSUsers->check_read_only( $post_status );
                        required>
 			<?php else:
 				
-				if ( current_user_can( 'dispatcher' ) || current_user_can( 'dispatcher-tl' ) || current_user_can( 'expedite_manager' ) ) {
+				if ( current_user_can( 'dispatcher' ) || current_user_can( 'dispatcher-tl' ) || current_user_can( 'expedite_manager' ) 
+                || current_user_can( 'morning_tracking' ) || current_user_can( 'nightshift_tracking' ) || current_user_can( 'tracking-tl' ) 
+                || current_user_can( 'tracking' ) || current_user_can( 'accounting' ) ) {
 					if ( ! $dispatcher_initials ) {
 						$dispatcher_initials = get_current_user_id();
 						$user_name           = $helper->get_user_full_name_by_id( $dispatcher_initials );

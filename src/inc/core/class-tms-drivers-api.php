@@ -991,6 +991,7 @@ class TMSDriversAPI {
                 'phone' => $this->clean_empty_value($meta_data['emergency_contact_phone'] ?? null),
                 'relation' => $this->clean_empty_value($meta_data['emergency_contact_relation'] ?? null)
             ),
+            'recruiter_add' => $this->clean_empty_value($meta_data['recruiter_add'] ?? null)
         );
     }
     

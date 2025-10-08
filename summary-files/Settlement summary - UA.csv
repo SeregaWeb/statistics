@@ -1174,7 +1174,8 @@ L221213-00046,"Hazel Park, MI ","Dublin, VA",(170) Seraly Lilain Rodalvy,$650.00
 2963936,"WALKER, MI 49534","DOTHAN, AL 36305",(784) Michael Fayz,"$1,100.00",12/13/2022,Delivered,12/14/2022
 395784 ,"Houston, TX","Jal, NM",(879) Juan Montoya,$550.00,12/13/2022,Delivered,12/14/2022
 90344,"Houston, TX","Fort Stockton, TX","(879) Juan Montoya
-(839) Gainel Alvarez",$800.00,12/13/2022,Delivered,12/14/2022
+",$50.00,12/13/2022,Delivered,12/14/2022
+90344,"Houston, TX","Fort Stockton, TX",(839) Gainel Alvarez,$750.00,12/13/2022,Delivered,12/14/2022
 1EW5842,"Charlotte,NC","Middlesex,NC",(677) Andre Williams,$300.00,12/14/2022,Delivered,12/14/2022
 0007385,"Lebanon, OH 45036","Amherst, NY 14228",(726) Oluwafemi Adelanwa,$100.00,12/14/2022,TONU,12/14/2022
 3115781,"LAREDO, TX 78045","LAREDO, TX 78045",(851) Peter Smith,$75.00,12/14/2022,Delivered,12/14/2022
@@ -1194,7 +1195,9 @@ GLG6385,"SAN FRANCISCO, CA 94128","BROOKS, CA 95606",(893) Vincent Leal,$200.00,
 114930208,"Doral, FL","Sanford, FL
 HEBRON, KY",(567) Nunzio Leonardo Grieco,"$1,100.00",12/15/2022,Delivered,12/16/2022
 114929998,"SANFORD, FL","DORAL, FL ","(876) Rami Francis
-(843) Gerrell Oxendine",$375.00,12/15/2022,Delivered,12/16/2022
+",$100.00,12/15/2022,Delivered,12/16/2022
+114929998,"SANFORD, FL","DORAL, FL ","
+(843) Gerrell Oxendine",$275.00,12/15/2022,Delivered,12/16/2022
 114931057,"WEST PALM BEACH, FL","Minneapolis, MN",(901) Emmanuel Dimanche,"$1,600.00",12/15/2022,Delivered,12/16/2022
 171361,SPARTANBURG SC 29303,KANSAS CITY MO 64120,(322) Christopher Davis,"$1,050.00",12/16/2022,TONU,12/16/2022
 1047641,FRANKLIN PARK IL,GIBSON CITY IL,(512) Eduard Kirilov,$350.00,12/16/2022,Delivered,12/16/2022
@@ -3661,7 +3664,8 @@ SPT-263618,"1. HYATTSVILLE, MD
 1238272,"Houston, TX","Jasper, AL",(785) Michael Huynh,$700.00,07/10/2023,Delivered,07/11/2023
 46502,"Huntington, IN","Stoughton, WI",(905) Damon Perine,$300.00,07/10/2023,Delivered,07/11/2023
 2CS8440,"SAN DIEGO,Ca","RICHMOND,SA,Ca","(922) Sarah Johnson
-(665) Adhikari Chiranjeebi",$665.00,07/10/2023,Delivered,07/11/2023
+",$590.00,07/10/2023,Delivered,07/11/2023
+2CS8440,"SAN DIEGO,Ca","RICHMOND,SA,Ca",(665) Adhikari Chiranjeebi,$75.00,07/10/2023,Delivered,07/11/2023
 0097327,"LAS VEGAS, NV","FULLERTON, CA",(923) Sarah Johnson,$300.00,07/10/2023,Delivered,07/11/2023
 314488,"Chicago, IL","Evansville, IN",(980) Lynete Wilson,$420.00,07/10/2023,Delivered,07/11/2023
 29487 ,"Livermore, CA","Fresno, CA",(1053) Sylvester Simms,$225.00,07/11/2023,Delivered,07/11/2023
@@ -3757,7 +3761,7 @@ LIV39411,"Calhoun, GA","Franklin, GA",(1068) Robert Flono ,$450.00,07/18/2023,De
 1152610,MOBILE AL ,CEDAR SPRINGS GA,(912) Lamont Frye,$220.00,07/18/2023,Delivered,07/18/2023
 0413700,"CARROLLTON, TX","IDABEL, OK",(958) Victor Unique,$250.00,07/18/2023,Delivered,07/18/2023
 0320162,"1. ELYRIA OH
-2. BEREA OH",INDIANAPOLIS IN ,(963 Brandon Rivera,$380.00,07/18/2023,Delivered,07/18/2023
+2. BEREA OH",INDIANAPOLIS IN ,(963) Brandon Rivera,$380.00,07/18/2023,Delivered,07/18/2023
 99574,"LEETSDALE, PA","CLEVELAND, OH",(963) Brandon Rivera,$230.00,07/18/2023,Delivered,07/18/2023
 0404316,EDISON NJ,ELIZABETH NJ,(970) Rafael Nunez ,$50.00,07/18/2023,TONU,07/18/2023
 535368,"Grand Prairie, TX","Jerome, ID",(1175) Sheryll Rasberry,"$1,375.00",07/17/2023,Delivered,07/19/2023
@@ -3892,7 +3896,8 @@ JTS16346,"COPPELL, TX ","PLANT CITY, FL ",(1127) El Amin Najmah,"$1,250.00",07/2
 220729,"Ayer, MA","Old Bridge, NJ",(1005) Terrell Fleming ,$375.00,07/27/2023,Delivered,7/28/2023
 29887,"Modesto, CA","Eureka,CA ",(1044) Ahmed Khedr,$525.00,07/27/2023,Delivered,7/28/2023
 1157592,PAULSBORO NJ,SACO ME,"(1087)  Terrance Manley
-(1219) William Adegbite",$590.00,07/27/2023,Delivered,7/28/2023
+",$550.00,07/27/2023,Delivered,7/28/2023
+1157592,PAULSBORO NJ,SACO ME,(1219) William Adegbite,$40.00,07/27/2023,Delivered,7/28/2023
 5675716,"Nogales, AZ","Cerritos, CA",(1213) Moses Falaiye (Driver Luis),$550.00,07/27/2023,Delivered,07/28/2023
 29885,"GREER, SC","CARY, NC",(1297) Ernest Mitchell,$325.00,07/27/2023,Delivered,7/28/2023
 29670,"Mound House, NV ","Las Vegas, NV",(1316) Orlando Zayas,$450.00,07/27/2023,Delivered,7/28/2023
@@ -4007,10 +4012,10 @@ L230807-00028,"Dayton, OH","Brigden, ON",(1161) Frank Waswa,$600.00,08/07/2023,D
 30211,"San Rafael, CA","San Jose, CA ",(1053) Sylvester Simms,$400.00,08/08/2023,Delivered,08/08/2023
 S111884732,"East Point, GA 30344","Newport, TN 37821",(1068) Robert Flono ,$550.00,08/08/2023,Delivered,08/08/2023
 221008,Sterling Heights MI , Raleigh NC ,(1333) Veronica Johnson,$50.00,08/08/2023,TONU,8/8/2023
-27411265,"Clyde, OH","Olmsted Falls, OH","(1333) Veronica Johnson
+27411265,"Clyde, OH","Olmsted Falls, OH","
 (725) Joma Hamad",$225.00,08/08/2023,Delivered,08/08/2023
 49025909,"Phoenix, AZ","DESERT CENTER, CA",(437) Alfred Thomas,$325.00,08/08/2023,Delivered,08/08/2023
-27411754 ,"Clyde, OH","Ypsilanti, MI","(725) Joma Hamad
+27411754 ,"Clyde, OH","Ypsilanti, MI","
 (1333) Veronica Johnson",$180.00,08/08/2023,Delivered,08/08/2023
 27406727,"Wyoming, MI","Walled Lake, MI",(784) Michael Fayz,$275.00,08/08/2023,Delivered,08/08/2023
 116440394,"Sanford, FL","DORAL, FL",(994) Aroldo Morfee,$400.00,08/08/2023,Delivered,08/08/2023
@@ -4075,7 +4080,7 @@ S00090625,"Bedford Park, IL","Burlington, WI",(1141) Jason Bradley,$175.00,08/10
 30397,"MODESTO, CA",EUREKA CA,(1176) Dmytro Himchynskyy,$550.00,08/14/2023,Delivered,08/15/2023
 0420193,"HOUSTON, TX","HIGHLAND HEIGHT, OH ",(1293) Ajala Adejoke,"$1,050.00",08/14/2023,Delivered,08/15/2023
 47987,"Aurora, IL","Apopka, FL",(567) Nunzio Grieco,"$1,100.00",08/14/2023,Delivered,08/15/2023
-0323285,"DOVER, OH","ATHENS, GA",1107) Chafik Djellali,$780.00,08/14/2023,Delivered,08/15/2023
+0323285,"DOVER, OH","ATHENS, GA",(1107) Chafik Djellali,$780.00,08/14/2023,Delivered,08/15/2023
 11200999,"ORLANDO, FL ","Plant City, FL",(1028) Josh Hudnell,$100.00,08/15/2023,Delivered,08/15/2023
 27454321,"Clyde, OH","Auburn hills, MI",(1290) Brandon Wright,$200.00,08/15/2023,Delivered,08/15/2023
 LD48657,"EL PASO, TX","LAS VEGAS, NV",(1295) Henry Bueno,$50.00,08/15/2023,TONU,08/15/2023
@@ -5164,7 +5169,9 @@ RELO-55614,"Tulsa, OK","Kent, WA",(877) Greg Steven Horan,"$2,200.00",11/21/2023
 117272325,"Chandler, AZ","Miami, FL",(1279) Wendy Avellones,"$2,100.00",11/23/2023,Delivered,11/25/2023
 1223692,SALEM NH,BURLINGTON VT,(1562) Italo Lima,$350.00,11/25/2023,Delivered,11/25/2023
 L-65045,"East Boston, MA","Walpole, NH","(1562) Italo Lima
-(1161) Frank Waswa",$300.00,11/20/2023,Delivered,11/27/2023
+",$200.00,11/20/2023,Delivered,11/27/2023
+L-65045,"East Boston, MA","Walpole, NH","
+(1161) Frank Waswa",$100.00,11/20/2023,Delivered,11/27/2023
 0445920,"IXONIA, WI","LEWISBURG, TN",(1319) Jesus Ocanto,$700.00,11/22/2023,Delivered,11/27/2023
 103911,"South Fayette Township, PA","Northlake, IL",(1366) Christopher Giblin (driver Rossukon),$600.00,11/22/2023,Delivered,11/27/2023
 578727,"SANDY, OR","MONTCLAIR, CA",(1511) Jonathan Barraclough,$800.00,11/24/2023,Delivered,11/27/2023
@@ -5292,7 +5299,7 @@ TRIP-19156,"TORRANCE, CA","Elko, NV",(1554) Priscilla Villa,$700.00,12/5/2023,De
 117357239,"SAN FRANCISSCO, CA ","LOS ANGELES, CA",(161) Samuel Temesgen,$525.00,12/5/2023,Delivered,12/06/2023
 117352128,"GREENSBORO, NC","POMPANO BEACH, FL ",(274) Mark Anthony Williams,$850.00,12/5/2023,Delivered,12/06/2023
 1183-033621-4,"Chalfont, PA","Greenville, NC",(307) Darryl Coachman,$400.00,12/5/2023,Delivered,12/06/2023
-C091135,Greenville SC,"Dudley, MA",1242) Matthew Hankins,$915.00,12/5/2023,Delivered,12/06/2023
+C091135,Greenville SC,"Dudley, MA",(1242) Matthew Hankins,$915.00,12/5/2023,Delivered,12/06/2023
 99758,"Mansfield, TX","Johnson City, TX",(1106) Robert Kelly,$400.00,12/6/2023,Delivered,12/06/2023
 6141618,"N. Royalton, OH","Aurora, IL",(1180) Jhon hidalgo,$550.00,12/6/2023,Delivered,12/6/2023
 S00001554,NEWARK NJ,ELMA NY,(480) Agustin Vivar,$100.00,12/6/2023,TONU,12/6/2023
@@ -5551,7 +5558,8 @@ S00001596,KANSAS CITY MO,LENEXA KS,(1491) Hany Youssef ,$150.00,12/22/2023,Deliv
 0570881,"Columbus, OH","Fullerton, CA",(1176) Dmytro Himchynskyy ,"$2,450.00",12/19/2023,Delivered,12/25/2023
 L00012059,"Warren, PA","Erie, PA",(1255) ZAAF ABDERRAHMANE,$300.00,12/21/2023,Delivered,12/25/2023
 0425128,HOUSTON TX ,ROBINSON IL,"(1284) Strovos Cade
-(1624) Zachary Welch ",$995.00,12/21/2023,Delivered,12/25/2023
+",$80.00,12/21/2023,Delivered,12/25/2023
+0425128,HOUSTON TX ,ROBINSON IL,(1624) Zachary Welch ,$915.00,12/21/2023,Delivered,12/25/2023
 6580,"El Paso, TX","Vaughn, NM",(1618) Bhone Zeya,$350.00,12/21/2023,Delivered,12/25/2023
 11205208,"Chicago, IL","Tipton, IN",(1422) Jamail Scruggs,$200.00,12/22/2023,Delivered,12/25/2023
 6760401,"Corona, CA","RONKONKOMA, NY",(1348) Siam Khai,"$2,200.00",12/21/2023,Delivered,12/26/2023
@@ -5601,7 +5609,7 @@ AQKF-117565145,"NORTH BERGEN, NJ","PLATTSBURGH, NY",(970) Rafael Nunez,$50.00,12
 0453699,"KAUFMAN, TX","CHICAGO, IL ",(1106) (Joshua driver),$750.00,12/29/2023,Delivered,12/31/2023
 111474 ,Bensenville IL,Shepherdsville KY,(1317) Christopher Billups,$500.00,12/29/2023,Delivered,12/31/2023
 7029233,El Paso TX,"Cerritos, CA",(1009) Robert Hadnot (Driver - Daniel) ,$640.00,12/29/2023,Delivered,01/02/2024
-AQKF-117565145,"NORTH BERGEN, NJ","PLATTSBURGH, NY","(970) Rafael Nunez
+AQKF-117565145,"NORTH BERGEN, NJ","PLATTSBURGH, NY","
 (480) Augustin Vivar",$450.00,12/29/2023,Delivered,01/02/2024
 11205421,"Denver, CO","Spanish Fork, UT",(1342) Ramez Iskander,$650.00,12/31/2023,Delivered,01/02/2024
 1354956,"Pasadena, TX","Naperville, IL",(1592) Waseem Sandhu,"$1,450.00",12/31/2023,Delivered,1/2/2024
@@ -5894,7 +5902,7 @@ Fort Worth, TX","Carlsbad, NM",(1716) Alejandro Gonzalez,$600.00,1/19/2024,Deliv
 263107,"NEW CASTLE, DE","RED OAK, IA",(480) Agustin Vivar (driver Said Lopez Casttillo),"$1,100.00",1/19/2024,Delivered,01/22/2024
 2341996,"Spring, TX ","Roswell, NM",(1282) Marlo Woodard,"$1,050.00",1/21/2024,Delivered,01/22/2024
 23322,"JAMAICA, NY","TONAWANDA, NY",(1532) Matthew English,$500.00,1/21/2024,Delivered,01/22/2024
-1638786,"Channahon, IL","Greencastle, IN",503770,$275.00,1/22/2024,Delivered,01/22/2024
+1638786,"Channahon, IL","Greencastle, IN",(62),$275.00,1/22/2024,Delivered,01/22/2024
 1252334,NASHVILLE TN,OXFORD MS,(1215) Eric Treadwell ,$350.00,1/22/2024,Delivered,01/22/2024
 1252846,DALLAS TX,LEANDER TX ,(1251) Melvin Brown,$300.00,1/22/2024,Delivered,01/22/2024
 117722363 ,"WINSTON-SALEM, NC","DEERFIELD BEACH, FL ",(1313) Erica Williams ,$50.00,1/22/2024,TONU,1/22/2024
@@ -5938,7 +5946,7 @@ C31476-06886 ,"Charlestown, IN","MIDWAY, TN",(1422) Jamail Scruggs ,$400.00,1/23
 11206105,"Houston, TX","Eagle Pass, TX",(1569) Danni Escalona,$380.00,1/23/2024,Delivered,01/24/2024
 BIG3M3734,"EULESS , TX","EL PASO , TX",(1685) Romelis Jimenez,$550.00,1/23/2024,Delivered,01/24/2024
 111622,Sterling VA,Fletcher NC,(609) Brian Coley,$602.00,1/23/2024,Delivered,1/24/2024
-1421888,"Hopkinsville, KY","Forest Park, GA",1692) Omarcus Swims,$450.00,1/23/2024,Delivered,01/24/2024
+1421888,"Hopkinsville, KY","Forest Park, GA",(1692) Omarcus Swims,$450.00,1/23/2024,Delivered,01/24/2024
 PB31638,"Bisbee, AZ","Douglas, AZ",(1213) Moses Falaiye (Robinson driver),$150.00,1/24/2024,Delivered,01/24/2024
 117752916,"TAMPA, FL","CORAL SPRINGS, FL",(1424) Giorgio Salvi  ,$350.00,1/24/2024,Delivered,01/24/2024
 60106714267,"Phoenix, AZ","Phoenix, AZ",(1437) Raymond Epps,$200.00,1/24/2024,Delivered,01/24/2024
@@ -6055,7 +6063,7 @@ Tog10115,"MESA, AZ ","RIDGEVILLE, SC",(1464) Martin Duncan,$100.00,1/31/2024,TON
 2095556 ," NORTH VERNON, IN","HOMERVILLE, GA",(853) Walter Osmai ,$50.00,1/31/2024,TONU,1/31/2024
 1258529,FRANKLIN PARK IL,BLOOMINGTON IL ,(928) Eric Mason ,$160.00,1/31/2024,Delivered,01/31/2024
 1258250,FRANKLIN PARK IL,INDIANAPOLIS IN,(980) Lynette Wilson ,$300.00,1/31/2024,Delivered,01/31/2024
-7678681TLG ,"HOUSTON, TX","WACO, TX",1537) Raymond Amisu,$250.00,01/31/2024,Delivered,01/31/2024
+7678681TLG ,"HOUSTON, TX","WACO, TX",(1537) Raymond Amisu,$250.00,01/31/2024,Delivered,01/31/2024
 1541592,"Jeffersonville, IN","Northfield, MN",(1260) Aaron Stengel,$800.00,1/30/2024,Delivered,02/01/2024
 263427,"SAN ANTONIO, TX","FORT WAYNE, IN",(1675) Robert Paul Mari,"$1,065.00",1/30/2024,Delivered,02/01/2024
 28435782,"Heber, CA","Burlingame, CA",(1083) Jose Valles (driver Karina),$750.00,1/31/2024,Delivered,02/01/2024
@@ -6339,7 +6347,7 @@ S2144568,"Battle Creek,MI","London,OH",(1348) Siam Khai,$300.00,2/14/2024,Delive
 0465189,"Butner, NC","Jackson, TN",(1661) Gary Schreiber,$750.00,2/15/2024,Delivered,2/15/2024
 101149,"Pasadena, TX ","Loving, NM",(1745) Umut Sozeri,$900.00,2/15/2024,Delivered,02/15/2024
 2109645,"GRANDVIEW, MO","FORT LUPTON, CO",(1781) Mario Guerriero,"$1,030.00",2/15/2024,Delivered,02/15/2024
-136093,"New Orleans, LA","Huntsville, AL",1713) Arif Sameja,$725.00,2/15/2024,Delivered,02/15/2024
+136093,"New Orleans, LA","Huntsville, AL",(1713) Arif Sameja,$725.00,2/15/2024,Delivered,02/15/2024
 117972490,"Chatsworth, CA",Whitehall OH,(1410) Jesus Abelino,"$1,490.00",2/14/2024,Delivered,2/16/2024
 CHA12727,"Weymouth, MA","Franklin, WI",(737) Elizabeth Grullon,"$1,000.00",2/14/2024,Delivered,2/16/2024
 6720,"Carson, CA","Centennial, CO",(933) Lian Zam,$850.00,2/14/2024,Delivered,2/16/2024
@@ -6427,7 +6435,7 @@ DALLAS TX",(1436) John Black,$350.00,2/20/2024,Delivered,2/21/2024
 4079063,"Sidney, OH","Kansas City, MO",(1747) Charica Bowen,$750.00,2/20/2024,Delivered,2/21/2024
 118109222,"Germantown, WI ","Waco, TX",(273) Dloyd L Mitchell ,$450.00,2/20/2024,Delivered,02/21/2024
 0432875 ,"Pasadena, TX ","NOTREES, TX ",(576) Rohan Adams ,$575.00,2/20/2024,Delivered,02/21/2024
-181869,SAN FRANCISCO CA,GOODYEAR AZ,1237) Wayne Friday,$550.00,2/20/2024,Delivered,02/21/2024
+181869,SAN FRANCISCO CA,GOODYEAR AZ,(1237) Wayne Friday,$550.00,2/20/2024,Delivered,02/21/2024
 14683,"Oshkosh,WI","Chicago, IL",(1366) Rossukon Giblin,$350.00,2/21/2024,Delivered,2/21/2024
 1066001,"MOBILE, AL","ATLANTA, GA",(159) Ibrahim Osinbanjo,$400.00,2/21/2024,Delivered,2/21/2024
 118187446,"DORAL, FL ","POMPANO BEACH, FL",(1690) Sandro Pena  ,$100.00,2/21/2024,Delivered,2/21/2024
@@ -6806,7 +6814,8 @@ INT8577921,"Chino, CA","Sacramento, CA",(1511) Jonathan Barraclough,$475.00,3/13
 24664,"CHARLOTTE, NC","MONROE, NC",(1313) Erica Williams,$80.00,3/14/2024,Delivered,3/15/2024
 24662,"Linden, NJ","AUBURN HILLS, MI",(1534) Juan Coronado,$820.00,3/14/2024,Delivered,3/15/2024
 118353688,"LOS ANGELES, CA","LAS VEGAS, NV ","(1578) Samuel Spacek 
-(925) Curtis Mauldin",$600.00,3/14/2024,Delivered,3/15/2024
+",$100.00,3/14/2024,Delivered,3/15/2024
+118353688,"LOS ANGELES, CA","LAS VEGAS, NV ",(925) Curtis Mauldin,$500.00,3/14/2024,Delivered,3/15/2024
 1812534,"South Bend, IN","Rosemount, MN",(1613) Michael Anyanwu,$600.00,3/14/2024,Delivered,3/15/2024
 J250085414,"LAMBERTVILLE, NJ","HICKORY, NC",(307) Darryl Coachman,$650.00,3/14/2024,Delivered,3/15/2024
 3GD1564,"SAN DIEGO,Ca","MILAN,Oh",(588) Pavel Ion,"$1,800.00",3/14/2024,Delivered,3/15/2024
@@ -8307,8 +8316,8 @@ LIV59675,DYERSBURG TN,MURFEESBORO TN ,(1189) Willie Ozier,$250.00,7/11/2024,Deli
 4384218,"Columbus, OH","Gaffney, SC",(181) Werku Belachew,$500.00,7/11/2024,Delivered,07/11/2024
 3884168,"Jackson, TN","Troy, MO",(1914) Dieumaitre Blanc,$500.00,7/11/2024,Delivered,07/11/2024
 "119561145","MARIETTA, GA "," PELHAM, AL",(2099) Tariq Smith,$100.00,7/11/2024,TONU,7/11/2024
-11211762,"Humble, TX","Laredo, TX","(1816) Sanjay Karki $150
-(785) Michael Huynh 450",$600.00,7/7/2024,Delivered,7/12/2024
+11211762,"Humble, TX","Laredo, TX",(1816) Sanjay Karki,$150.00,7/7/2024,Delivered,7/12/2024
+11211762,"Humble, TX","Laredo, TX",(785) Michael Huynh,$450.00,7/7/2024,Delivered,7/12/2024
 119546666,"Las Vegas, NV","NEWPORT, DE",(2024) Joe Brewer ,"$2,300.00",7/10/2024,Delivered,07/12/2024
 3245742,"MCALLEN, TX","ST CLOUD , MN",(2060) Freddrick Rogers,"$1,300.00",7/10/2024,Delivered,07/12/2024
 2259194,"CAMARILLO, CA","SAN MATEO, CA",(1213) Moses Falaiye,$350.00,7/11/2024,Delivered,7/12/2024
@@ -8663,7 +8672,7 @@ GA7793197,"Lebanon, TN","Northbrook, IL",(1929) David Barcolleh,$450.00,8/7/2024
 4444309,"TAYLOR, TX ","BORGER, TX",(2008) Lonnie Graves,$600.00,8/8/2024,Delivered,08/08/2024
 LIV61780,DYERSBURG TN,MURFEESBORO TN ,(2069)  Jhonattan Salas,$250.00,8/8/2024,Delivered,08/08/2024
 4441059,"Indianapolis, IN","Toledo, OH ",(2180) Han Htwe ,$220.00,8/8/2024,Delivered,08/08/2024
-29473044,"Charlevoix, MI","Anniston, AL",driver (313)605-6015                        ,$100.00,8/8/2024,TONU,8/8/2024
+29473044,"Charlevoix, MI","Anniston, AL",(1957) Michael Fayz ,$100.00,8/8/2024,TONU,8/8/2024
 2539642,"SPANISH FORK, UT","DELAND, FL",(1541) Cristian Vargas ,"$1,700.00",8/6/2024,Delivered,08/09/2024
 9067200,"HOBART, IN","NORTH LAS VEGAS, NV",(1798) Adriano Reis,"$1,800.00",8/7/2024,Delivered,08/09/2024
 4442960,"Yuba City, CA","Auburn, WA",(2164) Carlos Garret,$600.00,8/7/2024,Delivered,08/09/2024
@@ -8878,7 +8887,9 @@ S2488213,"Laredo, TX","Indianapolis, IN",(1735) Joel Dingamnayal,"$1,100.00",8/2
 230290,"Ayer, MA",Agawam MA,(2057) James Barret,$200.00,8/23/2024,Delivered,08/26/2024
 230264,"Otsego, MI","San Diego, CA",(2136) Benjamin Castaneda,"$2,000.00",8/23/2024,Delivered,08/26/2024
 150793,"Belle Glade, FL","Cary, NC","(2192) Jacques Willis
-(1853) Zouli Radji",$700.00,8/23/2024,Delivered,08/26/2024
+",$650.00,8/23/2024,Delivered,not pay
+150793,"Belle Glade, FL","Cary, NC","
+(1853) Zouli Radji",$50.00,8/23/2024,Delivered,08/26/2024
 4477344,"MARCELINE, MO","SALEM, MA",(419) Lovejoy Baltazar,"$1,100.00",8/23/2024,Delivered,08/26/2024
 7790053,"Chicago, IL","Toledo, OH",(980) Lynette Wilson,$450.00,8/23/2024,Delivered,08/26/2024
 005221091,"GAINESVILLE, TX","COLUMBUS, OH",(1805) Ramses Guerrero ,$950.00,8/25/2024,Delivered,08/26/2024
@@ -8961,7 +8972,8 @@ OR304672,"Los Angeles, CA","Sulphur, LA",(1599) Jair Coye ,"$1,310.00",8/30/2024
 16243,"Hauppauge, NY","Kent, OH 44240",(2104) Camilo Bedoya ,$520.00,8/30/2024,Delivered,09/03/2024
 12991,Fort Wayne IN,"Cove, AR",(2210) Raul Soto ,$790.00,8/30/2024,Delivered,09/03/2024
 4902-6454,"MCCARREN, NV ","IOLA, TX","(2227) Alejandro Oviedo
-(2045) Bertin Koko","$1,500.00",8/30/2024,Delivered,09/03/2024
+","$1,100.00",8/30/2024,Delivered,09/03/2024
+4902-6454,"MCCARREN, NV ","IOLA, TX",(2045) Bertin Koko,$400.00,8/30/2024,Delivered,09/03/2024
 98211,"SEATTLE, WA","LA JOLLA, CA",(603) Vartan Hovsepyan,$950.00,8/30/2024,Delivered,09/03/2024
 73185,"Corona, CA","Roanoke, VA",(1554) Priscilla Villa,"$1,560.00",8/31/2024,Delivered,09/03/2024
 73185,"Corona, CA","Roanoke, VA",(2164) Carlos Garret,$150.00,8/31/2024,Delivered,09/03/2024
@@ -9396,7 +9408,7 @@ C107390,GREENVILLE SC,HACKBERRY LA,(2046) Moises Lantigua,$950.00,10/3/2024,Deli
 1413623,ORLANDO FL ,PORT CHARLOTTE FL ,(1901) Sharlene Rivera ,$350.00,10/4/2024,Delivered,10/05/2024
 1999810,"ELLENWOOD, GA","PALM BEACH GARDIENS, FL ",(2315) Heverton Martins ,$650.00,10/4/2024,Delivered,10/05/2024
 120527304,"Huntington Beach, CA","SANTA ROSA, CA",(603)  Vartan Hovsepyan,$75.00,10/4/2024,TONU,10/5/2024
-1413629 ,ORLANDO FL ,TAMPA FL ,()1906 Mohamed Abbas ,$200.00,10/5/2024,Delivered,10/05/2024
+1413629 ,ORLANDO FL ,TAMPA FL ,(1906) Mohamed Abbas ,$200.00,10/5/2024,Delivered,10/05/2024
 29606,"DALLAS, TX","LAREDO, TX",(1674) Amy Youdelis ,$100.00,10/6/2024,TONU,10/6/2024
 2914327,"HUMBLE, TX","NEW ORLEANS, LA",(2124) Jonas Dones ,$420.00,10/6/2024,Delivered,10/06/2024
 2914261,"MESA, AZ ","TRENRON, MI",(1824) Yohan Yalda ,"$1,700.00",10/3/2024,Delivered,10/07/2024
@@ -9461,7 +9473,7 @@ C107638,Greenville SC,"Allentown, PA",(553) Abdul Hassan,$600.00,10/8/2024,Deliv
 120558113,"GRAND PRAIRIE, TX","BURKBURNETT, TX",(2135) Justin Parker,$250.00,10/9/2024,Delivered,10/9/2024
 2914661,"RIALTO, CA","ROSAMOND, CA",(596) Petros Darbinyan ,$250.00,10/9/2024,Delivered,10/09/2024
 1416031,NORCROSS GA,SPARTANBURG SC,(958) Victor Unique ,$300.00,10/9/2024,Delivered,10/09/2024
-16949,"San Antonio, TX ","Harlingen, TX ",1554) Priscilla Villa,$75.00,10/9/2024,TONU,10/9/2024
+16949,"San Antonio, TX ","Harlingen, TX ",(1554) Priscilla Villa,$75.00,10/9/2024,TONU,10/9/2024
 2914377,"HULL, IA","ROSAMOND, CA
 RIALTO, CA",(2038) Eddy Kusuma,"$1,800.00",10/7/2024,Delivered,10/10/2024
 39399,"PALMETTO, FL ","MESA, AZ",(815) Franklin D Morris,"$1,700.00",10/7/2024,Delivered,10/10/2024
@@ -10243,7 +10255,8 @@ C110081,"ARGYLE, NY","LITTLE ROCK, AR",(2137) Dimitri Macias,"$1,130.00",11/15/2
 151896,"Belle Glade, FL","Okeechobee, FL",(1690) Sandro Pena,$250.00,11/19/2024,Delivered,11/19/2024
 17949,"Princeton, FL","Myers, FL",(1759) Nelson Eguizabal,$250.00,11/19/2024,Delivered,11/19/2024
 0100702,"Columbus, OH","High Point, NC","(1800) Herbert Kyagaba
-(2292) Edixon Rivera",$150.00,11/19/2024,TONU,11/19/2024
+",$75.00,11/19/2024,TONU,11/19/2024
+0100702,"Columbus, OH","High Point, NC",(2292) Edixon Rivera,$75.00,11/19/2024,TONU,11/19/2024
 17964,"Sanford, FL "," Ft Pierce, FL",(2107) Aboubacar Diawara ,$250.00,11/19/2024,Delivered,11/19/2024
 151904,"Richmond, VA","Winston-Salem, NC",(2112) Abdelazim Iysa,$300.00,11/19/2024,Delivered,11/19/2024
 0539389,"WELLFORD, SC","MARIETTA, SC",(2143) Alberto Martinez,$200.00,11/19/2024,Delivered,11/19/2024
@@ -10607,7 +10620,8 @@ S2701467,"E Stroudsburg, PA","Worcester, MA",(1393) Oscar Hernandez,$350.00,12/1
 152115,"Dacula, GA","Nashville, TN",(1851) Ivan Diaz,$350.00,12/12/2024,Delivered,12/13/2024
 005301503,"FRIENDLY, WV","TEMPLE, TX",(2042) Javier Acevedo ,"$1,500.00",12/12/2024,Delivered,12/13/2024
 S00006703,"Miami, FL ",PALM CITY. FL,"(2076) Carlos Borgas 
-(1690) Sandro Pena",$350.00,12/12/2024,Delivered,12/13/2024
+",$100.00,12/12/2024,Delivered,12/13/2024
+S00006703,"Miami, FL ",PALM CITY. FL,(1690) Sandro Pena,$250.00,12/12/2024,Delivered,12/13/2024
 9989164,"Smyrna, TN","Troy, MI",(2202) Jesus Ortegano,$500.00,12/12/2024,Delivered,12/13/2024
 30128430,"Fort Walton Beach, FL","Saginaw, MI",(2222) Willian Gabriel,"$1,100.00",12/12/2024,Delivered,12/13/2024
 0471388,ST GEORGE UT,NOTREES TX ,(2425) Arthur Sarrasin ,"$1,000.00",12/12/2024,Delivered,12/13/2024
@@ -10738,7 +10752,9 @@ Jamaica, NY ",(1172) Patrick Mundia,"$1,500.00",12/20/2024,Delivered,12/23/2024
 18607,"Carson city, NV"," DEERFIELD BEACH, FL",(2061) Baldomero Lozano,"$2,700.00",12/20/2024,Delivered,12/23/2024
 82070,"Piney Flats, TN","Jamaica, NY 
 Jamaica, NY ","(2117) Heinrich Mukalazi
-(1172) Patrick Mundia",$750.00,12/20/2024,Delivered,12/23/2024
+",$750.00,12/20/2024,Delivered,12/23/2024
+82070,"Piney Flats, TN","Jamaica, NY 
+Jamaica, NY ",(1172) Patrick Mundia,$0.00,12/20/2024,Delivered,12/23/2024
 158834,"HOUSTON, TX","LUDINGTON, MI",(2430) Jean Valmy,"$1,000.00",12/20/2024,Delivered,12/23/2024
 0472776,HUFFMAN TX ,HOUSTON TX ,(1284)  Strovos Cade,$100.00,12/23/2024,Delivered,12/23/2024
 18662 ,"MIAMI LAKES, FL","MIAMI, FL",(1690) Sandro Pena ,$250.00,12/23/2024,Delivered,12/23/2024
@@ -11018,7 +11034,8 @@ LAS VEGAS, NV",(2433) Joseito Colmenares,$750.00,1/16/2025,Delivered,01/17/2025
 19176 ,"Princeton, FL","Fort Myers, FL",(1690) Sandro Pena ,$250.00,1/17/2025,Delivered,01/17/2025
 4791296,"YORK HAVEN, PA","SAINT PAUL, VA",(1922) Robert Reyes,$600.00,1/17/2025,Delivered,01/17/2025
 121681794,Agawam MA ,Ayer MA,"(2049) Sophia Lawrence
-(2057) James Barret ",$300.00,1/17/2025,Delivered,01/17/2025
+",$100.00,1/17/2025,Delivered,01/17/2025
+121681794,Agawam MA ,Ayer MA,(2057) James Barret ,$200.00,1/17/2025,Delivered,01/17/2025
 19201,"Sterling, VA","GREENSBORO, NC",(2112) Abdelazim Iysa,$400.00,1/17/2025,Delivered,01/17/2025
 31498-40315,"Seattle, WA","Yakima, WA",(2185) Enrique Gonzales,$330.00,1/17/2025,Delivered,01/17/2025
 1094401,"BLOOMINGTON,IL","PEORIA,IL",(2274) John Cooper,$200.00,1/17/2025,Delivered,01/17/2025
@@ -11124,7 +11141,8 @@ TRIP-9812,"New Albany, OH","Anderson, SC",(1540) Miguel Olarte,$700.00,1/17/2025
 1486893,TEMPLE TX,JAL NM ,(2391) Pedro Dasilva ,$375.00,1/23/2025,Delivered,01/24/2025
 1197771,"MARLBOROUGH, MA","INDIANAPOLIS, IN",(2452) Sergio Buitrago,$962.50,1/23/2025,Delivered,01/24/2025
 82257,"Piney Flats, TN","Jamaica, NY ","(2534) Joan Ozuna
-(1895) Hamidu Jalloh",$945.00,1/23/2025,Delivered,01/24/2025
+",$820.00,1/23/2025,Delivered,01/24/2025
+82257,"Piney Flats, TN","Jamaica, NY ",(1895) Hamidu Jalloh,$125.00,1/23/2025,Delivered,01/24/2025
 4802738,"GOLDEN, CO","WEATHERFORD, OK",(2564) Ibrahim Blanco,$600.00,1/23/2025,Delivered,01/24/2025
 2106299,"Indianapolis, IN","Middleburg, FL",(818) Johnny Inman,$900.00,1/23/2025,Delivered,01/24/2025
 0105817,ROCKFORD IL ,BIRMINGHAM AL ,(820) Mohamed Mustafa ,"$1,500.00",1/23/2025,Delivered,01/24/2025

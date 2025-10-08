@@ -79,7 +79,10 @@ import { initCapabilitiesFilter } from './components/capabilities-filter';
 import { initQuickStatusUpdate } from './components/quick-status-update';
 import './components/quick-copy';
 import './components/driver-popups';
+import DriverPopupForms from './components/driver-popup-forms';
 import AudioHelper from './components/common/audio-helper';
+import { TimerControl } from './components/timer-control';
+import { TimerAnalytics } from './components/timer-analytics';
 
 function ready() {
     console.log('ready'); 
@@ -108,6 +111,15 @@ function ready() {
 
     // Initialize Audio Helper for managing audio playback
     AudioHelper.getInstance();
+    
+    // Initialize Driver Popup Forms
+    new DriverPopupForms(urlAjax);
+    
+    // Initialize Timer Control
+    new TimerControl(urlAjax);
+    
+    // Initialize timer analytics
+    new TimerAnalytics(urlAjax);
 
     // Ajax Actions
     actionCreateReportInit(urlAjax);

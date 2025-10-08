@@ -1,0 +1,62 @@
+﻿Timer Analytics Export
+Period: day
+Date: 2025-10-03
+Generated: 2025-10-03 15:20:57
+
+=== OVERALL STATISTICS ===
+Total Timer Uses,15
+Total Updates,24
+Yellow Zone Count,5
+Yellow Zone Percentage,33.33%
+Red Zone Count,2
+Red Zone Percentage,13.33%
+Black Zone Count,12
+Black Zone Percentage,80%
+
+=== USER PERFORMANCE ===
+User Name,User Email,Timer Uses,Updates,Yellow Zone,Red Zone,Black Zone
+,,9,18,4,2,8
+,,6,6,1,0,4
+
+=== TIMER LOGS ===
+Load ID,User Name,User Email,Action,Comment,Project,FLT,Dispatcher ID,Created At
+0,Milchenko Serhii,milchenko2k16@gmail.com,update,"Load updated - timer restarted",Odysseia,No,20,2025-10-03 10:15:45
+0,Milchenko Serhii,milchenko2k16@gmail.com,update,"Load updated - timer restarted",Odysseia,No,20,2025-10-03 10:12:38
+0,Milchenko Serhii,milchenko2k16@gmail.com,update,"Load updated - timer restarted",Odysseia,No,20,2025-10-03 10:09:31
+0,Milchenko Serhii,milchenko2k16@gmail.com,update,"Load updated - timer restarted",Odysseia,No,20,2025-10-03 10:07:16
+0,Milchenko Serhii,milchenko2k16@gmail.com,update,"Load updated - timer restarted",Odysseia,No,20,2025-10-03 10:04:01
+0,tracking tracking,traching@gmail.com,update,"Load updated - timer restarted",Odysseia,No,3,2025-10-03 09:58:57
+0,Milchenko Serhii,milchenko2k16@gmail.com,start,"Timer started",Odysseia,No,20,2025-10-03 09:58:30
+0,Milchenko Serhii,milchenko2k16@gmail.com,update,"Load updated - timer restarted",Odysseia,No,20,2025-10-03 09:54:56
+0,Milchenko Serhii,milchenko2k16@gmail.com,update,"Load updated - timer restarted",Odysseia,No,20,2025-10-03 09:50:57
+0,Milchenko Serhii,milchenko2k16@gmail.com,update,"Load updated - timer restarted",Odysseia,No,5,2025-10-03 09:42:20
+0,Milchenko Serhii,milchenko2k16@gmail.com,update,"Load updated - timer restarted",Odysseia,No,5,2025-10-03 09:36:51
+0,Milchenko Serhii,milchenko2k16@gmail.com,update,"Load updated - timer restarted",Odysseia,No,5,2025-10-03 09:26:38
+0,tracking tracking,traching@gmail.com,update,"Load updated - timer restarted and ownership transferred",Odysseia,No,2,2025-10-03 09:13:04
+0,Milchenko Serhii,milchenko2k16@gmail.com,update,"Load updated - timer restarted",Odysseia,No,5,2025-10-03 09:12:33
+0,Milchenko Serhii,milchenko2k16@gmail.com,update,"Load updated - timer restarted and ownership transferred",Odysseia,No,5,2025-10-03 09:11:03
+0,Milchenko Serhii,milchenko2k16@gmail.com,update,"Load updated - timer restarted and ownership transferred",Odysseia,No,20,2025-10-03 09:09:28
+0,Milchenko Serhii,milchenko2k16@gmail.com,update,"Load updated - timer restarted and ownership transferred",Odysseia,No,2,2025-10-03 09:07:55
+0,Milchenko Serhii,milchenko2k16@gmail.com,stop,"Timer stopped",Odysseia,No,20,2025-10-03 09:04:36
+0,Milchenko Serhii,milchenko2k16@gmail.com,update,"Load updated - timer restarted",Odysseia,No,20,2025-10-03 09:04:28
+0,Milchenko Serhii,milchenko2k16@gmail.com,update,"Load updated - timer restarted",Odysseia,No,2,2025-10-03 09:04:05
+0,Milchenko Serhii,milchenko2k16@gmail.com,stop,"Stopped for update",Odysseia,No,2,2025-10-03 09:00:59
+0,Milchenko Serhii,milchenko2k16@gmail.com,start,"Timer started",Odysseia,No,2,2025-10-03 09:00:59
+0,Milchenko Serhii,milchenko2k16@gmail.com,update,"Load updated - timer restarted",Odysseia,No,2,2025-10-03 09:00:59
+0,tracking tracking,traching@gmail.com,stop,"Stopped for update",Odysseia,No,2,2025-10-03 08:42:48
+0,tracking tracking,traching@gmail.com,start,"Timer started",Odysseia,No,2,2025-10-03 08:42:48
+0,tracking tracking,traching@gmail.com,update,"Load updated - timer restarted",Odysseia,No,2,2025-10-03 08:42:48
+0,tracking tracking,traching@gmail.com,start,"Timer started",Odysseia,No,2,2025-10-03 08:40:56
+0,tracking tracking,traching@gmail.com,stop,"Timer stopped",Odysseia,No,,2025-10-03 08:33:06
+0,tracking tracking,traching@gmail.com,pause,"стоп",Odysseia,No,,2025-10-03 08:32:45
+0,tracking tracking,traching@gmail.com,stop,"Stopped for update",Odysseia,No,,2025-10-03 08:32:08
+0,tracking tracking,traching@gmail.com,start,"Timer started",Odysseia,No,,2025-10-03 08:32:08
+0,tracking tracking,traching@gmail.com,update,"Load updated - timer restarted",Odysseia,No,,2025-10-03 08:32:08
+0,tracking tracking,traching@gmail.com,stop,"Stopped for update",Odysseia,No,,2025-10-03 08:30:49
+0,tracking tracking,traching@gmail.com,update,"Load updated - timer stopped",Odysseia,No,,2025-10-03 08:30:49
+0,tracking tracking,traching@gmail.com,stop,"Stopped for update",Odysseia,No,,2025-10-03 08:29:26
+0,tracking tracking,traching@gmail.com,update,"Load updated - timer stopped",Odysseia,No,,2025-10-03 08:29:26
+0,tracking tracking,traching@gmail.com,start,"Timer started",Odysseia,No,,2025-10-03 08:26:55
+0,tracking tracking,traching@gmail.com,start,"Timer started",Odysseia,No,,2025-10-03 08:21:10
+0,Milchenko Serhii,milchenko2k16@gmail.com,stop,"Stopped for update",Odysseia,No,,2025-10-03 08:18:38
+0,Milchenko Serhii,milchenko2k16@gmail.com,update,"Load updated - timer stopped",Odysseia,No,,2025-10-03 08:18:38

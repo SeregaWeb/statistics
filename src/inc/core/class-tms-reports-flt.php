@@ -996,6 +996,10 @@ class TMSReportsFlt extends TMSReportsHelper {
 			$where_conditions[] = "dispatcher.meta_value IN ('" . implode( "','", $team_values ) . "')";
 		}
 		
+		if ( ! empty( $args[ 'dispatcher' ] ) ) {
+			$add_condition( "dispatcher.meta_value = %s", $args[ 'dispatcher' ] );
+		}
+		
 		if ( ! empty( $args[ 'exclude_status' ] ) ) {
 			$exclude_status     = esc_sql( (array) $args[ 'exclude_status' ] );
 			$where_conditions[] = "load_status.meta_value NOT IN ('" . implode( "','", $exclude_status ) . "')";
@@ -1193,6 +1197,7 @@ class TMSReportsFlt extends TMSReportsHelper {
 				foreach ( $items[ 'dispatchers' ][ $key ] as $status => $count ) {
 					if ( isset( $team_total[ $status ] ) && is_numeric( $count ) ) {
 						$team_total[ $status ] += $count;
+						$team_total[$key] = $count;
 					}
 				}
 			}
@@ -4637,12 +4642,55 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 			}
 		}
 		
+		// Check if load_status was updated to final status and stop timer
+		if ( isset( $meta_data['load_status'] ) ) {
+			$final_statuses = array( 'delivered', 'tonu', 'cancelled', 'waiting-on-rc' );
+			if ( in_array( $meta_data['load_status'], $final_statuses ) ) {
+				$this->stop_timer_for_final_status( $post_id, $meta_data['load_status'], true );
+			}
+		}
+		
 		// Проверка на ошибки
 		if ( $wpdb->last_error ) {
 			return new WP_Error( 'db_error', 'Ошибка при обновлении метаданных: ' . $wpdb->last_error );
 		}
 		
 		return true;
+	}
+
+	/**
+	 * Stop timer when load status changes to final status
+	 *
+	 * @param int $post_id Load ID
+	 * @param string $status Final status
+	 * @param bool $is_flt Is FLT load
+	 * @return void
+	 */
+	private function stop_timer_for_final_status( $post_id, $status, $is_flt = true ) {
+		// Get current user's project
+		$user_id = get_current_user_id();
+		$current_project = get_field( 'current_select', 'user_' . $user_id );
+		
+		// Initialize timer class
+		$timer_class = new TMSReportsTimer();
+		
+		// Get active timer for this load, user, and project
+		$active_timer = $timer_class->get_active_timer( $post_id, $user_id );
+		if ( $active_timer ) {
+			// Check if timer matches current project and FLT status
+			if ( $active_timer['project'] === $current_project && $active_timer['flt'] == $is_flt ) {
+				$timer_class->stop_timer( $post_id, 'Load status changed to: ' . $status );
+			}
+		}
+		
+		// Also check paused timer
+		$paused_timer = $timer_class->get_paused_timer( $post_id, $user_id );
+		if ( $paused_timer ) {
+			// Check if timer matches current project and FLT status
+			if ( $paused_timer['project'] === $current_project && $paused_timer['flt'] == $is_flt ) {
+				$timer_class->stop_timer( $post_id, 'Load status changed to: ' . $status );
+			}
+		}
 	}
 	
 	// UPDATE IN DATABASE END

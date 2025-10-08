@@ -30,6 +30,7 @@ if ( $access ) {
 					<nav class="nav nav-tabs" id="csvParserTab" role="tablist">
 			<a class="nav-item nav-link active" id="generate-tab" href="#generate" role="tab" aria-controls="generate" aria-selected="true">Generate Document</a>
 			<a class="nav-item nav-link" id="csv-parser-tab" href="#csv-parser" role="tab" aria-controls="csv-parser" aria-selected="false">CSV Parser</a>
+			<a class="nav-item nav-link" id="show-results-tab" href="#show-results" role="tab" aria-controls="show-results" aria-selected="false">Show results</a>
 		</nav>
 		</div>
 		<?php } ?> 
@@ -205,6 +206,53 @@ if ( $access ) {
 							</div>
 						</div>
 					</div>
+				</div>
+			</div>
+
+			<!-- Show Results Tab -->
+			<div class="tab-pane" id="show-results" role="tabpanel" aria-labelledby="show-results-tab">
+				<div class="show-results-content">
+					<h4>Show Results</h4>
+					<?php
+					global $wpdb;
+					$table_summary = $wpdb->prefix . 'settlement_summary';
+					
+					// Get unique drivers from settlement summary
+					$drivers = $wpdb->get_results(
+						"SELECT id_driver, MAX(driver_name) AS driver_name
+						 FROM {$table_summary}
+						 WHERE id_driver IS NOT NULL AND id_driver <> 0
+						 GROUP BY id_driver
+						 ORDER BY driver_name ASC",
+						ARRAY_A
+					);
+					
+					// Current selected driver
+					$selected_driver_id = isset( $_GET['id_driver'] ) ? sanitize_text_field( wp_unslash( $_GET['id_driver'] ) ) : '';
+					?>
+					<div class="card mb-3">
+						<div class="card-body">
+							<form method="get" class="form-inline">
+								<label for="id_driver" class="mr-2">Driver</label>
+								<select id="id_driver" name="id_driver" class="form-control mr-2" style="min-width: 280px;">
+									<option value="">Select driver...</option>
+									<?php if ( ! empty( $drivers ) ) { foreach ( $drivers as $d ) { $val = (string) $d['id_driver']; ?>
+										<option value="<?php echo esc_attr( $val ); ?>" <?php selected( $selected_driver_id, $val ); ?>>
+											<?php echo esc_html( trim( (string) $d['driver_name'] ) !== '' ? (string) $d['driver_name'] : ( '#' . $val ) ); ?>
+										</option>
+									<?php } } ?>
+								</select>
+								<button type="submit" class="btn btn-primary">Show</button>
+							</form>
+						</div>
+					</div>
+
+					<?php
+					if ( $selected_driver_id ) {
+						// Render automatic monthly layout for selected driver
+						echo $settlement->render_driver_settlement_by_month( $selected_driver_id );
+					}
+					?>
 				</div>
 			</div>
 			<?php } ?>

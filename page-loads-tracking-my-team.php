@@ -8,7 +8,10 @@
 
 get_header();
 
+// Analytics caching now uses WordPress transients (no session needed)
+
 $TMSUser = new TMSUsers();
+$TMSReportsTimer = new TMSReportsTimer();
 
 // Проверяем доступ к FLT
 $flt_user_access = get_field( 'flt', 'user_' . get_current_user_id() );
@@ -46,6 +49,12 @@ if ( $is_flt ) {
 	$items[ 'flt' ] = true;
 }
 
+// Initialize smart analytics for current user
+$current_project = $is_flt ? 'flt' : '';
+$smart_analytics = $TMSReportsTimer->get_smart_analytics( $current_project, $is_flt );
+$items['smart_analytics'] = $smart_analytics;
+
+
 ?>
     <div class="container-fluid">
         <div class="row">
@@ -72,7 +81,7 @@ if ( $is_flt ) {
                         
 						<?php
 						if ( is_array( $my_team ) ) {
-							echo esc_html( get_template_part( TEMPLATE_PATH . 'filters/report', 'filter-tracking' ) );
+							echo esc_html( get_template_part( TEMPLATE_PATH . 'filters/report', 'filter-tracking', array( 'my_team' => $my_team ) ) );
 							echo esc_html( get_template_part( TEMPLATE_PATH . 'tables/report', 'table-tracking', $items ) );
 						} else {
 							echo $reports->message_top( 'error', 'Team not found' );

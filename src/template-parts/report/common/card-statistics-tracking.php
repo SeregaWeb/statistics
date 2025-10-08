@@ -11,37 +11,39 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-// Extract and validate arguments
-$user       = isset( $args[ 'user' ] ) ? $args[ 'user' ] : array();
-$user_stats = isset( $args[ 'user_stats' ] ) ? $args[ 'user_stats' ] : array();
-$TMSUser    = new TMSUsers();
+// Validate and sanitize arguments
+$args       = $args ?? array();
+$user       = wp_parse_args( $args[ 'user' ] ?? array(), array(
+	'id'             => 0,
+	'name'           => '',
+	'initials'       => '',
+	'initials_color' => '#030303',
+	'my_team'        => array()
+) );
+$user_stats = $args[ 'user_stats' ] ?? array();
+$total      = $args[ 'total' ] ?? 0;
 
-$total = isset( $args[ 'total' ] ) ? $args[ 'total' ] : false;
+// Validate data types
+$user_stats        = is_array( $user_stats ) ? $user_stats : array();
+$user[ 'my_team' ] = is_array( $user[ 'my_team' ] ) ? $user[ 'my_team' ] : array();
+$total             = is_numeric( $total ) ? (int) $total : 0;
 
-$class_total = '';
-
-// Check if user has any meaningful statistics
-$has_stats = false;
-if ( is_array( $user_stats ) ) {
-	foreach ( $user_stats as $stat_value ) {
-		if ( is_numeric( $stat_value ) && $stat_value > 0 ) {
-			$has_stats = true;
-			break;
-		}
-	}
-}
+// Initialize helper class
+$helper = new TMSReportsHelper();
 
 // Only display card if user has statistics
-if ( $has_stats && isset( $user_stats[ 'total' ] ) ) :
+if ( $helper->has_meaningful_stats( $user_stats ) && isset( $user_stats[ 'total' ] ) ) :
 	
 	// Set total class for styling
-	if ( is_numeric( $total ) && $total <= $user_stats[ 'total' ] ) {
-		$class_total = 'text-danger';
-	}
+	$class_total = ( $total > 0 && $total <= $user_stats[ 'total' ] ) ? 'text-danger' : '';
+	
+	// Clean up team members and get valid ones
+	$valid_team_members = ! empty( $user[ 'my_team' ] )
+		? $helper->cleanup_invalid_team_members( $user[ 'id' ], $user[ 'my_team' ] ) : array();
 	?>
 
     <div class="card-tracking-stats">
-		<?php if ( isset( $user[ 'name' ] ) && isset( $user[ 'initials' ] ) && isset( $user[ 'initials_color' ] ) ) : ?>
+		<?php if ( ! empty( $user[ 'name' ] ) && ! empty( $user[ 'initials' ] ) ) : ?>
             <p class="card-tracking-stats__user"
                title="<?php echo esc_attr( $user[ 'name' ] ); ?>"
                style="background-color: <?php echo esc_attr( $user[ 'initials_color' ] ); ?>;">
@@ -51,80 +53,55 @@ if ( $has_stats && isset( $user_stats[ 'total' ] ) ) :
 
         <ul>
             <li>
-				<?php if ( isset( $user_stats[ 'at-pu' ] ) && $user_stats[ 'at-pu' ] > 0 ) : ?>
-                    <span>At Pick Up:
-							<?php echo esc_html( $user_stats[ 'at-pu' ] ); ?>
-					</span>
-				<?php else: ?>
-                    <span></span>
+				<?php if ( ! empty( $user_stats[ 'at-pu' ] ) && $user_stats[ 'at-pu' ] > 0 ) : ?>
+                    <span>At Pick Up: <?php echo esc_html( $user_stats[ 'at-pu' ] ); ?></span>
 				<?php endif; ?>
-				<?php if ( isset( $user_stats[ 'total' ] ) && $user_stats[ 'total' ] > 0 ) : ?>
-                    <span>
-						Total: <span class="<?php echo esc_attr( $class_total ); ?>">
-							<?php echo esc_html( $user_stats[ 'total' ] ); ?>
-						</span>
-					</span>
+				
+				<?php if ( ! empty( $user_stats[ 'total' ] ) && $user_stats[ 'total' ] > 0 ) : ?>
+                    <span>Total: <span
+                                class="<?php echo esc_attr( $class_total ); ?>"><?php echo esc_html( $user_stats[ 'total' ] ); ?></span></span>
 				<?php endif; ?>
             </li>
-			<?php if ( isset( $user_stats[ 'at-del' ] ) && $user_stats[ 'at-del' ] > 0 ) : ?>
+			
+			<?php if ( ! empty( $user_stats[ 'at-del' ] ) && $user_stats[ 'at-del' ] > 0 ) : ?>
                 <li>
                     <span>At Delivery: <?php echo esc_html( $user_stats[ 'at-del' ] ); ?></span>
                 </li>
 			<?php endif; ?>
 			
-			<?php if ( isset( $user_stats[ 'loaded-enroute' ] ) && $user_stats[ 'loaded-enroute' ] > 0 ) : ?>
+			<?php if ( ! empty( $user_stats[ 'loaded-enroute' ] ) && $user_stats[ 'loaded-enroute' ] > 0 ) : ?>
                 <li>
                     <span>Loaded: <?php echo esc_html( $user_stats[ 'loaded-enroute' ] ); ?></span>
                 </li>
 			<?php endif; ?>
 			
-			<?php if ( isset( $user_stats[ 'waiting-on-pu-date' ] ) && $user_stats[ 'waiting-on-pu-date' ] > 0 ) : ?>
+			<?php if ( ! empty( $user_stats[ 'waiting-on-pu-date' ] ) && $user_stats[ 'waiting-on-pu-date' ] > 0 ) : ?>
                 <li>
                     <span>Waiting: <?php echo esc_html( $user_stats[ 'waiting-on-pu-date' ] ); ?></span>
                 </li>
 			<?php endif; ?>
 			
-			<?php if ( isset( $user[ 'my_team' ] ) && is_array( $user[ 'my_team' ] ) && ! empty( $user[ 'my_team' ] ) ) : ?>
+			<?php if ( ! empty( $valid_team_members ) ) : ?>
                 <li class="mt-1">
                     <div>
                         <p class="mb-0">Team</p>
                         <div class="d-flex gap-1 flex-wrap">
-							<?php foreach ( $user[ 'my_team' ] as $user_team ) : ?>
-								<?php
+							<?php
+							$TMSUser              = new TMSUsers();
+							foreach ( $valid_team_members as $member_id ) :
+								$user_data = $TMSUser->get_user_full_name_by_id( $member_id );
 								
-								$user_arr = $TMSUser->get_user_full_name_by_id( $user_team );
-								
-								
-								// Get user color with fallback
-								$color_initials = '#030303';
-								if ( $user_arr ) {
-									$user_color = get_field( 'initials_color', 'user_' . $user_team );
-									if ( $user_color ) {
-										$color_initials = $user_color;
-									}
-								} else {
-									
-									// Remove user from ACF field and update
-									$current_team = get_field( 'field_66f9240398a70', 'user_' . $args[ 'user' ][ 'id' ] );
-									if ( is_array( $current_team ) ) {
-										// Remove the user from the team array
-										$updated_team = array_diff( $current_team, array( $user_team ) );
-										// Update the ACF field
-										update_field( 'field_66f9240398a70', $updated_team, 'user_' . $args[ 'user' ][ 'id' ] );
-									}
-									
-									$user_arr = false;
-								}
-								?>
-								
-								<?php if ( is_array( $user_arr ) ) : ?>
+								if ( $user_data && is_array( $user_data ) ) :
+									$member_color = $helper->get_user_color( $member_id );
+									$member_stats = $user_stats[ 'user_' . $member_id ] ?? 0;
+									?>
                                     <span data-bs-toggle="tooltip"
                                           data-bs-placement="top"
-                                          title="<?php echo esc_attr( $user_arr[ 'full_name' ] ); ?>"
+                                          title="<?php echo esc_attr( $user_data[ 'full_name' ] ); ?> (<?php echo esc_attr( $member_stats ); ?>)"
                                           class="initials-circle"
-                                          style="background-color: <?php echo esc_attr( $color_initials ); ?>">
-									<?php echo esc_html( $user_arr[ 'initials' ] ); ?>
-								</span>
+                                          style="background-color: <?php echo esc_attr( $member_color ); ?>">
+										<?php echo esc_html( $user_data[ 'initials' ] ); ?>
+									</span>
 								<?php endif; ?>
 							<?php endforeach; ?>
                         </div>

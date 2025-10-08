@@ -653,63 +653,9 @@ export const driverCoreInit = (urlAjax) => {
         });
     }
     
-    // Rating form submission
-    const ratingForm = document.getElementById('ratingForm') as HTMLFormElement;
-    if (ratingForm) {
-        ratingForm.addEventListener('submit', function(e) {
-            e.preventDefault();
-            
-            const formData = new FormData(this);
-            formData.append('action', 'add_driver_rating');
-            
-            fetch(urlAjax, {
-                method: 'POST',
-                body: formData
-            })
-            .then(response => response.json())
-            .then((data: any) => {
-                if (data.success) {
-                    printMessage('Rating added successfully!', 'success', 3000);
-                    location.reload();
-                } else {
-                    printMessage('Error: ' + data.data, 'danger', 3000);
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                printMessage('An error occurred while adding the rating.', 'danger', 3000);
-            });
-        });
-    }
+    // Rating form submission - moved to driver-popup-forms.ts
     
-    // Notice form submission
-    const noticeForm = document.getElementById('noticeForm') as HTMLFormElement;
-    if (noticeForm) {
-        noticeForm.addEventListener('submit', function(e) {
-            e.preventDefault();
-            
-            const formData = new FormData(this);
-            formData.append('action', 'add_driver_notice');
-            
-            fetch(urlAjax, {
-                method: 'POST',
-                body: formData
-            })
-            .then(response => response.json())
-            .then((data: any) => {
-                if (data.success) {
-                    printMessage('Notice added successfully!', 'success', 3000);
-                    location.reload();
-                } else {
-                    printMessage('Error: ' + data.data, 'danger', 3000);
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                printMessage('An error occurred while adding the notice.', 'danger', 3000);
-            });
-        });
-    }
+    // Notice form submission - moved to driver-popup-forms.ts
     
     // Notice status checkbox functionality
     const noticeCheckboxes = document.querySelectorAll('.notice-status-checkbox') as NodeListOf<HTMLInputElement>;

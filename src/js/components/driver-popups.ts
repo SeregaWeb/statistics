@@ -98,6 +98,11 @@ class DriverPopups {
         const driverName = button.getAttribute('data-driver-name');
         const rating = button.getAttribute('data-rating');
 
+        console.log('Rating button clicked:', button);
+        console.log('Driver ID from button:', driverId);
+        console.log('Driver name from button:', driverName);
+        console.log('Rating from button:', rating);
+
         if (!driverId) {
             this.showMessage('Driver ID not found', 'danger');
             return;
@@ -108,7 +113,12 @@ class DriverPopups {
         const scoreElement = document.getElementById('driverRatingScore');
         const fullPageLink = document.getElementById('driverRatingFullPage') as HTMLAnchorElement;
 
-        if (nameElement) nameElement.textContent = driverName || 'Unknown Driver';
+        if (nameElement) {
+            nameElement.textContent = driverName || 'Unknown Driver';
+            nameElement.setAttribute('data-driver-id', driverId);
+            console.log('Setting driver ID for ratings:', driverId);
+            console.log('Element after setting:', nameElement);
+        }
         if (scoreElement) scoreElement.textContent = rating || '0';
         if (fullPageLink) {
             fullPageLink.href = `${this.addNewLoadUrl}?driver=${driverId}&tab=pills-driver-stats-tab`;
@@ -138,6 +148,11 @@ class DriverPopups {
         const driverName = button.getAttribute('data-driver-name');
         const noticeCount = button.getAttribute('data-notice-count');
 
+        console.log('Notice button clicked:', button);
+        console.log('Driver ID from button:', driverId);
+        console.log('Driver name from button:', driverName);
+        console.log('Notice count from button:', noticeCount);
+
         if (!driverId) {
             this.showMessage('Driver ID not found', 'danger');
             return;
@@ -148,7 +163,12 @@ class DriverPopups {
         const countElement = document.getElementById('driverNoticeCount');
         const fullPageLink = document.getElementById('driverNoticeFullPage') as HTMLAnchorElement;
 
-        if (nameElement) nameElement.textContent = driverName || 'Unknown Driver';
+        if (nameElement) {
+            nameElement.textContent = driverName || 'Unknown Driver';
+            nameElement.setAttribute('data-driver-id', driverId);
+            console.log('Setting driver ID for notices:', driverId);
+            console.log('Element after setting:', nameElement);
+        }
         if (countElement) countElement.textContent = noticeCount || '0';
         if (fullPageLink) {
             fullPageLink.href = `${this.addNewLoadUrl}?driver=${driverId}&tab=pills-driver-stats-tab`;
@@ -286,8 +306,8 @@ class DriverPopups {
                             <strong>${notice.name}</strong>
                         </div>
                         <div class="text-end">
-                            <span class="badge bg-${notice.status ? 'success' : 'warning'}">
-                                ${notice.status ? 'Resolved' : 'Pending'}
+                            <span class="badge bg-${+notice.status === 1 ? 'success' : 'warning'}">
+                                ${+notice.status === 1 ? 'Resolved' : 'Pending'}
                             </span>
                             <small class="text-muted d-block">${this.formatDate(notice.date)}</small>
                         </div>
@@ -320,9 +340,12 @@ class DriverPopups {
     }
 }
 
-// Initialize Driver Popups when DOM is ready
-document.addEventListener('DOMContentLoaded', () => {
-    new DriverPopups();
-});
+// Create global instance
+let driverPopupsInstance: DriverPopups | null = null;
 
+// Initialize Driver Popups when DOM is ready
+driverPopupsInstance = new DriverPopups();
+
+// Export both class and instance
 export default DriverPopups;
+export { driverPopupsInstance };

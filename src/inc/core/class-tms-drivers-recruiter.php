@@ -10,6 +10,21 @@ class TMSDriversRecruiter {
 	
 	private $api_key;
 	private $reports_path;
+
+	/**
+	 * Map Brokersnapshot status codes to human readable
+	 */
+	private function map_brokersnapshot_status( $status_code ) {
+		$status_code = strtoupper( trim( (string) $status_code ) );
+		$map = array(
+			'A' => 'Active',
+			'I' => 'Inactive',
+			'S' => 'Suspended',
+			'R' => 'Revoked',
+			'D' => 'Deleted',
+		);
+		return $map[ $status_code ] ?? $status_code;
+	}
 	
 	public function __construct() {
 		global $global_options;
@@ -150,6 +165,7 @@ class TMSDriversRecruiter {
 			// Get driver contact information
 			$main_contact = get_field_value($meta, 'main_contact');
 			$owner_phone = get_field_value($meta, 'owner_phone');
+			$driver_name = get_field_value($meta, 'driver_name');
 			$driver_phone = get_field_value($meta, 'driver_phone');
 			$driver_email = get_field_value($meta, 'driver_email');
 			$driver2_phone = get_field_value($meta, 'team_driver_phone');
@@ -179,17 +195,25 @@ class TMSDriversRecruiter {
 				$current_date = date("m/d/Y", $time);
 				$status = true;
 				
-				foreach ($driver_contacts as $contact) {
+				foreach ($driver_contacts as $index => $contact) {
 					if (empty($contact)) continue;
+					
+					error_log('Processing contact #' . ($index + 1) . ': ' . $contact);
+					
+					// Add delay between API calls to avoid rate limiting
+					if ($index > 0) {
+						error_log('Adding 2 second delay before API call #' . ($index + 1));
+						sleep(2);
+					}
 					
 					$response = $this->get_info_by_brokersnapshot($contact);
 				
 					if (isset($response['error'])) {
-						$report[] = 'Date: ' . $current_date . ' ID Driver: ' . $driver_id . ' Name: ' . get_the_title($driver_id) . ' Param search:' . $contact . ' Error: ' . $response['error'];
+						$report[] = 'Date: ' . $current_date . ' ID Driver: ' . $driver_id . ' Name: ' . $driver_name . ' Param search:' . $contact . ' Error: ' . $response['error'];
 					} else {
 						$dot_highlight = $response['dot'] ? '<span class="dot-highlight">DOT:' . $response['dot'] . '</span>' : '';
 						$mc_highlight = $response['mc'] ? '<span class="mc-highlight">MC: ' . $response['mc'] . '</span>' : '';
-						$report[] = 'Date: ' . $current_date . ' ID Driver: ' . $driver_id . ' Name: ' . get_the_title($driver_id) . ' Param search:' . $contact . ' ' . $dot_highlight . ' ' . $mc_highlight . ' Status:' . $response['status'];
+						$report[] = 'Date: ' . $current_date . ' ID Driver: ' . $driver_id . ' Name: ' . $driver_name . ' Param search:' . $contact . ' ' . $dot_highlight . ' ' . $mc_highlight . ' Status:' . $response['status'];
 						
 						if ($driver_test_human) {
 							$report[] = 'The status has not been changed, the driver has been verified by a person !';
@@ -295,6 +319,8 @@ class TMSDriversRecruiter {
 		curl_setopt_array($curl, [
 			CURLOPT_URL => $url,
 			CURLOPT_RETURNTRANSFER => true,
+			CURLOPT_TIMEOUT => 30,
+			CURLOPT_CONNECTTIMEOUT => 10,
 			CURLOPT_HTTPHEADER => [
 				'Authorization: Bearer ' . $this->api_key
 			]
@@ -303,18 +329,30 @@ class TMSDriversRecruiter {
 		$response = curl_exec($curl);
 		$http_code = curl_getinfo($curl, CURLINFO_HTTP_CODE);
 		$curl_error = curl_error($curl);
+		$curl_info = curl_getinfo($curl);
 		
 		error_log('HTTP Code: ' . $http_code);
+		error_log('CURL Info: ' . print_r($curl_info, true));
 		if ($curl_error) {
 			error_log('CURL Error: ' . $curl_error);
+		}
+		
+		curl_close($curl);
+		
+		// Check for HTTP errors
+		if ($http_code >= 400) {
+			error_log('HTTP Error: ' . $http_code . ' - ' . $response);
+			return array("error" => 'Technical error (HTTP ' . $http_code . ')');
 		}
 
 		if ($response) {
 			error_log('API Response received, length: ' . strlen($response));
+			error_log('API Response content: ' . substr($response, 0, 500) . (strlen($response) > 500 ? '...' : ''));
 			$data = json_decode($response, true);
 			
 			if (json_last_error() !== JSON_ERROR_NONE) {
 				error_log('JSON Decode Error: ' . json_last_error_msg());
+				error_log('Raw response that failed to decode: ' . $response);
 			}
 			
 			if ($data && isset($data['Success'])) {
@@ -328,11 +366,14 @@ class TMSDriversRecruiter {
 						if (isset($data['Data'][0])) {
 							$MC = $data['Data'][0]['DOCKET_NUMBER'] ? $data['Data'][0]['DOCKET_NUMBER'] : '';
 							$DOT = $data['Data'][0]['DOT_NUMBER'] ? $data['Data'][0]['DOT_NUMBER'] : '';
-							$status = $data['Data'][0]['ACT_STAT'] ? $data['Data'][0]['ACT_STAT'] : '';
-							
-							error_log('API Result - MC: ' . $MC . ', DOT: ' . $DOT . ', Status: ' . $status);
-							
-							return array("mc" => $MC, 'dot' => $DOT, 'status' => $status);
+                            		$status = $data['Data'][0]['ACT_STAT'] ? $data['Data'][0]['ACT_STAT'] : '';
+
+                            // Map raw status codes to human-readable
+                            $mapped_status = $this->map_brokersnapshot_status($status);
+
+                            error_log('API Result - MC: ' . $MC . ', DOT: ' . $DOT . ', Status raw: ' . $status . ', Status mapped: ' . $mapped_status);
+
+                            return array("mc" => $MC, 'dot' => $DOT, 'status' => $mapped_status);
 						}
 					} else {
 						error_log('API Response: No data found');
@@ -346,6 +387,11 @@ class TMSDriversRecruiter {
 			}
 		} else {
 			error_log('API Response: No response received');
+			if ($curl_error) {
+				return array("error" => 'Technical error (CURL: ' . $curl_error . ')');
+			} else {
+				return array("error" => 'Technical error (No response)');
+			}
 		}
 		
 		error_log('API call failed - returning technical error');

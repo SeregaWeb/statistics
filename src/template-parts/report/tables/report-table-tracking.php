@@ -37,7 +37,7 @@ $all_statuses = $helper->get_statuses();
 $blocked_update = $TMSUsers->check_user_role_access( array( 'driver_updates', 'expedite_manager', 'dispatcher-tl' ) );
 
 $access_timer = $TMSUsers->check_user_role_access( array( 'administrator', 'tracking-tl', 'tracking', 'morning_tracking', 'nightshift_tracking' ), true );
-
+$access_quick_comment = $TMSUsers->check_user_role_access( array( 'administrator', 'tracking-tl', 'tracking', 'morning_tracking', 'nightshift_tracking' ), true );
 
 if ( ! empty( $results ) ) :
 	$tools = $TMSReports->get_stat_tools();
@@ -139,7 +139,7 @@ if ( ! empty( $results ) ) :
 				$disable_status = true;
 			}
 			
-			$tmpl = $logs->get_last_log_by_post( $row[ 'id' ] );
+			$tmpl = $logs->get_last_log_by_post( $row[ 'id' ], $flt ? 'reports_flt' : 'report' );
 			
 			$now_show = ( $factoring_status_row === 'paid' );
 			
@@ -214,8 +214,21 @@ if ( ! empty( $results ) ) :
 
                 <td width="300">
                     <div class="d-flex flex-column gap-1">
-						<?php echo $tmpl;
-						
+                        <div class="d-flex align-items-start gap-1 w-100">
+                            <div class="w-100 js-log-wrapper">
+						    <?php echo $tmpl; ?>
+                            </div>
+                            <?php if ( $access_quick_comment ): ?>
+                            <button class="btn btn-sm btn-outline-success js-open-log-modal" 
+                                    style="width: 30px; height: 30px; padding: 0;"
+                                    data-post-id="<?php echo $row['id']; ?>"
+                                    data-bs-toggle="modal" 
+                                    data-bs-target="#addLogModal">
+                                <b style="font-size: 18px;">+</b>
+                            </button>
+                            <?php endif; ?>
+                        </div>
+						<?php 
 						echo esc_html( get_template_part( TEMPLATE_PATH . 'common/pinned', 'message', array(
 							'id'        => $row[ 'id' ],
 							'meta'      => $meta,
@@ -289,3 +302,6 @@ if ( ! empty( $results ) ) :
 
 <!-- Timer Control Modal -->
 <?php echo esc_html( get_template_part( TEMPLATE_PATH . 'popups/timer', 'control-modal' ) ); ?>
+
+<!-- Add Log Message Modal -->
+<?php echo esc_html( get_template_part( TEMPLATE_PATH . 'popups/add-log', 'modal', $args ) ); ?>

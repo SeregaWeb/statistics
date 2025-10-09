@@ -278,11 +278,11 @@ class TMSLogs extends TMSReports {
 	}
 	
 	
-	public function get_last_log_by_post( $post_id ) {
+	public function get_last_log_by_post( $post_id, $post_type = 'report' ) {
 		global $wpdb;
 		
 		// Определяем таблицу логов для текущего проекта
-		$logs_table = $wpdb->prefix . 'reports_logs_' . $this->use_project;
+		$logs_table = $this->get_table_by_post_type( $post_type );
 		
 		// Проверяем, существует ли таблица
 		if ( $wpdb->get_var( "SHOW TABLES LIKE '$logs_table'" ) !== $logs_table ) {
@@ -323,7 +323,7 @@ class TMSLogs extends TMSReports {
 				"user_id"   => FILTER_SANITIZE_NUMBER_INT,
 				"post_id"   => FILTER_SANITIZE_NUMBER_INT,
 				"post_type" => FILTER_SANITIZE_STRING,
-				"message"   => FILTER_SANITIZE_STRING,
+				"message"   => FILTER_UNSAFE_RAW, // Don't sanitize message to preserve quotes
 				"priority"  => FILTER_SANITIZE_NUMBER_INT,
 				"project"   => FILTER_SANITIZE_STRING,
 			] );
@@ -340,6 +340,9 @@ class TMSLogs extends TMSReports {
 				wp_send_json_error( [ 'message' => 'Missing data' ] );
 			}
 			
+			// Clean message from any escaped characters
+			$MY_INPUT[ 'message' ] = stripslashes( $MY_INPUT[ 'message' ] );
+			
 			$result = $this->create_one_log( $MY_INPUT );
 			
 			if ( $result[ 'insert' ] === false ) {
@@ -350,7 +353,7 @@ class TMSLogs extends TMSReports {
 			$html = $this->generate_log_card( [
 				'role'    => $result[ 'user_role' ],
 				'name'    => $result[ 'user_name' ],
-				'date'    => date( 'm/d/Y H:i', strtotime( current_time( 'mysql' ) ) ),
+				'date'    => current_time( 'mysql' ),
 				'message' => $MY_INPUT[ 'message' ],
 			] );
 			
@@ -382,6 +385,9 @@ class TMSLogs extends TMSReports {
 		$date_est         = new DateTime( 'now', new DateTimeZone( 'America/New_York' ) ); // Указываем временную зону EST
 		$current_time_est = $date_est->format( 'Y-m-d H:i:s' );
 		
+		// Debug: Log table name for debugging
+		error_log( 'TMS Logs: Saving to table: ' . $table_name . ' for post_type: ' . $array_data[ 'post_type' ] );
+		
 		// Добавление записи в таблицу
 		$result = $wpdb->insert( $table_name, [
 			'id_load'      => $array_data[ 'post_id' ],
@@ -404,7 +410,7 @@ class TMSLogs extends TMSReports {
 		$role    = esc_html( $log_data[ 'role' ] );
 		$name    = esc_html( $log_data[ 'name' ] );
 		$date    = $this->formatDate( $log_data[ 'date' ] );
-		$message = $log_data[ 'message' ];
+		$message = $this->clean_message_for_display( $log_data[ 'message' ] );
 		
 		return "
 	    <div class='log-card {$role}'>
@@ -417,6 +423,25 @@ class TMSLogs extends TMSReports {
 	            {$message}
 	        </div>
 	    </div>";
+	}
+	
+	/**
+	 * Clean message for display - remove escaped quotes and other unwanted characters
+	 * 
+	 * @param string $message Raw message
+	 * @return string Cleaned message
+	 */
+	private function clean_message_for_display( $message ) {
+		// Remove escaped quotes
+		$message = str_replace( array( "\\'", '\\"' ), array( "'", '"' ), $message );
+		
+		// Remove other common escaped characters
+		$message = str_replace( array( '\\\\', '\\n', '\\r', '\\t' ), array( '\\', "\n", "\r", "\t" ), $message );
+		
+		// Convert line breaks to HTML
+		$message = nl2br( esc_html( $message ) );
+		
+		return $message;
 	}
 	
 	public function delete_all_logs( $post_id, $post_type = 'report' ) {
@@ -493,6 +518,16 @@ class TMSLogs extends TMSReports {
 		
 		if ( $post_type === 'reports_flt' ) {
 			$logs_table = $wpdb->prefix . 'reports_logs_flt_' . strtolower( $this->use_project );
+		}
+		
+		if ( $post_type === 'tracking' ) {
+			// Check if FLT parameter is present to determine the correct table
+			$flt = isset( $_POST['flt'] ) ? $_POST['flt'] : '';
+			if ( $flt ) {
+				$logs_table = $wpdb->prefix . 'reports_logs_flt_' . strtolower( $this->use_project );
+			} else {
+				$logs_table = $wpdb->prefix . 'reports_logs_' . strtolower( $this->use_project );
+			}
 		}
 		
 		if ( $post_type === 'driver' ) {

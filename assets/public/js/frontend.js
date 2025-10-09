@@ -4638,7 +4638,7 @@ var previewFileUpload = function previewFileUpload() {
     });
   });
 };
-var addActionsDeleteUniversalCard = function addActionsDeleteUniversalCard(selectorBtn, selectorCard) {
+var addActionsDeleteUniversalCard = function addActionsDeleteUniversalCard(selectorBtn, selectorCard, afterDeleteCallback) {
   if (!selectorBtn || !selectorCard) return;
   var btnsSelectors = document.querySelectorAll(selectorBtn);
   btnsSelectors && btnsSelectors.forEach(function (item) {
@@ -4649,6 +4649,9 @@ var addActionsDeleteUniversalCard = function addActionsDeleteUniversalCard(selec
         var container = target.closest(selectorCard);
         if (!container) return;
         container.remove();
+        if (afterDeleteCallback) {
+          afterDeleteCallback();
+        }
       }
     });
   });
@@ -4868,6 +4871,31 @@ var timeStrictChange = function timeStrictChange() {
     });
   }
 };
+var getMaxPickUpDate = function getMaxPickUpDate() {
+  var pickUpDateInputs = document.querySelectorAll('input[name="pick_up_location_date[]"]');
+  var maxDate = null;
+  pickUpDateInputs.forEach(function (input) {
+    var dateValue = input.value;
+    if (dateValue) {
+      if (!maxDate || new Date(dateValue) > new Date(maxDate)) {
+        maxDate = dateValue;
+      }
+    }
+  });
+  return maxDate;
+};
+var updateDeliveryDateMin = function updateDeliveryDateMin() {
+  var stopTypeSelect = document.querySelector('.js-shipper-stop-type');
+  var shipperDate = document.querySelector('.js-shipper-date');
+  if (stopTypeSelect && shipperDate && stopTypeSelect.value === 'delivery_location') {
+    var maxPickUpDate = getMaxPickUpDate();
+    if (maxPickUpDate) {
+      shipperDate.min = maxPickUpDate;
+    } else {
+      shipperDate.removeAttribute('min');
+    }
+  }
+};
 var addShipperPointInit = function addShipperPointInit() {
   var btnAddPoint = document.querySelectorAll('.js-add-point');
   btnAddPoint && btnAddPoint.forEach(function (item) {
@@ -4915,6 +4943,22 @@ var addShipperPointInit = function addShipperPointInit() {
         if (stopTypeValue === '') {
           (0,_info_messages__WEBPACK_IMPORTED_MODULE_1__.printMessage)("Stop type empty", 'danger', 5000);
           return false;
+        }
+        if (stopTypeValue === 'delivery_location' && dateValue) {
+          var pickUpDateInputs = document.querySelectorAll('input[name="pick_up_location_date[]"]');
+          var maxPickUpDate = null;
+          pickUpDateInputs.forEach(function (input) {
+            var inputDateValue = input.value;
+            if (inputDateValue) {
+              if (!maxPickUpDate || new Date(inputDateValue) > new Date(maxPickUpDate)) {
+                maxPickUpDate = inputDateValue;
+              }
+            }
+          });
+          if (maxPickUpDate && new Date(dateValue) < new Date(maxPickUpDate)) {
+            (0,_info_messages__WEBPACK_IMPORTED_MODULE_1__.printMessage)("Delivery date cannot be earlier than the latest pick up date (".concat(maxPickUpDate, ")"), 'danger', 5000);
+            return false;
+          }
         }
         if (infoValue === '') {
           infoValue = 'unset';
@@ -4989,13 +5033,20 @@ var addShipperPointInit = function addShipperPointInit() {
         date.value = '';
         info.value = '';
         addressSearch.value = '';
+        var stopTypeSelect = form.querySelector('.js-shipper-stop-type');
+        if (stopTypeSelect && stopTypeSelect.value === 'delivery_location') {
+          var _maxPickUpDate = getMaxPickUpDate();
+          if (_maxPickUpDate) {
+            date.min = _maxPickUpDate;
+          }
+        }
         dateStart.value = '';
         dateEnd.value = '';
         dateStrict.checked = false;
         timeEndContainer && timeEndContainer.classList.remove('d-none');
         var btnAdd = document.querySelector('.js-add-ship');
         var btnEdit = document.querySelector('.js-end-edit-ship');
-        addActionsDeleteUniversalCard('.js-remove-ship', '.js-current-shipper');
+        addActionsDeleteUniversalCard('.js-remove-ship', '.js-current-shipper', updateDeliveryDateMin);
         editShipperStopInit();
         if (btnAdd && btnEdit && target.classList.contains('js-end-edit-ship')) {
           form.classList.remove('edit-now');
@@ -5006,7 +5057,7 @@ var addShipperPointInit = function addShipperPointInit() {
       }
     });
   });
-  addActionsDeleteUniversalCard('.js-remove-ship', '.js-current-shipper');
+  addActionsDeleteUniversalCard('.js-remove-ship', '.js-current-shipper', updateDeliveryDateMin);
   editShipperStopInit();
 };
 var sendShipperFormInit = function sendShipperFormInit(ajaxUrl) {
@@ -7592,7 +7643,8 @@ function unrequiderInit() {
 "use strict";
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
-/* harmony export */   logsInit: function() { return /* binding */ logsInit; }
+/* harmony export */   logsInit: function() { return /* binding */ logsInit; },
+/* harmony export */   modalLogsInit: function() { return /* binding */ modalLogsInit; }
 /* harmony export */ });
 /* harmony import */ var _info_messages__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./info-messages */ "./src/js/components/info-messages.ts");
 
@@ -7609,6 +7661,10 @@ var logsInit = function logsInit(ajaxUrl) {
       method: 'POST',
       body: form
     };
+    var submitButton = target.querySelector('button[type="submit"]');
+    if (submitButton) {
+      submitButton.disabled = true;
+    }
     target.setAttribute('disabled', 'disabled');
     fetch(ajaxUrl, options).then(function (res) {
       return res.json();
@@ -7624,6 +7680,10 @@ var logsInit = function logsInit(ajaxUrl) {
       (0,_info_messages__WEBPACK_IMPORTED_MODULE_0__.printMessage)("Request failed: ".concat(error), 'danger', 8000);
       console.error('Request failed:', error);
       target.removeAttribute('disabled');
+    }).finally(function () {
+      if (submitButton) {
+        submitButton.disabled = false;
+      }
     });
   });
   var btns = document.querySelectorAll('.js-hide-logs');
@@ -7649,6 +7709,109 @@ var logsInit = function logsInit(ajaxUrl) {
           val = 1;
         }
         document.cookie = "logshow=".concat(val, "; path=/; max-age=86400");
+      }
+    });
+  });
+};
+var modalLogsInit = function modalLogsInit(ajaxUrl) {
+  var openModalButtons = document.querySelectorAll('.js-open-log-modal');
+  openModalButtons.forEach(function (button) {
+    button.addEventListener('click', function (event) {
+      var _a;
+      var target = event.currentTarget;
+      var postId = target.getAttribute('data-post-id');
+      if (postId) {
+        var modalPostIdInput = document.getElementById('modal_post_id');
+        if (modalPostIdInput) {
+          modalPostIdInput.value = postId;
+        }
+        var logWrapper = (_a = target.closest('.d-flex.flex-column.gap-1')) === null || _a === void 0 ? void 0 : _a.querySelector('.js-log-wrapper');
+        if (logWrapper) {
+          var modal = document.getElementById('addLogModal');
+          if (modal) {
+            modal.setAttribute('data-target-log-wrapper', '');
+            modal.targetLogWrapper = logWrapper;
+          }
+        }
+      }
+    });
+  });
+  var modalLogForm = document.querySelector('.js-log-message-modal');
+  modalLogForm && modalLogForm.addEventListener('submit', function (event) {
+    event.preventDefault();
+    var target = event.target;
+    var form = new FormData(target);
+    var action = 'add_user_log';
+    form.append('action', action);
+    var options = {
+      method: 'POST',
+      body: form
+    };
+    var submitButton = target.querySelector('button[type="submit"]');
+    if (submitButton) {
+      submitButton.disabled = true;
+      submitButton.textContent = 'Sending...';
+    }
+    fetch(ajaxUrl, options).then(function (res) {
+      return res.json();
+    }).then(function (requestStatus) {
+      if (requestStatus.success) {
+        (0,_info_messages__WEBPACK_IMPORTED_MODULE_0__.printMessage)('Log message added successfully', 'success', 3000);
+        target.reset();
+        var modalForLog = document.getElementById('addLogModal');
+        if (modalForLog && modalForLog.targetLogWrapper && requestStatus.data.template) {
+          var logWrapper = modalForLog.targetLogWrapper;
+          logWrapper.innerHTML = requestStatus.data.template;
+        } else {
+          var logContainer = document.querySelector('.js-log-container');
+          if (logContainer && requestStatus.data.template) {
+            logContainer.innerHTML = requestStatus.data.template;
+          }
+        }
+        var modal = document.getElementById('addLogModal');
+        if (modal) {
+          try {
+            if (window.bootstrap && window.bootstrap.Modal) {
+              var bootstrapModal = window.bootstrap.Modal.getInstance(modal);
+              if (bootstrapModal) {
+                bootstrapModal.hide();
+              } else {
+                var newModal = new window.bootstrap.Modal(modal);
+                newModal.hide();
+              }
+            } else {
+              modal.classList.remove('show');
+              modal.style.display = 'none';
+              document.body.classList.remove('modal-open');
+              var backdrop = document.querySelector('.modal-backdrop');
+              if (backdrop) {
+                backdrop.remove();
+              }
+            }
+          } catch (error) {
+            console.log('Error closing modal:', error);
+            modal.classList.remove('show');
+            modal.style.display = 'none';
+            document.body.classList.remove('modal-open');
+            var _backdrop = document.querySelector('.modal-backdrop');
+            if (_backdrop) {
+              _backdrop.remove();
+            }
+          }
+        }
+        if (modal && modal.targetLogWrapper) {
+          delete modal.targetLogWrapper;
+        }
+      } else {
+        (0,_info_messages__WEBPACK_IMPORTED_MODULE_0__.printMessage)(requestStatus.data.message, 'danger', 8000);
+      }
+    }).catch(function (error) {
+      (0,_info_messages__WEBPACK_IMPORTED_MODULE_0__.printMessage)("Request failed: ".concat(error), 'danger', 8000);
+      console.error('Request failed:', error);
+    }).finally(function () {
+      if (submitButton) {
+        submitButton.disabled = false;
+        submitButton.textContent = 'Send';
       }
     });
   });
@@ -9174,18 +9337,93 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   changeStopType: function() { return /* binding */ changeStopType; }
 /* harmony export */ });
+var getMaxPickUpDate = function getMaxPickUpDate() {
+  var pickUpDateInputs = document.querySelectorAll('input[name="pick_up_location_date[]"]');
+  var maxDate = null;
+  pickUpDateInputs.forEach(function (input) {
+    var dateValue = input.value;
+    if (dateValue) {
+      if (!maxDate || new Date(dateValue) > new Date(maxDate)) {
+        maxDate = dateValue;
+      }
+    }
+  });
+  return maxDate;
+};
+var validateDeliveryDate = function validateDeliveryDate(deliveryDate) {
+  var maxPickUpDate = getMaxPickUpDate();
+  if (!maxPickUpDate || !deliveryDate) {
+    return true;
+  }
+  return new Date(deliveryDate) >= new Date(maxPickUpDate);
+};
+var showDateValidationError = function showDateValidationError(shipperDate) {
+  var _a, _b;
+  shipperDate.classList.add('is-invalid');
+  var existingError = (_a = shipperDate.parentElement) === null || _a === void 0 ? void 0 : _a.querySelector('.invalid-feedback');
+  if (existingError) {
+    existingError.remove();
+  }
+  var errorDiv = document.createElement('div');
+  errorDiv.className = 'invalid-feedback';
+  errorDiv.textContent = 'Delivery date cannot be earlier than the latest pick up date';
+  (_b = shipperDate.parentElement) === null || _b === void 0 ? void 0 : _b.appendChild(errorDiv);
+};
+var clearDateValidationError = function clearDateValidationError(shipperDate) {
+  var _a;
+  shipperDate.classList.remove('is-invalid');
+  var existingError = (_a = shipperDate.parentElement) === null || _a === void 0 ? void 0 : _a.querySelector('.invalid-feedback');
+  if (existingError) {
+    existingError.remove();
+  }
+};
+var updateDateInputMin = function updateDateInputMin(shipperDate, stopType) {
+  var selectedValue = stopType.value;
+  if (selectedValue === 'delivery_location') {
+    var maxPickUpDate = getMaxPickUpDate();
+    if (maxPickUpDate) {
+      shipperDate.min = maxPickUpDate;
+    } else {
+      shipperDate.removeAttribute('min');
+    }
+  } else {
+    shipperDate.removeAttribute('min');
+  }
+};
 var changeStopType = function changeStopType() {
   var stopType = document.querySelector('.js-shipper-stop-type');
   var dateDelivery = document.querySelector('.js-delivery-date-setup');
   var datePickUp = document.querySelector('.js-pick-up-date-setup');
   var shipperDate = document.querySelector('.js-shipper-date');
   if (!stopType || !shipperDate) return;
+  shipperDate.addEventListener('change', function () {
+    var selectedStopType = stopType.value;
+    updateDateInputMin(shipperDate, stopType);
+    if (selectedStopType === 'delivery_location') {
+      var isValid = validateDeliveryDate(shipperDate.value);
+      if (!isValid) {
+        showDateValidationError(shipperDate);
+      } else {
+        clearDateValidationError(shipperDate);
+      }
+    } else {
+      clearDateValidationError(shipperDate);
+    }
+  });
   stopType.addEventListener('change', function (event) {
     var selectedValue = event.target.value;
+    clearDateValidationError(shipperDate);
+    updateDateInputMin(shipperDate, stopType);
     if (selectedValue === 'pick_up_location' && datePickUp) {
       shipperDate.value = datePickUp.value;
     } else if (selectedValue === 'delivery_location' && dateDelivery) {
       shipperDate.value = dateDelivery.value;
+      if (shipperDate.value) {
+        var isValid = validateDeliveryDate(shipperDate.value);
+        if (!isValid) {
+          showDateValidationError(shipperDate);
+        }
+      }
     }
   });
 };
@@ -23432,6 +23670,7 @@ function ready() {
   (0,_components_create_report__WEBPACK_IMPORTED_MODULE_3__.quickEditInit)(urlAjax, '.js-quick-edit-ar', 'quick_update_post_ar');
   (0,_components_bookmark__WEBPACK_IMPORTED_MODULE_18__.bookmarkInit)(urlAjax);
   (0,_components_logs__WEBPACK_IMPORTED_MODULE_17__.logsInit)(urlAjax);
+  (0,_components_logs__WEBPACK_IMPORTED_MODULE_17__.modalLogsInit)(urlAjax);
   (0,_components_create_report__WEBPACK_IMPORTED_MODULE_3__.quickEditTrackingStatus)(urlAjax);
   (0,_components_performance__WEBPACK_IMPORTED_MODULE_19__.sendUpdatePerformance)(urlAjax);
   (0,_components_send_email_chain__WEBPACK_IMPORTED_MODULE_23__.sendEmailChain)(urlAjax);

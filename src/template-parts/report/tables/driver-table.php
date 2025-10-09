@@ -28,6 +28,12 @@ if ( ! empty( $results ) ) : ?>
             <th scope="col">Vehicle</th>
             <th scope="col">Home location</th>
             <th scope="col">Additional</th>
+            <th scope="col">
+                Rating
+            </th>
+            <th scope="col">
+                Notes
+            </th>
             <th scope="col">Status</th>
             <th scope="col"></th>
         </tr>
@@ -72,7 +78,7 @@ if ( ! empty( $results ) ) : ?>
 //			if ( $date_hired == '11/30/-0001' ) {
 //				$drivers->update_date_created( $row[ 'id' ] );
 //			}
-			
+            $show_controls   = true;
 			$driver_status = trim( $driver_status );
 			$is_hold = $driver_status === 'on_hold';
 			
@@ -101,6 +107,31 @@ if ( ! empty( $results ) ) : ?>
 
 			// TODO: Remove this after testing
 			$class_hide = $row['id'] === '3343' ? 'd-none' : '';
+
+
+            $driver_statistics = $drivers->get_driver_statistics( $row[ 'id' ] );
+			
+			// Function to determine button color based on value
+			$get_button_color = function( $value ) {
+				
+				if ( ! is_numeric( $value ) || intval( $value ) === 0 ) {
+					return 'btn-secondary'; // grey
+				}
+				
+				if ( + $value <= 1 ) {
+					return 'btn-danger'; // red
+				}
+				
+				if ( + $value <= 4 ) {
+					return 'btn-warning'; // orange
+				}
+				
+				if ( + $value > 4 ) {
+					return 'btn-success'; // green
+				}
+				
+				return 'btn-secondary'; // default grey
+			};
 			?>
 
             <tr class="<?php echo $class_hide; ?>" data-driver-id="<?php echo $row[ 'id' ]; ?>">
@@ -145,6 +176,97 @@ if ( ! empty( $results ) ) : ?>
                     <div class="table-tags d-flex flex-wrap">
 						<?php include( get_template_directory() . '/src/template-parts/report/common/driver-capabilities-display.php' ); ?>
                     </div>
+                </td>
+
+                <td style="width: 86px;">
+					<?php if ( $show_controls ) : ?>
+                        <button
+                                type="button"
+                                class="btn w-100 <?php echo $get_button_color( $driver_statistics[ 'rating' ][ 'avg_rating' ] ); ?> btn-sm d-flex align-items-center justify-content-between gap-1 js-driver-rating-btn"
+                                data-driver-id="<?php echo $row[ 'id' ]; ?>"
+                                data-driver-name="<?php echo esc_attr( $driver_name ); ?>"
+                                data-rating="<?php echo $driver_statistics[ 'rating' ][ 'avg_rating' ]; ?>">
+							<?php echo $driver_statistics[ 'rating' ][ 'avg_rating' ] > 0
+								? $driver_statistics[ 'rating' ][ 'avg_rating' ] : '-'; ?>
+                            <svg fill="white" width="12" height="12" version="1.1" xmlns="http://www.w3.org/2000/svg"
+                                 xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px" viewBox="0 0 460 460"
+                                 style="enable-background:new 0 0 460 460;" xml:space="preserve">
+                                    <path d="M230,0C102.975,0,0,102.975,0,230s102.975,230,230,230s230-102.974,230-230S357.025,0,230,0z M268.333,377.36
+                                        c0,8.676-7.034,15.71-15.71,15.71h-43.101c-8.676,0-15.71-7.034-15.71-15.71V202.477c0-8.676,7.033-15.71,15.71-15.71h43.101
+                                        c8.676,0,15.71,7.033,15.71,15.71V377.36z M230,157c-21.539,0-39-17.461-39-39s17.461-39,39-39s39,17.461,39,39
+                                        S251.539,157,230,157z"></path>
+                            </svg>
+                        </button>
+					<?php else : ?>
+                        <span class="btn <?php echo $get_button_color( $driver_statistics[ 'rating' ][ 'avg_rating' ] ); ?> btn-sm d-flex align-items-center justify-content-between gap-1 disabled"
+                              style="opacity: 0.5; pointer-events: none;">
+						<?php echo $driver_statistics[ 'rating' ][ 'avg_rating' ] > 0
+							? $driver_statistics[ 'rating' ][ 'avg_rating' ] : '-'; ?>
+                        <svg fill="white" width="12" height="12" version="1.1" xmlns="http://www.w3.org/2000/svg"
+                             xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px" viewBox="0 0 460 460"
+                             style="enable-background:new 0 0 460 460;" xml:space="preserve">
+                                    <path d="M230,0C102.975,0,0,102.975,0,230s102.975,230,230,230s230-102.974,230-230S357.025,0,230,0z M268.333,377.36
+                                        c0,8.676-7.034,15.71-15.71,15.71h-43.101c-8.676,0-15.71-7.034-15.71-15.71V202.477c0-8.676,7.033-15.71,15.71-15.71h43.101
+                                        c8.676,0,15.71,7.033,15.71,15.71V377.36z M230,157c-21.539,0-39-17.461-39-39s17.461-39,39-39s39,17.461,39,39
+                                        S251.539,157,230,157z"></path>
+                            </svg>
+                    </span>
+					<?php endif; ?>
+
+                </td>
+
+                <td style="width: 86px;">
+					<?php if ( $show_controls ) : ?>
+                        <button type="button"
+                                class="btn btn-primary w-100 btn-sm d-flex align-items-center justify-content-between gap-1 js-driver-notice-btn"
+                                data-driver-id="<?php echo $row[ 'id' ]; ?>"
+                                data-driver-name="<?php echo esc_attr( $driver_name ); ?>"
+                                data-notice-count="<?php echo $driver_statistics[ 'notice' ][ 'count' ]; ?>">
+							<?php echo $driver_statistics[ 'notice' ][ 'count' ] > 0
+								? $driver_statistics[ 'notice' ][ 'count' ] : '-'; ?>
+                            <svg viewBox="-1 0 46 46" width="12" height="12" xmlns="http://www.w3.org/2000/svg"
+                                 fill="white">
+                                <g id="_6" data-name="6" transform="translate(-832 -151.466)">
+                                    <g id="Group_263" data-name="Group 263">
+                                        <rect id="Rectangle_63" data-name="Rectangle 63" width="6" height="7"
+                                              transform="translate(832 155.466)"></rect>
+                                        <path id="Path_188" data-name="Path 188"
+                                              d="M832,191.827l3,5.419,3-5.419V163.466h-6Z"></path>
+                                        <g id="Group_262" data-name="Group 262">
+                                            <g id="Group_261" data-name="Group 261">
+                                                <path id="Path_189" data-name="Path 189"
+                                                      d="M864.907,155.466l-.3-1H862v-3h-6v3h-3.033l-.3,1H842v42h34v-42Zm9.093,40H844v-38h8.171l-.66,3h14.556l-.66-3H874Z"></path>
+                                            </g>
+                                        </g>
+                                    </g>
+                                </g>
+                            </svg>
+                        </button>
+					<?php else : ?>
+                        <span class="btn btn-primary btn-sm d-flex align-items-center justify-content-between gap-1 disabled"
+                              style="opacity: 0.5; pointer-events: none;">
+						<?php echo $driver_statistics[ 'notice' ][ 'count' ] > 0
+							? $driver_statistics[ 'notice' ][ 'count' ] : '-'; ?>
+                        <svg viewBox="-1 0 46 46" width="12" height="12" xmlns="http://www.w3.org/2000/svg"
+                             fill="white">
+                            <g id="_6" data-name="6" transform="translate(-832 -151.466)">
+                                <g id="Group_263" data-name="Group 263">
+                                    <rect id="Rectangle_63" data-name="Rectangle 63" width="6" height="7"
+                                          transform="translate(832 155.466)"></rect>
+                                    <path id="Path_188" data-name="Path 188"
+                                          d="M832,191.827l3,5.419,3-5.419V163.466h-6Z"></path>
+                                    <g id="Group_262" data-name="Group 262">
+                                        <g id="Group_261" data-name="Group 261">
+                                            <path id="Path_189" data-name="Path 189"
+                                                  d="M864.907,155.466l-.3-1H862v-3h-6v3h-3.033l-.3,1H842v42h34v-42Zm9.093,40H844v-38h8.171l-.66,3h14.556l-.66-3H874Z"></path>
+                                        </g>
+                                    </g>
+                                </g>
+                            </g>
+                        </svg>
+                    </span>
+					<?php endif; ?>
+
                 </td>
 
                 <td style="width: 100px;" class="<?php echo $driver_status ? $driver_status
@@ -194,7 +316,8 @@ if ( ! empty( $results ) ) : ?>
 	?>
 	
 	<?php get_template_part( TEMPLATE_PATH . 'popups/quick-status-update-modal' ); ?>
-
+    <?php get_template_part( TEMPLATE_PATH . 'popups/driver-notice' ); ?>
+    <?php get_template_part( TEMPLATE_PATH . 'popups/driver-raiting' ); ?>
 
 <?php else : ?>
     <p>No drivers were found.</p>

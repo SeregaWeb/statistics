@@ -55,7 +55,7 @@ import {
     cleanUrlByFilterDriverSearch,
 } from './components/filter-clean';
 import { disabledValuesInSelectInit, showHiddenValueInit } from './components/chow-hidden-value';
-import { logsInit } from './components/logs';
+import { logsInit, modalLogsInit } from './components/logs';
 import { bookmarkInit } from './components/bookmark';
 import { sendUpdatePerformance } from './components/performance';
 import { dateMaskInit, masksAllSite, telMaskInit } from './components/tel-mask';
@@ -142,6 +142,7 @@ function ready() {
     quickEditInit(urlAjax, '.js-quick-edit-ar', 'quick_update_post_ar');
     bookmarkInit(urlAjax);
     logsInit(urlAjax);
+    modalLogsInit(urlAjax);
     quickEditTrackingStatus(urlAjax);
     sendUpdatePerformance(urlAjax);
     sendEmailChain(urlAjax);

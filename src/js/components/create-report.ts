@@ -683,7 +683,7 @@ export const previewFileUpload = () => {
         });
 };
 
-export const addActionsDeleteUniversalCard = (selectorBtn, selectorCard) => {
+export const addActionsDeleteUniversalCard = (selectorBtn, selectorCard, afterDeleteCallback?: () => void) => {
     if (!selectorBtn || !selectorCard) return;
     // @ts-ignore
     const btnsSelectors = document.querySelectorAll(selectorBtn);
@@ -700,6 +700,11 @@ export const addActionsDeleteUniversalCard = (selectorBtn, selectorCard) => {
                     if (!container) return;
 
                     container.remove();
+                    
+                    // Execute callback after deletion if provided
+                    if (afterDeleteCallback) {
+                        afterDeleteCallback();
+                    }
                 }
             });
         });
@@ -1060,6 +1065,38 @@ export const timeStrictChange = () => {
     }
 };
 
+// Function to get the maximum pick up date from existing checkpoints
+const getMaxPickUpDate = (): string | null => {
+    const pickUpDateInputs = document.querySelectorAll<HTMLInputElement>('input[name="pick_up_location_date[]"]');
+    let maxDate: string | null = null;
+
+    pickUpDateInputs.forEach((input) => {
+        const dateValue = input.value;
+        if (dateValue) {
+            if (!maxDate || new Date(dateValue) > new Date(maxDate)) {
+                maxDate = dateValue;
+            }
+        }
+    });
+
+    return maxDate;
+};
+
+// Function to update min date for delivery location
+const updateDeliveryDateMin = () => {
+    const stopTypeSelect = document.querySelector('.js-shipper-stop-type') as HTMLSelectElement;
+    const shipperDate = document.querySelector('.js-shipper-date') as HTMLInputElement;
+    
+    if (stopTypeSelect && shipperDate && stopTypeSelect.value === 'delivery_location') {
+        const maxPickUpDate = getMaxPickUpDate();
+        if (maxPickUpDate) {
+            shipperDate.min = maxPickUpDate;
+        } else {
+            shipperDate.removeAttribute('min');
+        }
+    }
+};
+
 export const addShipperPointInit = () => {
     const btnAddPoint = document.querySelectorAll('.js-add-point');
 
@@ -1124,6 +1161,27 @@ export const addShipperPointInit = () => {
                         printMessage(`Stop type empty`, 'danger', 5000);
                         // eslint-disable-next-line consistent-return
                         return false;
+                    }
+
+                    // Validate delivery date against existing pick up dates
+                    if (stopTypeValue === 'delivery_location' && dateValue) {
+                        const pickUpDateInputs = document.querySelectorAll<HTMLInputElement>('input[name="pick_up_location_date[]"]');
+                        let maxPickUpDate: string | null = null;
+
+                        pickUpDateInputs.forEach((input) => {
+                            const inputDateValue = input.value;
+                            if (inputDateValue) {
+                                if (!maxPickUpDate || new Date(inputDateValue) > new Date(maxPickUpDate)) {
+                                    maxPickUpDate = inputDateValue;
+                                }
+                            }
+                        });
+
+                        if (maxPickUpDate && new Date(dateValue) < new Date(maxPickUpDate)) {
+                            printMessage(`Delivery date cannot be earlier than the latest pick up date (${maxPickUpDate})`, 'danger', 5000);
+                            // eslint-disable-next-line consistent-return
+                            return false;
+                        }
                     }
 
                     // if (contactValue === '') {
@@ -1276,6 +1334,15 @@ export const addShipperPointInit = () => {
                     date.value = '';
                     info.value = '';
                     addressSearch.value = '';
+                    
+                    // Update min date for delivery location after adding new checkpoint
+                    const stopTypeSelect = form.querySelector('.js-shipper-stop-type') as HTMLSelectElement;
+                    if (stopTypeSelect && stopTypeSelect.value === 'delivery_location') {
+                        const maxPickUpDate = getMaxPickUpDate();
+                        if (maxPickUpDate) {
+                            date.min = maxPickUpDate;
+                        }
+                    }
                     dateStart.value = '';
                     dateEnd.value = '';
                     dateStrict.checked = false;
@@ -1284,7 +1351,7 @@ export const addShipperPointInit = () => {
                     const btnAdd = document.querySelector('.js-add-ship');
                     const btnEdit = document.querySelector('.js-end-edit-ship');
 
-                    addActionsDeleteUniversalCard('.js-remove-ship', '.js-current-shipper');
+                    addActionsDeleteUniversalCard('.js-remove-ship', '.js-current-shipper', updateDeliveryDateMin);
                     editShipperStopInit();
                     // @ts-ignore
                     if (btnAdd && btnEdit && target.classList.contains('js-end-edit-ship')) {
@@ -1298,7 +1365,7 @@ export const addShipperPointInit = () => {
             });
         });
 
-    addActionsDeleteUniversalCard('.js-remove-ship', '.js-current-shipper');
+    addActionsDeleteUniversalCard('.js-remove-ship', '.js-current-shipper', updateDeliveryDateMin);
     editShipperStopInit();
 };
 

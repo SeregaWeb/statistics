@@ -48,6 +48,11 @@ if ( $is_flt ) {
 	$items[ 'flt' ] = true;
 }
 
+// Add project to items for modal log form
+$user_id = get_current_user_id();
+$user_project = get_field( 'current_select', 'user_' . $user_id );
+$items['project'] = $user_project;
+
 ?>
     <div class="container-fluid tracking-colored">
         <div class="row">

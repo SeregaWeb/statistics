@@ -43,7 +43,7 @@ $logs_messages = $logs->get_user_logs_by_post( $post_id, $user_id, $post_type );
             <label for="exampleFormControlTextarea1" class="form-label">Your message</label>
             <textarea class="form-control" name="message" id="exampleFormControlTextarea1"></textarea>
         </div>
-        <button class="btn btn-primary">Send</button>
+        <button type="submit" class="btn btn-primary">Send</button>
     </form>
 	
 	<?php if ( $post_type === 'report' || $post_type === 'reports_flt' ) :

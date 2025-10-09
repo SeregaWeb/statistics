@@ -54,6 +54,10 @@ $current_project = $is_flt ? 'flt' : '';
 $smart_analytics = $TMSReportsTimer->get_smart_analytics( $current_project, $is_flt );
 $items['smart_analytics'] = $smart_analytics;
 
+$user_id = get_current_user_id();
+$user_project = get_field( 'current_select', 'user_' . $user_id );
+$items['project'] = $user_project;
+
 
 ?>
     <div class="container-fluid">

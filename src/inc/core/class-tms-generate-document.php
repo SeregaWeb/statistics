@@ -82,6 +82,12 @@ class TMSGenerateDocument extends TMSReports {
 		add_action( 'wp_ajax_get_settlement_stats', array( $this, 'ajax_get_settlement_stats' ) );
 		add_action( 'wp_ajax_get_settlement_progress', array( $this, 'ajax_get_settlement_progress' ) );
 		add_action( 'wp_ajax_clear_settlement_data', array( $this, 'ajax_clear_settlement_data' ) );
+		
+		// New AJAX handlers for bulk PDF generation
+		add_action( 'wp_ajax_start_bulk_pdf_generation', array( $this, 'ajax_start_bulk_pdf_generation' ) );
+		add_action( 'wp_ajax_generate_single_driver_pdf', array( $this, 'ajax_generate_single_driver_pdf' ) );
+		add_action( 'wp_ajax_get_bulk_generation_progress', array( $this, 'ajax_get_bulk_generation_progress' ) );
+		add_action( 'wp_ajax_reset_bulk_generation_progress', array( $this, 'ajax_reset_bulk_generation_progress' ) );
 	}
 	
 	function generate_invoice() {
@@ -920,7 +926,6 @@ class TMSGenerateDocument extends TMSReports {
 		?>
 		<div class="card mb-3">
 			<div class="card-body">
-				<h5 class="card-title" style="margin-bottom: 10px;"><?php echo esc_html( $label ); ?></h5>
 				<table style="font-family: sans-serif; border-collapse: collapse; border-spacing: 0; margin-bottom: 10px;" border="0" width="100%">
 					<tr style="width: 100%;">
 						<td width="150px"><p style="margin:0;">&nbsp;<?php echo esc_html( $check_date ); ?></p></td>
@@ -1155,7 +1160,6 @@ class TMSGenerateDocument extends TMSReports {
             ?>
             <div class="card mb-3">
                 <div class="card-body">
-                    <h5 class="card-title" style="margin-bottom: 10px;"><?php echo esc_html( $label ); ?></h5>
                     <table style="font-family: sans-serif; border-collapse: collapse; border-spacing: 0; margin-bottom: 10px;" border="0" width="100%">
                         <tr style="width: 100%;">
                             <td width="150px"><p style="margin:0;"><?php echo esc_html( $check_date ); ?></p></td>
@@ -1216,7 +1220,7 @@ class TMSGenerateDocument extends TMSReports {
                             <td width="10%" style=" font-size: 14px; padding-top: 10px;padding-bottom:10px;"></td>
                             <td width="10%" style=" font-size: 14px; padding-top: 10px;padding-bottom:10px;"><?php echo esc_html( (string) $row['reference_number'] ); ?></td>
                             <td width="16%" style=" font-size: 14px; padding-top: 10px;padding-bottom:10px;"><?php echo esc_html( date( 'm/d/Y', strtotime( $date_val ) ) ); ?></td>
-                            <td width="10%" style=" font-size: 14px; padding-top: 10px;padding-bottom:10px; text-align: right; border-bottom: 1px solid #000000"><strong><?php echo esc_html( '$' . $helper->format_currency( $rate, false ) ); ?></strong></td>
+                            <td width="10%" style=" font-size: 14px; padding-top: 10px;padding-bottom:10px; text-align: right; border-bottom: 1px solid #000000"><?php echo esc_html( '$' . $helper->format_currency( $rate, false ) ); ?></td>
                         </tr>
                         <?php } ?>
                         <tr>
@@ -1226,7 +1230,7 @@ class TMSGenerateDocument extends TMSReports {
                             <td width="10%"></td>
                             <td width="10%"></td>
                             <td width="16%" style="text-align:right;"><strong>ORDER TOTAL</strong></td>
-                            <td width="10%" style="text-align:right; font-size: 14px; padding-top: 10px;padding-bottom:10px; text-align: right;"><strong><?php echo esc_html( '$' . $helper->format_currency( $month_total, false ) ); ?></strong></td>
+                            <td width="10%" style="text-align:right; font-size: 14px; padding-top: 10px;padding-bottom:10px; text-align: right;"><?php echo esc_html( '$' . $helper->format_currency( $month_total, false ) ); ?></td>
                         </tr>
                     </table>
                     <table style=" font-size: 14px; font-family: sans-serif; border-collapse: collapse; width: 100%; border-top: 1px solid #000000; margin-top: 10px;">
@@ -1381,12 +1385,8 @@ class TMSGenerateDocument extends TMSReports {
             <tr>
                 <td width="85%" style="font-size: 14px; padding-top: 10px;padding-bottom:10px; text-align: left;">
                     <p>
-				ODYSSEIA INC
-                    </p>
-                    <p>
-				521 S Port St.
-                    </p>
-                    <p>
+				ODYSSEIA INC<br>
+				521 S Port St.<br>
 				Baltimore, MD 21224
                     </p>
                 </td>
@@ -3962,5 +3962,654 @@ class TMSGenerateDocument extends TMSReports {
 		} catch (Exception $e) {
 			wp_send_json_error('Error getting progress: ' . $e->getMessage());
 		}
+	}
+
+	/**
+	 * Start bulk PDF generation process
+	 */
+	public function ajax_start_bulk_pdf_generation() {
+		if ( ! defined( 'DOING_AJAX' ) || ! DOING_AJAX ) {
+			wp_die();
+		}
+
+		// Check nonce for security
+		if ( ! wp_verify_nonce( $_POST['nonce'], 'settlement_csv_nonce' ) ) {
+			wp_send_json_error( 'Security check failed' );
+		}
+
+		// Check user permissions
+		$TMSUsers = new TMSUsers();
+		if ( ! $TMSUsers->check_user_role_access( [ 'administrator' ], true ) ) {
+			wp_send_json_error( 'Access denied' );
+		}
+
+		// Check if we should reset progress
+		$reset_progress = isset( $_POST['reset_progress'] ) && $_POST['reset_progress'] === 'true';
+		
+		if ( $reset_progress ) {
+			delete_transient( 'bulk_pdf_generation_progress' );
+		}
+
+		// Check if generation is already in progress
+		$existing_progress = get_transient( 'bulk_pdf_generation_progress' );
+		if ( $existing_progress && ! $reset_progress ) {
+			wp_send_json_success( [
+				'message' => 'Generation already in progress',
+				'total_drivers' => $existing_progress['total_drivers'],
+				'progress' => $existing_progress,
+				'resume' => true
+			] );
+		}
+
+		global $wpdb;
+		$table_summary = $wpdb->prefix . 'settlement_summary';
+		
+		// Debug: Check if table has any data
+		$total_records = $wpdb->get_var( "SELECT COUNT(*) FROM {$table_summary}" );
+		error_log( "TMS PDF Generation: Total records in table: {$total_records}" );
+		
+		// Get all unique drivers
+		$drivers = $wpdb->get_results(
+			"SELECT id_driver, MAX(driver_name) AS driver_name
+			 FROM {$table_summary}
+			 WHERE id_driver IS NOT NULL AND id_driver <> 0
+			 GROUP BY id_driver
+			 ORDER BY driver_name ASC",
+			ARRAY_A
+		);
+
+		if ( empty( $drivers ) ) {
+			wp_send_json_error( 'No drivers found' );
+		}
+
+		// Create documents-generate directory structure
+		$upload_dir = wp_get_upload_dir();
+		$base_dir = $upload_dir['basedir'] . '/documents-generate';
+		
+		if ( ! file_exists( $base_dir ) ) {
+			wp_mkdir_p( $base_dir );
+		}
+
+		// Check which drivers already have PDFs generated
+		$completed_drivers = [];
+		$remaining_drivers = [];
+		
+		foreach ( $drivers as $driver ) {
+			$driver_dir = $base_dir . '/' . $driver['id_driver'];
+			if ( file_exists( $driver_dir ) ) {
+				// Check if driver has any PDF files
+				$pdf_files = glob( $driver_dir . '/*/*.pdf' );
+				if ( ! empty( $pdf_files ) ) {
+					$completed_drivers[] = $driver;
+				} else {
+					$remaining_drivers[] = $driver;
+				}
+			} else {
+				$remaining_drivers[] = $driver;
+			}
+		}
+
+		// Store generation progress in transient
+		$progress_data = [
+			'total_drivers' => count( $drivers ),
+			'current_driver' => 0,
+			'completed_drivers' => count( $completed_drivers ),
+			'failed_drivers' => 0,
+			'drivers' => $remaining_drivers,
+			'completed_driver_list' => $completed_drivers,
+			'start_time' => current_time( 'mysql' ),
+			'status' => 'running'
+		];
+
+		set_transient( 'bulk_pdf_generation_progress', $progress_data, HOUR_IN_SECONDS );
+
+		wp_send_json_success( [
+			'message' => 'Bulk generation started',
+			'total_drivers' => count( $drivers ),
+			'remaining_drivers' => count( $remaining_drivers ),
+			'completed_drivers' => count( $completed_drivers ),
+			'progress' => $progress_data
+		] );
+	}
+
+	/**
+	 * Generate PDF for a single driver
+	 */
+	public function ajax_generate_single_driver_pdf() {
+		if ( ! defined( 'DOING_AJAX' ) || ! DOING_AJAX ) {
+			wp_die();
+		}
+
+		// Check nonce for security
+		if ( ! wp_verify_nonce( $_POST['nonce'], 'settlement_csv_nonce' ) ) {
+			wp_send_json_error( 'Security check failed' );
+		}
+
+		// Check user permissions
+		$TMSUsers = new TMSUsers();
+		if ( ! $TMSUsers->check_user_role_access( [ 'administrator' ], true ) ) {
+			wp_send_json_error( 'Access denied' );
+		}
+
+		$driver_id = intval( $_POST['driver_id'] );
+		if ( ! $driver_id ) {
+			wp_send_json_error( 'Invalid driver ID' );
+		}
+
+		try {
+			$result = $this->generate_driver_pdf_with_structure( $driver_id );
+			
+			if ( $result['success'] ) {
+				wp_send_json_success( [
+					'message' => 'PDF generated successfully',
+					'files_created' => $result['files_created'],
+					'driver_id' => $driver_id
+				] );
+			} else {
+				wp_send_json_error( [
+					'message' => $result['message'],
+					'driver_id' => $driver_id
+				] );
+			}
+		} catch ( Exception $e ) {
+			wp_send_json_error( [
+				'message' => 'Error generating PDF: ' . $e->getMessage(),
+				'driver_id' => $driver_id
+			] );
+		}
+	}
+
+	/**
+	 * Get bulk generation progress
+	 */
+	public function ajax_get_bulk_generation_progress() {
+		if ( ! defined( 'DOING_AJAX' ) || ! DOING_AJAX ) {
+			wp_die();
+		}
+
+		// Check nonce for security
+		if ( ! wp_verify_nonce( $_POST['nonce'], 'settlement_csv_nonce' ) ) {
+			wp_send_json_error( 'Security check failed' );
+		}
+
+		$progress = get_transient( 'bulk_pdf_generation_progress' );
+		
+		if ( ! $progress ) {
+			wp_send_json_error( 'No active generation process found' );
+		}
+
+		wp_send_json_success( $progress );
+	}
+
+	/**
+	 * Reset bulk generation progress
+	 */
+	public function ajax_reset_bulk_generation_progress() {
+		if ( ! defined( 'DOING_AJAX' ) || ! DOING_AJAX ) {
+			wp_die();
+		}
+
+		// Check nonce for security
+		if ( ! wp_verify_nonce( $_POST['nonce'], 'settlement_csv_nonce' ) ) {
+			wp_send_json_error( 'Security check failed' );
+		}
+
+		// Check user permissions
+		$TMSUsers = new TMSUsers();
+		if ( ! $TMSUsers->check_user_role_access( [ 'administrator' ], true ) ) {
+			wp_send_json_error( 'Access denied' );
+		}
+
+		// Delete the transient
+		delete_transient( 'bulk_pdf_generation_progress' );
+
+		wp_send_json_success( [
+			'message' => 'Progress reset successfully'
+		] );
+	}
+
+	/**
+	 * Render driver settlement for specific month and year
+	 */
+	private function render_driver_settlement_by_month_year( $driver_id, $year, $month ) {
+		global $wpdb;
+		$table_name = $wpdb->prefix . 'settlement_summary';
+		$driver_id = sanitize_text_field( (string) $driver_id );
+
+		// Fetch records for driver for specific month/year
+		$rows = $wpdb->get_results(
+			$wpdb->prepare(
+				"SELECT id, reference_number, shipper_location, receiver_location, id_driver, driver_name, driver_rate, load_status, pick_up_date, delivery_date
+				 FROM {$table_name}
+				 WHERE id_driver = %s
+				 AND (
+				   (YEAR(delivery_date) = %d AND MONTH(delivery_date) = %d AND delivery_date IS NOT NULL AND delivery_date != '0000-00-00' AND YEAR(delivery_date) > 0) OR
+				   (delivery_date IS NULL OR delivery_date = '' OR delivery_date = '0000-00-00') AND (YEAR(pick_up_date) = %d AND MONTH(pick_up_date) = %d AND pick_up_date IS NOT NULL AND pick_up_date != '0000-00-00' AND YEAR(pick_up_date) > 0)
+				 )
+				 ORDER BY
+				   CASE WHEN delivery_date IS NULL OR delivery_date = '' OR delivery_date = '0000-00-00' THEN 1 ELSE 0 END,
+				   COALESCE(delivery_date, pick_up_date) ASC,
+				   id ASC",
+				$driver_id, $year, $month, $year, $month
+			),
+			ARRAY_A
+		);
+
+		if ( empty( $rows ) ) {
+			return false; // No data for this month
+		}
+
+		$driver_name = $rows[0]['driver_name'];
+		$settlement = $driver_id . ' - ' . $driver_name;
+
+		// Helper to split location "City - ST" into [city, state]
+		$split_location = function( $location ) {
+			$location = (string) $location;
+			$parts = array_map( 'trim', explode( '-', $location ) );
+			$city  = isset( $parts[0] ) ? $parts[0] : '';
+			$state = isset( $parts[1] ) ? $parts[1] : '';
+			return array( $city, $state );
+		};
+
+		// Currency formatter
+		$helper = new TMSReportsHelper();
+
+		$month_ts = mktime( 0, 0, 0, $month, 1, $year );
+		$label = date( 'F Y', $month_ts );
+		$period_from = date( 'm/d/Y', strtotime( 'first day of this month', $month_ts ) );
+		$period_to = date( 'm/d/Y', strtotime( 'last day of this month', $month_ts ) );
+		$check_date = $period_to;
+		$month_total = 0.0;
+
+		// Calculate total
+		foreach ( $rows as $row ) {
+			$month_total += (float) $row['driver_rate'];
+		}
+
+		ob_start();
+		?>
+		<div class="card mb-3">
+			<div class="card-body">
+				<table style="font-family: sans-serif; border-collapse: collapse; border-spacing: 0; margin-bottom: 10px;" border="0" width="100%">
+					<tr style="width: 100%;">
+						<td width="150px"><p style="margin:0;"><?php echo esc_html( $check_date ); ?></p></td>
+						<td width="100%" style="text-align: center">
+							<p style="font-size:22px;color:#000;margin:15px 0;font-weight:600;">Settlement Summary</p>
+						</td>
+						<td width="150px"><img height="120" width="120" style="height:120px;width:120px;" src="<?php echo esc_url( $this->logo ); ?>" alt="logo"></td>
+					</tr>
+				</table>
+
+				<table style="font-family: sans-serif; border-collapse: collapse;
+				border-spacing: 0; margin-bottom: 10px;" border="0" width="100%">
+					<tr>
+						<td width="100%" style="text-align: center">
+							<p style="text-align: center;margin: 0;">
+							<?php echo esc_html( $this->company_name ); ?>
+							</p>
+						</td>
+					</tr>
+					<tr>
+						<td width="100%" style="text-align: center">
+							<p style="text-align: center;margin: 0;">
+							<?php echo esc_html( $this->company_address . ', ' . $this->company_sity_state_zip . ', phone: ' . $this->company_phone ); ?>
+							</p>
+						</td>
+					</tr>
+				</table>
+
+				<table style="font-family: sans-serif; border-collapse: collapse; border-spacing: 0; font-size: 14px; margin-bottom: 10px;" border="0" width="100%">
+					<tr>
+						<td width="33.33%"><p style="text-align:left;margin:0;font-size:14px;font-weight:bold;">For: <strong style="margin-right:20px;"><?php echo esc_html( $period_from ); ?></strong></p></td>
+						<td width="33.33%"><p style="text-align:center;margin:0;font-size:14px;font-weight:bold;">Period ending: <?php echo esc_html( $period_to ); ?></p></td>
+						<td width="33.33%"><p style="text-align:right;font-size:14px;margin:0;font-weight:bold;">Check #: <strong style="width:120px;display:inline-block;text-align:left;"></strong></p><p style="text-align:right;font-size:14px;margin:0;font-weight:bold;">Check date: <strong style="width:120px;display:inline-block;text-align:left;">&nbsp;<?php echo esc_html( $check_date ); ?></strong></p></td>
+					</tr>
+				</table>
+				<table style="font-family: sans-serif; border-collapse: collapse; width: 100%; border-top: 1px solid #000000; border-bottom: 1px solid #000000;">
+					<tr>
+						<td width="22%" style=" font-size: 14px; padding-top: 10px;padding-bottom:10px;"><strong>Origin</strong></td>
+						<td width="22%" style=" font-size: 14px; padding-top: 10px;padding-bottom:10px;"><strong>Destination</strong></td>
+						<td width="10%" style=" font-size: 14px; padding-top: 10px;padding-bottom:10px;"><strong>Loaded</strong></td>
+						<td width="10%" style=" font-size: 14px; padding-top: 10px;padding-bottom:10px;"><strong>Miles</strong></td>
+						<td width="10%" style=" font-size: 14px; padding-top: 10px;padding-bottom:10px;"><strong>Invoice</strong></td>
+						<td width="16%" style=" font-size: 14px; padding-top: 10px;padding-bottom:10px;"><strong>Date Received</strong></td>
+						<td width="10%" style=" font-size: 14px; padding-top: 10px;padding-bottom:10px; text-align: right;"><strong>Net Pay</strong></td>
+					</tr>
+				</table>
+				<table style="font-family: sans-serif; border-collapse: collapse; width: 100%; border-top: 1px solid #000000; margin-top: 10px;">
+					<tr>
+						<td width="22%" colspan="2" style="padding-top: 10px;padding-bottom:10px;">
+							<strong>SETTLEMENT </strong><strong><?php echo esc_html( $settlement ); ?></strong></td>
+					</tr>   
+					
+					<?php foreach ( $rows as $row ) { 
+						list( $from_city, $from_state ) = $split_location( $row['shipper_location'] ); 
+						list( $to_city, $to_state ) = $split_location( $row['receiver_location'] ); 
+						$date_val = ! empty( $row['delivery_date'] ) ? $row['delivery_date'] : ( ! empty( $row['pick_up_date'] ) ? $row['pick_up_date'] : date('Y-m-d') ); 
+						$rate = (float) $row['driver_rate']; 
+					?>
+						<tr>
+							<td width="22%" style="  font-size: 14px; padding-top: 10px;padding-bottom:10px;"><?php echo esc_html( $from_city ); ?></td>
+							<td width="22%" style=" font-size: 14px; padding-top: 10px;padding-bottom:10px;"><?php echo esc_html( $to_city ); ?></td>
+							<td width="10%" style=" font-size: 14px; padding-top: 10px;padding-bottom:10px;">Loaded</td>
+							<td width="10%" style=" font-size: 14px; padding-top: 10px;padding-bottom:10px;"></td>
+							<td width="10%" style=" font-size: 14px; padding-top: 10px;padding-bottom:10px;"><?php echo esc_html( (string) $row['reference_number'] ); ?></td>
+							<td width="16%" style=" font-size: 14px; padding-top: 10px;padding-bottom:10px;"><?php echo esc_html( date( 'm/d/Y', strtotime( $date_val ) ) ); ?></td>
+							<td width="10%" style=" font-size: 14px; padding-top: 10px;padding-bottom:10px; text-align: right; border-bottom: 1px solid #000000"><?php echo esc_html( '$' . $helper->format_currency( $rate, false ) ); ?></td>
+						</tr>
+					<?php } ?>
+					<tr>
+						<td width="22%"></td>
+						<td width="22%"></td>
+						<td width="10%"></td>
+						<td width="10%"></td>
+						<td width="10%"></td>
+						<td width="16%" style="text-align:right;"><strong>ORDER TOTAL</strong></td>
+						<td width="10%" style="text-align:right; font-size: 14px; padding-top: 10px;padding-bottom:10px; text-align: right;"><?php echo esc_html( '$' . $helper->format_currency( $month_total, false ) ); ?></td>
+					</tr>
+				</table>
+				<table style=" font-size: 14px; font-family: sans-serif; border-collapse: collapse; width: 100%; border-top: 1px solid #000000; margin-top: 10px;">
+					<tr>
+						<td width="50%"><strong>PAY SUMMARY</strong></td>
+						<td width="40%" style="text-align:right; padding-top: 10px;padding-bottom:10px;">ORDER PAY:</td>
+						<td width="10%" style="text-align:right; padding-top: 10px;padding-bottom:10px;">&nbsp;<?php echo esc_html( '$' . $helper->format_currency( $month_total, false ) ); ?></td>
+					</tr>
+					<tr>
+						<td width="50%"></td>
+						<td width="40%" style="text-align:right; padding-top: 10px;padding-bottom:10px;">TOTAL GROSS EARNINGS:</td>
+						<td width="10%" style="text-align:right; padding-top: 10px;padding-bottom:10px;">&nbsp;<?php echo esc_html( '$' . $helper->format_currency( $month_total, false ) ); ?></td>
+					</tr>
+					<tr>
+						<td width="50%"></td>
+						<td width="40%" style="text-align:right; padding-top: 10px;padding-bottom:10px;">NET PAY:</td>
+						<td width="10%" style="text-align:right; padding-top: 10px;padding-bottom:10px;">&nbsp;<?php echo esc_html( '$' . $helper->format_currency( $month_total, false ) ); ?></td>
+					</tr>
+				</table>
+
+				<table
+				style=" font-size: 14px; margin-top: 20px; font-family: sans-serif; border-collapse: collapse; width: 100%; border-top: 1px solid #000000; border-bottom: 1px solid #000000;">
+			<tr width="100%">
+				<td width="100%" style=" font-size: 14px; text-align: center; padding-top: 10px;padding-bottom:10px;">
+					<p style=" font-size: 14px;
+						width: 100%;
+						display: block;
+					    color: #000000;
+					    text-align: center;
+					    font-family: sans-serif, areal;
+					    font-weight: 600;">
+						<strong>
+							DIRECT DEPOSIT DISTRIBUTION
+						</strong>
+					</p>
+				</td>
+			</tr>
+
+		</table>
+
+		<table style=" font-size: 18px;font-family: sans-serif; border-collapse: collapse; width: 100%;">
+			<tr>
+				<td width="22.5%" style=" font-size: 14px;text-align: center">Acct type</td>
+				<td width="22.5%" style=" font-size: 14px;text-align: center">Bank ABA #</td>
+				<td width="22.5%" style=" font-size: 14px;text-align: center">Acct number</td>
+				<td width="22.5%" style=" font-size: 14px;text-align: right;">Acct distribution</td>
+				<td width="10%" style=" font-size: 14px;padding-top: 10px;padding-bottom:10px; text-align: right;">
+					<?php echo esc_html( '$' . $helper->format_currency( $month_total, false ) ); ?>
+				</td>
+			</tr>
+			<tr>
+				<td width="22.5%" style=" font-size: 14px;text-align: center">
+			Checking
+				</td>
+				<td width="22.5%" style=" font-size: 14px;text-align: center">
+				
+				</td>
+				<td width="22.5%" style=" font-size: 14px;text-align: center">******
+				
+				</td>
+				<td width="22.5%" style=" font-size: 14px;text-align: right;">
+			100%
+				</td>
+				<td width="10%" style=" font-size: 14px;padding-top: 10px;padding-bottom:10px; text-align: right;">
+					<?php echo esc_html( '$' . $helper->format_currency( $month_total, false ) ); ?>
+				</td>
+			</tr>
+		</table>
+
+		<table
+				style=" font-size: 14px;margin-top: 20px; font-family: sans-serif; border-collapse: collapse; width: 100%; border-top: 1px solid #000000; border-bottom: 1px solid #000000;">
+			<tr width="100%">
+				<td width="100%" style=" font-size: 14px;text-align: center; padding-top: 10px;padding-bottom:10px;">
+					<p style=" font-size: 14px;
+						width: 100%;
+						display: block;
+					    color: #000000;
+					    text-align: center;
+					    font-family: sans-serif, areal;
+					    font-weight: 600;">
+						<strong>
+							DISPATCH SUMMARY
+						</strong>
+					</p>
+				</td>
+			</tr>
+		</table>
+		<table style=" font-size: 14px; font-family: sans-serif; border-collapse: collapse; width: 100%;">
+			<tr>
+				<td width="90%" style=" font-size: 14px; padding-top: 10px;padding-bottom:10px; text-align: right;">
+					ORDERS:
+				</td>
+				<td width="10%" style=" font-size: 14px; padding-top: 10px;padding-bottom:10px; text-align: right;">
+					<?php echo esc_html( sizeof( $rows ) ); ?>
+				</td>
+			</tr>
+			<tr>
+				<td width="90%" style=" font-size: 14px; padding-top: 10px;padding-bottom:10px; text-align: right;">
+					LOADED MILES:
+				</td>
+				<td width="10%" style=" font-size: 14px; padding-top: 10px;padding-bottom:10px; text-align: right;">
+				
+				</td>
+			</tr>
+			<tr>
+				<td width="90%" style=" font-size: 14px; padding-top: 10px;padding-bottom:10px; text-align: right;">
+					EMPTY MILES:
+				</td>
+				<td width="10%" style=" font-size: 14px; padding-top: 10px;padding-bottom:10px; text-align: right;">
+					0
+				</td>
+			</tr>
+			<tr>
+				<td width="90%" style=" font-size: 14px; padding-top: 10px;padding-bottom:10px; text-align: right;">
+					TOTAL MILES:
+				</td>
+				<td width="10%" style=" font-size: 14px; padding-top: 10px;padding-bottom:10px; text-align: right;">
+				
+				</td>
+			</tr>
+		</table>
+
+		<table
+				style=" font-size: 14px;margin-top: 20px; font-family: sans-serif; border-collapse: collapse; width: 100%; border-top: 1px solid #000000; border-bottom: 1px solid #000000;">
+			<tr width="100%">
+				<td width="100%" style=" font-size: 14px;text-align: center; padding-top: 10px;padding-bottom:10px;">
+					<p style=" font-size: 14px;
+						width: 100%;
+						display: block;
+					    color: #000000;
+					    text-align: center;
+					    font-family: sans-serif, areal;
+					    font-weight: 600;">
+						<strong>
+							YTD SUMMARY
+						</strong>
+					</p>
+				</td>
+			</tr>
+		</table>
+
+		<table style=" font-size: 14px; font-family: sans-serif; border-collapse: collapse; width: 100%;">
+			<tr>
+				<td width="85%" style="font-size: 14px; padding-top: 10px;padding-bottom:10px; text-align: right;">
+					<strong>EARNINGS:</strong>
+				</td>
+				<td width="15%" style=" font-size: 14px; padding-top: 10px;padding-bottom:10px; text-align: right;">
+					<strong>
+				<?php echo esc_html( '$' . $helper->format_currency( $month_total, false ) ); ?>
+					</strong></td>
+			</tr>
+			<tr>
+				<td width="85%" style="font-size: 14px; padding-top: 10px;padding-bottom:10px; text-align: left;">
+					<p>
+				ODYSSEIA INC<br>
+				521 S Port St.<br>
+				Baltimore, MD 21224
+					</p>
+				</td>
+			</tr>
+		</table>
+			</div>
+		</div>
+		<?php
+		return ob_get_clean();
+	}
+
+	/**
+	 * Generate PDF from HTML content
+	 */
+	private function generate_pdf_from_html( $html_content, $filename ) {
+		try {
+			$mpdf = new \Mpdf\Mpdf();
+			$mpdf->AddPage( '', '', '', '', '', 5, 5, 5, 5, 5, 5 );
+			$mpdf->WriteHTML( $html_content );
+			
+			// Create temporary file to get PDF content
+			$temp_file = tempnam( sys_get_temp_dir(), 'pdf_' );
+			$mpdf->Output( $temp_file, "F" );
+			
+			// Read PDF content
+			$pdf_content = file_get_contents( $temp_file );
+			
+			// Clean up temp file
+			unlink( $temp_file );
+			
+			return $pdf_content;
+		} catch ( Exception $e ) {
+			error_log( 'PDF generation error: ' . $e->getMessage() );
+			return false;
+		}
+	}
+
+	/**
+	 * Generate PDF for a single driver with proper folder structure
+	 */
+	private function generate_driver_pdf_with_structure( $driver_id ) {
+		global $wpdb;
+		$table_summary = $wpdb->prefix . 'settlement_summary';
+		
+		// Debug: Check table structure
+		$table_columns = $wpdb->get_col( "DESCRIBE {$table_summary}" );
+		error_log( "TMS PDF Generation: Table columns: " . implode( ', ', $table_columns ) );
+		
+		// Get driver info
+		$driver_info = $wpdb->get_row(
+			$wpdb->prepare(
+				"SELECT id_driver, MAX(driver_name) AS driver_name
+				 FROM {$table_summary}
+				 WHERE id_driver = %d
+				 GROUP BY id_driver",
+				$driver_id
+			),
+			ARRAY_A
+		);
+
+		if ( ! $driver_info ) {
+			return [ 'success' => false, 'message' => 'Driver not found' ];
+		}
+
+		// Get available years for this driver
+		$years = $wpdb->get_col(
+			$wpdb->prepare(
+				"SELECT DISTINCT YEAR(COALESCE(delivery_date, pick_up_date)) as year
+				 FROM {$table_summary}
+				 WHERE id_driver = %d
+				 AND (delivery_date IS NOT NULL OR pick_up_date IS NOT NULL)
+				 AND delivery_date != '0000-00-00' AND pick_up_date != '0000-00-00'
+				 AND YEAR(COALESCE(delivery_date, pick_up_date)) > 0
+				 ORDER BY year DESC",
+				$driver_id
+			)
+		);
+
+		if ( empty( $years ) ) {
+			// Debug: Check if driver has any records at all
+			$total_records = $wpdb->get_var(
+				$wpdb->prepare(
+					"SELECT COUNT(*) FROM {$table_summary} WHERE id_driver = %d",
+					$driver_id
+				)
+			);
+			
+			error_log( "TMS PDF Generation: Driver {$driver_id} has {$total_records} total records" );
+			
+			return [ 'success' => false, 'message' => "No settlement data found for driver (total records: {$total_records})" ];
+		}
+
+		$upload_dir = wp_get_upload_dir();
+		$base_dir = $upload_dir['basedir'] . '/documents-generate';
+		$driver_dir = $base_dir . '/' . $driver_id;
+		
+		// Create driver directory
+		if ( ! file_exists( $driver_dir ) ) {
+			wp_mkdir_p( $driver_dir );
+		}
+
+		$files_created = [];
+		$month_names = [
+			1 => 'january', 2 => 'february', 3 => 'march', 4 => 'april',
+			5 => 'may', 6 => 'june', 7 => 'july', 8 => 'august',
+			9 => 'september', 10 => 'october', 11 => 'november', 12 => 'december'
+		];
+
+		foreach ( $years as $year ) {
+			$year_dir = $driver_dir . '/' . $year;
+			
+			// Create year directory
+			if ( ! file_exists( $year_dir ) ) {
+				wp_mkdir_p( $year_dir );
+			}
+
+			// Generate PDF for each month
+			for ( $month = 1; $month <= 12; $month++ ) {
+				$month_name = $month_names[ $month ];
+				$filename = $month_name . '-' . $year . '.pdf';
+				$filepath = $year_dir . '/' . $filename;
+
+				// Check if file already exists
+				if ( file_exists( $filepath ) ) {
+					continue;
+				}
+
+				// Generate HTML for this specific month and year
+				$html_content = $this->render_driver_settlement_by_month_year( $driver_id, $year, $month );
+				
+				if ( $html_content ) {
+					// Convert HTML to PDF
+					$pdf_content = $this->generate_pdf_from_html( $html_content, $filename );
+					
+					if ( $pdf_content ) {
+						// Save PDF content to file
+						file_put_contents( $filepath, $pdf_content );
+						$files_created[] = $filepath;
+					}
+				}
+			}
+		}
+
+		return [
+			'success' => true,
+			'message' => 'PDFs generated successfully',
+			'files_created' => $files_created,
+			'driver_name' => $driver_info['driver_name']
+		];
 	}
 }

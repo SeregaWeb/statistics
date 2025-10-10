@@ -6,6 +6,11 @@
  * @since 4.4.0
  */
 
+// Enqueue jQuery in head for this page
+add_action( 'wp_head', function() {
+	wp_enqueue_script( 'jquery' );
+}, 1 );
+
 get_header();
 
 global $global_options;

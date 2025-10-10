@@ -7717,7 +7717,6 @@ var modalLogsInit = function modalLogsInit(ajaxUrl) {
   var openModalButtons = document.querySelectorAll('.js-open-log-modal');
   openModalButtons.forEach(function (button) {
     button.addEventListener('click', function (event) {
-      var _a;
       var target = event.currentTarget;
       var postId = target.getAttribute('data-post-id');
       if (postId) {
@@ -7725,12 +7724,18 @@ var modalLogsInit = function modalLogsInit(ajaxUrl) {
         if (modalPostIdInput) {
           modalPostIdInput.value = postId;
         }
-        var logWrapper = (_a = target.closest('.d-flex.flex-column.gap-1')) === null || _a === void 0 ? void 0 : _a.querySelector('.js-log-wrapper');
-        if (logWrapper) {
+        var rowRoot = target.closest('.d-flex.flex-column.gap-1');
+        var logWrapper = rowRoot === null || rowRoot === void 0 ? void 0 : rowRoot.querySelector('.js-log-wrapper');
+        var pinnedWrapper = rowRoot === null || rowRoot === void 0 ? void 0 : rowRoot.querySelector('.js-pinned-wrapper');
+        if (logWrapper || pinnedWrapper) {
           var modal = document.getElementById('addLogModal');
           if (modal) {
-            modal.setAttribute('data-target-log-wrapper', '');
-            modal.targetLogWrapper = logWrapper;
+            if (logWrapper) {
+              modal.targetLogWrapper = logWrapper;
+            }
+            if (pinnedWrapper) {
+              modal.targetPinnedWrapper = pinnedWrapper;
+            }
           }
         }
       }
@@ -7741,7 +7746,16 @@ var modalLogsInit = function modalLogsInit(ajaxUrl) {
     event.preventDefault();
     var target = event.target;
     var form = new FormData(target);
-    var action = 'add_user_log';
+    var pinnedCheckbox = target.querySelector('input[name="is_pinned"]');
+    var isPinned = pinnedCheckbox && pinnedCheckbox.checked;
+    if (isPinned) {
+      var messageTextarea = target.querySelector('#logMessageTextarea');
+      var messageValue = messageTextarea ? messageTextarea.value : '';
+      form.set('pinned_message', messageValue);
+    }
+    var fltInput = target.querySelector('input[name="flt"]');
+    var isFlt = !!(fltInput && fltInput.value);
+    var action = isPinned ? isFlt ? 'add_pinned_message_flt' : 'add_pinned_message' : 'add_user_log';
     form.append('action', action);
     var options = {
       method: 'POST',
@@ -7756,16 +7770,29 @@ var modalLogsInit = function modalLogsInit(ajaxUrl) {
       return res.json();
     }).then(function (requestStatus) {
       if (requestStatus.success) {
-        (0,_info_messages__WEBPACK_IMPORTED_MODULE_0__.printMessage)('Log message added successfully', 'success', 3000);
+        var successMessage = isPinned ? 'Pinned message added successfully' : 'Log message added successfully';
+        (0,_info_messages__WEBPACK_IMPORTED_MODULE_0__.printMessage)(successMessage, 'success', 3000);
         target.reset();
-        var modalForLog = document.getElementById('addLogModal');
-        if (modalForLog && modalForLog.targetLogWrapper && requestStatus.data.template) {
-          var logWrapper = modalForLog.targetLogWrapper;
-          logWrapper.innerHTML = requestStatus.data.template;
+        if (isPinned) {
+          if (requestStatus.data.pinned) {
+            var modalForLog = document.getElementById('addLogModal');
+            var pinnedWrapper = modalForLog ? modalForLog.targetPinnedWrapper : undefined;
+            if (pinnedWrapper) {
+              var pinned = requestStatus.data.pinned;
+              var pinnedHtml = "\n                                    <div class=\"pinned-message\">\n                                        <div class=\"d-flex justify-content-between align-items-center pinned-message__header\">\n                                            <span class=\"d-flex align-items-center \">\n                                                <svg fill=\"#000000\" width=\"18px\" height=\"18px\" viewBox=\"0 0 32 32\" version=\"1.1\" xmlns=\"http://www.w3.org/2000/svg\">\n                                                    <path d=\"M18.973 17.802l-7.794-4.5c-0.956-0.553-2.18-0.225-2.732 0.731-0.552 0.957-0.224 2.18 0.732 2.732l7.793 4.5c0.957 0.553 2.18 0.225 2.732-0.732 0.554-0.956 0.226-2.179-0.731-2.731zM12.545 12.936l6.062 3.5 2.062-5.738-4.186-2.416-3.938 4.654zM8.076 27.676l5.799-7.044-2.598-1.5-3.201 8.544zM23.174 7.525l-5.195-3c-0.718-0.414-1.635-0.169-2.049 0.549-0.415 0.718-0.168 1.635 0.549 2.049l5.196 3c0.718 0.414 1.635 0.169 2.049-0.549s0.168-1.635-0.55-2.049z\"></path>\n                                                </svg>\n                                                ".concat(pinned.full_name || '', "\n                                            </span>\n                                            <span>").concat(pinned.time_pinned || '', "</span>\n                                        </div>\n                                        <div class=\"pinned-message__content\">\n                                            ").concat(pinned.pinned_message || '', "\n                                        </div>\n                                    </div>");
+              pinnedWrapper.innerHTML = pinnedHtml;
+            }
+          }
         } else {
-          var logContainer = document.querySelector('.js-log-container');
-          if (logContainer && requestStatus.data.template) {
-            logContainer.innerHTML = requestStatus.data.template;
+          var _modalForLog = document.getElementById('addLogModal');
+          if (_modalForLog && _modalForLog.targetLogWrapper && requestStatus.data.template) {
+            var logWrapper = _modalForLog.targetLogWrapper;
+            logWrapper.innerHTML = requestStatus.data.template;
+          } else {
+            var logContainer = document.querySelector('.js-log-container');
+            if (logContainer && requestStatus.data.template) {
+              logContainer.innerHTML = requestStatus.data.template;
+            }
           }
         }
         var modal = document.getElementById('addLogModal');
@@ -7799,8 +7826,14 @@ var modalLogsInit = function modalLogsInit(ajaxUrl) {
             }
           }
         }
-        if (modal && modal.targetLogWrapper) {
-          delete modal.targetLogWrapper;
+        var modalRef = document.getElementById('addLogModal');
+        if (modalRef) {
+          if (modalRef.targetLogWrapper) {
+            delete modalRef.targetLogWrapper;
+          }
+          if (modalRef.targetPinnedWrapper) {
+            delete modalRef.targetPinnedWrapper;
+          }
         }
       } else {
         (0,_info_messages__WEBPACK_IMPORTED_MODULE_0__.printMessage)(requestStatus.data.message, 'danger', 8000);

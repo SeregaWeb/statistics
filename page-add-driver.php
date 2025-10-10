@@ -10,6 +10,7 @@ $dtiver       = new TMSDrivers();
 $helperDriver = new TMSDriversHelper();
 $helper       = new TMSReportsHelper();
 $TMSUsers     = new TMSUsers();
+$TMSReports   = new TMSReports();
 
 
 $disabled_tabs  = 'disabled';
@@ -450,6 +451,7 @@ $access_vehicle = $TMSUsers->check_user_role_access( [
 								'post_id'   => $post_id,
 								'user_id'   => get_current_user_id(),
 								'post_type' => 'driver',
+								'project'   => $TMSReports->project,
 							) ) );
 							?>
                         </div>

@@ -438,8 +438,8 @@ class TMSLogs extends TMSReports {
 		// Remove other common escaped characters
 		$message = str_replace( array( '\\\\', '\\n', '\\r', '\\t' ), array( '\\', "\n", "\r", "\t" ), $message );
 		
-		// Convert line breaks to HTML
-		$message = nl2br( esc_html( $message ) );
+		// Convert line breaks to HTML (but don't escape HTML tags)
+		$message = nl2br( $message );
 		
 		return $message;
 	}

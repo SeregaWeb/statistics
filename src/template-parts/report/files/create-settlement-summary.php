@@ -257,6 +257,65 @@ if ( $access ) {
 			</div>
 			<?php } ?>
 		</div>
+		
+		<?php if ( $access_csv_parser ) { ?>
+		<!-- Bulk PDF Generation Section -->
+		<div class="bulk-pdf-generation mt-4">
+			<div class="card">
+				<div class="card-header">
+					<h5 class="mb-0">Bulk PDF Generation</h5>
+				</div>
+				<div class="card-body">
+					<p class="text-muted">Generate PDF documents for all drivers with proper folder structure.</p>
+					<div class="bulk-generation-controls">
+						<button type="button" class="btn btn-success" id="start-bulk-generation">
+							<i class="fas fa-play"></i> Start Bulk Generation
+						</button>
+						<button type="button" class="btn btn-danger" id="stop-bulk-generation" style="display: none;">
+							<i class="fas fa-stop"></i> Stop Generation
+						</button>
+						<button type="button" class="btn btn-warning" id="reset-bulk-generation">
+							<i class="fas fa-refresh"></i> Reset Progress
+						</button>
+					</div>
+					
+					<!-- Progress Section -->
+					<div id="bulk-generation-progress" class="mt-3" style="display: none;">
+						<div class="progress mb-3">
+							<div class="progress-bar" role="progressbar" style="width: 0%" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">
+								<span class="progress-text">0%</span>
+							</div>
+						</div>
+						<div class="generation-stats">
+							<div class="row">
+								<div class="col-md-3">
+									<small class="text-muted">Total Drivers:</small>
+									<div class="fw-bold" id="total-drivers">0</div>
+								</div>
+								<div class="col-md-3">
+									<small class="text-muted">Completed:</small>
+									<div class="fw-bold text-success" id="completed-drivers">0</div>
+								</div>
+								<div class="col-md-3">
+									<small class="text-muted">Failed:</small>
+									<div class="fw-bold text-danger" id="failed-drivers">0</div>
+								</div>
+								<div class="col-md-3">
+									<small class="text-muted">Current:</small>
+									<div class="fw-bold text-info" id="current-driver">-</div>
+								</div>
+							</div>
+						</div>
+						<div class="generation-log mt-3">
+							<small class="text-muted">Generation Log:</small>
+							<div id="generation-log" class="bg-light p-2 rounded" style="max-height: 200px; overflow-y: auto; font-family: monospace; font-size: 12px;">
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+		<?php } ?>
 	</div>
 
 	<?php if ( $access_csv_parser ) { ?>
@@ -662,6 +721,394 @@ if ( $access ) {
 	
 	// Start initialization
 	initWhenReady();
+	
+	// Bulk PDF Generation functionality
+	let bulkGenerationActive = false;
+	let currentDriverIndex = 0;
+	let totalDrivers = 0;
+	let driversList = [];
+	
+	// Wait for jQuery to be available before setting up bulk generation
+	function initBulkGeneration() {
+		if (typeof $ !== 'undefined' && typeof jQuery !== 'undefined') {
+			// jQuery is available, use it
+			$(document).ready(function() {
+				// Start bulk generation
+				$('#start-bulk-generation').on('click', function() {
+					startBulkGeneration();
+				});
+				
+					// Stop bulk generation
+					$('#stop-bulk-generation').on('click', function() {
+						stopBulkGeneration();
+					});
+					
+					// Reset bulk generation progress
+					$('#reset-bulk-generation').on('click', function() {
+						resetBulkGeneration();
+					});
+			});
+		} else {
+			// Fallback to vanilla JavaScript if jQuery is not available
+			const startBtn = document.getElementById('start-bulk-generation');
+			const stopBtn = document.getElementById('stop-bulk-generation');
+			
+			if (startBtn) {
+				startBtn.addEventListener('click', startBulkGeneration);
+			}
+			
+			if (stopBtn) {
+				stopBtn.addEventListener('click', stopBulkGeneration);
+			}
+			
+			const resetBtn = document.getElementById('reset-bulk-generation');
+			if (resetBtn) {
+				resetBtn.addEventListener('click', resetBulkGeneration);
+			}
+		}
+	}
+	
+	// Initialize bulk generation when DOM is ready
+	if (document.readyState === 'loading') {
+		document.addEventListener('DOMContentLoaded', initBulkGeneration);
+	} else {
+		// DOM is already ready
+		initBulkGeneration();
+	}
+	
+	function startBulkGeneration() {
+		// Show progress section
+		if (typeof $ !== 'undefined' && typeof jQuery !== 'undefined') {
+			// Use jQuery
+			$('#bulk-generation-progress').show();
+			$('#start-bulk-generation').hide();
+			$('#stop-bulk-generation').show();
+		} else {
+			// Use vanilla JavaScript
+			const progressSection = document.getElementById('bulk-generation-progress');
+			const startBtn = document.getElementById('start-bulk-generation');
+			const stopBtn = document.getElementById('stop-bulk-generation');
+			
+			if (progressSection) progressSection.style.display = 'block';
+			if (startBtn) startBtn.style.display = 'none';
+			if (stopBtn) stopBtn.style.display = 'inline-block';
+		}
+		
+		// Reset progress
+		updateProgress(0, 0, 0, '-');
+		addLog('Starting bulk PDF generation...');
+		
+		// Start the process
+		if (typeof $ !== 'undefined' && typeof jQuery !== 'undefined') {
+			// Use jQuery AJAX
+			$.ajax({
+				url: ajaxurl,
+				type: 'POST',
+				data: {
+					action: 'start_bulk_pdf_generation',
+					nonce: settlement_nonce
+				},
+				success: function(response) {
+					handleStartResponse(response);
+				},
+				error: function() {
+					addLog('Network error occurred', 'error');
+					stopBulkGeneration();
+				}
+			});
+		} else {
+			// Use fetch API as fallback
+			const formData = new FormData();
+			formData.append('action', 'start_bulk_pdf_generation');
+			formData.append('nonce', settlement_nonce);
+			
+			fetch(ajaxurl, {
+				method: 'POST',
+				body: formData
+			})
+			.then(response => response.json())
+			.then(data => handleStartResponse(data))
+			.catch(error => {
+				addLog('Network error occurred', 'error');
+				stopBulkGeneration();
+			});
+		}
+		
+			function handleStartResponse(response) {
+				if (response.success) {
+					if (response.data.resume) {
+						// Resume existing generation
+						totalDrivers = response.data.total_drivers;
+						driversList = response.data.progress.drivers;
+						currentDriverIndex = response.data.progress.current_driver || 0;
+						bulkGenerationActive = true;
+						
+						const completed = response.data.progress.completed_drivers || 0;
+						const failed = response.data.progress.failed_drivers || 0;
+						
+						updateProgress(
+							Math.round((completed / totalDrivers) * 100),
+							completed,
+							failed,
+							'-'
+						);
+						
+						addLog(`Resuming generation: ${completed}/${totalDrivers} drivers completed`);
+						
+						// Start processing drivers
+						processNextDriver();
+					} else {
+						// Start new generation
+						totalDrivers = response.data.total_drivers;
+						driversList = response.data.progress.drivers;
+						currentDriverIndex = 0;
+						bulkGenerationActive = true;
+						
+						const completed = response.data.completed_drivers || 0;
+						const remaining = response.data.remaining_drivers || totalDrivers;
+						
+						updateProgress(0, completed, 0, '-');
+						
+						if (completed > 0) {
+							addLog(`Found ${totalDrivers} drivers. ${completed} already completed, ${remaining} remaining. Starting generation...`);
+						} else {
+							addLog(`Found ${totalDrivers} drivers. Starting generation...`);
+						}
+						
+						// Start processing drivers
+						processNextDriver();
+					}
+				} else {
+					addLog('Error: ' + response.data, 'error');
+					stopBulkGeneration();
+				}
+			}
+	}
+	
+	function processNextDriver() {
+		if (typeof $ === 'undefined' && typeof jQuery === 'undefined') {
+			console.error('jQuery is not available');
+			return;
+		}
+		
+		if (!bulkGenerationActive || currentDriverIndex >= driversList.length) {
+			// Generation completed
+			addLog('Bulk generation completed!', 'success');
+			stopBulkGeneration();
+			return;
+		}
+		
+		const driver = driversList[currentDriverIndex];
+		const driverName = driver.driver_name || `Driver #${driver.id_driver}`;
+		
+		addLog(`Processing driver: ${driverName} (${currentDriverIndex + 1}/${totalDrivers})`);
+		updateProgress(
+			Math.round((currentDriverIndex / totalDrivers) * 100),
+			currentDriverIndex,
+			0,
+			driverName
+		);
+		
+		// Generate PDF for current driver
+		if (typeof $ !== 'undefined' && typeof jQuery !== 'undefined') {
+			// Use jQuery AJAX
+			$.ajax({
+				url: ajaxurl,
+				type: 'POST',
+				data: {
+					action: 'generate_single_driver_pdf',
+					driver_id: driver.id_driver,
+					nonce: settlement_nonce
+				},
+				success: function(response) {
+					handleDriverResponse(response, driverName);
+				},
+				error: function() {
+					addLog(`✗ ${driverName}: Network error`, 'error');
+					currentDriverIndex++;
+					setTimeout(processNextDriver, 1000);
+				}
+			});
+		} else {
+			// Use fetch API as fallback
+			const formData = new FormData();
+			formData.append('action', 'generate_single_driver_pdf');
+			formData.append('driver_id', driver.id_driver);
+			formData.append('nonce', settlement_nonce);
+			
+			fetch(ajaxurl, {
+				method: 'POST',
+				body: formData
+			})
+			.then(response => response.json())
+			.then(data => handleDriverResponse(data, driverName))
+			.catch(error => {
+				addLog(`✗ ${driverName}: Network error`, 'error');
+				currentDriverIndex++;
+				setTimeout(processNextDriver, 1000);
+			});
+		}
+		
+		function handleDriverResponse(response, driverName) {
+			if (response.success) {
+				const filesCreated = response.data.files_created ? response.data.files_created.length : 0;
+				addLog(`✓ ${driverName}: ${filesCreated} files created`, 'success');
+			} else {
+				addLog(`✗ ${driverName}: ${response.data.message}`, 'error');
+			}
+			
+			// Move to next driver
+			currentDriverIndex++;
+			
+			// Add small delay to prevent overwhelming the server
+			setTimeout(processNextDriver, 1000);
+		}
+	}
+	
+	function stopBulkGeneration() {
+		bulkGenerationActive = false;
+		
+		if (typeof $ !== 'undefined' && typeof jQuery !== 'undefined') {
+			// Use jQuery
+			$('#start-bulk-generation').show();
+			$('#stop-bulk-generation').hide();
+		} else {
+			// Use vanilla JavaScript
+			const startBtn = document.getElementById('start-bulk-generation');
+			const stopBtn = document.getElementById('stop-bulk-generation');
+			
+			if (startBtn) startBtn.style.display = 'inline-block';
+			if (stopBtn) stopBtn.style.display = 'none';
+		}
+		
+		addLog('Generation stopped by user', 'warning');
+	}
+	
+	function resetBulkGeneration() {
+		if (confirm('Are you sure you want to reset the generation progress? This will allow you to start from the beginning.')) {
+			if (typeof $ !== 'undefined' && typeof jQuery !== 'undefined') {
+				// Use jQuery AJAX
+				$.ajax({
+					url: ajaxurl,
+					type: 'POST',
+					data: {
+						action: 'reset_bulk_generation_progress',
+						nonce: settlement_nonce
+					},
+					success: function(response) {
+						if (response.success) {
+							addLog('Progress reset successfully', 'success');
+							// Reset UI
+							bulkGenerationActive = false;
+							currentDriverIndex = 0;
+							totalDrivers = 0;
+							driversList = [];
+							
+							$('#start-bulk-generation').show();
+							$('#stop-bulk-generation').hide();
+							$('#bulk-generation-progress').hide();
+							
+							updateProgress(0, 0, 0, '-');
+						} else {
+							addLog('Error resetting progress: ' + response.data, 'error');
+						}
+					},
+					error: function() {
+						addLog('Network error occurred while resetting progress', 'error');
+					}
+				});
+			} else {
+				// Use fetch API as fallback
+				const formData = new FormData();
+				formData.append('action', 'reset_bulk_generation_progress');
+				formData.append('nonce', settlement_nonce);
+				
+				fetch(ajaxurl, {
+					method: 'POST',
+					body: formData
+				})
+				.then(response => response.json())
+				.then(data => {
+					if (data.success) {
+						addLog('Progress reset successfully', 'success');
+						// Reset UI
+						bulkGenerationActive = false;
+						currentDriverIndex = 0;
+						totalDrivers = 0;
+						driversList = [];
+						
+						const startBtn = document.getElementById('start-bulk-generation');
+						const stopBtn = document.getElementById('stop-bulk-generation');
+						const progressSection = document.getElementById('bulk-generation-progress');
+						
+						if (startBtn) startBtn.style.display = 'inline-block';
+						if (stopBtn) stopBtn.style.display = 'none';
+						if (progressSection) progressSection.style.display = 'none';
+						
+						updateProgress(0, 0, 0, '-');
+					} else {
+						addLog('Error resetting progress: ' + data.data, 'error');
+					}
+				})
+				.catch(error => {
+					addLog('Network error occurred while resetting progress', 'error');
+				});
+			}
+		}
+	}
+	
+	function updateProgress(percentage, completed, failed, current) {
+		if (typeof $ !== 'undefined' && typeof jQuery !== 'undefined') {
+			// Use jQuery
+			$('.progress-bar').css('width', percentage + '%').attr('aria-valuenow', percentage);
+			$('.progress-text').text(percentage + '%');
+			$('#total-drivers').text(totalDrivers);
+			$('#completed-drivers').text(completed);
+			$('#failed-drivers').text(failed);
+			$('#current-driver').text(current);
+		} else {
+			// Use vanilla JavaScript
+			const progressBar = document.querySelector('.progress-bar');
+			const progressText = document.querySelector('.progress-text');
+			const totalDriversEl = document.getElementById('total-drivers');
+			const completedDriversEl = document.getElementById('completed-drivers');
+			const failedDriversEl = document.getElementById('failed-drivers');
+			const currentDriverEl = document.getElementById('current-driver');
+			
+			if (progressBar) {
+				progressBar.style.width = percentage + '%';
+				progressBar.setAttribute('aria-valuenow', percentage);
+			}
+			if (progressText) progressText.textContent = percentage + '%';
+			if (totalDriversEl) totalDriversEl.textContent = totalDrivers;
+			if (completedDriversEl) completedDriversEl.textContent = completed;
+			if (failedDriversEl) failedDriversEl.textContent = failed;
+			if (currentDriverEl) currentDriverEl.textContent = current;
+		}
+	}
+	
+	function addLog(message, type = 'info') {
+		const timestamp = new Date().toLocaleTimeString();
+		const logEntry = `[${timestamp}] ${message}`;
+		
+		if (typeof $ !== 'undefined' && typeof jQuery !== 'undefined') {
+			// Use jQuery
+			const logElement = $(`<div class="log-entry log-${type}">${logEntry}</div>`);
+			$('#generation-log').append(logEntry + '\n');
+			$('#generation-log').scrollTop($('#generation-log')[0].scrollHeight);
+		} else {
+			// Use vanilla JavaScript
+			const logContainer = document.getElementById('generation-log');
+			if (logContainer) {
+				logContainer.textContent += logEntry + '\n';
+				logContainer.scrollTop = logContainer.scrollHeight;
+			} else {
+				// Fallback to console if element not found
+				console.log(logEntry);
+			}
+		}
+	}
+	
 	})();
 	</script>
 
@@ -705,6 +1152,100 @@ if ( $access ) {
 		padding: 20px;
 		background: #f8f9fa;
 		border-radius: 5px;
+	}
+	
+	/* Bulk PDF Generation Styles */
+	.bulk-pdf-generation .card {
+		border: 1px solid #dee2e6;
+		border-radius: 0.375rem;
+	}
+	
+	.bulk-pdf-generation .card-header {
+		background-color: #f8f9fa;
+		border-bottom: 1px solid #dee2e6;
+		padding: 1rem;
+	}
+	
+	.bulk-pdf-generation .card-body {
+		padding: 1.5rem;
+	}
+	
+	.bulk-generation-controls {
+		margin-bottom: 1rem;
+	}
+	
+	.bulk-generation-controls .btn {
+		margin-right: 0.5rem;
+	}
+	
+	.progress {
+		height: 1.5rem;
+		background-color: #e9ecef;
+		border-radius: 0.375rem;
+		overflow: hidden;
+	}
+	
+	.progress-bar {
+		background-color: #28a745;
+		transition: width 0.3s ease;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		color: white;
+		font-weight: bold;
+		font-size: 0.875rem;
+	}
+	
+	.generation-stats {
+		background-color: #f8f9fa;
+		padding: 1rem;
+		border-radius: 0.375rem;
+		margin-bottom: 1rem;
+	}
+	
+	.generation-stats .col-md-3 {
+		text-align: center;
+	}
+	
+	.generation-stats small {
+		display: block;
+		margin-bottom: 0.25rem;
+	}
+	
+	.generation-stats .fw-bold {
+		font-size: 1.25rem;
+	}
+	
+	#generation-log {
+		background-color: #f8f9fa;
+		border: 1px solid #dee2e6;
+		border-radius: 0.375rem;
+		padding: 1rem;
+		font-family: 'Courier New', monospace;
+		font-size: 0.875rem;
+		line-height: 1.4;
+		white-space: pre-wrap;
+		word-wrap: break-word;
+	}
+	
+	.log-entry {
+		margin-bottom: 0.25rem;
+	}
+	
+	.log-success {
+		color: #28a745;
+	}
+	
+	.log-error {
+		color: #dc3545;
+	}
+	
+	.log-warning {
+		color: #ffc107;
+	}
+	
+	.log-info {
+		color: #17a2b8;
 	}
 	</style>
 	<?php } ?>

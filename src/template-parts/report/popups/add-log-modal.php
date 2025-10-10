@@ -41,6 +41,12 @@ if ( ! $project ) {
                     </div>
                 </div>
                 <div class="modal-footer">
+                    <div class="form-check ">
+                        <input class="form-check-input" type="checkbox" name="is_pinned" id="pinnedMessageCheck" value="1">
+                        <label class="form-check-label" for="pinnedMessageCheck">
+                            Pin this message
+                        </label>
+                    </div>
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
                     <button type="submit" class="btn btn-primary">Send</button>
                 </div>

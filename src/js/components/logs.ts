@@ -108,14 +108,18 @@ export const modalLogsInit = (ajaxUrl) => {
                 }
                 
                 // Store reference to the log wrapper for this specific row
-                const logWrapper = target.closest('.d-flex.flex-column.gap-1')?.querySelector('.js-log-wrapper') as HTMLElement;
-                if (logWrapper) {
-                    // Store the log wrapper reference in the modal for later use
+                const rowRoot = target.closest('.d-flex.flex-column.gap-1') as HTMLElement | null;
+                const logWrapper = rowRoot?.querySelector('.js-log-wrapper') as HTMLElement | null;
+                const pinnedWrapper = rowRoot?.querySelector('.js-pinned-wrapper') as HTMLElement | null;
+                if (logWrapper || pinnedWrapper) {
                     const modal = document.getElementById('addLogModal');
                     if (modal) {
-                        modal.setAttribute('data-target-log-wrapper', '');
-                        // Store reference in a way we can access it later
-                        (modal as any).targetLogWrapper = logWrapper;
+                        if (logWrapper) {
+                            (modal as any).targetLogWrapper = logWrapper;
+                        }
+                        if (pinnedWrapper) {
+                            (modal as any).targetPinnedWrapper = pinnedWrapper;
+                        }
                     }
                 }
             }
@@ -131,7 +135,26 @@ export const modalLogsInit = (ajaxUrl) => {
             const { target } = event;
             // @ts-ignore
             const form = new FormData(target);
-            const action = 'add_user_log';
+            
+            // Check if pinned message checkbox is checked (renamed to is_pinned)
+            const pinnedCheckbox = (target as HTMLFormElement).querySelector('input[name="is_pinned"]') as HTMLInputElement;
+            const isPinned = pinnedCheckbox && pinnedCheckbox.checked;
+            
+            // If pinned, send pinned_message with textarea value
+            if (isPinned) {
+                const messageTextarea = (target as HTMLFormElement).querySelector('#logMessageTextarea') as HTMLTextAreaElement;
+                const messageValue = messageTextarea ? messageTextarea.value : '';
+                form.set('pinned_message', messageValue);
+            }
+            
+            // Detect FLT context
+            const fltInput = (target as HTMLFormElement).querySelector('input[name="flt"]') as HTMLInputElement | null;
+            const isFlt = !!(fltInput && fltInput.value);
+            
+            // Set the appropriate action based on checkbox and FLT
+            const action = isPinned
+                ? (isFlt ? 'add_pinned_message_flt' : 'add_pinned_message')
+                : 'add_user_log';
             // @ts-ignore
             form.append('action', action);
             
@@ -152,20 +175,49 @@ export const modalLogsInit = (ajaxUrl) => {
                 .then((res) => res.json())
                 .then((requestStatus) => {
                     if (requestStatus.success) {
-                        printMessage('Log message added successfully', 'success', 3000);
+                        const successMessage = isPinned ? 'Pinned message added successfully' : 'Log message added successfully';
+                        printMessage(successMessage, 'success', 3000);
                         // @ts-ignore
                         target.reset();
                         
-                        // Replace the log entry in the specific log wrapper (keep only the latest message)
-                        const modalForLog = document.getElementById('addLogModal');
-                        if (modalForLog && (modalForLog as any).targetLogWrapper && requestStatus.data.template) {
-                            const logWrapper = (modalForLog as any).targetLogWrapper as HTMLElement;
-                            logWrapper.innerHTML = requestStatus.data.template;
+                        if (isPinned) {
+                            // Handle pinned message response
+                            if (requestStatus.data.pinned) {
+                                const modalForLog = document.getElementById('addLogModal');
+                                const pinnedWrapper = modalForLog ? (modalForLog as any).targetPinnedWrapper as HTMLElement | undefined : undefined;
+                                if (pinnedWrapper) {
+                                    const { pinned } = requestStatus.data as any;
+                                    const pinnedHtml = `
+                                    <div class="pinned-message">
+                                        <div class="d-flex justify-content-between align-items-center pinned-message__header">
+                                            <span class="d-flex align-items-center ">
+                                                <svg fill="#000000" width="18px" height="18px" viewBox="0 0 32 32" version="1.1" xmlns="http://www.w3.org/2000/svg">
+                                                    <path d="M18.973 17.802l-7.794-4.5c-0.956-0.553-2.18-0.225-2.732 0.731-0.552 0.957-0.224 2.18 0.732 2.732l7.793 4.5c0.957 0.553 2.18 0.225 2.732-0.732 0.554-0.956 0.226-2.179-0.731-2.731zM12.545 12.936l6.062 3.5 2.062-5.738-4.186-2.416-3.938 4.654zM8.076 27.676l5.799-7.044-2.598-1.5-3.201 8.544zM23.174 7.525l-5.195-3c-0.718-0.414-1.635-0.169-2.049 0.549-0.415 0.718-0.168 1.635 0.549 2.049l5.196 3c0.718 0.414 1.635 0.169 2.049-0.549s0.168-1.635-0.55-2.049z"></path>
+                                                </svg>
+                                                ${pinned.full_name || ''}
+                                            </span>
+                                            <span>${pinned.time_pinned || ''}</span>
+                                        </div>
+                                        <div class="pinned-message__content">
+                                            ${pinned.pinned_message || ''}
+                                        </div>
+                                    </div>`;
+                                    pinnedWrapper.innerHTML = pinnedHtml;
+                                }
+                            }
                         } else {
-                            // Fallback: try to find any log container
-                            const logContainer = document.querySelector('.js-log-container');
-                            if (logContainer && requestStatus.data.template) {
-                                logContainer.innerHTML = requestStatus.data.template;
+                            // Handle regular log response
+                            // Replace the log entry in the specific log wrapper (keep only the latest message)
+                            const modalForLog = document.getElementById('addLogModal');
+                            if (modalForLog && (modalForLog as any).targetLogWrapper && requestStatus.data.template) {
+                                const logWrapper = (modalForLog as any).targetLogWrapper as HTMLElement;
+                                logWrapper.innerHTML = requestStatus.data.template;
+                            } else {
+                                // Fallback: try to find any log container
+                                const logContainer = document.querySelector('.js-log-container');
+                                if (logContainer && requestStatus.data.template) {
+                                    logContainer.innerHTML = requestStatus.data.template;
+                                }
                             }
                         }
                         // Close modal
@@ -208,9 +260,15 @@ export const modalLogsInit = (ajaxUrl) => {
                             }
                         }
                         
-                        // Clean up the reference to the log wrapper
-                        if (modal && (modal as any).targetLogWrapper) {
-                            delete (modal as any).targetLogWrapper;
+                        // Clean up the references
+                        const modalRef = document.getElementById('addLogModal');
+                        if (modalRef) {
+                            if ((modalRef as any).targetLogWrapper) {
+                                delete (modalRef as any).targetLogWrapper;
+                            }
+                            if ((modalRef as any).targetPinnedWrapper) {
+                                delete (modalRef as any).targetPinnedWrapper;
+                            }
                         }
                     } else {
                         printMessage(requestStatus.data.message, 'danger', 8000);

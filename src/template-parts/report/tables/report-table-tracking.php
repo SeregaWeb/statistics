@@ -229,12 +229,16 @@ if ( ! empty( $results ) ) :
                             <?php endif; ?>
                         </div>
 						<?php 
-						echo esc_html( get_template_part( TEMPLATE_PATH . 'common/pinned', 'message', array(
-							'id'        => $row[ 'id' ],
-							'meta'      => $meta,
-							'hide_ctrl' => true,
-						) ) );
 						?>
+						<div class="w-100 js-pinned-wrapper">
+							<?php echo esc_html( get_template_part( TEMPLATE_PATH . 'common/pinned', 'message', array(
+								'id'        => $row[ 'id' ],
+								'meta'      => $meta,
+								'hide_ctrl' => true,
+							) ) ); ?>
+						</div>
+						<?php 
+ 						?>
 
                     </div>
                 </td>

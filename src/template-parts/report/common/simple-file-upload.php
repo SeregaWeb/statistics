@@ -18,6 +18,7 @@
 
 // Set defaults
 $defaults = [
+    'full_only_view' => '',
     'field_name'     => '',
     'label'          => '',
     'file_value'     => null,
@@ -54,7 +55,7 @@ $helper = new TMSReportsHelper();
             </label>
             
             <?php if ( ! $args['file_value'] ): ?>
-                <button data-href="#<?php echo esc_attr( $args['popup_id'] ); ?>"
+                <button <?php echo $args['full_only_view'] ? 'disabled' : ''; ?> data-href="#<?php echo esc_attr( $args['popup_id'] ); ?>"
                         class="<?php echo esc_attr( $args['button_class'] ); ?> js-open-popup-activator mt-1">
                     <?php echo esc_html( $args['button_text'] ); ?>
                 </button>

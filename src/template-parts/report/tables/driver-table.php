@@ -8,10 +8,11 @@ $results       = get_field_value( $args, 'results' );
 $total_pages   = get_field_value( $args, 'total_pages' );
 $current_pages = get_field_value( $args, 'current_pages' );
 $is_draft      = get_field_value( $args, 'is_draft' );
+$is_archive    = get_field_value( $args, 'is_archive' );
 
 if ( ! empty( $results ) ) : ?>
 	
-	<?php if ( $driverHelper->can_copy_driver_phones() ): ?>
+	<?php if ( $driverHelper->can_copy_driver_phones() && !$is_archive && !$is_draft ): ?>
         <div class="mb-3 d-flex justify-content-end">
             <button type="button" class="btn btn-outline-primary" id="copy-driver-phones-btn">
                 Copy All Phone Numbers
@@ -34,7 +35,10 @@ if ( ! empty( $results ) ) : ?>
             <th scope="col">
                 Notes
             </th>
+            <?php if (!$is_archive): ?>
             <th scope="col">Status</th>
+            <?php endif; ?>
+
             <th scope="col"></th>
         </tr>
         </thead>
@@ -132,6 +136,11 @@ if ( ! empty( $results ) ) : ?>
 				
 				return 'btn-secondary'; // default grey
 			};
+
+
+            if ($is_archive) {
+                $show_controls = false;
+            }
 			?>
 
             <tr class="<?php echo $class_hide; ?>" data-driver-id="<?php echo $row[ 'id' ]; ?>">
@@ -269,12 +278,14 @@ if ( ! empty( $results ) ) : ?>
 
                 </td>
 
+                <?php if (!$is_archive): ?>
                 <td style="width: 100px;" class="<?php echo $driver_status ? $driver_status
 					: 'text-danger'; ?> driver-status"><?php echo $status_text; ?></td>
+                <?php endif; ?>
 
                 <td style="width: 92px;">
                     <div class="d-flex gap-1 align-items-center justify-content-end">
-                        <?php if ( !$is_hold ): ?>
+                        <?php if ( !$is_hold && !$is_archive ): ?>
                         <button class="btn btn-sm d-flex align-items-center justify-content-center js-quick-status-update"
                                 data-bs-toggle="modal"
                                 data-bs-target="#quickStatusUpdateModal"
@@ -298,6 +309,7 @@ if ( ! empty( $results ) ) : ?>
 						<?php echo esc_html( get_template_part( TEMPLATE_PATH . 'tables/control', 'dropdown-driver', [
 							'id'       => $row[ 'id' ],
 							'is_draft' => $is_draft,
+							'is_archive' => $is_archive,
 						] ) ); ?>
                     </div>
                 </td>
@@ -318,6 +330,7 @@ if ( ! empty( $results ) ) : ?>
 	<?php get_template_part( TEMPLATE_PATH . 'popups/quick-status-update-modal' ); ?>
     <?php get_template_part( TEMPLATE_PATH . 'popups/driver-notice' ); ?>
     <?php get_template_part( TEMPLATE_PATH . 'popups/driver-raiting' ); ?>
+    <?php get_template_part( TEMPLATE_PATH . 'popups/remove-driver', 'modal', array() );?>
 
 <?php else : ?>
     <p>No drivers were found.</p>

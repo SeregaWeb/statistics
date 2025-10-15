@@ -5751,6 +5751,7 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */   helperDisabledChecbox: function() { return /* binding */ helperDisabledChecbox; },
 /* harmony export */   removeFullDriver: function() { return /* binding */ removeFullDriver; },
 /* harmony export */   removeOneFileInitial: function() { return /* binding */ removeOneFileInitial; },
+/* harmony export */   restoreDriver: function() { return /* binding */ restoreDriver; },
 /* harmony export */   updateDriverContact: function() { return /* binding */ updateDriverContact; },
 /* harmony export */   updateDriverDocument: function() { return /* binding */ updateDriverDocument; },
 /* harmony export */   updateDriverFinance: function() { return /* binding */ updateDriverFinance; },
@@ -6098,6 +6099,7 @@ var helperDisabledChecbox = function helperDisabledChecbox() {
 };
 var removeFullDriver = function removeFullDriver(ajaxUrl) {
   var btnsRemove = document.querySelectorAll('.js-remove-driver');
+  var btnsRemoveSoft = document.querySelectorAll('.js-remove-driver-soft');
   btnsRemove && btnsRemove.forEach(function (item) {
     item.addEventListener('click', function (event) {
       event.preventDefault();
@@ -6135,6 +6137,136 @@ var removeFullDriver = function removeFullDriver(ajaxUrl) {
           console.error('Request failed:', error);
         });
       }
+    });
+  });
+  btnsRemoveSoft && btnsRemoveSoft.forEach(function (item) {
+    item.addEventListener('click', function (event) {
+      event.preventDefault();
+      var target = event.target;
+      if (!(target instanceof HTMLElement)) return;
+      var idLoad = target.getAttribute('data-id');
+      if (!idLoad) {
+        (0,_info_messages__WEBPACK_IMPORTED_MODULE_0__.printMessage)("Error remove Driver: reload this page and try again", 'danger', 8000);
+        return;
+      }
+      var modal = document.getElementById('removeDriverModal');
+      if (!modal) {
+        (0,_info_messages__WEBPACK_IMPORTED_MODULE_0__.printMessage)('Remove modal not found', 'danger', 8000);
+        return;
+      }
+      var form = modal.querySelector('.js-remove-driver-form');
+      if (!form) return;
+      form.querySelector('input[name="reason"]').value = '';
+      form.querySelector('textarea[name="notes"]').value = '';
+      form.querySelector('input[name="notify"]').checked = false;
+      var _onSubmit = function onSubmit(e) {
+        e.preventDefault();
+        var reason = form.querySelector('input[name="reason"]').value.trim();
+        var notes = form.querySelector('textarea[name="notes"]').value.trim();
+        var notify = form.querySelector('input[name="notify"]').checked ? '1' : '0';
+        if (!reason) {
+          (0,_info_messages__WEBPACK_IMPORTED_MODULE_0__.printMessage)('Reason is required', 'danger', 5000);
+          return;
+        }
+        var formData = new FormData();
+        formData.append('action', 'soft_remove_driver');
+        formData.append('id_driver', idLoad);
+        formData.append('reason', reason);
+        formData.append('notes', notes);
+        formData.append('notify', notify);
+        var submitBtn = form.querySelector('button[type="submit"]');
+        if (submitBtn) {
+          submitBtn.disabled = true;
+          submitBtn.textContent = 'Removing...';
+        }
+        fetch(ajaxUrl, {
+          method: 'POST',
+          body: formData
+        }).then(function (res) {
+          return res.json();
+        }).then(function (requestStatus) {
+          var _a;
+          if (requestStatus.success) {
+            window.location.reload();
+            return;
+          }
+          (0,_info_messages__WEBPACK_IMPORTED_MODULE_0__.printMessage)("Error remove Driver: ".concat(((_a = requestStatus.data) === null || _a === void 0 ? void 0 : _a.message) || '').trim(), 'danger', 8000);
+        }).catch(function (error) {
+          (0,_info_messages__WEBPACK_IMPORTED_MODULE_0__.printMessage)("Request failed: ".concat(error), 'danger', 8000);
+          console.error('Request failed:', error);
+        }).finally(function () {
+          if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'Remove';
+          }
+          form.removeEventListener('submit', _onSubmit);
+          if (window.bootstrap && window.bootstrap.Modal) {
+            var inst = window.bootstrap.Modal.getInstance(modal) || new window.bootstrap.Modal(modal);
+            inst.hide();
+          } else {
+            modal.classList.remove('show');
+            modal.removeAttribute('aria-modal');
+            modal.setAttribute('aria-hidden', 'true');
+            modal.style.display = 'none';
+          }
+          setTimeout(function () {
+            document.body.classList.remove('modal-open');
+            document.body.style.overflow = '';
+            document.body.style.paddingRight = '';
+            var backdrops = document.querySelectorAll('.modal-backdrop');
+            backdrops.forEach(function (b) {
+              return b.remove();
+            });
+          }, 50);
+        });
+      };
+      form.addEventListener('submit', _onSubmit);
+    });
+  });
+};
+var restoreDriver = function restoreDriver(ajaxUrl) {
+  var btnsRestore = document.querySelectorAll('.js-restore-driver');
+  btnsRestore && btnsRestore.forEach(function (item) {
+    item.addEventListener('click', function (event) {
+      event.preventDefault();
+      var target = event.target;
+      if (!(target instanceof HTMLElement)) return;
+      var idDriver = target.getAttribute('data-id');
+      if (!idDriver) {
+        (0,_info_messages__WEBPACK_IMPORTED_MODULE_0__.printMessage)("Error restore Driver: reload this page and try again", 'danger', 8000);
+        return;
+      }
+      var question = confirm('Are you sure you want to restore this driver?');
+      if (!question) return;
+      var formData = new FormData();
+      formData.append('action', 'restore_driver');
+      formData.append('id_driver', idDriver);
+      var submitBtn = target;
+      if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Restoring...';
+      }
+      fetch(ajaxUrl, {
+        method: 'POST',
+        body: formData
+      }).then(function (res) {
+        return res.json();
+      }).then(function (requestStatus) {
+        var _a;
+        if (requestStatus.success) {
+          window.location.reload();
+          return;
+        }
+        (0,_info_messages__WEBPACK_IMPORTED_MODULE_0__.printMessage)("Error restore Driver: ".concat(((_a = requestStatus.data) === null || _a === void 0 ? void 0 : _a.message) || '').trim(), 'danger', 8000);
+      }).catch(function (error) {
+        (0,_info_messages__WEBPACK_IMPORTED_MODULE_0__.printMessage)("Request failed: ".concat(error), 'danger', 8000);
+        console.error('Request failed:', error);
+      }).finally(function () {
+        if (submitBtn) {
+          submitBtn.disabled = false;
+          submitBtn.textContent = 'Restore';
+        }
+      });
     });
   });
 };
@@ -6206,6 +6338,7 @@ var copyText = function copyText() {
 var driversActions = function driversActions(urlAjax) {
   createDriver(urlAjax);
   removeFullDriver(urlAjax);
+  restoreDriver(urlAjax);
   updateDriverContact(urlAjax);
   updateDriverInformation(urlAjax);
   updateDriverFinance(urlAjax);
@@ -7807,23 +7940,11 @@ var modalLogsInit = function modalLogsInit(ajaxUrl) {
                 newModal.hide();
               }
             } else {
-              modal.classList.remove('show');
-              modal.style.display = 'none';
-              document.body.classList.remove('modal-open');
-              var backdrop = document.querySelector('.modal-backdrop');
-              if (backdrop) {
-                backdrop.remove();
-              }
+              forceCloseModal(modal);
             }
           } catch (error) {
             console.log('Error closing modal:', error);
-            modal.classList.remove('show');
-            modal.style.display = 'none';
-            document.body.classList.remove('modal-open');
-            var _backdrop = document.querySelector('.modal-backdrop');
-            if (_backdrop) {
-              _backdrop.remove();
-            }
+            forceCloseModal(modal);
           }
         }
         var modalRef = document.getElementById('addLogModal');
@@ -7835,6 +7956,17 @@ var modalLogsInit = function modalLogsInit(ajaxUrl) {
             delete modalRef.targetPinnedWrapper;
           }
         }
+        setTimeout(function () {
+          document.body.classList.remove('modal-open');
+          document.body.style.overflow = '';
+          document.body.style.paddingRight = '';
+          document.documentElement.style.overflow = '';
+          document.documentElement.style.paddingRight = '';
+          var remainingBackdrops = document.querySelectorAll('.modal-backdrop');
+          remainingBackdrops.forEach(function (backdrop) {
+            return backdrop.remove();
+          });
+        }, 100);
       } else {
         (0,_info_messages__WEBPACK_IMPORTED_MODULE_0__.printMessage)(requestStatus.data.message, 'danger', 8000);
       }
@@ -7849,6 +7981,24 @@ var modalLogsInit = function modalLogsInit(ajaxUrl) {
     });
   });
 };
+function forceCloseModal(modal) {
+  modal.classList.remove('show');
+  modal.classList.remove('fade');
+  modal.style.display = 'none';
+  modal.setAttribute('aria-hidden', 'true');
+  modal.removeAttribute('aria-modal');
+  modal.removeAttribute('role');
+  document.body.classList.remove('modal-open');
+  document.body.style.overflow = '';
+  document.body.style.paddingRight = '';
+  var backdrops = document.querySelectorAll('.modal-backdrop');
+  backdrops.forEach(function (backdrop) {
+    return backdrop.remove();
+  });
+  document.documentElement.style.overflow = '';
+  document.documentElement.style.paddingRight = '';
+  modal.offsetHeight;
+}
 
 /***/ }),
 

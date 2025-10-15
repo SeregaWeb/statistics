@@ -241,7 +241,7 @@ $access_vehicle = $TMSUsers->check_user_role_access( [
 								? $reports->get_icon_uploaded_file() : ''; ?></label>
 						<?php if ( ! $payment_file ): ?>
 
-                            <button data-href="#popup_upload_payment_file"
+                            <button <?php echo $full_only_view ? 'disabled' : ''; ?> data-href="#popup_upload_payment_file"
                                     class="btn btn-success js-open-popup-activator mt-1">
                                 Upload file
                             </button>
@@ -289,7 +289,7 @@ $access_vehicle = $TMSUsers->check_user_role_access( [
                         <label class="form-label d-flex align-items-center gap-1">W9 File <?php echo $w9_file
 								? $reports->get_icon_uploaded_file() : ''; ?></label>
 						<?php if ( ! $w9_file ): ?>
-                            <button data-href="#popup_upload_w9_file"
+                            <button <?php echo $full_only_view ? 'disabled' : ''; ?> data-href="#popup_upload_w9_file"
                                     class="btn btn-success js-open-popup-activator mt-1">
                                 Upload file
                             </button>
@@ -332,7 +332,7 @@ $access_vehicle = $TMSUsers->check_user_role_access( [
 									? $reports->get_icon_uploaded_file() : ''; ?></label>
 							<?php if ( ! $ssn_file ): ?>
 
-                                <button data-href="#popup_upload_ssn_file"
+                                <button <?php echo $full_only_view ? 'disabled' : ''; ?> data-href="#popup_upload_ssn_file"
                                         class="btn btn-success js-open-popup-activator mt-1">
                                     Upload file
                                 </button>
@@ -369,7 +369,7 @@ $access_vehicle = $TMSUsers->check_user_role_access( [
 									? $reports->get_icon_uploaded_file() : ''; ?></label>
 							
 							<?php if ( ! $ein_file ): ?>
-                                <button data-href="#popup_upload_ein_file"
+                                <button <?php echo $full_only_view ? 'disabled' : ''; ?> data-href="#popup_upload_ein_file"
                                         class="btn btn-success js-open-popup-activator mt-1">
                                     Upload file
                                 </button>
@@ -390,7 +390,7 @@ $access_vehicle = $TMSUsers->check_user_role_access( [
                         <label class="form-label d-flex align-items-center gap-1">1099-NEC File <?php echo $nec_file
 								? $reports->get_icon_uploaded_file() : ''; ?></label>
 						<?php if ( ! $nec_file ): ?>
-                            <button data-href="#popup_upload_nec_file"
+                            <button <?php echo $full_only_view ? 'disabled' : ''; ?> data-href="#popup_upload_nec_file"
                                     class="btn btn-success js-open-popup-activator mt-1">
                                 Upload file
                             </button>

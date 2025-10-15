@@ -438,6 +438,7 @@ export const helperDisabledChecbox = () => {
 
 export const removeFullDriver = (ajaxUrl) => {
     const btnsRemove = document.querySelectorAll('.js-remove-driver');
+    const btnsRemoveSoft = document.querySelectorAll('.js-remove-driver-soft');
 
     btnsRemove &&
         btnsRemove.forEach((item) => {
@@ -491,6 +492,157 @@ export const removeFullDriver = (ajaxUrl) => {
                             console.error('Request failed:', error);
                         });
                 }
+            });
+        });
+
+    // Soft remove with modal (non-draft)
+    btnsRemoveSoft &&
+        btnsRemoveSoft.forEach((item) => {
+            item.addEventListener('click', (event) => {
+                event.preventDefault();
+                const { target } = event;
+
+                if (!(target instanceof HTMLElement)) return;
+                const idLoad = target.getAttribute('data-id');
+                if (!idLoad) {
+                    printMessage(`Error remove Driver: reload this page and try again`, 'danger', 8000);
+                    return;
+                }
+
+                const modal = document.getElementById('removeDriverModal');
+                if (!modal) {
+                    printMessage('Remove modal not found', 'danger', 8000);
+                    return;
+                }
+
+                // Do not manually show modal here; Bootstrap data attributes handle it.
+
+                const form = modal.querySelector('.js-remove-driver-form') as HTMLFormElement | null;
+                if (!form) return;
+
+                (form.querySelector('input[name="reason"]') as HTMLInputElement).value = '';
+                (form.querySelector('textarea[name="notes"]') as HTMLTextAreaElement).value = '';
+                (form.querySelector('input[name="notify"]') as HTMLInputElement).checked = false;
+
+                const onSubmit = (e: Event) => {
+                    e.preventDefault();
+                    const reason = (form.querySelector('input[name="reason"]') as HTMLInputElement).value.trim();
+                    const notes = (form.querySelector('textarea[name="notes"]') as HTMLTextAreaElement).value.trim();
+                    const notify = (form.querySelector('input[name="notify"]') as HTMLInputElement).checked ? '1' : '0';
+
+                    if (!reason) {
+                        printMessage('Reason is required', 'danger', 5000);
+                        return;
+                    }
+
+                    const formData = new FormData();
+                    formData.append('action', 'soft_remove_driver');
+                    formData.append('id_driver', idLoad);
+                    formData.append('reason', reason);
+                    formData.append('notes', notes);
+                    formData.append('notify', notify);
+
+                    const submitBtn = form.querySelector('button[type="submit"]') as HTMLButtonElement | null;
+                    if (submitBtn) {
+                        submitBtn.disabled = true;
+                        submitBtn.textContent = 'Removing...';
+                    }
+
+                    fetch(ajaxUrl, { method: 'POST', body: formData })
+                        .then((res) => res.json())
+                        .then((requestStatus) => {
+                            if (requestStatus.success) {
+                                window.location.reload();
+                                return;
+                            }
+                            printMessage(`Error remove Driver: ${requestStatus.data?.message || ''}`.trim(), 'danger', 8000);
+                        })
+                        .catch((error) => {
+                            printMessage(`Request failed: ${error}`, 'danger', 8000);
+                            console.error('Request failed:', error);
+                        })
+                        .finally(() => {
+                            if (submitBtn) {
+                                submitBtn.disabled = false;
+                                submitBtn.textContent = 'Remove';
+                            }
+                            form.removeEventListener('submit', onSubmit);
+                            // Close via Bootstrap if available; otherwise hard close and cleanup
+                            // @ts-ignore
+                            if (window.bootstrap && window.bootstrap.Modal) {
+                                // @ts-ignore
+                                const inst = window.bootstrap.Modal.getInstance(modal) || new window.bootstrap.Modal(modal);
+                                inst.hide();
+                            } else {
+                                modal.classList.remove('show');
+                                modal.removeAttribute('aria-modal');
+                                modal.setAttribute('aria-hidden', 'true');
+                                (modal as HTMLElement).style.display = 'none';
+                            }
+                            // Ensure backdrop and scroll cleanup
+                            setTimeout(() => {
+                                document.body.classList.remove('modal-open');
+                                (document.body as any).style.overflow = '';
+                                (document.body as any).style.paddingRight = '';
+                                const backdrops = document.querySelectorAll('.modal-backdrop');
+                                backdrops.forEach((b) => b.remove());
+                            }, 50);
+                        });
+                };
+
+                form.addEventListener('submit', onSubmit);
+            });
+        });
+};
+
+export const restoreDriver = (ajaxUrl) => {
+    const btnsRestore = document.querySelectorAll('.js-restore-driver');
+
+    btnsRestore &&
+        btnsRestore.forEach((item) => {
+            item.addEventListener('click', (event) => {
+                event.preventDefault();
+                const { target } = event;
+
+                if (!(target instanceof HTMLElement)) return;
+                const idDriver = target.getAttribute('data-id');
+                if (!idDriver) {
+                    printMessage(`Error restore Driver: reload this page and try again`, 'danger', 8000);
+                    return;
+                }
+
+                const question = confirm('Are you sure you want to restore this driver?');
+                if (!question) return;
+
+                const formData = new FormData();
+                formData.append('action', 'restore_driver');
+                formData.append('id_driver', idDriver);
+
+                const submitBtn = target as HTMLButtonElement;
+                if (submitBtn) {
+                    submitBtn.disabled = true;
+                    submitBtn.textContent = 'Restoring...';
+                }
+
+                fetch(ajaxUrl, { method: 'POST', body: formData })
+                    .then((res) => res.json())
+                    .then((requestStatus) => {
+                        if (requestStatus.success) {
+                            window.location.reload();
+                            return;
+                        }
+                        printMessage(`Error restore Driver: ${requestStatus.data?.message || ''}`.trim(), 'danger', 8000);
+                    })
+                    .catch((error) => {
+                        printMessage(`Request failed: ${error}`, 'danger', 8000);
+                        console.error('Request failed:', error);
+                    })
+                    .finally(() => {
+                        if (submitBtn) {
+                            submitBtn.disabled = false;
+                            submitBtn.textContent = 'Restore';
+                        }
+                    });
             });
         });
 };
@@ -583,6 +735,7 @@ export const copyText = () => {
 export const driversActions = (urlAjax) => {
     createDriver(urlAjax);
     removeFullDriver(urlAjax);
+    restoreDriver(urlAjax);
     updateDriverContact(urlAjax);
     updateDriverInformation(urlAjax);
     updateDriverFinance(urlAjax);

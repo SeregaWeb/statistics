@@ -239,24 +239,12 @@ export const modalLogsInit = (ajaxUrl) => {
                                     }
                                 } else {
                                     // Fallback: manually hide modal
-                                    modal.classList.remove('show');
-                                    modal.style.display = 'none';
-                                    document.body.classList.remove('modal-open');
-                                    const backdrop = document.querySelector('.modal-backdrop');
-                                    if (backdrop) {
-                                        backdrop.remove();
-                                    }
+                                    forceCloseModal(modal);
                                 }
                             } catch (error) {
                                 console.log('Error closing modal:', error);
                                 // Fallback: manually hide modal
-                                modal.classList.remove('show');
-                                modal.style.display = 'none';
-                                document.body.classList.remove('modal-open');
-                                const backdrop = document.querySelector('.modal-backdrop');
-                                if (backdrop) {
-                                    backdrop.remove();
-                                }
+                                forceCloseModal(modal);
                             }
                         }
                         
@@ -270,6 +258,20 @@ export const modalLogsInit = (ajaxUrl) => {
                                 delete (modalRef as any).targetPinnedWrapper;
                             }
                         }
+                        
+                        // Additional cleanup to ensure scroll is restored
+                        setTimeout(() => {
+                            // Remove any remaining modal-related classes and styles
+                            document.body.classList.remove('modal-open');
+                            document.body.style.overflow = '';
+                            document.body.style.paddingRight = '';
+                            document.documentElement.style.overflow = '';
+                            document.documentElement.style.paddingRight = '';
+                            
+                            // Remove any remaining backdrops
+                            const remainingBackdrops = document.querySelectorAll('.modal-backdrop');
+                            remainingBackdrops.forEach(backdrop => backdrop.remove());
+                        }, 100);
                     } else {
                         printMessage(requestStatus.data.message, 'danger', 8000);
                     }
@@ -287,3 +289,30 @@ export const modalLogsInit = (ajaxUrl) => {
                 });
         });
 };
+
+// Helper function to force close modal and restore scroll
+function forceCloseModal(modal: HTMLElement) {
+    // Remove modal classes
+    modal.classList.remove('show');
+    modal.classList.remove('fade');
+    modal.style.display = 'none';
+    modal.setAttribute('aria-hidden', 'true');
+    modal.removeAttribute('aria-modal');
+    modal.removeAttribute('role');
+    
+    // Remove body classes that prevent scrolling
+    document.body.classList.remove('modal-open');
+    document.body.style.overflow = '';
+    document.body.style.paddingRight = '';
+    
+    // Remove all modal backdrops
+    const backdrops = document.querySelectorAll('.modal-backdrop');
+    backdrops.forEach(backdrop => backdrop.remove());
+    
+    // Remove any inline styles that might be blocking scroll
+    document.documentElement.style.overflow = '';
+    document.documentElement.style.paddingRight = '';
+    
+    // Force reflow to ensure changes take effect
+    modal.offsetHeight;
+}

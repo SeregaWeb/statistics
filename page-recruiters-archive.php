@@ -1,6 +1,6 @@
 <?php
 /**
- * Template Name: Page recruiters draft
+ * Template Name: Page recruiters archive
  *
  * @package WP-rock
  * @since 4.4.0
@@ -12,14 +12,13 @@ $Drivers  = new TMSDrivers();
 $TMSUsers = new TMSUsers();
 $helper   = new TMSReportsHelper();
 $args     = array(
-	'status_post' => 'draft',
-	'recruiter'   => get_current_user_id(),
+	'status_post' => 'removed',
 );
 
 $args                = $Drivers->set_filter_params( $args );
 $items               = $Drivers->get_table_items( $args );
 
-$items[ 'is_draft' ] = true;
+$items[ 'is_archive' ] = true;
 
 $access = $TMSUsers->check_user_role_access( [ 'administrator', 'recruiter', 'recruiter-tl', 'hr_manager' ], true );
 
@@ -34,7 +33,7 @@ $access = $TMSUsers->check_user_role_access( [ 'administrator', 'recruiter', 're
 						else:
 							
 							?>
-                            <h4 class="mb-3">Draft drivers</h4>
+                            <h4 class="mb-3">Archived units</h4>
 							<?php
 							
 							echo esc_html( get_template_part( TEMPLATE_PATH . 'tables/driver', 'table', $items ) );

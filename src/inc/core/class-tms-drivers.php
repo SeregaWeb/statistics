@@ -53,6 +53,8 @@ class TMSDrivers extends TMSDriversHelper {
 			'update_driver_document'       => 'update_driver_document',
 			'update_driver_status'         => 'update_driver_status',
 			'remove_one_driver'            => 'remove_one_driver',
+			'soft_remove_driver'           => 'soft_remove_driver',
+			'restore_driver'               => 'restore_driver',
 			'upload_driver_helper'         => 'upload_driver_helper',
 			'optimize_drivers_tables'      => 'optimize_drivers_tables',
 			'update_location_driver'       => 'update_location_driver',
@@ -575,6 +577,224 @@ class TMSDrivers extends TMSDriversHelper {
 		} else {
 			wp_send_json_error( [ 'message' => 'Invalid request' ] );
 		}
+	}
+
+	public function soft_remove_driver() {
+		if ( defined( 'DOING_AJAX' ) && DOING_AJAX ) {
+			global $wpdb, $global_options;
+			
+			$MY_INPUT = filter_var_array( $_POST, [
+				"id_driver" => FILTER_SANITIZE_STRING,
+				"reason"    => FILTER_SANITIZE_STRING,
+				"notes"     => FILTER_UNSAFE_RAW,
+				"notify"    => FILTER_SANITIZE_STRING,
+			] );
+			
+			$id_load    = $MY_INPUT[ "id_driver" ];
+			$table_name = $wpdb->prefix . $this->table_main;
+			$table_meta = $wpdb->prefix . $this->table_meta;
+			
+			// Get meta to build email
+			$meta_data = $wpdb->get_results( $wpdb->prepare( "SELECT meta_key, meta_value FROM {$table_meta} WHERE post_id = %d", $id_load ), ARRAY_A );
+			$driver_name = 'Unknown Driver';
+			foreach ( $meta_data as $meta ) {
+				if ( $meta['meta_key'] === 'driver_name' ) {
+					$driver_name = $meta['meta_value'];
+					break;
+				}
+			}
+			
+			// Mark as removed (soft)
+			$wpdb->update( $table_name, array( 'status_post' => 'removed' ), array( 'id' => $id_load ), array( '%s' ), array( '%d' ) );
+			
+			// Save reason/notes/removed_at
+			if ( ! empty( $MY_INPUT['reason'] ) ) {
+				$wpdb->replace( $table_meta, array(
+					'post_id'    => $id_load,
+					'meta_key'   => 'removed_reason',
+					'meta_value' => html_entity_decode( stripslashes( sanitize_text_field( $MY_INPUT['reason'] ) ), ENT_QUOTES, 'UTF-8' ),
+				), array( '%d', '%s', '%s' ) );
+			}
+			$wpdb->replace( $table_meta, array(
+				'post_id'    => $id_load,
+				'meta_key'   => 'removed_notes',
+				'meta_value' => html_entity_decode( stripslashes( wp_kses_post( $MY_INPUT['notes'] ?? '' ) ), ENT_QUOTES, 'UTF-8' ),
+			), array( '%d', '%s', '%s' ) );
+			
+			// Get New York timezone for database storage
+			$ny_timezone = new DateTimeZone('America/New_York');
+			$ny_time = new DateTime('now', $ny_timezone);
+			$removal_date_db = $ny_time->format('Y-m-d H:i:s');
+			
+			$wpdb->replace( $table_meta, array(
+				'post_id'    => $id_load,
+				'meta_key'   => 'removed_at',
+				'meta_value' => $removal_date_db,
+			), array( '%d', '%s', '%s' ) );
+			
+			// Send emails
+			$user_id   = get_current_user_id();
+			$user_name = $this->get_user_full_name_by_id( $user_id );
+			$project   = get_field( 'current_select', 'user_' . $user_id );
+			$operator_name = is_array( $user_name ) && isset( $user_name['full_name'] ) ? $user_name['full_name'] : 'Unknown User';
+			$unit_number = $id_load;
+			foreach ( $meta_data as $meta ) {
+				if ( $meta['meta_key'] === 'unit_number' ) { $unit_number = $meta['meta_value']; break; }
+			}
+			$reason = isset( $MY_INPUT['reason'] ) ? trim( html_entity_decode( stripslashes( (string) $MY_INPUT['reason'] ), ENT_QUOTES, 'UTF-8' ) ) : '';
+			$notes  = isset( $MY_INPUT['notes'] ) ? trim( html_entity_decode( stripslashes( (string) $MY_INPUT['notes'] ), ENT_QUOTES, 'UTF-8' ) ) : '';
+			
+			// Use the same removal date that was saved to database
+			$removal_date = $removal_date_db;
+			
+			$subject = 'Driver Removed: (' . $id_load . ') ' . $driver_name;
+			$message = 'Odysseia<br>' . $operator_name . ' has removed a driver from our system' . '<br>' .
+				'Unit number: ' . $unit_number . '<br>' .
+				'Driver Name: ' . $driver_name . '<br>' .
+				'Reason: ' . ( $reason !== '' ? $reason : 'N/A' ) . '<br>' .
+				'Notes: ' . ( $notes !== '' ? nl2br( $notes ) : 'N/A' ) . '<br>' .
+				'Removal Date: ' . $removal_date . '<br><br>' .
+				'This driver has been permanently removed from the system.';
+			
+			$recipients_notify    = $global_options['mails_notify_remove_driver'];
+			$recipients_no_notify = $global_options['mails_remove_driver'];
+			$emails_to = ( isset( $MY_INPUT['notify'] ) && $MY_INPUT['notify'] === '1' )
+				? ($recipients_no_notify . ', ' . $recipients_notify)
+				: $recipients_no_notify;
+			
+			$this->email_helper->send_custom_email( $emails_to, array(
+				'subject'      => $subject,
+				'project_name' => $project,
+				'subtitle'     => '',
+				'message'      => $message,
+			) );
+			
+			wp_send_json_success( [ 'message' => 'Driver marked as removed' ] );
+		}
+		wp_send_json_error( [ 'message' => 'Invalid request' ] );
+	}
+
+	public function restore_driver() {
+		if ( defined( 'DOING_AJAX' ) && DOING_AJAX ) {
+			global $wpdb, $global_options;
+			
+			$MY_INPUT = filter_var_array( $_POST, [
+				"id_driver" => FILTER_SANITIZE_NUMBER_INT,
+			] );
+			
+			$id_driver = $MY_INPUT[ "id_driver" ];
+			if ( ! $id_driver ) {
+				wp_send_json_error( [ 'message' => 'Missing driver ID' ] );
+			}
+			
+			$table_name = $wpdb->prefix . $this->table_main;
+			$table_meta = $wpdb->prefix . $this->table_meta;
+			
+			// Get driver meta data
+			$meta_data = $wpdb->get_results( $wpdb->prepare( "SELECT meta_key, meta_value FROM {$table_meta} WHERE post_id = %d", $id_driver ), ARRAY_A );
+			$meta_array = [];
+			foreach ( $meta_data as $meta ) {
+				$meta_array[ $meta['meta_key'] ] = $meta['meta_value'];
+			}
+			
+			// Update status from 'removed' to 'publish'
+			$update_result = $wpdb->update( 
+				$table_name, 
+				array( 'status_post' => 'publish' ), 
+				array( 'id' => $id_driver ), 
+				array( '%s' ), 
+				array( '%d' ) 
+			);
+			
+			if ( $update_result === false ) {
+				wp_send_json_error( [ 'message' => 'Database error: ' . $wpdb->last_error ] );
+			}
+			
+			// Get driver info for email
+			$driver_name = get_field_value( $meta_array, 'driver_name' ) ?: 'Unknown Driver';
+			$unit_number = $id_driver ?: 'N/A';
+			$driver_phone = get_field_value( $meta_array, 'driver_phone' ) ?: 'N/A';
+			$vehicle_type = get_field_value( $meta_array, 'vehicle_type' ) ?: 'N/A';
+			$dimensions = get_field_value( $meta_array, 'dimensions' ) ?: 'N/A';
+			$payload = get_field_value( $meta_array, 'payload' ) ?: 'N/A';
+			$city = get_field_value( $meta_array, 'city' ) ?: 'N/A';
+			$home_location = get_field_value( $meta_array, 'home_location' ) ?: 'N/A';
+			
+			// Format vehicle type for display
+			$vehicle_type_display = ucwords( str_replace( '-', ' ', $vehicle_type ) );
+			
+			// Get user info
+			$user_id = get_current_user_id();
+			$user_name = $this->get_user_full_name_by_id( $user_id );
+			$project = get_field( 'current_select', 'user_' . $user_id );
+			$operator_name = is_array( $user_name ) && isset( $user_name['full_name'] ) ? $user_name['full_name'] : 'Unknown User';
+			
+			// Build driver capabilities array (same as in add_driver function)
+			$selected_cross_border = get_field_value( $meta_array, 'cross_border' ) ? explode( ',', get_field_value( $meta_array, 'cross_border' ) ) : array();
+			$driver_licence_type_cdl = get_field_value( $meta_array, 'driver_licence_type' ) === 'cdl';
+			
+			$driver_capabilities = array(
+				'twic'               => get_field_value( $meta_array, 'twic' ),
+				'tsa'                => get_field_value( $meta_array, 'tsa_approved' ),
+				'hazmat'             => get_field_value( $meta_array, 'hazmat_certificate' ) || get_field_value( $meta_array, 'hazmat_endorsement' ),
+				'change-9'           => get_field_value( $meta_array, 'change_9_training' ),
+				'tanker-endorsement' => get_field_value( $meta_array, 'tanker_endorsement' ),
+				'background-check'   => get_field_value( $meta_array, 'background_check' ),
+				'liftgate'           => get_field_value( $meta_array, 'lift_gate' ),
+				'pallet-jack'        => get_field_value( $meta_array, 'pallet_jack' ),
+				'dolly'              => get_field_value( $meta_array, 'dolly' ),
+				'ppe'                => get_field_value( $meta_array, 'ppe' ),
+				'e-track'            => get_field_value( $meta_array, 'e_tracks' ),
+				'ramp'               => get_field_value( $meta_array, 'ramp' ),
+				'printer'            => get_field_value( $meta_array, 'printer' ),
+				'sleeper'            => get_field_value( $meta_array, 'sleeper' ),
+				'load-bars'          => get_field_value( $meta_array, 'load_bars' ),
+				'mc'                 => get_field_value( $meta_array, 'mc' ),
+				'dot'                => get_field_value( $meta_array, 'dot' ),
+				'real_id'            => get_field_value( $meta_array, 'real_id' ),
+				'macropoint'         => get_field_value( $meta_array, 'macro_point' ),
+				'tucker-tools'       => get_field_value( $meta_array, 'trucker_tools' ),
+				'canada'             => is_numeric( array_search( 'canada', $selected_cross_border ) ) || get_field_value( $meta_array, 'canada_transition_proof' ),
+				'mexico'             => is_numeric( array_search( 'mexico', $selected_cross_border ) ),
+				'cdl'                => $driver_licence_type_cdl,
+				'dock-high'          => get_field_value( $meta_array, 'dock_high' ),
+				'side_door'          => get_field_value( $meta_array, 'side_door_on' ),
+			);
+			
+			$labels = $this->labels;
+			
+			$available_labels = array_intersect_key( $labels, array_filter( $driver_capabilities, function( $value ) {
+				return ! empty( $value );
+			} ) );
+			
+			$str = '';
+			if ( is_array( $available_labels ) && ! empty( $available_labels ) ) {
+				$available_labels_str = implode( ', ', $available_labels );
+				$str = $available_labels_str;
+			}
+			
+			// Prepare email content
+			$email_subject = 'Driver Restored: (' . $id_driver . ') ' . $driver_name;
+			$email_message = $operator_name . " has restored the unit " . $unit_number . ", " . $driver_name . " in our system.<br><br>" .
+				"Vehicle: " . $vehicle_type_display . "<br>" .
+				"Cargo space details: " . $dimensions . " inches, " . $payload . " lbs.<br>" .
+				"Home location: " . $city . ', ' . $home_location . "<br>" .
+				( ! empty( $str ) ? "Additional details: " . $str . "<br><br>" : "" ) .
+				"Don't forget to rate your experience with this driver in our system if you happen to book a load for this unit.";
+			
+			$emails_to = $global_options['mails_notify_remove_driver'];	
+
+			// Send email to expedite@odysseia.one
+			$this->email_helper->send_custom_email( $emails_to, array(
+				'subject'      => $email_subject,
+				'project_name' => $project,
+				'subtitle'     => '',
+				'message'      => $email_message,
+			) );
+			
+			wp_send_json_success( [ 'message' => 'Driver restored successfully' ] );
+		}
+		wp_send_json_error( [ 'message' => 'Invalid request' ] );
 	}
 	
 	public function set_filter_params( $args ) {

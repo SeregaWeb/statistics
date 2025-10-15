@@ -577,7 +577,7 @@ $access_vehicle = $TMSUsers->check_user_role_access( [
                     <div class="js-add-new-report w-100">
                         <div class="p-0 mb-2 col-12">
                             <p class="h5">Pictures of Vehicle</p>
-                            <button data-href="#popup_upload_vehicle_pictures"
+                            <button <?php echo $full_only_view ? 'disabled' : ''; ?> data-href="#popup_upload_vehicle_pictures"
                                     class="btn btn-success js-open-popup-activator ">
                                 Upload files
                             </button>
@@ -590,7 +590,7 @@ $access_vehicle = $TMSUsers->check_user_role_access( [
                         <div class="p-0 mb-2 col-12">
                             <p class="h5">Dimensions Pictures</p>
 
-                            <button data-href="#popup_upload_dimensions_pictures"
+                            <button <?php echo $full_only_view ? 'disabled' : ''; ?> data-href="#popup_upload_dimensions_pictures"
                                     class="btn btn-success js-open-popup-activator ">
                                 Upload files
                             </button>
@@ -608,7 +608,7 @@ $access_vehicle = $TMSUsers->check_user_role_access( [
                                         style="position: relative; top: -2px;"><?php if ( $plates_file ): echo $reports->get_icon_uploaded_file(); endif; ?></span>Plates
                             </p>
 							<?php if ( ! $plates_file ): ?>
-                                <button data-href="#popup_upload_plates_file"
+                                <button <?php echo $full_only_view ? 'disabled' : ''; ?> data-href="#popup_upload_plates_file"
                                         class="btn btn-success js-open-popup-activator ">
                                     Upload file
                                 </button>
@@ -626,7 +626,7 @@ $access_vehicle = $TMSUsers->check_user_role_access( [
                                 Vehicle Registration
                             </p>
 							<?php if ( ! $registration_file ): ?>
-                                <button data-href="#popup_upload_registration_file"
+                                <button <?php echo $full_only_view ? 'disabled' : ''; ?> data-href="#popup_upload_registration_file"
                                         class="btn btn-success js-open-popup-activator ">
                                     Upload file
                                 </button>
@@ -650,7 +650,7 @@ $access_vehicle = $TMSUsers->check_user_role_access( [
 							
 							<?php if ( ! $ppe_file ): ?>
                                 <div class="js-ppe-driver <?php echo $ppe ? '' : 'd-none'; ?>">
-                                    <button data-href="#popup_upload_ppe_file"
+                                    <button <?php echo $full_only_view ? 'disabled' : ''; ?> data-href="#popup_upload_ppe_file"
                                             class="btn btn-success js-open-popup-activator mt-1">
                                         Upload file
                                     </button>
@@ -677,7 +677,7 @@ $access_vehicle = $TMSUsers->check_user_role_access( [
 							
 							<?php if ( ! $e_tracks_file ): ?>
                                 <div class="js-e-tracks-driver <?php echo $e_tracks ? '' : 'd-none'; ?>">
-                                    <button data-href="#popup_upload_e_tracks_file"
+                                    <button <?php echo $full_only_view ? 'disabled' : ''; ?> data-href="#popup_upload_e_tracks_file"
                                             class="btn btn-success js-open-popup-activator mt-1">
                                         Upload file
                                     </button>
@@ -707,7 +707,7 @@ $access_vehicle = $TMSUsers->check_user_role_access( [
 							<?php if ( ! $pallet_jack_file ): ?>
                                 <div class="js-pallet-jack-driver <?php echo $pallet_jack ? '' : 'd-none'; ?>">
 
-                                    <button data-href="#popup_upload_pallet_jack_file"
+                                    <button <?php echo $full_only_view ? 'disabled' : ''; ?> data-href="#popup_upload_pallet_jack_file"
                                             class="btn btn-success js-open-popup-activator mt-1">
                                         Upload file
                                     </button>
@@ -737,7 +737,7 @@ $access_vehicle = $TMSUsers->check_user_role_access( [
 							
 							<?php if ( ! $lift_gate_file ): ?>
                                 <div class="js-lift-gate-driver <?php echo $lift_gate ? '' : 'd-none'; ?>">
-                                    <button data-href="#popup_upload_lift_gate_file"
+                                    <button <?php echo $full_only_view ? 'disabled' : ''; ?> data-href="#popup_upload_lift_gate_file"
                                             class="btn btn-success js-open-popup-activator mt-1">
                                         Upload file
                                     </button>
@@ -765,7 +765,7 @@ $access_vehicle = $TMSUsers->check_user_role_access( [
 							
 							<?php if ( ! $dolly_file ): ?>
                                 <div class="js-dolly-driver <?php echo $dolly ? '' : 'd-none'; ?>">
-                                    <button data-href="#popup_upload_dolly_file"
+                                    <button <?php echo $full_only_view ? 'disabled' : ''; ?> data-href="#popup_upload_dolly_file"
                                             class="btn btn-success js-open-popup-activator mt-1">
                                         Upload file
                                     </button>
@@ -792,7 +792,7 @@ $access_vehicle = $TMSUsers->check_user_role_access( [
 							
 							<?php if ( ! $ramp_file ): ?>
                                 <div class="js-ramp-driver <?php echo $ramp ? '' : 'd-none'; ?>">
-                                    <button data-href="#popup_upload_ramp_file"
+                                    <button <?php echo $full_only_view ? 'disabled' : ''; ?> data-href="#popup_upload_ramp_file"
                                             class="btn btn-success js-open-popup-activator mt-1">
                                         Upload file
                                     </button>

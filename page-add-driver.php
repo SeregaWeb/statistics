@@ -112,6 +112,10 @@ if ( $status_publish === 'draft' ) {
 	$full_only_view = false;
 }
 
+if ( $status_publish === 'removed' ) {
+	$full_only_view = true;
+}
+
 get_header();
 
 $logshow        = isset( $_COOKIE[ 'logshow' ] ) && + $_COOKIE[ 'logshow' ] !== 0 ? 'hidden-logs col-lg-1' : 'col-lg-3';

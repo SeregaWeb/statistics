@@ -504,6 +504,7 @@ $access_vehicle = $TMSUsers->check_user_role_access( [
 				<?php
 				// Driving record
 				$simple_upload_args = [
+					'full_only_view' => $full_only_view,
 					'field_name' => 'driving_record',
 					'label'      => 'Driving Record',
 					'file_value' => $driving_record,
@@ -518,6 +519,7 @@ $access_vehicle = $TMSUsers->check_user_role_access( [
 					<?php
 					// Driving record team driver
 					$simple_upload_args = [
+						'full_only_view' => $full_only_view,
 						'field_name' => 'team_driver_driving_record',
 						'label'      => 'Driving Record (Team driver)',
 						'file_value' => $team_driver_driving_record,
@@ -601,6 +603,7 @@ $access_vehicle = $TMSUsers->check_user_role_access( [
 				<?php
 				// Driver licence
 				$simple_upload_args = [
+					'full_only_view' => $full_only_view,
 					'field_name' => 'driver_licence',
 					'label'      => 'Driver Licence',
 					'file_value' => $driver_licence,
@@ -613,6 +616,7 @@ $access_vehicle = $TMSUsers->check_user_role_access( [
 				<?php if ( $team_driver ):
 					// Driver licence team driver
 					$simple_upload_args = [
+						'full_only_view' => $full_only_view,
 						'field_name' => 'driver_licence_team_driver',
 						'label'      => 'Driver Licence (Team driver)',
 						'file_value' => $driver_licence_team_driver,
@@ -717,6 +721,7 @@ $access_vehicle = $TMSUsers->check_user_role_access( [
 						<?php
 						// Hazmat Certificate
 						$simple_upload_args = [
+							'full_only_view' => $full_only_view,
 							'field_name' => 'hazmat_certificate_file',
 							'label'      => 'Hazmat Certificate',
 							'file_value' => $hazmat_certificate_file,
@@ -748,6 +753,7 @@ $access_vehicle = $TMSUsers->check_user_role_access( [
 						<?php
 						// TWIC File
 						$simple_upload_args = [
+							'full_only_view' => $full_only_view,
 							'field_name' => 'twic_file',
 							'label'      => 'TWIC File',
 							'file_value' => $twic_file,
@@ -779,6 +785,7 @@ $access_vehicle = $TMSUsers->check_user_role_access( [
 						<?php
 						// TSA File
 						$simple_upload_args = [
+							'full_only_view' => $full_only_view,
 							'field_name' => 'tsa_file',
 							'label'      => 'TSA File',
 							'file_value' => $tsa_file,
@@ -834,6 +841,7 @@ $access_vehicle = $TMSUsers->check_user_role_access( [
 						<?php
 						// Legal document
 						$simple_upload_args = [
+							'full_only_view' => $full_only_view,
 							'field_name' => 'legal_document',
 							'label'      => 'Legal document',
 							'file_value' => $legal_document,
@@ -864,6 +872,7 @@ $access_vehicle = $TMSUsers->check_user_role_access( [
 							<?php
 							// Legal document
 							$simple_upload_args = [
+								'full_only_view' => $full_only_view,
 								'field_name'   => 'legal_document_team_driver',
 								'label'        => 'Legal document (Team driver)',
 								'file_value'   => $legal_document_team_driver,
@@ -920,6 +929,7 @@ $access_vehicle = $TMSUsers->check_user_role_access( [
 						<?php
 						// Expiration File (Immigration)
 						$simple_upload_args = [
+							'full_only_view' => $full_only_view,
 							'field_name' => 'immigration_file',
 							'label'      => 'Expiration File',
 							'file_value' => $immigration_file,
@@ -946,6 +956,7 @@ $access_vehicle = $TMSUsers->check_user_role_access( [
 							<?php
 							// Expiration File (Immigration) team driver
 							$simple_upload_args = [
+								'full_only_view' => $full_only_view,
 								'field_name'   => 'immigration_file_team_driver',
 								'label'        => 'Expiration File (Team driver)',
 								'file_value'   => $immigration_file_team_driver,
@@ -996,6 +1007,7 @@ $access_vehicle = $TMSUsers->check_user_role_access( [
 						<?php
 						// Background File
 						$simple_upload_args = [
+							'full_only_view' => $full_only_view,
 							'field_name' => 'background_file',
 							'label'      => 'Background File',
 							'file_value' => $background_file,
@@ -1040,15 +1052,15 @@ $access_vehicle = $TMSUsers->check_user_role_access( [
 				<?php endif; ?>
 
                 <div class="col-12 col-md-6 mb-3">
-                    <button type="button" class="btn btn-outline-primary btn-sm js-update-background-date">Update
+                    <button type="button" <?php echo $full_only_view ? 'disabled' : ''; ?> class="btn btn-outline-primary btn-sm js-update-background-date">Update
                         background check date
                     </button>
                 </div>
 				
 				<?php if ( $team_driver ): ?>
                     <div class="col-12 col-md-6 mb-3">
-                        <button type="button"
-                                class="btn btn-outline-success btn-sm js-update-background-date js-team-driver">Update
+                        <button type="button" <?php echo $full_only_view ? 'disabled' : ''; ?> 
+					class="btn btn-outline-success btn-sm js-update-background-date js-team-driver">Update
                             background check date (Team driver)
                         </button>
                     </div>
@@ -1089,6 +1101,7 @@ $access_vehicle = $TMSUsers->check_user_role_access( [
 						<?php
 						// Canada transition File
 						$simple_upload_args = [
+							'full_only_view' => $full_only_view,
 							'field_name' => 'canada_transition_file',
 							'label'      => 'Canada transition File',
 							'file_value' => $canada_transition_file,
@@ -1163,6 +1176,7 @@ $access_vehicle = $TMSUsers->check_user_role_access( [
 						<?php
 						// Change 9 File
 						$simple_upload_args = [
+							'full_only_view' => $full_only_view,
 							'field_name' => 'change_9_file',
 							'label'      => 'Change 9 File',
 							'file_value' => $change_9_file,
@@ -1187,6 +1201,7 @@ $access_vehicle = $TMSUsers->check_user_role_access( [
 							<?php
 							// Change 9 File team driver
 							$simple_upload_args = [
+								'full_only_view' => $full_only_view,
 								'field_name'   => 'change_9_file_team_driver',
 								'label'        => 'Change 9 File (Team driver)',
 								'file_value'   => $change_9_file_team_driver,
@@ -1210,6 +1225,7 @@ $access_vehicle = $TMSUsers->check_user_role_access( [
 				<?php
 				// Odysseia IC agreement
 				$simple_upload_args = [
+					'full_only_view' => $full_only_view,
 					'field_name' => 'ic_agreement',
 					'label'      => 'Odysseia IC agreement',
 					'file_value' => $ic_agreement,
@@ -1307,6 +1323,7 @@ $access_vehicle = $TMSUsers->check_user_role_access( [
 						<?php
 						// Odysseia COI
 						$simple_upload_args = [
+							'full_only_view' => $full_only_view,
 							'field_name' => 'auto_liability_coi',
 							'label'      => 'Odysseia COI',
 							'file_value' => $auto_liability_coi,
@@ -1321,6 +1338,7 @@ $access_vehicle = $TMSUsers->check_user_role_access( [
                         <?php
                         // Martlet Express COI
                         $file_upload_args = [
+                            'full_only_view' => $full_only_view,
                             'field_name'    => 'martlet_coi',
                             'label'         => 'Martlet Express COI',
                             'toggle_block'  => 'js-martlet-coi-files',
@@ -1344,6 +1362,7 @@ $access_vehicle = $TMSUsers->check_user_role_access( [
 						<?php
 						// Endurance Transport COI
 						$file_upload_args = [
+							'full_only_view' => $full_only_view,
 							'field_name'    => 'endurance_coi',
 							'label'         => 'Endurance Transport COI',
 							'toggle_block'  => 'js-endurance-coi-files',
@@ -1388,6 +1407,7 @@ $access_vehicle = $TMSUsers->check_user_role_access( [
 						<?php
 						// Motor Cargo COI
 						$simple_upload_args = [
+							'full_only_view' => $full_only_view,
 							'field_name' => 'motor_cargo_coi',
 							'label'      => 'Motor Cargo COI',
 							'file_value' => $motor_cargo_coi,

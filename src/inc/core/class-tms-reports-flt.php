@@ -2222,6 +2222,9 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 			}
 			
 			if ( $MY_INPUT[ 'factoring_status' ] === 'charge-back' ) {
+				if (!empty(	$MY_INPUT[ 'booked_rate' ])) {
+					$MY_INPUT[ 'charge_back_rate' ] = $MY_INPUT[ 'booked_rate' ];
+				}
 				$MY_INPUT[ 'booked_rate' ] = 0;
 			}
 			
@@ -3430,6 +3433,10 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 		
 		if ( $post_meta[ 'factoring_status' ] === 'charge-back' ) {
 			$post_meta[ 'booked_rate' ] = 0;
+		}
+
+		if (isset($data['charge_back_rate'])) {
+			$post_meta[ 'charge_back_rate' ] = $data[ 'charge_back_rate' ];
 		}
 		
 		// Specify the condition (WHERE clause)
@@ -4650,6 +4657,14 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 			}
 		}
 		
+		// Check if load_status was updated to restart timer status and update timer
+		if ( isset( $meta_data['load_status'] ) ) {
+			$restart_timer_statuses = array( 'loaded-enroute', 'at-del' );
+			if ( in_array( $meta_data['load_status'], $restart_timer_statuses ) ) {
+				$this->update_timer_for_status_change( $post_id, $meta_data['load_status'], true );
+			}
+		}
+		
 		// Проверка на ошибки
 		if ( $wpdb->last_error ) {
 			return new WP_Error( 'db_error', 'Ошибка при обновлении метаданных: ' . $wpdb->last_error );
@@ -4691,6 +4706,27 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 				$timer_class->stop_timer( $post_id, 'Load status changed to: ' . $status );
 			}
 		}
+	}
+	
+	/**
+	 * Update timer when load status changes to restart timer statuses
+	 * 
+	 * @param int $post_id Load ID
+	 * @param string $status Status that triggers timer update
+	 * @param bool $is_flt Is FLT load
+	 * @return void
+	 */
+	private function update_timer_for_status_change( $post_id, $status, $is_flt = true ) {
+		// Get current user's project
+		$user_id = get_current_user_id();
+		$current_project = get_field( 'current_select', 'user_' . $user_id );
+		
+		// Initialize timer class
+		$timer_class = new TMSReportsTimer();
+		
+		// Update timer with status change comment
+		$comment = 'Load status changed to: ' . $status;
+		$timer_class->update_timer( $post_id, $comment, $current_project, $is_flt );
 	}
 	
 	// UPDATE IN DATABASE END

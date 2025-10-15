@@ -515,3 +515,4 @@ if ( ! empty( $results ) ) : ?>
 <?php get_template_part( TEMPLATE_PATH . 'popups/quick-status-update-modal' ); ?>
 <?php get_template_part( TEMPLATE_PATH . 'popups/driver-notice' ); ?>
 <?php get_template_part( TEMPLATE_PATH . 'popups/driver-raiting' ); ?>
+<?php get_template_part( TEMPLATE_PATH . 'popups/remove-driver', 'modal', array() );?>

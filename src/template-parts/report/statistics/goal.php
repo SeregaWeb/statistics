@@ -159,11 +159,12 @@ foreach ( $dispatchers as $dispatcher ) {
 		if ( isset( $dispatcher_stats_indexed[ $fullname ] ) ) {
 			$stat           = $dispatcher_stats_indexed[ $fullname ];
 			$post_count     = $stat[ 'post_count' ];
-			$total_profit   = number_format( $stat[ 'total_profit' ], 2 );
-			$average_profit = number_format( $stat[ 'average_profit' ], 2 );
+			$total_profit_raw = $stat[ 'total_profit' ];
+			$total_profit   = rtrim(rtrim(number_format( $total_profit_raw, 2 ), '0'), '.');
+			$average_profit = rtrim(rtrim(number_format( $stat[ 'average_profit' ], 2 ), '0'), '.');
 			$goal           = $stat[ 'goal' ];
-			$left           = $stat[ 'goal' ] - $stat[ 'total_profit' ];
-			
+			$left           = $stat[ 'goal' ] - $total_profit_raw;
+			$left           = is_numeric($left) ? rtrim(rtrim(number_format($left, 2), '0'), '.') : 0;
 			$compleat_color = '';
 			$text_color     = '#000000';
 			
@@ -172,11 +173,11 @@ foreach ( $dispatchers as $dispatcher ) {
 			}
 			
 			if ( is_numeric( $goal ) && $goal > 0 ) {
-				$profit = isset( $stat['total_profit'] ) ? (float) $stat['total_profit'] : 0.0;
+				$profit = isset( $total_profit_raw ) ? (float) $total_profit_raw : 0.0;
 				$goal_v = (float) $goal;
 				$value_pr = $goal_v > 0 ? ( $profit / $goal_v ) * 100 : 0;
 				
-				$goal_completion = number_format( $value_pr, 2 );
+				$goal_completion = rtrim(rtrim(number_format( $value_pr, 2 ), '0'), '.');
 				
 				
 				if ( $value_pr >= 0 && $value_pr <= 80 ) {

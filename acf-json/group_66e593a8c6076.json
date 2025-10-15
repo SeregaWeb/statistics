@@ -1360,6 +1360,46 @@
             "placeholder": "",
             "prepend": "",
             "append": ""
+        },
+        {
+            "key": "field_68ee43ae514ea",
+            "label": "Mails remove driver",
+            "name": "mails_remove_driver",
+            "aria-label": "",
+            "type": "text",
+            "instructions": "",
+            "required": 0,
+            "conditional_logic": 0,
+            "wrapper": {
+                "width": "",
+                "class": "",
+                "id": ""
+            },
+            "default_value": "",
+            "maxlength": "",
+            "placeholder": "",
+            "prepend": "",
+            "append": ""
+        },
+        {
+            "key": "field_68ee45f8514eb",
+            "label": "Mails notify remove driver",
+            "name": "mails_notify_remove_driver",
+            "aria-label": "",
+            "type": "text",
+            "instructions": "",
+            "required": 0,
+            "conditional_logic": 0,
+            "wrapper": {
+                "width": "",
+                "class": "",
+                "id": ""
+            },
+            "default_value": "",
+            "maxlength": "",
+            "placeholder": "",
+            "prepend": "",
+            "append": ""
         }
     ],
     "location": [
@@ -1380,5 +1420,5 @@
     "active": true,
     "description": "",
     "show_in_rest": 0,
-    "modified": 1758048914
+    "modified": 1760446058
 }

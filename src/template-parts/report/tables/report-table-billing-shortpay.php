@@ -81,6 +81,8 @@ if ( ! empty( $results ) ) : ?>
 			
 			$booked_rate_raw = get_field_value( $meta, 'booked_rate' );
 			$booked_rate     = esc_html( '$' . $helper->format_currency( $booked_rate_raw ) );
+            $charge_back_rate = get_field_value( $meta, 'charge_back_rate' );
+            $charge_back_rate = esc_html( '$' . $helper->format_currency( $charge_back_rate ) );
 			
 			$factoring_status_row = get_field_value( $meta, 'factoring_status' );
 			$factoring_status     = esc_html( $helper->get_label_by_key( $factoring_status_row, 'factoring_status' ) );
@@ -146,7 +148,7 @@ if ( ! empty( $results ) ) : ?>
 
                 <td>
                     <span class="<?php echo $booked_price_class; ?>">
-                        <?php echo $factoring_status_row === 'short-pay' ? $short_pay : $booked_rate; ?>
+                        <?php echo $factoring_status_row === 'short-pay' ? $short_pay : $charge_back_rate; ?>
                     </span>
                 </td>
                 <td>

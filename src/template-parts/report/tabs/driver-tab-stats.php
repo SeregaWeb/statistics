@@ -25,7 +25,7 @@ $driver_statistics = $driver->get_driver_statistics( $post_id, true );
             <div class="card">
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <h5 class="mb-0">Rating</h5>
-                    <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#ratingModal">
+                    <button type="button" <?php echo $full_only_view ? 'disabled' : ''; ?> class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#ratingModal">
                         Add Rating
                     </button>
                 </div>
@@ -135,7 +135,7 @@ $driver_statistics = $driver->get_driver_statistics( $post_id, true );
             <div class="card">
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <h5 class="mb-0">Notifications</h5>
-                    <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#noticeModal">
+                    <button type="button" <?php echo $full_only_view ? 'disabled' : ''; ?> class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#noticeModal">
                         Add Notice
                     </button>
                 </div>

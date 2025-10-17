@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>ETA Test Page</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        button { padding: 10px 20px; margin: 10px; background: #007cba; color: white; border: none; cursor: pointer; }
+        button:hover { background: #005a87; }
+        .result { margin: 20px 0; padding: 10px; background: #f0f0f0; border-radius: 5px; }
+    </style>
+</head>
+<body>
+    <h1>ETA System Test</h1>
+    
+    <div>
+        <button onclick="createTestRecords()">Create Test ETA Records</button>
+        <button onclick="testNotifications()">Test ETA Notifications</button>
+    </div>
+    
+    <div id="result" class="result" style="display: none;"></div>
+    
+    <script>
+        function createTestRecords() {
+            const formData = new FormData();
+            formData.append('action', 'create_test_eta_records');
+            
+            fetch('/wp-admin/admin-ajax.php', {
+                method: 'POST',
+                body: formData,
+                credentials: 'same-origin'
+            })
+            .then(response => {
+                console.log('Response status:', response.status);
+                console.log('Response headers:', response.headers);
+                return response.text();
+            })
+            .then(text => {
+                console.log('Raw response:', text);
+                try {
+                    const data = JSON.parse(text);
+                    document.getElementById('result').style.display = 'block';
+                    document.getElementById('result').innerHTML = 
+                        '<h3>Test Records Created:</h3><p>' + (data.data ? data.data.message : data.message) + '</p>';
+                } catch (e) {
+                    document.getElementById('result').style.display = 'block';
+                    document.getElementById('result').innerHTML = 
+                        '<h3>Error parsing response:</h3><p>' + text.substring(0, 500) + '</p>';
+                }
+            })
+            .catch(error => {
+                document.getElementById('result').style.display = 'block';
+                document.getElementById('result').innerHTML = 
+                    '<h3>Error:</h3><p>' + error.message + '</p>';
+            });
+        }
+        
+        function testNotifications() {
+            const formData = new FormData();
+            formData.append('action', 'test_eta_notifications');
+            
+            fetch('/wp-admin/admin-ajax.php', {
+                method: 'POST',
+                body: formData,
+                credentials: 'same-origin'
+            })
+            .then(response => response.text())
+            .then(text => {
+                console.log('Raw response:', text);
+                try {
+                    const data = JSON.parse(text);
+                    document.getElementById('result').style.display = 'block';
+                    document.getElementById('result').innerHTML = 
+                        '<h3>Notification Test:</h3><p>' + (data.data ? data.data.message : data.message) + '</p><p>Check debug.log for detailed logs.</p>';
+                } catch (e) {
+                    document.getElementById('result').style.display = 'block';
+                    document.getElementById('result').innerHTML = 
+                        '<h3>Error parsing response:</h3><p>' + text.substring(0, 500) + '</p>';
+                }
+            })
+            .catch(error => {
+                document.getElementById('result').style.display = 'block';
+                document.getElementById('result').innerHTML = 
+                    '<h3>Error:</h3><p>' + error.message + '</p>';
+            });
+        }
+    </script>
+</body>
+</html>

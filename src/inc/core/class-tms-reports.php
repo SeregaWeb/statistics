@@ -2859,6 +2859,11 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 			$result = $this->add_load( $MY_INPUT );
 			
 			if ( $result ) {
+				// Remove ETA records if status is final
+				if ( isset( $MY_INPUT['load_status'] ) ) {
+					$this->remove_eta_records_for_status( $result, $MY_INPUT['load_status'] );
+				}
+				
 				wp_send_json_success( [ 'message' => 'Report successfully added', 'data' => $MY_INPUT ] );
 			}
 			
@@ -4723,6 +4728,9 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 			if ( in_array( $meta_data['load_status'], $final_statuses ) ) {
 				$this->stop_timer_for_final_status( $post_id, $meta_data['load_status'], false );
 			}
+			
+			// Remove ETA records for completed loads
+			$this->remove_eta_records_for_status( $post_id, $meta_data['load_status'] );
 		}
 		
 		// Check if load_status was updated to restart timer status and update timer
@@ -6262,6 +6270,42 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 				'message' => 'Shipper optimization failed: ' . $e->getMessage(),
 				'error'   => $e->getMessage()
 			) );
+		}
+	}
+	
+	/**
+	 * Remove ETA records for completed loads
+	 */
+	private function remove_eta_records_for_status( $post_id, $status ) {
+		global $wpdb;
+		
+		$eta_table = $wpdb->prefix . 'eta_records';
+		
+		// Determine which ETA types to remove based on status
+		$eta_types_to_remove = array();
+		
+		// For loaded-enroute, delivered, tonu, cancelled - remove pickup ETA
+		if ( in_array( $status, array( 'loaded-enroute', 'delivered', 'tonu', 'cancelled' ) ) ) {
+			$eta_types_to_remove[] = 'pickup';
+		}
+		
+		// For delivered, tonu, cancelled - remove delivery ETA
+		if ( in_array( $status, array( 'delivered', 'tonu', 'cancelled' ) ) ) {
+			$eta_types_to_remove[] = 'delivery';
+		}
+		
+		// Remove ETA records for regular loads only (is_flt = 0)
+		// Since load_number in eta_records table actually stores the post_id
+		foreach ( $eta_types_to_remove as $eta_type ) {
+			$wpdb->delete(
+				$eta_table,
+				array(
+					'load_number' => $post_id,
+					'eta_type' => $eta_type,
+					'is_flt' => 0
+				),
+				array( '%s', '%s', '%d' )
+			);
 		}
 	}
 	

@@ -13,6 +13,7 @@ $TMSBroker  = new TMSReportsCompany();
 $helper     = new TMSReportsHelper();
 $logs       = new TMSLogs();
 $TMSReports = new TMSReports();
+$eta_manager = new TMSEta();
 
 if ( $flt ) {
 	$TMSReports = new TMSReportsFlt();
@@ -101,7 +102,9 @@ if ( ! empty( $results ) ) :
 			$main = get_field_value( $row, 'main' );
 			
 			$pdlocations = $helper->get_locations_template( $row, 'tracking' );
-			
+
+            $eta_data = $helper->get_eta_data( $row );
+
 			$dispatcher_initials = get_field_value( $meta, 'dispatcher_initials' );
 			$dispatcher          = $helper->get_user_full_name_by_id( $dispatcher_initials );
 			$color_initials      = $dispatcher ? get_field( 'initials_color', 'user_' . $dispatcher_initials )
@@ -171,10 +174,67 @@ if ( ! empty( $results ) ) :
                 </td>
 
                 <td>
+                    <div class="d-flex gap-1 align-items-start">
+                    <div class="w-100">
 					<?php echo $pdlocations[ 'pick_up_template' ]; ?>
+                    </div>
+                    <?php 
+
+                    if ($load_status !== 'loaded-enroute' && $load_status !== 'delivered' && $load_status !== 'tonu' && $load_status !== 'cancelled'):
+
+                    $helper = new TMSReportsHelper();
+                    $eta_data = $helper->get_eta_data($row);
+                    $pickup_data = $helper->get_eta_display_data($eta_data, 'pick_up');
+                    
+                    // Check if ETA record exists
+                    $pickup_eta_exists = $eta_manager->eta_record_exists($row['id'], 'pickup', $flt);
+                    $pickup_button_class = $pickup_eta_exists ? 'btn-success' : 'btn-outline-primary';
+                    ?>
+                    <button class="btn btn-sm <?php echo $pickup_button_class; ?> js-open-popup-activator" 
+                            data-href="#popup_eta_pick_up"
+                            data-load-id="<?php echo $row['id']; ?>"
+                            data-current-date="<?php echo esc_attr($pickup_data['date']); ?>"
+                            data-current-time="<?php echo esc_attr($pickup_data['time']); ?>"
+                            data-state="<?php echo esc_attr($pickup_data['state']); ?>"
+                            data-timezone="<?php echo esc_attr($pickup_data['timezone']); ?>"
+                            data-eta-type="pickup"
+                            data-is-flt="<?php echo $flt ? '1' : '0'; ?>"
+                            title="Pickup ETA - <?php echo esc_attr($pickup_data['timezone']); ?>">
+                        ETA
+                    </button>
+
+                    <?php endif; ?>
+                    </div>
                 </td>
                 <td>
+                    <div class="d-flex gap-1 align-items-start">
+                    <div class="w-100">
 					<?php echo $pdlocations[ 'delivery_template' ]; ?>
+                    </div>
+                    <?php 
+
+                if ($load_status !== 'delivered' && $load_status !== 'tonu' && $load_status !== 'cancelled'):
+                    $delivery_data = $helper->get_eta_display_data($eta_data, 'delivery');
+                    
+                    // Check if ETA record exists
+                    $delivery_eta_exists = $eta_manager->eta_record_exists($row['id'], 'delivery', $flt);
+                    $delivery_button_class = $delivery_eta_exists ? 'btn-success' : 'btn-outline-primary';
+                    ?>
+                    <button class="btn btn-sm <?php echo $delivery_button_class; ?> js-open-popup-activator" 
+                            data-href="#popup_eta_delivery"
+                            data-load-id="<?php echo $row['id']; ?>"
+                            data-current-date="<?php echo esc_attr($delivery_data['date']); ?>"
+                            data-current-time="<?php echo esc_attr($delivery_data['time']); ?>"
+                            data-state="<?php echo esc_attr($delivery_data['state']); ?>"
+                            data-timezone="<?php echo esc_attr($delivery_data['timezone']); ?>"
+                            data-eta-type="delivery"
+                            data-is-flt="<?php echo $flt ? '1' : '0'; ?>"
+                            title="Delivery ETA - <?php echo esc_attr($delivery_data['timezone']); ?>">
+                        ETA
+                    </button>
+
+                    <?php endif; ?>
+                    </div>
                 </td>
                 <td>
 					<?php echo $driver_with_macropoint; ?>
@@ -309,3 +369,7 @@ if ( ! empty( $results ) ) :
 
 <!-- Add Log Message Modal -->
 <?php echo esc_html( get_template_part( TEMPLATE_PATH . 'popups/add-log', 'modal', $args ) ); ?>
+
+<!-- ETA Popups -->
+<?php echo esc_html( get_template_part( TEMPLATE_PATH . 'popups/eta', 'pickup' ) ); ?>
+<?php echo esc_html( get_template_part( TEMPLATE_PATH . 'popups/eta', 'delivery' ) ); ?>

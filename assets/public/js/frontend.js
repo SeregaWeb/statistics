@@ -7265,6 +7265,173 @@ driverPopupsInstance = new DriverPopups();
 
 /***/ }),
 
+/***/ "./src/js/components/eta-popup.ts":
+/*!****************************************!*\
+  !*** ./src/js/components/eta-popup.ts ***!
+  \****************************************/
+/***/ (function(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   initEtaPopups: function() { return /* binding */ initEtaPopups; }
+/* harmony export */ });
+/* harmony import */ var _info_messages__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./info-messages */ "./src/js/components/info-messages.ts");
+
+var loadExistingEtaRecord = function loadExistingEtaRecord(loadId, etaType, isFlt, popup) {
+  var _a;
+  var formData = new FormData();
+  formData.append('action', 'get_eta_record');
+  formData.append('load_id', loadId);
+  formData.append('eta_type', etaType);
+  formData.append('is_flt', isFlt);
+  return fetch(((_a = window.var_from_php) === null || _a === void 0 ? void 0 : _a.ajax_url) || '/wp-admin/admin-ajax.php', {
+    method: 'POST',
+    body: formData
+  }).then(function (response) {
+    return response.json();
+  }).then(function (data) {
+    if (data.success && data.data.exists) {
+      var form = popup.querySelector('form');
+      if (form) {
+        var dateInput = form.querySelector('input[name="date"]');
+        var timeInput = form.querySelector('input[name="time"]');
+        if (dateInput) dateInput.value = data.data.date || '';
+        if (timeInput) timeInput.value = data.data.time || '';
+      }
+    }
+  }).catch(function (error) {
+    console.error('Error loading ETA record:', error);
+  });
+};
+var initEtaPopups = function initEtaPopups() {
+  var clickedButton = null;
+  document.addEventListener('click', function (event) {
+    var target = event.target;
+    if (!target.classList.contains('js-open-popup-activator')) {
+      return;
+    }
+    var button = target;
+    var href = button.getAttribute('data-href');
+    if (href === '#popup_eta_pick_up' || href === '#popup_eta_delivery') {
+      event.preventDefault();
+      clickedButton = button;
+      var loadId = button.getAttribute('data-load-id');
+      var currentDate = button.getAttribute('data-current-date');
+      var currentTime = button.getAttribute('data-current-time');
+      var state = button.getAttribute('data-state');
+      var popup = document.querySelector(href);
+      if (!popup) {
+        console.error('ETA popup not found:', href);
+        return;
+      }
+      var form = popup.querySelector('form');
+      if (form) {
+        var idInput = form.querySelector('input[name="id_load"]');
+        if (idInput) idInput.value = loadId || '';
+      }
+      var etaType = button.getAttribute('data-eta-type') || '';
+      var isFlt = button.getAttribute('data-is-flt') || '0';
+      var hasExistingRecord = button.classList.contains('btn-success');
+      if (hasExistingRecord) {
+        popup.classList.add('active');
+        document.body.classList.add('popup-open');
+        if (form) {
+          var submitBtn = form.querySelector('button[type="submit"]');
+          if (submitBtn) {
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Loading...';
+          }
+        }
+        loadExistingEtaRecord(loadId || '', etaType, isFlt, popup).then(function () {
+          if (form) {
+            var _submitBtn = form.querySelector('button[type="submit"]');
+            if (_submitBtn) {
+              _submitBtn.disabled = false;
+              _submitBtn.textContent = 'Save';
+            }
+          }
+        });
+      } else {
+        if (form) {
+          var dateInput = form.querySelector('input[name="date"]');
+          var timeInput = form.querySelector('input[name="time"]');
+          if (dateInput) dateInput.value = currentDate || '';
+          if (timeInput) timeInput.value = currentTime || '';
+        }
+        popup.classList.add('active');
+        document.body.classList.add('popup-open');
+      }
+    }
+  });
+  document.addEventListener('submit', function (event) {
+    var _a, _b, _c, _d;
+    var form = event.target;
+    if (!form.classList.contains('js-eta-pickup-form') && !form.classList.contains('js-eta-delivery-form')) {
+      return;
+    }
+    event.preventDefault();
+    var loadId = ((_a = form.querySelector('input[name="id_load"]')) === null || _a === void 0 ? void 0 : _a.getAttribute('value')) || '';
+    var date = ((_b = form.querySelector('input[name="date"]')) === null || _b === void 0 ? void 0 : _b.value) || '';
+    var time = ((_c = form.querySelector('input[name="time"]')) === null || _c === void 0 ? void 0 : _c.value) || '';
+    if (!loadId || !date || !time) {
+      (0,_info_messages__WEBPACK_IMPORTED_MODULE_0__.printMessage)('Please fill in all required fields', 'danger', 5000);
+      return;
+    }
+    var activeButton = clickedButton;
+    if (!activeButton) {
+      (0,_info_messages__WEBPACK_IMPORTED_MODULE_0__.printMessage)('Error: Could not find load data', 'danger', 5000);
+      return;
+    }
+    var timezone = activeButton.getAttribute('data-timezone') || '';
+    var etaType = activeButton.getAttribute('data-eta-type') || '';
+    var isFlt = activeButton.getAttribute('data-is-flt') || '0';
+    var formData = new FormData();
+    formData.append('action', 'save_eta_record');
+    formData.append('load_id', loadId);
+    formData.append('date', date);
+    formData.append('time', time);
+    formData.append('timezone', timezone);
+    formData.append('eta_type', etaType);
+    formData.append('is_flt', isFlt);
+    var submitBtn = form.querySelector('button[type="submit"]');
+    if (submitBtn) {
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Saving...';
+    }
+    fetch(((_d = window.var_from_php) === null || _d === void 0 ? void 0 : _d.ajax_url) || '/wp-admin/admin-ajax.php', {
+      method: 'POST',
+      body: formData
+    }).then(function (response) {
+      return response.json();
+    }).then(function (data) {
+      var _a;
+      if (data.success) {
+        activeButton.classList.remove('btn-outline-primary');
+        activeButton.classList.add('btn-success');
+        var popup = form.closest('.popup');
+        if (popup) {
+          popup.classList.remove('active');
+          document.body.classList.remove('popup-open');
+        }
+        (0,_info_messages__WEBPACK_IMPORTED_MODULE_0__.printMessage)(data.data.message, 'success', 5000);
+      } else {
+        (0,_info_messages__WEBPACK_IMPORTED_MODULE_0__.printMessage)('Error: ' + (((_a = data.data) === null || _a === void 0 ? void 0 : _a.message) || 'Unknown error'), 'danger', 5000);
+      }
+    }).catch(function (error) {
+      console.error('ETA save error:', error);
+      (0,_info_messages__WEBPACK_IMPORTED_MODULE_0__.printMessage)('Request failed. Please try again.', 'danger', 5000);
+    }).finally(function () {
+      if (submitBtn) {
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Save';
+      }
+    });
+  });
+};
+
+/***/ }),
+
 /***/ "./src/js/components/filter-clean.ts":
 /*!*******************************************!*\
   !*** ./src/js/components/filter-clean.ts ***!
@@ -23768,12 +23935,14 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _components_common_hold_section__WEBPACK_IMPORTED_MODULE_31__ = __webpack_require__(/*! ./components/common/hold-section */ "./src/js/components/common/hold-section.ts");
 /* harmony import */ var _components_capabilities_filter__WEBPACK_IMPORTED_MODULE_32__ = __webpack_require__(/*! ./components/capabilities-filter */ "./src/js/components/capabilities-filter.ts");
 /* harmony import */ var _components_quick_status_update__WEBPACK_IMPORTED_MODULE_33__ = __webpack_require__(/*! ./components/quick-status-update */ "./src/js/components/quick-status-update.ts");
-/* harmony import */ var _components_quick_copy__WEBPACK_IMPORTED_MODULE_34__ = __webpack_require__(/*! ./components/quick-copy */ "./src/js/components/quick-copy.ts");
-/* harmony import */ var _components_driver_popups__WEBPACK_IMPORTED_MODULE_35__ = __webpack_require__(/*! ./components/driver-popups */ "./src/js/components/driver-popups.ts");
-/* harmony import */ var _components_driver_popup_forms__WEBPACK_IMPORTED_MODULE_36__ = __webpack_require__(/*! ./components/driver-popup-forms */ "./src/js/components/driver-popup-forms.ts");
-/* harmony import */ var _components_common_audio_helper__WEBPACK_IMPORTED_MODULE_37__ = __webpack_require__(/*! ./components/common/audio-helper */ "./src/js/components/common/audio-helper.ts");
-/* harmony import */ var _components_timer_control__WEBPACK_IMPORTED_MODULE_38__ = __webpack_require__(/*! ./components/timer-control */ "./src/js/components/timer-control.ts");
-/* harmony import */ var _components_timer_analytics__WEBPACK_IMPORTED_MODULE_39__ = __webpack_require__(/*! ./components/timer-analytics */ "./src/js/components/timer-analytics.ts");
+/* harmony import */ var _components_eta_popup__WEBPACK_IMPORTED_MODULE_34__ = __webpack_require__(/*! ./components/eta-popup */ "./src/js/components/eta-popup.ts");
+/* harmony import */ var _components_quick_copy__WEBPACK_IMPORTED_MODULE_35__ = __webpack_require__(/*! ./components/quick-copy */ "./src/js/components/quick-copy.ts");
+/* harmony import */ var _components_driver_popups__WEBPACK_IMPORTED_MODULE_36__ = __webpack_require__(/*! ./components/driver-popups */ "./src/js/components/driver-popups.ts");
+/* harmony import */ var _components_driver_popup_forms__WEBPACK_IMPORTED_MODULE_37__ = __webpack_require__(/*! ./components/driver-popup-forms */ "./src/js/components/driver-popup-forms.ts");
+/* harmony import */ var _components_common_audio_helper__WEBPACK_IMPORTED_MODULE_38__ = __webpack_require__(/*! ./components/common/audio-helper */ "./src/js/components/common/audio-helper.ts");
+/* harmony import */ var _components_timer_control__WEBPACK_IMPORTED_MODULE_39__ = __webpack_require__(/*! ./components/timer-control */ "./src/js/components/timer-control.ts");
+/* harmony import */ var _components_timer_analytics__WEBPACK_IMPORTED_MODULE_40__ = __webpack_require__(/*! ./components/timer-analytics */ "./src/js/components/timer-analytics.ts");
+
 
 
 
@@ -23829,10 +23998,10 @@ function ready() {
   };
   var popupInstance = new _parts_popup_window__WEBPACK_IMPORTED_MODULE_1__["default"]();
   popupInstance.init();
-  _components_common_audio_helper__WEBPACK_IMPORTED_MODULE_37__["default"].getInstance();
-  new _components_driver_popup_forms__WEBPACK_IMPORTED_MODULE_36__["default"](urlAjax);
-  new _components_timer_control__WEBPACK_IMPORTED_MODULE_38__.TimerControl(urlAjax);
-  new _components_timer_analytics__WEBPACK_IMPORTED_MODULE_39__.TimerAnalytics(urlAjax);
+  _components_common_audio_helper__WEBPACK_IMPORTED_MODULE_38__["default"].getInstance();
+  new _components_driver_popup_forms__WEBPACK_IMPORTED_MODULE_37__["default"](urlAjax);
+  new _components_timer_control__WEBPACK_IMPORTED_MODULE_39__.TimerControl(urlAjax);
+  new _components_timer_analytics__WEBPACK_IMPORTED_MODULE_40__.TimerAnalytics(urlAjax);
   (0,_components_create_report__WEBPACK_IMPORTED_MODULE_3__.actionCreateReportInit)(urlAjax);
   (0,_components_create_report__WEBPACK_IMPORTED_MODULE_3__.createDraftPosts)(urlAjax);
   (0,_components_create_report__WEBPACK_IMPORTED_MODULE_3__.updateFilesReportInit)(urlAjax);
@@ -23868,6 +24037,7 @@ function ready() {
   (0,_components_driver_core__WEBPACK_IMPORTED_MODULE_26__.driverCoreInit)(urlAjax);
   (0,_components_capabilities_filter__WEBPACK_IMPORTED_MODULE_32__.initCapabilitiesFilter)();
   (0,_components_quick_status_update__WEBPACK_IMPORTED_MODULE_33__.initQuickStatusUpdate)(urlAjax);
+  (0,_components_eta_popup__WEBPACK_IMPORTED_MODULE_34__.initEtaPopups)();
   (0,_components_create_report__WEBPACK_IMPORTED_MODULE_3__.additionalContactsInit)();
   (0,_components_create_report__WEBPACK_IMPORTED_MODULE_3__.addShipperPointInit)();
   (0,_components_input_helpers__WEBPACK_IMPORTED_MODULE_2__.initMoneyMask)();

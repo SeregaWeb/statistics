@@ -1433,6 +1433,128 @@ Kindly confirm once you've received this message." ) . "\n";
 		<?php
 		return ob_get_clean();
 	}
+
+	function get_eta_data ($row) {
+
+		$meta = get_field_value( $row, 'meta_data' );
+
+		// Декодируем JSON, если он не пуст
+		$delivery = ! empty( get_field_value( $meta, 'delivery_location' ) )
+			? json_decode( str_replace( "\'", "'", stripslashes( get_field_value( $meta, 'delivery_location' ) ) ), ARRAY_A )
+			: [];
+		$pick_up  = ! empty( get_field_value( $meta, 'pick_up_location' ) )
+			? json_decode( str_replace( "\'", "'", stripslashes( get_field_value( $meta, 'pick_up_location' ) ) ), ARRAY_A )
+			: [];
+
+		return [
+			'delivery' => $delivery,
+			'pick_up' => $pick_up,
+		];
+	}
+
+	/**
+	 * Extract ETA data for popup display
+	 * Gets date, time_start, and state from short_address
+	 */
+	function get_eta_display_data($eta_data, $type = 'delivery') {
+		$location_data = isset($eta_data[$type][0]) ? $eta_data[$type][0] : null;
+		
+		if (!$location_data) {
+			return [
+				'date' => '',
+				'time' => '',
+				'state' => '',
+				'timezone' => ''
+			];
+		}
+
+		// Extract state from short_address (e.g., "Nikolaev AL" -> "AL")
+		$short_address = $location_data['short_address'] ?? '';
+		$state = '';
+		if ($short_address) {
+			$parts = explode(' ', trim($short_address));
+			$state = end($parts); // Get last part (state)
+		}
+
+		// Get timezone for the state
+		$timezone = $this->get_timezone_by_state($state);
+
+		return [
+			'date' => $location_data['date'] ?? '',
+			'time' => $location_data['time_start'] ?? '',
+			'state' => $state,
+			'timezone' => $timezone
+		];
+	}
+
+	/**
+	 * Get timezone abbreviation by state code
+	 */
+	function get_timezone_by_state($state) {
+		$timezone_map = [
+			// Alaska Time (AKDT UTC-8)
+			'AK' => 'AKDT (UTC-8)',
+			
+			// Pacific Time (PDT UTC-7)
+			'CA' => 'PDT (UTC-7)',
+			'NV' => 'PDT (UTC-7)',
+			'WA' => 'PDT (UTC-7)',
+			'OR' => 'PDT (UTC-7)',
+			
+			// Mountain Time (MDT UTC-6)
+			'AZ' => 'MDT (UTC-6)',
+			'CO' => 'MDT (UTC-6)',
+			'ID' => 'MDT (UTC-6)',
+			'MT' => 'MDT (UTC-6)',
+			'NM' => 'MDT (UTC-6)',
+			'UT' => 'MDT (UTC-6)',
+			'WY' => 'MDT (UTC-6)',
+			
+			// Central Time (CDT UTC-5)
+			'AL' => 'CDT (UTC-5)',
+			'AR' => 'CDT (UTC-5)',
+			'IA' => 'CDT (UTC-5)',
+			'IL' => 'CDT (UTC-5)',
+			'IN' => 'CDT (UTC-5)',
+			'KS' => 'CDT (UTC-5)',
+			'KY' => 'CDT (UTC-5)',
+			'LA' => 'CDT (UTC-5)',
+			'MN' => 'CDT (UTC-5)',
+			'MO' => 'CDT (UTC-5)',
+			'MS' => 'CDT (UTC-5)',
+			'ND' => 'CDT (UTC-5)',
+			'NE' => 'CDT (UTC-5)',
+			'OK' => 'CDT (UTC-5)',
+			'SD' => 'CDT (UTC-5)',
+			'TN' => 'CDT (UTC-5)',
+			'TX' => 'CDT (UTC-5)',
+			'WI' => 'CDT (UTC-5)',
+			
+			// Eastern Time (EDT UTC-4)
+			'CT' => 'EDT (UTC-4)',
+			'DC' => 'EDT (UTC-4)',
+			'DE' => 'EDT (UTC-4)',
+			'FL' => 'EDT (UTC-4)',
+			'GA' => 'EDT (UTC-4)',
+			'MA' => 'EDT (UTC-4)',
+			'MD' => 'EDT (UTC-4)',
+			'ME' => 'EDT (UTC-4)',
+			'MI' => 'EDT (UTC-4)',
+			'NC' => 'EDT (UTC-4)',
+			'NH' => 'EDT (UTC-4)',
+			'NJ' => 'EDT (UTC-4)',
+			'NY' => 'EDT (UTC-4)',
+			'OH' => 'EDT (UTC-4)',
+			'PA' => 'EDT (UTC-4)',
+			'RI' => 'EDT (UTC-4)',
+			'SC' => 'EDT (UTC-4)',
+			'VA' => 'EDT (UTC-4)',
+			'VT' => 'EDT (UTC-4)',
+			'WV' => 'EDT (UTC-4)',
+		];
+
+		return $timezone_map[$state] ?? '';
+	}
 	
 	function get_locations_template( $row, $template = 'default' ) {
 		$meta = get_field_value( $row, 'meta_data' );

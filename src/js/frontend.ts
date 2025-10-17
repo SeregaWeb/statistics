@@ -77,6 +77,7 @@ import { driverHoldInit } from './components/driver-hold';
 import { holdSectionInit } from './components/common/hold-section';
 import { initCapabilitiesFilter } from './components/capabilities-filter';
 import { initQuickStatusUpdate } from './components/quick-status-update';
+import { initEtaPopups } from './components/eta-popup';
 import './components/quick-copy';
 import './components/driver-popups';
 import DriverPopupForms from './components/driver-popup-forms';
@@ -160,6 +161,7 @@ function ready() {
     driverCoreInit(urlAjax);
     initCapabilitiesFilter();
     initQuickStatusUpdate(urlAjax);
+    initEtaPopups();
 
     // DRIVER END
     additionalContactsInit();

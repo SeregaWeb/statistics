@@ -1,5 +1,6 @@
 import { printMessage } from './info-messages';
 import { driverPopupsInstance } from './driver-popups';
+import { populateLoadSelect } from '../utils/load-select';
 
 /**
  * Driver Popup Forms Handler
@@ -20,6 +21,13 @@ class DriverPopupForms {
         this.handleRatingForm();
         this.handleNoticeForm();
         this.listenForPopupOpen();
+        this.handleDriverPageRatingModal();
+        this.setupRatingConstraints();
+
+        // Reset UI state on popup open
+        document.addEventListener('tms:rating-popup-open', () => {
+            this.resetRatingUIState();
+        });
     }
 
     /**
@@ -48,6 +56,12 @@ class DriverPopupForms {
         document.querySelectorAll('.rating-btn').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 const target = e.target as HTMLButtonElement;
+                const rating = parseInt(target.dataset.rating || '0', 10);
+                // Prevent selecting 3-5 when Canceled selected
+                if (this.isCanceledSelected() && rating > 2) {
+                    printMessage('For Canceled loads you can set rating 1-2 only.', 'warning', 2500);
+                    return;
+                }
                 
                 // Remove active class from all buttons
                 document.querySelectorAll('.rating-btn').forEach(b => b.classList.remove('active'));
@@ -75,6 +89,13 @@ class DriverPopupForms {
 
         form.addEventListener('submit', (e) => {
             e.preventDefault();
+            // Validate constraint on submit as well
+            const selectedRatingInput = document.getElementById('selectedRating') as HTMLInputElement;
+            const selectedRatingVal = selectedRatingInput ? parseInt(selectedRatingInput.value || '0', 10) : 0;
+            if (this.isCanceledSelected() && selectedRatingVal > 2) {
+                printMessage('For Canceled loads you can set rating 1-2 only.', 'danger', 3000);
+                return;
+            }
             
             // Check if driver_id is already in the form (for modal windows)
             const existingDriverId = form.querySelector('input[name="driver_id"]') as HTMLInputElement;
@@ -103,6 +124,78 @@ class DriverPopupForms {
                 return;
             }
         });
+    }
+
+    /**
+     * Setup constraints: when Canceled selected, disable rating buttons 3-5
+     */
+    private setupRatingConstraints(): void {
+        const loadSelect = document.getElementById('loadNumber') as HTMLSelectElement | null;
+        if (!loadSelect) return;
+
+        const applyState = () => {
+            const canceled = this.isCanceledSelected();
+            const buttons = Array.from(document.querySelectorAll<HTMLButtonElement>('.rating-btn'));
+            buttons.forEach(btn => {
+                const val = parseInt(btn.dataset.rating || '0', 10);
+                // Always restore base outline classes first
+                if (val === 1) {
+                    btn.className = 'btn btn-outline-danger rating-btn';
+                } else if (val >= 2 && val <= 4) {
+                    btn.className = 'btn btn-outline-warning rating-btn';
+                } else if (val === 5) {
+                    btn.className = 'btn btn-outline-success rating-btn';
+                }
+                // Remove active state in Canceled mode
+                if (canceled) {
+                    btn.classList.remove('active');
+                }
+                // Disable 3-5 in Canceled mode
+                const shouldDisable = canceled && val > 2;
+                btn.disabled = shouldDisable;
+            });
+            // Reset selectedRating when Canceled
+            const selectedRating = document.getElementById('selectedRating') as HTMLInputElement | null;
+            if (selectedRating && canceled) {
+                selectedRating.value = '';
+            }
+        };
+
+        // Initial apply
+        applyState();
+        // On change
+        loadSelect.addEventListener('change', applyState);
+    }
+
+    private resetRatingUIState(): void {
+        // Re-enable all rating buttons and clear selection
+        document.querySelectorAll<HTMLButtonElement>('.rating-btn').forEach(btn => {
+            btn.disabled = false;
+            btn.classList.remove('active');
+            // Restore original outline classes
+            const rating = parseInt(btn.dataset.rating || '0', 10);
+            if (rating === 1) {
+                btn.className = 'btn btn-outline-danger rating-btn';
+            } else if (rating >= 2 && rating <= 4) {
+                btn.className = 'btn btn-outline-warning rating-btn';
+            } else if (rating === 5) {
+                btn.className = 'btn btn-outline-success rating-btn';
+            }
+        });
+        const selectedRating = document.getElementById('selectedRating') as HTMLInputElement | null;
+        if (selectedRating) selectedRating.value = '';
+        // Re-apply constraints based on current select value
+        const loadSelect = document.getElementById('loadNumber') as HTMLSelectElement | null;
+        if (loadSelect) {
+            // Trigger change to apply constraint state
+            const event = new Event('change');
+            loadSelect.dispatchEvent(event);
+        }
+    }
+
+    private isCanceledSelected(): boolean {
+        const loadSelect = document.getElementById('loadNumber') as HTMLSelectElement | null;
+        return !!(loadSelect && loadSelect.value === 'Canceled');
     }
 
     /**
@@ -266,7 +359,14 @@ class DriverPopupForms {
         .then(response => response.json())
         .then(data => {
             if (data.success) {
-                this.updatePopupContent(type, data.data);
+                if (type === 'rating') {
+                    // For ratings, data.data now contains both ratings and available_loads
+                    this.updatePopupContent(type, data.data.ratings);
+                    // Also update available loads
+                    this.updateAvailableLoadsFromResponse(data.data.available_loads);
+                } else {
+                    this.updatePopupContent(type, data.data);
+                }
             }
         })
         .catch(error => {
@@ -289,6 +389,16 @@ class DriverPopupForms {
      * Update rating popup content
      */
     private updateRatingPopup(data: any): void {
+        // Reset rating UI state when new driver ratings arrive
+        this.resetRatingUIState();
+        // Also reset load select to placeholder and re-apply constraints
+        const loadSelect = document.getElementById('loadNumber') as HTMLSelectElement | null;
+        if (loadSelect) {
+            loadSelect.selectedIndex = 0; // placeholder
+            const evt = new Event('change');
+            loadSelect.dispatchEvent(evt);
+        }
+
         // Find the ratings container in the popup
         const ratingsContainer = document.getElementById('driverRatingContent');
         
@@ -311,6 +421,82 @@ class DriverPopupForms {
         }
     }
 
+
+    /**
+     * Update available loads from response data
+     */
+    private updateAvailableLoadsFromResponse(availableLoads: any[]): void {
+        const loadSelect = document.getElementById('loadNumber') as HTMLSelectElement;
+        const loadsInfo = document.getElementById('loadsInfo') as HTMLElement;
+        
+        if (!loadSelect || !loadsInfo) {
+            return;
+        }
+
+        populateLoadSelect(loadSelect, loadsInfo, availableLoads);
+    }
+
+    /**
+     * Handle rating modal on driver page
+     */
+    private handleDriverPageRatingModal(): void {
+        const ratingModal = document.getElementById('ratingModal');
+        const loadSelect = document.getElementById('loadNumber') as HTMLSelectElement;
+        const loadsInfo = document.getElementById('loadsInfo') as HTMLElement;
+        
+        if (ratingModal && loadSelect && loadsInfo) {
+            ratingModal.addEventListener('show.bs.modal', () => {
+                this.loadAvailableLoadsForDriverPage(loadSelect, loadsInfo);
+            });
+        }
+    }
+
+    /**
+     * Load available loads for driver page rating modal
+     */
+    private loadAvailableLoadsForDriverPage(loadSelect: HTMLSelectElement, loadsInfo: HTMLElement): void {
+        // Get driver ID from hidden input in the form
+        const driverIdInput = document.querySelector('input[name="driver_id"]') as HTMLInputElement;
+        
+        if (!driverIdInput || !driverIdInput.value) {
+            loadsInfo.textContent = 'Driver ID not found';
+            loadsInfo.className = 'text-danger';
+            return;
+        }
+        
+        const driverId = driverIdInput.value;
+
+        loadsInfo.textContent = 'Loading available loads...';
+        loadsInfo.className = 'text-muted';
+        loadSelect.innerHTML = '<option value="">Select a load...</option>';
+        
+        const formData = new FormData();
+        formData.append('action', 'get_driver_ratings');
+        formData.append('driver_id', driverId);
+        
+        fetch(this.ajaxUrl, {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success && data.data && data.data.available_loads) {
+                const loads = data.data.available_loads;
+                populateLoadSelect(loadSelect, loadsInfo, loads);
+            } else {
+                loadsInfo.textContent = 'Error loading loads';
+                loadsInfo.className = 'text-danger';
+            }
+        })
+        .catch(error => {
+            console.error('Error loading available loads:', error);
+            loadsInfo.textContent = 'Error loading loads: ' + error.message;
+            loadsInfo.className = 'text-danger';
+        });
+    }
+
+    // populateLoadSelect moved to utils/load-select.ts
+
     /**
      * Show message to user using existing printMessage function
      */
@@ -319,6 +505,186 @@ class DriverPopupForms {
         const messageType = type === 'error' ? 'danger' : type;
         
         printMessage(message, messageType, 3000);
+    }
+
+    /**
+     * Load and display driver statistics
+     */
+    public loadDriverStatistics(driverId: number): void {
+        const container = document.getElementById('driver-statistics-container');
+        if (!container) {
+            return;
+        }
+
+        // Show loading state
+        container.innerHTML = `
+            <div class="col-12">
+                <div class="text-center">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <p class="mt-2">Loading driver statistics...</p>
+                </div>
+            </div>
+        `;
+
+        // Create form data
+        const formData = new FormData();
+        formData.append('action', 'get_driver_statistics');
+        formData.append('driver_id', driverId.toString());
+        
+        // Get nonce from hidden input
+        const nonceInput = document.getElementById('driver-statistics-nonce') as HTMLInputElement;
+        const nonce = nonceInput ? nonceInput.value : '';
+        formData.append('nonce', nonce);
+        
+        // console.log('Sending AJAX request with:', {
+        //     action: 'get_driver_statistics',
+        //     driver_id: driverId,
+        //     nonce: nonce
+        // });
+
+        // Fetch statistics
+        fetch(this.ajaxUrl, {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                this.displayDriverStatistics(data.data);
+            } else {
+                this.showStatisticsError(data.data || 'Failed to load statistics');
+            }
+        })
+        .catch(error => {
+            console.error('Error loading driver statistics:', error);
+            this.showStatisticsError('Network error occurred');
+        });
+    }
+
+    /**
+     * Display driver statistics in cards
+     */
+    private displayDriverStatistics(stats: any): void {
+        const container = document.getElementById('driver-statistics-container');
+        if (!container) return;
+
+        const formatCurrency = (amount: number): string => {
+            return new Intl.NumberFormat('en-US', {
+                style: 'currency',
+                currency: 'USD',
+                minimumFractionDigits: 0,
+                maximumFractionDigits: 2
+            }).format(amount);
+        };
+
+        let html = '<div class="row">';
+
+        // Financial Statistics
+        html += `
+            <div class="col-md-4 mb-3">
+                <div class="card bg-primary text-white">
+                    <div class="card-body">
+                        <h5 class="card-title">Total Gross</h5>
+                        <h3 class="card-text">${formatCurrency(stats.total_gross)}</h3>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4 mb-3">
+                <div class="card bg-success text-white">
+                    <div class="card-body">
+                        <h5 class="card-title">Driver Earnings</h5>
+                        <h3 class="card-text">${formatCurrency(stats.total_driver_earnings)}</h3>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4 mb-3">
+                <div class="card bg-info text-white">
+                    <div class="card-body">
+                        <h5 class="card-title">Total Profit</h5>
+                        <h3 class="card-text">${formatCurrency(stats.total_profit)}</h3>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        // Load Statistics
+        html += `
+            <div class="col-md-3 mb-3">
+                <div class="card bg-success text-white">
+                    <div class="card-body">
+                        <h5 class="card-title">Delivered</h5>
+                        <h3 class="card-text">${stats.delivered_loads}</h3>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3 mb-3">
+                <div class="card bg-danger text-white">
+                    <div class="card-body">
+                        <h5 class="card-title">Cancelled</h5>
+                        <h3 class="card-text">${stats.cancelled_loads}</h3>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3 mb-3">
+                <div class="card bg-warning text-white">
+                    <div class="card-body">
+                        <h5 class="card-title">TONU</h5>
+                        <h3 class="card-text">${stats.tonu_loads}</h3>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        // Show loaded loads only if there are any
+        if (stats.loaded_loads > 0) {
+            html += `
+                <div class="col-md-3 mb-3">
+                    <div class="card bg-secondary text-white">
+                        <div class="card-body">
+                            <h5 class="card-title">Loaded</h5>
+                            <h3 class="card-text">${stats.loaded_loads}</h3>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Show waiting on PU only if there are any
+        if (stats.waiting_pu_loads > 0) {
+            html += `
+                <div class="col-md-3 mb-3">
+                    <div class="card bg-dark text-white">
+                        <div class="card-body">
+                            <h5 class="card-title">Waiting on PU</h5>
+                            <h3 class="card-text">${stats.waiting_pu_loads}</h3>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        html += '</div>';
+        container.innerHTML = html;
+    }
+
+    /**
+     * Show error message for statistics loading
+     */
+    private showStatisticsError(message: string): void {
+        const container = document.getElementById('driver-statistics-container');
+        if (!container) return;
+
+        container.innerHTML = `
+            <div class="col-12">
+                <div class="alert alert-danger" role="alert">
+                    <h5 class="alert-heading">Error Loading Statistics</h5>
+                    <p>${message}</p>
+                    <button class="btn btn-outline-danger btn-sm" onclick="location.reload()">Retry</button>
+                </div>
+            </div>
+        `;
     }
 }
 

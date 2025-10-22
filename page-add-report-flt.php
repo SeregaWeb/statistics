@@ -77,8 +77,10 @@ if ( $TMSUsers->check_user_role_access( array(
 	} else {
 		if ( $TMSUsers->check_user_in_my_group( $my_team, intval( $dispatcher_initials ) ) ) {
 			$access = true;
+			$full_only_view = false;
 		} else {
-			$access = false;
+			$access         = false;
+			$full_only_view = true;
 		}
 	}
 }
@@ -134,6 +136,10 @@ if ( $TMSUsers->check_user_role_access( array( 'driver_updates' ), true ) && iss
 	$full_only_view = true;
 	$access         = true;
 }
+
+if ( $TMSUsers->check_user_role_access( array( 'expedite_manager' ), true ) && isset( $meta ) ) {
+	$access         = true;
+}	
 
 $access_flt = get_field( 'flt', 'user_' . get_current_user_id() );
 $is_admin   = current_user_can( 'administrator' );

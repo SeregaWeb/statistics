@@ -80,6 +80,12 @@ if ( $report_object ) {
 		$dispatcher_initials    = get_field_value( $meta, 'dispatcher_initials' );
 		$reference_number       = get_field_value( $meta, 'reference_number' );
 		$unit_number_name       = get_field_value( $meta, 'unit_number_name' );
+		
+		// Extract unit number from unit_number_name (e.g., "(77) Daniel Jecson" -> "77")
+		$unit_number = '';
+		if ( !empty( $unit_number_name ) && preg_match( '/^\((\d+)\)/', $unit_number_name, $matches ) ) {
+			$unit_number = $matches[1];
+		}
 		$booked_rate            = get_field_value( $meta, 'booked_rate' );
 		$driver_rate            = get_field_value( $meta, 'driver_rate' );
 		$driver_phone           = get_field_value( $meta, 'driver_phone' );
@@ -560,17 +566,42 @@ $read_only = $TMSUsers->check_read_only( $post_status );
 		<?php else: ?>
 
             <div class="mb-2 col-12 col-md-6 col-xl-4">
-                <label for="unit_number_name" class="form-label">Unit Number & Name</label>
-                <div class="d-flex gap-1 js-container-number">
-                    <input type="text" name="unit_number_name" <?php echo $tbd ? 'readonly' : ''; ?>
-                           data-value="<?php echo $unit_number_name; ?>"
-                           value="<?php echo stripslashes( $unit_number_name ); ?>" class="form-control" required>
-                    <button class="btn btn-primary js-fill-driver" data-phone=".js-phone-driver">Fill</button>
-                    <input type="hidden" name="attached_driver"
-                           value="<?php echo get_field_value( $meta, 'attached_driver' ); ?>">
+                <label for="unit_number" class="form-label">Unit Number</label>
+                <div class="position-relative">
+                    <input type="text" id="unit_number" name="unit_number" <?php echo $tbd ? 'readonly' : ''; ?>
+                           value="<?php echo $unit_number; ?>" class="form-control js-unit-number-input" 
+                           placeholder="Enter unit number..." autocomplete="off">
+                    <div class="js-driver-dropdown dropdown-menu w-100" style="display: none; max-height: 200px; overflow-y: auto; position: absolute; top: 100%; left: 0; z-index: 1000; background: white; border: 1px solid #ccc; border-radius: 4px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                        <!-- Driver options will be populated here -->
+                    </div>
                 </div>
+                
+                
+                <!-- Hidden fields -->
+                <input type="hidden" name="attached_driver" value="<?php echo get_field_value( $meta, 'attached_driver' ); ?>">
+                <input type="hidden" name="unit_number_name" value="<?php echo $unit_number_name; ?>">
                 <input type="hidden" name="old_unit_number_name" value="<?php echo $unit_number_name; ?>">
+                <input type="hidden" id="driver-search-nonce" value="<?php echo wp_create_nonce('driver_search_nonce'); ?>">
             </div>
+
+            <style>
+                .js-driver-dropdown .dropdown-item,
+                .js-second-driver-dropdown .dropdown-item {
+                    padding: 8px 12px;
+                    cursor: pointer;
+                    border-bottom: 1px solid #eee;
+                }
+                .js-driver-dropdown .dropdown-item:hover,
+                .js-driver-dropdown .dropdown-item.active,
+                .js-second-driver-dropdown .dropdown-item:hover,
+                .js-second-driver-dropdown .dropdown-item.active {
+                    background-color: #f8f9fa;
+                }
+                .js-driver-dropdown .dropdown-item:last-child,
+                .js-second-driver-dropdown .dropdown-item:last-child {
+                    border-bottom: none;
+                }
+            </style>
 
             <div class="mb-2 col-12 col-md-6 col-xl-4">
                 <label for="driver_rate" class="form-label">Driver Rate</label>
@@ -661,19 +692,22 @@ $read_only = $TMSUsers->check_read_only( $post_status );
                         <p class="h5">Second Driver </p>
                     </div>
                     <div class="mb-2 col-12 col-md-6 col-xl-4">
-                        <label for="unit_number_name" class="form-label">Second Unit Number & Name</label>
-                        <div class="d-flex gap-1 js-container-number">
-                            <input type="text" name="second_unit_number_name"
-                                   data-value="<?php echo $second_unit_number_name; ?>"
-                                   value="<?php echo stripslashes( $second_unit_number_name ); ?>" class="form-control"
-                            >
-                            <button class="btn btn-primary js-fill-driver" data-phone=".js-second-phone-driver">Fill
-                            </button>
-                            <input type="hidden" name="attached_second_driver"
-                                   value="<?php echo get_field_value( $meta, 'attached_second_driver' ); ?>">
+                        <label for="second_unit_number" class="form-label">Second Unit Number</label>
+                        <div class="position-relative">
+                            <input type="text" id="second_unit_number" name="second_unit_number" 
+                                   value="<?php echo $second_unit_number; ?>" class="form-control js-second-unit-number-input" 
+                                   placeholder="Enter unit number..." autocomplete="off">
+                            <div class="js-second-driver-dropdown dropdown-menu w-100" style="display: none; max-height: 200px; overflow-y: auto; position: absolute; top: 100%; left: 0; z-index: 1000; background: white; border: 1px solid #ccc; border-radius: 4px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                                <!-- Driver options will be populated here -->
+                            </div>
                         </div>
-                        <input type="hidden" name="old_second_unit_number_name"
-                               value="<?php echo $second_unit_number_name; ?>">
+                        
+                        
+                        <!-- Hidden fields -->
+                        <input type="hidden" name="attached_second_driver" value="<?php echo get_field_value( $meta, 'attached_second_driver' ); ?>">
+                        <input type="hidden" name="second_unit_number_name" value="<?php echo $second_unit_number_name; ?>">
+                        <input type="hidden" name="old_second_unit_number_name" value="<?php echo $second_unit_number_name; ?>">
+                        <input type="hidden" id="second-driver-search-nonce" value="<?php echo wp_create_nonce('driver_search_nonce'); ?>">
                     </div>
 
                     <div class="mb-2 col-12 col-md-6 col-xl-4">

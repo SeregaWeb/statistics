@@ -46,7 +46,13 @@
                             
                             <div class="col-12">
                                 <label for="loadNumber" class="form-label">Load number</label>
-                                <input type="text" class="form-control" id="loadNumber" required name="load_number">
+                                <select class="form-control" id="loadNumber" required name="load_number">
+                                    <option value="">Select a load...</option>
+                                    <option value="Canceled">Canceled</option>
+                                </select>
+                                <div class="form-text">
+                                    <small class="text-muted" id="loadsInfo">Loading available loads...</small>
+                                </div>
                             </div>
                             
                             <div class="col-12">

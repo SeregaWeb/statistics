@@ -5145,35 +5145,7 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 	 * Remove ETA records for completed loads
 	 */
 	private function remove_eta_records_for_status( $post_id, $status ) {
-		global $wpdb;
-		
-		$eta_table = $wpdb->prefix . 'eta_records';
-		
-		// Determine which ETA types to remove based on status
-		$eta_types_to_remove = array();
-		
-		// For loaded-enroute, delivered, tonu, cancelled - remove pickup ETA
-		if ( in_array( $status, array( 'loaded-enroute', 'delivered', 'tonu', 'cancelled' ) ) ) {
-			$eta_types_to_remove[] = 'pickup';
-		}
-		
-		// For delivered, tonu, cancelled - remove delivery ETA
-		if ( in_array( $status, array( 'delivered', 'tonu', 'cancelled' ) ) ) {
-			$eta_types_to_remove[] = 'delivery';
-		}
-		
-		// Remove ETA records for FLT loads only (is_flt = 1)
-		// Since load_number in eta_records table actually stores the post_id
-		foreach ( $eta_types_to_remove as $eta_type ) {
-			$wpdb->delete(
-				$eta_table,
-				array(
-					'load_number' => $post_id,
-					'eta_type' => $eta_type,
-					'is_flt' => 1
-				),
-				array( '%s', '%s', '%d' )
-			);
-		}
+		// Use helper function for FLT loads (is_flt = true)
+		$this->remove_eta_records_by_status( $post_id, $status, true );
 	}
 }

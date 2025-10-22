@@ -81,6 +81,7 @@ import { initEtaPopups } from './components/eta-popup';
 import './components/quick-copy';
 import './components/driver-popups';
 import DriverPopupForms from './components/driver-popup-forms';
+import DriverAutocomplete from './components/driver-autocomplete';
 import AudioHelper from './components/common/audio-helper';
 import { TimerControl } from './components/timer-control';
 import { TimerAnalytics } from './components/timer-analytics';
@@ -114,7 +115,35 @@ function ready() {
     AudioHelper.getInstance();
     
     // Initialize Driver Popup Forms
-    new DriverPopupForms(urlAjax);
+    const driverPopupForms = new DriverPopupForms(urlAjax);
+    
+    // Initialize Driver Autocomplete
+    new DriverAutocomplete(urlAjax, {
+        unitInput: '.js-unit-number-input',
+        dropdown: '.js-driver-dropdown',
+        attachedDriverInput: 'input[name="attached_driver"]',
+        phoneInput: '.js-phone-driver',
+        unitNumberNameInput: 'input[name="unit_number_name"]',
+        nonceInput: '#driver-search-nonce'
+    });
+    
+    // Initialize Second Driver Autocomplete
+    new DriverAutocomplete(urlAjax, {
+        unitInput: '.js-second-unit-number-input',
+        dropdown: '.js-second-driver-dropdown',
+        attachedDriverInput: 'input[name="attached_second_driver"]',
+        phoneInput: '.js-second-phone-driver',
+        unitNumberNameInput: 'input[name="second_unit_number_name"]',
+        nonceInput: '#second-driver-search-nonce'
+    });
+    
+    // Load driver statistics if on driver page
+    if (document.getElementById('driver-statistics-container')) {
+        const driverIdInput = document.querySelector('input[name="driver_id"]') as HTMLInputElement;
+        if (driverIdInput && driverIdInput.value) {
+            driverPopupForms.loadDriverStatistics(parseInt(driverIdInput.value));
+        }
+    }
     
     // Initialize Timer Control
     new TimerControl(urlAjax);

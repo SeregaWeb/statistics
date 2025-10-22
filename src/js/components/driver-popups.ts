@@ -20,6 +20,8 @@ interface DriverNotice {
     status: number;
 }
 
+import { populateLoadSelect } from '../utils/load-select';
+
 class DriverPopups {
     private addNewLoadUrl: string = '';
     private popupSystem: any = null;
@@ -37,6 +39,8 @@ class DriverPopups {
         
         // Import existing popup system
         this.importPopupSystem();
+
+        // Server-side hides initial rows; no client init needed
     }
 
     private async importPopupSystem(): Promise<void> {
@@ -91,6 +95,19 @@ class DriverPopups {
                 }
             }
         });
+
+        // Load more ratings on driver single page
+        document.addEventListener('click', (e: Event) => {
+            const target = e.target as HTMLElement;
+            if (target && target.id === 'ratingsLoadMore') {
+                e.preventDefault();
+                this.revealMoreRatings(target as HTMLButtonElement);
+            }
+            if (target && target.id === 'noticesLoadMore') {
+                e.preventDefault();
+                this.revealMoreNotices(target as HTMLButtonElement);
+            }
+        });
     }
 
     private handleRatingClick(button: HTMLElement): void {
@@ -139,8 +156,40 @@ class DriverPopups {
         // Show popup using existing system
         this.openPopup('#driver-rating-popup');
 
+        // Notify forms module to reset rating UI state
+        try {
+            document.dispatchEvent(new CustomEvent('tms:rating-popup-open'));
+        } catch (e) {
+            // no-op
+        }
+
         // Load rating data
         this.loadDriverRatings(parseInt(driverId));
+    }
+
+    // Reveal more notices in chunks
+    private revealMoreNotices(button: HTMLButtonElement): void {
+        const stepAttr = button.getAttribute('data-step');
+        const step = stepAttr ? parseInt(stepAttr, 10) : 5;
+        const rows = Array.from(document.querySelectorAll<HTMLTableRowElement>('.js-notice-row'));
+        if (rows.length === 0) {
+            button.classList.add('d-none');
+            return;
+        }
+
+        const isRowVisible = (row: HTMLTableRowElement) => row.style.display !== 'none';
+        const visibleCount = rows.reduce((acc, r) => acc + (isRowVisible(r) ? 1 : 0), 0);
+        const nextVisible = Math.min(visibleCount + step, rows.length);
+
+        for (let i = visibleCount; i < nextVisible; i++) {
+            rows[i].style.display = '';
+        }
+
+        if (nextVisible >= rows.length) {
+            button.classList.add('d-none');
+        } else {
+            button.classList.remove('d-none');
+        }
     }
 
     private handleNoticeClick(button: HTMLElement): void {
@@ -228,7 +277,11 @@ class DriverPopups {
             const data = await response.json();
 
             if (data.success) {
-                this.displayRatings(data.data, contentElement);
+                // data.data now contains both ratings and available_loads
+                this.displayRatings(data.data.ratings, contentElement);
+                
+                // Update available loads in the form
+                this.updateAvailableLoads(data.data.available_loads);
             } else {
                 contentElement.innerHTML = '<div class="alert alert-danger">Failed to load ratings</div>';
             }
@@ -290,6 +343,54 @@ class DriverPopups {
         `).join('');
 
         container.innerHTML = ratingsHtml;
+
+        // After rendering ratings inside popup we do not paginate here
+    }
+
+    // Helper for driver single page table: reveals 5 more rows on each click
+    private revealMoreRatings(button: HTMLButtonElement): void {
+        const stepAttr = button.getAttribute('data-step');
+        const step = stepAttr ? parseInt(stepAttr, 10) : 5;
+        const rows = Array.from(document.querySelectorAll<HTMLTableRowElement>('.js-rating-row'));
+        if (rows.length === 0) {
+            button.classList.add('d-none');
+            return;
+        }
+
+        // Determine how many rows are currently visible
+        const isRowVisible = (row: HTMLTableRowElement) => row.style.display !== 'none';
+        let visibleCount = rows.reduce((acc, r) => acc + (isRowVisible(r) ? 1 : 0), 0);
+
+        // On first run, if nothing hidden logic prepared yet, hide rows beyond first step
+        if (visibleCount === 0 || visibleCount === rows.length) {
+            rows.forEach((r, idx) => {
+                r.style.display = idx < step ? '' : 'none';
+            });
+            visibleCount = Math.min(step, rows.length);
+        } else {
+            // Reveal next chunk
+            const nextVisible = Math.min(visibleCount + step, rows.length);
+            for (let i = visibleCount; i < nextVisible; i++) {
+                rows[i].style.display = '';
+            }
+            visibleCount = nextVisible;
+        }
+
+        // Toggle button visibility
+        if (visibleCount >= rows.length) {
+            button.classList.add('d-none');
+        } else {
+            button.classList.remove('d-none');
+        }
+    }
+
+    // setupDriverPageRatingsPagination removed; handled by PHP to avoid flash
+
+    private updateAvailableLoads(availableLoads: any[]): void {
+        const loadSelect = document.getElementById('loadNumber') as HTMLSelectElement;
+        const loadsInfo = document.getElementById('loadsInfo') as HTMLElement;
+        if (!loadSelect || !loadsInfo) return;
+        populateLoadSelect(loadSelect, loadsInfo, availableLoads);
     }
 
     private displayNotices(notices: DriverNotice[], container: HTMLElement): void {

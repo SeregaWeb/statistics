@@ -5735,6 +5735,336 @@ var initGetInfoDriver = function initGetInfoDriver(urlAjax, ProjectsLinks) {
 
 /***/ }),
 
+/***/ "./src/js/components/driver-autocomplete.ts":
+/*!**************************************************!*\
+  !*** ./src/js/components/driver-autocomplete.ts ***!
+  \**************************************************/
+/***/ (function(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+function _typeof(o) { "@babel/helpers - typeof"; return _typeof = "function" == typeof Symbol && "symbol" == typeof Symbol.iterator ? function (o) { return typeof o; } : function (o) { return o && "function" == typeof Symbol && o.constructor === Symbol && o !== Symbol.prototype ? "symbol" : typeof o; }, _typeof(o); }
+function _regeneratorRuntime() { "use strict"; /*! regenerator-runtime -- Copyright (c) 2014-present, Facebook, Inc. -- license (MIT): https://github.com/facebook/regenerator/blob/main/LICENSE */ _regeneratorRuntime = function _regeneratorRuntime() { return e; }; var t, e = {}, r = Object.prototype, n = r.hasOwnProperty, o = Object.defineProperty || function (t, e, r) { t[e] = r.value; }, i = "function" == typeof Symbol ? Symbol : {}, a = i.iterator || "@@iterator", c = i.asyncIterator || "@@asyncIterator", u = i.toStringTag || "@@toStringTag"; function define(t, e, r) { return Object.defineProperty(t, e, { value: r, enumerable: !0, configurable: !0, writable: !0 }), t[e]; } try { define({}, ""); } catch (t) { define = function define(t, e, r) { return t[e] = r; }; } function wrap(t, e, r, n) { var i = e && e.prototype instanceof Generator ? e : Generator, a = Object.create(i.prototype), c = new Context(n || []); return o(a, "_invoke", { value: makeInvokeMethod(t, r, c) }), a; } function tryCatch(t, e, r) { try { return { type: "normal", arg: t.call(e, r) }; } catch (t) { return { type: "throw", arg: t }; } } e.wrap = wrap; var h = "suspendedStart", l = "suspendedYield", f = "executing", s = "completed", y = {}; function Generator() {} function GeneratorFunction() {} function GeneratorFunctionPrototype() {} var p = {}; define(p, a, function () { return this; }); var d = Object.getPrototypeOf, v = d && d(d(values([]))); v && v !== r && n.call(v, a) && (p = v); var g = GeneratorFunctionPrototype.prototype = Generator.prototype = Object.create(p); function defineIteratorMethods(t) { ["next", "throw", "return"].forEach(function (e) { define(t, e, function (t) { return this._invoke(e, t); }); }); } function AsyncIterator(t, e) { function invoke(r, o, i, a) { var c = tryCatch(t[r], t, o); if ("throw" !== c.type) { var u = c.arg, h = u.value; return h && "object" == _typeof(h) && n.call(h, "__await") ? e.resolve(h.__await).then(function (t) { invoke("next", t, i, a); }, function (t) { invoke("throw", t, i, a); }) : e.resolve(h).then(function (t) { u.value = t, i(u); }, function (t) { return invoke("throw", t, i, a); }); } a(c.arg); } var r; o(this, "_invoke", { value: function value(t, n) { function callInvokeWithMethodAndArg() { return new e(function (e, r) { invoke(t, n, e, r); }); } return r = r ? r.then(callInvokeWithMethodAndArg, callInvokeWithMethodAndArg) : callInvokeWithMethodAndArg(); } }); } function makeInvokeMethod(e, r, n) { var o = h; return function (i, a) { if (o === f) throw Error("Generator is already running"); if (o === s) { if ("throw" === i) throw a; return { value: t, done: !0 }; } for (n.method = i, n.arg = a;;) { var c = n.delegate; if (c) { var u = maybeInvokeDelegate(c, n); if (u) { if (u === y) continue; return u; } } if ("next" === n.method) n.sent = n._sent = n.arg;else if ("throw" === n.method) { if (o === h) throw o = s, n.arg; n.dispatchException(n.arg); } else "return" === n.method && n.abrupt("return", n.arg); o = f; var p = tryCatch(e, r, n); if ("normal" === p.type) { if (o = n.done ? s : l, p.arg === y) continue; return { value: p.arg, done: n.done }; } "throw" === p.type && (o = s, n.method = "throw", n.arg = p.arg); } }; } function maybeInvokeDelegate(e, r) { var n = r.method, o = e.iterator[n]; if (o === t) return r.delegate = null, "throw" === n && e.iterator.return && (r.method = "return", r.arg = t, maybeInvokeDelegate(e, r), "throw" === r.method) || "return" !== n && (r.method = "throw", r.arg = new TypeError("The iterator does not provide a '" + n + "' method")), y; var i = tryCatch(o, e.iterator, r.arg); if ("throw" === i.type) return r.method = "throw", r.arg = i.arg, r.delegate = null, y; var a = i.arg; return a ? a.done ? (r[e.resultName] = a.value, r.next = e.nextLoc, "return" !== r.method && (r.method = "next", r.arg = t), r.delegate = null, y) : a : (r.method = "throw", r.arg = new TypeError("iterator result is not an object"), r.delegate = null, y); } function pushTryEntry(t) { var e = { tryLoc: t[0] }; 1 in t && (e.catchLoc = t[1]), 2 in t && (e.finallyLoc = t[2], e.afterLoc = t[3]), this.tryEntries.push(e); } function resetTryEntry(t) { var e = t.completion || {}; e.type = "normal", delete e.arg, t.completion = e; } function Context(t) { this.tryEntries = [{ tryLoc: "root" }], t.forEach(pushTryEntry, this), this.reset(!0); } function values(e) { if (e || "" === e) { var r = e[a]; if (r) return r.call(e); if ("function" == typeof e.next) return e; if (!isNaN(e.length)) { var o = -1, i = function next() { for (; ++o < e.length;) if (n.call(e, o)) return next.value = e[o], next.done = !1, next; return next.value = t, next.done = !0, next; }; return i.next = i; } } throw new TypeError(_typeof(e) + " is not iterable"); } return GeneratorFunction.prototype = GeneratorFunctionPrototype, o(g, "constructor", { value: GeneratorFunctionPrototype, configurable: !0 }), o(GeneratorFunctionPrototype, "constructor", { value: GeneratorFunction, configurable: !0 }), GeneratorFunction.displayName = define(GeneratorFunctionPrototype, u, "GeneratorFunction"), e.isGeneratorFunction = function (t) { var e = "function" == typeof t && t.constructor; return !!e && (e === GeneratorFunction || "GeneratorFunction" === (e.displayName || e.name)); }, e.mark = function (t) { return Object.setPrototypeOf ? Object.setPrototypeOf(t, GeneratorFunctionPrototype) : (t.__proto__ = GeneratorFunctionPrototype, define(t, u, "GeneratorFunction")), t.prototype = Object.create(g), t; }, e.awrap = function (t) { return { __await: t }; }, defineIteratorMethods(AsyncIterator.prototype), define(AsyncIterator.prototype, c, function () { return this; }), e.AsyncIterator = AsyncIterator, e.async = function (t, r, n, o, i) { void 0 === i && (i = Promise); var a = new AsyncIterator(wrap(t, r, n, o), i); return e.isGeneratorFunction(r) ? a : a.next().then(function (t) { return t.done ? t.value : a.next(); }); }, defineIteratorMethods(g), define(g, u, "Generator"), define(g, a, function () { return this; }), define(g, "toString", function () { return "[object Generator]"; }), e.keys = function (t) { var e = Object(t), r = []; for (var n in e) r.push(n); return r.reverse(), function next() { for (; r.length;) { var t = r.pop(); if (t in e) return next.value = t, next.done = !1, next; } return next.done = !0, next; }; }, e.values = values, Context.prototype = { constructor: Context, reset: function reset(e) { if (this.prev = 0, this.next = 0, this.sent = this._sent = t, this.done = !1, this.delegate = null, this.method = "next", this.arg = t, this.tryEntries.forEach(resetTryEntry), !e) for (var r in this) "t" === r.charAt(0) && n.call(this, r) && !isNaN(+r.slice(1)) && (this[r] = t); }, stop: function stop() { this.done = !0; var t = this.tryEntries[0].completion; if ("throw" === t.type) throw t.arg; return this.rval; }, dispatchException: function dispatchException(e) { if (this.done) throw e; var r = this; function handle(n, o) { return a.type = "throw", a.arg = e, r.next = n, o && (r.method = "next", r.arg = t), !!o; } for (var o = this.tryEntries.length - 1; o >= 0; --o) { var i = this.tryEntries[o], a = i.completion; if ("root" === i.tryLoc) return handle("end"); if (i.tryLoc <= this.prev) { var c = n.call(i, "catchLoc"), u = n.call(i, "finallyLoc"); if (c && u) { if (this.prev < i.catchLoc) return handle(i.catchLoc, !0); if (this.prev < i.finallyLoc) return handle(i.finallyLoc); } else if (c) { if (this.prev < i.catchLoc) return handle(i.catchLoc, !0); } else { if (!u) throw Error("try statement without catch or finally"); if (this.prev < i.finallyLoc) return handle(i.finallyLoc); } } } }, abrupt: function abrupt(t, e) { for (var r = this.tryEntries.length - 1; r >= 0; --r) { var o = this.tryEntries[r]; if (o.tryLoc <= this.prev && n.call(o, "finallyLoc") && this.prev < o.finallyLoc) { var i = o; break; } } i && ("break" === t || "continue" === t) && i.tryLoc <= e && e <= i.finallyLoc && (i = null); var a = i ? i.completion : {}; return a.type = t, a.arg = e, i ? (this.method = "next", this.next = i.finallyLoc, y) : this.complete(a); }, complete: function complete(t, e) { if ("throw" === t.type) throw t.arg; return "break" === t.type || "continue" === t.type ? this.next = t.arg : "return" === t.type ? (this.rval = this.arg = t.arg, this.method = "return", this.next = "end") : "normal" === t.type && e && (this.next = e), y; }, finish: function finish(t) { for (var e = this.tryEntries.length - 1; e >= 0; --e) { var r = this.tryEntries[e]; if (r.finallyLoc === t) return this.complete(r.completion, r.afterLoc), resetTryEntry(r), y; } }, catch: function _catch(t) { for (var e = this.tryEntries.length - 1; e >= 0; --e) { var r = this.tryEntries[e]; if (r.tryLoc === t) { var n = r.completion; if ("throw" === n.type) { var o = n.arg; resetTryEntry(r); } return o; } } throw Error("illegal catch attempt"); }, delegateYield: function delegateYield(e, r, n) { return this.delegate = { iterator: values(e), resultName: r, nextLoc: n }, "next" === this.method && (this.arg = t), y; } }, e; }
+function _classCallCheck(a, n) { if (!(a instanceof n)) throw new TypeError("Cannot call a class as a function"); }
+function _defineProperties(e, r) { for (var t = 0; t < r.length; t++) { var o = r[t]; o.enumerable = o.enumerable || !1, o.configurable = !0, "value" in o && (o.writable = !0), Object.defineProperty(e, _toPropertyKey(o.key), o); } }
+function _createClass(e, r, t) { return r && _defineProperties(e.prototype, r), t && _defineProperties(e, t), Object.defineProperty(e, "prototype", { writable: !1 }), e; }
+function _toPropertyKey(t) { var i = _toPrimitive(t, "string"); return "symbol" == _typeof(i) ? i : i + ""; }
+function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e = t[Symbol.toPrimitive]; if (void 0 !== e) { var i = e.call(t, r || "default"); if ("object" != _typeof(i)) return i; throw new TypeError("@@toPrimitive must return a primitive value."); } return ("string" === r ? String : Number)(t); }
+var __awaiter = undefined && undefined.__awaiter || function (thisArg, _arguments, P, generator) {
+  function adopt(value) {
+    return value instanceof P ? value : new P(function (resolve) {
+      resolve(value);
+    });
+  }
+  return new (P || (P = Promise))(function (resolve, reject) {
+    function fulfilled(value) {
+      try {
+        step(generator.next(value));
+      } catch (e) {
+        reject(e);
+      }
+    }
+    function rejected(value) {
+      try {
+        step(generator["throw"](value));
+      } catch (e) {
+        reject(e);
+      }
+    }
+    function step(result) {
+      result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected);
+    }
+    step((generator = generator.apply(thisArg, _arguments || [])).next());
+  });
+};
+var DriverAutocomplete = /*#__PURE__*/function () {
+  function DriverAutocomplete(ajaxUrl, selectors) {
+    _classCallCheck(this, DriverAutocomplete);
+    this.searchTimeout = null;
+    this.selectedDriver = null;
+    this.searchCache = new Map();
+    this.lastSearchTerm = '';
+    this.ajaxUrl = ajaxUrl;
+    this.selectors = selectors;
+    this.init();
+  }
+  return _createClass(DriverAutocomplete, [{
+    key: "init",
+    value: function init() {
+      var _this = this;
+      var unitInput = document.querySelector(this.selectors.unitInput);
+      if (!unitInput) return;
+      unitInput.addEventListener('input', function (e) {
+        return _this.handleInput(e);
+      });
+      unitInput.addEventListener('blur', function () {
+        return _this.handleBlur();
+      });
+      unitInput.addEventListener('focus', function () {
+        return _this.handleFocus();
+      });
+      unitInput.addEventListener('keydown', function (e) {
+        return _this.handleKeydown(e);
+      });
+      document.addEventListener('click', function (e) {
+        return _this.handleDocumentClick(e);
+      });
+      this.restoreSelectedDriver();
+    }
+  }, {
+    key: "handleInput",
+    value: function handleInput(e) {
+      var _this2 = this;
+      var input = e.target;
+      var value = input.value.trim();
+      if (this.searchTimeout) {
+        clearTimeout(this.searchTimeout);
+      }
+      if (!value) {
+        this.clearSelection();
+        this.searchCache.clear();
+        this.hideDropdown();
+        return;
+      }
+      if (this.selectedDriver) {
+        this.selectedDriver = null;
+      }
+      this.searchTimeout = setTimeout(function () {
+        _this2.searchDrivers(value);
+      }, 300);
+    }
+  }, {
+    key: "handleBlur",
+    value: function handleBlur() {
+      var _this3 = this;
+      setTimeout(function () {
+        _this3.hideDropdown();
+      }, 150);
+    }
+  }, {
+    key: "handleFocus",
+    value: function handleFocus() {
+      var input = document.querySelector(this.selectors.unitInput);
+      if (input) {
+        var currentValue = input.value.trim();
+        if (!currentValue && this.selectedDriver && this.lastSearchTerm && this.searchCache.has(this.lastSearchTerm)) {
+          this.showDropdown(this.searchCache.get(this.lastSearchTerm));
+        } else if (currentValue) {
+          if (this.searchCache.has(currentValue)) {
+            this.showDropdown(this.searchCache.get(currentValue));
+          } else {
+            this.searchDrivers(currentValue);
+          }
+        }
+      }
+    }
+  }, {
+    key: "handleKeydown",
+    value: function handleKeydown(e) {
+      var dropdown = document.querySelector(this.selectors.dropdown);
+      var items = dropdown.querySelectorAll('.dropdown-item');
+      if (!dropdown || items.length === 0) return;
+      var currentActive = dropdown.querySelector('.dropdown-item.active');
+      var activeIndex = currentActive ? Array.from(items).indexOf(currentActive) : -1;
+      switch (e.key) {
+        case 'ArrowDown':
+          e.preventDefault();
+          activeIndex = Math.min(activeIndex + 1, items.length - 1);
+          this.setActiveItem(items, activeIndex);
+          break;
+        case 'ArrowUp':
+          e.preventDefault();
+          activeIndex = Math.max(activeIndex - 1, 0);
+          this.setActiveItem(items, activeIndex);
+          break;
+        case 'Enter':
+          e.preventDefault();
+          if (currentActive) {
+            this.selectDriver(currentActive);
+          }
+          break;
+        case 'Escape':
+          this.hideDropdown();
+          break;
+      }
+    }
+  }, {
+    key: "handleDocumentClick",
+    value: function handleDocumentClick(e) {
+      var _a;
+      var target = e.target;
+      var container = (_a = document.querySelector(this.selectors.unitInput)) === null || _a === void 0 ? void 0 : _a.closest('.position-relative');
+      if (container && !container.contains(target)) {
+        this.hideDropdown();
+      }
+    }
+  }, {
+    key: "searchDrivers",
+    value: function searchDrivers(unitNumber) {
+      return __awaiter(this, void 0, void 0, /*#__PURE__*/_regeneratorRuntime().mark(function _callee() {
+        var nonceInput, nonce, formData, response, data;
+        return _regeneratorRuntime().wrap(function _callee$(_context) {
+          while (1) switch (_context.prev = _context.next) {
+            case 0:
+              _context.prev = 0;
+              nonceInput = document.getElementById(this.selectors.nonceInput.replace('#', ''));
+              nonce = nonceInput ? nonceInput.value : '';
+              formData = new FormData();
+              formData.append('action', 'search_drivers_by_unit');
+              formData.append('unit_number', unitNumber);
+              formData.append('nonce', nonce);
+              _context.next = 9;
+              return fetch(this.ajaxUrl, {
+                method: 'POST',
+                body: formData
+              });
+            case 9:
+              response = _context.sent;
+              _context.next = 12;
+              return response.json();
+            case 12:
+              data = _context.sent;
+              if (data.success) {
+                this.searchCache.set(unitNumber, data.data);
+                this.lastSearchTerm = unitNumber;
+                this.showDropdown(data.data);
+              } else {
+                this.searchCache.set(unitNumber, []);
+                this.lastSearchTerm = unitNumber;
+                this.hideDropdown();
+              }
+              _context.next = 20;
+              break;
+            case 16:
+              _context.prev = 16;
+              _context.t0 = _context["catch"](0);
+              console.error('Error searching drivers:', _context.t0);
+              this.hideDropdown();
+            case 20:
+            case "end":
+              return _context.stop();
+          }
+        }, _callee, this, [[0, 16]]);
+      }));
+    }
+  }, {
+    key: "showDropdown",
+    value: function showDropdown(drivers) {
+      var _this4 = this;
+      var dropdown = document.querySelector(this.selectors.dropdown);
+      if (!dropdown) return;
+      if (drivers.length === 0) {
+        dropdown.innerHTML = '<div class="dropdown-item text-muted">No drivers found</div>';
+      } else {
+        dropdown.innerHTML = drivers.map(function (driver) {
+          return "<div class=\"dropdown-item\" data-driver='".concat(JSON.stringify(driver), "'>\n                    <strong>").concat(driver.display_name, "</strong>\n                    ").concat(driver.phone ? "<br><small class=\"text-muted\">".concat(driver.phone, "</small>") : '', "\n                </div>");
+        }).join('');
+        dropdown.querySelectorAll('.dropdown-item').forEach(function (item) {
+          item.addEventListener('click', function () {
+            return _this4.selectDriver(item);
+          });
+        });
+      }
+      dropdown.style.display = 'block';
+    }
+  }, {
+    key: "hideDropdown",
+    value: function hideDropdown() {
+      var dropdown = document.querySelector(this.selectors.dropdown);
+      if (dropdown) {
+        dropdown.style.display = 'none';
+      }
+    }
+  }, {
+    key: "setActiveItem",
+    value: function setActiveItem(items, index) {
+      items.forEach(function (item, i) {
+        item.classList.toggle('active', i === index);
+      });
+    }
+  }, {
+    key: "selectDriver",
+    value: function selectDriver(item) {
+      var driverData = item.getAttribute('data-driver');
+      if (!driverData) return;
+      try {
+        var driver = JSON.parse(driverData);
+        this.setSelectedDriver(driver);
+        this.hideDropdown();
+      } catch (error) {
+        console.error('Error parsing driver data:', error);
+      }
+    }
+  }, {
+    key: "setSelectedDriver",
+    value: function setSelectedDriver(driver) {
+      this.selectedDriver = driver;
+      var attachedDriverInput = document.querySelector(this.selectors.attachedDriverInput);
+      if (attachedDriverInput) {
+        attachedDriverInput.value = driver.driver_id;
+      }
+      var unitInput = document.querySelector(this.selectors.unitInput);
+      if (unitInput) {
+        unitInput.value = '';
+        unitInput.placeholder = "Selected: ".concat(driver.display_name);
+      }
+      var phoneInput = document.querySelector(this.selectors.phoneInput);
+      if (phoneInput && driver.phone) {
+        phoneInput.value = driver.phone;
+      }
+      var unitNumberNameInput = document.querySelector(this.selectors.unitNumberNameInput);
+      if (unitNumberNameInput) {
+        unitNumberNameInput.value = driver.display_name;
+      }
+    }
+  }, {
+    key: "clearSelection",
+    value: function clearSelection() {
+      this.selectedDriver = null;
+      var attachedDriverInput = document.querySelector(this.selectors.attachedDriverInput);
+      if (attachedDriverInput) {
+        attachedDriverInput.value = '';
+      }
+      var unitNumberNameInput = document.querySelector(this.selectors.unitNumberNameInput);
+      if (unitNumberNameInput) {
+        unitNumberNameInput.value = '';
+      }
+      var phoneInput = document.querySelector(this.selectors.phoneInput);
+      if (phoneInput) {
+        phoneInput.value = '';
+      }
+      var unitInput = document.querySelector(this.selectors.unitInput);
+      if (unitInput) {
+        unitInput.placeholder = 'Enter unit number...';
+      }
+    }
+  }, {
+    key: "restoreSelectedDriver",
+    value: function restoreSelectedDriver() {
+      var attachedDriverInput = document.querySelector(this.selectors.attachedDriverInput);
+      var unitNumberNameInput = document.querySelector(this.selectors.unitNumberNameInput);
+      var phoneInput = document.querySelector(this.selectors.phoneInput);
+      if (attachedDriverInput && attachedDriverInput.value && unitNumberNameInput && unitNumberNameInput.value && phoneInput && phoneInput.value) {
+        var driver = {
+          driver_id: attachedDriverInput.value,
+          display_name: unitNumberNameInput.value,
+          phone: phoneInput.value,
+          unit_number: attachedDriverInput.value
+        };
+        this.selectedDriver = driver;
+        var unitInput = document.querySelector(this.selectors.unitInput);
+        if (unitInput) {
+          unitInput.value = '';
+          unitInput.placeholder = "Selected: ".concat(driver.display_name);
+        }
+      }
+    }
+  }]);
+}();
+/* harmony default export */ __webpack_exports__["default"] = (DriverAutocomplete);
+
+/***/ }),
+
 /***/ "./src/js/components/driver-core.ts":
 /*!******************************************!*\
   !*** ./src/js/components/driver-core.ts ***!
@@ -6652,12 +6982,14 @@ var driverHoldInit = function driverHoldInit(ajaxUrl) {
 __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _info_messages__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./info-messages */ "./src/js/components/info-messages.ts");
 /* harmony import */ var _driver_popups__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./driver-popups */ "./src/js/components/driver-popups.ts");
+/* harmony import */ var _utils_load_select__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ../utils/load-select */ "./src/js/utils/load-select.ts");
 function _typeof(o) { "@babel/helpers - typeof"; return _typeof = "function" == typeof Symbol && "symbol" == typeof Symbol.iterator ? function (o) { return typeof o; } : function (o) { return o && "function" == typeof Symbol && o.constructor === Symbol && o !== Symbol.prototype ? "symbol" : typeof o; }, _typeof(o); }
 function _classCallCheck(a, n) { if (!(a instanceof n)) throw new TypeError("Cannot call a class as a function"); }
 function _defineProperties(e, r) { for (var t = 0; t < r.length; t++) { var o = r[t]; o.enumerable = o.enumerable || !1, o.configurable = !0, "value" in o && (o.writable = !0), Object.defineProperty(e, _toPropertyKey(o.key), o); } }
 function _createClass(e, r, t) { return r && _defineProperties(e.prototype, r), t && _defineProperties(e, t), Object.defineProperty(e, "prototype", { writable: !1 }), e; }
 function _toPropertyKey(t) { var i = _toPrimitive(t, "string"); return "symbol" == _typeof(i) ? i : i + ""; }
 function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e = t[Symbol.toPrimitive]; if (void 0 !== e) { var i = e.call(t, r || "default"); if ("object" != _typeof(i)) return i; throw new TypeError("@@toPrimitive must return a primitive value."); } return ("string" === r ? String : Number)(t); }
+
 
 
 var DriverPopupForms = /*#__PURE__*/function () {
@@ -6670,22 +7002,28 @@ var DriverPopupForms = /*#__PURE__*/function () {
   return _createClass(DriverPopupForms, [{
     key: "init",
     value: function init() {
+      var _this = this;
       this.handleRatingButtons();
       this.handleRatingForm();
       this.handleNoticeForm();
       this.listenForPopupOpen();
+      this.handleDriverPageRatingModal();
+      this.setupRatingConstraints();
+      document.addEventListener('tms:rating-popup-open', function () {
+        _this.resetRatingUIState();
+      });
     }
   }, {
     key: "listenForPopupOpen",
     value: function listenForPopupOpen() {
-      var _this = this;
+      var _this2 = this;
       document.addEventListener('click', function (e) {
         var target = e.target;
         if (target.closest('[data-driver-id]')) {
           var button = target.closest('[data-driver-id]');
           var driverId = button.getAttribute('data-driver-id');
           if (driverId) {
-            _this.currentDriverId = driverId;
+            _this2.currentDriverId = driverId;
           }
         }
       });
@@ -6693,9 +7031,15 @@ var DriverPopupForms = /*#__PURE__*/function () {
   }, {
     key: "handleRatingButtons",
     value: function handleRatingButtons() {
+      var _this3 = this;
       document.querySelectorAll('.rating-btn').forEach(function (btn) {
         btn.addEventListener('click', function (e) {
           var target = e.target;
+          var rating = parseInt(target.dataset.rating || '0', 10);
+          if (_this3.isCanceledSelected() && rating > 2) {
+            (0,_info_messages__WEBPACK_IMPORTED_MODULE_0__.printMessage)('For Canceled loads you can set rating 1-2 only.', 'warning', 2500);
+            return;
+          }
           document.querySelectorAll('.rating-btn').forEach(function (b) {
             return b.classList.remove('active');
           });
@@ -6710,17 +7054,23 @@ var DriverPopupForms = /*#__PURE__*/function () {
   }, {
     key: "handleRatingForm",
     value: function handleRatingForm() {
-      var _this2 = this;
+      var _this4 = this;
       var form = document.getElementById('ratingForm');
       if (!form) {
         return;
       }
       form.addEventListener('submit', function (e) {
         e.preventDefault();
+        var selectedRatingInput = document.getElementById('selectedRating');
+        var selectedRatingVal = selectedRatingInput ? parseInt(selectedRatingInput.value || '0', 10) : 0;
+        if (_this4.isCanceledSelected() && selectedRatingVal > 2) {
+          (0,_info_messages__WEBPACK_IMPORTED_MODULE_0__.printMessage)('For Canceled loads you can set rating 1-2 only.', 'danger', 3000);
+          return;
+        }
         var existingDriverId = form.querySelector('input[name="driver_id"]');
         var driverId = existingDriverId ? existingDriverId.value : null;
         if (!driverId) {
-          driverId = _this2.currentDriverId || _this2.getDriverIdFromPopup('driverRatingName');
+          driverId = _this4.currentDriverId || _this4.getDriverIdFromPopup('driverRatingName');
           var driverIdField = document.getElementById('ratingDriverId');
           if (driverIdField && driverId) {
             driverIdField.value = driverId;
@@ -6729,7 +7079,7 @@ var DriverPopupForms = /*#__PURE__*/function () {
         if (driverId) {
           var formData = new FormData(form);
           formData.set('action', 'add_driver_rating');
-          _this2.submitForm(formData, 'rating');
+          _this4.submitForm(formData, 'rating');
         } else {
           (0,_info_messages__WEBPACK_IMPORTED_MODULE_0__.printMessage)('No driver ID found!', 'danger', 3000);
           return;
@@ -6737,9 +7087,70 @@ var DriverPopupForms = /*#__PURE__*/function () {
       });
     }
   }, {
+    key: "setupRatingConstraints",
+    value: function setupRatingConstraints() {
+      var _this5 = this;
+      var loadSelect = document.getElementById('loadNumber');
+      if (!loadSelect) return;
+      var applyState = function applyState() {
+        var canceled = _this5.isCanceledSelected();
+        var buttons = Array.from(document.querySelectorAll('.rating-btn'));
+        buttons.forEach(function (btn) {
+          var val = parseInt(btn.dataset.rating || '0', 10);
+          if (val === 1) {
+            btn.className = 'btn btn-outline-danger rating-btn';
+          } else if (val >= 2 && val <= 4) {
+            btn.className = 'btn btn-outline-warning rating-btn';
+          } else if (val === 5) {
+            btn.className = 'btn btn-outline-success rating-btn';
+          }
+          if (canceled) {
+            btn.classList.remove('active');
+          }
+          var shouldDisable = canceled && val > 2;
+          btn.disabled = shouldDisable;
+        });
+        var selectedRating = document.getElementById('selectedRating');
+        if (selectedRating && canceled) {
+          selectedRating.value = '';
+        }
+      };
+      applyState();
+      loadSelect.addEventListener('change', applyState);
+    }
+  }, {
+    key: "resetRatingUIState",
+    value: function resetRatingUIState() {
+      document.querySelectorAll('.rating-btn').forEach(function (btn) {
+        btn.disabled = false;
+        btn.classList.remove('active');
+        var rating = parseInt(btn.dataset.rating || '0', 10);
+        if (rating === 1) {
+          btn.className = 'btn btn-outline-danger rating-btn';
+        } else if (rating >= 2 && rating <= 4) {
+          btn.className = 'btn btn-outline-warning rating-btn';
+        } else if (rating === 5) {
+          btn.className = 'btn btn-outline-success rating-btn';
+        }
+      });
+      var selectedRating = document.getElementById('selectedRating');
+      if (selectedRating) selectedRating.value = '';
+      var loadSelect = document.getElementById('loadNumber');
+      if (loadSelect) {
+        var event = new Event('change');
+        loadSelect.dispatchEvent(event);
+      }
+    }
+  }, {
+    key: "isCanceledSelected",
+    value: function isCanceledSelected() {
+      var loadSelect = document.getElementById('loadNumber');
+      return !!(loadSelect && loadSelect.value === 'Canceled');
+    }
+  }, {
     key: "handleNoticeForm",
     value: function handleNoticeForm() {
-      var _this3 = this;
+      var _this6 = this;
       var form = document.getElementById('noticeForm');
       if (!form) return;
       form.addEventListener('submit', function (e) {
@@ -6747,7 +7158,7 @@ var DriverPopupForms = /*#__PURE__*/function () {
         var existingDriverId = form.querySelector('input[name="driver_id"]');
         var driverId = existingDriverId ? existingDriverId.value : null;
         if (!driverId) {
-          driverId = _this3.currentDriverId || _this3.getDriverIdFromPopup('driverNoticeName');
+          driverId = _this6.currentDriverId || _this6.getDriverIdFromPopup('driverNoticeName');
           var driverIdField = document.getElementById('noticeDriverId');
           if (driverIdField && driverId) {
             driverIdField.value = driverId;
@@ -6756,7 +7167,7 @@ var DriverPopupForms = /*#__PURE__*/function () {
         if (driverId) {
           var formData = new FormData(form);
           formData.set('action', 'add_driver_notice');
-          _this3.submitForm(formData, 'notice');
+          _this6.submitForm(formData, 'notice');
         } else {
           (0,_info_messages__WEBPACK_IMPORTED_MODULE_0__.printMessage)('No driver ID found!', 'danger', 3000);
           return;
@@ -6773,7 +7184,7 @@ var DriverPopupForms = /*#__PURE__*/function () {
   }, {
     key: "submitForm",
     value: function submitForm(formData, type) {
-      var _this4 = this;
+      var _this7 = this;
       fetch(this.ajaxUrl, {
         method: 'POST',
         body: formData
@@ -6791,13 +7202,13 @@ var DriverPopupForms = /*#__PURE__*/function () {
         });
       }).then(function (data) {
         if (data.success) {
-          _this4.handleSuccess(type);
+          _this7.handleSuccess(type);
         } else {
-          _this4.handleError(type, data.data || 'Unknown error');
+          _this7.handleError(type, data.data || 'Unknown error');
         }
       }).catch(function (error) {
         (0,_info_messages__WEBPACK_IMPORTED_MODULE_0__.printMessage)('Network error occurred', 'danger', 3000);
-        _this4.handleError(type, error.message || 'Network error');
+        _this7.handleError(type, error.message || 'Network error');
       });
     }
   }, {
@@ -6838,7 +7249,7 @@ var DriverPopupForms = /*#__PURE__*/function () {
   }, {
     key: "updatePopupData",
     value: function updatePopupData(type) {
-      var _this5 = this;
+      var _this8 = this;
       var driverId = this.currentDriverId || this.getDriverIdFromPopup(type === 'rating' ? 'driverRatingName' : 'driverNoticeName');
       if (!driverId) {
         console.error('No driver ID found for popup update');
@@ -6855,7 +7266,12 @@ var DriverPopupForms = /*#__PURE__*/function () {
         return response.json();
       }).then(function (data) {
         if (data.success) {
-          _this5.updatePopupContent(type, data.data);
+          if (type === 'rating') {
+            _this8.updatePopupContent(type, data.data.ratings);
+            _this8.updateAvailableLoadsFromResponse(data.data.available_loads);
+          } else {
+            _this8.updatePopupContent(type, data.data);
+          }
         }
       }).catch(function (error) {
         console.error('Error updating popup data:', error);
@@ -6873,6 +7289,13 @@ var DriverPopupForms = /*#__PURE__*/function () {
   }, {
     key: "updateRatingPopup",
     value: function updateRatingPopup(data) {
+      this.resetRatingUIState();
+      var loadSelect = document.getElementById('loadNumber');
+      if (loadSelect) {
+        loadSelect.selectedIndex = 0;
+        var evt = new Event('change');
+        loadSelect.dispatchEvent(evt);
+      }
       var ratingsContainer = document.getElementById('driverRatingContent');
       if (ratingsContainer && _driver_popups__WEBPACK_IMPORTED_MODULE_1__.driverPopupsInstance) {
         _driver_popups__WEBPACK_IMPORTED_MODULE_1__.driverPopupsInstance.displayRatings(data, ratingsContainer);
@@ -6887,10 +7310,131 @@ var DriverPopupForms = /*#__PURE__*/function () {
       }
     }
   }, {
+    key: "updateAvailableLoadsFromResponse",
+    value: function updateAvailableLoadsFromResponse(availableLoads) {
+      var loadSelect = document.getElementById('loadNumber');
+      var loadsInfo = document.getElementById('loadsInfo');
+      if (!loadSelect || !loadsInfo) {
+        return;
+      }
+      (0,_utils_load_select__WEBPACK_IMPORTED_MODULE_2__.populateLoadSelect)(loadSelect, loadsInfo, availableLoads);
+    }
+  }, {
+    key: "handleDriverPageRatingModal",
+    value: function handleDriverPageRatingModal() {
+      var _this9 = this;
+      var ratingModal = document.getElementById('ratingModal');
+      var loadSelect = document.getElementById('loadNumber');
+      var loadsInfo = document.getElementById('loadsInfo');
+      if (ratingModal && loadSelect && loadsInfo) {
+        ratingModal.addEventListener('show.bs.modal', function () {
+          _this9.loadAvailableLoadsForDriverPage(loadSelect, loadsInfo);
+        });
+      }
+    }
+  }, {
+    key: "loadAvailableLoadsForDriverPage",
+    value: function loadAvailableLoadsForDriverPage(loadSelect, loadsInfo) {
+      var driverIdInput = document.querySelector('input[name="driver_id"]');
+      if (!driverIdInput || !driverIdInput.value) {
+        loadsInfo.textContent = 'Driver ID not found';
+        loadsInfo.className = 'text-danger';
+        return;
+      }
+      var driverId = driverIdInput.value;
+      loadsInfo.textContent = 'Loading available loads...';
+      loadsInfo.className = 'text-muted';
+      loadSelect.innerHTML = '<option value="">Select a load...</option>';
+      var formData = new FormData();
+      formData.append('action', 'get_driver_ratings');
+      formData.append('driver_id', driverId);
+      fetch(this.ajaxUrl, {
+        method: 'POST',
+        body: formData
+      }).then(function (response) {
+        return response.json();
+      }).then(function (data) {
+        if (data.success && data.data && data.data.available_loads) {
+          var loads = data.data.available_loads;
+          (0,_utils_load_select__WEBPACK_IMPORTED_MODULE_2__.populateLoadSelect)(loadSelect, loadsInfo, loads);
+        } else {
+          loadsInfo.textContent = 'Error loading loads';
+          loadsInfo.className = 'text-danger';
+        }
+      }).catch(function (error) {
+        console.error('Error loading available loads:', error);
+        loadsInfo.textContent = 'Error loading loads: ' + error.message;
+        loadsInfo.className = 'text-danger';
+      });
+    }
+  }, {
     key: "showMessage",
     value: function showMessage(message, type) {
       var messageType = type === 'error' ? 'danger' : type;
       (0,_info_messages__WEBPACK_IMPORTED_MODULE_0__.printMessage)(message, messageType, 3000);
+    }
+  }, {
+    key: "loadDriverStatistics",
+    value: function loadDriverStatistics(driverId) {
+      var _this10 = this;
+      var container = document.getElementById('driver-statistics-container');
+      if (!container) {
+        return;
+      }
+      container.innerHTML = "\n            <div class=\"col-12\">\n                <div class=\"text-center\">\n                    <div class=\"spinner-border text-primary\" role=\"status\">\n                        <span class=\"visually-hidden\">Loading...</span>\n                    </div>\n                    <p class=\"mt-2\">Loading driver statistics...</p>\n                </div>\n            </div>\n        ";
+      var formData = new FormData();
+      formData.append('action', 'get_driver_statistics');
+      formData.append('driver_id', driverId.toString());
+      var nonceInput = document.getElementById('driver-statistics-nonce');
+      var nonce = nonceInput ? nonceInput.value : '';
+      formData.append('nonce', nonce);
+      fetch(this.ajaxUrl, {
+        method: 'POST',
+        body: formData
+      }).then(function (response) {
+        return response.json();
+      }).then(function (data) {
+        if (data.success) {
+          _this10.displayDriverStatistics(data.data);
+        } else {
+          _this10.showStatisticsError(data.data || 'Failed to load statistics');
+        }
+      }).catch(function (error) {
+        console.error('Error loading driver statistics:', error);
+        _this10.showStatisticsError('Network error occurred');
+      });
+    }
+  }, {
+    key: "displayDriverStatistics",
+    value: function displayDriverStatistics(stats) {
+      var container = document.getElementById('driver-statistics-container');
+      if (!container) return;
+      var formatCurrency = function formatCurrency(amount) {
+        return new Intl.NumberFormat('en-US', {
+          style: 'currency',
+          currency: 'USD',
+          minimumFractionDigits: 0,
+          maximumFractionDigits: 2
+        }).format(amount);
+      };
+      var html = '<div class="row">';
+      html += "\n            <div class=\"col-md-4 mb-3\">\n                <div class=\"card bg-primary text-white\">\n                    <div class=\"card-body\">\n                        <h5 class=\"card-title\">Total Gross</h5>\n                        <h3 class=\"card-text\">".concat(formatCurrency(stats.total_gross), "</h3>\n                    </div>\n                </div>\n            </div>\n            <div class=\"col-md-4 mb-3\">\n                <div class=\"card bg-success text-white\">\n                    <div class=\"card-body\">\n                        <h5 class=\"card-title\">Driver Earnings</h5>\n                        <h3 class=\"card-text\">").concat(formatCurrency(stats.total_driver_earnings), "</h3>\n                    </div>\n                </div>\n            </div>\n            <div class=\"col-md-4 mb-3\">\n                <div class=\"card bg-info text-white\">\n                    <div class=\"card-body\">\n                        <h5 class=\"card-title\">Total Profit</h5>\n                        <h3 class=\"card-text\">").concat(formatCurrency(stats.total_profit), "</h3>\n                    </div>\n                </div>\n            </div>\n        ");
+      html += "\n            <div class=\"col-md-3 mb-3\">\n                <div class=\"card bg-success text-white\">\n                    <div class=\"card-body\">\n                        <h5 class=\"card-title\">Delivered</h5>\n                        <h3 class=\"card-text\">".concat(stats.delivered_loads, "</h3>\n                    </div>\n                </div>\n            </div>\n            <div class=\"col-md-3 mb-3\">\n                <div class=\"card bg-danger text-white\">\n                    <div class=\"card-body\">\n                        <h5 class=\"card-title\">Cancelled</h5>\n                        <h3 class=\"card-text\">").concat(stats.cancelled_loads, "</h3>\n                    </div>\n                </div>\n            </div>\n            <div class=\"col-md-3 mb-3\">\n                <div class=\"card bg-warning text-white\">\n                    <div class=\"card-body\">\n                        <h5 class=\"card-title\">TONU</h5>\n                        <h3 class=\"card-text\">").concat(stats.tonu_loads, "</h3>\n                    </div>\n                </div>\n            </div>\n        ");
+      if (stats.loaded_loads > 0) {
+        html += "\n                <div class=\"col-md-3 mb-3\">\n                    <div class=\"card bg-secondary text-white\">\n                        <div class=\"card-body\">\n                            <h5 class=\"card-title\">Loaded</h5>\n                            <h3 class=\"card-text\">".concat(stats.loaded_loads, "</h3>\n                        </div>\n                    </div>\n                </div>\n            ");
+      }
+      if (stats.waiting_pu_loads > 0) {
+        html += "\n                <div class=\"col-md-3 mb-3\">\n                    <div class=\"card bg-dark text-white\">\n                        <div class=\"card-body\">\n                            <h5 class=\"card-title\">Waiting on PU</h5>\n                            <h3 class=\"card-text\">".concat(stats.waiting_pu_loads, "</h3>\n                        </div>\n                    </div>\n                </div>\n            ");
+      }
+      html += '</div>';
+      container.innerHTML = html;
+    }
+  }, {
+    key: "showStatisticsError",
+    value: function showStatisticsError(message) {
+      var container = document.getElementById('driver-statistics-container');
+      if (!container) return;
+      container.innerHTML = "\n            <div class=\"col-12\">\n                <div class=\"alert alert-danger\" role=\"alert\">\n                    <h5 class=\"alert-heading\">Error Loading Statistics</h5>\n                    <p>".concat(message, "</p>\n                    <button class=\"btn btn-outline-danger btn-sm\" onclick=\"location.reload()\">Retry</button>\n                </div>\n            </div>\n        ");
     }
   }]);
 }();
@@ -6909,6 +7453,7 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   driverPopupsInstance: function() { return /* binding */ driverPopupsInstance; }
 /* harmony export */ });
+/* harmony import */ var _utils_load_select__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ../utils/load-select */ "./src/js/utils/load-select.ts");
 function _typeof(o) { "@babel/helpers - typeof"; return _typeof = "function" == typeof Symbol && "symbol" == typeof Symbol.iterator ? function (o) { return typeof o; } : function (o) { return o && "function" == typeof Symbol && o.constructor === Symbol && o !== Symbol.prototype ? "symbol" : typeof o; }, _typeof(o); }
 function _regeneratorRuntime() { "use strict"; /*! regenerator-runtime -- Copyright (c) 2014-present, Facebook, Inc. -- license (MIT): https://github.com/facebook/regenerator/blob/main/LICENSE */ _regeneratorRuntime = function _regeneratorRuntime() { return e; }; var t, e = {}, r = Object.prototype, n = r.hasOwnProperty, o = Object.defineProperty || function (t, e, r) { t[e] = r.value; }, i = "function" == typeof Symbol ? Symbol : {}, a = i.iterator || "@@iterator", c = i.asyncIterator || "@@asyncIterator", u = i.toStringTag || "@@toStringTag"; function define(t, e, r) { return Object.defineProperty(t, e, { value: r, enumerable: !0, configurable: !0, writable: !0 }), t[e]; } try { define({}, ""); } catch (t) { define = function define(t, e, r) { return t[e] = r; }; } function wrap(t, e, r, n) { var i = e && e.prototype instanceof Generator ? e : Generator, a = Object.create(i.prototype), c = new Context(n || []); return o(a, "_invoke", { value: makeInvokeMethod(t, r, c) }), a; } function tryCatch(t, e, r) { try { return { type: "normal", arg: t.call(e, r) }; } catch (t) { return { type: "throw", arg: t }; } } e.wrap = wrap; var h = "suspendedStart", l = "suspendedYield", f = "executing", s = "completed", y = {}; function Generator() {} function GeneratorFunction() {} function GeneratorFunctionPrototype() {} var p = {}; define(p, a, function () { return this; }); var d = Object.getPrototypeOf, v = d && d(d(values([]))); v && v !== r && n.call(v, a) && (p = v); var g = GeneratorFunctionPrototype.prototype = Generator.prototype = Object.create(p); function defineIteratorMethods(t) { ["next", "throw", "return"].forEach(function (e) { define(t, e, function (t) { return this._invoke(e, t); }); }); } function AsyncIterator(t, e) { function invoke(r, o, i, a) { var c = tryCatch(t[r], t, o); if ("throw" !== c.type) { var u = c.arg, h = u.value; return h && "object" == _typeof(h) && n.call(h, "__await") ? e.resolve(h.__await).then(function (t) { invoke("next", t, i, a); }, function (t) { invoke("throw", t, i, a); }) : e.resolve(h).then(function (t) { u.value = t, i(u); }, function (t) { return invoke("throw", t, i, a); }); } a(c.arg); } var r; o(this, "_invoke", { value: function value(t, n) { function callInvokeWithMethodAndArg() { return new e(function (e, r) { invoke(t, n, e, r); }); } return r = r ? r.then(callInvokeWithMethodAndArg, callInvokeWithMethodAndArg) : callInvokeWithMethodAndArg(); } }); } function makeInvokeMethod(e, r, n) { var o = h; return function (i, a) { if (o === f) throw Error("Generator is already running"); if (o === s) { if ("throw" === i) throw a; return { value: t, done: !0 }; } for (n.method = i, n.arg = a;;) { var c = n.delegate; if (c) { var u = maybeInvokeDelegate(c, n); if (u) { if (u === y) continue; return u; } } if ("next" === n.method) n.sent = n._sent = n.arg;else if ("throw" === n.method) { if (o === h) throw o = s, n.arg; n.dispatchException(n.arg); } else "return" === n.method && n.abrupt("return", n.arg); o = f; var p = tryCatch(e, r, n); if ("normal" === p.type) { if (o = n.done ? s : l, p.arg === y) continue; return { value: p.arg, done: n.done }; } "throw" === p.type && (o = s, n.method = "throw", n.arg = p.arg); } }; } function maybeInvokeDelegate(e, r) { var n = r.method, o = e.iterator[n]; if (o === t) return r.delegate = null, "throw" === n && e.iterator.return && (r.method = "return", r.arg = t, maybeInvokeDelegate(e, r), "throw" === r.method) || "return" !== n && (r.method = "throw", r.arg = new TypeError("The iterator does not provide a '" + n + "' method")), y; var i = tryCatch(o, e.iterator, r.arg); if ("throw" === i.type) return r.method = "throw", r.arg = i.arg, r.delegate = null, y; var a = i.arg; return a ? a.done ? (r[e.resultName] = a.value, r.next = e.nextLoc, "return" !== r.method && (r.method = "next", r.arg = t), r.delegate = null, y) : a : (r.method = "throw", r.arg = new TypeError("iterator result is not an object"), r.delegate = null, y); } function pushTryEntry(t) { var e = { tryLoc: t[0] }; 1 in t && (e.catchLoc = t[1]), 2 in t && (e.finallyLoc = t[2], e.afterLoc = t[3]), this.tryEntries.push(e); } function resetTryEntry(t) { var e = t.completion || {}; e.type = "normal", delete e.arg, t.completion = e; } function Context(t) { this.tryEntries = [{ tryLoc: "root" }], t.forEach(pushTryEntry, this), this.reset(!0); } function values(e) { if (e || "" === e) { var r = e[a]; if (r) return r.call(e); if ("function" == typeof e.next) return e; if (!isNaN(e.length)) { var o = -1, i = function next() { for (; ++o < e.length;) if (n.call(e, o)) return next.value = e[o], next.done = !1, next; return next.value = t, next.done = !0, next; }; return i.next = i; } } throw new TypeError(_typeof(e) + " is not iterable"); } return GeneratorFunction.prototype = GeneratorFunctionPrototype, o(g, "constructor", { value: GeneratorFunctionPrototype, configurable: !0 }), o(GeneratorFunctionPrototype, "constructor", { value: GeneratorFunction, configurable: !0 }), GeneratorFunction.displayName = define(GeneratorFunctionPrototype, u, "GeneratorFunction"), e.isGeneratorFunction = function (t) { var e = "function" == typeof t && t.constructor; return !!e && (e === GeneratorFunction || "GeneratorFunction" === (e.displayName || e.name)); }, e.mark = function (t) { return Object.setPrototypeOf ? Object.setPrototypeOf(t, GeneratorFunctionPrototype) : (t.__proto__ = GeneratorFunctionPrototype, define(t, u, "GeneratorFunction")), t.prototype = Object.create(g), t; }, e.awrap = function (t) { return { __await: t }; }, defineIteratorMethods(AsyncIterator.prototype), define(AsyncIterator.prototype, c, function () { return this; }), e.AsyncIterator = AsyncIterator, e.async = function (t, r, n, o, i) { void 0 === i && (i = Promise); var a = new AsyncIterator(wrap(t, r, n, o), i); return e.isGeneratorFunction(r) ? a : a.next().then(function (t) { return t.done ? t.value : a.next(); }); }, defineIteratorMethods(g), define(g, u, "Generator"), define(g, a, function () { return this; }), define(g, "toString", function () { return "[object Generator]"; }), e.keys = function (t) { var e = Object(t), r = []; for (var n in e) r.push(n); return r.reverse(), function next() { for (; r.length;) { var t = r.pop(); if (t in e) return next.value = t, next.done = !1, next; } return next.done = !0, next; }; }, e.values = values, Context.prototype = { constructor: Context, reset: function reset(e) { if (this.prev = 0, this.next = 0, this.sent = this._sent = t, this.done = !1, this.delegate = null, this.method = "next", this.arg = t, this.tryEntries.forEach(resetTryEntry), !e) for (var r in this) "t" === r.charAt(0) && n.call(this, r) && !isNaN(+r.slice(1)) && (this[r] = t); }, stop: function stop() { this.done = !0; var t = this.tryEntries[0].completion; if ("throw" === t.type) throw t.arg; return this.rval; }, dispatchException: function dispatchException(e) { if (this.done) throw e; var r = this; function handle(n, o) { return a.type = "throw", a.arg = e, r.next = n, o && (r.method = "next", r.arg = t), !!o; } for (var o = this.tryEntries.length - 1; o >= 0; --o) { var i = this.tryEntries[o], a = i.completion; if ("root" === i.tryLoc) return handle("end"); if (i.tryLoc <= this.prev) { var c = n.call(i, "catchLoc"), u = n.call(i, "finallyLoc"); if (c && u) { if (this.prev < i.catchLoc) return handle(i.catchLoc, !0); if (this.prev < i.finallyLoc) return handle(i.finallyLoc); } else if (c) { if (this.prev < i.catchLoc) return handle(i.catchLoc, !0); } else { if (!u) throw Error("try statement without catch or finally"); if (this.prev < i.finallyLoc) return handle(i.finallyLoc); } } } }, abrupt: function abrupt(t, e) { for (var r = this.tryEntries.length - 1; r >= 0; --r) { var o = this.tryEntries[r]; if (o.tryLoc <= this.prev && n.call(o, "finallyLoc") && this.prev < o.finallyLoc) { var i = o; break; } } i && ("break" === t || "continue" === t) && i.tryLoc <= e && e <= i.finallyLoc && (i = null); var a = i ? i.completion : {}; return a.type = t, a.arg = e, i ? (this.method = "next", this.next = i.finallyLoc, y) : this.complete(a); }, complete: function complete(t, e) { if ("throw" === t.type) throw t.arg; return "break" === t.type || "continue" === t.type ? this.next = t.arg : "return" === t.type ? (this.rval = this.arg = t.arg, this.method = "return", this.next = "end") : "normal" === t.type && e && (this.next = e), y; }, finish: function finish(t) { for (var e = this.tryEntries.length - 1; e >= 0; --e) { var r = this.tryEntries[e]; if (r.finallyLoc === t) return this.complete(r.completion, r.afterLoc), resetTryEntry(r), y; } }, catch: function _catch(t) { for (var e = this.tryEntries.length - 1; e >= 0; --e) { var r = this.tryEntries[e]; if (r.tryLoc === t) { var n = r.completion; if ("throw" === n.type) { var o = n.arg; resetTryEntry(r); } return o; } } throw Error("illegal catch attempt"); }, delegateYield: function delegateYield(e, r, n) { return this.delegate = { iterator: values(e), resultName: r, nextLoc: n }, "next" === this.method && (this.arg = t), y; } }, e; }
 function _classCallCheck(a, n) { if (!(a instanceof n)) throw new TypeError("Cannot call a class as a function"); }
@@ -6943,6 +7488,7 @@ var __awaiter = undefined && undefined.__awaiter || function (thisArg, _argument
     step((generator = generator.apply(thisArg, _arguments || [])).next());
   });
 };
+
 var DriverPopups = /*#__PURE__*/function () {
   function DriverPopups() {
     _classCallCheck(this, DriverPopups);
@@ -7026,6 +7572,17 @@ var DriverPopups = /*#__PURE__*/function () {
           }
         }
       });
+      document.addEventListener('click', function (e) {
+        var target = e.target;
+        if (target && target.id === 'ratingsLoadMore') {
+          e.preventDefault();
+          _this.revealMoreRatings(target);
+        }
+        if (target && target.id === 'noticesLoadMore') {
+          e.preventDefault();
+          _this.revealMoreNotices(target);
+        }
+      });
     }
   }, {
     key: "handleRatingClick",
@@ -7059,7 +7616,36 @@ var DriverPopups = /*#__PURE__*/function () {
         contentElement.innerHTML = "\n                <div class=\"text-center\">\n                    <div class=\"spinner-border\" role=\"status\">\n                        <span class=\"visually-hidden\">Loading...</span>\n                    </div>\n                </div>\n            ";
       }
       this.openPopup('#driver-rating-popup');
+      try {
+        document.dispatchEvent(new CustomEvent('tms:rating-popup-open'));
+      } catch (e) {}
       this.loadDriverRatings(parseInt(driverId));
+    }
+  }, {
+    key: "revealMoreNotices",
+    value: function revealMoreNotices(button) {
+      var stepAttr = button.getAttribute('data-step');
+      var step = stepAttr ? parseInt(stepAttr, 10) : 5;
+      var rows = Array.from(document.querySelectorAll('.js-notice-row'));
+      if (rows.length === 0) {
+        button.classList.add('d-none');
+        return;
+      }
+      var isRowVisible = function isRowVisible(row) {
+        return row.style.display !== 'none';
+      };
+      var visibleCount = rows.reduce(function (acc, r) {
+        return acc + (isRowVisible(r) ? 1 : 0);
+      }, 0);
+      var nextVisible = Math.min(visibleCount + step, rows.length);
+      for (var i = visibleCount; i < nextVisible; i++) {
+        rows[i].style.display = '';
+      }
+      if (nextVisible >= rows.length) {
+        button.classList.add('d-none');
+      } else {
+        button.classList.remove('d-none');
+      }
     }
   }, {
     key: "handleNoticeClick",
@@ -7140,7 +7726,8 @@ var DriverPopups = /*#__PURE__*/function () {
             case 12:
               data = _context2.sent;
               if (data.success) {
-                this.displayRatings(data.data, contentElement);
+                this.displayRatings(data.data.ratings, contentElement);
+                this.updateAvailableLoads(data.data.available_loads);
               } else {
                 contentElement.innerHTML = '<div class="alert alert-danger">Failed to load ratings</div>';
               }
@@ -7220,6 +7807,48 @@ var DriverPopups = /*#__PURE__*/function () {
         return "\n            <div class=\"card mb-3\">\n                <div class=\"card-body\">\n                    <div class=\"d-flex justify-content-between align-items-start mb-2\">\n                        <div>\n                            <strong>".concat(rating.name, "</strong>\n                            ").concat(rating.order_number ? "<small class=\"text-muted\">Order: ".concat(rating.order_number, "</small>") : '', "\n                        </div>\n                        <div class=\"text-end\">\n                            <span class=\"badge bg-").concat(_this2.getRatingColor(rating.reit), "\">").concat(rating.reit, "/5</span>\n                            <small class=\"text-muted d-block\">").concat(_this2.formatDate(rating.time), "</small>\n                        </div>\n                    </div>\n                    ").concat(rating.message ? "<p class=\"mb-0\">".concat(rating.message, "</p>") : '', "\n                </div>\n            </div>\n        ");
       }).join('');
       container.innerHTML = ratingsHtml;
+    }
+  }, {
+    key: "revealMoreRatings",
+    value: function revealMoreRatings(button) {
+      var stepAttr = button.getAttribute('data-step');
+      var step = stepAttr ? parseInt(stepAttr, 10) : 5;
+      var rows = Array.from(document.querySelectorAll('.js-rating-row'));
+      if (rows.length === 0) {
+        button.classList.add('d-none');
+        return;
+      }
+      var isRowVisible = function isRowVisible(row) {
+        return row.style.display !== 'none';
+      };
+      var visibleCount = rows.reduce(function (acc, r) {
+        return acc + (isRowVisible(r) ? 1 : 0);
+      }, 0);
+      if (visibleCount === 0 || visibleCount === rows.length) {
+        rows.forEach(function (r, idx) {
+          r.style.display = idx < step ? '' : 'none';
+        });
+        visibleCount = Math.min(step, rows.length);
+      } else {
+        var nextVisible = Math.min(visibleCount + step, rows.length);
+        for (var i = visibleCount; i < nextVisible; i++) {
+          rows[i].style.display = '';
+        }
+        visibleCount = nextVisible;
+      }
+      if (visibleCount >= rows.length) {
+        button.classList.add('d-none');
+      } else {
+        button.classList.remove('d-none');
+      }
+    }
+  }, {
+    key: "updateAvailableLoads",
+    value: function updateAvailableLoads(availableLoads) {
+      var loadSelect = document.getElementById('loadNumber');
+      var loadsInfo = document.getElementById('loadsInfo');
+      if (!loadSelect || !loadsInfo) return;
+      (0,_utils_load_select__WEBPACK_IMPORTED_MODULE_0__.populateLoadSelect)(loadSelect, loadsInfo, availableLoads);
     }
   }, {
     key: "displayNotices",
@@ -11199,6 +11828,40 @@ var updateTooltip = function updateTooltip() {
     });
   }
 };
+
+/***/ }),
+
+/***/ "./src/js/utils/load-select.ts":
+/*!*************************************!*\
+  !*** ./src/js/utils/load-select.ts ***!
+  \*************************************/
+/***/ (function(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   populateLoadSelect: function() { return /* binding */ populateLoadSelect; }
+/* harmony export */ });
+function populateLoadSelect(loadSelect, loadsInfo, loads) {
+  loadSelect.innerHTML = '<option value="">Select a load...</option>';
+  if (loads && loads.length > 0) {
+    loads.forEach(function (load) {
+      var option = document.createElement('option');
+      option.value = load.load_number;
+      option.textContent = "".concat(load.load_number, " - ").concat(new Date(load.date_created).toLocaleDateString());
+      loadSelect.appendChild(option);
+    });
+    loadsInfo.textContent = "".concat(loads.length, " available load(s) for rating");
+    loadsInfo.className = 'text-success';
+  } else {
+    loadsInfo.textContent = 'No available loads for rating';
+    loadsInfo.className = 'text-danger';
+  }
+  var canceledOption = document.createElement('option');
+  canceledOption.value = 'Canceled';
+  canceledOption.textContent = 'Canceled';
+  loadSelect.appendChild(canceledOption);
+}
 
 /***/ }),
 
@@ -23939,9 +24602,11 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _components_quick_copy__WEBPACK_IMPORTED_MODULE_35__ = __webpack_require__(/*! ./components/quick-copy */ "./src/js/components/quick-copy.ts");
 /* harmony import */ var _components_driver_popups__WEBPACK_IMPORTED_MODULE_36__ = __webpack_require__(/*! ./components/driver-popups */ "./src/js/components/driver-popups.ts");
 /* harmony import */ var _components_driver_popup_forms__WEBPACK_IMPORTED_MODULE_37__ = __webpack_require__(/*! ./components/driver-popup-forms */ "./src/js/components/driver-popup-forms.ts");
-/* harmony import */ var _components_common_audio_helper__WEBPACK_IMPORTED_MODULE_38__ = __webpack_require__(/*! ./components/common/audio-helper */ "./src/js/components/common/audio-helper.ts");
-/* harmony import */ var _components_timer_control__WEBPACK_IMPORTED_MODULE_39__ = __webpack_require__(/*! ./components/timer-control */ "./src/js/components/timer-control.ts");
-/* harmony import */ var _components_timer_analytics__WEBPACK_IMPORTED_MODULE_40__ = __webpack_require__(/*! ./components/timer-analytics */ "./src/js/components/timer-analytics.ts");
+/* harmony import */ var _components_driver_autocomplete__WEBPACK_IMPORTED_MODULE_38__ = __webpack_require__(/*! ./components/driver-autocomplete */ "./src/js/components/driver-autocomplete.ts");
+/* harmony import */ var _components_common_audio_helper__WEBPACK_IMPORTED_MODULE_39__ = __webpack_require__(/*! ./components/common/audio-helper */ "./src/js/components/common/audio-helper.ts");
+/* harmony import */ var _components_timer_control__WEBPACK_IMPORTED_MODULE_40__ = __webpack_require__(/*! ./components/timer-control */ "./src/js/components/timer-control.ts");
+/* harmony import */ var _components_timer_analytics__WEBPACK_IMPORTED_MODULE_41__ = __webpack_require__(/*! ./components/timer-analytics */ "./src/js/components/timer-analytics.ts");
+
 
 
 
@@ -23998,10 +24663,32 @@ function ready() {
   };
   var popupInstance = new _parts_popup_window__WEBPACK_IMPORTED_MODULE_1__["default"]();
   popupInstance.init();
-  _components_common_audio_helper__WEBPACK_IMPORTED_MODULE_38__["default"].getInstance();
-  new _components_driver_popup_forms__WEBPACK_IMPORTED_MODULE_37__["default"](urlAjax);
-  new _components_timer_control__WEBPACK_IMPORTED_MODULE_39__.TimerControl(urlAjax);
-  new _components_timer_analytics__WEBPACK_IMPORTED_MODULE_40__.TimerAnalytics(urlAjax);
+  _components_common_audio_helper__WEBPACK_IMPORTED_MODULE_39__["default"].getInstance();
+  var driverPopupForms = new _components_driver_popup_forms__WEBPACK_IMPORTED_MODULE_37__["default"](urlAjax);
+  new _components_driver_autocomplete__WEBPACK_IMPORTED_MODULE_38__["default"](urlAjax, {
+    unitInput: '.js-unit-number-input',
+    dropdown: '.js-driver-dropdown',
+    attachedDriverInput: 'input[name="attached_driver"]',
+    phoneInput: '.js-phone-driver',
+    unitNumberNameInput: 'input[name="unit_number_name"]',
+    nonceInput: '#driver-search-nonce'
+  });
+  new _components_driver_autocomplete__WEBPACK_IMPORTED_MODULE_38__["default"](urlAjax, {
+    unitInput: '.js-second-unit-number-input',
+    dropdown: '.js-second-driver-dropdown',
+    attachedDriverInput: 'input[name="attached_second_driver"]',
+    phoneInput: '.js-second-phone-driver',
+    unitNumberNameInput: 'input[name="second_unit_number_name"]',
+    nonceInput: '#second-driver-search-nonce'
+  });
+  if (document.getElementById('driver-statistics-container')) {
+    var driverIdInput = document.querySelector('input[name="driver_id"]');
+    if (driverIdInput && driverIdInput.value) {
+      driverPopupForms.loadDriverStatistics(parseInt(driverIdInput.value));
+    }
+  }
+  new _components_timer_control__WEBPACK_IMPORTED_MODULE_40__.TimerControl(urlAjax);
+  new _components_timer_analytics__WEBPACK_IMPORTED_MODULE_41__.TimerAnalytics(urlAjax);
   (0,_components_create_report__WEBPACK_IMPORTED_MODULE_3__.actionCreateReportInit)(urlAjax);
   (0,_components_create_report__WEBPACK_IMPORTED_MODULE_3__.createDraftPosts)(urlAjax);
   (0,_components_create_report__WEBPACK_IMPORTED_MODULE_3__.updateFilesReportInit)(urlAjax);

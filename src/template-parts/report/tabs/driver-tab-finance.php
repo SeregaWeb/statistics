@@ -34,6 +34,11 @@ $w9_file      = get_field_value( $meta, 'w9_file' );
 $ssn_file     = get_field_value( $meta, 'ssn_file' );
 $ein_file     = get_field_value( $meta, 'ein_file' );
 $nec_file     = get_field_value( $meta, 'nec_file' );
+$nec_file_martlet = get_field_value( $meta, 'nec_file_martlet' );
+$nec_file_endurance = get_field_value( $meta, 'nec_file_endurance' );
+$nec_file_martlet_on = get_field_value( $meta, 'nec_file_martlet_on' );
+$nec_file_endurance_on = get_field_value( $meta, 'nec_file_endurance_on' );
+
 $total_images = 0;
 
 $payment_file_arr = $driver->process_file_attachment( $payment_file );
@@ -41,7 +46,8 @@ $w9_file_arr      = $driver->process_file_attachment( $w9_file );
 $ssn_file_arr     = $driver->process_file_attachment( $ssn_file );
 $ein_file_arr     = $driver->process_file_attachment( $ein_file );
 $nec_file_arr     = $driver->process_file_attachment( $nec_file );
-
+$nec_file_martlet_arr = $driver->process_file_attachment( $nec_file_martlet );
+$nec_file_endurance_arr = $driver->process_file_attachment( $nec_file_endurance );
 $total_images = 0;
 
 $files_check = array(
@@ -50,6 +56,8 @@ $files_check = array(
 	$ssn_file_arr,
 	$ein_file_arr,
 	$nec_file_arr,
+	$nec_file_martlet_arr,
+	$nec_file_endurance_arr,
 );
 
 foreach ( $files_check as $file ) {
@@ -111,6 +119,28 @@ $files = array(
 		'class_name'     => 'nec-file',
 		'field_name'     => 'nec_file',
 		'field_label'    => 'NEC file',
+		'delete_action'  => 'js-remove-one-driver',
+		'active_tab'     => 'pills-driver-finance-tab',
+	),
+	array(
+		'file_arr'       => $nec_file_martlet_arr,
+		'file'           => $nec_file_martlet,
+		'full_only_view' => $full_only_view,
+		'post_id'        => $post_id,
+		'class_name'     => 'nec-file-martlet',
+		'field_name'     => 'nec_file_martlet',
+		'field_label'    => 'NEC file (Martlet)',
+		'delete_action'  => 'js-remove-one-driver',
+		'active_tab'     => 'pills-driver-finance-tab',
+	),
+	array(
+		'file_arr'       => $nec_file_endurance_arr,
+		'file'           => $nec_file_endurance,
+		'full_only_view' => $full_only_view,
+		'post_id'        => $post_id,
+		'class_name'     => 'nec-file-endurance',
+		'field_name'     => 'nec_file_endurance',
+		'field_label'    => 'NEC file (Endurance)',
 		'delete_action'  => 'js-remove-one-driver',
 		'active_tab'     => 'pills-driver-finance-tab',
 	),
@@ -402,6 +432,60 @@ $access_vehicle = $TMSUsers->check_user_role_access( [
                 </div>
             </div>
 
+            <div class="col-12 ">
+                <div class="row">
+
+                    <div class="col-12 mb-3">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input js-toggle"
+                                data-block-toggle="js-nec-file-martlet-section" type="checkbox" name="nec_file_martlet_on"
+                                id="nec_file_martlet_on" <?php echo $nec_file_martlet_on ? 'checked' : ''; ?>>
+                            <label class="form-check-label" for="nec_file_martlet_on">1099-NEC File (Martlet)</label>
+                        </div>
+                    </div>
+                
+                    <div class="col-12 mb-3 js-nec-file-martlet-section <?php echo $nec_file_martlet_on ? '' : 'd-none'; ?>">
+                        <label class="form-label d-flex align-items-center gap-1">1099-NEC File (Martlet) <?php echo $nec_file_martlet
+								? $reports->get_icon_uploaded_file() : ''; ?></label>
+						<?php if ( ! $nec_file_martlet ): ?>
+                            <button <?php echo $full_only_view ? 'disabled' : ''; ?> data-href="#popup_upload_nec_file_martlet"
+                                    class="btn btn-success js-open-popup-activator mt-1">
+                                Upload file (Martlet)
+                            </button>
+						<?php endif; ?>
+                    </div>
+                    <div class="col-12 mb-1 mt-1 preview-photo js-preview-photo-upload">
+
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-12 ">
+                <div class="row">
+                    <div class="col-12 mb-3">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input js-toggle"
+                                data-block-toggle="js-nec-file-endurance-section" type="checkbox" name="nec_file_endurance_on"
+                                id="nec_file_endurance_on" <?php echo $nec_file_endurance_on ? 'checked' : ''; ?>>
+                            <label class="form-check-label" for="nec_file_endurance_on">1099-NEC File (Endurance)</label>
+                        </div>
+                    </div>
+                    <div class="col-12 mb-3 js-nec-file-endurance-section <?php echo $nec_file_endurance_on ? '' : 'd-none'; ?>">
+                        <label class="form-label d-flex align-items-center gap-1">1099-NEC File (Endurance) <?php echo $nec_file_endurance
+								? $reports->get_icon_uploaded_file() : ''; ?></label>
+						<?php if ( ! $nec_file_endurance ): ?>
+                            <button <?php echo $full_only_view ? 'disabled' : ''; ?> data-href="#popup_upload_nec_file_endurance"
+                                    class="btn btn-success js-open-popup-activator mt-1">
+                                Upload file (Endurance)
+                            </button>
+						<?php endif; ?>
+                    </div>
+                    <div class="col-12 mb-1 mt-1 preview-photo js-preview-photo-upload">
+
+                    </div>
+                </div>
+            </div>
+
             <div class="col-6 mb-3">
                 <label class="form-label">Authorized Email</label>
                 <input type="email" class="form-control" name="authorized_email"
@@ -461,6 +545,18 @@ $access_vehicle = $TMSUsers->check_user_role_access( [
 		array(
 			'title'     => 'Upload 1099-NEC File',
 			'file_name' => 'nec_file',
+			'multiply'  => false,
+			'driver_id' => $post_id,
+		),
+		array(
+			'title'     => 'Upload 1099-NEC File (Martlet)',
+			'file_name' => 'nec_file_martlet',
+			'multiply'  => false,
+			'driver_id' => $post_id,
+		),
+		array(
+			'title'     => 'Upload 1099-NEC File (Endurance)',
+			'file_name' => 'nec_file_endurance',
 			'multiply'  => false,
 			'driver_id' => $post_id,
 		),

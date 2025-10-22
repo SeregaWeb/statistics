@@ -60,6 +60,7 @@ $full_only_view = false;
 
 if ( $TMSUsers->check_user_role_access( array(
 		'dispatcher-tl',
+		'expedite_manager',
 		'tracking',
 	), true ) && isset( $meta ) ) {
 	$dispatcher_initials = get_field_value( $meta, 'dispatcher_initials' );
@@ -67,15 +68,16 @@ if ( $TMSUsers->check_user_role_access( array(
 	$my_team             = $TMSUsers->check_group_access();
 	$current_user_id     = get_current_user_id();
 	
-	
 	if ( $current_user_id === intval( $user_id_added ) || intval( $dispatcher_initials ) === intval( $current_user_id ) ) {
 		$access         = true;
 		$full_only_view = false;
 	} else {
 		if ( $TMSUsers->check_user_in_my_group( $my_team, intval( $dispatcher_initials ) ) ) {
 			$access = true;
+			$full_only_view = false;
 		} else {
-			$access = false;
+			$access         = false;
+			$full_only_view = true;
 		}
 	}
 }
@@ -132,24 +134,13 @@ if ( $TMSUsers->check_user_role_access( array(
 	$accounting_info = true;
 }
 
-if ( $TMSUsers->check_user_role_access( array( 'driver_updates', 'expedite_manager' ), true ) && isset( $meta ) ) {
+if ( $TMSUsers->check_user_role_access( array( 'driver_updates' ), true ) && isset( $meta ) ) {
 	$full_only_view = true;
 	$access         = true;
+}
 
-
-	if ( $TMSUsers->check_user_role_access( array( 'expedite_manager' ), true ) && isset( $meta ) ) {
-		$dispatcher_initials = get_field_value( $meta, 'dispatcher_initials' );
-		$user_id_added       = get_field_value( $main, 'user_id_added' );
-		
-		if ( is_array( $report_object ) ) {
-			$current_user_id = get_current_user_id();
-			if ( intval( $user_id_added ) === $current_user_id || intval( $dispatcher_initials ) === $current_user_id ) {
-				$access         = true;
-				$full_only_view = false;
-			} 
-		}
-	}
-
+if ( $TMSUsers->check_user_role_access( array( 'expedite_manager' ), true ) && isset( $meta ) ) {
+	$access         = true;
 }
 
 

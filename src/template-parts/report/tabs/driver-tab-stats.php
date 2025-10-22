@@ -85,8 +85,15 @@ $driver_statistics = $driver->get_driver_statistics( $post_id, true );
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        <?php foreach ( $driver_statistics['rating']['data'] as $rating ) : ?>
-                                            <tr>
+                                        <?php 
+                                        $ratings_list = $driver_statistics['rating']['data'];
+                                        $ratings_total = is_array( $ratings_list ) ? count( $ratings_list ) : 0;
+                                        $row_index = 0;
+                                        foreach ( $ratings_list as $rating ) : 
+                                            $is_hidden = $row_index >= 5;
+                                            $row_index++;
+                                        ?>
+                                            <tr class="js-rating-row"<?php echo $is_hidden ? ' style="display:none"' : ''; ?>>
                                                 <td><?php echo esc_html( $rating['name'] ); ?></td>
                                                 <td><?php echo date( 'm/d/Y g:i a', $rating['time'] ); ?></td>
                                                 <td>
@@ -121,6 +128,9 @@ $driver_statistics = $driver->get_driver_statistics( $post_id, true );
                                         <?php endforeach; ?>
                                     </tbody>
                                 </table>
+                            </div>
+                            <div class="text-center mt-2">
+                                <button type="button" class="btn btn-outline-secondary btn-sm <?php echo ( $ratings_total > 5 ) ? '' : 'd-none'; ?>" id="ratingsLoadMore" data-step="5">Load more</button>
                             </div>
                         </div>
                     <?php else : ?>
@@ -159,8 +169,15 @@ $driver_statistics = $driver->get_driver_statistics( $post_id, true );
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        <?php foreach ( $driver_statistics['notice']['data'] as $notice ) : ?>
-                                            <tr class="<?php echo $notice['status'] == 1 ? 'table-success' : ''; ?>">
+                                        <?php 
+                                        $notices_list = $driver_statistics['notice']['data'];
+                                        $notices_total = is_array( $notices_list ) ? count( $notices_list ) : 0;
+                                        $notice_index = 0;
+                                        foreach ( $notices_list as $notice ) : 
+                                            $notice_hidden = $notice_index >= 5;
+                                            $notice_index++;
+                                        ?>
+                                            <tr class="js-notice-row <?php echo $notice['status'] == 1 ? 'table-success' : ''; ?>"<?php echo $notice_hidden ? ' style="display:none"' : ''; ?>>
                                                 <td><?php echo esc_html( $notice['name'] ); ?></td>
                                                 <td><?php echo date( 'm/d/Y g:i a', $notice['date'] ); ?></td>
                                                 <td><?php echo esc_html( $notice['message'] ); ?></td>
@@ -175,6 +192,9 @@ $driver_statistics = $driver->get_driver_statistics( $post_id, true );
                                     </tbody>
                                 </table>
                             </div>
+                            <div class="text-center mt-2">
+                                <button type="button" class="btn btn-outline-secondary btn-sm <?php echo ( $notices_total > 5 ) ? '' : 'd-none'; ?>" id="noticesLoadMore" data-step="5">Load more</button>
+                            </div>
                         </div>
                     <?php else : ?>
                         <p class="text-muted mt-3">No notifications yet.</p>
@@ -183,6 +203,28 @@ $driver_statistics = $driver->get_driver_statistics( $post_id, true );
             </div>
         </div>
     </div>
+
+
+    <div class="row">
+        <div class="col-12">
+            <h2 class="mb-3">Driver Statistics</h2>
+        </div>
+    </div>
+
+    <!-- Driver Statistics Cards -->
+    <div class="row mb-4" id="driver-statistics-container">
+        <div class="col-12">
+            <div class="text-center">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+                <p class="mt-2">Loading driver statistics...</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Hidden nonce for statistics -->
+    <input type="hidden" id="driver-statistics-nonce" value="<?php echo wp_create_nonce('driver_statistics_nonce'); ?>">
 </div>
 
 <!-- Rating Modal -->
@@ -226,7 +268,13 @@ $driver_statistics = $driver->get_driver_statistics( $post_id, true );
                     
                     <div class="mb-3">
                         <label for="loadNumber" class="form-label">Load number</label>
-                        <input type="text" class="form-control" id="loadNumber" required name="load_number">
+                        <select class="form-control" id="loadNumber" required name="load_number">
+                            <option value="">Select a load...</option>
+                            <option value="Canceled">Canceled</option>
+                        </select>
+                        <div class="form-text">
+                            <small class="text-muted" id="loadsInfo">Loading available loads...</small>
+                        </div>
                     </div>
                     
                     <div class="mb-3">
@@ -270,7 +318,3 @@ $driver_statistics = $driver->get_driver_statistics( $post_id, true );
     </div>
 </div>
 
-<script>
-// Define ajaxurl for TypeScript
-var ajaxurl = '<?php echo admin_url('admin-ajax.php'); ?>';
-</script>

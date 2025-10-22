@@ -1400,6 +1400,26 @@
             "placeholder": "",
             "prepend": "",
             "append": ""
+        },
+        {
+            "key": "field_68f7705c6eb28",
+            "label": "Email HR add notification",
+            "name": "email_hr_add_notification",
+            "aria-label": "",
+            "type": "text",
+            "instructions": "",
+            "required": 0,
+            "conditional_logic": 0,
+            "wrapper": {
+                "width": "",
+                "class": "",
+                "id": ""
+            },
+            "default_value": "",
+            "maxlength": "",
+            "placeholder": "",
+            "prepend": "",
+            "append": ""
         }
     ],
     "location": [
@@ -1420,5 +1440,5 @@
     "active": true,
     "description": "",
     "show_in_rest": 0,
-    "modified": 1760446058
+    "modified": 1761046648
 }

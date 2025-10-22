@@ -180,7 +180,7 @@ if ( ! empty( $results ) ) :
                     </div>
                     <?php 
 
-                    if ($load_status !== 'loaded-enroute' && $load_status !== 'delivered' && $load_status !== 'tonu' && $load_status !== 'cancelled'):
+                    if ($load_status !== 'loaded-enroute' && $load_status !== 'at-del' && $load_status !== 'at-pu' && $load_status !== 'waiting-on-rc' && $load_status !== 'delivered' && $load_status !== 'tonu' && $load_status !== 'cancelled'):
 
                     $helper = new TMSReportsHelper();
                     $eta_data = $helper->get_eta_data($row);
@@ -213,7 +213,7 @@ if ( ! empty( $results ) ) :
                     </div>
                     <?php 
 
-                if ($load_status !== 'delivered' && $load_status !== 'tonu' && $load_status !== 'cancelled'):
+                if ($load_status !== 'delivered' && $load_status !== 'waiting-on-rc' && $load_status !== 'tonu' && $load_status !== 'cancelled'):
                     $delivery_data = $helper->get_eta_display_data($eta_data, 'delivery');
                     
                     // Check if ETA record exists

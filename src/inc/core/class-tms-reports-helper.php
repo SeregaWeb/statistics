@@ -1915,6 +1915,46 @@ Kindly confirm once you've received this message." ) . "\n";
 		
 		return $valid_members;
 	}
-	
+
+	/**
+	 * Remove ETA records for completed loads
+	 * 
+	 * @param int $post_id The post ID (load ID)
+	 * @param string $status The load status
+	 * @param bool $is_flt Whether this is an FLT load (default: false for regular loads)
+	 */
+	public function remove_eta_records_by_status( $post_id, $status, $is_flt = false ) {
+		global $wpdb;
+		
+		$eta_table = $wpdb->prefix . 'eta_records';
+		
+		// Determine which ETA types to remove based on status
+		$eta_types_to_remove = array();
+		
+		// For loaded-enroute, delivered, tonu, cancelled - remove pickup ETA
+		if ( in_array( $status, array( 'loaded-enroute', 'at-del', 'at-pu', 'waiting-on-rc', 'delivered', 'tonu', 'cancelled' ) ) ) {
+			$eta_types_to_remove[] = 'pickup';
+		}
+		
+		// For delivered, tonu, cancelled - remove delivery ETA
+		if ( in_array( $status, array( 'delivered', 'waiting-on-rc', 'tonu', 'cancelled' ) ) ) {
+			$eta_types_to_remove[] = 'delivery';
+		}
+		
+		// Remove ETA records for the specified load type
+		// Since load_number in eta_records table actually stores the post_id
+		foreach ( $eta_types_to_remove as $eta_type ) {
+			$wpdb->delete(
+				$eta_table,
+				array(
+					'load_number' => $post_id,
+					'eta_type' => $eta_type,
+					'is_flt' => $is_flt ? 1 : 0
+				),
+				array( '%s', '%s', '%d' )
+			);
+		}
+	}
+
 }
 

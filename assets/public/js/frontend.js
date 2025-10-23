@@ -5809,6 +5809,7 @@ var DriverAutocomplete = /*#__PURE__*/function () {
       document.addEventListener('click', function (e) {
         return _this.handleDocumentClick(e);
       });
+      this.initTbdListener();
       this.restoreSelectedDriver();
     }
   }, {
@@ -6016,6 +6017,7 @@ var DriverAutocomplete = /*#__PURE__*/function () {
       if (unitNumberNameInput) {
         unitNumberNameInput.value = driver.display_name;
       }
+      this.triggerValidation();
     }
   }, {
     key: "clearSelection",
@@ -6037,6 +6039,7 @@ var DriverAutocomplete = /*#__PURE__*/function () {
       if (unitInput) {
         unitInput.placeholder = 'Enter unit number...';
       }
+      this.triggerValidation();
     }
   }, {
     key: "restoreSelectedDriver",
@@ -6058,6 +6061,161 @@ var DriverAutocomplete = /*#__PURE__*/function () {
           unitInput.placeholder = "Selected: ".concat(driver.display_name);
         }
       }
+    }
+  }, {
+    key: "initTbdListener",
+    value: function initTbdListener() {
+      var _this5 = this;
+      var tbdCheckbox = document.querySelector('.js-tbd');
+      if (!tbdCheckbox) return;
+      var isFirstDriver = this.selectors.unitInput === '.js-unit-number-input';
+      if (!isFirstDriver) return;
+      tbdCheckbox.addEventListener('change', function (event) {
+        var target = event.target;
+        if (target.checked) {
+          _this5.setTbdMode();
+        } else {
+          _this5.clearTbdMode();
+        }
+      });
+    }
+  }, {
+    key: "setTbdMode",
+    value: function setTbdMode() {
+      var unitInput = document.querySelector(this.selectors.unitInput);
+      var phoneInput = document.querySelector(this.selectors.phoneInput);
+      var unitNumberNameInput = document.querySelector(this.selectors.unitNumberNameInput);
+      var attachedDriverInput = document.querySelector(this.selectors.attachedDriverInput);
+      var driverValueInput = this.selectors.driverValueInput ? document.querySelector(this.selectors.driverValueInput) : null;
+      if (unitInput && !unitInput.hasAttribute('data-tbd-original')) {
+        unitInput.setAttribute('data-tbd-original', unitInput.value);
+      }
+      if (phoneInput && !phoneInput.hasAttribute('data-tbd-original')) {
+        phoneInput.setAttribute('data-tbd-original', phoneInput.value);
+      }
+      if (unitNumberNameInput && !unitNumberNameInput.hasAttribute('data-tbd-original')) {
+        unitNumberNameInput.setAttribute('data-tbd-original', unitNumberNameInput.value);
+      }
+      if (attachedDriverInput && !attachedDriverInput.hasAttribute('data-tbd-original')) {
+        attachedDriverInput.setAttribute('data-tbd-original', attachedDriverInput.value);
+      }
+      if (driverValueInput && !driverValueInput.hasAttribute('data-tbd-original')) {
+        driverValueInput.setAttribute('data-tbd-original', driverValueInput.value);
+      }
+      if (unitInput) {
+        unitInput.value = 'TBD';
+        unitInput.placeholder = 'TBD';
+        unitInput.setAttribute('readonly', 'readonly');
+      }
+      if (phoneInput) {
+        phoneInput.value = 'TBD';
+        phoneInput.setAttribute('readonly', 'readonly');
+      }
+      if (unitNumberNameInput) {
+        unitNumberNameInput.value = 'TBD';
+      }
+      if (attachedDriverInput) {
+        attachedDriverInput.value = '';
+      }
+      if (driverValueInput) {
+        driverValueInput.value = '0';
+        driverValueInput.setAttribute('readonly', 'readonly');
+      }
+      this.selectedDriver = null;
+      this.hideDropdown();
+    }
+  }, {
+    key: "clearTbdMode",
+    value: function clearTbdMode() {
+      var unitInput = document.querySelector(this.selectors.unitInput);
+      var phoneInput = document.querySelector(this.selectors.phoneInput);
+      var unitNumberNameInput = document.querySelector(this.selectors.unitNumberNameInput);
+      var attachedDriverInput = document.querySelector(this.selectors.attachedDriverInput);
+      var driverValueInput = this.selectors.driverValueInput ? document.querySelector(this.selectors.driverValueInput) : null;
+      this.isRestoringFromTbd = true;
+      if (unitInput) {
+        unitInput.removeAttribute('readonly');
+        var tbdOriginalValue = unitInput.getAttribute('data-tbd-original');
+        if (tbdOriginalValue && tbdOriginalValue !== 'TBD') {
+          unitInput.value = tbdOriginalValue;
+        } else {
+          unitInput.value = '';
+        }
+        var _attachedDriverInput = document.querySelector(this.selectors.attachedDriverInput);
+        var _unitNumberNameInput = document.querySelector(this.selectors.unitNumberNameInput);
+        var restoredAttachedDriverValue = (_attachedDriverInput === null || _attachedDriverInput === void 0 ? void 0 : _attachedDriverInput.getAttribute('data-tbd-original')) || '';
+        var restoredUnitNumberNameValue = (_unitNumberNameInput === null || _unitNumberNameInput === void 0 ? void 0 : _unitNumberNameInput.getAttribute('data-tbd-original')) || '';
+        console.log('Restoring from TBD:', {
+          attachedDriverValue: _attachedDriverInput === null || _attachedDriverInput === void 0 ? void 0 : _attachedDriverInput.value,
+          unitNumberNameValue: _unitNumberNameInput === null || _unitNumberNameInput === void 0 ? void 0 : _unitNumberNameInput.value,
+          restoredAttachedDriverValue: restoredAttachedDriverValue,
+          restoredUnitNumberNameValue: restoredUnitNumberNameValue,
+          tbdOriginalValue: tbdOriginalValue
+        });
+        if (restoredAttachedDriverValue && restoredUnitNumberNameValue && restoredUnitNumberNameValue !== 'TBD') {
+          unitInput.placeholder = "Selected: ".concat(restoredUnitNumberNameValue);
+          this.selectedDriver = {
+            driver_id: restoredAttachedDriverValue,
+            display_name: restoredUnitNumberNameValue,
+            phone: (phoneInput === null || phoneInput === void 0 ? void 0 : phoneInput.value) || '',
+            unit_number: restoredAttachedDriverValue
+          };
+          console.log('Restored selected driver:', this.selectedDriver);
+        } else {
+          unitInput.placeholder = 'Enter unit number...';
+          console.log('No driver selected, using default placeholder');
+        }
+        this.triggerValidation();
+      }
+      if (phoneInput) {
+        phoneInput.removeAttribute('readonly');
+        var _tbdOriginalValue = phoneInput.getAttribute('data-tbd-original');
+        if (_tbdOriginalValue && _tbdOriginalValue !== 'TBD') {
+          phoneInput.value = _tbdOriginalValue;
+        } else {
+          phoneInput.value = '';
+        }
+      }
+      if (unitNumberNameInput) {
+        var _tbdOriginalValue2 = unitNumberNameInput.getAttribute('data-tbd-original');
+        if (_tbdOriginalValue2 && _tbdOriginalValue2 !== 'TBD') {
+          unitNumberNameInput.value = _tbdOriginalValue2;
+        } else {
+          unitNumberNameInput.value = '';
+        }
+      }
+      if (attachedDriverInput) {
+        var _tbdOriginalValue3 = attachedDriverInput.getAttribute('data-tbd-original');
+        if (_tbdOriginalValue3) {
+          attachedDriverInput.value = _tbdOriginalValue3;
+        } else {
+          attachedDriverInput.value = '';
+        }
+      }
+      if (driverValueInput) {
+        driverValueInput.removeAttribute('readonly');
+        var _tbdOriginalValue4 = driverValueInput.getAttribute('data-tbd-original');
+        if (_tbdOriginalValue4) {
+          driverValueInput.value = _tbdOriginalValue4;
+        } else {
+          driverValueInput.value = '';
+        }
+      }
+    }
+  }, {
+    key: "triggerValidation",
+    value: function triggerValidation() {
+      if (this.isRestoringFromTbd) {
+        this.isRestoringFromTbd = false;
+        return;
+      }
+      var event = new CustomEvent('driverSelectionChanged', {
+        detail: {
+          hasSelectedDriver: !!this.selectedDriver,
+          selectors: this.selectors
+        }
+      });
+      document.dispatchEvent(event);
     }
   }]);
 }();
@@ -24671,7 +24829,8 @@ function ready() {
     attachedDriverInput: 'input[name="attached_driver"]',
     phoneInput: '.js-phone-driver',
     unitNumberNameInput: 'input[name="unit_number_name"]',
-    nonceInput: '#driver-search-nonce'
+    nonceInput: '#driver-search-nonce',
+    driverValueInput: '.js-driver-value'
   });
   new _components_driver_autocomplete__WEBPACK_IMPORTED_MODULE_38__["default"](urlAjax, {
     unitInput: '.js-second-unit-number-input',
@@ -24681,6 +24840,7 @@ function ready() {
     unitNumberNameInput: 'input[name="second_unit_number_name"]',
     nonceInput: '#second-driver-search-nonce'
   });
+  initDriverValidation();
   if (document.getElementById('driver-statistics-container')) {
     var driverIdInput = document.querySelector('input[name="driver_id"]');
     if (driverIdInput && driverIdInput.value) {
@@ -24781,6 +24941,110 @@ function ready() {
         item.remove();
       });
     }, 200);
+  }
+}
+function initDriverValidation() {
+  var firstDriverSelected = false;
+  var secondDriverSelected = false;
+  function initializeDriverState() {
+    var firstDriverInput = document.querySelector('input[name="attached_driver"]');
+    var secondDriverInput = document.querySelector('input[name="attached_second_driver"]');
+    if (firstDriverInput && firstDriverInput.value) {
+      firstDriverSelected = true;
+      console.log('First driver already selected on load:', firstDriverInput.value);
+    }
+    if (secondDriverInput && secondDriverInput.value) {
+      secondDriverSelected = true;
+      console.log('Second driver already selected on load:', secondDriverInput.value);
+    }
+  }
+  initializeDriverState();
+  setTimeout(function () {
+    var firstUnitInput = document.querySelector('.js-unit-number-input');
+    var secondUnitInput = document.querySelector('.js-second-unit-number-input');
+    console.log('Autocomplete components check:', {
+      firstUnitInputExists: !!firstUnitInput,
+      secondUnitInputExists: !!secondUnitInput,
+      firstDriverSelected: firstDriverSelected,
+      secondDriverSelected: secondDriverSelected
+    });
+  }, 1000);
+  document.addEventListener('driverSelectionChanged', function (e) {
+    var _e$detail = e.detail,
+      hasSelectedDriver = _e$detail.hasSelectedDriver,
+      selectors = _e$detail.selectors;
+    console.log('Driver selection changed:', {
+      hasSelectedDriver: hasSelectedDriver,
+      selectors: selectors
+    });
+    if (selectors.unitInput === '.js-unit-number-input') {
+      firstDriverSelected = hasSelectedDriver;
+      console.log('First driver selected:', firstDriverSelected);
+    } else if (selectors.unitInput === '.js-second-unit-number-input') {
+      secondDriverSelected = hasSelectedDriver;
+      console.log('Second driver selected:', secondDriverSelected);
+    }
+    validateDriverSelection();
+  });
+  var forms = document.querySelectorAll('form');
+  forms.forEach(function (form) {
+    form.addEventListener('submit', function (e) {
+      if (!validateDriverSelection()) {
+        e.preventDefault();
+        return false;
+      }
+    });
+  });
+  function validateDriverSelection() {
+    var tbdCheckbox = document.querySelector('.js-tbd');
+    var isTbdMode = tbdCheckbox && tbdCheckbox.checked;
+    console.log('Validating driver selection:', {
+      isTbdMode: isTbdMode,
+      firstDriverSelected: firstDriverSelected,
+      secondDriverSelected: secondDriverSelected
+    });
+    var firstDriverInput = document.querySelector('input[name="attached_driver"]');
+    var secondDriverInput = document.querySelector('input[name="attached_second_driver"]');
+    var firstUnitInput = document.querySelector('.js-unit-number-input');
+    var secondUnitInput = document.querySelector('.js-second-unit-number-input');
+    console.log('Driver inputs:', {
+      firstDriverValue: firstDriverInput === null || firstDriverInput === void 0 ? void 0 : firstDriverInput.value,
+      secondDriverValue: secondDriverInput === null || secondDriverInput === void 0 ? void 0 : secondDriverInput.value
+    });
+    var isValid = true;
+    var errorMessage = '';
+    if (!isTbdMode && firstDriverInput && firstDriverInput.value && !firstDriverSelected) {
+      isValid = false;
+      errorMessage = 'Please select a valid driver for the first driver field.';
+      console.log('First driver validation failed');
+    }
+    var secondDriverSection = document.querySelector('.js-second-driver');
+    var isSecondDriverVisible = secondDriverSection && !secondDriverSection.classList.contains('d-none');
+    var secondDriverInputExists = document.querySelector('.js-second-unit-number-input');
+    console.log('Second driver checks:', {
+      secondDriverInputExists: !!secondDriverInputExists,
+      isSecondDriverVisible: isSecondDriverVisible,
+      secondDriverValue: secondDriverInput === null || secondDriverInput === void 0 ? void 0 : secondDriverInput.value,
+      secondDriverSelected: secondDriverSelected
+    });
+    if (secondDriverInputExists && isSecondDriverVisible && secondDriverInput && secondDriverInput.value && !secondDriverSelected) {
+      isValid = false;
+      errorMessage = 'Please select a valid driver for the second driver field.';
+      console.log('Second driver validation failed');
+    }
+    console.log('Validation result:', {
+      isValid: isValid,
+      errorMessage: errorMessage
+    });
+    if (!isValid) {
+      alert(errorMessage);
+      if (firstDriverInput && firstDriverInput.value && !firstDriverSelected) {
+        firstUnitInput === null || firstUnitInput === void 0 ? void 0 : firstUnitInput.focus();
+      } else if (isSecondDriverVisible && secondDriverInput && secondDriverInput.value && !secondDriverSelected) {
+        secondUnitInput === null || secondUnitInput === void 0 ? void 0 : secondUnitInput.focus();
+      }
+    }
+    return isValid;
   }
 }
 window.document.addEventListener('DOMContentLoaded', ready);

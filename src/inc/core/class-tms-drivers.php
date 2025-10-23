@@ -1631,7 +1631,7 @@ class TMSDrivers extends TMSDriversHelper {
 		$vehicle_type = implode( ' ', $vehicle_parts );
 		
 		if ( $add_new_driver ) {
-			$link = '<a href="' . $add_new_driver . '?post_id=' . $ID_DRIVER . '">' . '(' . $ID_DRIVER . ') ' . $driver_name . '</a>';
+			$link = '<a href="' . $add_new_driver . '?driver=' . $ID_DRIVER . '">' . '(' . $ID_DRIVER . ') ' . $driver_name . '</a>';
 		}
 		
 		// var_dump( $select_emails, array(
@@ -4265,7 +4265,7 @@ class TMSDrivers extends TMSDriversHelper {
 			$user_name      = $this->get_user_full_name_by_id( $current_user_id );
 
 			if ( $add_new_driver ) {
-				$link = '<a href="' . $add_new_driver . '?post_id=' . $driver_id . '">' . '(' . $driver_id . ') ' . $driver_name . '</a>';
+				$link = '<a href="' . $add_new_driver . '?driver=' . $driver_id . '">' . '(' . $driver_id . ') ' . $driver_name . '</a>';
 			}
 
 			$this->email_helper->send_custom_email( $select_emails, array(
@@ -4328,7 +4328,7 @@ class TMSDrivers extends TMSDriversHelper {
 			$user_name      = $this->get_user_full_name_by_id( $current_user_id );
 
 			if ( $add_new_driver ) {
-				$link = '<a href="' . $add_new_driver . '?post_id=' . $driver_id . '">' . '(' . $driver_id . ') ' . $driver_name . '</a>';
+				$link = '<a href="' . $add_new_driver . '?driver=' . $driver_id . '">' . '(' . $driver_id . ') ' . $driver_name . '</a>';
 			}
 
 			$this->email_helper->send_custom_email( $select_emails, array(

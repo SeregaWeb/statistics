@@ -124,7 +124,8 @@ function ready() {
         attachedDriverInput: 'input[name="attached_driver"]',
         phoneInput: '.js-phone-driver',
         unitNumberNameInput: 'input[name="unit_number_name"]',
-        nonceInput: '#driver-search-nonce'
+        nonceInput: '#driver-search-nonce',
+        driverValueInput: '.js-driver-value'
     });
     
     // Initialize Second Driver Autocomplete
@@ -134,8 +135,11 @@ function ready() {
         attachedDriverInput: 'input[name="attached_second_driver"]',
         phoneInput: '.js-second-phone-driver',
         unitNumberNameInput: 'input[name="second_unit_number_name"]',
-        nonceInput: '#second-driver-search-nonce'
+        nonceInput: '#second-driver-search-nonce',
     });
+
+    // Add driver validation
+    initDriverValidation();
     
     // Load driver statistics if on driver page
     if (document.getElementById('driver-statistics-container')) {
@@ -261,6 +265,143 @@ function ready() {
                     item.remove();
                 });
         }, 200);
+    }
+}
+
+function initDriverValidation(): void {
+    // Track driver selection state
+    let firstDriverSelected = false;
+    let secondDriverSelected = false;
+
+    // Initialize state on page load
+    function initializeDriverState() {
+        const firstDriverInput = document.querySelector('input[name="attached_driver"]') as HTMLInputElement;
+        const secondDriverInput = document.querySelector('input[name="attached_second_driver"]') as HTMLInputElement;
+        
+        // Check if drivers are already selected on page load
+        if (firstDriverInput && firstDriverInput.value) {
+            firstDriverSelected = true;
+            console.log('First driver already selected on load:', firstDriverInput.value);
+        }
+        
+        if (secondDriverInput && secondDriverInput.value) {
+            secondDriverSelected = true;
+            console.log('Second driver already selected on load:', secondDriverInput.value);
+        }
+    }
+
+    // Initialize state
+    initializeDriverState();
+
+    // Also check if autocomplete components are working
+    setTimeout(() => {
+        const firstUnitInput = document.querySelector('.js-unit-number-input') as HTMLInputElement;
+        const secondUnitInput = document.querySelector('.js-second-unit-number-input') as HTMLInputElement;
+        
+        console.log('Autocomplete components check:', {
+            firstUnitInputExists: !!firstUnitInput,
+            secondUnitInputExists: !!secondUnitInput,
+            firstDriverSelected,
+            secondDriverSelected
+        });
+    }, 1000);
+
+    // Listen for driver selection changes
+    document.addEventListener('driverSelectionChanged', (e: any) => {
+        const { hasSelectedDriver, selectors } = e.detail;
+        
+        console.log('Driver selection changed:', { hasSelectedDriver, selectors });
+        
+        // Check which driver was changed
+        if (selectors.unitInput === '.js-unit-number-input') {
+            firstDriverSelected = hasSelectedDriver;
+            console.log('First driver selected:', firstDriverSelected);
+        } else if (selectors.unitInput === '.js-second-unit-number-input') {
+            secondDriverSelected = hasSelectedDriver;
+            console.log('Second driver selected:', secondDriverSelected);
+        }
+
+        // Validate form submission
+        validateDriverSelection();
+    });
+
+    // Validate on form submission
+    const forms = document.querySelectorAll('form');
+    forms.forEach(form => {
+        form.addEventListener('submit', (e) => {
+            if (!validateDriverSelection()) {
+                e.preventDefault();
+                return false;
+            }
+        });
+    });
+
+    function validateDriverSelection(): boolean {
+        // Check if TBD is checked
+        const tbdCheckbox = document.querySelector('.js-tbd') as HTMLInputElement;
+        const isTbdMode = tbdCheckbox && tbdCheckbox.checked;
+
+        console.log('Validating driver selection:', { isTbdMode, firstDriverSelected, secondDriverSelected });
+
+        // If TBD mode is active, skip validation for first driver only
+        // Second driver should still be validated even in TBD mode
+
+        // Check if any driver fields have values but no selected driver
+        const firstDriverInput = document.querySelector('input[name="attached_driver"]') as HTMLInputElement;
+        const secondDriverInput = document.querySelector('input[name="attached_second_driver"]') as HTMLInputElement;
+        
+        const firstUnitInput = document.querySelector('.js-unit-number-input') as HTMLInputElement;
+        const secondUnitInput = document.querySelector('.js-second-unit-number-input') as HTMLInputElement;
+
+        console.log('Driver inputs:', {
+            firstDriverValue: firstDriverInput?.value,
+            secondDriverValue: secondDriverInput?.value
+        });
+
+        let isValid = true;
+        let errorMessage = '';
+
+        // Check first driver - skip if TBD mode is active
+        if (!isTbdMode && firstDriverInput && firstDriverInput.value && !firstDriverSelected) {
+            isValid = false;
+            errorMessage = 'Please select a valid driver for the first driver field.';
+            console.log('First driver validation failed');
+        }
+
+        // Check second driver - only if the second driver section is visible and has values
+        const secondDriverSection = document.querySelector('.js-second-driver');
+        const isSecondDriverVisible = secondDriverSection && !secondDriverSection.classList.contains('d-none');
+        const secondDriverInputExists = document.querySelector('.js-second-unit-number-input');
+        
+        console.log('Second driver checks:', {
+            secondDriverInputExists: !!secondDriverInputExists,
+            isSecondDriverVisible,
+            secondDriverValue: secondDriverInput?.value,
+            secondDriverSelected
+        });
+        
+        // Only validate second driver if the section exists, is visible, and has values
+        if (secondDriverInputExists && isSecondDriverVisible && secondDriverInput && secondDriverInput.value && !secondDriverSelected) {
+            isValid = false;
+            errorMessage = 'Please select a valid driver for the second driver field.';
+            console.log('Second driver validation failed');
+        }
+
+        console.log('Validation result:', { isValid, errorMessage });
+
+        // Show error if validation failed
+        if (!isValid) {
+            alert(errorMessage);
+            
+            // Focus on the problematic field
+            if (firstDriverInput && firstDriverInput.value && !firstDriverSelected) {
+                firstUnitInput?.focus();
+            } else if (isSecondDriverVisible && secondDriverInput && secondDriverInput.value && !secondDriverSelected) {
+                secondUnitInput?.focus();
+            }
+        }
+
+        return isValid;
     }
 }
 

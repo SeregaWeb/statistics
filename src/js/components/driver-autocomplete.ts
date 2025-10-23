@@ -17,6 +17,7 @@ class DriverAutocomplete {
         phoneInput: string;
         unitNumberNameInput: string;
         nonceInput: string;
+        driverValueInput?: string; // Optional driver rate field
     };
 
     constructor(ajaxUrl: string, selectors: {
@@ -26,6 +27,7 @@ class DriverAutocomplete {
         phoneInput: string;
         unitNumberNameInput: string;
         nonceInput: string;
+        driverValueInput?: string;
     }) {
         this.ajaxUrl = ajaxUrl;
         this.selectors = selectors;
@@ -44,6 +46,9 @@ class DriverAutocomplete {
 
         // Click outside to close dropdown
         document.addEventListener('click', (e) => this.handleDocumentClick(e));
+
+        // Listen for TBD checkbox changes
+        this.initTbdListener();
 
         // Check if there's already a selected driver on page load
         this.restoreSelectedDriver();
@@ -250,6 +255,9 @@ class DriverAutocomplete {
         if (unitNumberNameInput) {
             unitNumberNameInput.value = driver.display_name;
         }
+
+        // Trigger validation event
+        this.triggerValidation();
     }
 
     private clearSelection(): void {
@@ -278,6 +286,9 @@ class DriverAutocomplete {
         if (unitInput) {
             unitInput.placeholder = 'Enter unit number...';
         }
+
+        // Trigger validation event
+        this.triggerValidation();
     }
 
     private restoreSelectedDriver(): void {
@@ -308,6 +319,199 @@ class DriverAutocomplete {
                 unitInput.placeholder = `Selected: ${driver.display_name}`;
             }
         }
+    }
+
+    private initTbdListener(): void {
+        const tbdCheckbox = document.querySelector('.js-tbd') as HTMLInputElement;
+        if (!tbdCheckbox) return;
+
+        // Only first driver should respond to TBD changes
+        const isFirstDriver = this.selectors.unitInput === '.js-unit-number-input';
+        if (!isFirstDriver) return;
+
+        tbdCheckbox.addEventListener('change', (event) => {
+            const target = event.target as HTMLInputElement;
+            
+            if (target.checked) {
+                // TBD is checked - set TBD values and disable autocomplete
+                this.setTbdMode();
+            } else {
+                // TBD is unchecked - restore normal mode
+                this.clearTbdMode();
+            }
+        });
+    }
+
+    private setTbdMode(): void {
+        const unitInput = document.querySelector(this.selectors.unitInput) as HTMLInputElement;
+        const phoneInput = document.querySelector(this.selectors.phoneInput) as HTMLInputElement;
+        const unitNumberNameInput = document.querySelector(this.selectors.unitNumberNameInput) as HTMLInputElement;
+        const attachedDriverInput = document.querySelector(this.selectors.attachedDriverInput) as HTMLInputElement;
+        const driverValueInput = this.selectors.driverValueInput ? 
+            document.querySelector(this.selectors.driverValueInput) as HTMLInputElement : null;
+
+        // Store current values before setting TBD
+        if (unitInput && !unitInput.hasAttribute('data-tbd-original')) {
+            unitInput.setAttribute('data-tbd-original', unitInput.value);
+        }
+        if (phoneInput && !phoneInput.hasAttribute('data-tbd-original')) {
+            phoneInput.setAttribute('data-tbd-original', phoneInput.value);
+        }
+        if (unitNumberNameInput && !unitNumberNameInput.hasAttribute('data-tbd-original')) {
+            unitNumberNameInput.setAttribute('data-tbd-original', unitNumberNameInput.value);
+        }
+        if (attachedDriverInput && !attachedDriverInput.hasAttribute('data-tbd-original')) {
+            attachedDriverInput.setAttribute('data-tbd-original', attachedDriverInput.value);
+        }
+        if (driverValueInput && !driverValueInput.hasAttribute('data-tbd-original')) {
+            driverValueInput.setAttribute('data-tbd-original', driverValueInput.value);
+        }
+
+        if (unitInput) {
+            unitInput.value = 'TBD';
+            unitInput.placeholder = 'TBD';
+            unitInput.setAttribute('readonly', 'readonly');
+        }
+
+        if (phoneInput) {
+            phoneInput.value = 'TBD';
+            phoneInput.setAttribute('readonly', 'readonly');
+        }
+
+        if (unitNumberNameInput) {
+            unitNumberNameInput.value = 'TBD';
+        }
+
+        if (attachedDriverInput) {
+            attachedDriverInput.value = '';
+        }
+
+        if (driverValueInput) {
+            driverValueInput.value = '0';
+            driverValueInput.setAttribute('readonly', 'readonly');
+        }
+
+        // Clear selection and hide dropdown
+        this.selectedDriver = null;
+        this.hideDropdown();
+    }
+
+    private clearTbdMode(): void {
+        const unitInput = document.querySelector(this.selectors.unitInput) as HTMLInputElement;
+        const phoneInput = document.querySelector(this.selectors.phoneInput) as HTMLInputElement;
+        const unitNumberNameInput = document.querySelector(this.selectors.unitNumberNameInput) as HTMLInputElement;
+        const attachedDriverInput = document.querySelector(this.selectors.attachedDriverInput) as HTMLInputElement;
+        const driverValueInput = this.selectors.driverValueInput ? 
+            document.querySelector(this.selectors.driverValueInput) as HTMLInputElement : null;
+
+        // Set flag to indicate we're restoring from TBD
+        (this as any).isRestoringFromTbd = true;
+
+        if (unitInput) {
+            unitInput.removeAttribute('readonly');
+            
+            // Restore original value from TBD backup
+            const tbdOriginalValue = unitInput.getAttribute('data-tbd-original');
+            if (tbdOriginalValue && tbdOriginalValue !== 'TBD') {
+                unitInput.value = tbdOriginalValue;
+            } else {
+                unitInput.value = '';
+            }
+            
+            // Check if we should restore selected driver state
+            const attachedDriverInput = document.querySelector(this.selectors.attachedDriverInput) as HTMLInputElement;
+            const unitNumberNameInput = document.querySelector(this.selectors.unitNumberNameInput) as HTMLInputElement;
+            
+            // Get the restored values
+            const restoredAttachedDriverValue = attachedDriverInput?.getAttribute('data-tbd-original') || '';
+            const restoredUnitNumberNameValue = unitNumberNameInput?.getAttribute('data-tbd-original') || '';
+            
+            console.log('Restoring from TBD:', {
+                attachedDriverValue: attachedDriverInput?.value,
+                unitNumberNameValue: unitNumberNameInput?.value,
+                restoredAttachedDriverValue,
+                restoredUnitNumberNameValue,
+                tbdOriginalValue
+            });
+            
+            if (restoredAttachedDriverValue && restoredUnitNumberNameValue && restoredUnitNumberNameValue !== 'TBD') {
+                // Driver is selected, update placeholder and restore selection state
+                unitInput.placeholder = `Selected: ${restoredUnitNumberNameValue}`;
+                this.selectedDriver = {
+                    driver_id: restoredAttachedDriverValue,
+                    display_name: restoredUnitNumberNameValue,
+                    phone: phoneInput?.value || '',
+                    unit_number: restoredAttachedDriverValue
+                };
+                console.log('Restored selected driver:', this.selectedDriver);
+            } else {
+                // No driver selected, use default placeholder
+                unitInput.placeholder = 'Enter unit number...';
+                console.log('No driver selected, using default placeholder');
+            }
+            
+            // Trigger validation event to update state
+            this.triggerValidation();
+        }
+
+        if (phoneInput) {
+            phoneInput.removeAttribute('readonly');
+            // Restore original value from TBD backup
+            const tbdOriginalValue = phoneInput.getAttribute('data-tbd-original');
+            if (tbdOriginalValue && tbdOriginalValue !== 'TBD') {
+                phoneInput.value = tbdOriginalValue;
+            } else {
+                phoneInput.value = '';
+            }
+        }
+
+        if (unitNumberNameInput) {
+            // Restore original value from TBD backup
+            const tbdOriginalValue = unitNumberNameInput.getAttribute('data-tbd-original');
+            if (tbdOriginalValue && tbdOriginalValue !== 'TBD') {
+                unitNumberNameInput.value = tbdOriginalValue;
+            } else {
+                unitNumberNameInput.value = '';
+            }
+        }
+
+        if (attachedDriverInput) {
+            // Restore original value from TBD backup
+            const tbdOriginalValue = attachedDriverInput.getAttribute('data-tbd-original');
+            if (tbdOriginalValue) {
+                attachedDriverInput.value = tbdOriginalValue;
+            } else {
+                attachedDriverInput.value = '';
+            }
+        }
+
+        if (driverValueInput) {
+            driverValueInput.removeAttribute('readonly');
+            // Restore original value from TBD backup
+            const tbdOriginalValue = driverValueInput.getAttribute('data-tbd-original');
+            if (tbdOriginalValue) {
+                driverValueInput.value = tbdOriginalValue;
+            } else {
+                driverValueInput.value = '';
+            }
+        }
+    }
+
+    private triggerValidation(): void {
+        // Don't trigger validation if we're restoring from TBD
+        if ((this as any).isRestoringFromTbd) {
+            (this as any).isRestoringFromTbd = false;
+            return;
+        }
+
+        // Dispatch custom event for form validation
+        const event = new CustomEvent('driverSelectionChanged', {
+            detail: {
+                hasSelectedDriver: !!this.selectedDriver,
+                selectors: this.selectors
+            }
+        });
+        document.dispatchEvent(event);
     }
 }
 

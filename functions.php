@@ -19,6 +19,11 @@ define( 'TEMPLATE_PATH', 'src/template-parts/report/' );
 require THEME_DIR . '/src/inc/class-wp-rock.php';
 require 'vendor/autoload.php';
 
+// Admin tools (temporary)
+if (is_admin()) {
+    require THEME_DIR . '/src/inc/admin/class-fix-driver-data.php';
+}
+
 use Mpdf\Mpdf;
 
 require THEME_DIR . '/src/inc/core/class-map-controller.php';

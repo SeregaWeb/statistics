@@ -1,3 +1,17 @@
+<?php 
+$TMSUsers = new TMSUsers();
+$rating_access = $TMSUsers->check_user_role_access( [
+	'administrator',
+	'dispatcher',
+	'dispatcher-tl',
+	'tracking',
+	'tracking-tl',
+	'morning_tracking',
+	'nightshift_tracking',
+	'expedite_manager',
+], true );
+?>
+
     <!-- Driver Rating Popup -->
     <div class="popup" id="driver-rating-popup">
         <div class="my_overlay js-popup-close"></div>
@@ -12,6 +26,7 @@
                 <div class="popup-content">
                     <h3 class="mb-3">Driver Ratings</h3>
 
+                    <?php if ( $rating_access ) : ?>
                     <!-- Add Rating Form -->
                     <div class="mb-3">
                         <form id="ratingForm" class="row g-3">
@@ -65,6 +80,7 @@
                             </div>
                         </form>
                     </div>
+                    <?php endif; ?>
 
                     <div class="d-flex justify-content-between align-items-center mb-3">
                         <h6 class="mb-0" id="driverRatingName"></h6>

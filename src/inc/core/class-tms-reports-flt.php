@@ -2829,6 +2829,16 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 					need to switch back, current project - ' . $this->project . ' previous - ' . $MY_INPUT[ 'project' ]
 				] );
 			}
+
+			if (!$MY_INPUT[ 'tbd' ]) {
+				if (empty($MY_INPUT[ 'attached_driver' ])) {
+					wp_send_json_error( [ 'message' => 'Error adding load: You need to attach a driver. To do this, select the driver from the drop-down list (by clicking on it)' ] );
+				}
+			}
+
+			if (empty($MY_INPUT[ 'attached_second_driver' ]) && $MY_INPUT[ 'second_driver' ]) {
+				wp_send_json_error( [ 'message' => 'Error adding load: You need to attach a second driver. To do this, select the second driver from the drop-down list (by clicking on it)' ] );
+			}
 			
 			if ( $MY_INPUT[ 'load_status' ] === 'cancelled' ) {
 				$MY_INPUT[ "booked_rate" ]        = '0.00';

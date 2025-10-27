@@ -3179,9 +3179,9 @@ class TMSDrivers extends TMSDriversHelper {
 		$access_flt = get_field('flt', 'user_' . $current_user_id);
 		$has_flt_access = $is_admin || $access_flt;
 		
-		// Build WHERE conditions
-		$where_conditions = array("rm.meta_value = %s");
-		$where_values = array((string)$driver_id);
+		// Build WHERE conditions - check both attached_driver and attached_second_driver
+		$where_conditions = array("(rm.meta_value = %s OR rm2.meta_value = %s)", "r.date_created >= %s");
+		$where_values = array((string)$driver_id, (string)$driver_id, '2025-10-01 00:00:00');
 		
 		// If user is dispatcher, filter by dispatcher_initials
 		if ($is_dispatcher) {
@@ -3196,6 +3196,7 @@ class TMSDrivers extends TMSDriversHelper {
 			SELECT DISTINCT r.id, ref_meta.meta_value as load_number, r.date_created, 'regular' as load_type
 			FROM $reports_table r
 			LEFT JOIN $reports_meta_table rm ON r.id = rm.post_id AND rm.meta_key = 'attached_driver'
+			LEFT JOIN $reports_meta_table rm2 ON r.id = rm2.post_id AND rm2.meta_key = 'attached_second_driver'
 			LEFT JOIN $reports_meta_table ref_meta ON r.id = ref_meta.post_id AND ref_meta.meta_key = 'reference_number'
 		";
 		
@@ -3213,9 +3214,9 @@ class TMSDrivers extends TMSDriversHelper {
 		$flt_meta_table_exists = $wpdb->get_var( "SHOW TABLES LIKE '$reports_flt_meta_table'" );
 		
 		if ( $flt_meta_table_exists && $has_flt_access ) {
-			// Build WHERE conditions for FLT query (use rfm instead of rm)
-			$flt_where_conditions = array("rfm.meta_value = %s");
-			$flt_where_values = array((string)$driver_id);
+			// Build WHERE conditions for FLT query (use rfm instead of rm) - check both attached_driver and attached_second_driver
+			$flt_where_conditions = array("(rfm.meta_value = %s OR rfm2.meta_value = %s)", "rf.date_created >= %s");
+			$flt_where_values = array((string)$driver_id, (string)$driver_id, '2025-10-01 00:00:00');
 			
 			// If user is dispatcher, filter by dispatcher_initials
 			if ($is_dispatcher) {
@@ -3230,6 +3231,7 @@ class TMSDrivers extends TMSDriversHelper {
 				SELECT DISTINCT rf.id, ref_meta.meta_value as load_number, rf.date_created, 'flt' as load_type
 				FROM $reports_flt_table rf
 				LEFT JOIN $reports_flt_meta_table rfm ON rf.id = rfm.post_id AND rfm.meta_key = 'attached_driver'
+				LEFT JOIN $reports_flt_meta_table rfm2 ON rf.id = rfm2.post_id AND rfm2.meta_key = 'attached_second_driver'
 				LEFT JOIN $reports_flt_meta_table ref_meta ON rf.id = ref_meta.post_id AND ref_meta.meta_key = 'reference_number'
 			";
 			
@@ -6076,11 +6078,12 @@ class TMSDrivers extends TMSDriversHelper {
 		// Convert to lowercase for table names
 		$current_project = strtolower( $current_project );
 		
-		// Debug logging (disabled for production)
-		// error_log( "=== DRIVER STATISTICS DEBUG ===" );
-		// error_log( "Driver ID: $driver_id" );
-		// error_log( "Current user ID: $current_user_id" );
-		// error_log( "Current project: $current_project" );
+		// Debug logging (enabled for debugging)
+		error_log( "=== DRIVER STATISTICS DEBUG ===" );
+		error_log( "Driver ID: $driver_id" );
+		error_log( "Current user ID: $current_user_id" );
+		error_log( "Current project: $current_project" );
+		error_log( "Function called from: " . debug_backtrace()[1]['function'] ?? 'unknown' );
 		
 		$stats = array(
 			'total_gross' => 0,
@@ -6101,58 +6104,73 @@ class TMSDrivers extends TMSDriversHelper {
 		$regular_table_exists = $wpdb->get_var( $wpdb->prepare( "SHOW TABLES LIKE %s", $regular_table ) );
 		$regular_meta_exists = $wpdb->get_var( $wpdb->prepare( "SHOW TABLES LIKE %s", $regular_meta_table ) );
 		
-		// error_log( "Regular table: $regular_table (exists: " . ($regular_table_exists ? 'YES' : 'NO') . ")" );
-		// error_log( "Regular meta table: $regular_meta_table (exists: " . ($regular_meta_exists ? 'YES' : 'NO') . ")" );
-		
 		if ( $regular_table_exists && $regular_meta_exists ) {
-			// First, let's check if there are any records with this driver_id
-			$test_query = "SELECT COUNT(*) as count FROM {$regular_meta_table} WHERE meta_key = 'attached_driver' AND meta_value = %d";
-			$test_result = $wpdb->get_var( $wpdb->prepare( $test_query, $driver_id ) );
-			// error_log( "Found $test_result records with attached_driver = $driver_id" );
+			error_log( "Regular tables exist, executing stats query..." );
 			
-			// Get regular loads for this driver
-			$regular_query = "
+			// Use the same approach as get_top_drivers() - single query with proper aggregation
+			$stats_query = "
 				SELECT 
-					COALESCE(SUM(CASE WHEN rm1.meta_key = 'booked_rate' AND rm_status.meta_value NOT IN ('waiting-on-rc', 'cancelled', 'tonu') THEN CAST(rm1.meta_value AS DECIMAL(10,2)) ELSE 0 END), 0) as total_gross,
-					COALESCE(SUM(CASE WHEN rm2.meta_key = 'driver_rate' AND rm_status.meta_value NOT IN ('waiting-on-rc', 'cancelled', 'tonu') THEN CAST(rm2.meta_value AS DECIMAL(10,2)) ELSE 0 END), 0) as total_driver_earnings,
-					COALESCE(SUM(CASE WHEN rm3.meta_key = 'profit' AND rm_status.meta_value NOT IN ('waiting-on-rc', 'cancelled', 'tonu') THEN CAST(rm3.meta_value AS DECIMAL(10,2)) ELSE 0 END), 0) as total_profit,
-					SUM(CASE WHEN rm4.meta_key = 'load_status' AND rm4.meta_value = 'delivered' THEN 1 ELSE 0 END) as delivered_loads,
-					SUM(CASE WHEN rm4.meta_key = 'load_status' AND rm4.meta_value = 'cancelled' THEN 1 ELSE 0 END) as cancelled_loads,
-					SUM(CASE WHEN rm4.meta_key = 'load_status' AND rm4.meta_value = 'tonu' THEN 1 ELSE 0 END) as tonu_loads,
-					SUM(CASE WHEN rm4.meta_key = 'load_status' AND rm4.meta_value IN ('at-pu', 'at-del', 'loaded-enroute') THEN 1 ELSE 0 END) as loaded_loads,
-					SUM(CASE WHEN rm4.meta_key = 'load_status' AND rm4.meta_value = 'waiting-on-pu' THEN 1 ELSE 0 END) as waiting_pu_loads
+					COUNT(DISTINCT r.ID) as delivered_loads,
+					COALESCE(SUM(CAST(rm_booked_rate.meta_value AS DECIMAL(10,2))), 0) as total_gross,
+					COALESCE(SUM(CAST(rm_profit.meta_value AS DECIMAL(10,2))), 0) as total_profit,
+					COALESCE(SUM(
+						CASE 
+							WHEN rm_driver.meta_value = %d THEN CAST(rm_driver_rate.meta_value AS DECIMAL(10,2))
+							WHEN rm_second_driver.meta_value = %d THEN CAST(rm_second_driver_rate.meta_value AS DECIMAL(10,2))
+							ELSE 0
+						END
+					), 0) as total_driver_earnings
 				FROM {$regular_table} r
 				LEFT JOIN {$regular_meta_table} rm_driver ON r.ID = rm_driver.post_id AND rm_driver.meta_key = 'attached_driver'
-				LEFT JOIN {$regular_meta_table} rm1 ON r.ID = rm1.post_id AND rm1.meta_key = 'booked_rate'
-				LEFT JOIN {$regular_meta_table} rm2 ON r.ID = rm2.post_id AND rm2.meta_key = 'driver_rate'
-				LEFT JOIN {$regular_meta_table} rm3 ON r.ID = rm3.post_id AND rm3.meta_key = 'profit'
-				LEFT JOIN {$regular_meta_table} rm4 ON r.ID = rm4.post_id AND rm4.meta_key = 'load_status'
+				LEFT JOIN {$regular_meta_table} rm_second_driver ON r.ID = rm_second_driver.post_id AND rm_second_driver.meta_key = 'attached_second_driver'
 				LEFT JOIN {$regular_meta_table} rm_status ON r.ID = rm_status.post_id AND rm_status.meta_key = 'load_status'
-				WHERE rm_driver.meta_value = %d
+				LEFT JOIN {$regular_meta_table} rm_booked_rate ON r.ID = rm_booked_rate.post_id AND rm_booked_rate.meta_key = 'booked_rate'
+				LEFT JOIN {$regular_meta_table} rm_driver_rate ON r.ID = rm_driver_rate.post_id AND rm_driver_rate.meta_key = 'driver_rate'
+				LEFT JOIN {$regular_meta_table} rm_second_driver_rate ON r.ID = rm_second_driver_rate.post_id AND rm_second_driver_rate.meta_key = 'second_driver_rate'
+				LEFT JOIN {$regular_meta_table} rm_profit ON r.ID = rm_profit.post_id AND rm_profit.meta_key = 'profit'
+				WHERE rm_status.meta_value = 'delivered'
+				AND (%d IN (rm_driver.meta_value, rm_second_driver.meta_value))
 			";
 			
-			// error_log( "Regular query: " . $regular_query );
-			// error_log( "Query params: driver_id = $driver_id" );
+			error_log( "Stats query: " . $stats_query );
+			error_log( "Query params: driver_id=$driver_id, driver_id=$driver_id, driver_id=$driver_id" );
 			
-			$regular_results = $wpdb->get_row( $wpdb->prepare( $regular_query, $driver_id ) );
+			$regular_results = $wpdb->get_row( $wpdb->prepare( $stats_query, $driver_id, $driver_id, $driver_id ) );
+			error_log( "Regular results: " . print_r( $regular_results, true ) );
 			
-			// error_log( "Regular query results: " . print_r( $regular_results, true ) );
+			// Debug: Get all load IDs for this driver
+			$debug_load_ids_query = "
+				SELECT DISTINCT r.ID as load_id
+				FROM {$regular_table} r
+				LEFT JOIN {$regular_meta_table} rm_driver ON r.ID = rm_driver.post_id AND rm_driver.meta_key = 'attached_driver'
+				LEFT JOIN {$regular_meta_table} rm_second_driver ON r.ID = rm_second_driver.post_id AND rm_second_driver.meta_key = 'attached_second_driver'
+				LEFT JOIN {$regular_meta_table} rm_status ON r.ID = rm_status.post_id AND rm_status.meta_key = 'load_status'
+				WHERE rm_status.meta_value = 'delivered'
+				AND (%d IN (rm_driver.meta_value, rm_second_driver.meta_value))
+				ORDER BY r.ID
+			";
+			$debug_load_ids = $wpdb->get_col( $wpdb->prepare( $debug_load_ids_query, $driver_id ) );
+			error_log( "INDIVIDUAL STATS - Load IDs for driver $driver_id: " . implode(', ', $debug_load_ids) );
+			error_log( "INDIVIDUAL STATS - Total count: " . count($debug_load_ids) );
 			
 			if ( $regular_results ) {
 				$stats['total_gross'] += floatval( $regular_results->total_gross );
 				$stats['total_driver_earnings'] += floatval( $regular_results->total_driver_earnings );
 				$stats['total_profit'] += floatval( $regular_results->total_profit );
 				$stats['delivered_loads'] += intval( $regular_results->delivered_loads );
-				$stats['cancelled_loads'] += intval( $regular_results->cancelled_loads );
-				$stats['tonu_loads'] += intval( $regular_results->tonu_loads );
-				$stats['loaded_loads'] += intval( $regular_results->loaded_loads );
-				$stats['waiting_pu_loads'] += intval( $regular_results->waiting_pu_loads );
+				// Set other statuses to 0 since we only count delivered
+				$stats['cancelled_loads'] = 0;
+				$stats['tonu_loads'] = 0;
+				$stats['loaded_loads'] = 0;
+				$stats['waiting_pu_loads'] = 0;
 			}
 		}
 		
 		// Get FLT loads statistics (if user has access)
 		$access_flt = get_field( 'flt', 'user_' . $current_user_id );
 		$user_roles = wp_get_current_user()->roles;
+		
+		error_log( "FLT access check: access_flt=$access_flt, user_roles=" . print_r($user_roles, true) );
 		
 		if ( $access_flt || in_array( 'administrator', $user_roles ) ) {
 			$flt_table = $wpdb->prefix . 'reports_flt_' . $current_project;
@@ -6163,46 +6181,379 @@ class TMSDrivers extends TMSDriversHelper {
 			$flt_meta_exists = $wpdb->get_var( $wpdb->prepare( "SHOW TABLES LIKE %s", $flt_meta_table ) );
 			
 			if ( $flt_table_exists && $flt_meta_exists ) {
-				// Get FLT loads for this driver
-				$flt_query = "
-					SELECT 
-						COALESCE(SUM(CASE WHEN rfm1.meta_key = 'booked_rate' AND rfm_status.meta_value NOT IN ('waiting-on-rc', 'cancelled', 'tonu') THEN CAST(rfm1.meta_value AS DECIMAL(10,2)) ELSE 0 END), 0) as total_gross,
-						COALESCE(SUM(CASE WHEN rfm2.meta_key = 'driver_rate' AND rfm_status.meta_value NOT IN ('waiting-on-rc', 'cancelled', 'tonu') THEN CAST(rfm2.meta_value AS DECIMAL(10,2)) ELSE 0 END), 0) as total_driver_earnings,
-						COALESCE(SUM(CASE WHEN rfm3.meta_key = 'profit' AND rfm_status.meta_value NOT IN ('waiting-on-rc', 'cancelled', 'tonu') THEN CAST(rfm3.meta_value AS DECIMAL(10,2)) ELSE 0 END), 0) as total_profit,
-						SUM(CASE WHEN rfm4.meta_key = 'load_status' AND rfm4.meta_value = 'delivered' THEN 1 ELSE 0 END) as delivered_loads,
-						SUM(CASE WHEN rfm4.meta_key = 'load_status' AND rfm4.meta_value = 'cancelled' THEN 1 ELSE 0 END) as cancelled_loads,
-						SUM(CASE WHEN rfm4.meta_key = 'load_status' AND rfm4.meta_value = 'tonu' THEN 1 ELSE 0 END) as tonu_loads,
-						SUM(CASE WHEN rfm4.meta_key = 'load_status' AND rfm4.meta_value IN ('at-pu', 'at-del', 'loaded-enroute') THEN 1 ELSE 0 END) as loaded_loads,
-						SUM(CASE WHEN rfm4.meta_key = 'load_status' AND rfm4.meta_value = 'waiting-on-pu' THEN 1 ELSE 0 END) as waiting_pu_loads
+				error_log( "FLT tables exist, checking FLT loads..." );
+				
+				// Debug: Get FLT load IDs for this driver
+				$flt_debug_load_ids_query = "
+					SELECT DISTINCT rf.ID as load_id
 					FROM {$flt_table} rf
 					LEFT JOIN {$flt_meta_table} rfm_driver ON rf.ID = rfm_driver.post_id AND rfm_driver.meta_key = 'attached_driver'
-					LEFT JOIN {$flt_meta_table} rfm1 ON rf.ID = rfm1.post_id AND rfm1.meta_key = 'booked_rate'
-					LEFT JOIN {$flt_meta_table} rfm2 ON rf.ID = rfm2.post_id AND rfm2.meta_key = 'driver_rate'
-					LEFT JOIN {$flt_meta_table} rfm3 ON rf.ID = rfm3.post_id AND rfm3.meta_key = 'profit'
-					LEFT JOIN {$flt_meta_table} rfm4 ON rf.ID = rfm4.post_id AND rfm4.meta_key = 'load_status'
+					LEFT JOIN {$flt_meta_table} rfm_second_driver ON rf.ID = rfm_second_driver.post_id AND rfm_second_driver.meta_key = 'attached_second_driver'
 					LEFT JOIN {$flt_meta_table} rfm_status ON rf.ID = rfm_status.post_id AND rfm_status.meta_key = 'load_status'
-					WHERE rfm_driver.meta_value = %d
+					WHERE rfm_status.meta_value = 'delivered'
+					AND (%d IN (rfm_driver.meta_value, rfm_second_driver.meta_value))
+					ORDER BY rf.ID
+				";
+				$flt_debug_load_ids = $wpdb->get_col( $wpdb->prepare( $flt_debug_load_ids_query, $driver_id ) );
+				error_log( "INDIVIDUAL STATS - FLT Load IDs for driver $driver_id: " . implode(', ', $flt_debug_load_ids) );
+				error_log( "INDIVIDUAL STATS - FLT Total count: " . count($flt_debug_load_ids) );
+				
+				// Use the same approach as get_top_drivers() - single query with proper aggregation
+				$flt_stats_query = "
+					SELECT 
+						COUNT(DISTINCT rf.ID) as delivered_loads,
+						COALESCE(SUM(CAST(rfm_booked_rate.meta_value AS DECIMAL(10,2))), 0) as total_gross,
+						COALESCE(SUM(CAST(rfm_profit.meta_value AS DECIMAL(10,2))), 0) as total_profit,
+						COALESCE(SUM(
+							CASE 
+								WHEN rfm_driver.meta_value = %d THEN CAST(rfm_driver_rate.meta_value AS DECIMAL(10,2))
+								WHEN rfm_second_driver.meta_value = %d THEN CAST(rfm_second_driver_rate.meta_value AS DECIMAL(10,2))
+								ELSE 0
+							END
+						), 0) as total_driver_earnings
+					FROM {$flt_table} rf
+					LEFT JOIN {$flt_meta_table} rfm_driver ON rf.ID = rfm_driver.post_id AND rfm_driver.meta_key = 'attached_driver'
+					LEFT JOIN {$flt_meta_table} rfm_second_driver ON rf.ID = rfm_second_driver.post_id AND rfm_second_driver.meta_key = 'attached_second_driver'
+					LEFT JOIN {$flt_meta_table} rfm_status ON rf.ID = rfm_status.post_id AND rfm_status.meta_key = 'load_status'
+					LEFT JOIN {$flt_meta_table} rfm_booked_rate ON rf.ID = rfm_booked_rate.post_id AND rfm_booked_rate.meta_key = 'booked_rate'
+					LEFT JOIN {$flt_meta_table} rfm_driver_rate ON rf.ID = rfm_driver_rate.post_id AND rfm_driver_rate.meta_key = 'driver_rate'
+					LEFT JOIN {$flt_meta_table} rfm_second_driver_rate ON rf.ID = rfm_second_driver_rate.post_id AND rfm_second_driver_rate.meta_key = 'second_driver_rate'
+					LEFT JOIN {$flt_meta_table} rfm_profit ON rf.ID = rfm_profit.post_id AND rfm_profit.meta_key = 'profit'
+					WHERE rfm_status.meta_value = 'delivered'
+					AND (%d IN (rfm_driver.meta_value, rfm_second_driver.meta_value))
 				";
 				
-				$flt_results = $wpdb->get_row( $wpdb->prepare( $flt_query, $driver_id ) );
+				$flt_results = $wpdb->get_row( $wpdb->prepare( $flt_stats_query, $driver_id, $driver_id, $driver_id ) );
 				
 				if ( $flt_results ) {
 					$stats['total_gross'] += floatval( $flt_results->total_gross );
 					$stats['total_driver_earnings'] += floatval( $flt_results->total_driver_earnings );
 					$stats['total_profit'] += floatval( $flt_results->total_profit );
 					$stats['delivered_loads'] += intval( $flt_results->delivered_loads );
-					$stats['cancelled_loads'] += intval( $flt_results->cancelled_loads );
-					$stats['tonu_loads'] += intval( $flt_results->tonu_loads );
-					$stats['loaded_loads'] += intval( $flt_results->loaded_loads );
-					$stats['waiting_pu_loads'] += intval( $flt_results->waiting_pu_loads );
 				}
 			}
 		}
 		
-		// error_log( "Final stats: " . print_r( $stats, true ) );
-		// error_log( "=== END DRIVER STATISTICS DEBUG ===" );
+		error_log( "Final stats: " . print_r( $stats, true ) );
+		error_log( "=== END DRIVER STATISTICS DEBUG ===" );
 		
 		return $stats;
+	}
+
+	/**
+	 * Get top drivers by performance (MULTIPLE SIMPLE QUERIES APPROACH)
+	 * Criteria: Rating >= 4, sorted by delivered loads count, then by profit
+	 */
+	public function get_top_drivers($limit = 25) {
+		global $wpdb;
+		
+		$current_user_id = get_current_user_id();
+		$current_project = get_field('current_select', 'user_' . $current_user_id);
+		
+		if (empty($current_project)) {
+			$current_project = 'odysseia';
+		}
+		
+		$current_project = strtolower($current_project);
+		
+		// Build table names
+		$drivers_table = $wpdb->prefix . 'drivers';
+		$drivers_meta_table = $wpdb->prefix . 'drivers_meta';
+		$drivers_rating_table = $wpdb->prefix . $this->table_raiting;
+		$reports_table = $wpdb->prefix . 'reports_' . $current_project;
+		$reports_meta_table = $wpdb->prefix . 'reportsmeta_' . $current_project;
+		$reports_flt_table = $wpdb->prefix . 'reports_flt_' . $current_project;
+		$reports_flt_meta_table = $wpdb->prefix . 'reportsmeta_flt_' . $current_project;
+		
+		// Check if FLT tables exist and user has access
+		$access_flt = get_field('flt', 'user_' . $current_user_id);
+		$user_roles = wp_get_current_user()->roles;
+		$has_flt_access = $access_flt || in_array('administrator', $user_roles);
+		
+		$flt_table_exists = $wpdb->get_var("SHOW TABLES LIKE '$reports_flt_table'");
+		$flt_meta_exists = $wpdb->get_var("SHOW TABLES LIKE '$reports_flt_meta_table'");
+		$use_flt = $has_flt_access && $flt_table_exists && $flt_meta_exists;
+		
+		// Step 1: Get drivers with rating >= 4
+		$high_rated_drivers_query = "
+			SELECT 
+				driver_id,
+				ROUND(AVG(reit), 2) as avg_rating
+			FROM {$drivers_rating_table}
+			GROUP BY driver_id
+			HAVING AVG(reit) >= 4.0
+		";
+		
+		$high_rated_drivers = $wpdb->get_results($high_rated_drivers_query);
+		
+		if (empty($high_rated_drivers)) {
+			return [];
+		}
+		
+		// Extract driver IDs
+		$driver_ids = array_map(function($driver) {
+			return intval($driver->driver_id);
+		}, $high_rated_drivers);
+		
+		// Create placeholders for IN clause
+		$placeholders = implode(',', array_fill(0, count($driver_ids), '%d'));
+		
+		// Create rating lookup array
+		$rating_lookup = [];
+		foreach ($high_rated_drivers as $driver) {
+			$rating_lookup[intval($driver->driver_id)] = floatval($driver->avg_rating);
+		}
+		
+		// Step 2: Get first driver load counts (only for drivers that exist in drivers table)
+		$first_driver_loads_query = "
+			SELECT 
+				rm_driver.meta_value as driver_id,
+				COUNT(DISTINCT r.ID) as first_loads
+			FROM {$reports_table} r
+			LEFT JOIN {$reports_meta_table} rm_driver ON r.ID = rm_driver.post_id AND rm_driver.meta_key = 'attached_driver'
+			LEFT JOIN {$reports_meta_table} rm_status ON r.ID = rm_status.post_id AND rm_status.meta_key = 'load_status'
+			INNER JOIN {$drivers_table} d ON rm_driver.meta_value = d.id
+			WHERE rm_status.meta_value = 'delivered'
+			AND rm_driver.meta_value IN ($placeholders)
+			GROUP BY rm_driver.meta_value
+		";
+		
+		$first_driver_loads = $wpdb->get_results($wpdb->prepare($first_driver_loads_query, $driver_ids));
+		
+		// Step 3: Get second driver load counts (only for drivers that exist in drivers table)
+		$second_driver_loads_query = "
+			SELECT 
+				rm_second_driver.meta_value as driver_id,
+				COUNT(DISTINCT r.ID) as second_loads
+			FROM {$reports_table} r
+			LEFT JOIN {$reports_meta_table} rm_second_driver ON r.ID = rm_second_driver.post_id AND rm_second_driver.meta_key = 'attached_second_driver'
+			LEFT JOIN {$reports_meta_table} rm_status ON r.ID = rm_status.post_id AND rm_status.meta_key = 'load_status'
+			INNER JOIN {$drivers_table} d ON rm_second_driver.meta_value = d.id
+			WHERE rm_status.meta_value = 'delivered'
+			AND rm_second_driver.meta_value IN ($placeholders)
+			GROUP BY rm_second_driver.meta_value
+		";
+		
+		$second_driver_loads = $wpdb->get_results($wpdb->prepare($second_driver_loads_query, $driver_ids));
+		
+		// Step 4: Get first driver financial data (only for drivers that exist in drivers table)
+		$first_driver_financial_query = "
+			SELECT 
+				rm_driver.meta_value as driver_id,
+				COALESCE(SUM(CAST(rm_profit.meta_value AS DECIMAL(10,2))), 0) as first_profit,
+				COALESCE(SUM(CAST(rm_driver_rate.meta_value AS DECIMAL(10,2))), 0) as first_earnings
+			FROM {$reports_table} r
+			LEFT JOIN {$reports_meta_table} rm_driver ON r.ID = rm_driver.post_id AND rm_driver.meta_key = 'attached_driver'
+			LEFT JOIN {$reports_meta_table} rm_status ON r.ID = rm_status.post_id AND rm_status.meta_key = 'load_status'
+			LEFT JOIN {$reports_meta_table} rm_profit ON r.ID = rm_profit.post_id AND rm_profit.meta_key = 'profit'
+			LEFT JOIN {$reports_meta_table} rm_driver_rate ON r.ID = rm_driver_rate.post_id AND rm_driver_rate.meta_key = 'driver_rate'
+			INNER JOIN {$drivers_table} d ON rm_driver.meta_value = d.id
+			WHERE rm_status.meta_value = 'delivered'
+			AND rm_driver.meta_value IN ($placeholders)
+			GROUP BY rm_driver.meta_value
+		";
+		
+		$first_driver_financial = $wpdb->get_results($wpdb->prepare($first_driver_financial_query, $driver_ids));
+		
+		// Step 5: Get second driver financial data (only for drivers that exist in drivers table)
+		$second_driver_financial_query = "
+			SELECT 
+				rm_second_driver.meta_value as driver_id,
+				COALESCE(SUM(CAST(rm_profit.meta_value AS DECIMAL(10,2))), 0) as second_profit,
+				COALESCE(SUM(CAST(rm_second_rate.meta_value AS DECIMAL(10,2))), 0) as second_earnings
+			FROM {$reports_table} r
+			LEFT JOIN {$reports_meta_table} rm_second_driver ON r.ID = rm_second_driver.post_id AND rm_second_driver.meta_key = 'attached_second_driver'
+			LEFT JOIN {$reports_meta_table} rm_status ON r.ID = rm_status.post_id AND rm_status.meta_key = 'load_status'
+			LEFT JOIN {$reports_meta_table} rm_profit ON r.ID = rm_profit.post_id AND rm_profit.meta_key = 'profit'
+			LEFT JOIN {$reports_meta_table} rm_second_rate ON r.ID = rm_second_rate.post_id AND rm_second_rate.meta_key = 'second_driver_rate'
+			INNER JOIN {$drivers_table} d ON rm_second_driver.meta_value = d.id
+			WHERE rm_status.meta_value = 'delivered'
+			AND rm_second_driver.meta_value IN ($placeholders)
+			GROUP BY rm_second_driver.meta_value
+		";
+		
+		$second_driver_financial = $wpdb->get_results($wpdb->prepare($second_driver_financial_query, $driver_ids));
+		
+		// Add FLT data if available
+		$flt_first_loads = [];
+		$flt_second_loads = [];
+		$flt_first_financial = [];
+		$flt_second_financial = [];
+		
+		if ($use_flt) {
+			// FLT first driver loads (only for drivers that exist in drivers table)
+			$flt_first_loads_query = "
+				SELECT 
+					rfm_driver.meta_value as driver_id,
+					COUNT(DISTINCT rf.ID) as first_loads
+				FROM {$reports_flt_table} rf
+				LEFT JOIN {$reports_flt_meta_table} rfm_driver ON rf.ID = rfm_driver.post_id AND rfm_driver.meta_key = 'attached_driver'
+				LEFT JOIN {$reports_flt_meta_table} rfm_status ON rf.ID = rfm_status.post_id AND rfm_status.meta_key = 'load_status'
+				INNER JOIN {$drivers_table} d ON rfm_driver.meta_value = d.id
+				WHERE rfm_status.meta_value = 'delivered'
+				AND rfm_driver.meta_value IN ($placeholders)
+				GROUP BY rfm_driver.meta_value
+			";
+			$flt_first_loads = $wpdb->get_results($wpdb->prepare($flt_first_loads_query, $driver_ids));
+			
+			// FLT second driver loads (only for drivers that exist in drivers table)
+			$flt_second_loads_query = "
+				SELECT 
+					rfm_second_driver.meta_value as driver_id,
+					COUNT(DISTINCT rf.ID) as second_loads
+				FROM {$reports_flt_table} rf
+				LEFT JOIN {$reports_flt_meta_table} rfm_second_driver ON rf.ID = rfm_second_driver.post_id AND rfm_second_driver.meta_key = 'attached_second_driver'
+				LEFT JOIN {$reports_flt_meta_table} rfm_status ON rf.ID = rfm_status.post_id AND rfm_status.meta_key = 'load_status'
+				INNER JOIN {$drivers_table} d ON rfm_second_driver.meta_value = d.id
+				WHERE rfm_status.meta_value = 'delivered'
+				AND rfm_second_driver.meta_value IN ($placeholders)
+				GROUP BY rfm_second_driver.meta_value
+			";
+			$flt_second_loads = $wpdb->get_results($wpdb->prepare($flt_second_loads_query, $driver_ids));
+			
+			// FLT first driver financial (only for drivers that exist in drivers table)
+			$flt_first_financial_query = "
+				SELECT 
+					rfm_driver.meta_value as driver_id,
+					COALESCE(SUM(CAST(rfm_profit.meta_value AS DECIMAL(10,2))), 0) as first_profit,
+					COALESCE(SUM(CAST(rfm_driver_rate.meta_value AS DECIMAL(10,2))), 0) as first_earnings
+				FROM {$reports_flt_table} rf
+				LEFT JOIN {$reports_flt_meta_table} rfm_driver ON rf.ID = rfm_driver.post_id AND rfm_driver.meta_key = 'attached_driver'
+				LEFT JOIN {$reports_flt_meta_table} rfm_status ON rf.ID = rfm_status.post_id AND rfm_status.meta_key = 'load_status'
+				LEFT JOIN {$reports_flt_meta_table} rfm_profit ON rf.ID = rfm_profit.post_id AND rfm_profit.meta_key = 'profit'
+				LEFT JOIN {$reports_flt_meta_table} rfm_driver_rate ON rf.ID = rfm_driver_rate.post_id AND rfm_driver_rate.meta_key = 'driver_rate'
+				INNER JOIN {$drivers_table} d ON rfm_driver.meta_value = d.id
+				WHERE rfm_status.meta_value = 'delivered'
+				AND rfm_driver.meta_value IN ($placeholders)
+				GROUP BY rfm_driver.meta_value
+			";
+			$flt_first_financial = $wpdb->get_results($wpdb->prepare($flt_first_financial_query, $driver_ids));
+			
+			// FLT second driver financial (only for drivers that exist in drivers table)
+			$flt_second_financial_query = "
+				SELECT 
+					rfm_second_driver.meta_value as driver_id,
+					COALESCE(SUM(CAST(rfm_profit.meta_value AS DECIMAL(10,2))), 0) as second_profit,
+					COALESCE(SUM(CAST(rfm_second_rate.meta_value AS DECIMAL(10,2))), 0) as second_earnings
+				FROM {$reports_flt_table} rf
+				LEFT JOIN {$reports_flt_meta_table} rfm_second_driver ON rf.ID = rfm_second_driver.post_id AND rfm_second_driver.meta_key = 'attached_second_driver'
+				LEFT JOIN {$reports_flt_meta_table} rfm_status ON rf.ID = rfm_status.post_id AND rfm_status.meta_key = 'load_status'
+				LEFT JOIN {$reports_flt_meta_table} rfm_profit ON rf.ID = rfm_profit.post_id AND rfm_profit.meta_key = 'profit'
+				LEFT JOIN {$reports_flt_meta_table} rfm_second_rate ON rf.ID = rfm_second_rate.post_id AND rfm_second_rate.meta_key = 'second_driver_rate'
+				INNER JOIN {$drivers_table} d ON rfm_second_driver.meta_value = d.id
+				WHERE rfm_status.meta_value = 'delivered'
+				AND rfm_second_driver.meta_value IN ($placeholders)
+				GROUP BY rfm_second_driver.meta_value
+			";
+			$flt_second_financial = $wpdb->get_results($wpdb->prepare($flt_second_financial_query, $driver_ids));
+		}
+		
+		// Step 6: Get driver names
+		$name_placeholders = implode(',', array_fill(0, count($driver_ids), '%d'));
+		$names_query = "
+			SELECT 
+				post_id as driver_id,
+				meta_value as driver_name
+			FROM {$drivers_meta_table}
+			WHERE meta_key = 'driver_name'
+			AND post_id IN ($name_placeholders)
+		";
+		
+		$driver_names = $wpdb->get_results($wpdb->prepare($names_query, $driver_ids));
+		
+		// Create lookup arrays
+		$name_lookup = [];
+		foreach ($driver_names as $row) {
+			$name_lookup[intval($row->driver_id)] = $row->driver_name;
+		}
+		
+		$first_loads_lookup = [];
+		foreach ($first_driver_loads as $row) {
+			$first_loads_lookup[intval($row->driver_id)] = intval($row->first_loads);
+		}
+		
+		$second_loads_lookup = [];
+		foreach ($second_driver_loads as $row) {
+			$second_loads_lookup[intval($row->driver_id)] = intval($row->second_loads);
+		}
+		
+		$first_financial_lookup = [];
+		foreach ($first_driver_financial as $row) {
+			$first_financial_lookup[intval($row->driver_id)] = [
+				'profit' => floatval($row->first_profit),
+				'earnings' => floatval($row->first_earnings)
+			];
+		}
+		
+		$second_financial_lookup = [];
+		foreach ($second_driver_financial as $row) {
+			$second_financial_lookup[intval($row->driver_id)] = [
+				'profit' => floatval($row->second_profit),
+				'earnings' => floatval($row->second_earnings)
+			];
+		}
+		
+		// Add FLT data to lookups
+		foreach ($flt_first_loads as $row) {
+			$driver_id = intval($row->driver_id);
+			$first_loads_lookup[$driver_id] = ($first_loads_lookup[$driver_id] ?? 0) + intval($row->first_loads);
+		}
+		
+		foreach ($flt_second_loads as $row) {
+			$driver_id = intval($row->driver_id);
+			$second_loads_lookup[$driver_id] = ($second_loads_lookup[$driver_id] ?? 0) + intval($row->second_loads);
+		}
+		
+		foreach ($flt_first_financial as $row) {
+			$driver_id = intval($row->driver_id);
+			$first_financial_lookup[$driver_id] = [
+				'profit' => ($first_financial_lookup[$driver_id]['profit'] ?? 0) + floatval($row->first_profit),
+				'earnings' => ($first_financial_lookup[$driver_id]['earnings'] ?? 0) + floatval($row->first_earnings)
+			];
+		}
+		
+		foreach ($flt_second_financial as $row) {
+			$driver_id = intval($row->driver_id);
+			$second_financial_lookup[$driver_id] = [
+				'profit' => ($second_financial_lookup[$driver_id]['profit'] ?? 0) + floatval($row->second_profit),
+				'earnings' => ($second_financial_lookup[$driver_id]['earnings'] ?? 0) + floatval($row->second_earnings)
+			];
+		}
+		
+		// Step 7: Combine all data and calculate totals
+		$driver_stats = [];
+		foreach ($driver_ids as $driver_id) {
+			$first_loads = $first_loads_lookup[$driver_id] ?? 0;
+			$second_loads = $second_loads_lookup[$driver_id] ?? 0;
+			$total_loads = $first_loads + $second_loads;
+			
+			if ($total_loads > 0) {
+				$first_financial = $first_financial_lookup[$driver_id] ?? ['profit' => 0, 'earnings' => 0];
+				$second_financial = $second_financial_lookup[$driver_id] ?? ['profit' => 0, 'earnings' => 0];
+				
+				$driver_stats[] = [
+					'driver_id' => $driver_id,
+					'driver_name' => $name_lookup[$driver_id] ?? 'Unknown',
+					'rating' => $rating_lookup[$driver_id] ?? 0.0,
+					'delivered_loads' => $total_loads,
+					'first_driver_loads' => $first_loads,
+					'second_driver_loads' => $second_loads,
+					'total_profit' => $first_financial['profit'] + $second_financial['profit'],
+					'total_earnings' => $first_financial['earnings'] + $second_financial['earnings']
+				];
+			}
+		}
+		
+		// Step 8: Sort by delivered loads, then by profit
+		usort($driver_stats, function($a, $b) {
+			if ($a['delivered_loads'] == $b['delivered_loads']) {
+				return $b['total_profit'] <=> $a['total_profit'];
+			}
+			return $b['delivered_loads'] <=> $a['delivered_loads'];
+		});
+		
+		// Step 9: Limit results
+		return array_slice($driver_stats, 0, $limit);
 	}
 
 	/**
@@ -6222,7 +6573,15 @@ class TMSDrivers extends TMSDriversHelper {
 			return;
 		}
 		
+		// Debug logging
+		error_log( "=== AJAX DRIVER STATISTICS DEBUG ===" );
+		error_log( "Driver ID: $driver_id" );
+		error_log( "Calling get_driver_financial_statistics..." );
+		
 		$statistics = $this->get_driver_financial_statistics( $driver_id );
+		
+		error_log( "Statistics result: " . print_r( $statistics, true ) );
+		error_log( "=== END AJAX DRIVER STATISTICS DEBUG ===" );
 		
 		wp_send_json_success( $statistics );
 	}

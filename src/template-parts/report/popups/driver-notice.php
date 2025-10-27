@@ -10,7 +10,7 @@
                     </svg>
                 </button>
                 <div class="popup-content">
-                    <h3 class="mb-3">Driver Notices</h3>
+                    <h3 class="mb-3">Driver Notes</h3>
 
                     <!-- Add Notice Form -->
                     <div class="mb-3">

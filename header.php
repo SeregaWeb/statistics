@@ -80,7 +80,15 @@ We will immediately let you know once the truck is on-site.
 Если у груза статус "Waiting on RC" нужно чтобы подгрузка Rate confirmation & Dispatch message не была обязательная. Так же в Trip, не обязательно вводить информацию Shipper, Receiver.
 </pre>
 
-<body <?php body_class( $page_class ); ?>>
+<body <?php 
+$dark_mode_class = '';
+if (class_exists('DarkMode')) {
+    $dark_mode = new DarkMode();
+    $dark_mode_class = $dark_mode->get_body_class();
+}
+$body_classes = array_filter([$page_class, $dark_mode_class]);
+body_class($body_classes); 
+?>>
 
     <?php do_action( 'wp_rock_after_open_body_tag' ); ?>
 

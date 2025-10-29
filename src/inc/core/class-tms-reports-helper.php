@@ -771,9 +771,11 @@ class TMSReportsHelper extends TMSReportsIcons {
 		return null;
 	}
 	
-	function get_tracking_message( $tracking_email, $nightshift_email ) {
+	function get_tracking_message( $tracking_email, $nightshift_email, $morning_email ) {
 		// Сначала ищем nightshift
 		$nightshift_user = $this->find_user_by_emails( $nightshift_email );
+
+		$morning_user = $this->find_user_by_emails( $morning_email );
 		
 		// Теперь ищем tracking, исключая nightshift_user
 		$tracking_user = $this->find_user_by_emails( $tracking_email, $nightshift_user ? $nightshift_user->ID : null );
@@ -784,13 +786,21 @@ class TMSReportsHelper extends TMSReportsIcons {
 		if ( ! $nightshift_user ) {
 			return 'Nightshift user not found.';
 		}
+
+		if ( ! $morning_user ) {
+			return 'Morning user not found.';
+		}
 		
 		$tracking_text = $tracking_user
-			? sprintf( "%s %s", get_field( 'phone_number', 'user_' . $tracking_user->ID ), $tracking_user->first_name )
+			? sprintf( "%s %s",$tracking_user->first_name, get_field( 'phone_number', 'user_' . $tracking_user->ID ) )
 			: '';
 		
 		$nightshift_text = $nightshift_user
-			? sprintf( "%s %s", get_field( 'phone_number', 'user_' . $nightshift_user->ID ), $nightshift_user->first_name )
+			? sprintf( "%s %s", $nightshift_user->first_name, get_field( 'phone_number', 'user_' . $nightshift_user->ID ) )
+			: '';
+
+		$morning_text = $morning_user
+			? sprintf( "%s %s", get_field( 'phone_number', 'user_' . $morning_user->ID ), $morning_user->first_name )
 			: '';
 		
 		$text_parts = [];
@@ -802,8 +812,12 @@ class TMSReportsHelper extends TMSReportsIcons {
 		if ( $nightshift_text ) {
 			$text_parts[] = 'Afterhours contact: ' . $nightshift_text;
 		}
+
+		if ( $morning_text ) {
+			$text_parts[] = $morning_text;
+		}
 		
-		$text = implode( '. ', $text_parts ) . '.';
+		$text = implode( ', ', $text_parts ) . '.';
 		
 		
 		return $text;
@@ -825,10 +839,13 @@ class TMSReportsHelper extends TMSReportsIcons {
 		$pick_up_location       = get_field_value( $meta, 'pick_up_location' );
 		$delivery_location      = get_field_value( $meta, 'delivery_location' );
 		$dispatcher_initials    = get_field_value( $meta, 'dispatcher_initials' );
-		$nightshift             = get_field( 'nightshift_tracking', 'user_' . $dispatcher_initials );
-		$tracking               = $emails->get_tracking_email( $dispatcher_initials );
+
+		$emails_by_groups = $emails->get_tracking_emails_by_groups($dispatcher_initials);
+		$tracking = $emails_by_groups['tracking'][0];
+		$nightshift = $emails_by_groups['nightshift'][0];
+		$morning = $emails_by_groups['morning'][0];
 		
-		$last_message = $this->get_tracking_message( $tracking, $nightshift );
+		$last_message = $this->get_tracking_message( $tracking, $nightshift, $morning );
 		
 		$driver_rate             = esc_html( '$' . $this->format_currency( $driver_rate_raw ) );
 		$get_instructions_values = $this->get_instructions_values( $instructions );
@@ -1120,6 +1137,27 @@ Kindly confirm once you've received this message." ) . "\n";
 				'full_name' => $full_name,
 				'initials'  => $initials,
 			);
+		}
+		
+		return false;
+	}
+
+	/**
+	 * Get user role by user ID
+	 * 
+	 * @param int $user_id User ID
+	 * @return string|false User role or false if user not found
+	 */
+	function get_user_role_by_id( $user_id ) {
+		$user = get_user_by( 'id', $user_id );
+		
+		if ( $user ) {
+			$user_roles = $user->roles;
+			
+			// Return the first role (users typically have one primary role)
+			if ( ! empty( $user_roles ) ) {
+				return $user_roles[0];
+			}
 		}
 		
 		return false;

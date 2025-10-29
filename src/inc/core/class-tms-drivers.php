@@ -6242,7 +6242,7 @@ class TMSDrivers extends TMSDriversHelper {
 
 	/**
 	 * Get top drivers by performance (MULTIPLE SIMPLE QUERIES APPROACH)
-	 * Criteria: Rating >= 4, sorted by delivered loads count, then by profit
+	 * Criteria: Rating >= 4, sorted by profit, then by delivered loads count
 	 */
 	public function get_top_drivers($limit = 25) {
 		global $wpdb;
@@ -6448,23 +6448,26 @@ class TMSDrivers extends TMSDriversHelper {
 			$flt_second_financial = $wpdb->get_results($wpdb->prepare($flt_second_financial_query, $driver_ids));
 		}
 		
-		// Step 6: Get driver names
+		// Step 6: Get driver names and recruiters
 		$name_placeholders = implode(',', array_fill(0, count($driver_ids), '%d'));
 		$names_query = "
 			SELECT 
-				post_id as driver_id,
-				meta_value as driver_name
-			FROM {$drivers_meta_table}
-			WHERE meta_key = 'driver_name'
-			AND post_id IN ($name_placeholders)
+				d.id as driver_id,
+				dm_name.meta_value as driver_name,
+				d.user_id_added
+			FROM {$drivers_table} d
+			LEFT JOIN {$drivers_meta_table} dm_name ON d.id = dm_name.post_id AND dm_name.meta_key = 'driver_name'
+			WHERE d.id IN ($name_placeholders)
 		";
 		
 		$driver_names = $wpdb->get_results($wpdb->prepare($names_query, $driver_ids));
 		
 		// Create lookup arrays
 		$name_lookup = [];
+		$recruiter_lookup = [];
 		foreach ($driver_names as $row) {
 			$name_lookup[intval($row->driver_id)] = $row->driver_name;
+			$recruiter_lookup[intval($row->driver_id)] = intval($row->user_id_added);
 		}
 		
 		$first_loads_lookup = [];
@@ -6534,6 +6537,7 @@ class TMSDrivers extends TMSDriversHelper {
 				$driver_stats[] = [
 					'driver_id' => $driver_id,
 					'driver_name' => $name_lookup[$driver_id] ?? 'Unknown',
+					'recruiter_id' => $recruiter_lookup[$driver_id] ?? 0,
 					'rating' => $rating_lookup[$driver_id] ?? 0.0,
 					'delivered_loads' => $total_loads,
 					'first_driver_loads' => $first_loads,
@@ -6544,12 +6548,12 @@ class TMSDrivers extends TMSDriversHelper {
 			}
 		}
 		
-		// Step 8: Sort by delivered loads, then by profit
+		// Step 8: Sort by profit, then by delivered loads
 		usort($driver_stats, function($a, $b) {
-			if ($a['delivered_loads'] == $b['delivered_loads']) {
-				return $b['total_profit'] <=> $a['total_profit'];
+			if ($a['total_profit'] == $b['total_profit']) {
+				return $b['delivered_loads'] <=> $a['delivered_loads'];
 			}
-			return $b['delivered_loads'] <=> $a['delivered_loads'];
+			return $b['total_profit'] <=> $a['total_profit'];
 		});
 		
 		// Step 9: Limit results

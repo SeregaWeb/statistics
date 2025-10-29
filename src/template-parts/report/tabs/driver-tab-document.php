@@ -851,13 +851,13 @@ $access_vehicle = $TMSUsers->check_user_role_access( [
 						echo esc_html( get_template_part( TEMPLATE_PATH . 'common/simple', 'file-upload', $simple_upload_args ) );
 						?>
 
-                        <div class="col-12 col-md-6 mb-2">
+                        <div class="col-12 col-md-6 mb-2 js-expiration-date-field" <?php echo $legal_document_type === 'certificate-of-naturalization' ? 'style="display: none;"' : ''; ?>>
                             <label class="form-label">Expiration date</label>
                             <input type="text" class="form-control js-new-format-date" name="legal_document_expiration"
                                    value="<?php echo $legal_document_expiration; ?>">
                         </div>
 
-                        <div class="col-12 offset-md-6 col-md-6">
+                        <div class="col-12 col-md-6">
                             <label class="form-label">Nationality</label>
                             <input type="text" value="<?php echo $nationality; ?>" class="form-control"
                                    name="nationality">
@@ -883,14 +883,14 @@ $access_vehicle = $TMSUsers->check_user_role_access( [
 							echo esc_html( get_template_part( TEMPLATE_PATH . 'common/simple', 'file-upload', $simple_upload_args ) );
 							?>
 
-                            <div class="col-12 col-md-6 mb-2">
+                            <div class="col-12 col-md-6 mb-2 js-expiration-date-field-team-driver" <?php echo $legal_document_type_team_driver === 'certificate-of-naturalization' ? 'style="display: none;"' : ''; ?>>
                                 <label class="form-label">Expiration date (Team driver)</label>
                                 <input type="text" class="form-control js-new-format-date"
                                        name="legal_document_expiration_team_driver"
                                        value="<?php echo $legal_document_expiration_team_driver; ?>">
                             </div>
 
-                            <div class="col-12 offset-md-6 col-md-6">
+                            <div class="col-12 col-md-6">
                                 <label class="form-label">Nationality (Team driver)</label>
                                 <input type="text" value="<?php echo $nationality_team_driver; ?>" class="form-control"
                                        name="nationality_team_driver">

@@ -761,6 +761,23 @@ $orange_lvl = $TMSUsers->check_user_role_access( array(
                                     </div>
                                 </div>
 								
+                                <div class="d-flex gap-1 justify-content-end">
+                                <form class="d-flex justify-content-end gap-2">
+                                    <input type="hidden" name="broker_id" value="<?php echo $id_broker; ?>">
+                                    <input type="hidden" name="paged" value="1">
+                                    <div class="d-flex gap-1">
+                                        <input class="form-control w-auto" type="search" name="my_search" placeholder="Search" value="<?php echo get_field_value( $_GET, 'my_search' ); ?>" aria-label="Search">
+                                        <button class="btn btn-outline-dark" type="submit">Search</button>
+                                    </div>
+                                </form>
+                                <?php if ( ! empty( $_GET['my_search'] ) ): ?>
+                                <form class="d-flex justify-content-end gap-2"> 
+                                    <input type="hidden" name="broker_id" value="<?php echo $id_broker; ?>">
+                                    <input type="hidden" name="paged" value="1">    
+                                    <button class="btn btn-outline-danger" type="submit">Reset</button>
+                                </form>
+                                <?php endif; ?>
+                                </div>
 								
 								<?php
 								echo esc_html( get_template_part( TEMPLATE_PATH . 'tables/report', 'table', $items ) );

@@ -2,6 +2,7 @@
  * SASS
  */
 import '../scss/frontend.scss';
+import '../scss/dark-mode.scss';
 /**
  * JavaScript
  */
@@ -54,7 +55,7 @@ import {
     cleanUrlByFilterPlatform,
     cleanUrlByFilterDriverSearch,
 } from './components/filter-clean';
-import { disabledValuesInSelectInit, showHiddenValueInit } from './components/chow-hidden-value';
+import { disabledValuesInSelectInit, showHiddenValueInit, legalDocumentExpirationInit } from './components/chow-hidden-value';
 import { logsInit, modalLogsInit } from './components/logs';
 import { bookmarkInit } from './components/bookmark';
 import { sendUpdatePerformance } from './components/performance';
@@ -85,6 +86,7 @@ import DriverAutocomplete from './components/driver-autocomplete';
 import AudioHelper from './components/common/audio-helper';
 import { TimerControl } from './components/timer-control';
 import { TimerAnalytics } from './components/timer-analytics';
+import DarkModeToggle from './components/dark-mode-toggle'; 
 
 function ready() {
     console.log('ready'); 
@@ -154,6 +156,9 @@ function ready() {
     
     // Initialize timer analytics
     new TimerAnalytics(urlAjax);
+    
+    // Initialize dark mode toggle
+    new DarkModeToggle(urlAjax);
 
     // Ajax Actions
     actionCreateReportInit(urlAjax);
@@ -210,6 +215,7 @@ function ready() {
     cleanUrlByFilterAr();
     cleanUrlByFilterPlatform();
     showHiddenValueInit();
+    legalDocumentExpirationInit();
     checboxesHelperInit();
     toggleBlocksInit();
     toggleCheckboxInit();

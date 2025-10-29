@@ -45,6 +45,7 @@ require THEME_DIR . '/src/inc/core/class-tms-drivers-helper.php';
 require THEME_DIR . '/src/inc/core/class-tms-drivers.php';
 require THEME_DIR . '/src/inc/core/class-tms-drivers-recruiter.php';
 require THEME_DIR . '/src/inc/core/class-tms-drivers-api.php';
+require THEME_DIR . '/src/inc/core/class-dark-mode.php';
 require THEME_DIR . '/src/inc/core/class-tms-user-sync-api.php';
 require THEME_DIR . '/src/inc/hooks/user-sync-hooks.php';
 require THEME_DIR . '/src/inc/admin/user-sync-admin.php';

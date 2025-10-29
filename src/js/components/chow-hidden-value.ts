@@ -114,3 +114,59 @@ export const disabledValuesInSelectInit = () => {
         updateDisabledOptions();
     }
 };
+
+export const legalDocumentExpirationInit = () => {
+    // Handle main driver legal document type
+    const mainDriverSelect = document.querySelector('.js-legal-doc');
+    const mainDriverExpirationField = document.querySelector('.js-expiration-date-field');
+    
+    if (mainDriverSelect && mainDriverExpirationField) {
+        const toggleExpirationField = (selectedValue: string) => {
+            if (selectedValue === 'certificate-of-naturalization') {
+                (mainDriverExpirationField as HTMLElement).style.display = 'none';
+                // Clear the input value when hiding
+                const input = mainDriverExpirationField.querySelector('input');
+                if (input) {
+                    input.value = '';
+                }
+            } else {
+                (mainDriverExpirationField as HTMLElement).style.display = '';
+            }
+        };
+
+        mainDriverSelect.addEventListener('change', (event) => {
+            const target = event.target as HTMLSelectElement;
+            toggleExpirationField(target.value);
+        });
+
+        // Set initial state
+        toggleExpirationField((mainDriverSelect as HTMLSelectElement).value);
+    }
+
+    // Handle team driver legal document type
+    const teamDriverSelect = document.querySelector('.js-legal-doc-team-driver');
+    const teamDriverExpirationField = document.querySelector('.js-expiration-date-field-team-driver');
+    
+    if (teamDriverSelect && teamDriverExpirationField) {
+        const toggleExpirationField = (selectedValue: string) => {
+            if (selectedValue === 'certificate-of-naturalization') {
+                (teamDriverExpirationField as HTMLElement).style.display = 'none';
+                // Clear the input value when hiding
+                const input = teamDriverExpirationField.querySelector('input');
+                if (input) {
+                    input.value = '';
+                }
+            } else {
+                (teamDriverExpirationField as HTMLElement).style.display = '';
+            }
+        };
+
+        teamDriverSelect.addEventListener('change', (event) => {
+            const target = event.target as HTMLSelectElement;
+            toggleExpirationField(target.value);
+        });
+
+        // Set initial state
+        toggleExpirationField((teamDriverSelect as HTMLSelectElement).value);
+    }
+};

@@ -183,6 +183,67 @@ class TMSEmails extends TMSUsers {
 		
 		return implode( ',', $emails );
 	}
+
+	/**
+	 * Get tracking emails separated by role groups
+	 * 
+	 * @param int|null $user_id User ID
+	 * @param string|null $project Project name
+	 * @return array Array with separate email lists for each role group
+	 */
+	function get_tracking_emails_by_groups( $user_id = null, $project = null ) {
+		
+		$user_fields = $user_id ? get_fields( 'user_' . $user_id ) : $this->user_fields;
+		
+		$current_select  = $project ?? get_field_value( $user_fields, 'current_select' );
+		$current_user_id = $user_id ? intval( $user_id ) : get_current_user_id();
+		
+		// Define role groups
+		$role_groups = array(
+			'tracking' => array('tracking', 'tracking-tl'),
+			'nightshift' => array('nightshift_tracking'),
+			'morning' => array('morning_tracking')
+		);
+		
+		$result = array(
+			'tracking' => array(),
+			'nightshift' => array(),
+			'morning' => array()
+		);
+		
+		// Query each role group separately
+		foreach ( $role_groups as $group_name => $roles ) {
+			$args = array(
+				'role__in'   => $roles,
+				'meta_query' => array(
+					'relation' => 'AND',
+					array(
+						'key'     => 'my_team',
+						'value'   => '"' . $current_user_id . '"',
+						'compare' => 'LIKE'
+					),
+					array(
+						'key'     => 'permission_view',
+						'value'   => '"' . $current_select . '"',
+						'compare' => 'LIKE'
+					)
+				)
+			);
+			
+			$query = new WP_User_Query( $args );
+			$users = $query->get_results();
+			
+			if ( ! empty( $users ) ) {
+				foreach ( $users as $user ) {
+					$result[$group_name][] = $user->user_email;
+				}
+			}
+		}
+		
+		return $result;
+	}
+
+	
 	
 	function get_admin_email() {
 		global $global_options;

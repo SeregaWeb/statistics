@@ -67,6 +67,7 @@ iframe {
     padding: 5px 4px !important;
     text-align: center !important;
     text-transform: uppercase;
+    pointer-events: none;
 }
 
 #main-wrapper {
@@ -87,7 +88,7 @@ iframe {
                     &:nth-of-type(17),
                     &:nth-of-type(21),
                     &:nth-of-type(25),
-                    &:nth-of-type(29),{
+                    &:nth-of-type(29) {
                         border-right: 1px solid #000000;
                     }
                 }
@@ -118,7 +119,7 @@ iframe {
                 &:nth-of-type(26),
                 &:nth-of-type(27),
                 &:nth-of-type(28),
-                &:nth-of-type(29),{
+                &:nth-of-type(29){
                     background-color: #f2f2f2;
                 }
 
@@ -128,7 +129,7 @@ iframe {
                 &:nth-of-type(17),
                 &:nth-of-type(21),
                 &:nth-of-type(25),
-                &:nth-of-type(29),{
+                &:nth-of-type(29){
                     border-right: 1px solid #000000;
                 }
 

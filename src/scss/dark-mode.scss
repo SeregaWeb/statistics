@@ -1,0 +1,1861 @@
+/**
+ * Dark Mode SCSS Styles
+ * Basic dark theme implementation using SCSS variables
+ */
+
+// Dark mode color variables - One Dark theme inspired
+$dark-bg-primary: #21252b;        // One Dark background
+$dark-bg-secondary: #282c34;      // One Dark darker background
+$dark-bg-tertiary: #3c4043;       // One Dark selection
+$dark-border: #3c4043;            // One Dark selection
+$dark-text-primary: #abb2bf;      // One Dark foreground
+$dark-text-secondary: #5c6370;    // One Dark comment
+$dark-accent: #61afef;           // One Dark blue
+$dark-accent-secondary: #56b6c2;  // One Dark cyan
+$dark-success: #98c379;          // One Dark green
+$dark-warning: #e5c07b;          // One Dark yellow
+$dark-error: #e06c75;            // One Dark red
+
+/* Dark mode base styles */
+body.dark-mode {
+    background-color: $dark-bg-primary;
+    color: $dark-text-primary;
+
+    a {
+      color: $dark-accent;
+      &:hover {
+        color: $dark-accent-secondary;
+      }
+      &:active {
+        color: $dark-accent;
+      }
+    }
+
+    #main-wrapper {
+    .table {
+      tr {
+          &:hover {
+              td:not(.driver-status) {
+                  background-color: $dark-bg-tertiary !important;
+              }
+          }
+      }
+    }
+  }
+}
+
+/* Dark mode for cards */
+body.dark-mode .card {
+    background-color: $dark-bg-secondary;
+    border-color: $dark-border;
+    color: $dark-text-primary;
+}
+
+/* Dark mode for tables */
+body.dark-mode .table {
+    color: $dark-text-primary;
+  
+    th {
+        background-color: $dark-bg-tertiary;
+        border-color: $dark-border;
+        color: $dark-text-primary;
+    }
+  
+    td {
+        border-color: $dark-border;
+    }
+  
+    tbody tr:hover {
+        background-color: $dark-bg-tertiary;
+    }
+}
+
+/* Dark mode for forms */
+
+body.dark-mode .popup-container {
+    background-color: $dark-bg-secondary;
+    border-color: $dark-border;
+}
+
+body.dark-mode .form-control {
+    background-color: $dark-bg-secondary;
+    border-color: $dark-border;
+    color: $dark-text-primary;
+  
+    &:focus {
+        background-color: $dark-bg-secondary;
+        border-color: $dark-accent;
+        color: $dark-text-primary;
+        box-shadow: 0 0 0 0.2rem rgba(97, 175, 239, 0.25);
+    }
+}
+
+body.dark-mode .form-check-input:checked {
+    background-color: $dark-accent;
+    border-color: $dark-accent;
+}
+
+/* Dark mode for buttons */
+body.dark-mode .btn-primary {
+    background-color: $dark-accent;
+    border-color: $dark-accent;
+    color: $dark-bg-primary;
+    svg {
+      path {
+        fill: #000000;
+      }
+    }
+    &:hover {
+        background-color: $dark-accent-secondary;
+        border-color: $dark-accent-secondary;
+    }
+}
+
+body.dark-mode .btn-secondary {
+    background-color: $dark-bg-tertiary;
+    border-color: $dark-bg-tertiary;
+    color: $dark-text-primary;
+  
+    &:hover {
+        background-color: $dark-border;
+        border-color: $dark-border;
+    }
+}
+
+body.dark-mode .btn-outline-primary {
+    color: $dark-accent;
+    border-color: $dark-accent;
+  
+    &:hover {
+        background-color: $dark-accent;
+        border-color: $dark-accent;
+        color: $dark-bg-primary;
+    }
+}
+
+body.dark-mode .btn-success {
+    background-color: $dark-success;
+    border-color: $dark-success;
+    color: #000000;
+
+    svg {
+    path {
+        fill: #000000;
+    }
+    }
+}
+
+body.dark-mode .btn-warning {
+    background-color: $dark-warning;
+    border-color: $dark-warning;
+    color: #000000;
+
+    svg {
+      path {
+        fill: #000000;
+      }
+    }
+}
+
+body.dark-mode .btn-danger {
+    background-color: $dark-error;
+    border-color: $dark-error;
+    color: #000000;
+  
+    svg {
+      path {
+        fill: #000000;
+      }
+    }
+}
+
+body.dark-mode .btn-dark {
+    background-color: $dark-bg-tertiary;
+    border-color: $dark-text-primary;
+    color: $dark-text-primary;
+  
+    &:hover {
+        background-color: $dark-accent;
+        border-color: $dark-accent;
+        color: $dark-bg-primary;
+    }
+  
+    svg {
+        fill: $dark-text-primary;
+    }
+  
+    &:hover svg {
+        fill: $dark-bg-primary;
+    }
+}
+
+body.dark-mode .btn-outline-dark {
+    color: $dark-text-primary;
+    border-color: $dark-text-primary;
+    background-color: transparent;
+    
+    &:hover {
+        background-color: $dark-text-primary;
+        border-color: $dark-text-primary;
+        color: $dark-bg-primary;
+    }
+    
+    &:focus {
+        box-shadow: 0 0 0 0.2rem rgba(171, 178, 191, 0.25);
+    }
+    
+    &:active {
+        background-color: $dark-text-primary;
+        border-color: $dark-text-primary;
+        color: $dark-bg-primary;
+    }
+    
+    svg {
+        fill: $dark-text-primary;
+    }
+    
+    &:hover svg {
+        fill: $dark-bg-primary;
+    }
+}
+
+body.dark-mode .btn-outline-danger {
+    color: $dark-error;
+    border-color: $dark-error;
+    background-color: transparent;
+    
+    &:hover {
+        background-color: $dark-error;
+        border-color: $dark-error;
+        color: $dark-bg-primary;
+    }
+    
+    &:focus {
+        box-shadow: 0 0 0 0.2rem rgba(224, 108, 117, 0.25);
+    }
+    
+    &:active {
+        background-color: $dark-error;
+        border-color: $dark-error;
+        color: $dark-bg-primary;
+    }
+    
+    svg {
+        fill: $dark-error;
+    }
+    
+    &:hover svg {
+        fill: $dark-bg-primary;
+    }
+}
+
+body.dark-mode .btn-outline-success {
+    color: $dark-success;
+    border-color: $dark-success;
+    background-color: transparent;
+    
+    &:hover {
+        background-color: $dark-success;
+        border-color: $dark-success;
+        color: $dark-bg-primary;
+    }
+    
+    &:focus {
+        box-shadow: 0 0 0 0.2rem rgba(152, 195, 121, 0.25);
+    }
+    
+    &:active {
+        background-color: $dark-success;
+        border-color: $dark-success;
+        color: $dark-bg-primary;
+    }
+    
+    svg {
+        fill: $dark-success;
+    }
+    
+    &:hover svg {
+        fill: $dark-bg-primary;
+    }
+}
+
+/* Dark mode for all buttons with SVG icons */
+body.dark-mode .btn {
+    svg {
+        fill: $dark-text-primary;
+    }
+}
+
+/* Dark mode for button-action */
+body.dark-mode .button-action {
+    background-color: $dark-bg-secondary;
+    border-color: $dark-border;
+    color: $dark-text-primary;
+  
+    &:hover {
+        background-color: $dark-bg-tertiary;
+        border-color: $dark-accent;
+        color: $dark-text-primary;
+    }
+  
+    &.show {
+        background-color: $dark-bg-tertiary;
+        border-color: $dark-accent;
+        color: $dark-text-primary;
+    }
+  
+    svg {
+        fill: $dark-text-primary;
+    }
+}
+
+/* Dark mode for form checkboxes and radio buttons */
+body.dark-mode .form-check-input { 
+    background-color: $dark-bg-secondary;
+    border-color: $dark-text-primary;
+  
+    &:checked {
+        background-color: $dark-accent;
+        border-color: $dark-accent;
+    }
+  
+    &:focus {
+        border-color: $dark-accent;
+        box-shadow: 0 0 0 0.2rem rgba(97, 175, 239, 0.25);
+    }
+}
+
+body.dark-mode .form-check-label {
+    color: $dark-text-primary;
+}
+
+/* Dark mode for form switches */
+body.dark-mode .form-switch .form-check-input {
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='-4 -4 8 8'%3e%3ccircle r='3' fill='%23ffffff'/%3e%3c/svg%3e");
+  
+    &:checked {
+        background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='-4 -4 8 8'%3e%3ccircle r='3' fill='%2321252b'/%3e%3c/svg%3e");
+    }
+}
+
+/* Dark mode for navigation tabs */
+body.dark-mode .nav-tabs {
+    border-bottom-color: $dark-border;
+  
+    .nav-link {
+        color: $dark-text-secondary;
+        background-color: transparent;
+        border-color: transparent;
+      
+        &:hover {
+            color: $dark-text-primary;
+            background-color: $dark-bg-secondary;
+            border-color: $dark-border $dark-border transparent;
+        }
+      
+        &.active {
+            color: $dark-text-primary;
+            background-color: $dark-bg-secondary;
+            border-color: $dark-border $dark-border $dark-bg-secondary;
+        }
+    }
+}
+
+body.dark-mode .tab-content {
+    border-color: $dark-border;
+}
+
+
+body.dark-mode .link-primary {
+    color: $dark-accent !important;
+    text-decoration-color: $dark-accent !important;
+    &:hover {
+        color: $dark-accent-secondary !important;
+        text-decoration-color: $dark-accent-secondary !important;
+    }
+    &:active {
+        color: $dark-accent !important;
+        text-decoration-color: $dark-accent !important;
+    }
+    &:focus {
+        color: $dark-accent !important;
+        text-decoration-color: $dark-accent !important;
+    }
+}
+
+/* Dark mode for navigation pills */
+body.dark-mode .nav-pills {
+    .nav-link {
+        color: $dark-text-primary;
+        background-color: transparent;
+      
+        &:hover {
+            color: $dark-text-primary;
+            background-color: $dark-bg-secondary;
+        }
+      
+        &.active {
+            color: $dark-text-primary;
+            border-color: $dark-accent;
+        }
+    }
+}
+
+/* Dark mode for tables and status colors */
+body.dark-mode .table {
+    color: $dark-text-primary;
+    border-color: $dark-border;
+  
+    th {
+        background-color: $dark-bg-secondary;
+        border-color: $dark-border;
+        color: $dark-text-primary;
+    }
+  
+    td {
+        background-color: $dark-bg-primary !important;
+        border-color: $dark-border;
+        color: $dark-text-primary;
+    }
+  
+    tbody tr:hover {
+        background-color: $dark-bg-secondary;
+    }
+}
+
+/* Dark mode for load status backgrounds */
+body.dark-mode .load-status-tonu,
+body.dark-mode .load-status-cancelled {
+    background-color: rgba(224, 108, 117, 0.2) !important;
+  
+    td {
+        background-color: transparent !important;
+        color: $dark-text-primary !important;
+    }
+}
+
+body.dark-mode .load-status-at-del,
+body.dark-mode .load-status-delivered {
+    background-color: rgba(152, 195, 121, 0.2) !important;
+  
+    td {
+        background-color: transparent !important;
+        color: $dark-text-primary !important;
+    }
+}
+
+body.dark-mode .load-status-loaded-enroute {
+    background-color: rgba(152, 195, 121, 0.1) !important;
+  
+    td {
+        background-color: transparent !important;
+        color: $dark-text-primary !important;
+    }
+}
+
+body.dark-mode .load-status-waiting-on-rc {
+    background-color: rgba(229, 192, 123, 0.2) !important;
+  
+    td {
+        background-color: transparent !important;
+        color: $dark-text-primary !important;
+    }
+}
+
+/* Dark mode for status spans */
+body.dark-mode .tonu,
+body.dark-mode .cancelled {
+    span {
+        background-color: $dark-error !important;
+        color: $dark-text-primary !important;
+    }
+}
+
+body.dark-mode .waiting-on-rc {
+    span {
+        background-color: $dark-warning !important;
+        color: $dark-bg-primary !important;
+    }
+}
+
+body.dark-mode .at-del {
+    span {
+        background-color: rgba(152, 195, 121, 0.8) !important;
+        color: $dark-bg-primary !important;
+    }
+}
+
+body.dark-mode .loaded-enroute {
+    span {
+        background-color: rgba(152, 195, 121, 0.6) !important;
+        color: $dark-bg-primary !important;
+    }
+}
+
+body.dark-mode .delivered {
+    span {
+        background-color: $dark-success !important;
+        color: $dark-bg-primary !important;
+    }
+}
+
+/* Dark mode for accounting statuses */
+body.dark-mode .unsubmitted,
+body.dark-mode .in-processing {
+    span {
+        background-color: $dark-warning !important;
+        color: $dark-bg-primary !important;
+    }
+}
+
+body.dark-mode .processed {
+    span {
+        background-color: $dark-success !important;
+        color: $dark-bg-primary !important;
+    }
+}
+
+body.dark-mode .charge-back,
+body.dark-mode .in-dispute,
+body.dark-mode .requires-attention,
+body.dark-mode .short-pay {
+    span {
+        background-color: $dark-error !important;
+        color: $dark-text-primary !important;
+    }
+}
+
+body.dark-mode .invoiced {
+    span {
+        background-color: $dark-success !important;
+        color: $dark-bg-primary !important;
+    }
+}
+
+body.dark-mode .not-invoiced {
+    span {
+        background-color: $dark-error !important;
+        color: $dark-text-primary !important;
+    }
+}
+
+/* Dark mode for broker statuses */
+body.dark-mode .brocker-red {
+    td {
+        background-color: rgba(224, 108, 117, 0.2) !important;
+    }
+}
+
+body.dark-mode .brocker-orange {
+    td {
+        background-color: rgba(229, 192, 123, 0.2) !important;
+    }
+}
+
+body.dark-mode .brocker-gray {
+    td {
+        background-color: $dark-bg-tertiary !important;
+    }
+}
+
+body.dark-mode .credit-approval-required,
+body.dark-mode .broker-can-be-discussed,
+body.dark-mode .broker-one-load-allowed {
+    td {
+        background-color: rgba(229, 192, 123, 0.2) !important;
+    }
+}
+
+body.dark-mode .broker-denied {
+    td {
+        background-color: rgba(224, 108, 117, 0.2) !important;
+    }
+}
+
+body.dark-mode .broker-not-found {
+    td {
+        background-color: $dark-bg-tertiary !important;
+    }
+}
+
+body.dark-mode .tbd {
+    td {
+        background-color: rgba(229, 192, 123, 0.2) !important;
+    }
+}
+
+/* Dark mode for driver statuses */
+body.dark-mode .table tbody tr td.available {
+    background-color: $dark-success !important;
+    color: $dark-bg-primary !important;
+}
+
+body.dark-mode .table tbody tr td.no_updates {
+    background-color: $dark-error !important;
+    color: $dark-text-primary !important;
+}
+
+body.dark-mode .table tbody tr td.loaded_enroute,
+body.dark-mode .table tbody tr td.available_on {
+    background-color: rgba(152, 195, 121, 0.8) !important;
+    color: $dark-bg-primary !important;
+}
+
+body.dark-mode .table tbody tr td.available_off {
+    background-color: rgba(224, 108, 117, 0.8) !important;
+    color: #000000 !important;
+}
+
+body.dark-mode .table tbody tr td.banned {
+    background-color: rgba(229, 192, 123, 0.8) !important;
+    color: $dark-bg-primary !important;
+}
+
+body.dark-mode .table tbody tr td.no_interview,
+body.dark-mode .table tbody tr td.expired_documents,
+body.dark-mode .table tbody tr td.blocked {
+    background-color: $dark-error !important;
+    color: $dark-bg-primary !important;
+}
+
+body.dark-mode .table tbody tr td.on_vocation {
+    background-color: rgba(255, 121, 198, 0.8) !important;
+    color:  #000000 !important;
+}
+
+body.dark-mode .table tbody tr td.on_hold {
+    background-color: $dark-bg-tertiary !important;
+    color: $dark-text-primary !important;
+}
+
+body.dark-mode .table tbody tr td.need_update {
+    background-color: rgba(224, 108, 117, 0.3) !important;
+    color: $dark-error !important;
+}
+
+/* Dark mode for direct invoicing */
+body.dark-mode .direct_invoicing_paid {
+    td {
+        background-color: rgba(152, 195, 121, 0.2) !important;
+    }
+}
+
+body.dark-mode .direct_invoicing_in-processing {
+    td {
+        background-color: rgba(229, 192, 123, 0.2) !important;
+    }
+}
+
+body.dark-mode .direct_invoicing_requires-attention,
+body.dark-mode .direct_invoicing_in-dispute,
+body.dark-mode .direct_invoicing_charge-back,
+body.dark-mode .direct_invoicing_short-pay,
+body.dark-mode .direct_invoicing_fraud,
+body.dark-mode .direct_invoicing_company-closed {
+    td {
+        background-color: rgba(224, 108, 117, 0.2) !important;
+    }
+}
+
+/* Dark mode for factoring colors */
+body.dark-mode .factoring-color-unsubmitted,
+body.dark-mode .factoring-color-in-processing,
+body.dark-mode .factoring-color-pending-to-tafs {
+    td {
+        background-color: rgba(229, 192, 123, 0.2) !important;
+    }
+}
+
+body.dark-mode .factoring-color-processed {
+    td {
+        background-color: rgba(152, 195, 121, 0.1) !important;
+    }
+}
+
+body.dark-mode .factoring-color-paid {
+    td {
+        background-color: rgba(152, 195, 121, 0.2) !important;
+    }
+}
+
+body.dark-mode .factoring-color-requires-attention,
+body.dark-mode .factoring-color-in-dispute,
+body.dark-mode .factoring-color-charge-back,
+body.dark-mode .factoring-color-short-pay,
+body.dark-mode .factoring-color-fraud,
+body.dark-mode .factoring-color-company-closed {
+    td {
+        background-color: rgba(224, 108, 117, 0.2) !important;
+    }
+}
+
+/* Dark mode for status tracking */
+body.dark-mode .status-tracking-loaded-enroute {
+    background-color: rgba(152, 195, 121, 0.2) !important;
+  
+    td {
+        background-color: transparent !important;
+    }
+}
+
+body.dark-mode .status-tracking-at-del {
+    background-color: rgba(152, 195, 121, 0.3) !important;
+  
+    td {
+        background-color: transparent !important;
+    }
+}
+
+body.dark-mode .status-tracking-cancelled,
+body.dark-mode .status-tracking-tonu {
+    background-color: rgba(224, 108, 117, 0.2) !important;
+  
+    td {
+        background-color: transparent !important;
+    }
+}
+
+body.dark-mode .load-status-at-del td.at-del span,
+body.dark-mode .load-status-waiting-on-rc td.waiting-on-rc span,
+body.dark-mode .load-status-cancelled td.cancelled span,
+body.dark-mode .load-status-tonu td.tonu span,
+body.dark-mode .load-status-delivered td.delivered span,
+body.dark-mode .load-status-loaded-enroute td.loaded-enroute span {
+    background-color: transparent !important;
+    color: $dark-text-primary !important;
+    padding: 0;
+}
+
+
+body.dark-mode  {
+
+  .account-region, .account-role {
+  
+    color: $dark-accent;
+  }
+
+  #mainChart, #mainChartPrise, #sourcePostCountChart, #sourceProfitChart, #endorsementsChart {
+
+    filter: invert(1);
+    svg {
+      rect {
+        fill: transparent;
+      }
+    }
+  }
+}
+
+body.dark-mode .preview-photo {
+    .file-preview {
+        background-color: $dark-bg-secondary;
+        border-color: $dark-border;
+        color: $dark-text-primary;
+      
+        .file-name {
+            color: $dark-text-primary;
+        }
+      
+        .file-delete-btn {
+            svg path {
+                fill: $dark-error;
+            }
+        }
+    }
+}
+
+body.dark-mode .table-list-icons {
+    svg {
+        border-color: $dark-border;
+        background-color: #ffffff;
+    }
+}
+
+body.dark-mode #main-wrapper {
+    .table th {
+        color: $dark-text-secondary;
+    }
+  
+    .button-action {
+        background-color: $dark-bg-secondary;
+        border-color: $dark-border;
+      
+        &.show {
+            background-color: $dark-accent;
+            svg {
+                fill: $dark-text-primary;
+            }
+        }
+    }
+}
+
+body.dark-mode .my-dropdown-search {
+    background-color: $dark-bg-secondary;
+    border-color: $dark-border;
+  
+    &__link {
+        color: $dark-text-primary;
+      
+        &:hover {
+            background-color: $dark-bg-tertiary;
+            color: $dark-text-primary;
+        }
+    }
+  
+    &__name {
+        color: $dark-text-primary;
+    }
+  
+    &__others {
+        span {
+            color: $dark-text-primary;
+        }
+    }
+}
+
+body.dark-mode ul.result-search-el {
+    background-color: $dark-bg-secondary;
+    border-color: $dark-border;
+    color: $dark-text-primary;
+}
+
+body.dark-mode .card-upload {
+    background-color: $dark-bg-secondary;
+    border-color: $dark-border;
+  
+    .required-label {
+        font-weight: bold;
+    }
+  
+    // Vehicle label - фиолетовый
+    &.vehicle-label {
+        border-color: #8b5cf6;
+        .required-label {
+            background-color: #8b5cf6;
+            color: #ffffff;
+        }
+    }
+  
+    // Registration file - красный
+    &.registration-file {
+        border-color: #ef4444;
+        .required-label {
+            background-color: #ef4444;
+            color: #ffffff;
+        }
+    }
+  
+    // Dimensions pictures - синий
+    &.dimensions-pictures {
+        border-color: #3b82f6;
+        .required-label {
+            background-color: #3b82f6;
+            color: #ffffff;
+        }
+    }
+  
+    // Proof of delivery - зеленый
+    &.proof_of_delivery {
+        border-color: #10b981;
+        .required-label {
+            background-color: #10b981;
+            color: #ffffff;
+        }
+    }
+  
+    // E-tracks file - желтый
+    &.e-tracks-file {
+        border-color: #eab308;
+        .required-label {
+            background-color: #eab308;
+            color: #000000;
+        }
+    }
+  
+    // Pallet jack file - оранжевый
+    &.pallet-jack-file {
+        border-color: #f97316;
+        .required-label {
+            background-color: #f97316;
+            color: #ffffff;
+        }
+    }
+  
+    // NEC file, pallet file - голубой
+    &.nec-file,
+    &.pallet-file {
+        border-color: #06b6d4;
+        .required-label {
+            background-color: #06b6d4;
+            color: #ffffff;
+        }
+    }
+  
+    // Payment file, PPE file, screen picture - желтый
+    &.payment-file,
+    &.ppe-file,
+    &.screen-picture {
+        border-color: #eab308;
+        .required-label {
+            background-color: #eab308;
+            color: #000000;
+        }
+    }
+  
+    // W9 file, ramp file, updated - зеленый
+    &.w9-file,
+    &.ramp-file,
+    &.updated {
+        border-color: #10b981;
+        .required-label {
+            background-color: #10b981;
+            color: #ffffff;
+        }
+    }
+  
+    // SSN file, required - синий
+    &.ssn-file,
+    &.required {
+        border-color: #3b82f6;
+        .required-label {
+            background-color: #3b82f6;
+            color: #ffffff;
+        }
+    }
+  
+    // EIN file, dolly file, freight pictures - черный
+    &.ein-file,
+    &.dolly-file,
+    &.freight_pictures {
+        border-color: #374151;
+        .required-label {
+            background-color: #374151;
+            color: #ffffff;
+        }
+    }
+  
+    &__btn {
+        &--remove path {
+            fill: $dark-error;
+        }
+        &--download path {
+            fill: $dark-accent;
+        }
+    }
+  
+    &__figure {
+        svg {
+            path {
+                fill: $dark-text-primary;
+            }
+        }
+    }
+}
+
+body.dark-mode .preview-photo .file-preview .file-name svg {
+  path {
+      fill: $dark-text-primary;
+  }
+}
+
+body.dark-mode .view-document {
+    svg {
+        path {
+        fill: $dark-text-primary;
+        }
+    }
+}
+
+body.dark-mode .bg-light {
+    background-color: $dark-bg-secondary !important;
+    color: $dark-text-primary;
+}
+
+body.dark-mode .bg-primary {
+    background-color: $dark-accent !important;
+    color: $dark-bg-primary;
+}
+
+body.dark-mode .border-primary {
+    border-color: $dark-accent !important;
+}
+
+// Button states for dark mode
+body.dark-mode .btn-check:checked + .btn,
+body.dark-mode .btn.active,
+body.dark-mode .btn.show,
+body.dark-mode .btn:first-child:active,
+body.dark-mode :not(.btn-check) + .btn:active {
+    background-color: $dark-accent;
+    border-color: $dark-accent;
+    color: $dark-bg-primary;
+}
+
+// Custom button styles for dark mode
+body.dark-mode .btn-bookmark {
+    svg {
+        path {
+            fill: $dark-text-secondary;
+        }
+    }
+    
+    &.active {
+        svg {
+            path {
+                fill: $dark-warning;
+            }
+        }
+    }
+}
+
+body.dark-mode .btn.active {
+    svg {
+        path {
+            fill: $dark-bg-primary;
+        }
+    }
+}
+
+body.dark-mode .save-button {
+    border-color: $dark-accent;
+    
+    svg {
+        fill: $dark-accent;
+    }
+    
+    &:disabled {
+        border-color: $dark-text-secondary;
+        opacity: 0.3;
+        svg {
+            fill: $dark-text-secondary;
+        }
+    }
+}
+
+body.dark-mode .file-btn {
+    border-color: $dark-accent;
+    color: $dark-text-primary;
+    
+    svg {
+        path {
+            fill: $dark-accent !important;
+        }
+    }
+    
+    &:hover {
+        background-color: $dark-accent;
+        color: $dark-bg-primary;
+        svg {
+            path {
+                fill: $dark-bg-primary !important;
+            }
+        }
+    }
+}
+
+body.dark-mode .btn-remove-file {
+    svg {
+        path {
+            fill: $dark-error !important;
+        }
+    }
+    
+    &:hover {
+        svg {
+            path {
+                opacity: 0.8;
+            }
+        }
+    }
+}
+
+body.dark-mode .table-values {
+    &-col {
+        &:nth-of-type(1) {
+            background-color: #8b5a5a;
+            color: #ffffff;
+        }
+
+        &:nth-of-type(2) {
+            background-color: #8b4a4a;
+            color: #ffffff;
+        }
+
+        &:nth-of-type(3) {
+            background-color: #8b7a4a;
+            color: #ffffff;
+        }
+
+        &:nth-of-type(4) {
+            background-color: #4a8b4a;
+            color: #ffffff;
+        }
+
+        &:nth-of-type(5) {
+            background-color: #2d8b2d;
+            color: #ffffff;
+        }
+
+        p {
+            color: #ffffff;
+        }
+    }
+}
+
+body.dark-mode #timerControlModal {
+    .modal-dialog {
+        max-width: 600px;
+    }
+    
+    .modal-header {
+        background-color: $dark-bg-secondary;
+        border-bottom-color: $dark-border;
+        
+        .modal-title {
+            color: $dark-text-primary;
+        }
+    }
+    
+    .modal-body {
+        background-color: $dark-bg-primary;
+        
+        .js-timer-status-display {
+            background-color: rgba(97, 175, 239, 0.1);
+            border-color: $dark-accent;
+            color: $dark-text-primary;
+            
+            strong {
+                color: $dark-accent;
+            }
+        }
+        
+        .form-label {
+            color: $dark-text-primary;
+        }
+        
+        .form-control {
+            background-color: $dark-bg-secondary;
+            border-color: $dark-border;
+            color: $dark-text-primary;
+            
+            &:focus {
+                border-color: $dark-accent;
+                box-shadow: 0 0 0 0.25rem rgba(97, 175, 239, 0.25);
+            }
+            
+            &.is-invalid {
+                border-color: $dark-error;
+                
+                &:focus {
+                    border-color: $dark-error;
+                    box-shadow: 0 0 0 0.25rem rgba(224, 108, 117, 0.25);
+                }
+            }
+        }
+        
+        .js-comment-required {
+            color: $dark-text-secondary;
+        }
+        
+        .js-timer-history {
+            background-color: $dark-bg-secondary;
+            border-color: $dark-border;
+            color: $dark-text-primary;
+            
+            .border-bottom {
+                border-bottom-color: $dark-border !important;
+            }
+        }
+    }
+    
+    .modal-footer {
+        background-color: $dark-bg-secondary;
+        border-top-color: $dark-border;
+    }
+}
+
+body.dark-mode .additional-contacts {
+    background-color: $dark-bg-secondary;
+    border-color: $dark-accent;
+}
+
+body.dark-mode .additional-card {
+    background-color: $dark-bg-secondary;
+    border-color: $dark-accent;
+  
+    &.edit {
+        background-color: $dark-text-primary;
+        color: $dark-bg-primary;
+    }
+  
+    &__remove svg path {
+        fill: $dark-error;
+    }
+  
+    &__edit svg path {
+        fill: $dark-accent;
+    }
+}
+
+body.dark-mode .card-shipper {
+    background-color: $dark-bg-primary;
+    color: $dark-text-primary;
+  
+    &:nth-of-type(even) {
+        background-color: $dark-bg-secondary;
+    }
+}
+
+body.dark-mode .initials-circle {
+    color: #000000;
+}
+
+body.dark-mode .pagination {
+    a, span {
+        background-color: $dark-bg-secondary;
+        border-color: $dark-accent;
+        color: $dark-text-primary;
+      
+        &.current {
+            background-color: $dark-accent;
+            color: #000000;
+        }
+    }
+}
+
+body.dark-mode .preloader {
+    background: rgba(33, 37, 43, 0.8);
+}
+
+body.dark-mode .modified-price {
+    background-color: $dark-error !important;
+}
+
+body.dark-mode .form-quick-tracking {
+    select {
+        background-color: $dark-bg-secondary;
+        border-color: $dark-border;
+        color: $dark-text-primary;
+    }
+  
+    button {
+        background-color: $dark-bg-secondary;
+        border-color: $dark-accent;
+        color: $dark-text-primary;
+      
+        svg {
+            fill: $dark-accent;
+        }
+      
+        &:disabled {
+            opacity: 0.3;
+            border-color: $dark-border;
+            svg {
+                fill: $dark-text-secondary;
+            }
+        }
+    }
+}
+
+body.dark-mode .pinned-message {
+    background-color: rgba(224, 108, 117, 0.1);
+    border-color: $dark-error;
+    color: $dark-text-primary;
+  
+    svg {
+        fill: $dark-text-primary;
+    }
+}
+
+body.dark-mode .pinned-message__header {
+    color: $dark-text-primary;
+}
+
+/* Dark mode for log components */
+body.dark-mode .log {
+    &-card {
+        background-color: $dark-bg-secondary;
+        border-color: $dark-border;
+        color: $dark-text-primary;
+      
+        &__name {
+            color: $dark-text-primary;
+        }
+      
+        &__time {
+            color: $dark-text-secondary;
+        }
+      
+        &__message {
+            color: $dark-text-primary;
+          
+            span {
+                color: $dark-text-primary;
+            }
+        }
+      
+        &__role {
+            background-color: $dark-error;
+            color: #000000;
+        }
+    }
+}
+
+body.dark-mode .table-tags {
+  img {
+    background-color: #ffffff;
+  }
+}
+
+/* Dark mode for statistics components */
+body.dark-mode .table-stat {
+    color: $dark-text-primary;
+    
+    thead tr {
+        background-color: $dark-bg-secondary;
+    }
+    
+    th {
+        background-color: $dark-accent;
+        color: $dark-bg-primary;
+        border-color: $dark-border;
+    }
+    
+    td {
+        background-color: $dark-bg-primary;
+        border-bottom-color: $dark-border;
+        color: $dark-text-primary;
+    }
+    
+    tbody tr:nth-child(even) {
+        background-color: $dark-bg-secondary;
+    }
+    
+    tbody tr:hover {
+        background-color: $dark-bg-tertiary;
+    }
+    
+    &.total th {
+        background-color: $dark-success;
+        color: $dark-bg-primary;
+    }
+}
+
+body.dark-mode .top-3 {
+    &__card {
+        color: $dark-text-primary;
+    }
+    
+    &__small {
+        color: #000000;
+        text-shadow: 0 1px 2px rgba(255, 255, 255, 0.3);
+        font-weight: 700;
+    }
+    
+    &__name {
+        color: $dark-text-primary;
+    }
+    
+    &__sum {
+        color: $dark-success;
+    }
+}
+
+body.dark-mode .statistic-ar {
+    &__card {
+        color: $dark-text-primary;
+    }
+    
+    &__count {
+        border-color: $dark-accent;
+        color: $dark-text-primary;
+        
+        &:before {
+            border-color: $dark-accent;
+        }
+    }
+    
+    &__days {
+        color: $dark-text-primary;
+    }
+    
+    &.green .statistic-ar__count {
+        border-color: $dark-success;
+        
+        &:before {
+            border-color: $dark-success;
+        }
+    }
+    
+    &.orange .statistic-ar__count {
+        border-color: $dark-warning;
+        
+        &:before {
+            border-color: $dark-warning;
+        }
+    }
+    
+    &.red .statistic-ar__count {
+        border-color: $dark-error;
+        
+        &:before {
+            border-color: $dark-error;
+        }
+    }
+}
+
+body.dark-mode .tracking-statistics {
+    color: $dark-text-primary;
+    
+    &__move-container {
+        background-color: $dark-bg-secondary;
+        border-color: $dark-border;
+        color: $dark-text-primary;
+        
+        p {
+            color: $dark-text-primary;
+        }
+    }
+    
+    ul {
+        border-top-color: $dark-border;
+    }
+    
+    .dispatcher-section {
+        background-color: $dark-bg-secondary;
+        border-color: $dark-border;
+        color: $dark-text-primary;
+        
+        &:hover {
+            border-color: $dark-accent;
+        }
+        
+        .dispatcher-option {
+            input:disabled + span {
+                color: $dark-text-secondary;
+            }
+        }
+        
+        .weekend-exclusions {
+            background-color: $dark-bg-primary;
+            border-color: $dark-border;
+        }
+    }
+}
+
+body.dark-mode .card-tracking-stats {
+    color: $dark-text-primary;
+    
+    &__user {
+        background-color: $dark-accent;
+        color: $dark-bg-primary;
+    }
+    
+    &__project {
+        color: $dark-text-primary;
+    }
+    
+    ul li {
+        color: $dark-text-secondary;
+    }
+}
+
+body.dark-mode .list-groups {
+    border-top-color: $dark-border;
+}
+
+body.dark-mode .statistics-styles {
+    .list-group li {
+        color: $dark-text-secondary;
+    }
+}
+
+body.dark-mode .hidden-logs {
+    .log-title-container {
+        svg path {
+            fill: $dark-accent;
+        }
+      
+        &__small {
+            color: $dark-accent;
+        }
+    }
+}
+
+body.dark-mode .log-title-container {
+    color: $dark-text-primary;
+  
+    span {
+        color: $dark-text-primary;
+    }
+  
+    button {
+        svg path {
+            fill: $dark-text-secondary;
+        }
+      
+        &:hover svg path {
+            fill: $dark-text-primary;
+        }
+    }
+}
+
+/* Dark mode for badges */
+body.dark-mode .badge-light {
+    background-color: $dark-border;
+    color: $dark-text-primary;
+}
+
+/* Dark mode for alerts */
+body.dark-mode .alert-success {
+    background-color: rgba(152, 195, 121, 0.1);
+    border-color: $dark-success;
+    color: $dark-success;
+}
+
+body.dark-mode .alert-danger {
+    background-color: rgba(224, 108, 117, 0.1);
+    border-color: $dark-error;
+    color: $dark-error;
+}
+
+body.dark-mode .alert-warning {
+    background-color: rgba(229, 192, 123, 0.1);
+    border-color: $dark-warning;
+    color: $dark-warning;
+}
+
+body.dark-mode .alert-info {
+    background-color: rgba(97, 175, 239, 0.1);
+    border-color: $dark-accent;
+    color: $dark-accent;
+}
+
+/* Dark mode for modals */
+body.dark-mode .modal-content {
+    background-color: $dark-bg-secondary;
+    border-color: $dark-border;
+}
+
+body.dark-mode .modal-header,
+body.dark-mode .modal-footer {
+    border-color: $dark-border;
+}
+
+/* Dark mode for dropdowns */
+body.dark-mode .dropdown-menu {
+    background-color: $dark-bg-secondary;
+    border-color: $dark-border;
+}
+
+body.dark-mode .dropdown-item {
+    color: $dark-text-primary;
+  
+    &:hover {
+        background-color: $dark-bg-tertiary;
+        color: $dark-text-primary;
+    }
+}
+
+/* Dark mode for navigation */
+body.dark-mode .navbar {
+    border-color: $dark-border;
+}
+
+body.dark-mode .navbar-brand,
+body.dark-mode .navbar-nav .nav-link {
+    color: $dark-text-primary;
+  
+    &:hover {
+        color: $dark-text-primary;
+    }
+}
+
+/* Dark mode for pagination */
+body.dark-mode .page-link {
+    background-color: $dark-bg-secondary;
+    border-color: $dark-border;
+    color: $dark-text-primary;
+  
+    &:hover {
+        background-color: $dark-bg-tertiary;
+        border-color: $dark-border;
+        color: $dark-text-primary;
+    }
+}
+
+body.dark-mode .page-item.active .page-link {
+    background-color: $dark-accent;
+    border-color: $dark-accent;
+}
+
+/* Dark mode for tooltips */
+body.dark-mode .tooltip .tooltip-inner {
+    background-color: $dark-bg-tertiary;
+    color: $dark-text-primary;
+}
+
+/* Dark mode for progress bars */
+body.dark-mode .progress {
+    background-color: $dark-border;
+}
+
+/* Dark mode for list groups */
+body.dark-mode .list-group-item {
+    background-color: $dark-bg-secondary;
+    border-color: $dark-border;
+    color: $dark-text-primary;
+  
+    &:hover {
+        background-color: $dark-bg-tertiary;
+    }
+}
+
+/* Dark mode for breadcrumbs */
+body.dark-mode .breadcrumb {
+    background-color: $dark-bg-secondary;
+}
+
+body.dark-mode .breadcrumb-item {
+    a {
+        color: $dark-accent;
+    }
+  
+    &.active {
+        color: $dark-text-primary;
+    }
+}
+
+/* Dark mode for close buttons */
+body.dark-mode .btn-close {
+    filter: invert(1);
+}
+
+/* Dark mode for text colors */
+body.dark-mode .text-muted {
+    color: $dark-text-secondary !important;
+}
+
+body.dark-mode .text-primary {
+    color: $dark-accent !important;
+}
+
+body.dark-mode .text-success {
+    color: $dark-success !important;
+}
+
+body.dark-mode .text-danger {
+    color: $dark-error !important;
+}
+
+body.dark-mode .text-warning {
+    color: $dark-warning !important;
+}
+
+body.dark-mode .text-info {
+    color: $dark-accent-secondary !important;
+}
+
+/* Dark mode for site header */
+body.dark-mode .site-header {
+    background-color: $dark-bg-secondary;
+    border-color: $dark-border;
+}
+
+body.dark-mode .site-header h2 {
+    color: $dark-text-primary;
+}
+
+body.dark-mode .site-header p {
+    color: $dark-text-primary;
+}
+
+body.dark-mode .site-header .text-danger {
+    color: $dark-error !important;
+}
+
+body.dark-mode .site-header .text-small {
+    color: $dark-text-secondary;
+}
+
+body.dark-mode {
+  .form-text {
+    color: $dark-text-primary;
+  }
+
+  .popup-close {
+    svg {
+      filter: brightness(0) invert(1);
+    }
+  }
+
+  .input-group-text {
+    background-color: $dark-bg-secondary;
+    border-color: $dark-border;
+    color: $dark-text-primary;
+  }
+}
+
+/* Dark mode for form inputs */
+body.dark-mode .form-control {
+    background-color: $dark-bg-secondary;
+    border-color: $dark-border;
+    color: $dark-text-primary;
+  
+    &:focus {
+        background-color: $dark-bg-secondary;
+        border-color: $dark-accent;
+        color: $dark-text-primary;
+        box-shadow: 0 0 0 0.2rem rgba(97, 175, 239, 0.25);
+    }
+  
+    &::placeholder {
+        color: $dark-text-secondary;
+    }
+  
+    /* Dark mode for date and time inputs */
+    &[type="date"],
+    &[type="time"],
+    &[type="datetime-local"] {
+        &::-webkit-calendar-picker-indicator {
+            filter: invert(1) brightness(2) contrast(2) !important;
+            background-color: transparent !important;
+        }
+      
+        &::-webkit-datetime-edit-text {
+            color: $dark-text-primary !important;
+        }
+      
+        &::-webkit-datetime-edit-month-field,
+        &::-webkit-datetime-edit-day-field,
+        &::-webkit-datetime-edit-year-field {
+            color: $dark-text-primary !important;
+        }
+      
+        &::-webkit-datetime-edit-hour-field,
+        &::-webkit-datetime-edit-minute-field,
+        &::-webkit-datetime-edit-second-field {
+            color: $dark-text-primary !important;
+        }
+    }
+}
+
+/* Additional dark mode styles for date/time inputs */
+body.dark-mode input[type="date"],
+body.dark-mode input[type="time"],
+body.dark-mode input[type="datetime-local"] {
+    &::-webkit-calendar-picker-indicator {
+        filter: invert(1) brightness(2) contrast(2) !important;
+        background-color: transparent !important;
+    }
+  
+    &::-webkit-datetime-edit-text {
+        color: $dark-text-primary !important;
+    }
+  
+    &::-webkit-datetime-edit-month-field,
+    &::-webkit-datetime-edit-day-field,
+    &::-webkit-datetime-edit-year-field,
+    &::-webkit-datetime-edit-hour-field,
+    &::-webkit-datetime-edit-minute-field,
+    &::-webkit-datetime-edit-second-field {
+        color: $dark-text-primary !important;
+    }
+}
+
+/* Dark mode for form selects */
+body.dark-mode .form-select {
+    background-color: $dark-bg-secondary;
+    border-color: $dark-border;
+    color: $dark-text-primary;
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23ffffff' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m1 6 7 7 7-7'/%3e%3c/svg%3e");
+  
+    &:focus {
+        background-color: $dark-bg-secondary;
+        border-color: $dark-accent;
+        color: $dark-text-primary;
+        box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+        background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23ffffff' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m1 6 7 7 7-7'/%3e%3c/svg%3e");
+    }
+  
+    option {
+        background-color: $dark-bg-secondary;
+        color: $dark-text-primary;
+    }
+}
+
+/* Dark mode for left sidebar */
+body.dark-mode .left-sidebar {
+    background-color: $dark-bg-secondary;
+    border-color: $dark-border;
+}
+
+body.dark-mode .left-sidebar__block {
+    background-color: $dark-border;
+    border-color: $dark-border;
+}
+
+body.dark-mode .left-sidebar__btn {
+    color: $dark-text-primary;
+  
+    &:hover {
+        color: $dark-text-primary;
+    }
+  
+    &.active {
+        color: $dark-text-primary;
+    }
+}
+
+body.dark-mode .left-sidebar__icon {
+    filter: brightness(0) invert(1);
+}
+
+body.dark-mode .left-sidebar__menu {
+    border-color: $dark-border;
+}
+
+body.dark-mode .left-sidebar__item {
+  border-color: $dark-border;
+}
+
+body.dark-mode .left-sidebar__link {
+    color: $dark-text-primary;
+
+    &:before {
+      background-color: $dark-accent;
+    }
+  
+    &:hover {
+        color: $dark-accent;
+    }
+  
+    &.current-page {
+        color: $dark-accent;
+    }
+}
+
+body.dark-mode .left-sidebar__btn:before {
+    border-bottom: 2px solid $dark-text-primary;
+    border-right: 2px solid $dark-text-primary;
+}
+
+body.dark-mode .toggle-sidebar {
+    background-color: $dark-bg-secondary;
+    border-color: $dark-border;
+    color: $dark-text-primary;
+  
+    &:hover {
+        background-color: $dark-bg-tertiary;
+    }
+  
+    svg {
+        filter: brightness(0) invert(1);
+    }
+}
+
+/* Dark mode for custom components */
+body.dark-mode .custom-component {
+    background-color: $dark-bg-secondary;
+    color: $dark-text-primary;
+    border-color: $dark-border;
+}

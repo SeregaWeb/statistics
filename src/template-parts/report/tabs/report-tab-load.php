@@ -78,6 +78,12 @@ if ( $report_object ) {
 		}
 		
 		$dispatcher_initials    = get_field_value( $meta, 'dispatcher_initials' );
+        $role_dispatcher        = $helper->get_user_role_by_id( $dispatcher_initials );
+
+        $current_user_id = get_current_user_id();
+        $exclusive_access = $current_user_id === intval( 22 ) && $role_dispatcher === 'dispatcher';
+
+
 		$reference_number       = get_field_value( $meta, 'reference_number' );
 		$unit_number_name       = get_field_value( $meta, 'unit_number_name' );
 		
@@ -286,49 +292,67 @@ $read_only = $TMSUsers->check_read_only( $post_status );
         <div class="mb-2 col-12 col-md-6 col-xl-4">
             <label for="dispatcher_initials" class="form-label">Dispatcher Initials</label>
 			
-			<?php if ( ($full_view_only && intval( $dispatcher_initials ) ) || $tracking_tl ):
-				$user_name = $helper->get_user_full_name_by_id( $dispatcher_initials );
-				?>
-                <p class="m-0"><strong><?php echo $user_name[ 'full_name' ]; ?></strong></p>
-                <input type="hidden" name="dispatcher_initials" value="<?php echo $dispatcher_initials; ?>"
-                       required>
-			<?php else:
-				
-				if ( current_user_can( 'dispatcher' ) || current_user_can( 'dispatcher-tl' ) || current_user_can( 'expedite_manager' ) 
-                || current_user_can( 'morning_tracking' ) || current_user_can( 'nightshift_tracking' ) || current_user_can( 'tracking-tl' ) 
-                || current_user_can( 'tracking' ) || current_user_can( 'accounting' ) ) {
-					if ( ! $dispatcher_initials ) {
-						$dispatcher_initials = get_current_user_id();
-						$user_name           = $helper->get_user_full_name_by_id( $dispatcher_initials );
-						
-						?>
-                        <input type="hidden" name="dispatcher_initials" value="<?php echo $dispatcher_initials; ?>"
-                               required>
-                        <p class="text-primary"><?php echo $user_name[ 'full_name' ]; ?></p>
-						<?php
-					} else {
-						$user_name = $helper->get_user_full_name_by_id( $dispatcher_initials );
-						?>
-                        <input type="hidden" name="dispatcher_initials" value="<?php echo $dispatcher_initials; ?>"
-                               required>
-                        <p class="text-primary"><?php echo $user_name[ 'full_name' ]; ?></p>
-						<?php
-					}
-				} else { ?>
-                    <select name="dispatcher_initials" class="form-control form-select" required>
-                        <option value="">Select dispatcher</option>
-						<?php if ( is_array( $dispatchers ) ): ?>
-							<?php foreach ( $dispatchers as $dispatcher ): ?>
-                                <option value="<?php echo $dispatcher[ 'id' ]; ?>" <?php echo strval( $dispatcher_initials ) === strval( $dispatcher[ 'id' ] )
-									? 'selected' : ''; ?> >
-									<?php echo $dispatcher[ 'fullname' ]; ?>
-                                </option>
-							<?php endforeach; ?>
-						<?php endif; ?>
-                    </select>
-				<?php } ?>
-			
-			<?php endif; ?>
+            <?php if ($exclusive_access): ?>
+                <select name="dispatcher_initials" class="form-control form-select" required>
+                    <option value="">Select dispatcher</option>
+                    <?php if ( is_array( $dispatchers ) ): ?>
+                        <?php foreach ( $dispatchers as $dispatcher ): ?>
+                            <option value="<?php echo $dispatcher[ 'id' ]; ?>" <?php echo strval( $dispatcher_initials ) === strval( $dispatcher[ 'id' ] )
+                                ? 'selected' : ''; ?> >
+                                <?php echo $dispatcher[ 'fullname' ]; ?>
+                            </option>
+                        <?php endforeach; ?>
+                    <?php endif; ?>
+                </select>
+        
+            <?php else: ?>
+            
+                <?php if ( ($full_view_only && intval( $dispatcher_initials ) ) || $tracking_tl ):
+                    $user_name = $helper->get_user_full_name_by_id( $dispatcher_initials );
+                    ?>
+                    <p class="m-0"><strong><?php echo $user_name[ 'full_name' ]; ?></strong></p>
+                    <input type="hidden" name="dispatcher_initials" value="<?php echo $dispatcher_initials; ?>"
+                        required>
+                <?php else:
+                    
+                    if ( current_user_can( 'dispatcher' ) || current_user_can( 'dispatcher-tl' ) || current_user_can( 'expedite_manager' ) 
+                    || current_user_can( 'morning_tracking' ) || current_user_can( 'nightshift_tracking' ) || current_user_can( 'tracking-tl' ) 
+                    || current_user_can( 'tracking' ) || current_user_can( 'accounting' ) ) {
+                        if ( ! $dispatcher_initials ) {
+                            $dispatcher_initials = get_current_user_id();
+                            $user_name           = $helper->get_user_full_name_by_id( $dispatcher_initials );
+                            
+                            ?>
+                            <input type="hidden" name="dispatcher_initials" value="<?php echo $dispatcher_initials; ?>"
+                                required>
+                            <p class="text-primary"><?php echo $user_name[ 'full_name' ]; ?></p>
+                            <?php
+                        } else {
+                            $user_name = $helper->get_user_full_name_by_id( $dispatcher_initials );
+                            ?>
+                            <input type="hidden" name="dispatcher_initials" value="<?php echo $dispatcher_initials; ?>"
+                                required>
+                            <p class="text-primary"><?php echo $user_name[ 'full_name' ]; ?></p>
+                            <?php
+                        }
+                    } else { ?>
+                        <select name="dispatcher_initials" class="form-control form-select" required>
+                            <option value="">Select dispatcher</option>
+                            <?php if ( is_array( $dispatchers ) ): ?>
+                                <?php foreach ( $dispatchers as $dispatcher ): ?>
+                                    <option value="<?php echo $dispatcher[ 'id' ]; ?>" <?php echo strval( $dispatcher_initials ) === strval( $dispatcher[ 'id' ] )
+                                        ? 'selected' : ''; ?> >
+                                        <?php echo $dispatcher[ 'fullname' ]; ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            <?php endif; ?>
+                        </select>
+                    <?php } ?>
+                
+                <?php endif; ?>
+
+            <?php endif; ?>
+
         </div>
 
         <div class="mb-2 col-12 col-md-6 col-xl-4">
@@ -397,6 +421,7 @@ $read_only = $TMSUsers->check_read_only( $post_status );
                 <label for="unit_number_name" class="form-label">Unit Number & Name</label>
                 <p class="m-0"><strong><?php echo $unit_number_name; ?></strong></p>
                 <input type="hidden" name="unit_number_name" value="<?php echo $unit_number_name; ?>">
+                <input type="hidden" name="attached_driver" value="<?php echo get_field_value( $meta, 'attached_driver' ); ?>">
             </div>
 
             <div class="mb-2 col-12 col-md-6 col-xl-4">
@@ -494,7 +519,7 @@ $read_only = $TMSUsers->check_read_only( $post_status );
 						: ''; ?>
                            id="fake_second_driver" name="fake_second_driver"
                            type="checkbox">
-                    <label class="form-check-label ml-2" for="fake_second_driver">Second driver
+                    <label class="form-check-label ml-2" for="fake_second_driver">Second driver 
                     </label>
 
                     <input type="hidden" name="second_driver" value="<?php echo $second_driver; ?>">
@@ -512,6 +537,7 @@ $read_only = $TMSUsers->check_read_only( $post_status );
                        value="<?php echo stripslashes( $second_driver_rate ); ?>"/>
                 <input type="hidden" name="second_driver_phone"
                        value="<?php echo stripslashes( $second_driver_phone ); ?>"/>
+                       
 
                 <div class="row">
                     <div class="col-12">

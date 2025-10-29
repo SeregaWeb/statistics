@@ -1,7 +1,8 @@
 <?php
 /**
  * Template for displaying top drivers by performance
- * Criteria: Rating >= 4, sorted by delivered loads count, then by profit
+ * Criteria: Rating >= 4, sorted by profit, then by delivered loads count
+ * Shows recruiter initials instead of driver initials
  */
 
 if (!defined('ABSPATH')) {
@@ -48,6 +49,39 @@ try {
 
 // Get driver page URL
 $add_new_driver_url = get_field_value($global_options, 'add_new_driver');
+
+// Helper function to get recruiter info
+function get_recruiter_info($recruiter_id) {
+    if (!$recruiter_id) {
+        return ['initials' => 'NF', 'color' => '#030303', 'name' => 'User not found'];
+    }
+    
+    $user_recruiter = get_user_by('id', $recruiter_id);
+    if (!$user_recruiter) {
+        return ['initials' => 'NF', 'color' => '#030303', 'name' => 'User not found'];
+    }
+    
+    $full_name = trim($user_recruiter->first_name . ' ' . $user_recruiter->last_name);
+    if (empty($full_name)) {
+        $full_name = $user_recruiter->display_name;
+    }
+    
+    $initials = '';
+    $name_parts = explode(' ', $full_name);
+    if (count($name_parts) >= 2) {
+        $initials = strtoupper(substr($name_parts[0], 0, 1) . substr($name_parts[1], 0, 1));
+    } else {
+        $initials = strtoupper(substr($full_name, 0, 2));
+    }
+    
+    $color = get_field('initials_color', 'user_' . $recruiter_id) ?: '#030303';
+    
+    return [
+        'initials' => $initials,
+        'color' => $color,
+        'name' => $full_name
+    ];
+}
 ?>
 
 <div class="container-fluid">
@@ -113,8 +147,15 @@ $add_new_driver_url = get_field_value($global_options, 'add_new_driver');
                                             </td>
                                             <td>
                                                 <div class="d-flex align-items-center">
-                                                    <div class="avatar-sm bg-primary rounded-circle d-flex align-items-center justify-content-center text-white me-2">
-                                                        <?php echo strtoupper(substr($driver['driver_name'], 0, 2)); ?>
+                                                    <?php 
+                                                    $recruiter_info = get_recruiter_info($driver['recruiter_id'] ?? 0);
+                                                    ?>
+                                                    <div class="avatar-sm rounded-circle d-flex align-items-center justify-content-center text-white me-2" 
+                                                         style="background-color: <?php echo esc_attr($recruiter_info['color']); ?>"
+                                                         data-bs-toggle="tooltip" 
+                                                         data-bs-placement="top" 
+                                                         title="<?php echo esc_attr($recruiter_info['name']); ?>">
+                                                        <?php echo esc_html($recruiter_info['initials']); ?>
                                                     </div>
                                                     <div>
                                                         <?php if (!empty($add_new_driver_url)): ?>
@@ -234,6 +275,8 @@ $add_new_driver_url = get_field_value($global_options, 'add_new_driver');
     font-size: 16px;
     font-weight: bold;
     margin-right: 12px;
+    border: 2px solid rgba(255, 255, 255, 0.2);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 /* Table styling */

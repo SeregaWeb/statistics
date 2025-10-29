@@ -70,7 +70,15 @@ $logout_url = wp_logout_url( ! empty( $login_link ) ? $login_link : home_url() )
                     </select>
                 </div>
                 <div class="text-right d-flex flex-column">
+                    <div class="d-flex gap-1 align-items-center justify-content-between">
+
+                    <div class="form-check form-switch align-items-center m-0 d-flex gap-1">
+                        <input class="form-check-input" type="checkbox" id="night_mode" name="night_mode" value="1">
+                    </div>
+                    
                     <p class="m-0"><?php echo $user_name[ 'full_name' ]; ?></p>
+                    
+                    </div>
                     <a class="text-small text-danger " href="<?php echo $logout_url; ?>">Logout</a>
                 </div>
             </div>

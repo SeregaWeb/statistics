@@ -317,6 +317,12 @@ class TMSReports extends TMSReportsHelper {
 			LEFT JOIN $table_meta AS tbd
 				ON main.id = tbd.post_id
 				AND tbd.meta_key = 'tbd'
+			LEFT JOIN $table_meta AS pick_up_location
+				ON main.id = pick_up_location.post_id
+				AND pick_up_location.meta_key = 'pick_up_location'
+			LEFT JOIN $table_meta AS delivery_location
+				ON main.id = delivery_location.post_id
+				AND delivery_location.meta_key = 'delivery_location'
 			WHERE 1=1";
 		
 		// Основной запрос
@@ -446,8 +452,10 @@ class TMSReports extends TMSReportsHelper {
 		
 		// Фильтрация по reference_number
 		if ( ! empty( $args[ 'my_search' ] ) ) {
-			$where_conditions[] = "(reference.meta_value LIKE %s OR unit_number.meta_value LIKE %s)";
+			$where_conditions[] = "(reference.meta_value LIKE %s OR unit_number.meta_value LIKE %s OR pick_up_location.meta_value LIKE %s OR delivery_location.meta_value LIKE %s)";
 			$search_value       = '%' . $wpdb->esc_like( $args[ 'my_search' ] ) . '%';
+			$where_values[]     = $search_value;
+			$where_values[]     = $search_value;
 			$where_values[]     = $search_value;
 			$where_values[]     = $search_value;
 		}

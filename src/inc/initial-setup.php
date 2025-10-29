@@ -92,6 +92,8 @@ $tms_recruiter = new TMSDriversRecruiter();
 $eta_manager = new TMSEta();
 $eta_manager->init();
 
+$dark_mode = new DarkMode();
+
 function import_drivers_from_json( $page = 1 ) {
 	$theme_dir  = get_stylesheet_directory();
 	$import_dir = $theme_dir . '/import-drivers';

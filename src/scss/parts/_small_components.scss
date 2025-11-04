@@ -107,10 +107,14 @@
         }
 
         tr {
+            border-left: 4px solid transparent;
             &:hover {
-                td:not(.driver-status) {
-                    background-color: #ececec !important;
-                }
+
+                filter: brightness(0.9);
+                border-left: 4px solid $primary;
+                // td:not(.driver-status) {
+                //     background-color: #ececec !important;
+                // }
             }
         }
     }

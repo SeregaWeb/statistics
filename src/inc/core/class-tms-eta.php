@@ -40,14 +40,16 @@ class TMSEta extends TMSReportsHelper {
                 status enum('active', 'sended') DEFAULT 'active',
                 user_id int(11) NOT NULL,
                 is_flt tinyint(1) DEFAULT 0,
+                project varchar(50) NOT NULL DEFAULT '',
                 eta_type enum('pickup', 'delivery') NOT NULL,
                 created_at datetime DEFAULT CURRENT_TIMESTAMP,
                 updated_at datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
                 PRIMARY KEY (id),
-                UNIQUE KEY unique_load_type_user (load_number, eta_type, is_flt, user_id),
+                UNIQUE KEY unique_load_type_user_project (load_number, eta_type, is_flt, user_id, project),
                 KEY idx_load_number (load_number),
                 KEY idx_status (status),
-                KEY idx_user_id (user_id)
+                KEY idx_user_id (user_id),
+                KEY idx_project (project)
             ) $charset_collate;";
             
             require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
@@ -66,6 +68,17 @@ class TMSEta extends TMSReportsHelper {
         
         $table_name = $wpdb->prefix . $this->table_name;
         
+        // Check if project column exists
+        $columns = $wpdb->get_col("SHOW COLUMNS FROM $table_name");
+        $has_project_column = in_array('project', $columns);
+        
+        if (!$has_project_column) {
+            // Add project column
+            $wpdb->query("ALTER TABLE $table_name ADD COLUMN project varchar(50) NOT NULL DEFAULT '' AFTER is_flt");
+            // Add index for project
+            $wpdb->query("ALTER TABLE $table_name ADD INDEX idx_project (project)");
+        }
+        
         // Check current indexes
         $indexes = $wpdb->get_results("SHOW INDEX FROM $table_name");
         
@@ -73,10 +86,10 @@ class TMSEta extends TMSReportsHelper {
         $old_key_exists = false;
         
         foreach ($indexes as $index) {
-            if ($index->Key_name === 'unique_load_type_user') {
+            if ($index->Key_name === 'unique_load_type_user_project') {
                 $new_key_exists = true;
             }
-            if ($index->Key_name === 'unique_load_type') {
+            if ($index->Key_name === 'unique_load_type_user') {
                 $old_key_exists = true;
             }
         }
@@ -84,10 +97,10 @@ class TMSEta extends TMSReportsHelper {
         // If we have the old key but not the new one, update the structure
         if ($old_key_exists && !$new_key_exists) {
             // Drop the old unique key
-            $wpdb->query("ALTER TABLE $table_name DROP INDEX unique_load_type");
+            $wpdb->query("ALTER TABLE $table_name DROP INDEX unique_load_type_user");
             
-            // Add the new unique key with user_id
-            $wpdb->query("ALTER TABLE $table_name ADD UNIQUE KEY unique_load_type_user (load_number, eta_type, is_flt, user_id)");
+            // Add the new unique key with project
+            $wpdb->query("ALTER TABLE $table_name ADD UNIQUE KEY unique_load_type_user_project (load_number, eta_type, is_flt, user_id, project)");
         }
     }
     
@@ -100,12 +113,52 @@ class TMSEta extends TMSReportsHelper {
             'get_eta_record' => 'get_eta_record',
             'test_eta_notifications' => 'test_eta_notifications',
             'create_test_eta_records' => 'create_test_eta_records',
+            'debug_reference_number' => 'debug_reference_number',
         );
         
         foreach ($actions as $ajax_action => $method) {
             add_action("wp_ajax_{$ajax_action}", [$this, $method]);
             add_action("wp_ajax_nopriv_{$ajax_action}", [$this->helper, 'need_login']);
         }
+    }
+
+    /**
+     * Debug helper: return reference_number by load id (supports FLT)
+     */
+    public function debug_reference_number() {
+        if ( ! defined( 'DOING_AJAX' ) || ! DOING_AJAX ) {
+            wp_send_json_error( [ 'message' => 'Invalid request' ] );
+        }
+
+        $MY_INPUT = filter_var_array( $_POST, [
+            'load_id' => FILTER_SANITIZE_NUMBER_INT,
+            'is_flt'  => FILTER_SANITIZE_NUMBER_INT,
+        ] );
+
+        $load_id = (int) ( $MY_INPUT['load_id'] ?? 0 );
+        $is_flt  = (bool) ( $MY_INPUT['is_flt'] ?? 0 );
+
+        if ( ! $load_id ) {
+            wp_send_json_error( [ 'message' => 'Missing load_id' ] );
+        }
+
+        // Resolve table set and fetch reference
+        if ( $is_flt ) {
+            $reports = new TMSReportsFlt();
+        } else {
+            $reports = new TMSReports();
+        }
+
+        $project = $reports->project ?: '';
+        $reference_number = $this->get_reference_number_by_load( $load_id, $is_flt, $project );
+
+        wp_send_json_success( [
+            'load_id'           => $load_id,
+            'is_flt'            => $is_flt,
+            'project'           => $project,
+            'meta_table'        => $reports->table_meta,
+            'reference_number'  => $reference_number,
+        ] );
     }
     
     /**
@@ -139,16 +192,19 @@ class TMSEta extends TMSReportsHelper {
         $is_flt = (bool) $MY_INPUT['is_flt'];
         $user_id = get_current_user_id();
         
+        // Get current user's project
+        $reports = $is_flt ? new TMSReportsFlt() : new TMSReports();
+        $project = $reports->project ?: '';
         
         // Combine date and time
         $eta_datetime = $date . ' ' . $time . ':00';
         
         $table_name = $wpdb->prefix . $this->table_name;
         
-        // Check if record already exists for this user
+        // Check if record already exists for this user and project
         $existing_record = $wpdb->get_row($wpdb->prepare(
-            "SELECT id, status FROM $table_name WHERE load_number = %s AND eta_type = %s AND is_flt = %d AND user_id = %d",
-            $load_id, $eta_type, $is_flt, $user_id
+            "SELECT id, status FROM $table_name WHERE load_number = %s AND eta_type = %s AND is_flt = %d AND user_id = %d AND project = %s",
+            $load_id, $eta_type, $is_flt, $user_id, $project
         ));
         
         if ($existing_record) {
@@ -160,10 +216,11 @@ class TMSEta extends TMSReportsHelper {
                     'timezone' => $timezone,
                     'status' => 'active',
                     'user_id' => $user_id,
+                    'project' => $project,
                     'updated_at' => current_time('mysql')
                 ],
                 ['id' => $existing_record->id],
-                ['%s', '%s', '%s', '%d', '%s'],
+                ['%s', '%s', '%s', '%d', '%s', '%s'],
                 ['%d']
             );
             
@@ -185,9 +242,10 @@ class TMSEta extends TMSReportsHelper {
                     'status' => 'active',
                     'user_id' => $user_id,
                     'is_flt' => $is_flt,
+                    'project' => $project,
                     'eta_type' => $eta_type
                 ],
-                ['%s', '%s', '%s', '%s', '%d', '%d', '%s']
+                ['%s', '%s', '%s', '%s', '%d', '%d', '%s', '%s']
             );
             
             if ($result !== false) {
@@ -227,11 +285,15 @@ class TMSEta extends TMSReportsHelper {
         $is_flt = (bool) $MY_INPUT['is_flt'];
         $user_id = get_current_user_id();
         
+        // Get current user's project
+        $reports = $is_flt ? new TMSReportsFlt() : new TMSReports();
+        $project = $reports->project ?: '';
+        
         $table_name = $wpdb->prefix . $this->table_name;
         
         $record = $wpdb->get_row($wpdb->prepare(
-            "SELECT * FROM $table_name WHERE load_number = %s AND eta_type = %s AND is_flt = %d AND user_id = %d",
-            $load_id, $eta_type, $is_flt, $user_id
+            "SELECT * FROM $table_name WHERE load_number = %s AND eta_type = %s AND is_flt = %d AND user_id = %d AND project = %s",
+            $load_id, $eta_type, $is_flt, $user_id, $project
         ));
         
         if ($record) {
@@ -258,18 +320,23 @@ class TMSEta extends TMSReportsHelper {
     /**
      * Check if ETA record exists for load and type
      */
-    public function eta_record_exists($load_id, $eta_type, $is_flt = false, $user_id = null) {
+    public function eta_record_exists($load_id, $eta_type, $is_flt = false, $user_id = null, $project = null) {
         global $wpdb;
-        
+
         if ($user_id === null) {
             $user_id = get_current_user_id();
+        }
+        
+        if ($project === null) {
+            $reports = $is_flt ? new TMSReportsFlt() : new TMSReports();
+            $project = $reports->project ?: '';
         }
         
         $table_name = $wpdb->prefix . $this->table_name;
         
         $record = $wpdb->get_var($wpdb->prepare(
-            "SELECT id FROM $table_name WHERE load_number = %s AND eta_type = %s AND is_flt = %d AND user_id = %d",
-            $load_id, $eta_type, $is_flt, $user_id
+            "SELECT id FROM $table_name WHERE load_number = %s AND eta_type = %s AND is_flt = %d AND user_id = %d AND project = %s",
+            $load_id, $eta_type, $is_flt, $user_id, $project
         ));
         
         return !empty($record);
@@ -278,18 +345,23 @@ class TMSEta extends TMSReportsHelper {
     /**
      * Get ETA record data for display
      */
-    public function get_eta_record_data($load_id, $eta_type, $is_flt = false, $user_id = null) {
+    public function get_eta_record_data($load_id, $eta_type, $is_flt = false, $user_id = null, $project = null) {
         global $wpdb;
         
         if ($user_id === null) {
             $user_id = get_current_user_id();
         }
         
+        if ($project === null) {
+            $reports = $is_flt ? new TMSReportsFlt() : new TMSReports();
+            $project = $reports->project ?: '';
+        }
+        
         $table_name = $wpdb->prefix . $this->table_name;
         
         $record = $wpdb->get_row($wpdb->prepare(
-            "SELECT * FROM $table_name WHERE load_number = %s AND eta_type = %s AND is_flt = %d AND user_id = %d",
-            $load_id, $eta_type, $is_flt, $user_id
+            "SELECT * FROM $table_name WHERE load_number = %s AND eta_type = %s AND is_flt = %d AND user_id = %d AND project = %s",
+            $load_id, $eta_type, $is_flt, $user_id, $project
         ));
         
         if ($record) {
@@ -506,13 +578,17 @@ class TMSEta extends TMSReportsHelper {
         $eta_type_text = $record->eta_type === 'pickup' ? 'Pickup' : 'Delivery';
         $eta_time_formatted = $eta_ny_time->format('g:i A T');
         
-        $subject = "ETA Reminder: {$eta_type_text} ETA in 30 minutes - Load #{$record->load_number}";
+        // Resolve reference number from reports meta by load id, dataset (FLT or not), and project
+        $project = isset($record->project) ? $record->project : null;
+        $reference_number = $this->get_reference_number_by_load((int)$record->load_number, (bool)$record->is_flt, $project);
+        $reference_display = $reference_number ?: $record->load_number;
+        $subject = "ETA Reminder: {$eta_type_text} ETA in 30 minutes - Reference {$reference_display}";
         
         $message = "
         <h3>ETA Reminder</h3>
         <p>This is a reminder that your {$eta_type_text} ETA is approaching.</p>
         
-        <p><strong>Load Number:</strong> {$record->load_number}</p>
+        <p><strong>Load Number:</strong> {$reference_display}</p>
         <p><strong>ETA Type:</strong> {$eta_type_text}</p>
         <p><strong>ETA Time (New York):</strong> {$eta_time_formatted}</p>
         <p><strong>Original Timezone:</strong> {$record->timezone}</p>
@@ -539,6 +615,44 @@ class TMSEta extends TMSReportsHelper {
         // This would need to be implemented based on your load data structure
         // For now, return basic info
         return "<p><strong>Load Details:</strong> Please check the TMS system for complete load information.</p>";
+    }
+
+    /**
+     * Get reference_number meta by load id for regular or FLT datasets
+     */
+    private function get_reference_number_by_load($load_id, $is_flt = false, $project = null) {
+        global $wpdb;
+
+        if (!$load_id) {
+            return '';
+        }
+
+        // If project is provided, use it; otherwise get from current user
+        if ($project === null) {
+            // Determine meta table by dataset (current user's project is used by report classes)
+            if ($is_flt) {
+                $reports = new TMSReportsFlt();
+            } else {
+                $reports = new TMSReports();
+            }
+            $project = $reports->project;
+        }
+
+        // Build table meta name based on project and FLT flag
+        if ($is_flt) {
+            $table_meta = $wpdb->prefix . 'reportsmeta_flt_' . strtolower($project);
+        } else {
+            $table_meta = $wpdb->prefix . 'reportsmeta_' . strtolower($project);
+        }
+
+        // Fetch reference_number from meta
+        $sql = $wpdb->prepare(
+            "SELECT meta_value FROM {$table_meta} WHERE post_id = %d AND meta_key = 'reference_number' LIMIT 1",
+            $load_id
+        );
+        $ref = (string) $wpdb->get_var($sql);
+
+        return trim($ref);
     }
     
     /**

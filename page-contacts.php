@@ -17,6 +17,40 @@ $dispatchers         = $reports->get_dispatchers();
 $dispatcher_initials = get_field_value( $_GET, 'dispatcher' );
 $search              = get_field_value( $_GET, 'my_search' );
 
+const START_YEAR = 2025;
+
+// Get and validate parameters
+$current_year = (int) date( 'Y' );
+$current_month = (int) date( 'm' );
+
+// Get year and month parameters from GET
+$year_raw = isset( $_GET[ 'fyear' ] ) ? $_GET[ 'fyear' ] : null;
+$month_raw = isset( $_GET[ 'fmonth' ] ) ? $_GET[ 'fmonth' ] : null;
+
+// Handle year parameter
+if ( $year_raw === null ) {
+	// First page load - use current year as default
+	$year_param = $current_year;
+} elseif ( $year_raw === 'all_years' || $year_raw === '' ) {
+	// User selected "All years"
+	$year_param = null;
+} else {
+	// User selected specific year
+	$year_param = (int) $year_raw;
+}
+
+// Handle month parameter
+if ( $month_raw === null ) {
+	// First page load - use current month as default
+	$month_param = $current_month;
+} elseif ( $month_raw === 'all_months' || $month_raw === '' ) {
+	// User selected "All months"
+	$month_param = null;
+} else {
+	// User selected specific month
+	$month_param = (int) $month_raw;
+}
+
 $show_filter = $TMSUsers->check_user_role_access( array(
 	'administrator',
 ), true );
@@ -58,11 +92,39 @@ $current_pages = get_field_value( $data[ 'pagination' ], 'current_page' );
                                         Add a contact
                                     </button>
                                 </div>
-								<?php if ( $show_filter ): ?>
                                     <form class="flex-column align-items-end justify-content-end gap-1"
                                           id="navbarNavDarkDropdown">
                                         <div class="d-flex gap-1">
-                                            <select class="form-select w-auto" name="dispatcher"
+
+
+                                        <?php
+                                        $months = $reports->get_months();
+                                        ?>
+                                        <select class="form-select w-auto" name="fmonth" aria-label=".form-select-sm example">
+                                            <option value="all_months" <?php echo ( $month_param === null ) ? 'selected' : ''; ?>>All months</option>
+                                            <?php
+                                            foreach ( $months as $num => $name ) {
+                                                
+                                                $select = ( ! empty( $month_param ) && (int) $month_param === (int) $num ) ? 'selected' : '';
+                                                
+                                                echo '<option ' . $select . ' value="' . $num . '">' . $name . '</option>';
+                                            }
+                                            ?>
+                                        </select>
+
+                                        <!-- Year Selector -->
+                                        <select class="form-select w-auto" name="fyear" aria-label="Select year">
+                                            <option value="all_years" <?php echo ( $year_param === null ) ? 'selected' : ''; ?>>All years</option>
+                                            <?php for ( $year = START_YEAR; $year <= $current_year; $year++ ): ?>
+                                                <option value="<?php echo esc_attr( $year ); ?>" 
+                                                        <?php echo ( ! empty( $year_param ) && (int) $year_param === (int) $year ) ? 'selected' : ''; ?>>
+                                                    <?php echo esc_html( $year ); ?>
+                                                </option>
+                                            <?php endfor; ?>
+                                        </select>
+
+								        <?php if ( $show_filter ): ?>
+                                        <select class="form-select w-auto" name="dispatcher"
                                                     aria-label=".form-select-sm example">
                                                 <option value="">Dispatcher</option>
 												<?php if ( is_array( $dispatchers ) ): ?>
@@ -74,11 +136,7 @@ $current_pages = get_field_value( $data[ 'pagination' ], 'current_page' );
 													<?php endforeach; ?>
 												<?php endif; ?>
                                             </select>
-                                            <!---->
-                                            <!--                                        <input class="form-control w-auto" type="search" name="my_search"-->
-                                            <!--                                               placeholder="Search"-->
-                                            <!--                                               value="-->
-											<?php //echo $search; ?><!--" aria-label="Search">-->
+										<?php endif; ?>
                                             <button class="btn btn-outline-dark" type="submit">Search</button>
 											<?php if ( ! empty( $_GET ) ): ?>
                                                 <a class="btn btn-outline-danger"
@@ -86,7 +144,6 @@ $current_pages = get_field_value( $data[ 'pagination' ], 'current_page' );
 											<?php endif; ?>
                                         </div>
                                     </form>
-								<?php endif; ?>
                             </div>
                             <table class="table mb-5 w-100">
                                 <thead>
@@ -110,7 +167,7 @@ $current_pages = get_field_value( $data[ 'pagination' ], 'current_page' );
 										$ids_for_statistics[] = $result[ 'main_id' ];
 									endforeach;
 									
-									$statistics_for_contact = $reports->get_profit_by_preset( $ids_for_statistics );
+									$statistics_for_contact = $reports->get_profit_by_preset( $ids_for_statistics, $month_param, $year_param );
 									
 									foreach ( $results as $item ):
 										$stat = isset( $statistics_for_contact[ 'brocker_' . $item[ 'main_id' ] ] )
@@ -298,8 +355,8 @@ $current_pages = get_field_value( $data[ 'pagination' ], 'current_page' );
                                             <td><?php echo $item[ 'office_number' ]; ?></td>
                                             <td><?php echo $item[ 'direct_number' ]; ?></td>
                                             <td><?php echo $item[ 'direct_email' ]; ?></td>
-                                            <td><?php echo $stat[ 'total_posts' ]; ?></td>
-                                            <td><?php echo esc_html( '$' . $reports->format_currency( $stat[ 'total_profit' ] ) ); ?></td>
+                                            <td><?php echo $stat[ 'total_posts' ] !== 0 ? $stat[ 'total_posts' ] : '-'; ?></td>
+                                            <td><?php echo $stat[ 'total_profit' ] !== 0 ? esc_html( '$' . $reports->format_currency( $stat[ 'total_profit' ] ) ) : '-'; ?></td>
                                             <td class="d-flex justify-content-end gap-1">
                                                 <button class="btn btn-outline-primary btn-sm js-open-popup-edit">Edit
                                                 </button>

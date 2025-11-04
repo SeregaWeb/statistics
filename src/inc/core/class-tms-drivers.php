@@ -69,6 +69,7 @@ class TMSDrivers extends TMSDriversHelper {
 			'update_driver_zipcode_date'   => 'update_driver_zipcode_date',
 			'get_driver_ratings'           => 'get_driver_ratings',
 			'get_driver_notices'           => 'get_driver_notices',
+			'get_all_driver_loads'         => 'ajax_get_all_driver_loads',
 		);
 		
 		foreach ( $actions as $ajax_action => $method ) {
@@ -1252,8 +1253,8 @@ class TMSDrivers extends TMSDriversHelper {
 		$capabilities_joins = array();
 		$processed_joins    = array(); // Track processed joins to avoid duplicates
 		
-		if ( ! empty( $args[ 'capabilities' ] ) && is_array( $args[ 'capabilities' ] ) ) {
-			foreach ( $args[ 'capabilities' ] as $capability ) {
+        if ( ! empty( $args[ 'capabilities' ] ) && is_array( $args[ 'capabilities' ] ) ) {
+            foreach ( $args[ 'capabilities' ] as $capability ) {
 				// Handle special cases for cross_border fields
 				if ( $capability === 'cross_border_canada' || $capability === 'cross_border_mexico' ) {
 					$alias    = 'cap_cross_border';
@@ -1269,6 +1270,16 @@ class TMSDrivers extends TMSDriversHelper {
 						ON main.id = $alias.post_id AND $alias.meta_key = '$meta_key'";
 					$processed_joins[]    = $alias;
 				}
+
+                // Special case: hazmat_certificate must also accept hazmat_endorsement
+                if ( $capability === 'hazmat_certificate' ) {
+                    $alias_endorsement = 'cap_hazmat_endorsement';
+                    if ( ! in_array( $alias_endorsement, $processed_joins ) ) {
+                        $capabilities_joins[] = "LEFT JOIN $table_meta AS $alias_endorsement
+                            ON main.id = $alias_endorsement.post_id AND $alias_endorsement.meta_key = 'hazmat_endorsement'";
+                        $processed_joins[]    = $alias_endorsement;
+                    }
+                }
 			}
 			$join_builder .= "\n" . implode( "\n", $capabilities_joins );
 		}
@@ -1278,14 +1289,32 @@ class TMSDrivers extends TMSDriversHelper {
 		$where_values     = array();
 		
 		// Add capabilities filtering conditions
-		if ( ! empty( $args[ 'capabilities' ] ) && is_array( $args[ 'capabilities' ] ) ) {
-			$capability_conditions = array();
-			foreach ( $args[ 'capabilities' ] as $capability ) {
+        if ( ! empty( $args[ 'capabilities' ] ) && is_array( $args[ 'capabilities' ] ) ) {
+            $capability_conditions = array();
+            $has_hazmat_certificate = in_array( 'hazmat_certificate', $args[ 'capabilities' ] );
+            $has_hazmat_endorsement = in_array( 'hazmat_endorsement', $args[ 'capabilities' ] );
+            $hazmat_processed = false;
+            
+            foreach ( $args[ 'capabilities' ] as $capability ) {
 				// Handle special cases for cross_border fields
 				if ( $capability === 'cross_border_canada' || $capability === 'cross_border_mexico' ) {
 					$alias = 'cap_cross_border';
 				} else {
 					$alias = 'cap_' . $capability;
+				}
+				
+				// Special case: if both hazmat_certificate and hazmat_endorsement are selected, combine them
+				if ( ( $capability === 'hazmat_certificate' || $capability === 'hazmat_endorsement' ) && $has_hazmat_certificate && $has_hazmat_endorsement && ! $hazmat_processed ) {
+					$alias_cert = 'cap_hazmat_certificate';
+					$alias_endorsement = 'cap_hazmat_endorsement';
+					$capability_conditions[] = "((".$alias_cert.".meta_value IS NOT NULL AND ".$alias_cert.".meta_value != '' AND ".$alias_cert.".meta_value IN ('1','on','yes')) OR (".$alias_endorsement.".meta_value IS NOT NULL AND ".$alias_endorsement.".meta_value != '' AND ".$alias_endorsement.".meta_value IN ('1','on','yes')))";
+					$hazmat_processed = true;
+					continue;
+				}
+				
+				// Skip if already processed as part of combined hazmat condition
+				if ( ( $capability === 'hazmat_certificate' || $capability === 'hazmat_endorsement' ) && $has_hazmat_certificate && $has_hazmat_endorsement && $hazmat_processed ) {
+					continue;
 				}
 				
 				switch ( $capability ) {
@@ -1303,6 +1332,12 @@ class TMSDrivers extends TMSDriversHelper {
 						// team_driver_enabled stores "on" when enabled
 						$capability_conditions[] = "($alias.meta_value = 'on')";
 						break;
+
+                    case 'hazmat_certificate':
+                        // Accept either hazmat_certificate OR hazmat_endorsement
+                        $alias_endorsement = 'cap_hazmat_endorsement';
+                        $capability_conditions[] = "((".$alias.".meta_value IS NOT NULL AND ".$alias.".meta_value != '' AND ".$alias.".meta_value IN ('1','on','yes')) OR (".$alias_endorsement.".meta_value IS NOT NULL AND ".$alias_endorsement.".meta_value != '' AND ".$alias_endorsement.".meta_value IN ('1','on','yes')))";
+                        break;
 					
 					default:
 						// Standard capability check
@@ -4629,6 +4664,15 @@ class TMSDrivers extends TMSDriversHelper {
 				ORDER BY time DESC
 			", $driver_id ) );
 			
+			// Clean escaped slashes from message field
+			if ( $ratings && is_array( $ratings ) ) {
+				foreach ( $ratings as $key => $rating ) {
+					if ( isset( $rating->message ) ) {
+						$ratings[ $key ]->message = stripslashes( $rating->message );
+					}
+				}
+			}
+			
 			// Get available loads for rating
 			$available_loads = $this->get_available_loads_for_rating( $driver_id );
 			
@@ -4665,11 +4709,54 @@ class TMSDrivers extends TMSDriversHelper {
 				ORDER BY date DESC
 			", $driver_id ) );
 			
+			// Clean escaped slashes from message field
+			if ( $notices && is_array( $notices ) ) {
+				foreach ( $notices as $key => $notice ) {
+					if ( isset( $notice->message ) ) {
+						$notices[ $key ]->message = stripslashes( $notice->message );
+					}
+				}
+			}
+			
 			if ( $notices ) {
 				wp_send_json_success( $notices );
 			} else {
 				wp_send_json_success( [] );
 			}
+		}
+	}
+	
+	/**
+	 * AJAX endpoint to get all driver loads for testing
+	 */
+	public function ajax_get_all_driver_loads() {
+		if ( defined( 'DOING_AJAX' ) && DOING_AJAX ) {
+			$MY_INPUT = filter_var_array( $_POST, [
+				"driver_id" => FILTER_SANITIZE_NUMBER_INT,
+			] );
+			
+			if ( ! isset( $MY_INPUT[ 'driver_id' ] ) || empty( $MY_INPUT[ 'driver_id' ] ) ) {
+				wp_send_json_error( [ 'message' => 'Driver ID not found' ] );
+			}
+			
+			$driver_id = (int) $MY_INPUT[ 'driver_id' ];
+			
+			// Get all loads
+			$all_loads = $this->get_driver_loads( $driver_id );
+			
+			// Get available loads for rating
+			$available_loads = $this->get_available_loads_for_rating( $driver_id );
+			
+			// Get existing ratings
+			$existing_ratings = $this->get_user_ratings_for_driver( $driver_id );
+			
+			$response_data = [
+				'all_loads' => $all_loads ? $all_loads : [],
+				'available_loads' => $available_loads ? $available_loads : [],
+				'existing_ratings' => $existing_ratings ? $existing_ratings : [],
+			];
+			
+			wp_send_json_success( $response_data );
 		}
 	}
 	
@@ -5266,6 +5353,11 @@ class TMSDrivers extends TMSDriversHelper {
 			} else {
 				$meta_keys_to_query[] = $capability;
 			}
+			
+			// Special case: hazmat_certificate must also check hazmat_endorsement
+			if ( $capability === 'hazmat_certificate' ) {
+				$meta_keys_to_query[] = 'hazmat_endorsement';
+			}
 		}
 		
 		// Remove duplicates
@@ -5285,41 +5377,64 @@ class TMSDrivers extends TMSDriversHelper {
 		}
 		
 		
+		// Check if both hazmat filters are present
+		$has_hazmat_cert = in_array( 'hazmat_certificate', $required_capabilities );
+		$has_hazmat_end = in_array( 'hazmat_endorsement', $required_capabilities );
+		$hazmat_combined = $has_hazmat_cert && $has_hazmat_end;
+		$hazmat_check_done = false;
+		
 		// Check if driver has all required capabilities
 		foreach ( $required_capabilities as $capability ) {
 			$has_capability = false;
 			
-			
-			switch ( $capability ) {
-				case 'cross_border_canada':
-					// cross_border stores values like "canada,mexico" - check for canada
-					if ( isset( $capabilities_map[ 'cross_border' ] ) && ! empty( $capabilities_map[ 'cross_border' ] ) ) {
-						$cross_border_values = array_map( 'trim', explode( ',', $capabilities_map[ 'cross_border' ] ) );
-						$has_capability      = in_array( 'canada', $cross_border_values, true );
-					}
-					break;
-				
-				case 'cross_border_mexico':
-					// cross_border stores values like "canada,mexico" - check for mexico
-					if ( isset( $capabilities_map[ 'cross_border' ] ) && ! empty( $capabilities_map[ 'cross_border' ] ) ) {
-						$cross_border_values = array_map( 'trim', explode( ',', $capabilities_map[ 'cross_border' ] ) );
-						$has_capability      = in_array( 'mexico', $cross_border_values, true );
-					}
-					break;
-				
-				case 'team_driver_enabled':
-					// team_driver_enabled stores "on" when enabled
-					$has_capability = isset( $capabilities_map[ $capability ] ) && ! empty( $capabilities_map[ $capability ] ) && $capabilities_map[ $capability ] === 'on';
-					break;
-				
-				default:
-					// Standard capability check
-					$has_capability = isset( $capabilities_map[ $capability ] ) && ! empty( $capabilities_map[ $capability ] ) && in_array( $capabilities_map[ $capability ], array(
-							'1',
-							'on',
-							'yes'
-						) );
-					break;
+			// Special case: if both hazmat filters are selected, check them together once
+			if ( ( $capability === 'hazmat_certificate' || $capability === 'hazmat_endorsement' ) && $hazmat_combined && ! $hazmat_check_done ) {
+				$has_certificate = isset( $capabilities_map[ 'hazmat_certificate' ] ) && ! empty( $capabilities_map[ 'hazmat_certificate' ] ) && in_array( $capabilities_map[ 'hazmat_certificate' ], array( '1', 'on', 'yes' ) );
+				$has_endorsement = isset( $capabilities_map[ 'hazmat_endorsement' ] ) && ! empty( $capabilities_map[ 'hazmat_endorsement' ] ) && in_array( $capabilities_map[ 'hazmat_endorsement' ], array( '1', 'on', 'yes' ) );
+				$has_capability = $has_certificate || $has_endorsement;
+				$hazmat_check_done = true;
+			} else if ( ( $capability === 'hazmat_certificate' || $capability === 'hazmat_endorsement' ) && $hazmat_combined && $hazmat_check_done ) {
+				// Skip second hazmat filter if already processed
+				continue;
+			} else {
+				switch ( $capability ) {
+					case 'cross_border_canada':
+						// cross_border stores values like "canada,mexico" - check for canada
+						if ( isset( $capabilities_map[ 'cross_border' ] ) && ! empty( $capabilities_map[ 'cross_border' ] ) ) {
+							$cross_border_values = array_map( 'trim', explode( ',', $capabilities_map[ 'cross_border' ] ) );
+							$has_capability      = in_array( 'canada', $cross_border_values, true );
+						}
+						break;
+					
+					case 'cross_border_mexico':
+						// cross_border stores values like "canada,mexico" - check for mexico
+						if ( isset( $capabilities_map[ 'cross_border' ] ) && ! empty( $capabilities_map[ 'cross_border' ] ) ) {
+							$cross_border_values = array_map( 'trim', explode( ',', $capabilities_map[ 'cross_border' ] ) );
+							$has_capability      = in_array( 'mexico', $cross_border_values, true );
+						}
+						break;
+					
+					case 'team_driver_enabled':
+						// team_driver_enabled stores "on" when enabled
+						$has_capability = isset( $capabilities_map[ $capability ] ) && ! empty( $capabilities_map[ $capability ] ) && $capabilities_map[ $capability ] === 'on';
+						break;
+					
+					case 'hazmat_certificate':
+						// Accept either hazmat_certificate OR hazmat_endorsement
+						$has_certificate = isset( $capabilities_map[ 'hazmat_certificate' ] ) && ! empty( $capabilities_map[ 'hazmat_certificate' ] ) && in_array( $capabilities_map[ 'hazmat_certificate' ], array( '1', 'on', 'yes' ) );
+						$has_endorsement = isset( $capabilities_map[ 'hazmat_endorsement' ] ) && ! empty( $capabilities_map[ 'hazmat_endorsement' ] ) && in_array( $capabilities_map[ 'hazmat_endorsement' ], array( '1', 'on', 'yes' ) );
+						$has_capability = $has_certificate || $has_endorsement;
+						break;
+					
+					default:
+						// Standard capability check
+						$has_capability = isset( $capabilities_map[ $capability ] ) && ! empty( $capabilities_map[ $capability ] ) && in_array( $capabilities_map[ $capability ], array(
+								'1',
+								'on',
+								'yes'
+							) );
+						break;
+				}
 			}
 			
 			if ( ! $has_capability ) {

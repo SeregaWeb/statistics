@@ -348,18 +348,49 @@ wp_localize_script( 'frontend_js', 'performanceData', array(
 													'friday_date'
 												];
 												$colors    = [];
+
+												// Check if dark mode is enabled
+												$is_dark_mode = false;
+												if ( class_exists( 'DarkMode' ) ) {
+													$dark_mode = new DarkMode();
+													$is_dark_mode = $dark_mode->is_dark_mode_enabled();
+												}
 												
+												// Define colors for both modes
+												$main_color_light = '#ffffff';
+												$secondary_color_light = '#f4cccc';
+												$third_color_light = '#d9facb';
+												
+												$main_color_dark = '#21252b';
+												$secondary_color_dark = '#6b3d47';
+												$third_color_dark = '#3c6a3c';
+												
+												// Set colors based on dark mode
+												if ( $is_dark_mode ) {
+													$main_color = $main_color_dark;
+													$secondary_color = $secondary_color_dark;
+													$third_color = $third_color_dark;
+												} else {
+													$main_color = $main_color_light;
+													$secondary_color = $secondary_color_light;
+													$third_color = $third_color_light;
+												}
+												
+												// Determine color type for each day (for data attributes)
+												$color_types = [];
 												foreach ( $days_keys as $day_key ) {
 													if ( isset( $print_date[ $day_key ][ 'performance' ] ) && $print_date[ $day_key ][ 'performance' ] !== '' ) {
 														$performance_val = (float) $print_date[ $day_key ][ 'performance' ];
 														if ( $performance_val == 0 ) {
-															$colors[ $day_key ] = '#ffffff';
+															$color_types[ $day_key ] = 'main';
+															$colors[ $day_key ] = $main_color;
 														} else {
-															$colors[ $day_key ] = $performance_val >= 100 ? '#d9facb'
-																: '#f4cccc';
+															$color_types[ $day_key ] = $performance_val >= 100 ? 'third' : 'secondary';
+															$colors[ $day_key ] = $performance_val >= 100 ? $third_color : $secondary_color;
 														}
 													} else {
-														$colors[ $day_key ] = '#ffffff';
+														$color_types[ $day_key ] = 'main';
+														$colors[ $day_key ] = $main_color;
 													}
 												}
 												
@@ -370,9 +401,24 @@ wp_localize_script( 'frontend_js', 'performanceData', array(
 												$wd_color = $colors[ 'wednesday_date' ];
 												$th_color = $colors[ 'thursday_date' ];
 												$fr_color = $colors[ 'friday_date' ];
+												
+												// Helper function to get data attributes for color switching
+												$get_color_attrs = function( $color_type ) use ( $main_color_light, $secondary_color_light, $third_color_light, $main_color_dark, $secondary_color_dark, $third_color_dark ) {
+													$light_colors = [
+														'main' => $main_color_light,
+														'secondary' => $secondary_color_light,
+														'third' => $third_color_light
+													];
+													$dark_colors = [
+														'main' => $main_color_dark,
+														'secondary' => $secondary_color_dark,
+														'third' => $third_color_dark
+													];
+													return 'data-color-light="' . esc_attr( $light_colors[ $color_type ] ) . '" data-color-dark="' . esc_attr( $dark_colors[ $color_type ] ) . '"';
+												};
 												?>
 
-                                                <td style="background-color: <?php echo $md_color; ?>">
+                                                <td class="js-change-color" style="background-color: <?php echo $md_color; ?> !important;" <?php echo $get_color_attrs( $color_types[ 'monday_date' ] ); ?>>
 													<?php if ( $edit_access ): ?>
                                                         <input value="<?php echo $print_date[ 'monday_calls' ] === 0
 															? '' : $print_date[ 'monday_calls' ]; ?>" type="number"
@@ -383,14 +429,14 @@ wp_localize_script( 'frontend_js', 'performanceData', array(
 													endif; ?>
 
                                                 </td>
-                                                <td style="background-color: <?php echo $md_color; ?>"><?php echo $print_date[ 'monday_date' ][ 'post_count' ]; ?></td>
-                                                <td style="background-color: <?php echo $md_color; ?>">
+                                                <td class="js-change-color" style="background-color: <?php echo $md_color; ?> !important;" <?php echo $get_color_attrs( $color_types[ 'monday_date' ] ); ?>><?php echo $print_date[ 'monday_date' ][ 'post_count' ]; ?></td>
+                                                <td class="js-change-color" style="background-color: <?php echo $md_color; ?> !important;" <?php echo $get_color_attrs( $color_types[ 'monday_date' ] ); ?>>
                                                     $<?php echo $helper->format_currency( $print_date[ 'monday_date' ][ 'profit' ] ); ?></td>
-                                                <td style="background-color: <?php echo $md_color; ?>"><?php echo $print_date[ 'monday_date' ][ 'performance' ]; ?>
+                                                <td class="js-change-color" style="background-color: <?php echo $md_color; ?> !important;" <?php echo $get_color_attrs( $color_types[ 'monday_date' ] ); ?>><?php echo $print_date[ 'monday_date' ][ 'performance' ]; ?>
                                                     %
                                                 </td>
 
-                                                <td style="background-color: <?php echo $tu_color; ?>">
+                                                <td class="js-change-color" style="background-color: <?php echo $tu_color; ?> !important;" <?php echo $get_color_attrs( $color_types[ 'tuesday_date' ] ); ?>>
 													<?php if ( $edit_access ): ?>
 
                                                         <input value="<?php echo $print_date[ 'tuesday_calls' ] === 0
@@ -401,14 +447,14 @@ wp_localize_script( 'frontend_js', 'performanceData', array(
 														echo $print_date[ 'tuesday_calls' ];
 													endif; ?>
                                                 </td>
-                                                <td style="background-color: <?php echo $tu_color; ?>"><?php echo $print_date[ 'tuesday_date' ][ 'post_count' ]; ?></td>
-                                                <td style="background-color: <?php echo $tu_color; ?>">
+                                                <td class="js-change-color" style="background-color: <?php echo $tu_color; ?> !important;" <?php echo $get_color_attrs( $color_types[ 'tuesday_date' ] ); ?>><?php echo $print_date[ 'tuesday_date' ][ 'post_count' ]; ?></td>
+                                                <td class="js-change-color" style="background-color: <?php echo $tu_color; ?> !important;" <?php echo $get_color_attrs( $color_types[ 'tuesday_date' ] ); ?>>
                                                     $<?php echo $helper->format_currency( $print_date[ 'tuesday_date' ][ 'profit' ] ); ?></td>
-                                                <td style="background-color: <?php echo $tu_color; ?>"><?php echo $print_date[ 'tuesday_date' ][ 'performance' ]; ?>
+                                                <td class="js-change-color" style="background-color: <?php echo $tu_color; ?> !important;" <?php echo $get_color_attrs( $color_types[ 'tuesday_date' ] ); ?>><?php echo $print_date[ 'tuesday_date' ][ 'performance' ]; ?>
                                                     %
                                                 </td>
 
-                                                <td style="background-color: <?php echo $wd_color; ?>">
+                                                <td class="js-change-color" style="background-color: <?php echo $wd_color; ?> !important;" <?php echo $get_color_attrs( $color_types[ 'wednesday_date' ] ); ?>>
 													<?php if ( $edit_access ): ?>
 
                                                         <input value="<?php echo $print_date[ 'wednesday_calls' ] === 0
@@ -419,15 +465,15 @@ wp_localize_script( 'frontend_js', 'performanceData', array(
 														echo $print_date[ 'wednesday_calls' ];
 													endif; ?>
                                                 </td>
-                                                <td style="background-color: <?php echo $wd_color; ?>"><?php echo $print_date[ 'wednesday_date' ][ 'post_count' ]; ?></td>
-                                                <td style="background-color: <?php echo $wd_color; ?>">
+                                                <td class="js-change-color" style="background-color: <?php echo $wd_color; ?> !important;" <?php echo $get_color_attrs( $color_types[ 'wednesday_date' ] ); ?>><?php echo $print_date[ 'wednesday_date' ][ 'post_count' ]; ?></td>
+                                                <td class="js-change-color" style="background-color: <?php echo $wd_color; ?> !important;" <?php echo $get_color_attrs( $color_types[ 'wednesday_date' ] ); ?>>
                                                     $<?php echo $helper->format_currency( $print_date[ 'wednesday_date' ][ 'profit' ] ); ?></td>
-                                                <td style="background-color: <?php echo $wd_color; ?>"><?php echo $print_date[ 'wednesday_date' ][ 'performance' ]; ?>
+                                                <td class="js-change-color" style="background-color: <?php echo $wd_color; ?> !important;" <?php echo $get_color_attrs( $color_types[ 'wednesday_date' ] ); ?>><?php echo $print_date[ 'wednesday_date' ][ 'performance' ]; ?>
                                                     %
                                                 </td>
 
 
-                                                <td style="background-color: <?php echo $th_color; ?>">
+                                                <td class="js-change-color" style="background-color: <?php echo $th_color; ?> !important;" <?php echo $get_color_attrs( $color_types[ 'thursday_date' ] ); ?>>
 													<?php if ( $edit_access ): ?>
 
                                                         <input value="<?php echo $print_date[ 'thursday_calls' ] === 0
@@ -438,17 +484,17 @@ wp_localize_script( 'frontend_js', 'performanceData', array(
 														echo $print_date[ 'thursday_calls' ];
 													endif; ?>
                                                 </td>
-                                                <td style="background-color: <?php echo $th_color; ?>"><?php echo $print_date[ 'thursday_date' ][ 'post_count' ]; ?></td>
-                                                <td style="background-color: <?php echo $th_color; ?>">
+                                                <td class="js-change-color" style="background-color: <?php echo $th_color; ?> !important;" <?php echo $get_color_attrs( $color_types[ 'thursday_date' ] ); ?>><?php echo $print_date[ 'thursday_date' ][ 'post_count' ]; ?></td>
+                                                <td class="js-change-color" style="background-color: <?php echo $th_color; ?> !important;" <?php echo $get_color_attrs( $color_types[ 'thursday_date' ] ); ?>>
                                                     $<?php echo $helper->format_currency( $print_date[ 'thursday_date' ][ 'profit' ] ); ?></td>
 
 
-                                                <td style="background-color: <?php echo $th_color; ?>"><?php echo $print_date[ 'thursday_date' ][ 'performance' ]; ?>
+                                                <td class="js-change-color" style="background-color: <?php echo $th_color; ?> !important;" <?php echo $get_color_attrs( $color_types[ 'thursday_date' ] ); ?>><?php echo $print_date[ 'thursday_date' ][ 'performance' ]; ?>
                                                     %
                                                 </td>
 
 
-                                                <td style="background-color: <?php echo $fr_color; ?>">
+                                                <td class="js-change-color" style="background-color: <?php echo $fr_color; ?> !important;" <?php echo $get_color_attrs( $color_types[ 'friday_date' ] ); ?>>
 													<?php if ( $edit_access ): ?>
 
                                                         <input value="<?php echo $print_date[ 'friday_calls' ] === 0
@@ -459,10 +505,10 @@ wp_localize_script( 'frontend_js', 'performanceData', array(
 														echo $print_date[ 'friday_calls' ];
 													endif; ?>
                                                 </td>
-                                                <td style="background-color: <?php echo $fr_color; ?>"><?php echo $print_date[ 'friday_date' ][ 'post_count' ]; ?></td>
-                                                <td style="background-color: <?php echo $fr_color; ?>">
+                                                <td class="js-change-color" style="background-color: <?php echo $fr_color; ?> !important;" <?php echo $get_color_attrs( $color_types[ 'friday_date' ] ); ?>><?php echo $print_date[ 'friday_date' ][ 'post_count' ]; ?></td>
+                                                <td class="js-change-color" style="background-color: <?php echo $fr_color; ?> !important;" <?php echo $get_color_attrs( $color_types[ 'friday_date' ] ); ?>>
                                                     $<?php echo $helper->format_currency( $print_date[ 'friday_date' ][ 'profit' ] ); ?></td>
-                                                <td style="background-color: <?php echo $fr_color; ?>"><?php echo $print_date[ 'friday_date' ][ 'performance' ]; ?>
+                                                <td class="js-change-color" style="background-color: <?php echo $fr_color; ?> !important;" <?php echo $get_color_attrs( $color_types[ 'friday_date' ] ); ?>><?php echo $print_date[ 'friday_date' ][ 'performance' ]; ?>
                                                     %
                                                 </td>
 

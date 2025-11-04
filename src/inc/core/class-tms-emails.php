@@ -125,7 +125,15 @@ class TMSEmails extends TMSUsers {
 		
 		if ( ! empty( $team_leaders ) ) {
 			foreach ( $team_leaders as $leader ) {
-				$emails[] = $leader->user_email;
+
+				if ($project === 'Endurance') {
+					$emails[] = get_field('endurance_email', 'user_' . $leader->ID);
+				} else if ($project === 'Martlet') {
+					$emails[] = get_field('martlet_email', 'user_' . $leader->ID);
+				} else if ($project === 'Odysseia') {
+					$emails[] = $leader->user_email;
+				}
+
 			}
 		}
 		
@@ -166,17 +174,14 @@ class TMSEmails extends TMSUsers {
 		
 		if ( ! empty( $tracking ) ) {
 			foreach ( $tracking as $leader ) {
-//
-//				// get weekend
-//				$fields   = get_fields( 'user_' . $leader->ID );
-//				$today    = strtolower( date( 'l' ) );
-//				$weekends = get_field_value( $fields, 'weekends' ) ?? [];
-//
-//				if ( is_array( $weekends ) && in_array( $today, $weekends, true ) ) {
-//					continue;
-//				}
 				
-				$emails[] = $leader->user_email;
+				if ($project === 'Endurance') {
+					$emails[] = get_field('endurance_email', 'user_' . $leader->ID);
+				} else if ($project === 'Martlet') {
+					$emails[] = get_field('martlet_email', 'user_' . $leader->ID);
+				} else if ($project === 'Odysseia') {
+					$emails[] = $leader->user_email;
+				}
 			}
 		}
 
@@ -343,10 +348,7 @@ class TMSEmails extends TMSUsers {
 	function send_email_create_load( $id_load, $flt = 'reports' ) {
 		global $global_options;
 		// Получение пользователей для ответа
-		$reply_users = get_field_value( $global_options, 'reply_create_loads_emails' );
-		if ( empty( $reply_users ) ) {
-			$reply_users = []; // Убедимся, что это массив
-		}
+
 		
 		$reports = new TMSReports();
 		
@@ -373,15 +375,37 @@ class TMSEmails extends TMSUsers {
 		if ( empty( $meta ) || ! is_array( $meta ) ) {
 			return [ 'success' => false, 'message' => 'Invalid meta data' ];
 		}
+
 		
 		$errors = [];
 		
 		// Получение данных из мета
 		$dispatcher = get_field_value( $meta, 'dispatcher_initials' );
 		
-		$dispatcher_email = $dispatcher ? get_the_author_meta( 'user_email', $dispatcher ) : '';
-		$nightshift       = get_field( 'nightshift_tracking', 'user_' . $dispatcher );
+
+		if ($project_name === 'Endurance') {
+			$nightshift       = get_field( 'nightshift_tracking_endurance', 'user_' . $dispatcher );
+			$reply_users = get_field_value( $global_options, 'reply_create_loads_emails_endurance' );
+			$dispatcher_email = get_field('endurance_email', 'user_' . $dispatcher);
+		} 
+
+		if ($project_name === 'Martlet') {
+			$nightshift       = get_field( 'nightshift_tracking_martlet', 'user_' . $dispatcher );
+			$reply_users = get_field_value( $global_options, 'reply_create_loads_emails_martlet' );
+			$dispatcher_email = get_field('martlet_email', 'user_' . $dispatcher);
+		}
+
+		if ($project_name === 'Odysseia') {
+			$nightshift       = get_field( 'nightshift_tracking', 'user_' . $dispatcher );
+			$reply_users = get_field_value( $global_options, 'reply_create_loads_emails' );
+			$dispatcher_email = $dispatcher ? get_the_author_meta( 'user_email', $dispatcher ) : '';
+		}
+
 		
+		if ( empty( $reply_users ) ) {
+			$reply_users = []; // Убедимся, что это массив
+		}
+
 		$tl_dispatcher = $this->get_team_leader_email( + $dispatcher, $project_name );
 		$tracking      = $this->get_tracking_email( + $dispatcher, $project_name );
 		
@@ -414,7 +438,9 @@ class TMSEmails extends TMSUsers {
 		$template_d = [];
 		
 		if ( ! empty( $pick_up_location ) ) {
-			$pick_up_location_array = json_decode( $pick_up_location, true );
+			$clean_json             = stripslashes( $pick_up_location );
+			$clean_json             = str_replace( "\'", "'", $pick_up_location );
+			$pick_up_location_array = json_decode( $clean_json, true, 512, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES );
 			if ( is_array( $pick_up_location_array ) ) {
 				foreach ( $pick_up_location_array as $pick_up ) {
 					if ( ! empty( $pick_up[ 'short_address' ] ) ) {
@@ -429,7 +455,12 @@ class TMSEmails extends TMSUsers {
 		}
 		
 		if ( ! empty( $delivery_location ) ) {
-			$delivery_location_array = json_decode( $delivery_location, true );
+
+			$clean_json             = stripslashes( $delivery_location );
+			$clean_json             = str_replace( "\'", "'", $delivery_location );
+			$delivery_location_array = json_decode( $clean_json, true, 512, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES );
+			
+			
 			if ( is_array( $delivery_location_array ) ) {
 				foreach ( $delivery_location_array as $delivery ) {
 					if ( ! empty( $delivery[ 'short_address' ] ) ) {
@@ -455,12 +486,43 @@ class TMSEmails extends TMSUsers {
 		// Формирование темы письма
 		$subject = sprintf( 'Tracking email chain: Load # %s %s - %s ', $reference_number, implode( ', ', $template_p ), implode( ', ', $template_d ) );
 		
+		$text = '';
 		// Формирование текста письма
-		$text = sprintf( "Thank you for running this load with %s.
-		<br>Our team will keep you updated during the whole process of transportation in this email thread.
-		<br>If you need to add any other email for the updates, please feel free to do that.
-		<br>We will immediately let you know once the truck is on-site.", $project_name );
-		
+		if ($project_name === 'Odysseia') {
+			$text = sprintf( "Thank you for running this load with %s.
+			<br>Our team will keep you updated during the whole process of transportation in this email thread.
+			<br>If you need to add any other email for the updates, please feel free to do that.
+			<br>We will immediately let you know once the truck is on-site.", $project_name );
+		} else if ($project_name === 'Martlet') {
+			// This is the Tracking Team at Martlet Express.
+			// We’ll provide trip updates in this email chain.
+			// For immediate assistance or updates, email us — we’ll reply right away.
+			// Feel free to add your team members to keep them in the loop.
+			
+			// Thank you for your continued partnership!
+
+			$text = sprintf( "This is the Tracking Team at Martlet Express.
+			<br>We’ll provide trip updates in this email chain.
+			<br>For immediate assistance or updates, email us — we’ll reply right away.
+			<br>Feel free to add your team members to keep them in the loop.
+			<br><br>Thank you for your continued partnership!");
+
+		} else if ($project_name === 'Endurance') {
+
+
+			// Thank you for choosing Endurance Transport to handle this load!
+			// We’ll keep you informed every step of the way in this email thread.
+			// If there’s anyone else who should receive updates, please don’t hesitate to include them.
+			// We’ll let you know right away once the truck is on-site.
+
+			$text = sprintf( "Thank you for choosing Endurance Transport to handle this load!
+			<br>We’ll keep you informed every step of the way in this email thread. 
+			<br>If there’s anyone else who should receive updates, please don’t hesitate to include them.
+			<br>We’ll let you know right away once the truck is on-site.");
+		} else {
+			$errors[] = 'Invalid project name';
+		}
+	
 		// Возврат собранных данных
 		return $this->send_email_for_brocker( [
 			'subject'           => $subject,
@@ -524,6 +586,7 @@ class TMSEmails extends TMSUsers {
 			'Content-Type: text/html; charset=UTF-8',
 			'From: Tracking chain <' . $data[ 'project_email' ] . '>'
 		);
+		
 		
 		// Отправка письма с помощью wp_mail() (для WordPress) или mail()
 		if ( function_exists( 'wp_mail' ) ) {

@@ -86,6 +86,11 @@ if ( ! empty( $manager_team ) && is_array( $manager_team ) ) {
 	$my_team = array_merge( $my_team, $manager_team );
 }
 
+$exclude_mg_users = get_field( 'exclude_mg_users', get_the_ID() );
+if ( ! empty( $exclude_mg_users ) && is_array( $exclude_mg_users ) ) {
+	$my_team = array_diff( $my_team, $exclude_mg_users );
+}
+// var_dump($my_team);
 
 $dispatcher_arr = $statistics->get_dispatcher_statistics_current_month( $my_team );
 

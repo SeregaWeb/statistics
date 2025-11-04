@@ -211,6 +211,7 @@ class DriverPopups {
         const nameElement = document.getElementById('driverNoticeName');
         const countElement = document.getElementById('driverNoticeCount');
         const fullPageLink = document.getElementById('driverNoticeFullPage') as HTMLAnchorElement;
+        const driverIdField = document.getElementById('noticeDriverId') as HTMLInputElement;
 
         if (nameElement) {
             nameElement.textContent = driverName || 'Unknown Driver';
@@ -218,6 +219,13 @@ class DriverPopups {
             console.log('Setting driver ID for notices:', driverId);
             console.log('Element after setting:', nameElement);
         }
+        
+        // Update hidden driver_id field in the form
+        if (driverIdField) {
+            driverIdField.value = driverId;
+            console.log('Updated noticeDriverId field:', driverId);
+        }
+        
         if (countElement) countElement.textContent = noticeCount || '0';
         if (fullPageLink) {
             fullPageLink.href = `${this.addNewLoadUrl}?driver=${driverId}&tab=pills-driver-stats-tab`;
@@ -233,6 +241,25 @@ class DriverPopups {
                     </div>
                 </div>
             `;
+        }
+        
+        // Clear the form to reset previous values
+        const noticeForm = document.getElementById('noticeForm') as HTMLFormElement;
+        if (noticeForm) {
+            // Reset all fields except driver_id
+            const messageField = noticeForm.querySelector('textarea[name="message"]') as HTMLTextAreaElement;
+            if (messageField) {
+                messageField.value = '';
+            }
+        }
+
+        // Dispatch event to update currentDriverId in DriverPopupForms
+        try {
+            document.dispatchEvent(new CustomEvent('tms:notice-popup-open', {
+                detail: { driverId: driverId }
+            }));
+        } catch (e) {
+            console.warn('Failed to dispatch notice popup open event:', e);
         }
 
         // Show popup using existing system

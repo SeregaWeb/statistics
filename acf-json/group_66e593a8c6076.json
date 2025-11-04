@@ -177,7 +177,24 @@
                             "required": 0,
                             "conditional_logic": 0,
                             "wrapper": {
-                                "width": "",
+                                "width": "50",
+                                "class": "",
+                                "id": ""
+                            },
+                            "return_format": "array",
+                            "parent_repeater": "field_66e59448bdfaa"
+                        },
+                        {
+                            "key": "field_69037b8aaade4",
+                            "label": "Link child",
+                            "name": "link_child",
+                            "aria-label": "",
+                            "type": "link",
+                            "instructions": "",
+                            "required": 0,
+                            "conditional_logic": 0,
+                            "wrapper": {
+                                "width": "50",
                                 "class": "",
                                 "id": ""
                             },
@@ -211,6 +228,53 @@
                             "instructions": "",
                             "required": 0,
                             "conditional_logic": 0,
+                            "wrapper": {
+                                "width": "33",
+                                "class": "",
+                                "id": ""
+                            },
+                            "choices": {
+                                "dispatcher": "Dispatcher",
+                                "dispatcher-tl": "Dispatcher Team Leader",
+                                "tracking": "Tracking",
+                                "tracking-tl": "Tracking Team Leader",
+                                "billing": "Billing",
+                                "recruiter": "Recruiter",
+                                "recruiter-tl": "Recruiter Team Leader",
+                                "accounting": "Accounting",
+                                "moderator": "Moderator",
+                                "morning_tracking": "Morning Tracking",
+                                "nightshift_tracking": "Nightshift Tracking",
+                                "expedite_manager": "Expedite Manager",
+                                "hr_manager": "HR Manager",
+                                "driver_updates": "Driver Updates",
+                                "administrator": "Admin"
+                            },
+                            "default_value": [],
+                            "return_format": "value",
+                            "allow_custom": 0,
+                            "layout": "vertical",
+                            "toggle": 0,
+                            "save_custom": 0,
+                            "custom_choice_button_text": "Add new choice",
+                            "parent_repeater": "field_66e59448bdfaa"
+                        },
+                        {
+                            "key": "field_69037d52babc2",
+                            "label": "Exclude role (child)",
+                            "name": "exclude_role_child",
+                            "aria-label": "",
+                            "type": "checkbox",
+                            "instructions": "",
+                            "required": 0,
+                            "conditional_logic": [
+                                [
+                                    {
+                                        "field": "field_69037b8aaade4",
+                                        "operator": "!=empty"
+                                    }
+                                ]
+                            ],
                             "wrapper": {
                                 "width": "33",
                                 "class": "",
@@ -752,20 +816,60 @@
             "label": "Reply create loads emails",
             "name": "reply_create_loads_emails",
             "aria-label": "",
-            "type": "text",
+            "type": "textarea",
             "instructions": "",
             "required": 0,
             "conditional_logic": 0,
             "wrapper": {
-                "width": "",
+                "width": "33",
                 "class": "",
                 "id": ""
             },
             "default_value": "",
             "maxlength": "",
+            "rows": 3,
             "placeholder": "",
-            "prepend": "",
-            "append": ""
+            "new_lines": ""
+        },
+        {
+            "key": "field_6908bc14438ee",
+            "label": "Reply create loads emails (Martlet)",
+            "name": "reply_create_loads_emails_martlet",
+            "aria-label": "",
+            "type": "textarea",
+            "instructions": "",
+            "required": 0,
+            "conditional_logic": 0,
+            "wrapper": {
+                "width": "33",
+                "class": "",
+                "id": ""
+            },
+            "default_value": "",
+            "maxlength": "",
+            "rows": 3,
+            "placeholder": "",
+            "new_lines": ""
+        },
+        {
+            "key": "field_6908bc2b438ef",
+            "label": "Reply create loads emails (Endurance)",
+            "name": "reply_create_loads_emails_endurance",
+            "aria-label": "",
+            "type": "textarea",
+            "instructions": "",
+            "required": 0,
+            "conditional_logic": 0,
+            "wrapper": {
+                "width": "33",
+                "class": "",
+                "id": ""
+            },
+            "default_value": "",
+            "maxlength": "",
+            "rows": 3,
+            "placeholder": "",
+            "new_lines": ""
         },
         {
             "key": "field_6797f95134aaa",
@@ -777,27 +881,7 @@
             "required": 0,
             "conditional_logic": 0,
             "wrapper": {
-                "width": "",
-                "class": "",
-                "id": ""
-            },
-            "default_value": "",
-            "maxlength": "",
-            "placeholder": "",
-            "prepend": "",
-            "append": ""
-        },
-        {
-            "key": "field_67bdc7efe318f",
-            "label": "Odysseia phone",
-            "name": "odysseia_phone",
-            "aria-label": "",
-            "type": "text",
-            "instructions": "",
-            "required": 0,
-            "conditional_logic": 0,
-            "wrapper": {
-                "width": "",
+                "width": "33",
                 "class": "",
                 "id": ""
             },
@@ -817,27 +901,7 @@
             "required": 0,
             "conditional_logic": 0,
             "wrapper": {
-                "width": "",
-                "class": "",
-                "id": ""
-            },
-            "default_value": "",
-            "maxlength": "",
-            "placeholder": "",
-            "prepend": "",
-            "append": ""
-        },
-        {
-            "key": "field_67bdc802e3190",
-            "label": "Martlet phone",
-            "name": "martlet_phone",
-            "aria-label": "",
-            "type": "text",
-            "instructions": "",
-            "required": 0,
-            "conditional_logic": 0,
-            "wrapper": {
-                "width": "",
+                "width": "33",
                 "class": "",
                 "id": ""
             },
@@ -857,7 +921,47 @@
             "required": 0,
             "conditional_logic": 0,
             "wrapper": {
-                "width": "",
+                "width": "33",
+                "class": "",
+                "id": ""
+            },
+            "default_value": "",
+            "maxlength": "",
+            "placeholder": "",
+            "prepend": "",
+            "append": ""
+        },
+        {
+            "key": "field_67bdc7efe318f",
+            "label": "Odysseia phone",
+            "name": "odysseia_phone",
+            "aria-label": "",
+            "type": "text",
+            "instructions": "",
+            "required": 0,
+            "conditional_logic": 0,
+            "wrapper": {
+                "width": "33",
+                "class": "",
+                "id": ""
+            },
+            "default_value": "",
+            "maxlength": "",
+            "placeholder": "",
+            "prepend": "",
+            "append": ""
+        },
+        {
+            "key": "field_67bdc802e3190",
+            "label": "Martlet phone",
+            "name": "martlet_phone",
+            "aria-label": "",
+            "type": "text",
+            "instructions": "",
+            "required": 0,
+            "conditional_logic": 0,
+            "wrapper": {
+                "width": "33",
                 "class": "",
                 "id": ""
             },
@@ -877,7 +981,7 @@
             "required": 0,
             "conditional_logic": 0,
             "wrapper": {
-                "width": "",
+                "width": "33",
                 "class": "",
                 "id": ""
             },
@@ -1440,5 +1544,5 @@
     "active": true,
     "description": "",
     "show_in_rest": 0,
-    "modified": 1761046648
+    "modified": 1762189546
 }

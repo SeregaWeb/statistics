@@ -186,8 +186,8 @@ if ( ! empty( $results ) ) :
                     $eta_data = $helper->get_eta_data($row);
                     $pickup_data = $helper->get_eta_display_data($eta_data, 'pick_up');
                     
-                    // Check if ETA record exists
-                    $pickup_eta_exists = $eta_manager->eta_record_exists($row['id'], 'pickup', $flt);
+                    // Check if ETA record exists (with project)
+                    $pickup_eta_exists = $eta_manager->eta_record_exists($row['id'], 'pickup', $flt, null, $TMSReports->project);
                     $pickup_button_class = $pickup_eta_exists ? 'btn-success' : 'btn-outline-primary';
                     ?>
                     <button class="btn btn-sm <?php echo $pickup_button_class; ?> js-open-popup-activator" 
@@ -216,8 +216,8 @@ if ( ! empty( $results ) ) :
                 if ($load_status !== 'delivered' && $load_status !== 'waiting-on-rc' && $load_status !== 'tonu' && $load_status !== 'cancelled'):
                     $delivery_data = $helper->get_eta_display_data($eta_data, 'delivery');
                     
-                    // Check if ETA record exists
-                    $delivery_eta_exists = $eta_manager->eta_record_exists($row['id'], 'delivery', $flt);
+                    // Check if ETA record exists (with project)
+                    $delivery_eta_exists = $eta_manager->eta_record_exists($row['id'], 'delivery', $flt, null, $TMSReports->project);
                     $delivery_button_class = $delivery_eta_exists ? 'btn-success' : 'btn-outline-primary';
                     ?>
                     <button class="btn btn-sm <?php echo $delivery_button_class; ?> js-open-popup-activator" 

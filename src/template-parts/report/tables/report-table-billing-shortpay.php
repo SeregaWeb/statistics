@@ -79,16 +79,16 @@ if ( ! empty( $results ) ) : ?>
 			$unit_number_name = esc_html( get_field_value( $meta, 'unit_number_name' ) );
 			$driver_phone     = esc_html( get_field_value( $meta, 'driver_phone' ) );
 			
-			$booked_rate_raw = get_field_value( $meta, 'booked_rate' );
-			$booked_rate     = esc_html( '$' . $helper->format_currency( $booked_rate_raw ) );
-            $charge_back_rate = get_field_value( $meta, 'charge_back_rate' );
-            $charge_back_rate = esc_html( '$' . $helper->format_currency( $charge_back_rate ) );
+            $booked_rate_raw      = get_field_value( $meta, 'booked_rate' );
+            $booked_rate          = esc_html( '$' . $helper->format_currency( $booked_rate_raw ) );
+            $charge_back_rate_raw = (float) ( get_field_value( $meta, 'charge_back_rate' ) ?? 0 );
+            $charge_back_rate     = esc_html( '$' . $helper->format_currency( $charge_back_rate_raw ) );
 			
 			$factoring_status_row = get_field_value( $meta, 'factoring_status' );
 			$factoring_status     = esc_html( $helper->get_label_by_key( $factoring_status_row, 'factoring_status' ) );
 			
 			$invoice_raw   = get_field_value( $meta, 'invoiced_proof' );
-			$short_pay_raw = get_field_value( $meta, 'short_pay' );
+            $short_pay_raw = (float) ( get_field_value( $meta, 'short_pay' ) ?? 0 );
 			$short_pay     = esc_html( '$' . $helper->format_currency( $short_pay_raw ) );
 			
 			$show_control    = $TMSUsers->show_control_loads( $my_team, $current_user_id, $dispatcher_initials, $is_draft );
@@ -107,8 +107,10 @@ if ( ! empty( $results ) ) : ?>
 			
 			$now_show = ( $factoring_status_row === 'paid' );
 			
-			$id_customer     = get_field_value( $meta, 'customer_id' );
-			$template_broker = $TMSBroker->get_broker_and_link_by_id( $id_customer );
+            $id_customer   = get_field_value( $meta, 'customer_id' );
+            // For table cell (with link/markup)
+            $template_broker = $TMSBroker->get_broker_and_link_by_id( $id_customer );
+            // (aggregation moved to a dedicated query; no collection here)
 			?>
 
             <tr class="factoring-color-<?php echo $factoring_class; ?> <?php echo $tbd ? 'tbd' : ''; ?>">

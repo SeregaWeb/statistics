@@ -161,7 +161,7 @@ $logshowcontent = isset( $_COOKIE[ 'logshow' ] ) && + $_COOKIE[ 'logshow' ] !== 
 							
 							<?php
 							
-							if ( 'Odysseia' === $reports->project && isset( $meta ) ) {
+							if ( isset( $meta ) ) {
 								$access_for_btn = $TMSUsers->check_user_role_access( array(
 									'administrator',
 									'dispatcher-tl',
@@ -179,11 +179,11 @@ $logshowcontent = isset( $_COOKIE[ 'logshow' ] ) && + $_COOKIE[ 'logshow' ] !== 
 								if ( $access_for_btn && isset( $status_publish ) && $status_publish === 'publish' && ! empty( $pick_up_location ) && ! empty( $delivery_location ) ) {
 									if ( ! isset( $send_mesaage ) || ! $send_mesaage ) {
 										?>
-                                        <form class="w-100 d-flex justify-content-end mb-3 js-send-email-chain">
-                                            <input type="hidden" name="project" value="<?php echo $project ?>">
-                                            <input type="hidden" name="load_id" value="<?php echo $post_id; ?>">
-                                            <button class="btn btn-warning">Create tracking chain</button>
-                                        </form>
+										<form class="w-100 d-flex justify-content-end mb-3 js-send-email-chain">
+											<input type="hidden" name="project" value="<?php echo $project ?>">
+											<input type="hidden" name="load_id" value="<?php echo $post_id; ?>">
+											<button class="btn btn-warning">Create tracking chain</button>
+										</form>
 										<?php
 									} else {
 										?>

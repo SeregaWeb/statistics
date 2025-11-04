@@ -34,7 +34,7 @@ class TMSReportsFlt extends TMSReportsHelper {
 		
 	}
 	
-	public function get_profit_by_preset( $preset_ids ) {
+	public function get_profit_by_preset( $preset_ids, $month = null, $year = null ) {
 		global $wpdb;
 		
 		if ( empty( $preset_ids ) || ! is_array( $preset_ids ) ) {
@@ -46,30 +46,69 @@ class TMSReportsFlt extends TMSReportsHelper {
 		
 		$placeholders = implode( ',', array_fill( 0, count( $preset_ids ), '%s' ) );
 		
+		// Build WHERE conditions and values
+		$where_conditions = array();
+		$where_values = array();
+		
+		// Add preset filter
+		$where_conditions[] = "preset_meta.meta_key = 'preset'";
+		$where_conditions[] = "preset_meta.meta_value IN ($placeholders)";
+		$where_values = array_merge( $where_values, $preset_ids );
+		
+		// Add date filters if provided
+		if ( ! empty( $year ) && ! empty( $month ) ) {
+			$where_conditions[] = "main.date_booked IS NOT NULL";
+			$where_conditions[] = "YEAR(main.date_booked) = %d";
+			$where_conditions[] = "MONTH(main.date_booked) = %d";
+			$where_values[] = (int) $year;
+			$where_values[] = (int) $month;
+		} elseif ( ! empty( $year ) ) {
+			$where_conditions[] = "main.date_booked IS NOT NULL";
+			$where_conditions[] = "YEAR(main.date_booked) = %d";
+			$where_values[] = (int) $year;
+		} elseif ( ! empty( $month ) ) {
+			$where_conditions[] = "main.date_booked IS NOT NULL";
+			$where_conditions[] = "MONTH(main.date_booked) = %d";
+			$where_values[] = (int) $month;
+		}
+		
+		// Add status filter
+		$where_conditions[] = "main.status_post = 'publish'";
+		
+		$where_clause = implode( ' AND ', $where_conditions );
+		
 		$sql = "
 		SELECT
 			preset_meta.meta_value AS preset_id,
 			COUNT(DISTINCT preset_meta.post_id) AS total_posts,
 			SUM(CAST(profit_meta.meta_value AS DECIMAL(10,2))) AS total_profit
 		FROM {$table_meta} AS preset_meta
+		INNER JOIN {$table_main} AS main
+			ON main.id = preset_meta.post_id
 		INNER JOIN {$table_meta} AS profit_meta
 			ON profit_meta.post_id = preset_meta.post_id AND profit_meta.meta_key = 'profit'
-		WHERE preset_meta.meta_key = 'preset'
-		  AND preset_meta.meta_value IN ($placeholders)
+		WHERE {$where_clause}
 		GROUP BY preset_meta.meta_value
-	";
+		";
 		
-		$prepared_sql = $wpdb->prepare( $sql, ...$preset_ids );
-		$results      = $wpdb->get_results( $prepared_sql, ARRAY_A );
+		if ( ! empty( $where_values ) ) {
+			$prepared_sql = $wpdb->prepare( $sql, ...$where_values );
+		} else {
+			$prepared_sql = $sql;
+		}
+		
+		$results = $wpdb->get_results( $prepared_sql, ARRAY_A );
 		
 		$output = [];
 		
-		foreach ( $results as $row ) {
-			$preset_id            = 'brocker_' . $row[ 'preset_id' ];
-			$output[ $preset_id ] = [
-				'total_posts'  => (int) $row[ 'total_posts' ],
-				'total_profit' => (float) $row[ 'total_profit' ],
-			];
+		if ( is_array( $results ) && ! empty( $results ) ) {
+			foreach ( $results as $row ) {
+				$preset_id            = 'brocker_' . $row[ 'preset_id' ];
+				$output[ $preset_id ] = [
+					'total_posts'  => (int) $row[ 'total_posts' ],
+					'total_profit' => (float) $row[ 'total_profit' ],
+				];
+			}
 		}
 		
 		return $output;

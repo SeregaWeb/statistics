@@ -130,7 +130,7 @@ $orange_lvl = $TMSUsers->check_user_role_access( array(
                         <div class="col-12 mt-2">
                             <ul class="nav nav-pills mb-2" id="pills-tab" role="tablist">
                                 <li class="nav-item w-25" role="presentation">
-                                    <button class="nav-link w-100 <?php echo ! isset( $_GET[ 'paged' ] ) ? 'active'
+                                    <button class="nav-link w-100 <?php echo ! isset( $_GET[ 'paged' ] ) && ! isset( $_GET[ 'my_search' ] ) ? 'active'
 										: ''; ?>" id="pills-info-tab" data-bs-toggle="pill"
                                             data-bs-target="#pills-info" type="button" role="tab"
                                             aria-controls="pills-info"
@@ -138,7 +138,7 @@ $orange_lvl = $TMSUsers->check_user_role_access( array(
                                     </button>
                                 </li>
                                 <li class="nav-item w-25" role="presentation">
-                                    <button class="nav-link w-100 <?php echo isset( $_GET[ 'paged' ] ) ? 'active'
+                                    <button class="nav-link w-100 <?php echo isset( $_GET[ 'paged' ] ) || isset( $_GET[ 'my_search' ] ) ? 'active'
 										: ''; ?>" id="pills-loads-tab" data-bs-toggle="pill"
                                             data-bs-target="#pills-loads" type="button" role="tab"
                                             aria-controls="pills-loads"
@@ -160,7 +160,7 @@ $orange_lvl = $TMSUsers->check_user_role_access( array(
                             </ul>
                         </div>
                         <div class="tab-content" id="pills-tabContent">
-                            <div class="tab-pane <?php echo ! isset( $_GET[ 'paged' ] ) ? 'show active' : 'fade'; ?>"
+                            <div class="tab-pane <?php echo ! isset( $_GET[ 'paged' ] ) && ! isset( $_GET[ 'my_search' ] ) ? 'show active' : 'fade'; ?>"
                                  id="pills-info" role="tabpanel"
                                  aria-labelledby="pills-info-tab">
                                 <div class="mt-3 mb-3" style="max-width: 944px;">
@@ -710,7 +710,7 @@ $orange_lvl = $TMSUsers->check_user_role_access( array(
                                 </div>
 							<?php endif; ?>
 
-                            <div class="tab-pane  <?php echo ( isset( $_GET[ 'paged' ] ) ) ? 'show active'
+                            <div class="tab-pane  <?php echo ( isset( $_GET[ 'paged' ] ) || isset( $_GET[ 'my_search' ] ) ) ? 'show active'
 								: 'fade'; ?> " id="pills-loads" role="tabpanel"
                                  aria-labelledby="pills-loads-tab">
 

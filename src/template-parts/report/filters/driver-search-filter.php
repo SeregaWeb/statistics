@@ -25,7 +25,7 @@ if ( ! empty( $capabilities ) ) {
 
 // Define driver capabilities for filtering
 $driver_capabilities = array(
-	'hazmat_certificate'      => 'Hazmat',
+	'hazmat_certificate'      => 'Hazmat Certificate',
     'hazmat_endorsement'      => 'Hazmat Endorsement',
 	'twic'                    => 'TWIC',
 	'cross_border_canada'     => 'Canada', // Special handling for cross_border

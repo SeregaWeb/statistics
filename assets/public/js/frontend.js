@@ -5523,6 +5523,7 @@ var DarkModeToggle = /*#__PURE__*/function () {
       }
       var isDarkModeEnabled = document.body.classList.contains('dark-mode');
       this.toggleSwitch.checked = isDarkModeEnabled;
+      this.updateDynamicColors(isDarkModeEnabled);
       this.toggleSwitch.addEventListener('change', function (e) {
         var target = e.target;
         _this2.handleToggle(target.checked);
@@ -5543,6 +5544,20 @@ var DarkModeToggle = /*#__PURE__*/function () {
       } else {
         body.classList.remove('dark-mode');
       }
+      this.updateDynamicColors(isEnabled);
+    }
+  }, {
+    key: "updateDynamicColors",
+    value: function updateDynamicColors(isDarkMode) {
+      var elements = document.querySelectorAll('.js-change-color');
+      elements.forEach(function (element) {
+        var colorLight = element.getAttribute('data-color-light');
+        var colorDark = element.getAttribute('data-color-dark');
+        if (colorLight && colorDark) {
+          var newColor = isDarkMode ? colorDark : colorLight;
+          element.style.setProperty('background-color', newColor, 'important');
+        }
+      });
     }
   }, {
     key: "sendAjaxRequest",
@@ -5592,7 +5607,13 @@ var DarkModeToggle = /*#__PURE__*/function () {
     value: function revertToggle() {
       if (this.toggleSwitch) {
         this.toggleSwitch.checked = !this.toggleSwitch.checked;
-        this.updateBodyClass(this.toggleSwitch.checked);
+        var isDarkMode = this.toggleSwitch.checked;
+        if (isDarkMode) {
+          document.body.classList.add('dark-mode');
+        } else {
+          document.body.classList.remove('dark-mode');
+        }
+        this.updateDynamicColors(isDarkMode);
       }
     }
   }]);
@@ -7363,6 +7384,12 @@ var DriverPopupForms = /*#__PURE__*/function () {
       document.addEventListener('tms:rating-popup-open', function () {
         _this.resetRatingUIState();
       });
+      document.addEventListener('tms:notice-popup-open', function (e) {
+        if (e.detail && e.detail.driverId) {
+          _this.currentDriverId = e.detail.driverId;
+          console.log('Updated currentDriverId from notice popup event:', _this.currentDriverId);
+        }
+      });
     }
   }, {
     key: "listenForPopupOpen",
@@ -7506,17 +7533,22 @@ var DriverPopupForms = /*#__PURE__*/function () {
       if (!form) return;
       form.addEventListener('submit', function (e) {
         e.preventDefault();
-        var existingDriverId = form.querySelector('input[name="driver_id"]');
-        var driverId = existingDriverId ? existingDriverId.value : null;
-        if (!driverId) {
-          driverId = _this6.currentDriverId || _this6.getDriverIdFromPopup('driverNoticeName');
-          var driverIdField = document.getElementById('noticeDriverId');
-          if (driverIdField && driverId) {
-            driverIdField.value = driverId;
+        var driverIdField = document.getElementById('noticeDriverId');
+        var driverId = driverIdField ? driverIdField.value : null;
+        if (!driverId || driverId.trim() === '') {
+          var existingDriverId = form.querySelector('input[name="driver_id"]');
+          driverId = existingDriverId ? existingDriverId.value : null;
+          if (!driverId) {
+            driverId = _this6.currentDriverId || _this6.getDriverIdFromPopup('driverNoticeName');
+            if (driverIdField && driverId) {
+              driverIdField.value = driverId;
+            }
           }
         }
-        if (driverId) {
+        console.log('Submitting notice form with driver ID:', driverId);
+        if (driverId && driverId.trim() !== '') {
           var formData = new FormData(form);
+          formData.set('driver_id', driverId);
           formData.set('action', 'add_driver_notice');
           _this6.submitForm(formData, 'notice');
         } else {
@@ -8015,11 +8047,16 @@ var DriverPopups = /*#__PURE__*/function () {
       var nameElement = document.getElementById('driverNoticeName');
       var countElement = document.getElementById('driverNoticeCount');
       var fullPageLink = document.getElementById('driverNoticeFullPage');
+      var driverIdField = document.getElementById('noticeDriverId');
       if (nameElement) {
         nameElement.textContent = driverName || 'Unknown Driver';
         nameElement.setAttribute('data-driver-id', driverId);
         console.log('Setting driver ID for notices:', driverId);
         console.log('Element after setting:', nameElement);
+      }
+      if (driverIdField) {
+        driverIdField.value = driverId;
+        console.log('Updated noticeDriverId field:', driverId);
       }
       if (countElement) countElement.textContent = noticeCount || '0';
       if (fullPageLink) {
@@ -8028,6 +8065,22 @@ var DriverPopups = /*#__PURE__*/function () {
       var contentElement = document.getElementById('driverNoticeContent');
       if (contentElement) {
         contentElement.innerHTML = "\n                <div class=\"text-center\">\n                    <div class=\"spinner-border\" role=\"status\">\n                        <span class=\"visually-hidden\">Loading...</span>\n                    </div>\n                </div>\n            ";
+      }
+      var noticeForm = document.getElementById('noticeForm');
+      if (noticeForm) {
+        var messageField = noticeForm.querySelector('textarea[name="message"]');
+        if (messageField) {
+          messageField.value = '';
+        }
+      }
+      try {
+        document.dispatchEvent(new CustomEvent('tms:notice-popup-open', {
+          detail: {
+            driverId: driverId
+          }
+        }));
+      } catch (e) {
+        console.warn('Failed to dispatch notice popup open event:', e);
       }
       this.openPopup('#driver-notice-popup');
       this.loadDriverNotices(parseInt(driverId));

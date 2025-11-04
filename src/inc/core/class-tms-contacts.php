@@ -334,7 +334,9 @@ class TMSContacts extends TMSDriversHelper {
 		$current_page = isset( $_GET[ 'paged' ] ) ? absint( $_GET[ 'paged' ] ) : 1;
 		$offset       = ( $current_page - 1 ) * $per_page;
 		$sort_by      = ! empty( $args[ 'sort_by' ] ) ? esc_sql( $args[ 'sort_by' ] ) : 'date_created';
-		
+		$month        = isset( $args[ 'month' ] ) ? (int) $args[ 'month' ] : null;
+		$year         = isset( $args[ 'year' ] ) ? (int) $args[ 'year' ] : null;
+
 		// Подсчёт общего количества
 		$total_records = (int) $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(*) FROM $table_main WHERE user_id_added = %d", $current_user_id ) );
 		

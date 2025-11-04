@@ -28,6 +28,14 @@ class DriverPopupForms {
         document.addEventListener('tms:rating-popup-open', () => {
             this.resetRatingUIState();
         });
+        
+        // Update currentDriverId when notice popup opens
+        document.addEventListener('tms:notice-popup-open', (e: any) => {
+            if (e.detail && e.detail.driverId) {
+                this.currentDriverId = e.detail.driverId;
+                console.log('Updated currentDriverId from notice popup event:', this.currentDriverId);
+            }
+        });
     }
 
     /**
@@ -208,23 +216,34 @@ class DriverPopupForms {
         form.addEventListener('submit', (e) => {
             e.preventDefault();
             
-            // Check if driver_id is already in the form (for modal windows)
-            const existingDriverId = form.querySelector('input[name="driver_id"]') as HTMLInputElement;
-            let driverId = existingDriverId ? existingDriverId.value : null;
+            // Always prioritize the hidden field in the form (most reliable)
+            const driverIdField = document.getElementById('noticeDriverId') as HTMLInputElement;
+            let driverId = driverIdField ? driverIdField.value : null;
             
-            // If no driver_id in form, try to get it from popup or current context
-            if (!driverId) {
-                driverId = this.currentDriverId || this.getDriverIdFromPopup('driverNoticeName');
+            // Fallback to other methods if hidden field is empty
+            if (!driverId || driverId.trim() === '') {
+                // Check if driver_id is already in the form (for modal windows)
+                const existingDriverId = form.querySelector('input[name="driver_id"]') as HTMLInputElement;
+                driverId = existingDriverId ? existingDriverId.value : null;
                 
-                // Set the driver ID in the hidden field if it exists
-                const driverIdField = document.getElementById('noticeDriverId') as HTMLInputElement;
-                if (driverIdField && driverId) {
-                    driverIdField.value = driverId;
+                // If still no driver_id, try to get it from popup or current context
+                if (!driverId) {
+                    driverId = this.currentDriverId || this.getDriverIdFromPopup('driverNoticeName');
+                    
+                    // Set the driver ID in the hidden field if it exists
+                    if (driverIdField && driverId) {
+                        driverIdField.value = driverId;
+                    }
                 }
             }
             
-            if (driverId) {
+            console.log('Submitting notice form with driver ID:', driverId);
+            
+            if (driverId && driverId.trim() !== '') {
                 const formData = new FormData(form);
+                
+                // Ensure driver_id is always set correctly
+                formData.set('driver_id', driverId);
                 
                 // Add action for AJAX
                 formData.set('action', 'add_driver_notice');

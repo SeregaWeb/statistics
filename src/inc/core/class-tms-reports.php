@@ -32,7 +32,7 @@ class TMSReports extends TMSReportsHelper {
 		}
 	}
 	
-	public function get_profit_by_preset( $preset_ids ) {
+	public function get_profit_by_preset( $preset_ids, $month = null, $year = null ) {
 		global $wpdb;
 		
 		if ( empty( $preset_ids ) || ! is_array( $preset_ids ) ) {
@@ -44,30 +44,69 @@ class TMSReports extends TMSReportsHelper {
 		
 		$placeholders = implode( ',', array_fill( 0, count( $preset_ids ), '%s' ) );
 		
+		// Build WHERE conditions and values
+		$where_conditions = array();
+		$where_values = array();
+		
+		// Add preset filter
+		$where_conditions[] = "preset_meta.meta_key = 'preset'";
+		$where_conditions[] = "preset_meta.meta_value IN ($placeholders)";
+		$where_values = array_merge( $where_values, $preset_ids );
+		
+		// Add date filters if provided
+		if ( ! empty( $year ) && ! empty( $month ) ) {
+			$where_conditions[] = "main.date_booked IS NOT NULL";
+			$where_conditions[] = "YEAR(main.date_booked) = %d";
+			$where_conditions[] = "MONTH(main.date_booked) = %d";
+			$where_values[] = (int) $year;
+			$where_values[] = (int) $month;
+		} elseif ( ! empty( $year ) ) {
+			$where_conditions[] = "main.date_booked IS NOT NULL";
+			$where_conditions[] = "YEAR(main.date_booked) = %d";
+			$where_values[] = (int) $year;
+		} elseif ( ! empty( $month ) ) {
+			$where_conditions[] = "main.date_booked IS NOT NULL";
+			$where_conditions[] = "MONTH(main.date_booked) = %d";
+			$where_values[] = (int) $month;
+		}
+		
+		// Add status filter
+		$where_conditions[] = "main.status_post = 'publish'";
+		
+		$where_clause = implode( ' AND ', $where_conditions );
+		
 		$sql = "
 		SELECT
 			preset_meta.meta_value AS preset_id,
 			COUNT(DISTINCT preset_meta.post_id) AS total_posts,
 			SUM(CAST(profit_meta.meta_value AS DECIMAL(10,2))) AS total_profit
 		FROM {$table_meta} AS preset_meta
+		INNER JOIN {$table_main} AS main
+			ON main.id = preset_meta.post_id
 		INNER JOIN {$table_meta} AS profit_meta
 			ON profit_meta.post_id = preset_meta.post_id AND profit_meta.meta_key = 'profit'
-		WHERE preset_meta.meta_key = 'preset'
-		  AND preset_meta.meta_value IN ($placeholders)
+		WHERE {$where_clause}
 		GROUP BY preset_meta.meta_value
-	";
+		";
 		
-		$prepared_sql = $wpdb->prepare( $sql, ...$preset_ids );
-		$results      = $wpdb->get_results( $prepared_sql, ARRAY_A );
+		if ( ! empty( $where_values ) ) {
+			$prepared_sql = $wpdb->prepare( $sql, ...$where_values );
+		} else {
+			$prepared_sql = $sql;
+		}
+		
+		$results = $wpdb->get_results( $prepared_sql, ARRAY_A );
 		
 		$output = [];
 		
-		foreach ( $results as $row ) {
-			$preset_id            = 'brocker_' . $row[ 'preset_id' ];
-			$output[ $preset_id ] = [
-				'total_posts'  => (int) $row[ 'total_posts' ],
-				'total_profit' => (float) $row[ 'total_profit' ],
-			];
+		if ( is_array( $results ) && ! empty( $results ) ) {
+			foreach ( $results as $row ) {
+				$preset_id            = 'brocker_' . $row[ 'preset_id' ];
+				$output[ $preset_id ] = [
+					'total_posts'  => (int) $row[ 'total_posts' ],
+					'total_profit' => (float) $row[ 'total_profit' ],
+				];
+			}
 		}
 		
 		return $output;
@@ -943,6 +982,136 @@ class TMSReports extends TMSReportsHelper {
 			'total_posts'   => $total_records,
 			'current_pages' => $current_page,
 		);
+	}
+
+	/**
+	 * Aggregate Charge back & Short pay totals by broker (no pagination)
+	 *
+	 * @param array $args Same filters as in get_table_items_billing_shortpay
+	 * @return array Array of rows: [ 'customer_id' => int, 'charge_back_total' => float, 'short_pay_total' => float ]
+	 */
+	public function get_shortpay_stats_by_broker( $args = array() ) {
+		global $wpdb;
+
+		$table_main = $wpdb->prefix . $this->table_main;
+		$table_meta = $wpdb->prefix . $this->table_meta;
+
+		$join_builder = "
+			FROM $table_main AS main
+			LEFT JOIN $table_meta AS reference ON main.id = reference.post_id AND reference.meta_key = 'reference_number'
+			LEFT JOIN $table_meta AS unit_number ON main.id = unit_number.post_id AND unit_number.meta_key = 'unit_number_name'
+			LEFT JOIN $table_meta AS load_status ON main.id = load_status.post_id AND load_status.meta_key = 'load_status'
+			LEFT JOIN $table_meta AS invoiced_proof ON main.id = invoiced_proof.post_id AND invoiced_proof.meta_key = 'invoiced_proof'
+			LEFT JOIN $table_meta AS factoring_status ON main.id = factoring_status.post_id AND factoring_status.meta_key = 'factoring_status'
+			LEFT JOIN $table_meta AS processing ON main.id = processing.post_id AND processing.meta_key = 'processing'
+			LEFT JOIN $table_meta AS customer_id ON main.id = customer_id.post_id AND customer_id.meta_key = 'customer_id'
+			LEFT JOIN $table_meta AS short_pay ON main.id = short_pay.post_id AND short_pay.meta_key = 'short_pay'
+			LEFT JOIN $table_meta AS charge_back_rate ON main.id = charge_back_rate.post_id AND charge_back_rate.meta_key = 'charge_back_rate'
+			WHERE 1=1
+		";
+
+		$sql = "SELECT 
+			customer_id.meta_value AS customer_id,
+			SUM(CASE WHEN LOWER(factoring_status.meta_value) = 'charge-back' THEN 0 + COALESCE(charge_back_rate.meta_value, '0') ELSE 0 END) AS charge_back_total,
+			SUM(CASE WHEN LOWER(factoring_status.meta_value) = 'short-pay' THEN 0 + COALESCE(short_pay.meta_value, '0') ELSE 0 END) AS short_pay_total
+		" . $join_builder;
+
+		$where_conditions = array();
+		$where_values     = array();
+
+		if ( ! empty( $args['status_post'] ) ) {
+			$where_conditions[] = $wpdb->prepare( 'main.status_post = %s', $args['status_post'] );
+		}
+
+		if ( ! empty( $args['load_status'] ) ) {
+			$where_conditions[] = $wpdb->prepare( 'load_status.meta_value = %s', $args['load_status'] );
+		}
+
+		if ( ! empty( $args['exclude_factoring_status'] ) ) {
+			$exclude_factoring_status = implode( "','", array_map( 'esc_sql', (array) $args['exclude_factoring_status'] ) );
+			$where_conditions[]       = "(
+				factoring_status.meta_value NOT IN ('$exclude_factoring_status')
+				OR factoring_status.meta_value IS NULL
+				OR factoring_status.meta_value = ''
+			)";
+		}
+
+		if ( ! empty( $args['include_factoring_status'] ) ) {
+			$include_factoring_status = implode( "','", array_map( 'esc_sql', (array) $args['include_factoring_status'] ) );
+			$where_conditions[]       = "(
+				factoring_status.meta_value IN ('$include_factoring_status')
+				AND factoring_status.meta_value IS NOT NULL
+				AND factoring_status.meta_value != ''
+			)";
+		}
+
+		if ( isset( $args['exclude_status'] ) && ! empty( $args['exclude_status'] ) ) {
+			$exclude_status = array_map( 'esc_sql', (array) $args['exclude_status'] );
+			if ( isset( $args['load_status'] ) && $args['load_status'] === 'cancelled' ) {
+				$exclude_status = implode( "','", array_diff( $exclude_status, array( 'cancelled' ) ) );
+			} else {
+				$exclude_status = implode( "','", $exclude_status );
+			}
+			if ( ! empty( $exclude_status ) ) {
+				$where_conditions[] = "load_status.meta_value NOT IN ('" . $exclude_status . "')";
+			}
+		}
+
+		if ( isset( $args['include_status'] ) && ! empty( $args['include_status'] ) ) {
+			$include_status     = array_map( 'esc_sql', (array) $args['include_status'] );
+			$where_conditions[] = "load_status.meta_value IN ('" . implode( "','", $include_status ) . "')";
+		}
+
+		if ( ! empty( $args['invoice'] ) ) {
+			if ( $args['invoice'] === 'invoiced' ) {
+				$where_conditions[] = 'invoiced_proof.meta_value = %s';
+				$where_values[]     = '1';
+			} else {
+				$where_conditions[] = '(invoiced_proof.meta_value = %s OR invoiced_proof.meta_value IS NULL)';
+				$where_values[]     = '0';
+			}
+		}
+
+		if ( ! empty( $args['factoring'] ) ) {
+			$where_conditions[] = 'factoring_status.meta_value = %s';
+			$where_values[]     = $args['factoring'];
+		}
+
+		if ( ! empty( $args['my_search'] ) ) {
+			$where_conditions[] = '(reference.meta_value LIKE %s OR unit_number.meta_value LIKE %s)';
+			$search_value       = '%' . $wpdb->esc_like( $args['my_search'] ) . '%';
+			$where_values[]     = $search_value;
+			$where_values[]     = $search_value;
+		}
+
+		if ( ! empty( $args['month'] ) && ! empty( $args['year'] ) ) {
+			$where_conditions[] = "date_booked IS NOT NULL
+			AND YEAR(date_booked) = %d
+			AND MONTH(date_booked) = %d";
+			$where_values[]     = $args['year'];
+			$where_values[]     = $args['month'];
+		}
+
+		if ( ! empty( $args['year'] ) && empty( $args['month'] ) ) {
+			$where_conditions[] = "date_booked IS NOT NULL
+			AND YEAR(date_booked) = %d";
+			$where_values[]     = $args['year'];
+		}
+
+		if ( ! empty( $args['month'] ) && empty( $args['year'] ) ) {
+			$where_conditions[] = "date_booked IS NOT NULL
+			AND MONTH(date_booked) = %d";
+			$where_values[]     = $args['month'];
+		}
+
+		if ( ! empty( $where_conditions ) ) {
+			$sql .= ' AND ' . implode( ' AND ', $where_conditions );
+		}
+
+		$sql .= ' GROUP BY customer_id.meta_value';
+
+		$rows = $wpdb->get_results( $wpdb->prepare( $sql, ...$where_values ), ARRAY_A );
+		return is_array( $rows ) ? $rows : array();
 	}
 	
 	public function get_table_items_tracking( $args = array() ) {
@@ -3091,10 +3260,12 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 					need to switch back, current project - ' . $this->project . ' previous - ' . $MY_INPUT[ 'project' ]
 				] );
 			}
+
+			
 			
 			$TMSEmails  = new TMSEmails();
 			$email_send = $TMSEmails->send_email_create_load( $MY_INPUT[ 'load_id' ] );
-			
+
 			if ( $email_send[ 'success' ] ) {
 				$post_meta = array(
 					'mail_chain_success_send' => '1',

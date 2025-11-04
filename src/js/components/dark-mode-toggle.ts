@@ -41,6 +41,9 @@ class DarkModeToggle {
         const isDarkModeEnabled = document.body.classList.contains('dark-mode');
         this.toggleSwitch.checked = isDarkModeEnabled;
         
+        // Initialize dynamic colors on page load
+        this.updateDynamicColors(isDarkModeEnabled);
+        
         // Add event listener for toggle
         this.toggleSwitch.addEventListener('change', (e: Event) => {
             const target = e.target as HTMLInputElement;
@@ -64,6 +67,26 @@ class DarkModeToggle {
         } else {
             body.classList.remove('dark-mode');
         }
+        
+        // Update colors for elements with js-change-color class
+        this.updateDynamicColors(isEnabled);
+    }
+    
+    /**
+     * Update colors for elements with js-change-color class
+     */
+    private updateDynamicColors(isDarkMode: boolean): void {
+        const elements = document.querySelectorAll('.js-change-color') as NodeListOf<HTMLElement>;
+        
+        elements.forEach((element) => {
+            const colorLight = element.getAttribute('data-color-light');
+            const colorDark = element.getAttribute('data-color-dark');
+            
+            if (colorLight && colorDark) {
+                const newColor = isDarkMode ? colorDark : colorLight;
+                element.style.setProperty('background-color', newColor, 'important');
+            }
+        });
     }
 
     private async sendAjaxRequest(isEnabled: boolean): Promise<void> {
@@ -96,7 +119,14 @@ class DarkModeToggle {
     private revertToggle(): void {
         if (this.toggleSwitch) {
             this.toggleSwitch.checked = !this.toggleSwitch.checked;
-            this.updateBodyClass(this.toggleSwitch.checked);
+            const isDarkMode = this.toggleSwitch.checked;
+            // Update body class and colors
+            if (isDarkMode) {
+                document.body.classList.add('dark-mode');
+            } else {
+                document.body.classList.remove('dark-mode');
+            }
+            this.updateDynamicColors(isDarkMode);
         }
     }
 }

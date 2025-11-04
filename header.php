@@ -148,11 +148,19 @@ body_class($body_classes);
                             foreach ($block['menu'] as $menu):
                                 $current_url = get_the_permalink();
                                 $menu_url = $menu['link']['url'];
+                                $menu_child_url = !empty($menu['link_child']['url']) ? $menu['link_child']['url'] : '';
+                                $child_popup_class = '';
+                                if (!empty($menu_child_url) && strpos($menu_child_url, '#') !== false) {
+                                    $child_popup_class = 'js-open-popup-activator';
+                                }
                                 $current_url_base = strtok($current_url, '?');
                                 $menu_url_base = strtok($menu_url, '?');
                                 $current_page = $current_url_base === $menu_url_base ? 'current-page' : '';
                                 $exclude = array_search($role, $menu['exclude_role']);
                                 $flt_access = $menu['flt_access'];
+                                $exclude_child = isset($menu['exclude_role_child']) && is_array($menu['exclude_role_child'])
+                                    ? array_search($role, $menu['exclude_role_child'])
+                                    : null;
                 
                                 if ($flt_access && !$flt_user_access && !$is_admin) {continue;}
 
@@ -187,10 +195,18 @@ body_class($body_classes);
                                 }
                                 
                                 ?>
-                                    <li class="left-sidebar__item">
+                                    <li class="left-sidebar__item d-flex align-items-center justify-content-between">
                                         <a class="left-sidebar__link <?php echo $current_page; ?> <?php echo $popup_class; ?> <?php echo $custom_class; ?>" target="<?php echo empty($menu['link']['target']) ? '_self' : $menu['link']['target'] ?>" href="<?php echo $link_url; ?>">
                                         <?php echo $link_title; ?>
                                         </a>
+                                        
+                                        <?php if (!empty($menu_child_url) && !is_numeric($exclude_child)): ?>
+                                            <a class="left-sidebar__link-child <?php echo $child_popup_class; ?>" target="<?php echo empty($menu['link_child']['target']) ? '_self' : $menu['link_child']['target'] ?>" href="<?php echo $menu_child_url; ?>">
+                                            <svg width="16px" height="16px" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                                <path d="M4 12H20M12 4V20" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                            </svg>
+                                            </a>
+                                        <?php endif; ?>
                                     </li>
                                 <?php endif; ?>
                             <?php endforeach; ?>

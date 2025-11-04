@@ -31,17 +31,41 @@ body.dark-mode {
       }
     }
 
-    #main-wrapper {
-    .table {
-      tr {
-          &:hover {
-              td:not(.driver-status) {
-                  background-color: $dark-bg-tertiary !important;
-              }
-          }
-      }
+    #main-wrapper .table tr:hover {
+        filter: brightness(0.8);
+        border-left: 4px solid $dark-accent;
     }
-  }
+
+    #main-wrapper .table-performance tr input {
+        background-color: $dark-bg-secondary;
+        border-color: $dark-border;
+        color: $dark-text-primary;
+        &:focus {
+            background-color: $dark-bg-secondary;
+            border-color: $dark-accent;
+            color: $dark-text-primary;
+        }
+    }
+
+    #main-wrapper .table-performance .week-divider {
+        background-color: #3c6a3c;
+        color: #ffffff !important;
+    }
+
+    .result-search-contact__item {
+        background-color: $dark-bg-primary;
+    }
+
+    #quickStatusUpdateModal .modal-footer {
+        background-color: $dark-bg-secondary;
+    }
+
+    #quickStatusUpdateModal .modal-header {
+        background-color: $dark-bg-secondary;
+        .modal-title {
+            color: $dark-text-primary;
+        }
+    }
 }
 
 /* Dark mode for cards */
@@ -60,14 +84,7 @@ body.dark-mode .table {
         border-color: $dark-border;
         color: $dark-text-primary;
     }
-  
-    td {
-        border-color: $dark-border;
-    }
-  
-    tbody tr:hover {
-        background-color: $dark-bg-tertiary;
-    }
+
 }
 
 /* Dark mode for forms */
@@ -414,13 +431,12 @@ body.dark-mode .table {
   
     td {
         background-color: $dark-bg-primary !important;
-        border-color: $dark-border;
         color: $dark-text-primary;
     }
   
-    tbody tr:hover {
-        background-color: $dark-bg-secondary;
-    }
+    // tbody tr:hover {
+    //     background-color: $dark-bg-secondary;
+    // }
 }
 
 /* Dark mode for load status backgrounds */
@@ -586,7 +602,7 @@ body.dark-mode .tbd {
 
 /* Dark mode for driver statuses */
 body.dark-mode .table tbody tr td.available {
-    background-color: $dark-success !important;
+    background-color: #7dbd4f !important;
     color: $dark-bg-primary !important;
 }
 
@@ -597,7 +613,7 @@ body.dark-mode .table tbody tr td.no_updates {
 
 body.dark-mode .table tbody tr td.loaded_enroute,
 body.dark-mode .table tbody tr td.available_on {
-    background-color: rgba(152, 195, 121, 0.8) !important;
+    background-color: #d1f9be !important;
     color: $dark-bg-primary !important;
 }
 
@@ -777,12 +793,12 @@ body.dark-mode #main-wrapper {
   
     .button-action {
         background-color: $dark-bg-secondary;
-        border-color: $dark-border;
+        border: 1px solid $dark-border;
       
         &.show {
             background-color: $dark-accent;
             svg {
-                fill: $dark-text-primary;
+                fill: #000000;
             }
         }
     }
@@ -1543,7 +1559,7 @@ body.dark-mode .modal-footer {
 
 /* Dark mode for dropdowns */
 body.dark-mode .dropdown-menu {
-    background-color: $dark-bg-secondary;
+    background-color: $dark-bg-secondary !important;
     border-color: $dark-border;
 }
 
@@ -1632,7 +1648,7 @@ body.dark-mode .btn-close {
 
 /* Dark mode for text colors */
 body.dark-mode .text-muted {
-    color: $dark-text-secondary !important;
+    color: #808690 !important;
 }
 
 body.dark-mode .text-primary {
@@ -1787,6 +1803,36 @@ body.dark-mode .form-select {
 body.dark-mode .left-sidebar {
     background-color: $dark-bg-secondary;
     border-color: $dark-border;
+}
+
+// Dark mode adaptations
+body.dark-mode {
+    .left-sidebar {
+        &__link-child {
+            background-color: $dark-accent;
+            color: #ffffff;
+            &:hover {
+                background-color: lighten($dark-accent, 5%);
+                color: #ffffff;
+            }
+            svg { fill: $dark-bg-primary; }
+        }
+    }
+
+    .night_mode__label {
+        
+        &:hover {
+            border-color: $dark-accent;
+            svg path {
+                fill: $dark-accent !important;
+            }
+            .dark {
+                svg path {
+                    fill: $dark-accent !important;
+                }
+            }
+        }
+    }
 }
 
 body.dark-mode .left-sidebar__block {

@@ -492,6 +492,15 @@ class  TMSStatistics extends TMSReportsHelper {
 		$table_reports = $wpdb->prefix . $this->table_main;
 		$table_meta    = $wpdb->prefix . $this->table_meta;
 		
+		// Get users with allowed roles: Dispatcher, Dispatcher Team Leader, Expedite Manager
+		$allowed_roles = array( 'dispatcher', 'dispatcher-tl', 'expedite_manager' );
+		$allowed_users_args = array(
+			'role__in' => $allowed_roles,
+			'fields'   => 'ID',
+		);
+		$allowed_users = get_users( $allowed_users_args );
+		$allowed_user_ids = ! empty( $allowed_users ) ? array_map( 'intval', $allowed_users ) : array();
+		
 		// Основная часть запроса
 		$query = "
 			SELECT
@@ -515,17 +524,33 @@ class  TMSStatistics extends TMSReportsHelper {
 			AND reports.status_post = 'publish'
 		";
 		
+		// Filter by allowed roles - only include users with allowed roles
+		$where_values = array();
+		if ( ! empty( $allowed_user_ids ) ) {
+			$allowed_placeholders = implode( ',', array_fill( 0, count( $allowed_user_ids ), '%d' ) );
+			$query .= " AND CAST(dispatcher_meta.meta_value AS UNSIGNED) IN ($allowed_placeholders)";
+			$where_values = array_merge( $where_values, $allowed_user_ids );
+		} else {
+			// If no allowed users found, return empty result
+			return array();
+		}
+		
 		// Исключение пользователей из exclude_users
 		if ( ! empty( $exclude_users ) && is_array( $exclude_users ) ) {
-			$placeholders = implode( ',', array_fill( 0, count( $exclude_users ), '%s' ) );
-			$query        .= " AND dispatcher_meta.meta_value NOT IN ($placeholders)";
+			$exclude_placeholders = implode( ',', array_fill( 0, count( $exclude_users ), '%s' ) );
+			$query .= " AND dispatcher_meta.meta_value NOT IN ($exclude_placeholders)";
+			// Convert exclude_users to strings to match meta_value type
+			$exclude_users_strings = array_map( 'strval', $exclude_users );
+			$where_values = array_merge( $where_values, $exclude_users_strings );
 		}
 		
 		$query .= " GROUP BY dispatcher_meta.meta_value
 			ORDER BY total_profit DESC";
 		
-		// Подготовка запроса с исключенными пользователями
-		$query = $wpdb->prepare( $query, ...$exclude_users );
+		// Подготовка запроса с параметрами
+		if ( ! empty( $where_values ) ) {
+			$query = $wpdb->prepare( $query, ...$where_values );
+		}
 		
 		// Выполняем запрос и получаем результат
 		$dispatcher_stats = $wpdb->get_results( $query, ARRAY_A );

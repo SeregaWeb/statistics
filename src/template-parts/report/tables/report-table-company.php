@@ -15,6 +15,7 @@ global $global_options;
 
 $helper   = new TMSReportsHelper();
 $report   = new TMSReports();
+$brokers  = new TMSReportsCompany();
 $TMSUsers = new TMSUsers();
 
 // Check user role access with validation
@@ -61,6 +62,7 @@ if ( ! empty( $results ) && is_array( $results ) ) : ?>
 					<th scope="col">Profit</th>
 				<?php endif; ?>
 				<th scope="col">Notes</th>
+				<th></th>
 			</tr>
 		</thead>
 		<tbody>
@@ -121,6 +123,9 @@ if ( ! empty( $results ) && is_array( $results ) ) : ?>
 					$factoring_status = isset( $meta['factoring_broker'] ) ? $meta['factoring_broker'] : '';
 					$notice = isset( $meta['notes'] ) ? $meta['notes'] : '';
 				}
+				
+				// Get broker statistics (notices count)
+				$broker_statistics = $brokers->get_broker_statistics( $row['id'] );
 				
 				// Get factoring status label
 				$factoring_label = '';
@@ -195,6 +200,33 @@ if ( ! empty( $results ) && is_array( $results ) ) : ?>
 					<td style="width: 200px; min-width: 200px;">
 						<?php echo esc_html( $notice ); ?>
 					</td>
+					<td style="width: 86px;">
+					<button type="button"
+                                class="btn btn-primary w-100 btn-sm d-flex align-items-center justify-content-between gap-1 js-broker-notice-btn"
+                                data-broker-id="<?php echo $row[ 'id' ]; ?>"
+                                data-broker-name="<?php echo esc_attr( isset( $row['company_name'] ) ? $row['company_name'] : '' ); ?>"
+                                data-notice-count="<?php echo $broker_statistics[ 'notice' ][ 'count' ]; ?>">
+							<?php echo $broker_statistics[ 'notice' ][ 'count' ] > 0
+								? $broker_statistics[ 'notice' ][ 'count' ] : '-'; ?>
+                            <svg viewBox="-1 0 46 46" width="12" height="12" xmlns="http://www.w3.org/2000/svg"
+                                 fill="white">
+                                <g id="_6" data-name="6" transform="translate(-832 -151.466)">
+                                    <g id="Group_263" data-name="Group 263">
+                                        <rect id="Rectangle_63" data-name="Rectangle 63" width="6" height="7"
+                                              transform="translate(832 155.466)"></rect>
+                                        <path id="Path_188" data-name="Path 188"
+                                              d="M832,191.827l3,5.419,3-5.419V163.466h-6Z"></path>
+                                        <g id="Group_262" data-name="Group 262">
+                                            <g id="Group_261" data-name="Group 261">
+                                                <path id="Path_189" data-name="Path 189"
+                                                      d="M864.907,155.466l-.3-1H862v-3h-6v3h-3.033l-.3,1H842v42h34v-42Zm9.093,40H844v-38h8.171l-.66,3h14.556l-.66-3H874Z"></path>
+                                            </g>
+                                        </g>
+                                    </g>
+                                </g>
+                            </svg>
+                        </button>
+					</td>
 				</tr>
 			<?php endforeach; ?>
 		</tbody>
@@ -207,6 +239,8 @@ if ( ! empty( $results ) && is_array( $results ) ) : ?>
 		'current_page' => $current_page,
 	) );
 	?>
+	
+	<?php get_template_part( TEMPLATE_PATH . 'popups/broker-notice' ); ?>
 
 <?php else : ?>
 	<p>No reports found.</p>

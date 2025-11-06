@@ -201,10 +201,20 @@ class TMSReportsFlt extends TMSReportsHelper {
 	}
 	
 	// GET ITEMS
-	public function get_stat_platform() {
+	public function get_stat_platform( $args = array() ) {
 		global $wpdb;
 		
-		$cache_key = 'stat_platform_cache_flt' . $this->project;
+		// Build cache key including filter parameters
+		$filter_params = array(
+			'office'      => isset( $args[ 'office' ] ) ? $args[ 'office' ] : '',
+			'dispatcher'  => isset( $args[ 'dispatcher' ] ) ? $args[ 'dispatcher' ] : '',
+			'load_status' => isset( $args[ 'load_status' ] ) ? $args[ 'load_status' ] : '',
+			'source'      => isset( $args[ 'source' ] ) ? $args[ 'source' ] : '',
+			'year'        => isset( $args[ 'year' ] ) ? $args[ 'year' ] : '',
+			'month'       => isset( $args[ 'month' ] ) ? $args[ 'month' ] : '',
+			'my_search'   => isset( $args[ 'my_search' ] ) ? $args[ 'my_search' ] : '',
+		);
+		$cache_key = 'stat_platform_cache_flt_' . $this->project . '_' . md5( serialize( $filter_params ) );
 		$cached    = get_transient( $cache_key );
 		
 		if ( $cached !== false ) {
@@ -240,6 +250,71 @@ class TMSReportsFlt extends TMSReportsHelper {
 			
 			$placeholders = implode( ',', array_fill( 0, count( $ids_array ), '%d' ) );
 			
+			// Build WHERE conditions similar to get_table_items
+			$where_conditions = array();
+			$where_values     = array();
+			
+			// Base conditions
+			$where_conditions[] = "customer_meta.meta_value IN ($placeholders)";
+			$where_values       = array_merge( $where_values, $ids_array );
+			
+			$where_conditions[] = "main.status_post = 'publish'";
+			$where_conditions[] = "(load_status.meta_value IS NULL OR load_status.meta_value NOT IN ('waiting-on-rc', 'delivered', 'tonu', 'cancelled'))";
+			
+			// Add JOINs for filters
+			$join_clauses = array();
+			$join_clauses[] = "LEFT JOIN {$table_meta} AS dispatcher ON main.id = dispatcher.post_id AND dispatcher.meta_key = 'dispatcher_initials'";
+			$join_clauses[] = "LEFT JOIN {$table_meta} AS source ON main.id = source.post_id AND source.meta_key = 'source'";
+			$join_clauses[] = "LEFT JOIN {$table_meta} AS office_dispatcher ON main.id = office_dispatcher.post_id AND office_dispatcher.meta_key = 'office_dispatcher'";
+			$join_clauses[] = "LEFT JOIN {$table_meta} AS reference ON main.id = reference.post_id AND reference.meta_key = 'reference_number'";
+			$join_clauses[] = "LEFT JOIN {$table_meta} AS unit_number ON main.id = unit_number.post_id AND unit_number.meta_key = 'unit_number_name'";
+			$join_clauses[] = "LEFT JOIN {$table_meta} AS pick_up_location ON main.id = pick_up_location.post_id AND pick_up_location.meta_key = 'pick_up_location'";
+			$join_clauses[] = "LEFT JOIN {$table_meta} AS delivery_location ON main.id = delivery_location.post_id AND delivery_location.meta_key = 'delivery_location'";
+			
+			// Apply filters
+			if ( ! empty( $args[ 'office' ] ) && $args[ 'office' ] !== 'all' ) {
+				$where_conditions[] = "office_dispatcher.meta_value = %s";
+				$where_values[]     = $args[ 'office' ];
+			}
+			
+			if ( ! empty( $args[ 'dispatcher' ] ) ) {
+				$where_conditions[] = "dispatcher.meta_value = %s";
+				$where_values[]     = $args[ 'dispatcher' ];
+			}
+			
+			if ( ! empty( $args[ 'load_status' ] ) ) {
+				$where_conditions[] = "load_status.meta_value = %s";
+				$where_values[]     = $args[ 'load_status' ];
+			}
+			
+			if ( ! empty( $args[ 'source' ] ) ) {
+				$where_conditions[] = "source.meta_value = %s";
+				$where_values[]     = $args[ 'source' ];
+			}
+			
+			// Date filters
+			if ( ! empty( $args[ 'month' ] ) && ! empty( $args[ 'year' ] ) ) {
+				$where_conditions[] = "main.date_booked IS NOT NULL AND YEAR(main.date_booked) = %d AND MONTH(main.date_booked) = %d";
+				$where_values[]     = $args[ 'year' ];
+				$where_values[]     = $args[ 'month' ];
+			} elseif ( ! empty( $args[ 'year' ] ) && empty( $args[ 'month' ] ) ) {
+				$where_conditions[] = "main.date_booked IS NOT NULL AND YEAR(main.date_booked) = %d";
+				$where_values[]     = $args[ 'year' ];
+			} elseif ( ! empty( $args[ 'month' ] ) && empty( $args[ 'year' ] ) ) {
+				$where_conditions[] = "main.date_booked IS NOT NULL AND MONTH(main.date_booked) = %d";
+				$where_values[]     = $args[ 'month' ];
+			}
+			
+			// Search filter
+			if ( ! empty( $args[ 'my_search' ] ) ) {
+				$where_conditions[] = "(reference.meta_value LIKE %s OR unit_number.meta_value LIKE %s OR pick_up_location.meta_value LIKE %s OR delivery_location.meta_value LIKE %s)";
+				$search_value       = '%' . $wpdb->esc_like( $args[ 'my_search' ] ) . '%';
+				$where_values[]     = $search_value;
+				$where_values[]     = $search_value;
+				$where_values[]     = $search_value;
+				$where_values[]     = $search_value;
+			}
+			
 			$sql = "
 			SELECT COUNT(DISTINCT main.id)
 			FROM {$table_main} AS main
@@ -247,12 +322,14 @@ class TMSReportsFlt extends TMSReportsHelper {
 				ON main.id = customer_meta.post_id AND customer_meta.meta_key = 'customer_id'
 			LEFT JOIN {$table_meta} AS load_status
 				ON main.id = load_status.post_id AND load_status.meta_key = 'load_status'
-			WHERE customer_meta.meta_value IN ($placeholders)
-			  AND main.status_post = 'publish'
-			  AND (load_status.meta_value IS NULL OR load_status.meta_value NOT IN ('waiting-on-rc', 'delivered', 'tonu', 'cancelled'))
-		";
+			" . implode( ' ', $join_clauses ) . "
+			WHERE " . implode( ' AND ', $where_conditions );
 			
-			$count = $wpdb->get_var( $wpdb->prepare( $sql, ...$ids_array ) );
+			if ( ! empty( $where_values ) ) {
+				$count = $wpdb->get_var( $wpdb->prepare( $sql, ...$where_values ) );
+			} else {
+				$count = $wpdb->get_var( $sql );
+			}
 			
 			$final_stats[ $platform ] = (int) $count;
 		}

@@ -38,7 +38,15 @@ foreach ( $trigger_keys as $key ) {
 }
 
 if ( ! empty( $results ) ) :
-	$platforms = $TMSReports->get_stat_platform();
+
+	// Prepare filter arguments from $_GET
+	$filter_args = array();
+	$helper      = new TMSReportsHelper();
+	
+	// Get filter parameters using the same method as get_table_items
+	$filter_args = $helper->set_filter_params( $filter_args );
+	
+	$platforms = $TMSReports->get_stat_platform( $filter_args );
 	?>
 
     <div class="d-flex justify-content-between align-items-center mb-3">

@@ -5,6 +5,7 @@ class TMSReportsCompany extends TMSReportsHelper {
 	
 	public $table_main     = 'reports_company';
 	public $table_meta     = 'reportsmeta_company';
+	public $table_notice   = 'brokers_notice';
 	public $posts_per_page = 25;
 	
 	public function ajax_actions() {
@@ -13,6 +14,8 @@ class TMSReportsCompany extends TMSReportsHelper {
 		add_action( 'wp_ajax_search_company', array( $this, 'search_company' ) );
 		add_action( 'wp_ajax_delete_broker', array( $this, 'delete_broker' ) );
 		add_action( 'wp_ajax_optimize_company_tables', array( $this, 'optimize_company_tables' ) );
+		add_action( 'wp_ajax_add_broker_notice', array( $this, 'ajax_add_broker_notice' ) );
+		add_action( 'wp_ajax_get_broker_notices', array( $this, 'ajax_get_broker_notices' ) );
 	}
 	
 	public function init() {
@@ -901,6 +904,23 @@ class TMSReportsCompany extends TMSReportsHelper {
 		
 		dbDelta( $sql );
 		
+		// Create brokers notice table
+		$table_notice_name = $wpdb->prefix . $this->table_notice;
+		
+		$sql_notice = "CREATE TABLE $table_notice_name (
+		id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+		broker_id BIGINT UNSIGNED DEFAULT NULL,
+		name VARCHAR(255) NOT NULL,
+		date INT(11) NOT NULL,
+		message TEXT,
+		load_number VARCHAR(100),
+		status TINYINT(1) NOT NULL DEFAULT 0,
+		PRIMARY KEY  (id),
+		KEY idx_broker_id (broker_id)
+	) $charset_collate;";
+		
+		dbDelta( $sql_notice );
+		
 	}
 	
 	public function get_all_meta_by_post_id( $post_id ) {
@@ -1174,4 +1194,235 @@ class TMSReportsCompany extends TMSReportsHelper {
 		
 		return $changes;
 	}
+	
+	/**
+	 * Insert broker notice into database
+	 */
+	private function insert_broker_notice( $broker_id, $name, $date, $message = '', $load_number = '', $status = false ) {
+		global $wpdb;
+		
+		$table_name = $wpdb->prefix . $this->table_notice;
+		
+		$data = [
+			'broker_id'   => (int) $broker_id,
+			'name'        => sanitize_text_field( $name ),
+			'date'        => (int) $date,
+			'message'     => sanitize_textarea_field( $message ),
+			'load_number' => sanitize_text_field( $load_number ),
+			'status'      => (int) $status,
+		];
+		
+		$formats = [ '%d', '%s', '%d', '%s', '%s', '%d' ];
+		
+		return $wpdb->insert( $table_name, $data, $formats );
+	}
+	
+	/**
+	 * Add new notice for broker
+	 */
+	public function add_broker_notice( $broker_id, $message, $load_number = '' ) {
+		global $wpdb;
+		
+		if ( empty( $broker_id ) || ! is_numeric( $broker_id ) ) {
+			return false;
+		}
+		
+		$broker_id = (int) $broker_id;
+		
+		$current_user_id = get_current_user_id();
+		$helper          = new TMSReportsHelper();
+		$user_info       = $helper->get_user_full_name_by_id( $current_user_id );
+		$user_name       = $user_info ? $user_info[ 'full_name' ] : 'Unknown User';
+		
+		$date = current_time( 'timestamp' );
+		
+		return $this->insert_broker_notice( $broker_id, $user_name, $date, $message, $load_number, 0 );
+	}
+	
+	/**
+	 * Get broker notices for AJAX
+	 */
+	public function ajax_get_broker_notices() {
+		$MY_INPUT = filter_var_array( $_POST, [
+			"broker_id" => FILTER_SANITIZE_NUMBER_INT,
+		] );
+		
+		if ( ! isset( $MY_INPUT[ 'broker_id' ] ) || empty( $MY_INPUT[ 'broker_id' ] ) ) {
+			wp_send_json_error( [ 'message' => 'Broker ID not found' ] );
+		}
+		
+		$broker_id = (int) $MY_INPUT[ 'broker_id' ];
+		global $wpdb;
+		$table_notice = $wpdb->prefix . $this->table_notice;
+		
+		$notices = $wpdb->get_results( $wpdb->prepare( "
+			SELECT id, name, date, message, load_number, status
+			FROM $table_notice
+			WHERE broker_id = %d
+			ORDER BY date DESC
+		", $broker_id ) );
+		
+		// Clean escaped slashes from message field
+		if ( $notices && is_array( $notices ) ) {
+			foreach ( $notices as $key => $notice ) {
+				if ( isset( $notice->message ) ) {
+					$notices[ $key ]->message = stripslashes( $notice->message );
+				}
+			}
+		}
+		
+		if ( $notices ) {
+			wp_send_json_success( $notices );
+		} else {
+			wp_send_json_success( [] );
+		}
+	}
+	
+	/**
+	 * AJAX handler for adding broker notice
+	 */
+	public function ajax_add_broker_notice() {
+		// Check nonce for security
+		if ( ! wp_verify_nonce( $_POST[ 'tms_broker_notice_nonce' ], 'tms_add_broker_notice' ) ) {
+			wp_send_json_error( 'Security check failed' );
+		}
+		
+		$broker_id  = intval( $_POST[ 'broker_id' ] ?? 0 );
+		$message    = sanitize_textarea_field( $_POST[ 'message' ] ?? '' );
+		$load_number = sanitize_text_field( $_POST[ 'load_number' ] ?? '' );
+		
+		if ( empty( $broker_id ) || empty( $message ) ) {
+			wp_send_json_error( 'Invalid data provided. Message is required.' );
+		}
+		
+		$result = $this->add_broker_notice( $broker_id, $message, $load_number );
+		
+		if ( $result ) {
+			global $global_options;
+			$add_new_broker = get_field_value( $global_options, 'single_page_broker' );
+			
+			$current_user_id = get_current_user_id();
+			$project        = get_field( 'current_select', 'user_' . $current_user_id );
+			
+			$broker_current = $this->get_company_by_id( $broker_id, ARRAY_A );
+			$broker_name = isset( $broker_current[ 0 ][ 'company_name' ] ) ? $broker_current[ 0 ][ 'company_name' ] : 'Unknown Broker';
+			
+			$helper = new TMSReportsHelper();
+			$user_name = $helper->get_user_full_name_by_id( $current_user_id );
+			
+			// Get email addresses
+			$emails = array();
+			
+			// Get admin emails from settings
+			$email_helper = new TMSEmails();
+			$admin_emails = $email_helper->get_admin_email();
+			if ( ! empty( $admin_emails ) ) {
+				// Split by comma and trim each email
+				$admin_emails_array = array_map( 'trim', explode( ',', $admin_emails ) );
+				$emails = array_merge( $emails, $admin_emails_array );
+			}
+			
+			// Get users with Dispatcher Team Leader and Expedite Manager roles
+			$users_with_roles = get_users( array(
+				'role__in' => array( 'dispatcher-tl', 'expedite_manager' ),
+				'fields'   => array( 'user_email' ),
+			) );
+			
+			foreach ( $users_with_roles as $user ) {
+				if ( ! empty( $user->user_email ) ) {
+					$emails[] = $user->user_email;
+				}
+			}
+			
+			// Remove duplicates
+			$emails = array_unique( $emails );
+			$email_list = implode( ',', $emails );
+			
+			if ( $add_new_broker ) {
+				$link = '<a href="' . $add_new_broker . '?broker_id=' . $broker_id . '">' . '(' . $broker_id . ') ' . $broker_name . '</a>';
+			} else {
+				$link = '(' . $broker_id . ') ' . $broker_name;
+			}
+			
+			// Prepare email message
+			$email_message = "Notice: " . $message;
+			if ( ! empty( $load_number ) ) {
+				$email_message .= "<br>Load Number: " . esc_html( $load_number );
+			}
+			
+			$email_helper = new TMSEmails();
+			$email_helper->send_custom_email( $email_list, array(
+				'subject'      => 'New broker notice added' . ' (' . $broker_id . ') ' . $broker_name,
+				'project_name' => $project,
+				'subtitle'     => $user_name[ 'full_name' ] . ' has added broker notice ' . $link,
+				'message'      => $email_message
+			) );
+			
+			error_log( 'Broker notice added successfully. Emails: ' . $email_list . ' User: ' . $user_name[ 'full_name' ] . ' Broker: ' . $link . ' Message: ' . $message );
+			
+			// Get the newly added notice data to return to frontend
+			global $wpdb;
+			$table_notice = $wpdb->prefix . $this->table_notice;
+			$notice_id = $wpdb->insert_id;
+			
+			$new_notice = $wpdb->get_row( $wpdb->prepare( "
+				SELECT id, name, date, message, load_number, status
+				FROM $table_notice
+				WHERE id = %d
+			", $notice_id ), ARRAY_A );
+			
+			// Clean escaped slashes from message and load_number fields
+			if ( $new_notice && is_array( $new_notice ) ) {
+				if ( isset( $new_notice['message'] ) ) {
+					$new_notice['message'] = stripslashes( $new_notice['message'] );
+				}
+				if ( isset( $new_notice['load_number'] ) ) {
+					$new_notice['load_number'] = stripslashes( $new_notice['load_number'] );
+				}
+				if ( isset( $new_notice['name'] ) ) {
+					$new_notice['name'] = stripslashes( $new_notice['name'] );
+				}
+			}
+			
+			wp_send_json_success( array(
+				'message' => 'Notice added successfully',
+				'notice' => $new_notice ? $new_notice : array()
+			) );
+			exit;
+		} else {
+			wp_send_json_error( 'Failed to add notice' );
+			exit;
+		}
+	}
+	
+	/**
+	 * Get broker statistics (notices count)
+	 */
+	public function get_broker_statistics( $broker_id ) {
+		global $wpdb;
+		
+		$table_notice = $wpdb->prefix . $this->table_notice;
+		
+		$count = $wpdb->get_var( $wpdb->prepare( "
+			SELECT COUNT(*)
+			FROM $table_notice
+			WHERE broker_id = %d
+		", $broker_id ) );
+		
+		$notices = $wpdb->get_results( $wpdb->prepare( "
+			SELECT id, name, date, message, load_number, status
+			FROM $table_notice
+			WHERE broker_id = %d
+			ORDER BY date DESC
+			LIMIT 10
+		", $broker_id ) );
+		
+		return array(
+			'notice' => array(
+				'count' => (int) $count,
+				'data'  => $notices ? $notices : array(),
+			),
+		);
+	}
+	
 }

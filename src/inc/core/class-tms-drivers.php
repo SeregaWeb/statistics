@@ -583,7 +583,6 @@ class TMSDrivers extends TMSDriversHelper {
 			wp_send_json_error( [ 'message' => 'Invalid request' ] );
 		}
 	}
-
 	public function soft_remove_driver() {
 		if ( defined( 'DOING_AJAX' ) && DOING_AJAX ) {
 			global $wpdb, $global_options;
@@ -666,6 +665,15 @@ class TMSDrivers extends TMSDriversHelper {
 			$emails_to = ( isset( $MY_INPUT['notify'] ) && $MY_INPUT['notify'] === '1' )
 				? ($recipients_no_notify . ', ' . $recipients_notify)
 				: $recipients_no_notify;
+
+			$this->log_controller->create_one_log( array(
+				'user_id'   => $user_id,
+				'post_id'   => $id_load,
+				'message'   => '<strong>Driver\'s profile has been removed</strong><br>' .
+				'Reason: ' . ( $reason !== '' ? esc_html( (string) $reason ) : 'N/A' ) . '<br>' .
+				'Notes: ' . ( $notes !== '' ? nl2br( esc_html( (string) $notes ) ) : 'N/A' ) . '<br>',
+				'post_type' => 'driver',
+			) );	
 			
 			$this->email_helper->send_custom_email( $emails_to, array(
 				'subject'      => $subject,
@@ -1091,7 +1099,6 @@ class TMSDrivers extends TMSDriversHelper {
 			'current_pages' => $current_page,
 		);
 	}
-	
 	public function get_table_items_search( $args = array() ) {
 		global $wpdb;
 		
@@ -1723,7 +1730,6 @@ class TMSDrivers extends TMSDriversHelper {
 			wp_send_json_error( [ 'message' => 'Invalid request' ] );
 		}
 	}
-	
 	public function update_driver_status_in_db( $data ) {
 		global $wpdb;
 		
@@ -2319,7 +2325,6 @@ class TMSDrivers extends TMSDriversHelper {
 			wp_send_json_error( [ 'message' => 'Report not create, error add in database' ] );
 		}
 	}
-	
 	public function update_driver_contact() {
 		if ( defined( 'DOING_AJAX' ) && DOING_AJAX ) {
 			// Sanitize incoming data
@@ -2688,7 +2693,6 @@ class TMSDrivers extends TMSDriversHelper {
 			wp_send_json_error( [ 'message' => 'Driver not update, error add in database' ] );
 		}
 	}
-	
 	public function update_driver_document() {
 		if ( defined( 'DOING_AJAX' ) && DOING_AJAX ) {
 			// Sanitize incoming data
@@ -3329,7 +3333,6 @@ class TMSDrivers extends TMSDriversHelper {
 		
 		return $ratings;
 	}
-	
 	/**
 	 * Get available loads for rating (loads without existing ratings by current user)
 	 */
@@ -3975,7 +3978,6 @@ class TMSDrivers extends TMSDriversHelper {
 		
 		return $changes;
 	}
-	
 	/**
 	 * Fast optimization for drivers notice table
 	 */
@@ -4579,11 +4581,6 @@ class TMSDrivers extends TMSDriversHelper {
 	}
 	
 	/**
-	 * Clear all drivers cache
-	 *
-	 * @return bool Success status
-	 */
-	/**
 	 * Clear all drivers related cache
 	 *
 	 * @return bool Success status
@@ -4605,7 +4602,6 @@ class TMSDrivers extends TMSDriversHelper {
 		
 		return ( $result1 !== false && $result2 !== false && $result3 !== false );
 	}
-	
 	/**
 	 * Clear coordinates cache for specific address or all coordinates cache
 	 *
@@ -4778,54 +4774,6 @@ class TMSDrivers extends TMSDriversHelper {
 		$table_main = $wpdb->prefix . $this->table_main;
 		$table_meta = $wpdb->prefix . $this->table_meta;
 		
-		// Debug: Check database timezone settings and time comparisons
-		// if ( current_user_can('administrator') ) {
-		// 	$timezone_info = $wpdb->get_results( "SELECT @@global.time_zone, @@session.time_zone, NOW() as db_time, UTC_TIMESTAMP() as utc_time" );
-		// 	$sample_updated = $wpdb->get_var( "SELECT updated_zipcode FROM $table_main WHERE updated_zipcode IS NOT NULL LIMIT 1" );
-			
-		// 	// Get current NY time
-		// 	$current_ny_time = (new DateTime('now', $ny_timezone))->format('Y-m-d H:i:s');
-			
-		// 	echo '<div style="background: #e1f5fe; padding: 10px; margin: 10px 0; border: 1px solid #2196F3;">';
-		// 	echo '<strong>Driver Availability Debug:</strong><br>';
-		// 	echo 'Global timezone: ' . $timezone_info[0]->{'@@global.time_zone'} . '<br>';
-		// 	echo 'Session timezone: ' . $timezone_info[0]->{'@@session.time_zone'} . '<br>';
-		// 	echo 'Database current time: ' . $timezone_info[0]->db_time . '<br>';
-		// 	echo 'Database UTC time: ' . $timezone_info[0]->utc_time . '<br>';
-		// 	echo '<strong>NY Time Calculations:</strong><br>';
-		// 	echo 'Current NY time: ' . $current_ny_time . '<br>';
-		// 	echo 'NY threshold time (NY - 12h): ' . $threshold_ny_time . '<br>';
-		// 	echo 'Sample updated_zipcode from DB: ' . $sample_updated . '<br>';
-			
-		// 	// Test CONVERT_TZ with different assumptions
-		// 	if ( $sample_updated ) {
-		// 		$convert_tests = $wpdb->get_results( $wpdb->prepare( "
-		// 			SELECT 
-		// 				CONVERT_TZ(%s, '+00:00', '-05:00') as est_time,
-		// 				CONVERT_TZ(%s, '+00:00', '-04:00') as edt_time,
-		// 				CONVERT_TZ(%s, '+00:00', 'America/New_York') as ny_time,
-		// 				CONVERT_TZ(%s, 'America/New_York', '+00:00') as as_utc_from_ny,
-		// 				CONVERT_TZ(%s, 'America/New_York', 'America/New_York') as as_ny_from_ny
-		// 		", $sample_updated, $sample_updated, $sample_updated, $sample_updated, $sample_updated ) );
-				
-		// 		echo '<strong>CONVERT_TZ Tests (assuming DB stores as UTC):</strong><br>';
-		// 		echo 'EST (-05:00): ' . $convert_tests[0]->est_time . '<br>';
-		// 		echo 'EDT (-04:00): ' . $convert_tests[0]->edt_time . '<br>';
-		// 		echo 'America/New_York: ' . $convert_tests[0]->ny_time . '<br>';
-		// 		echo '<strong>CONVERT_TZ Tests (assuming DB stores as NY time):</strong><br>';
-		// 		echo 'As UTC from NY: ' . $convert_tests[0]->as_utc_from_ny . '<br>';
-		// 		echo 'As NY from NY: ' . $convert_tests[0]->as_ny_from_ny . '<br>';
-				
-		// 		// Test direct comparison
-		// 		echo '<strong>Direct Comparisons:</strong><br>';
-		// 		echo 'Sample >= Threshold (DB stores NY time): ' . ($sample_updated >= $threshold_ny_time ? 'YES' : 'NO') . '<br>';
-		// 		echo 'Sample time: ' . $sample_updated . '<br>';
-		// 		echo 'Threshold time: ' . $threshold_ny_time . '<br>';
-		// 		echo 'Time difference: ' . (strtotime($sample_updated) - strtotime($threshold_ny_time)) . ' seconds<br>';
-		// 	}
-		// 	echo '</div>';
-		// }
-		
 		// Count available drivers (available, on_hold) with recent updates
 		// Note: updated_zipcode is already stored in NY timezone, no conversion needed
 		$result = $wpdb->get_results( $wpdb->prepare( "
@@ -4853,16 +4801,6 @@ class TMSDrivers extends TMSDriversHelper {
 			WHERE status.meta_value NOT IN ('blocked','banned', 'expired_documents')
 			AND (main.updated_zipcode < %s OR main.updated_zipcode IS NULL)
 		", $threshold_ny_time ) );
-		
-		// Debug: Show query results for administrators
-		// if ( current_user_can('administrator') ) {
-		// 	echo '<div style="background: #fff3cd; padding: 10px; margin: 10px 0; border: 1px solid #ffeaa7;">';
-		// 	echo '<strong>Query Results:</strong><br>';
-		// 	echo 'Available drivers (available, on_hold with recent updates): ' . (isset( $result[ 0 ]->count ) ? (int) $result[ 0 ]->count : 0) . '<br>';
-		// 	echo 'Available_on drivers (available_on with recent updates): ' . (isset( $result3[ 0 ]->count ) ? (int) $result3[ 0 ]->count : 0) . '<br>';
-		// 	echo 'Not updated drivers (old updates or NULL): ' . (isset( $result2[ 0 ]->count ) ? (int) $result2[ 0 ]->count : 0) . '<br>';
-		// 	echo '</div>';
-		// }
 		
 		return array(
 			'available'    => isset( $result[ 0 ]->count ) ? (int) $result[ 0 ]->count : 0,
@@ -5194,7 +5132,6 @@ class TMSDrivers extends TMSDriversHelper {
 			'driver_locations' => $driver_locations
 		);
 	}
-	
 	/**
 	 * Sort drivers by status priority
 	 *
@@ -5830,7 +5767,6 @@ class TMSDrivers extends TMSDriversHelper {
 		
 		return $result;
 	}
-	
 	/**
 	 * Cron функция для удаления истекших удержаний
 	 */
@@ -6095,7 +6031,6 @@ class TMSDrivers extends TMSDriversHelper {
 			'payment_instruction'        => 'Payment Instruction',
 			'w9_classification'          => 'W9 Classification',
 			'legal_document_type'        => 'Legal Document Type',
-			'legal_document_expiration'  => 'Legal Document Expiration',
 			'nationality'                => 'Nationality',
 			// Add more required fields here as needed
 			// 'driver_license'      => 'Driver License',
@@ -6354,7 +6289,6 @@ class TMSDrivers extends TMSDriversHelper {
 		
 		return $stats;
 	}
-
 	/**
 	 * Get top drivers by performance (MULTIPLE SIMPLE QUERIES APPROACH)
 	 * Criteria: Rating >= 4, sorted by profit, then by delivered loads count

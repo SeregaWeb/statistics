@@ -11,6 +11,16 @@ export const sendEmailChain = (ajaxUrl) => {
 
                 const { target } = e;
 
+                // Get project name from hidden input
+                const projectInput = (target as HTMLFormElement).querySelector('input[name="project"]') as HTMLInputElement | null;
+                const projectName = projectInput ? projectInput.value : 'Unknown Project';
+
+                // Show confirmation prompt
+                const confirmMessage = `${projectName}\n\nAre you sure you want to send tracking chain?`;
+                if (!confirm(confirmMessage)) {
+                    return;
+                }
+
                 // @ts-ignore
                 const formData = new FormData(target);
                 const flt = document.querySelector('input[name="flt"]');

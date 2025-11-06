@@ -524,13 +524,27 @@ export const removeFullDriver = (ajaxUrl) => {
                 (form.querySelector('textarea[name="notes"]') as HTMLTextAreaElement).value = '';
                 (form.querySelector('input[name="notify"]') as HTMLInputElement).checked = false;
 
+                // Remove any existing submit handler to prevent duplicates
+                const existingHandler = (form as any).__onSubmitHandler;
+                if (existingHandler) {
+                    form.removeEventListener('submit', existingHandler);
+                }
+
                 const onSubmit = (e: Event) => {
                     e.preventDefault();
+                    
+                    // Prevent double submission
+                    if ((form as any).__isSubmitting) {
+                        return;
+                    }
+                    (form as any).__isSubmitting = true;
+                    
                     const reason = (form.querySelector('input[name="reason"]') as HTMLInputElement).value.trim();
                     const notes = (form.querySelector('textarea[name="notes"]') as HTMLTextAreaElement).value.trim();
                     const notify = (form.querySelector('input[name="notify"]') as HTMLInputElement).checked ? '1' : '0';
 
                     if (!reason) {
+                        (form as any).__isSubmitting = false;
                         printMessage('Reason is required', 'danger', 5000);
                         return;
                     }
@@ -562,11 +576,13 @@ export const removeFullDriver = (ajaxUrl) => {
                             console.error('Request failed:', error);
                         })
                         .finally(() => {
+                            (form as any).__isSubmitting = false;
                             if (submitBtn) {
                                 submitBtn.disabled = false;
                                 submitBtn.textContent = 'Remove';
                             }
                             form.removeEventListener('submit', onSubmit);
+                            (form as any).__onSubmitHandler = null;
                             // Close via Bootstrap if available; otherwise hard close and cleanup
                             // @ts-ignore
                             if (window.bootstrap && window.bootstrap.Modal) {
@@ -590,6 +606,8 @@ export const removeFullDriver = (ajaxUrl) => {
                         });
                 };
 
+                // Store handler reference to prevent duplicates
+                (form as any).__onSubmitHandler = onSubmit;
                 form.addEventListener('submit', onSubmit);
             });
         });

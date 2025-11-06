@@ -82,6 +82,8 @@ import { initEtaPopups } from './components/eta-popup';
 import './components/quick-copy';
 import './components/driver-popups';
 import DriverPopupForms from './components/driver-popup-forms';
+import BrokerPopups from './components/broker-popups';
+import BrokerPopupForms from './components/broker-popup-forms';
 import DriverAutocomplete from './components/driver-autocomplete';
 import AudioHelper from './components/common/audio-helper';
 import { TimerControl } from './components/timer-control';
@@ -118,6 +120,14 @@ function ready() {
     
     // Initialize Driver Popup Forms
     const driverPopupForms = new DriverPopupForms(urlAjax);
+    
+    // Initialize Broker Popup Forms
+    const brokerPopupForms = new BrokerPopupForms(urlAjax);
+    
+    // Initialize Broker Popups
+    // @ts-ignore
+    const singlePageBrokerUrl = var_from_php?.single_page_broker || '';
+    const brokerPopups = new BrokerPopups(urlAjax, singlePageBrokerUrl);
     
     // Initialize Driver Autocomplete
     new DriverAutocomplete(urlAjax, {

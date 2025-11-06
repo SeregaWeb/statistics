@@ -34,6 +34,23 @@ if ( ! empty( $broker ) ) {
 	
 	$broker_id = (int) $id_broker;
 	
+	// Get broker statistics including notices
+	$broker_statistics = array(
+		'notice' => array(
+			'count' => 0,
+			'data'  => array(),
+		),
+	);
+	
+	if ( $broker_id > 0 ) {
+		try {
+			$broker_statistics = $brokers->get_broker_statistics( $broker_id );
+		} catch ( Exception $e ) {
+			// If error occurs, use default empty statistics
+			error_log( 'Error getting broker statistics: ' . $e->getMessage() );
+		}
+	}
+	
 	// Уникальные ключи для кэша
 	$transient_counters_key = 'counters_broker_' . $broker_id;
 	$transient_profit_key   = 'profit_broker_' . $broker_id;
@@ -54,6 +71,7 @@ if ( ! empty( $broker ) ) {
 	}
 	
 	
+	$broker_array = $broker;
 	if ( isset( $broker[ 0 ] ) ) {
 		$broker = $broker[ 0 ];
 	}
@@ -143,6 +161,13 @@ $orange_lvl = $TMSUsers->check_user_role_access( array(
                                             data-bs-target="#pills-loads" type="button" role="tab"
                                             aria-controls="pills-loads"
                                             aria-selected="true">Loads
+                                    </button>
+                                </li>
+                                <li class="nav-item w-25" role="notes">
+                                    <button class="nav-link w-100 <?php echo isset( $_GET[ 'notes' ] ) ? 'active'
+										: ''; ?>" id="pills-notes-tab" data-bs-toggle="pill"
+                                            data-bs-target="#pills-notes" type="button" role="tab"
+                                            aria-controls="pills-notes" aria-selected="false">Notes
                                     </button>
                                 </li>
 								
@@ -784,6 +809,87 @@ $orange_lvl = $TMSUsers->check_user_role_access( array(
 								?>
                             </div>
 
+                            <div class="tab-pane  <?php echo isset( $_GET[ 'notes' ] ) ? 'show active'
+								: 'fade'; ?> " id="pills-notes" role="tabpanel"
+                                 aria-labelledby="pills-notes-tab">
+
+                                <div class="mt-3 mb-3" style="max-width: 944px;">
+                                    <h2>Notes</h2>
+                                </div>
+                                
+                                <!-- Notifications Section -->
+                                <div class="mb-4">
+                                    <div class="card">
+                                        <div class="card-header d-flex justify-content-between align-items-center">
+                                            <h5 class="mb-0">Notices</h5>
+                                            <button type="button" <?php echo !$add_broker ? 'disabled' : ''; ?> class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#brokerNoticeModal">
+                                                Add
+                                            </button>
+                                        </div>
+                                        <div class="card-body">
+                                            <div class="mb-3">
+                                                <h6>Total</h6>
+                                                <div class="display-4 text-info"><?php echo isset( $broker_statistics['notice']['count'] ) ? (int) $broker_statistics['notice']['count'] : 0; ?></div>
+                                            </div>
+                                            
+                                            <?php 
+                                            $notices_list = isset( $broker_statistics['notice']['data'] ) && is_array( $broker_statistics['notice']['data'] ) ? $broker_statistics['notice']['data'] : array();
+                                            $notices_total = count( $notices_list );
+                                            
+                                            if ( ! empty( $notices_list ) ) : ?>
+                                                <div class="mt-3">
+                                                    <h6>Recent notices</h6>
+                                                    <div class="table-responsive">
+                                                        <table class="table table-sm">
+                                                            <thead>
+                                                                <tr>
+                                                                    <th width="20%">Name</th>
+                                                                    <th width="20%">Load Number</th>
+                                                                    <th width="60%">Message</th>
+                                                                </tr>
+                                                            </thead>
+                                                            <tbody>
+                                                                <?php 
+                                                                $notice_index = 0;
+                                                                foreach ( $notices_list as $notice ) : 
+                                                                    // Handle both object and array formats
+                                                                    $notice_name = is_object( $notice ) ? ( isset( $notice->name ) ? $notice->name : '' ) : ( isset( $notice['name'] ) ? $notice['name'] : '' );
+                                                                    $notice_date = is_object( $notice ) ? ( isset( $notice->date ) ? $notice->date : 0 ) : ( isset( $notice['date'] ) ? $notice['date'] : 0 );
+                                                                    $notice_load_number = is_object( $notice ) ? ( isset( $notice->load_number ) ? $notice->load_number : '' ) : ( isset( $notice['load_number'] ) ? $notice['load_number'] : '' );
+                                                                    $notice_message = is_object( $notice ) ? ( isset( $notice->message ) ? $notice->message : '' ) : ( isset( $notice['message'] ) ? $notice['message'] : '' );
+                                                                    
+                                                                    // Clean escaped slashes from all fields
+                                                                    $notice_name = stripslashes( $notice_name );
+                                                                    $notice_load_number = stripslashes( $notice_load_number );
+                                                                    $notice_message = stripslashes( $notice_message );
+                                                                    
+                                                                    $notice_hidden = $notice_index >= 5;
+                                                                    $notice_index++;
+                                                                ?>
+                                                                    <tr class="js-broker-notice-row"<?php echo $notice_hidden ? ' style="display:none"' : ''; ?>>
+                                                                        <td>
+                                                                            <div><?php echo esc_html( $notice_name ); ?></div>
+                                                                            <small class="text-muted"><?php echo $notice_date ? date( 'm/d/Y g:i a', $notice_date ) : '-'; ?></small>
+                                                                        </td>
+                                                                        <td><?php echo ! empty( $notice_load_number ) ? esc_html( $notice_load_number ) : '-'; ?></td>
+                                                                        <td><?php echo esc_html( $notice_message ); ?></td>
+                                                                    </tr>
+                                                                <?php endforeach; ?>
+                                                            </tbody>
+                                                        </table>
+                                                    </div>
+                                                    <div class="text-center mt-2">
+                                                        <button type="button" class="btn btn-outline-secondary btn-sm <?php echo ( $notices_total > 5 ) ? '' : 'd-none'; ?>" id="brokerNoticesLoadMore" data-step="5">Load more</button>
+                                                    </div>
+                                                </div>
+                                            <?php else : ?>
+                                                <p class="text-muted mt-3">No notices yet.</p>
+                                            <?php endif; ?>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
                         </div>
 
                         <div class="col-12 d-flex justify-content-end flex-wrap gap-2" role="presentation">
@@ -810,6 +916,38 @@ $orange_lvl = $TMSUsers->check_user_role_access( array(
             </div>
         </div>
     </div>
+
+<!-- Broker Notice Modal -->
+<div class="modal fade" id="brokerNoticeModal" tabindex="-1" aria-labelledby="brokerNoticeModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="brokerNoticeModalLabel"><?php echo esc_html( isset( $broker_array[0]['company_name'] ) ? $broker_array[0]['company_name'] : ( isset( $broker['company_name'] ) ? $broker['company_name'] : 'Broker' ) ); ?> - Add Notice</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="brokerNoticeForm">
+                <div class="modal-body">
+                    <input type="hidden" name="broker_id" value="<?php echo $broker_id; ?>">
+                    <?php wp_nonce_field( 'tms_add_broker_notice', 'tms_broker_notice_nonce' ); ?>
+                    
+                    <div class="mb-3">
+                        <label for="brokerLoadNumber" class="form-label">Load Number</label>
+                        <input type="text" class="form-control" id="brokerLoadNumber" name="load_number" placeholder="Optional">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="brokerMessage" class="form-label">Comments <span class="text-danger">*</span></label>
+                        <textarea class="form-control" id="brokerMessage" name="message" rows="4" required></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Add</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
 
 <?php
 do_action( 'wp_rock_before_page_content' );

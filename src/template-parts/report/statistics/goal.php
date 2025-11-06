@@ -211,17 +211,19 @@ foreach ( $dispatchers as $dispatcher ) {
 			$goal            = 0;
 			$left            = 0;
 			$goal            = get_field( 'monthly_goal', 'user_' . $dispatcher[ 'id' ] );
-			$goal_completion = 0;
+			$goal_completion  = 0;
 		}
+		
+		// Always add to totals, even if stat is empty
+		$total_team_load   += is_numeric( $post_count ) ? $post_count : 0;
 		
 		if ( isset( $stat ) && ! empty( $stat ) ) {
-			$total_team_load   += is_numeric( $post_count ) ? $post_count : 0;
 			$total_team_profit += is_numeric( $stat[ 'total_profit' ] ) ? floatval( $stat[ 'total_profit' ] ) : 0;
 			$total_team_goals  += is_numeric( $stat[ 'goal' ] ) ? $stat[ 'goal' ] : 0;
-			
+		} else {
+			// Add goal even if dispatcher has no statistics
+			$total_team_goals += is_numeric( $goal ) ? floatval( $goal ) : 0;
 		}
-		
-		
 		
 		// Вывод строки таблицы для текущего диспетчера
 		echo '<tr class="text-center">';
@@ -237,7 +239,6 @@ foreach ( $dispatchers as $dispatcher ) {
 }
 
 echo '</table>';
-
 
 if ( $total_team_profit > 0 && $total_team_load > 0 && $total_team_goals > 0 ) :
 	

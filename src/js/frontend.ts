@@ -64,6 +64,7 @@ import { changeStopType } from './components/stop-type';
 import { setStatusPaid } from './components/set-status-paid';
 import { sendEmailChain } from './components/send-email-chain';
 import { saveAllTracking } from './components/save-all-tracking';
+import { initAutoSubmitForm } from './components/auto-submit-form';
 import {
     createDocumentBolActions,
     createDocumentInvoice,
@@ -255,6 +256,10 @@ function ready() {
     addDeletePinnedHandler(urlAjax);
 
     applyZipCodeMask('.js-zip-code-mask');
+
+    // Initialize auto-submit forms for statistics pages
+    // These forms will automatically submit when select values change
+    initAutoSubmitForm('.js-auto-submit-form');
 
     // Remove preloader
     const preloaders = document.querySelectorAll('.js-preloader');

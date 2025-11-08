@@ -90,7 +90,7 @@ wp_localize_script( 'frontend_js', 'performanceData', array(
                             <?php endif; ?>
 
                             <div class="d-flex justify-content-start mb-2 w-100">
-                                <form class="d-flex gap-1">
+                                <form class="d-flex gap-1 js-auto-submit-form">
                                     <?php if ( $is_flt ): ?>
                                         <input type="hidden" name="type" value="flt">
                                     <?php endif; ?>
@@ -113,7 +113,7 @@ wp_localize_script( 'frontend_js', 'performanceData', array(
                                         </select>
 									<?php endif; ?>
 
-                                    <button class="btn btn-primary" type="submit">Select</button>
+                                    <!-- <button class="btn btn-primary" type="submit">Select</button> -->
                                 </form>
                             </div>
 							<?php if ( is_array( $week_dates ) ): ?>

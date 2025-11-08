@@ -17,6 +17,7 @@ $user_id = ( isset( $_GET[ 'user' ] ) && is_numeric( $_GET[ 'user' ] ) ) ? $_GET
 $TMSUser    = new TMSUsers();
 $TMSReports = new TMSReports();
 $statistics = new TMSStatistics();
+$project = $TMSReports->project;
 
 $USER_OBJECT = $TMSUser->get_account_info( $user_id );
 
@@ -32,7 +33,7 @@ $USER_OBJECT = $TMSUser->get_account_info( $user_id );
 							$counts = $TMSReports->get_load_counts_by_user_id( $user_id, $USER_OBJECT[ 'permission_project' ] );
 							$total  = array_sum( $counts );
 							
-							$progress = $statistics->get_dispatcher_statistics_current_month( $user_id );
+							$progress = $statistics->get_dispatcher_statistics_current_month( $user_id, $project );
 							?>
                             <div class="d-flex align-items-center gap-2">
                                 <div class="account-avatar"

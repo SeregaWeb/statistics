@@ -42,7 +42,7 @@ $monthly_stats = $statistics->get_monthly_dispatcher_stats( $dispatcher_initials
 ?>
 
 <!-- Filter Form -->
-<form class="monthly w-100" method="GET">
+<form class="monthly w-100 js-auto-submit-form" method="GET">
     <input type="hidden" name="active_state" value="yearly">
     
     <div class="d-flex gap-1">
@@ -70,7 +70,7 @@ $monthly_stats = $statistics->get_monthly_dispatcher_stats( $dispatcher_initials
             <?php endif; ?>
         </select>
         
-        <button class="btn btn-primary" type="submit">Filter</button>
+        <!-- <button class="btn btn-primary" type="submit">Filter</button> -->
     </div>
     
     <!-- Monthly Statistics Table -->

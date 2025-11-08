@@ -3,6 +3,18 @@
 
 $statistics = new TMSStatistics();
 $TMSUsers   = new TMSUsers();
+$TMSReports = new TMSReports();
+$project = $TMSReports->project;
+
+$name_field = 'monthly_goal';
+
+if ($project === 'Martlet') {
+	$name_field = 'monthly_goal_martlet';
+} elseif ($project === 'Endurance') {
+	$name_field = 'monthly_goal_endurance';
+}
+
+
 
 $dispatcher_tl_initials = get_field_value( $_GET, 'team-lead' );
 
@@ -92,7 +104,7 @@ if ( ! empty( $exclude_mg_users ) && is_array( $exclude_mg_users ) ) {
 }
 // var_dump($my_team);
 
-$dispatcher_arr = $statistics->get_dispatcher_statistics_current_month( $my_team );
+$dispatcher_arr = $statistics->get_dispatcher_statistics_current_month( $my_team, $project );
 
 // if (current_user_can('administrator')) {
 // 	var_dump($my_team);
@@ -113,7 +125,7 @@ $total_team_complete = 0;
 
 if ( $hide_filter ):
 	?>
-    <form class="w-100">
+    <form class="w-100 js-auto-submit-form">
         <div class="d-flex gap-1">
             <input type="hidden" name="active_state" value="goal">
             <select class="form-select w-auto" name="team-lead"
@@ -127,7 +139,7 @@ if ( $hide_filter ):
 					<?php endforeach; ?>
 				<?php endif; ?>
             </select>
-            <button class="btn btn-primary" type="submit">Filter</button>
+            <!-- <button class="btn btn-primary" type="submit">Filter</button> -->
         </div>
     </form>
 <?php
@@ -210,7 +222,7 @@ foreach ( $dispatchers as $dispatcher ) {
 			$average_profit  = number_format( 0, 2 );
 			$goal            = 0;
 			$left            = 0;
-			$goal            = get_field( 'monthly_goal', 'user_' . $dispatcher[ 'id' ] );
+			$goal            = get_field( $name_field, 'user_' . $dispatcher[ 'id' ] );
 			$goal_completion  = 0;
 		}
 		

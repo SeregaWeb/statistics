@@ -319,7 +319,7 @@ class  TMSStatistics extends TMSReportsHelper {
 		return $monthly_stats;
 	}
 	
-	public function get_dispatcher_statistics_current_month( $user_id = null ) {
+	public function get_dispatcher_statistics_current_month( $user_id = null, $project = null ) {
 		global $wpdb;
 		
 		$table_reports = $wpdb->prefix . $this->table_main;
@@ -329,7 +329,14 @@ class  TMSStatistics extends TMSReportsHelper {
 		$current_year  = date( 'Y' );
 		$current_month = date( 'm' );
 
-		
+		$name_field = 'monthly_goal';
+
+		if ($project === 'Martlet') {
+			$name_field = 'monthly_goal_martlet';
+		} elseif ($project === 'Endurance') {
+			$name_field = 'monthly_goal_endurance';
+		}
+
 		// if (current_user_can('administrator')) {
 		// 	$current_month = '9';
 		// }
@@ -386,7 +393,10 @@ class  TMSStatistics extends TMSReportsHelper {
 		if ( is_array( $dispatcher_stats ) && ! empty( $dispatcher_stats ) ) {
 			foreach ( $dispatcher_stats as $key => $disp ) {
 				$names = $this->get_user_full_name_by_id( $disp[ 'dispatcher_initials' ] );
-				$goal  = get_field( 'monthly_goal', 'user_' . $disp[ 'dispatcher_initials' ] );
+
+				
+
+				$goal  = get_field( $name_field, 'user_' . $disp[ 'dispatcher_initials' ] );
 				
 				if ( $names ) {
 					$dispatcher_stats[ $key ][ 'dispatcher_initials' ] = $names[ 'full_name' ];
@@ -419,7 +429,7 @@ class  TMSStatistics extends TMSReportsHelper {
 				foreach ( $my_team as $team_member_id ) {
 					$names = $this->get_user_full_name_by_id( $team_member_id );
 					if ( $names && ! in_array( $names[ 'full_name' ], $existing_dispatcher_ids ) ) {
-						$goal = get_field( 'monthly_goal', 'user_' . $team_member_id );
+						$goal = get_field( $name_field, 'user_' . $team_member_id );
 						if ( $goal && $goal > 0 ) {
 							$dispatcher_stats[] = array(
 								'dispatcher_initials' => $names[ 'full_name' ],

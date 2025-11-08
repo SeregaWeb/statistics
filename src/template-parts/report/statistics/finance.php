@@ -45,7 +45,7 @@ if ( ! $active_item ) {
 }
 
 if ( $show_filter_by_office ): ?>
-    <form class="w-100 d-flex gap-1">
+    <form class="w-100 d-flex gap-1 js-auto-submit-form">
         <select class="form-select w-auto" name="office" aria-label=".form-select-sm example">
             <option value="all">Company total</option>
 			<?php if ( isset( $offices[ 'choices' ] ) && is_array( $offices[ 'choices' ] ) ): ?>
@@ -57,7 +57,7 @@ if ( $show_filter_by_office ): ?>
 			<?php endif; ?>
         </select>
         <input type="hidden" name="active_state" value="<?php echo $active_item; ?>">
-        <button class="btn btn-primary">Select Office</button>
+        <!-- <button class="btn btn-primary">Select Office</button> -->
     </form>
 <?php endif; ?>
 

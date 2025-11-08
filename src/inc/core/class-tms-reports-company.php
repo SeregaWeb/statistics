@@ -1352,13 +1352,13 @@ class TMSReportsCompany extends TMSReportsHelper {
 			
 			$email_helper = new TMSEmails();
 			$email_helper->send_custom_email( $email_list, array(
-				'subject'      => 'New broker notice added' . ' (' . $broker_id . ') ' . $broker_name,
+				'subject'      => 'New broker note added' . ' (' . $broker_id . ') ' . $broker_name,
 				'project_name' => $project,
-				'subtitle'     => $user_name[ 'full_name' ] . ' has added broker notice ' . $link,
+				'subtitle'     => $user_name[ 'full_name' ] . ' has added broker note ' . $link,
 				'message'      => $email_message
 			) );
 			
-			error_log( 'Broker notice added successfully. Emails: ' . $email_list . ' User: ' . $user_name[ 'full_name' ] . ' Broker: ' . $link . ' Message: ' . $message );
+			error_log( 'Broker note added successfully. Emails: ' . $email_list . ' User: ' . $user_name[ 'full_name' ] . ' Broker: ' . $link . ' Message: ' . $message );
 			
 			// Get the newly added notice data to return to frontend
 			global $wpdb;
@@ -1385,12 +1385,12 @@ class TMSReportsCompany extends TMSReportsHelper {
 			}
 			
 			wp_send_json_success( array(
-				'message' => 'Notice added successfully',
+				'message' => 'Note added successfully',
 				'notice' => $new_notice ? $new_notice : array()
 			) );
 			exit;
 		} else {
-			wp_send_json_error( 'Failed to add notice' );
+			wp_send_json_error( 'Failed to add note' );
 			exit;
 		}
 	}

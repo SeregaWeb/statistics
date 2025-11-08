@@ -80,7 +80,7 @@ $show_only = $TMSUsers->check_user_role_access( array(
 	<?php if ( $show_only ): ?>
         <div class="col-12 col-lg-6 ">
             <h2 class="top-title">Highest result a day</h2>
-            <form class="w-100 d-flex gap-1">
+            <form class="w-100 d-flex gap-1 js-auto-submit-form">
                 <select class="form-select w-auto" name="office" aria-label=".form-select-sm example">
                     <option value="all">All Offices</option>
 					
@@ -97,7 +97,7 @@ $show_only = $TMSUsers->check_user_role_access( array(
 				<?php if ( $dispatcher_initials ): ?>
                     <input type="hidden" name="dispatcher" value="<?php echo $dispatcher_initials; ?>">
 				<?php endif; ?>
-                <button class="btn btn-primary">Select Office</button>
+                <!-- <button class="btn btn-primary">Select Office</button> -->
             </form>
 
             <table class="table-stat">
@@ -127,7 +127,7 @@ $show_only = $TMSUsers->check_user_role_access( array(
 
     <div class="col-12 col-lg-6">
 
-        <form class="w-100 ">
+        <form class="w-100 js-auto-submit-form">
             <div class="w-100 ">
                 <h2>Total cancelled loads</h2>
             </div>
@@ -147,7 +147,7 @@ $show_only = $TMSUsers->check_user_role_access( array(
 						<?php endforeach; ?>
 					<?php endif; ?>
                 </select>
-                <button class="btn btn-primary" type="submit">Select</button>
+                <!-- <button class="btn btn-primary" type="submit">Select</button> -->
             </div>
 			
 			<?php if ( isset( $statistics_with_status[ 0 ] ) ): ?>

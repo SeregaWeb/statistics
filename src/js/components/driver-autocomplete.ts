@@ -337,6 +337,7 @@ class DriverAutocomplete {
                 this.setTbdMode();
             } else {
                 // TBD is unchecked - restore normal mode
+                alert('TBD is unchecked - Don\'t forget to attach the Dispatch message.');
                 this.clearTbdMode();
             }
         });

@@ -1386,6 +1386,8 @@ Kindly confirm once you've received this message." ) . "\n";
 				$active_tab = 'pills-driver-contact-tab';
 			} else if ( $default_tab === 'dispatchers' ) {
 				$active_tab = 'pills-driver-location-tab';
+			} else if ( $default_tab === 'dispatchers_new' ) {
+				$active_tab = 'pills-driver-vehicle-tab';
 			}
 		}
 		

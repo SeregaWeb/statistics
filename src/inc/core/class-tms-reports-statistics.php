@@ -701,6 +701,7 @@ class  TMSStatistics extends TMSReportsHelper {
 		        SUM(CAST(IFNULL(profit.meta_value, 0) AS DECIMAL(10,2))) AS total_profit,
 		        SUM(CAST(IFNULL(driver_rate.meta_value, 0) AS DECIMAL(10,2))) AS total_driver_rate,
 		        SUM(CAST(IFNULL(second_driver_rate.meta_value, 0) AS DECIMAL(10,2))) AS total_second_driver_rate,
+			   SUM(CAST(IFNULL(third_driver_rate.meta_value, 0) AS DECIMAL(10,2))) AS total_third_driver_rate,
 		        SUM(CAST(IFNULL(true_profit.meta_value, 0) AS DECIMAL(10,2))) AS total_true_profit,
 		        SUM(CAST(IFNULL(processing_fees.meta_value, 0) AS DECIMAL(10,2))) AS total_processing_fees,
 		        SUM(CAST(IFNULL(percent_quick_pay_value.meta_value, 0) AS DECIMAL(10,2))) AS total_percent_quick_pay_value,
@@ -708,13 +709,16 @@ class  TMSStatistics extends TMSReportsHelper {
 		        SUM(CAST(IFNULL(booked_rate_modify.meta_value, 0) AS DECIMAL(10,2))) AS total_booked_rate_modify,
 		        SUM(CAST(IFNULL(percent_booked_rate.meta_value, 0) AS DECIMAL(10,2))) AS total_percent_booked_rate,
 		        SUM(CASE WHEN factoring_status.meta_value IN ('processed', 'paid') THEN CAST(IFNULL(booked_rate.meta_value, 0) AS DECIMAL(10,2)) ELSE 0 END) AS total_processed_invoices,
-		        SUM(CASE WHEN driver_pay_statuses.meta_value = 'paid' THEN CAST(IFNULL(driver_rate.meta_value, 0) AS DECIMAL(10,2)) ELSE 0 END) AS total_paid_loads
+		        SUM(CASE WHEN driver_pay_statuses.meta_value = 'paid' THEN CAST(IFNULL(driver_rate.meta_value, 0) AS DECIMAL(10,2)) ELSE 0 END) AS total_paid_loads,
+			   SUM(CASE WHEN driver_pay_statuses.meta_value = 'paid' THEN CAST(IFNULL(second_driver_rate.meta_value, 0) AS DECIMAL(10,2)) ELSE 0 END) AS total_paid_loads_second_driver,
+			   SUM(CASE WHEN driver_pay_statuses.meta_value = 'paid' THEN CAST(IFNULL(third_driver_rate.meta_value, 0) AS DECIMAL(10,2)) ELSE 0 END) AS total_paid_loads_third_driver
 		    FROM $table_reports reports
 		    LEFT JOIN $table_meta profit ON reports.id = profit.post_id AND profit.meta_key = 'profit'
 		    LEFT JOIN $table_meta percent_booked_rate ON reports.id = percent_booked_rate.post_id AND percent_booked_rate.meta_key = 'percent_booked_rate'
 		    LEFT JOIN $table_meta booked_rate ON reports.id = booked_rate.post_id AND booked_rate.meta_key = 'booked_rate'
 		    LEFT JOIN $table_meta driver_rate ON reports.id = driver_rate.post_id AND driver_rate.meta_key = 'driver_rate'
 		    LEFT JOIN $table_meta second_driver_rate ON reports.id = second_driver_rate.post_id AND second_driver_rate.meta_key = 'second_driver_rate'
+		    LEFT JOIN $table_meta third_driver_rate ON reports.id = third_driver_rate.post_id AND third_driver_rate.meta_key = 'third_driver_rate'
 		    LEFT JOIN $table_meta quick_pay_driver_amount ON reports.id = quick_pay_driver_amount.post_id AND quick_pay_driver_amount.meta_key = 'quick_pay_driver_amount'
 		    LEFT JOIN $table_meta percent_quick_pay_value ON reports.id = percent_quick_pay_value.post_id AND percent_quick_pay_value.meta_key = 'percent_quick_pay_value'
 		    LEFT JOIN $table_meta processing_fees ON reports.id = processing_fees.post_id AND processing_fees.meta_key = 'processing_fees'
@@ -835,6 +839,8 @@ class  TMSStatistics extends TMSReportsHelper {
 			'total_percent_booked_rate'     => 0.00,
 			'total_processed_invoices'      => 0.00,
 			'total_paid_loads'              => 0.00,
+			'total_paid_loads_second_driver' => 0.00,
+			'total_paid_loads_third_driver' => 0.00,
 		];
 		
 		// Populate the result with actual data if available
@@ -852,6 +858,8 @@ class  TMSStatistics extends TMSReportsHelper {
 			$monthly_stats[ 'total_percent_booked_rate' ]     = $results[ 0 ][ 'total_percent_booked_rate' ] ?? 0.00;
 			$monthly_stats[ 'total_processed_invoices' ]      = $results[ 0 ][ 'total_processed_invoices' ] ?? 0.00;
 			$monthly_stats[ 'total_paid_loads' ]              = $results[ 0 ][ 'total_paid_loads' ] ?? 0.00;
+			$monthly_stats[ 'total_paid_loads_second_driver' ] = $results[ 0 ][ 'total_paid_loads_second_driver' ] ?? 0.00;
+			$monthly_stats[ 'total_paid_loads_third_driver' ] = $results[ 0 ][ 'total_paid_loads_third_driver' ] ?? 0.00;
 		}
 		
 		// Return the monthly statistics

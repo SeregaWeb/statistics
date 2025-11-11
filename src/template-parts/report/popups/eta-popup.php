@@ -26,6 +26,22 @@ $form_class = $args['form_class'] ?? 'js-eta-form';
             <form class="<?php echo esc_attr($form_class); ?>">
                 <input type="hidden" name="id_load" value="">
 
+                <!-- Location Info -->
+                <div class="mb-3 p-2 bg-light rounded">
+                    <div class="d-flex justify-content-between align-items-center mb-1">
+                        <small class="text-muted">Location:</small>
+                        <strong class="js-eta-popup-state">--</strong>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center mb-1">
+                        <small class="text-muted">Timezone:</small>
+                        <strong class="js-eta-popup-timezone">--</strong>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <small class="text-muted">Current Time:</small>
+                        <strong class="js-eta-popup-current-time">--:--:--</strong>
+                    </div>
+                </div>
+
                 <div class="mb-3">
                     <label class="form-label">Date</label>
                     <input type="date" name="date" class="form-control" value="<?php echo esc_attr($args['current_date'] ?? ''); ?>" required>

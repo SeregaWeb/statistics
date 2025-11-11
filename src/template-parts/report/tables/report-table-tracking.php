@@ -186,22 +186,50 @@ if ( ! empty( $results ) ) :
                     $eta_data = $helper->get_eta_data($row);
                     $pickup_data = $helper->get_eta_display_data($eta_data, 'pick_up');
                     
-                    // Check if ETA record exists (with project)
-                    $pickup_eta_exists = $eta_manager->eta_record_exists($row['id'], 'pickup', $flt, null, $TMSReports->project);
-                    $pickup_button_class = $pickup_eta_exists ? 'btn-success' : 'btn-outline-primary';
+                    // Get ETA record for display (for all users)
+                    $pickup_eta_record = $eta_manager->get_eta_record_for_display($row['id'], 'pickup', $flt, $TMSReports->project);
+                    $pickup_button_class = $pickup_eta_record['exists'] ? 'btn-success' : 'btn-outline-primary';
+                    
+                    // Use ETA record data if exists, otherwise use location data
+                    $pickup_date = $pickup_eta_record['exists'] ? $pickup_eta_record['date'] : $pickup_data['date'];
+                    $pickup_time = $pickup_eta_record['exists'] ? $pickup_eta_record['time'] : $pickup_data['time'];
+                    
+                    // Recalculate timezone based on ETA date and state (to fix incorrect timezones in DB)
+                    // This ensures timezone is correct for the ETA date, accounting for DST
+                    if ($pickup_eta_record['exists'] && $pickup_data['state']) {
+                        // Recalculate timezone for ETA date to ensure DST is correct
+                        $recalculated_timezone = $helper->get_timezone_by_state($pickup_data['state'], $pickup_date);
+                        $pickup_timezone = $recalculated_timezone ?: $pickup_eta_record['timezone'];
+                    } else {
+                        $pickup_timezone = $pickup_data['timezone'];
+                    }
                     ?>
-                    <button class="btn btn-sm <?php echo $pickup_button_class; ?> js-open-popup-activator" 
-                            data-href="#popup_eta_pick_up"
-                            data-load-id="<?php echo $row['id']; ?>"
-                            data-current-date="<?php echo esc_attr($pickup_data['date']); ?>"
-                            data-current-time="<?php echo esc_attr($pickup_data['time']); ?>"
-                            data-state="<?php echo esc_attr($pickup_data['state']); ?>"
-                            data-timezone="<?php echo esc_attr($pickup_data['timezone']); ?>"
-                            data-eta-type="pickup"
-                            data-is-flt="<?php echo $flt ? '1' : '0'; ?>"
-                            title="Pickup ETA - <?php echo esc_attr($pickup_data['timezone']); ?>">
-                        ETA
-                    </button>
+                    <div class="d-flex flex-column align-items-start gap-1" style="min-width: 52px;">
+                        <button class="btn btn-sm <?php echo $pickup_button_class; ?> js-open-popup-activator" 
+                                data-href="#popup_eta_pick_up"
+                                data-load-id="<?php echo $row['id']; ?>"
+                                data-current-date="<?php echo esc_attr($pickup_date); ?>"
+                                data-current-time="<?php echo esc_attr($pickup_time); ?>"
+                                data-state="<?php echo esc_attr($pickup_data['state']); ?>"
+                                data-timezone="<?php echo esc_attr($pickup_timezone); ?>"
+                                data-eta-type="pickup"
+                                data-is-flt="<?php echo $flt ? '1' : '0'; ?>"
+                                title="Pickup ETA - <?php echo esc_attr($pickup_timezone); ?>">
+                            ETA
+                        </button>
+                        <?php if ($pickup_eta_record['exists']): ?>
+                            <div class="js-eta-timer" 
+                                 data-load-id="<?php echo $row['id']; ?>"
+                                 data-eta-type="pickup"
+                                 data-eta-datetime="<?php echo esc_attr($pickup_eta_record['eta_datetime']); ?>"
+                                 data-timezone="<?php echo esc_attr($pickup_timezone); ?>"
+                                 data-is-flt="<?php echo $flt ? '1' : '0'; ?>"
+                                 data-load-status="<?php echo esc_attr($load_status); ?>"
+                                 style="font-size: 11px; line-height: 1.2;">
+                                <span class="js-eta-timer-text">--:--</span>
+                            </div>
+                        <?php endif; ?>
+                    </div>
 
                     <?php endif; ?>
                     </div>
@@ -216,22 +244,50 @@ if ( ! empty( $results ) ) :
                 if ($load_status !== 'delivered' && $load_status !== 'waiting-on-rc' && $load_status !== 'tonu' && $load_status !== 'cancelled'):
                     $delivery_data = $helper->get_eta_display_data($eta_data, 'delivery');
                     
-                    // Check if ETA record exists (with project)
-                    $delivery_eta_exists = $eta_manager->eta_record_exists($row['id'], 'delivery', $flt, null, $TMSReports->project);
-                    $delivery_button_class = $delivery_eta_exists ? 'btn-success' : 'btn-outline-primary';
+                    // Get ETA record for display (for all users)
+                    $delivery_eta_record = $eta_manager->get_eta_record_for_display($row['id'], 'delivery', $flt, $TMSReports->project);
+                    $delivery_button_class = $delivery_eta_record['exists'] ? 'btn-success' : 'btn-outline-primary';
+                    
+                    // Use ETA record data if exists, otherwise use location data
+                    $delivery_date = $delivery_eta_record['exists'] ? $delivery_eta_record['date'] : $delivery_data['date'];
+                    $delivery_time = $delivery_eta_record['exists'] ? $delivery_eta_record['time'] : $delivery_data['time'];
+                    
+                    // Recalculate timezone based on ETA date and state (to fix incorrect timezones in DB)
+                    // This ensures timezone is correct for the ETA date, accounting for DST
+                    if ($delivery_eta_record['exists'] && $delivery_data['state']) {
+                        // Recalculate timezone for ETA date to ensure DST is correct
+                        $recalculated_timezone = $helper->get_timezone_by_state($delivery_data['state'], $delivery_date);
+                        $delivery_timezone = $recalculated_timezone ?: $delivery_eta_record['timezone'];
+                    } else {
+                        $delivery_timezone = $delivery_data['timezone'];
+                    }
                     ?>
-                    <button class="btn btn-sm <?php echo $delivery_button_class; ?> js-open-popup-activator" 
-                            data-href="#popup_eta_delivery"
-                            data-load-id="<?php echo $row['id']; ?>"
-                            data-current-date="<?php echo esc_attr($delivery_data['date']); ?>"
-                            data-current-time="<?php echo esc_attr($delivery_data['time']); ?>"
-                            data-state="<?php echo esc_attr($delivery_data['state']); ?>"
-                            data-timezone="<?php echo esc_attr($delivery_data['timezone']); ?>"
-                            data-eta-type="delivery"
-                            data-is-flt="<?php echo $flt ? '1' : '0'; ?>"
-                            title="Delivery ETA - <?php echo esc_attr($delivery_data['timezone']); ?>">
-                        ETA
-                    </button>
+                    <div class="d-flex flex-column align-items-start gap-1" style="min-width: 52px;">
+                        <button class="btn btn-sm <?php echo $delivery_button_class; ?> js-open-popup-activator" 
+                                data-href="#popup_eta_delivery"
+                                data-load-id="<?php echo $row['id']; ?>"
+                                data-current-date="<?php echo esc_attr($delivery_date); ?>"
+                                data-current-time="<?php echo esc_attr($delivery_time); ?>"
+                                data-state="<?php echo esc_attr($delivery_data['state']); ?>"
+                                data-timezone="<?php echo esc_attr($delivery_timezone); ?>"
+                                data-eta-type="delivery"
+                                data-is-flt="<?php echo $flt ? '1' : '0'; ?>"
+                                title="Delivery ETA - <?php echo esc_attr($delivery_timezone); ?>">
+                            ETA
+                        </button>
+                        <?php if ($delivery_eta_record['exists']): ?>
+                            <div class="js-eta-timer" 
+                                 data-load-id="<?php echo $row['id']; ?>"
+                                 data-eta-type="delivery"
+                                 data-eta-datetime="<?php echo esc_attr($delivery_eta_record['eta_datetime']); ?>"
+                                 data-timezone="<?php echo esc_attr($delivery_timezone); ?>"
+                                 data-is-flt="<?php echo $flt ? '1' : '0'; ?>"
+                                 data-load-status="<?php echo esc_attr($load_status); ?>"
+                                 style="font-size: 11px; line-height: 1.2;">
+                                <span class="js-eta-timer-text">--:--</span>
+                            </div>
+                        <?php endif; ?>
+                    </div>
 
                     <?php endif; ?>
                     </div>

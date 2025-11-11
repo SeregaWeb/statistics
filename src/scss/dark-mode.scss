@@ -1906,3 +1906,51 @@ body.dark-mode .custom-component {
     color: $dark-text-primary;
     border-color: $dark-border;
 }
+
+/* Dark mode for ETA timer */
+body.dark-mode .js-eta-timer {
+    color: $dark-text-primary;
+}
+
+/* ETA timer default text color (for stopped state) */
+.js-eta-timer .js-eta-timer-text {
+    color: #6c757d; /* gray for stopped state in light mode */
+}
+
+/* ETA timer color states - light mode (default colors) */
+.js-eta-timer.eta-timer-green .js-eta-timer-text {
+    color: #28a745; /* green */
+}
+
+.js-eta-timer.eta-timer-yellow .js-eta-timer-text {
+    color: #ffc107; /* yellow */
+}
+
+.js-eta-timer.eta-timer-red .js-eta-timer-text {
+    color: #dc3545; /* red */
+}
+
+.js-eta-timer.eta-timer-black .js-eta-timer-text {
+    color: #000000; /* black */
+}
+
+/* Dark mode colors for ETA timer - softer, less bright colors */
+body.dark-mode .js-eta-timer .js-eta-timer-text {
+    color: $dark-text-secondary; /* gray for stopped state in dark mode */
+}
+
+body.dark-mode .js-eta-timer.eta-timer-green .js-eta-timer-text {
+    color: #6bc77e; /* softer green for dark mode */
+}
+
+body.dark-mode .js-eta-timer.eta-timer-yellow .js-eta-timer-text {
+    color: #ffd54f; /* softer yellow for dark mode */
+}
+
+body.dark-mode .js-eta-timer.eta-timer-red .js-eta-timer-text {
+    color: #ff6b6b; /* softer red for dark mode */
+}
+
+body.dark-mode .js-eta-timer.eta-timer-black .js-eta-timer-text {
+    color: #ff6b6b; /* red instead of black for dark mode (better visibility) */
+}

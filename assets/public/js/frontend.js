@@ -8934,11 +8934,69 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */   initEtaPopups: function() { return /* binding */ initEtaPopups; }
 /* harmony export */ });
 /* harmony import */ var _info_messages__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./info-messages */ "./src/js/components/info-messages.ts");
+/* harmony import */ var _eta_timer__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./eta-timer */ "./src/js/components/eta-timer.ts");
 
-var loadExistingEtaRecord = function loadExistingEtaRecord(loadId, etaType, isFlt, popup) {
+
+var parseTimezone = function parseTimezone(timezoneStr) {
+  if (!timezoneStr) return null;
+  var match = timezoneStr.match(/\(UTC([+-]?\d+)\)/);
+  if (!match) return null;
+  var offset = parseInt(match[1], 10);
+  if (isNaN(offset)) return null;
+  return {
+    offset: offset
+  };
+};
+var getCurrentTimeInTimezone = function getCurrentTimeInTimezone(timezoneInfo) {
+  var nowUtc = new Date();
+  var nowUtcTimestamp = nowUtc.getTime();
+  var nowDestinationTimestamp = nowUtcTimestamp + timezoneInfo.offset * 60 * 60 * 1000;
+  var nowDestinationDate = new Date(nowDestinationTimestamp);
+  var hours = String(nowDestinationDate.getUTCHours()).padStart(2, '0');
+  var minutes = String(nowDestinationDate.getUTCMinutes()).padStart(2, '0');
+  var seconds = String(nowDestinationDate.getUTCSeconds()).padStart(2, '0');
+  return "".concat(hours, ":").concat(minutes, ":").concat(seconds);
+};
+var popupTimeInterval = null;
+var updatePopupLocationInfo = function updatePopupLocationInfo(popup, state, timezone) {
+  var stateElement = popup.querySelector('.js-eta-popup-state');
+  if (stateElement) {
+    stateElement.textContent = state || '--';
+  }
+  var timezoneElement = popup.querySelector('.js-eta-popup-timezone');
+  if (timezoneElement) {
+    timezoneElement.textContent = timezone || '--';
+  }
+  if (popupTimeInterval !== null) {
+    clearInterval(popupTimeInterval);
+    popupTimeInterval = null;
+  }
+  var currentTimeElement = popup.querySelector('.js-eta-popup-current-time');
+  if (currentTimeElement && timezone) {
+    var timezoneInfo = parseTimezone(timezone);
+    if (timezoneInfo) {
+      currentTimeElement.textContent = getCurrentTimeInTimezone(timezoneInfo);
+      popupTimeInterval = window.setInterval(function () {
+        if (popup.classList.contains('active')) {
+          currentTimeElement.textContent = getCurrentTimeInTimezone(timezoneInfo);
+        } else {
+          if (popupTimeInterval !== null) {
+            clearInterval(popupTimeInterval);
+            popupTimeInterval = null;
+          }
+        }
+      }, 1000);
+    } else {
+      currentTimeElement.textContent = '--:--:--';
+    }
+  } else if (currentTimeElement) {
+    currentTimeElement.textContent = '--:--:--';
+  }
+};
+var loadExistingEtaRecord = function loadExistingEtaRecord(loadId, etaType, isFlt, popup, state, timezone) {
   var _a;
   var formData = new FormData();
-  formData.append('action', 'get_eta_record');
+  formData.append('action', 'get_eta_record_for_display');
   formData.append('load_id', loadId);
   formData.append('eta_type', etaType);
   formData.append('is_flt', isFlt);
@@ -8956,13 +9014,43 @@ var loadExistingEtaRecord = function loadExistingEtaRecord(loadId, etaType, isFl
         if (dateInput) dateInput.value = data.data.date || '';
         if (timeInput) timeInput.value = data.data.time || '';
       }
+      var dbTimezone = data.data.timezone || timezone;
+      updatePopupLocationInfo(popup, state, dbTimezone);
+    } else {
+      updatePopupLocationInfo(popup, state, timezone);
     }
   }).catch(function (error) {
     console.error('Error loading ETA record:', error);
+    updatePopupLocationInfo(popup, state, timezone);
   });
 };
 var initEtaPopups = function initEtaPopups() {
   var clickedButton = null;
+  var clearPopupInterval = function clearPopupInterval(popup) {
+    if (popup && (popup.id === 'popup_eta_pick_up' || popup.id === 'popup_eta_delivery')) {
+      if (popupTimeInterval !== null) {
+        clearInterval(popupTimeInterval);
+        popupTimeInterval = null;
+      }
+    }
+  };
+  document.addEventListener('click', function (event) {
+    var target = event.target;
+    if (target.classList.contains('js-popup-close') || target.closest('.js-popup-close')) {
+      var popup = target.closest('.popup');
+      clearPopupInterval(popup);
+    }
+    if (target.classList.contains('my_overlay')) {
+      var _popup = target.closest('.popup');
+      clearPopupInterval(_popup);
+    }
+  });
+  document.addEventListener('keydown', function (event) {
+    if (event.key === 'Escape') {
+      var activePopup = document.querySelector('.popup.active');
+      clearPopupInterval(activePopup);
+    }
+  });
   document.addEventListener('click', function (event) {
     var target = event.target;
     if (!target.classList.contains('js-open-popup-activator')) {
@@ -8977,6 +9065,7 @@ var initEtaPopups = function initEtaPopups() {
       var currentDate = button.getAttribute('data-current-date');
       var currentTime = button.getAttribute('data-current-time');
       var state = button.getAttribute('data-state');
+      var timezone = button.getAttribute('data-timezone');
       var popup = document.querySelector(href);
       if (!popup) {
         console.error('ETA popup not found:', href);
@@ -8989,10 +9078,11 @@ var initEtaPopups = function initEtaPopups() {
       }
       var etaType = button.getAttribute('data-eta-type') || '';
       var isFlt = button.getAttribute('data-is-flt') || '0';
-      var hasExistingRecord = button.classList.contains('btn-success');
+      var hasExistingRecord = button.classList.contains('btn-success') || currentDate && currentTime && currentDate !== '' && currentTime !== '';
       if (hasExistingRecord) {
         popup.classList.add('active');
         document.body.classList.add('popup-open');
+        updatePopupLocationInfo(popup, state, timezone);
         if (form) {
           var submitBtn = form.querySelector('button[type="submit"]');
           if (submitBtn) {
@@ -9000,7 +9090,7 @@ var initEtaPopups = function initEtaPopups() {
             submitBtn.textContent = 'Loading...';
           }
         }
-        loadExistingEtaRecord(loadId || '', etaType, isFlt, popup).then(function () {
+        loadExistingEtaRecord(loadId || '', etaType, isFlt, popup, state, timezone).then(function () {
           if (form) {
             var _submitBtn = form.querySelector('button[type="submit"]');
             if (_submitBtn) {
@@ -9010,6 +9100,7 @@ var initEtaPopups = function initEtaPopups() {
           }
         });
       } else {
+        updatePopupLocationInfo(popup, state, timezone);
         if (form) {
           var dateInput = form.querySelector('input[name="date"]');
           var timeInput = form.querySelector('input[name="time"]');
@@ -9041,6 +9132,7 @@ var initEtaPopups = function initEtaPopups() {
       return;
     }
     var timezone = activeButton.getAttribute('data-timezone') || '';
+    var state = activeButton.getAttribute('data-state') || '';
     var etaType = activeButton.getAttribute('data-eta-type') || '';
     var isFlt = activeButton.getAttribute('data-is-flt') || '0';
     var formData = new FormData();
@@ -9049,6 +9141,7 @@ var initEtaPopups = function initEtaPopups() {
     formData.append('date', date);
     formData.append('time', time);
     formData.append('timezone', timezone);
+    formData.append('state', state);
     formData.append('eta_type', etaType);
     formData.append('is_flt', isFlt);
     var submitBtn = form.querySelector('button[type="submit"]');
@@ -9062,18 +9155,65 @@ var initEtaPopups = function initEtaPopups() {
     }).then(function (response) {
       return response.json();
     }).then(function (data) {
-      var _a;
+      var _a, _b, _c, _d;
       if (data.success) {
         activeButton.classList.remove('btn-outline-primary');
         activeButton.classList.add('btn-success');
+        var newEtaDatetime = "".concat(date, " ").concat(time, ":00");
+        activeButton.setAttribute('data-current-date', date);
+        activeButton.setAttribute('data-current-time', time);
+        var _timezone = activeButton.getAttribute('data-timezone') || '';
+        var _isFlt = activeButton.getAttribute('data-is-flt') || '0';
+        var _etaType = activeButton.getAttribute('data-eta-type') || '';
+        var timerContainer = activeButton.parentElement;
+        if (!timerContainer || !timerContainer.classList.contains('d-flex')) {
+          var newContainer = document.createElement('div');
+          newContainer.className = 'd-flex flex-column align-items-start gap-1';
+          (_a = activeButton.parentNode) === null || _a === void 0 ? void 0 : _a.insertBefore(newContainer, activeButton);
+          newContainer.appendChild(activeButton);
+          timerContainer = newContainer;
+        }
+        var timerElement = timerContainer.querySelector(".js-eta-timer[data-load-id=\"".concat(loadId, "\"][data-eta-type=\"").concat(_etaType, "\"]"));
+        if (!timerElement) {
+          timerElement = document.createElement('div');
+          timerElement.className = 'js-eta-timer';
+          timerElement.setAttribute('data-load-id', loadId);
+          timerElement.setAttribute('data-eta-type', _etaType);
+          timerElement.setAttribute('data-eta-datetime', newEtaDatetime);
+          timerElement.setAttribute('data-timezone', _timezone);
+          timerElement.setAttribute('data-is-flt', _isFlt);
+          var statusSelect = (_b = activeButton.closest('tr')) === null || _b === void 0 ? void 0 : _b.querySelector('select[name="status"]');
+          var loadStatus = (statusSelect === null || statusSelect === void 0 ? void 0 : statusSelect.value) || ((_c = activeButton.closest('tr')) === null || _c === void 0 ? void 0 : _c.getAttribute('data-load-status')) || '';
+          timerElement.setAttribute('data-load-status', loadStatus);
+          timerElement.style.fontSize = '11px';
+          timerElement.style.lineHeight = '1.2';
+          timerElement.style.minHeight = '14px';
+          timerElement.style.display = 'block';
+          var timerText = document.createElement('span');
+          timerText.className = 'js-eta-timer-text';
+          timerText.textContent = '--:--';
+          timerText.style.display = 'inline-block';
+          timerElement.appendChild(timerText);
+          timerContainer.appendChild(timerElement);
+        } else {
+          timerElement.setAttribute('data-eta-datetime', newEtaDatetime);
+        }
+        if (timerElement) {
+          timerElement.setAttribute('data-eta-datetime', newEtaDatetime);
+          (0,_eta_timer__WEBPACK_IMPORTED_MODULE_1__.updateEtaTimer)(loadId, _etaType, newEtaDatetime);
+        }
         var popup = form.closest('.popup');
         if (popup) {
           popup.classList.remove('active');
           document.body.classList.remove('popup-open');
+          if (popupTimeInterval !== null) {
+            clearInterval(popupTimeInterval);
+            popupTimeInterval = null;
+          }
         }
         (0,_info_messages__WEBPACK_IMPORTED_MODULE_0__.printMessage)(data.data.message, 'success', 5000);
       } else {
-        (0,_info_messages__WEBPACK_IMPORTED_MODULE_0__.printMessage)('Error: ' + (((_a = data.data) === null || _a === void 0 ? void 0 : _a.message) || 'Unknown error'), 'danger', 5000);
+        (0,_info_messages__WEBPACK_IMPORTED_MODULE_0__.printMessage)('Error: ' + (((_d = data.data) === null || _d === void 0 ? void 0 : _d.message) || 'Unknown error'), 'danger', 5000);
       }
     }).catch(function (error) {
       console.error('ETA save error:', error);
@@ -9086,6 +9226,393 @@ var initEtaPopups = function initEtaPopups() {
     });
   });
 };
+
+/***/ }),
+
+/***/ "./src/js/components/eta-timer.ts":
+/*!****************************************!*\
+  !*** ./src/js/components/eta-timer.ts ***!
+  \****************************************/
+/***/ (function(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   cleanupEtaTimers: function() { return /* binding */ cleanupEtaTimers; },
+/* harmony export */   initEtaTimers: function() { return /* binding */ initEtaTimers; },
+/* harmony export */   stopEtaTimer: function() { return /* binding */ stopEtaTimer; },
+/* harmony export */   updateEtaTimer: function() { return /* binding */ _updateEtaTimer; }
+/* harmony export */ });
+function _typeof(o) { "@babel/helpers - typeof"; return _typeof = "function" == typeof Symbol && "symbol" == typeof Symbol.iterator ? function (o) { return typeof o; } : function (o) { return o && "function" == typeof Symbol && o.constructor === Symbol && o !== Symbol.prototype ? "symbol" : typeof o; }, _typeof(o); }
+function _slicedToArray(r, e) { return _arrayWithHoles(r) || _iterableToArrayLimit(r, e) || _unsupportedIterableToArray(r, e) || _nonIterableRest(); }
+function _nonIterableRest() { throw new TypeError("Invalid attempt to destructure non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method."); }
+function _unsupportedIterableToArray(r, a) { if (r) { if ("string" == typeof r) return _arrayLikeToArray(r, a); var t = {}.toString.call(r).slice(8, -1); return "Object" === t && r.constructor && (t = r.constructor.name), "Map" === t || "Set" === t ? Array.from(r) : "Arguments" === t || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(t) ? _arrayLikeToArray(r, a) : void 0; } }
+function _arrayLikeToArray(r, a) { (null == a || a > r.length) && (a = r.length); for (var e = 0, n = Array(a); e < a; e++) n[e] = r[e]; return n; }
+function _iterableToArrayLimit(r, l) { var t = null == r ? null : "undefined" != typeof Symbol && r[Symbol.iterator] || r["@@iterator"]; if (null != t) { var e, n, i, u, a = [], f = !0, o = !1; try { if (i = (t = t.call(r)).next, 0 === l) { if (Object(t) !== t) return; f = !1; } else for (; !(f = (e = i.call(t)).done) && (a.push(e.value), a.length !== l); f = !0); } catch (r) { o = !0, n = r; } finally { try { if (!f && null != t.return && (u = t.return(), Object(u) !== u)) return; } finally { if (o) throw n; } } return a; } }
+function _arrayWithHoles(r) { if (Array.isArray(r)) return r; }
+function _classCallCheck(a, n) { if (!(a instanceof n)) throw new TypeError("Cannot call a class as a function"); }
+function _defineProperties(e, r) { for (var t = 0; t < r.length; t++) { var o = r[t]; o.enumerable = o.enumerable || !1, o.configurable = !0, "value" in o && (o.writable = !0), Object.defineProperty(e, _toPropertyKey(o.key), o); } }
+function _createClass(e, r, t) { return r && _defineProperties(e.prototype, r), t && _defineProperties(e, t), Object.defineProperty(e, "prototype", { writable: !1 }), e; }
+function _toPropertyKey(t) { var i = _toPrimitive(t, "string"); return "symbol" == _typeof(i) ? i : i + ""; }
+function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e = t[Symbol.toPrimitive]; if (void 0 !== e) { var i = e.call(t, r || "default"); if ("object" != _typeof(i)) return i; throw new TypeError("@@toPrimitive must return a primitive value."); } return ("string" === r ? String : Number)(t); }
+var EtaTimer = /*#__PURE__*/function () {
+  function EtaTimer(element) {
+    _classCallCheck(this, EtaTimer);
+    this.isStopped = false;
+    this.cachedEtaTimestamp = null;
+    this.element = element;
+    this.data = {
+      loadId: element.getAttribute('data-load-id') || '',
+      etaType: element.getAttribute('data-eta-type') || '',
+      etaDatetime: element.getAttribute('data-eta-datetime') || '',
+      timezone: element.getAttribute('data-timezone') || '',
+      isFlt: element.getAttribute('data-is-flt') || '0',
+      loadStatus: element.getAttribute('data-load-status') || ''
+    };
+    if (this.isLoadClosed()) {
+      this.isStopped = true;
+      this.displayStopped();
+      return;
+    }
+    if (!this.data.etaDatetime) {
+      this.displayError();
+      return;
+    }
+    this.updateTimer();
+  }
+  return _createClass(EtaTimer, [{
+    key: "isLoadClosed",
+    value: function isLoadClosed() {
+      var closedStatuses = ['delivered', 'tonu', 'cancelled'];
+      return closedStatuses.includes(this.data.loadStatus);
+    }
+  }, {
+    key: "updateTimer",
+    value: function updateTimer() {
+      if (this.isStopped || !this.data.etaDatetime) {
+        return;
+      }
+      if (this.isLoadClosed()) {
+        this.stop();
+        return;
+      }
+      var timezoneInfo = this.parseTimezone(this.data.timezone);
+      if (!timezoneInfo) {
+        this.updateTimerAsLocal();
+        return;
+      }
+      var etaDateStr = this.data.etaDatetime;
+      var currentEtaDatetime = this.element.getAttribute('data-eta-datetime');
+      if (currentEtaDatetime !== this.data.etaDatetime) {
+        this.data.etaDatetime = currentEtaDatetime || '';
+        this.cachedEtaTimestamp = null;
+      }
+      var destinationOffsetHours = timezoneInfo.offset;
+      if (this.cachedEtaTimestamp === null) {
+        var _etaDateStr$split = etaDateStr.split(' '),
+          _etaDateStr$split2 = _slicedToArray(_etaDateStr$split, 2),
+          datePart = _etaDateStr$split2[0],
+          timePart = _etaDateStr$split2[1];
+        var _datePart$split$map = datePart.split('-').map(Number),
+          _datePart$split$map2 = _slicedToArray(_datePart$split$map, 3),
+          year = _datePart$split$map2[0],
+          month = _datePart$split$map2[1],
+          day = _datePart$split$map2[2];
+        var _timePart$split$map = timePart.split(':').map(Number),
+          _timePart$split$map2 = _slicedToArray(_timePart$split$map, 3),
+          hours = _timePart$split$map2[0],
+          minutes = _timePart$split$map2[1],
+          seconds = _timePart$split$map2[2];
+        this.cachedEtaTimestamp = Date.UTC(year, month - 1, day, hours, minutes, seconds || 0);
+      }
+      var nowUtc = new Date();
+      var nowUtcTimestamp = nowUtc.getTime();
+      var nowDestinationTimestamp = nowUtcTimestamp + destinationOffsetHours * 60 * 60 * 1000;
+      var nowDestinationDate = new Date(nowDestinationTimestamp);
+      var nowDestinationYear = nowDestinationDate.getUTCFullYear();
+      var nowDestinationMonth = nowDestinationDate.getUTCMonth();
+      var nowDestinationDay = nowDestinationDate.getUTCDate();
+      var nowDestinationHour = nowDestinationDate.getUTCHours();
+      var nowDestinationMinute = nowDestinationDate.getUTCMinutes();
+      var nowDestinationSecond = nowDestinationDate.getUTCSeconds();
+      var nowDestinationComparable = Date.UTC(nowDestinationYear, nowDestinationMonth, nowDestinationDay, nowDestinationHour, nowDestinationMinute, nowDestinationSecond);
+      var diffMs = this.cachedEtaTimestamp - nowDestinationComparable;
+      var diffMinutes = Math.floor(diffMs / (1000 * 60));
+      var diffSeconds = Math.floor(diffMs % (1000 * 60) / 1000);
+      this.updateDisplay(diffMinutes, diffSeconds);
+    }
+  }, {
+    key: "updateTimerAsLocal",
+    value: function updateTimerAsLocal() {
+      var etaDate = new Date(this.data.etaDatetime.replace(' ', 'T'));
+      if (isNaN(etaDate.getTime())) {
+        this.displayError();
+        return;
+      }
+      var now = new Date();
+      var diffMs = etaDate.getTime() - now.getTime();
+      var diffMinutes = Math.floor(diffMs / (1000 * 60));
+      var diffSeconds = Math.floor(diffMs % (1000 * 60) / 1000);
+      this.updateDisplay(diffMinutes, diffSeconds);
+    }
+  }, {
+    key: "parseTimezone",
+    value: function parseTimezone(timezoneString) {
+      var match = timezoneString.match(/\(UTC([+-]\d+)\)/);
+      if (match) {
+        return {
+          offset: parseInt(match[1], 10)
+        };
+      }
+      return null;
+    }
+  }, {
+    key: "updateDisplay",
+    value: function updateDisplay(minutes, seconds) {
+      var textElement = this.element.querySelector('.js-eta-timer-text');
+      if (!textElement) {
+        return;
+      }
+      var displayText;
+      var timerClass;
+      var buttonClass;
+      if (minutes < 0) {
+        var absMinutes = Math.abs(minutes);
+        var absSeconds = Math.abs(seconds);
+        var hours = Math.floor(absMinutes / 60);
+        var mins = absMinutes % 60;
+        if (hours > 0) {
+          displayText = "-".concat(hours, ":").concat(mins.toString().padStart(2, '0'), ":").concat(absSeconds.toString().padStart(2, '0'));
+        } else {
+          displayText = "-".concat(mins, ":").concat(absSeconds.toString().padStart(2, '0'));
+        }
+        timerClass = 'eta-timer-black';
+        buttonClass = 'btn-dark';
+      } else if (minutes === 0 && seconds <= 0) {
+        displayText = '0:00:00';
+        timerClass = 'eta-timer-black';
+        buttonClass = 'btn-dark';
+      } else {
+        var _hours = Math.floor(minutes / 60);
+        var _mins = minutes % 60;
+        if (_hours > 0) {
+          displayText = "".concat(_hours, ":").concat(_mins.toString().padStart(2, '0'), ":").concat(seconds.toString().padStart(2, '0'));
+        } else {
+          displayText = "".concat(_mins, ":").concat(seconds.toString().padStart(2, '0'));
+        }
+        if (minutes < 15) {
+          timerClass = 'eta-timer-red';
+          buttonClass = 'btn-danger';
+        } else if (minutes < 30) {
+          timerClass = 'eta-timer-yellow';
+          buttonClass = 'btn-warning';
+        } else {
+          timerClass = 'eta-timer-green';
+          buttonClass = 'btn-success';
+        }
+      }
+      textElement.textContent = displayText;
+      this.element.classList.remove('eta-timer-green', 'eta-timer-yellow', 'eta-timer-red', 'eta-timer-black');
+      this.element.classList.add(timerClass);
+      this.updateButtonColor(buttonClass);
+    }
+  }, {
+    key: "updateButtonColor",
+    value: function updateButtonColor(buttonClass) {
+      var container = this.element.closest('.d-flex.flex-column');
+      if (!container) {
+        return;
+      }
+      var button = container.querySelector('.js-open-popup-activator');
+      if (!button) {
+        return;
+      }
+      button.classList.remove('btn-success', 'btn-warning', 'btn-danger', 'btn-dark', 'btn-outline-primary');
+      button.classList.add(buttonClass);
+    }
+  }, {
+    key: "displayStopped",
+    value: function displayStopped() {
+      var textElement = this.element.querySelector('.js-eta-timer-text');
+      if (textElement) {
+        textElement.textContent = 'Stopped';
+      }
+      this.element.classList.remove('eta-timer-green', 'eta-timer-yellow', 'eta-timer-red', 'eta-timer-black');
+      this.updateButtonColor('btn-outline-primary');
+    }
+  }, {
+    key: "displayError",
+    value: function displayError() {
+      var textElement = this.element.querySelector('.js-eta-timer-text');
+      if (textElement) {
+        textElement.textContent = 'Error';
+        textElement.style.color = '#dc3545';
+      }
+    }
+  }, {
+    key: "updateEta",
+    value: function updateEta(newEtaDatetime) {
+      this.data.etaDatetime = newEtaDatetime;
+      this.element.setAttribute('data-eta-datetime', newEtaDatetime);
+      this.cachedEtaTimestamp = null;
+      this.isStopped = false;
+      this.updateTimer();
+    }
+  }, {
+    key: "stop",
+    value: function stop() {
+      this.isStopped = true;
+      this.displayStopped();
+    }
+  }, {
+    key: "destroy",
+    value: function destroy() {
+      this.isStopped = true;
+    }
+  }]);
+}();
+var activeTimers = new Map();
+var globalIntervalId = null;
+var UPDATE_INTERVAL = 1000;
+var startGlobalInterval = function startGlobalInterval() {
+  if (globalIntervalId !== null) {
+    return;
+  }
+  globalIntervalId = window.setInterval(function () {
+    activeTimers.forEach(function (timer) {
+      timer.updateTimer();
+    });
+  }, UPDATE_INTERVAL);
+};
+var stopGlobalInterval = function stopGlobalInterval() {
+  if (globalIntervalId !== null) {
+    clearInterval(globalIntervalId);
+    globalIntervalId = null;
+  }
+};
+var initEtaTimers = function initEtaTimers() {
+  var timerElements = document.querySelectorAll('.js-eta-timer');
+  timerElements.forEach(function (element) {
+    var htmlElement = element;
+    if (activeTimers.has(htmlElement)) {
+      return;
+    }
+    if (!document.contains(htmlElement)) {
+      return;
+    }
+    var etaDatetime = htmlElement.getAttribute('data-eta-datetime');
+    if (etaDatetime) {
+      var timer = new EtaTimer(htmlElement);
+      activeTimers.set(htmlElement, timer);
+    }
+  });
+  if (activeTimers.size > 0 && globalIntervalId === null) {
+    startGlobalInterval();
+  } else if (activeTimers.size === 0 && globalIntervalId !== null) {
+    stopGlobalInterval();
+  }
+};
+var _updateEtaTimer = function updateEtaTimer(loadId, etaType, newEtaDatetime) {
+  var timerElement = document.querySelector(".js-eta-timer[data-load-id=\"".concat(loadId, "\"][data-eta-type=\"").concat(etaType, "\"]"));
+  if (!timerElement) {
+    var attempts = 0;
+    var maxAttempts = 5;
+    var checkInterval = setInterval(function () {
+      attempts++;
+      var element = document.querySelector(".js-eta-timer[data-load-id=\"".concat(loadId, "\"][data-eta-type=\"").concat(etaType, "\"]"));
+      if (element) {
+        clearInterval(checkInterval);
+        _updateEtaTimer(loadId, etaType, newEtaDatetime);
+      } else if (attempts >= maxAttempts) {
+        clearInterval(checkInterval);
+      }
+    }, 200);
+    return;
+  }
+  timerElement.setAttribute('data-eta-datetime', newEtaDatetime);
+  if (activeTimers.has(timerElement)) {
+    var timer = activeTimers.get(timerElement);
+    if (timer) {
+      timer.updateEta(newEtaDatetime);
+    }
+  } else {
+    var _timer = new EtaTimer(timerElement);
+    activeTimers.set(timerElement, _timer);
+  }
+};
+
+var stopEtaTimer = function stopEtaTimer(loadId, etaType) {
+  var timerElement = document.querySelector(".js-eta-timer[data-load-id=\"".concat(loadId, "\"][data-eta-type=\"").concat(etaType, "\"]"));
+  if (timerElement && activeTimers.has(timerElement)) {
+    var timer = activeTimers.get(timerElement);
+    if (timer) {
+      timer.stop();
+    }
+  }
+};
+var cleanupEtaTimers = function cleanupEtaTimers() {
+  activeTimers.forEach(function (timer, element) {
+    if (!document.contains(element)) {
+      timer.destroy();
+      activeTimers.delete(element);
+    }
+  });
+  if (activeTimers.size === 0 && globalIntervalId !== null) {
+    stopGlobalInterval();
+  }
+};
+var debounce = function debounce(func, wait) {
+  var timeout = null;
+  return function () {
+    for (var _len = arguments.length, args = new Array(_len), _key = 0; _key < _len; _key++) {
+      args[_key] = arguments[_key];
+    }
+    if (timeout !== null) {
+      clearTimeout(timeout);
+    }
+    timeout = window.setTimeout(function () {
+      return func.apply(void 0, args);
+    }, wait);
+  };
+};
+var debouncedInit = debounce(function () {
+  cleanupEtaTimers();
+  initEtaTimers();
+}, 300);
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', function () {
+    initEtaTimers();
+  });
+} else {
+  initEtaTimers();
+}
+var observer = new MutationObserver(function (mutations) {
+  var hasRelevantChanges = mutations.some(function (mutation) {
+    if (mutation.type !== 'childList') {
+      return false;
+    }
+    var addedNodes = Array.from(mutation.addedNodes);
+    var removedNodes = Array.from(mutation.removedNodes);
+    var hasTimerElements = function hasTimerElements(nodes) {
+      return nodes.some(function (node) {
+        var _a, _b;
+        if (node.nodeType !== Node.ELEMENT_NODE) {
+          return false;
+        }
+        var element = node;
+        return ((_a = element.classList) === null || _a === void 0 ? void 0 : _a.contains('js-eta-timer')) || ((_b = element.querySelector) === null || _b === void 0 ? void 0 : _b.call(element, '.js-eta-timer')) !== null;
+      });
+    };
+    return hasTimerElements(addedNodes) || hasTimerElements(removedNodes);
+  });
+  if (hasRelevantChanges) {
+    debouncedInit();
+  }
+});
+observer.observe(document.body, {
+  childList: true,
+  subtree: true
+});
 
 /***/ }),
 
@@ -9297,6 +9824,7 @@ function initMoneyMask() {
   var allValueInput = document.querySelector('.js-all-value');
   var driverValueInput = document.querySelector('.js-driver-value');
   var secondDriverValueInput = document.querySelector('.js-driver-second-value');
+  var thirdDriverValueInput = document.querySelector('.js-driver-third-value');
   var moneyTotalInput = document.querySelector('.js-money-total');
   var processingFeesInput = document.querySelector('.js-processing_fees');
   var typePayInput = document.querySelector('.js-type_pay');
@@ -9328,6 +9856,7 @@ function initMoneyMask() {
       var allValue = parseNumber(allValueInput.value);
       var driverValue = parseNumber(driverValueInput.value);
       var secondDriverValue = parseNumber(secondDriverValueInput.value) || 0;
+      var thirdDriverValue = parseNumber(thirdDriverValueInput.value) || 0;
       var processingFees = parseFloat(processingFeesInput.value) || 0;
       var typePay = typePayInput.value;
       var percentQuickPay = parseFloat(percentQuickPayInput.value) || 0;
@@ -9347,7 +9876,7 @@ function initMoneyMask() {
       if (tbd.checked) {
         moneyTotalMask.value = '0';
       } else {
-        var remaining = allValue - (driverValue + secondDriverValue);
+        var remaining = allValue - (driverValue + secondDriverValue + thirdDriverValue);
         moneyTotalMask.value = remaining.toString();
       }
     }
@@ -9355,6 +9884,7 @@ function initMoneyMask() {
       allValueInput.addEventListener('input', calculateRemaining);
       driverValueInput.addEventListener('input', calculateRemaining);
       secondDriverValueInput.addEventListener('input', calculateRemaining);
+      thirdDriverValueInput.addEventListener('input', calculateRemaining);
       tbd && tbd.addEventListener('change', function (event) {
         event.preventDefault();
         var target = event.target;
@@ -9362,19 +9892,22 @@ function initMoneyMask() {
         var inputDriverPhone = document.querySelector('.js-phone-driver');
         var inputDriverValue = document.querySelector('.js-driver-value');
         var secondInputDirverValue = document.querySelector('.js-driver-second-value');
+        var thirdInputDirverValue = document.querySelector('.js-driver-third-value');
         var inputTotal = document.querySelector('.js-money-total');
-        if (!inputDriver || !inputDriverPhone || !inputDriverValue) return;
+        if (!inputDriver || !inputDriverPhone || !inputDriverValue || !thirdInputDirverValue) return;
         if (target) {
           if (target.checked) {
             inputDriver.value = 'TBD';
             inputDriverPhone.value = 'TBD';
             inputDriverValue.value = '0';
             secondInputDirverValue.value = '0';
+            thirdInputDirverValue.value = '0';
             inputTotal.value = '0';
             inputDriver.setAttribute('readonly', 'readonly');
             inputDriverPhone.setAttribute('readonly', 'readonly');
             inputDriverValue.setAttribute('readonly', 'readonly');
             secondInputDirverValue.setAttribute('readonly', 'readonly');
+            thirdInputDirverValue.setAttribute('readonly', 'readonly');
             inputTotal.setAttribute('readonly', 'readonly');
           } else {
             var driverVal = inputDriver.getAttribute('data-value');
@@ -9383,11 +9916,13 @@ function initMoneyMask() {
             inputDriverPhone.value = driverPhoneVal === 'TBD' ? '' : driverPhoneVal;
             inputDriverValue.value = inputDriverValue.getAttribute('data-value');
             secondInputDirverValue.value = secondInputDirverValue.getAttribute('data-value');
+            thirdInputDirverValue.value = thirdInputDirverValue.getAttribute('data-value');
             inputTotal.value = inputTotal.getAttribute('data-value');
             inputDriver.removeAttribute('readonly');
             inputDriverPhone.removeAttribute('readonly');
             inputDriverValue.removeAttribute('readonly');
             secondInputDirverValue.removeAttribute('readonly');
+            thirdInputDirverValue.removeAttribute('readonly');
             calculateRemaining();
           }
         }
@@ -25651,16 +26186,18 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _components_capabilities_filter__WEBPACK_IMPORTED_MODULE_34__ = __webpack_require__(/*! ./components/capabilities-filter */ "./src/js/components/capabilities-filter.ts");
 /* harmony import */ var _components_quick_status_update__WEBPACK_IMPORTED_MODULE_35__ = __webpack_require__(/*! ./components/quick-status-update */ "./src/js/components/quick-status-update.ts");
 /* harmony import */ var _components_eta_popup__WEBPACK_IMPORTED_MODULE_36__ = __webpack_require__(/*! ./components/eta-popup */ "./src/js/components/eta-popup.ts");
-/* harmony import */ var _components_quick_copy__WEBPACK_IMPORTED_MODULE_37__ = __webpack_require__(/*! ./components/quick-copy */ "./src/js/components/quick-copy.ts");
-/* harmony import */ var _components_driver_popups__WEBPACK_IMPORTED_MODULE_38__ = __webpack_require__(/*! ./components/driver-popups */ "./src/js/components/driver-popups.ts");
-/* harmony import */ var _components_driver_popup_forms__WEBPACK_IMPORTED_MODULE_39__ = __webpack_require__(/*! ./components/driver-popup-forms */ "./src/js/components/driver-popup-forms.ts");
-/* harmony import */ var _components_broker_popups__WEBPACK_IMPORTED_MODULE_40__ = __webpack_require__(/*! ./components/broker-popups */ "./src/js/components/broker-popups.ts");
-/* harmony import */ var _components_broker_popup_forms__WEBPACK_IMPORTED_MODULE_41__ = __webpack_require__(/*! ./components/broker-popup-forms */ "./src/js/components/broker-popup-forms.ts");
-/* harmony import */ var _components_driver_autocomplete__WEBPACK_IMPORTED_MODULE_42__ = __webpack_require__(/*! ./components/driver-autocomplete */ "./src/js/components/driver-autocomplete.ts");
-/* harmony import */ var _components_common_audio_helper__WEBPACK_IMPORTED_MODULE_43__ = __webpack_require__(/*! ./components/common/audio-helper */ "./src/js/components/common/audio-helper.ts");
-/* harmony import */ var _components_timer_control__WEBPACK_IMPORTED_MODULE_44__ = __webpack_require__(/*! ./components/timer-control */ "./src/js/components/timer-control.ts");
-/* harmony import */ var _components_timer_analytics__WEBPACK_IMPORTED_MODULE_45__ = __webpack_require__(/*! ./components/timer-analytics */ "./src/js/components/timer-analytics.ts");
-/* harmony import */ var _components_dark_mode_toggle__WEBPACK_IMPORTED_MODULE_46__ = __webpack_require__(/*! ./components/dark-mode-toggle */ "./src/js/components/dark-mode-toggle.ts");
+/* harmony import */ var _components_eta_timer__WEBPACK_IMPORTED_MODULE_37__ = __webpack_require__(/*! ./components/eta-timer */ "./src/js/components/eta-timer.ts");
+/* harmony import */ var _components_quick_copy__WEBPACK_IMPORTED_MODULE_38__ = __webpack_require__(/*! ./components/quick-copy */ "./src/js/components/quick-copy.ts");
+/* harmony import */ var _components_driver_popups__WEBPACK_IMPORTED_MODULE_39__ = __webpack_require__(/*! ./components/driver-popups */ "./src/js/components/driver-popups.ts");
+/* harmony import */ var _components_driver_popup_forms__WEBPACK_IMPORTED_MODULE_40__ = __webpack_require__(/*! ./components/driver-popup-forms */ "./src/js/components/driver-popup-forms.ts");
+/* harmony import */ var _components_broker_popups__WEBPACK_IMPORTED_MODULE_41__ = __webpack_require__(/*! ./components/broker-popups */ "./src/js/components/broker-popups.ts");
+/* harmony import */ var _components_broker_popup_forms__WEBPACK_IMPORTED_MODULE_42__ = __webpack_require__(/*! ./components/broker-popup-forms */ "./src/js/components/broker-popup-forms.ts");
+/* harmony import */ var _components_driver_autocomplete__WEBPACK_IMPORTED_MODULE_43__ = __webpack_require__(/*! ./components/driver-autocomplete */ "./src/js/components/driver-autocomplete.ts");
+/* harmony import */ var _components_common_audio_helper__WEBPACK_IMPORTED_MODULE_44__ = __webpack_require__(/*! ./components/common/audio-helper */ "./src/js/components/common/audio-helper.ts");
+/* harmony import */ var _components_timer_control__WEBPACK_IMPORTED_MODULE_45__ = __webpack_require__(/*! ./components/timer-control */ "./src/js/components/timer-control.ts");
+/* harmony import */ var _components_timer_analytics__WEBPACK_IMPORTED_MODULE_46__ = __webpack_require__(/*! ./components/timer-analytics */ "./src/js/components/timer-analytics.ts");
+/* harmony import */ var _components_dark_mode_toggle__WEBPACK_IMPORTED_MODULE_47__ = __webpack_require__(/*! ./components/dark-mode-toggle */ "./src/js/components/dark-mode-toggle.ts");
+
 
 
 
@@ -25723,12 +26260,12 @@ function ready() {
   };
   var popupInstance = new _parts_popup_window__WEBPACK_IMPORTED_MODULE_2__["default"]();
   popupInstance.init();
-  _components_common_audio_helper__WEBPACK_IMPORTED_MODULE_43__["default"].getInstance();
-  var driverPopupForms = new _components_driver_popup_forms__WEBPACK_IMPORTED_MODULE_39__["default"](urlAjax);
-  var brokerPopupForms = new _components_broker_popup_forms__WEBPACK_IMPORTED_MODULE_41__["default"](urlAjax);
+  _components_common_audio_helper__WEBPACK_IMPORTED_MODULE_44__["default"].getInstance();
+  var driverPopupForms = new _components_driver_popup_forms__WEBPACK_IMPORTED_MODULE_40__["default"](urlAjax);
+  var brokerPopupForms = new _components_broker_popup_forms__WEBPACK_IMPORTED_MODULE_42__["default"](urlAjax);
   var singlePageBrokerUrl = (var_from_php === null || var_from_php === void 0 ? void 0 : var_from_php.single_page_broker) || '';
-  var brokerPopups = new _components_broker_popups__WEBPACK_IMPORTED_MODULE_40__["default"](urlAjax, singlePageBrokerUrl);
-  new _components_driver_autocomplete__WEBPACK_IMPORTED_MODULE_42__["default"](urlAjax, {
+  var brokerPopups = new _components_broker_popups__WEBPACK_IMPORTED_MODULE_41__["default"](urlAjax, singlePageBrokerUrl);
+  new _components_driver_autocomplete__WEBPACK_IMPORTED_MODULE_43__["default"](urlAjax, {
     unitInput: '.js-unit-number-input',
     dropdown: '.js-driver-dropdown',
     attachedDriverInput: 'input[name="attached_driver"]',
@@ -25737,13 +26274,21 @@ function ready() {
     nonceInput: '#driver-search-nonce',
     driverValueInput: '.js-driver-value'
   });
-  new _components_driver_autocomplete__WEBPACK_IMPORTED_MODULE_42__["default"](urlAjax, {
+  new _components_driver_autocomplete__WEBPACK_IMPORTED_MODULE_43__["default"](urlAjax, {
     unitInput: '.js-second-unit-number-input',
     dropdown: '.js-second-driver-dropdown',
     attachedDriverInput: 'input[name="attached_second_driver"]',
     phoneInput: '.js-second-phone-driver',
     unitNumberNameInput: 'input[name="second_unit_number_name"]',
     nonceInput: '#second-driver-search-nonce'
+  });
+  new _components_driver_autocomplete__WEBPACK_IMPORTED_MODULE_43__["default"](urlAjax, {
+    unitInput: '.js-third-unit-number-input',
+    dropdown: '.js-third-driver-dropdown',
+    attachedDriverInput: 'input[name="attached_third_driver"]',
+    phoneInput: '.js-third-phone-driver',
+    unitNumberNameInput: 'input[name="third_unit_number_name"]',
+    nonceInput: '#third-driver-search-nonce'
   });
   initDriverValidation();
   if (document.getElementById('driver-statistics-container')) {
@@ -25752,9 +26297,9 @@ function ready() {
       driverPopupForms.loadDriverStatistics(parseInt(driverIdInput.value));
     }
   }
-  new _components_timer_control__WEBPACK_IMPORTED_MODULE_44__.TimerControl(urlAjax);
-  new _components_timer_analytics__WEBPACK_IMPORTED_MODULE_45__.TimerAnalytics(urlAjax);
-  new _components_dark_mode_toggle__WEBPACK_IMPORTED_MODULE_46__["default"](urlAjax);
+  new _components_timer_control__WEBPACK_IMPORTED_MODULE_45__.TimerControl(urlAjax);
+  new _components_timer_analytics__WEBPACK_IMPORTED_MODULE_46__.TimerAnalytics(urlAjax);
+  new _components_dark_mode_toggle__WEBPACK_IMPORTED_MODULE_47__["default"](urlAjax);
   (0,_components_create_report__WEBPACK_IMPORTED_MODULE_4__.actionCreateReportInit)(urlAjax);
   (0,_components_create_report__WEBPACK_IMPORTED_MODULE_4__.createDraftPosts)(urlAjax);
   (0,_components_create_report__WEBPACK_IMPORTED_MODULE_4__.updateFilesReportInit)(urlAjax);
@@ -25791,6 +26336,7 @@ function ready() {
   (0,_components_capabilities_filter__WEBPACK_IMPORTED_MODULE_34__.initCapabilitiesFilter)();
   (0,_components_quick_status_update__WEBPACK_IMPORTED_MODULE_35__.initQuickStatusUpdate)(urlAjax);
   (0,_components_eta_popup__WEBPACK_IMPORTED_MODULE_36__.initEtaPopups)();
+  (0,_components_eta_timer__WEBPACK_IMPORTED_MODULE_37__.initEtaTimers)();
   (0,_components_create_report__WEBPACK_IMPORTED_MODULE_4__.additionalContactsInit)();
   (0,_components_create_report__WEBPACK_IMPORTED_MODULE_4__.addShipperPointInit)();
   (0,_components_input_helpers__WEBPACK_IMPORTED_MODULE_3__.initMoneyMask)();
@@ -25854,9 +26400,11 @@ function ready() {
 function initDriverValidation() {
   var firstDriverSelected = false;
   var secondDriverSelected = false;
+  var thirdDriverSelected = false;
   function initializeDriverState() {
     var firstDriverInput = document.querySelector('input[name="attached_driver"]');
     var secondDriverInput = document.querySelector('input[name="attached_second_driver"]');
+    var thirdDriverInput = document.querySelector('input[name="attached_third_driver"]');
     if (firstDriverInput && firstDriverInput.value) {
       firstDriverSelected = true;
       console.log('First driver already selected on load:', firstDriverInput.value);
@@ -25865,16 +26413,23 @@ function initDriverValidation() {
       secondDriverSelected = true;
       console.log('Second driver already selected on load:', secondDriverInput.value);
     }
+    if (thirdDriverInput && thirdDriverInput.value) {
+      thirdDriverSelected = true;
+      console.log('Third driver already selected on load:', thirdDriverInput.value);
+    }
   }
   initializeDriverState();
   setTimeout(function () {
     var firstUnitInput = document.querySelector('.js-unit-number-input');
     var secondUnitInput = document.querySelector('.js-second-unit-number-input');
+    var thirdUnitInput = document.querySelector('.js-third-unit-number-input');
     console.log('Autocomplete components check:', {
       firstUnitInputExists: !!firstUnitInput,
       secondUnitInputExists: !!secondUnitInput,
+      thirdUnitInputExists: !!thirdUnitInput,
       firstDriverSelected: firstDriverSelected,
-      secondDriverSelected: secondDriverSelected
+      secondDriverSelected: secondDriverSelected,
+      thirdDriverSelected: thirdDriverSelected
     });
   }, 1000);
   document.addEventListener('driverSelectionChanged', function (e) {
@@ -25891,6 +26446,9 @@ function initDriverValidation() {
     } else if (selectors.unitInput === '.js-second-unit-number-input') {
       secondDriverSelected = hasSelectedDriver;
       console.log('Second driver selected:', secondDriverSelected);
+    } else if (selectors.unitInput === '.js-third-unit-number-input') {
+      thirdDriverSelected = hasSelectedDriver;
+      console.log('Third driver selected:', thirdDriverSelected);
     }
     validateDriverSelection();
   });
@@ -25913,11 +26471,14 @@ function initDriverValidation() {
     });
     var firstDriverInput = document.querySelector('input[name="attached_driver"]');
     var secondDriverInput = document.querySelector('input[name="attached_second_driver"]');
+    var thirdDriverInput = document.querySelector('input[name="attached_third_driver"]');
     var firstUnitInput = document.querySelector('.js-unit-number-input');
     var secondUnitInput = document.querySelector('.js-second-unit-number-input');
+    var thirdUnitInput = document.querySelector('.js-third-unit-number-input');
     console.log('Driver inputs:', {
       firstDriverValue: firstDriverInput === null || firstDriverInput === void 0 ? void 0 : firstDriverInput.value,
-      secondDriverValue: secondDriverInput === null || secondDriverInput === void 0 ? void 0 : secondDriverInput.value
+      secondDriverValue: secondDriverInput === null || secondDriverInput === void 0 ? void 0 : secondDriverInput.value,
+      thirdDriverValue: thirdDriverInput === null || thirdDriverInput === void 0 ? void 0 : thirdDriverInput.value
     });
     var isValid = true;
     var errorMessage = '';
@@ -25939,6 +26500,20 @@ function initDriverValidation() {
       isValid = false;
       errorMessage = 'Please select a valid driver for the second driver field.';
       console.log('Second driver validation failed');
+    }
+    var thirdDriverSection = document.querySelector('.js-third-driver');
+    var isThirdDriverVisible = thirdDriverSection && !thirdDriverSection.classList.contains('d-none');
+    var thirdDriverInputExists = document.querySelector('.js-third-unit-number-input');
+    console.log('Third driver checks:', {
+      thirdDriverInputExists: !!thirdDriverInputExists,
+      isThirdDriverVisible: isThirdDriverVisible,
+      thirdDriverValue: thirdDriverInput === null || thirdDriverInput === void 0 ? void 0 : thirdDriverInput.value,
+      thirdDriverSelected: thirdDriverSelected
+    });
+    if (thirdDriverInputExists && isThirdDriverVisible && thirdDriverInput && thirdDriverInput.value && !thirdDriverSelected) {
+      isValid = false;
+      errorMessage = 'Please select a valid driver for the third driver field.';
+      console.log('Third driver validation failed');
     }
     console.log('Validation result:', {
       isValid: isValid,

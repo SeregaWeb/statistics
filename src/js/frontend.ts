@@ -80,6 +80,7 @@ import { holdSectionInit } from './components/common/hold-section';
 import { initCapabilitiesFilter } from './components/capabilities-filter';
 import { initQuickStatusUpdate } from './components/quick-status-update';
 import { initEtaPopups } from './components/eta-popup';
+import { initEtaTimers, updateEtaTimer } from './components/eta-timer';
 import './components/quick-copy';
 import './components/driver-popups';
 import DriverPopupForms from './components/driver-popup-forms';
@@ -151,6 +152,16 @@ function ready() {
         nonceInput: '#second-driver-search-nonce',
     });
 
+    // Initialize Third Driver Autocomplete
+    new DriverAutocomplete(urlAjax, {
+        unitInput: '.js-third-unit-number-input',
+        dropdown: '.js-third-driver-dropdown',
+        attachedDriverInput: 'input[name="attached_third_driver"]',
+        phoneInput: '.js-third-phone-driver',
+        unitNumberNameInput: 'input[name="third_unit_number_name"]',
+        nonceInput: '#third-driver-search-nonce',
+    });
+
     // Add driver validation
     initDriverValidation();
     
@@ -211,6 +222,7 @@ function ready() {
     initCapabilitiesFilter();
     initQuickStatusUpdate(urlAjax);
     initEtaPopups();
+    initEtaTimers();
 
     // DRIVER END
     additionalContactsInit();
@@ -293,11 +305,13 @@ function initDriverValidation(): void {
     // Track driver selection state
     let firstDriverSelected = false;
     let secondDriverSelected = false;
+    let thirdDriverSelected = false;
 
     // Initialize state on page load
     function initializeDriverState() {
         const firstDriverInput = document.querySelector('input[name="attached_driver"]') as HTMLInputElement;
         const secondDriverInput = document.querySelector('input[name="attached_second_driver"]') as HTMLInputElement;
+        const thirdDriverInput = document.querySelector('input[name="attached_third_driver"]') as HTMLInputElement;
         
         // Check if drivers are already selected on page load
         if (firstDriverInput && firstDriverInput.value) {
@@ -309,6 +323,11 @@ function initDriverValidation(): void {
             secondDriverSelected = true;
             console.log('Second driver already selected on load:', secondDriverInput.value);
         }
+        
+        if (thirdDriverInput && thirdDriverInput.value) {
+            thirdDriverSelected = true;
+            console.log('Third driver already selected on load:', thirdDriverInput.value);
+        }
     }
 
     // Initialize state
@@ -318,12 +337,15 @@ function initDriverValidation(): void {
     setTimeout(() => {
         const firstUnitInput = document.querySelector('.js-unit-number-input') as HTMLInputElement;
         const secondUnitInput = document.querySelector('.js-second-unit-number-input') as HTMLInputElement;
+        const thirdUnitInput = document.querySelector('.js-third-unit-number-input') as HTMLInputElement;
         
         console.log('Autocomplete components check:', {
             firstUnitInputExists: !!firstUnitInput,
             secondUnitInputExists: !!secondUnitInput,
+            thirdUnitInputExists: !!thirdUnitInput,
             firstDriverSelected,
-            secondDriverSelected
+            secondDriverSelected,
+            thirdDriverSelected
         });
     }, 1000);
 
@@ -340,6 +362,9 @@ function initDriverValidation(): void {
         } else if (selectors.unitInput === '.js-second-unit-number-input') {
             secondDriverSelected = hasSelectedDriver;
             console.log('Second driver selected:', secondDriverSelected);
+        } else if (selectors.unitInput === '.js-third-unit-number-input') {
+            thirdDriverSelected = hasSelectedDriver;
+            console.log('Third driver selected:', thirdDriverSelected);
         }
 
         // Validate form submission
@@ -370,13 +395,16 @@ function initDriverValidation(): void {
         // Check if any driver fields have values but no selected driver
         const firstDriverInput = document.querySelector('input[name="attached_driver"]') as HTMLInputElement;
         const secondDriverInput = document.querySelector('input[name="attached_second_driver"]') as HTMLInputElement;
+        const thirdDriverInput = document.querySelector('input[name="attached_third_driver"]') as HTMLInputElement;
         
         const firstUnitInput = document.querySelector('.js-unit-number-input') as HTMLInputElement;
         const secondUnitInput = document.querySelector('.js-second-unit-number-input') as HTMLInputElement;
+        const thirdUnitInput = document.querySelector('.js-third-unit-number-input') as HTMLInputElement;
 
         console.log('Driver inputs:', {
             firstDriverValue: firstDriverInput?.value,
-            secondDriverValue: secondDriverInput?.value
+            secondDriverValue: secondDriverInput?.value,
+            thirdDriverValue: thirdDriverInput?.value
         });
 
         let isValid = true;
@@ -406,6 +434,25 @@ function initDriverValidation(): void {
             isValid = false;
             errorMessage = 'Please select a valid driver for the second driver field.';
             console.log('Second driver validation failed');
+        }
+
+        // Check third driver - only if the third driver section is visible and has values
+        const thirdDriverSection = document.querySelector('.js-third-driver');
+        const isThirdDriverVisible = thirdDriverSection && !thirdDriverSection.classList.contains('d-none');
+        const thirdDriverInputExists = document.querySelector('.js-third-unit-number-input');
+        
+        console.log('Third driver checks:', {
+            thirdDriverInputExists: !!thirdDriverInputExists,
+            isThirdDriverVisible,
+            thirdDriverValue: thirdDriverInput?.value,
+            thirdDriverSelected
+        });
+        
+        // Only validate third driver if the section exists, is visible, and has values
+        if (thirdDriverInputExists && isThirdDriverVisible && thirdDriverInput && thirdDriverInput.value && !thirdDriverSelected) {
+            isValid = false;
+            errorMessage = 'Please select a valid driver for the third driver field.';
+            console.log('Third driver validation failed');
         }
 
         console.log('Validation result:', { isValid, errorMessage });

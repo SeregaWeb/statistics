@@ -82,6 +82,7 @@ if ( ! empty( $results ) ) : ?>
 			
 			$unit_number_name        = esc_html( get_field_value( $meta, 'unit_number_name' ) );
 			$second_unit_number_name = esc_html( get_field_value( $meta, 'second_unit_number_name' ) );
+			$third_unit_number_name  = esc_html( get_field_value( $meta, 'third_unit_number_name' ) );
 			
 			$booked_rate_raw = get_field_value( $meta, 'booked_rate' );
 			$booked_rate     = esc_html( '$' . $helper->format_currency( $booked_rate_raw ) );
@@ -94,13 +95,19 @@ if ( ! empty( $results ) ) : ?>
 			
 			$second_driver_rate_raw  = get_field_value( $meta, 'second_driver_rate' );
 			$second_driver           = get_field_value( $meta, 'second_driver' );
+
+			$third_driver_rate_raw = get_field_value( $meta, 'third_driver_rate' );
+			$third_driver = get_field_value( $meta, 'third_driver' );
+
 			$quick_pay_driver_amount = get_field_value( $meta, 'quick_pay_driver_amount' );
 			$second_driver_rate      = null;
+			$third_driver_rate       = null;
 			
 			if ( ! is_null( $quick_pay_driver_amount ) ) {
 				$driver_rate_raw = floatval( $driver_rate_raw ) - floatval( $quick_pay_driver_amount );
 				if ( $additional_fees_driver ) {
 					$second_driver_rate_raw = floatval( $second_driver_rate_raw ) - floatval( $quick_pay_driver_amount );
+					$third_driver_rate_raw = floatval( $third_driver_rate_raw ) - floatval( $quick_pay_driver_amount );
 				}
 			}
 			
@@ -119,6 +126,14 @@ if ( ! empty( $results ) ) : ?>
 					$second_driver_rate_raw = floatval( $second_driver_rate_raw ) - $float_value;
 				}
 				
+			}
+
+			if ( $third_driver ) {
+				if ( $additional_fees && $additional_fees_driver ) {
+					$cleaned_value          = str_replace( ',', '', $additional_fees_val );
+					$float_value            = floatval( $cleaned_value );
+					$third_driver_rate_raw = floatval( $third_driver_rate_raw ) - $float_value;
+				}
 			}
 			
 			$true_profit_raw = get_field_value( $meta, 'true_profit' );
@@ -159,11 +174,22 @@ if ( ! empty( $results ) ) : ?>
 					$second_driver_rate_raw       += floatval( $quick_pay_driver_amount );
 					
 				}
+
+				if ( $third_driver_rate_raw ) {
+					$third_quick_pay_show        = floatval( $third_driver_rate_raw );
+					$third_quick_pay_show_method = $helper->get_quick_pay_methods_for_accounting( $quick_pay_method );
+					$third_component_quick_pay   = "<span class='text-small'>$" . $third_quick_pay_show . " - " . $third_quick_pay_show_method . "</span>";
+					$third_driver_rate_raw       += floatval( $quick_pay_driver_amount );
+				}
 			}
 			
 			$driver_rate = esc_html( '$' . $helper->format_currency( $driver_rate_raw ) );
 			if ( $second_driver ) {
 				$second_driver_rate = esc_html( '$' . $helper->format_currency( $second_driver_rate_raw ) );
+			}
+
+			if ( $third_driver ) {
+				$third_driver_rate = esc_html( '$' . $helper->format_currency( $third_driver_rate_raw ) );
 			}
 			
 			$now_show = ( $factoring_status_row === 'paid' );
@@ -206,6 +232,9 @@ if ( ! empty( $results ) ) : ?>
 						<?php if ( $second_unit_number_name ): ?>
                             <p class="m-0"><?php echo $second_unit_number_name; ?></p>
 						<?php endif; ?>
+						<?php if ( $third_unit_number_name ): ?>
+                            <p class="m-0"><?php echo $third_unit_number_name; ?></p>
+						<?php endif; ?>
                     </div>
                 </td>
 
@@ -219,6 +248,12 @@ if ( ! empty( $results ) ) : ?>
                             <span><?php echo $second_driver_rate; ?></span>
 							<?php if ( $quick_pay_method ):
 								echo $second_component_quick_pay;
+							endif;
+						endif; ?>
+						<?php if ( $third_driver && $third_driver_rate && $third_driver_rate_raw !== '0' ): ?>
+                            <span><?php echo $third_driver_rate; ?></span>
+							<?php if ( $quick_pay_method ):
+								echo $third_component_quick_pay;
 							endif;
 						endif; ?>
                     </div>

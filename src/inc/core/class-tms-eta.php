@@ -111,6 +111,7 @@ class TMSEta extends TMSReportsHelper {
         $actions = array(
             'save_eta_record' => 'save_eta_record',
             'get_eta_record' => 'get_eta_record',
+            'get_eta_record_for_display' => 'get_eta_record_for_display_ajax',
             'test_eta_notifications' => 'test_eta_notifications',
             'create_test_eta_records' => 'create_test_eta_records',
             'debug_reference_number' => 'debug_reference_number',
@@ -176,6 +177,7 @@ class TMSEta extends TMSReportsHelper {
             'date' => FILTER_SANITIZE_STRING,
             'time' => FILTER_SANITIZE_STRING,
             'timezone' => FILTER_SANITIZE_STRING,
+            'state' => FILTER_SANITIZE_STRING,
             'eta_type' => FILTER_SANITIZE_STRING,
             'is_flt' => FILTER_SANITIZE_NUMBER_INT,
         ]);
@@ -188,6 +190,7 @@ class TMSEta extends TMSReportsHelper {
         $date = $MY_INPUT['date'];
         $time = $MY_INPUT['time'];
         $timezone = $MY_INPUT['timezone'] ?: '';
+        $state = $MY_INPUT['state'] ?: '';
         $eta_type = $MY_INPUT['eta_type']; // 'pickup' or 'delivery'
         $is_flt = (bool) $MY_INPUT['is_flt'];
         $user_id = get_current_user_id();
@@ -195,6 +198,16 @@ class TMSEta extends TMSReportsHelper {
         // Get current user's project
         $reports = $is_flt ? new TMSReportsFlt() : new TMSReports();
         $project = $reports->project ?: '';
+        
+        // Recalculate timezone based on ETA date and state (to account for DST)
+        // This ensures timezone is correct for the ETA date, not just the location date
+        if ($state) {
+            $helper = new TMSReportsHelper();
+            $recalculated_timezone = $helper->get_timezone_by_state($state, $date);
+            if ($recalculated_timezone) {
+                $timezone = $recalculated_timezone;
+            }
+        }
         
         // Combine date and time
         $eta_datetime = $date . ' ' . $time . ':00';
@@ -380,6 +393,76 @@ class TMSEta extends TMSReportsHelper {
     }
     
     /**
+     * Get ETA record for any user (for display to all users with access)
+     * Returns the most recent active ETA record for the load
+     */
+    public function get_eta_record_for_display($load_id, $eta_type, $is_flt = false, $project = null) {
+        global $wpdb;
+        
+        if ($project === null) {
+            $reports = $is_flt ? new TMSReportsFlt() : new TMSReports();
+            $project = $reports->project ?: '';
+        }
+        
+        $table_name = $wpdb->prefix . $this->table_name;
+        
+        // Get the most recent active ETA record for this load (any user)
+        $record = $wpdb->get_row($wpdb->prepare(
+            "SELECT * FROM $table_name 
+             WHERE load_number = %s AND eta_type = %s AND is_flt = %d AND project = %s AND status = 'active'
+             ORDER BY updated_at DESC, created_at DESC
+             LIMIT 1",
+            $load_id, $eta_type, $is_flt, $project
+        ));
+        
+        if ($record) {
+            $datetime = new DateTime($record->eta_datetime);
+            return [
+                'exists' => true,
+                'eta_datetime' => $record->eta_datetime,
+                'date' => $datetime->format('Y-m-d'),
+                'time' => $datetime->format('H:i'),
+                'timezone' => $record->timezone,
+                'status' => $record->status,
+                'record_id' => $record->id
+            ];
+        }
+        
+        return ['exists' => false];
+    }
+    
+    /**
+     * AJAX handler to get ETA record for display (for all users)
+     */
+    public function get_eta_record_for_display_ajax() {
+        if (!defined('DOING_AJAX') || !DOING_AJAX) {
+            wp_send_json_error(['message' => 'Invalid request']);
+        }
+        
+        $MY_INPUT = filter_var_array($_POST, [
+            'load_id' => FILTER_SANITIZE_NUMBER_INT,
+            'eta_type' => FILTER_SANITIZE_STRING,
+            'is_flt' => FILTER_SANITIZE_NUMBER_INT,
+        ]);
+        
+        if (!$MY_INPUT['load_id'] || !$MY_INPUT['eta_type']) {
+            wp_send_json_error(['message' => 'Missing required fields']);
+        }
+        
+        $load_id = $MY_INPUT['load_id'];
+        $eta_type = $MY_INPUT['eta_type'];
+        $is_flt = (bool) $MY_INPUT['is_flt'];
+        
+        $result = $this->get_eta_record_for_display($load_id, $eta_type, $is_flt);
+        
+        if ($result['exists']) {
+            wp_send_json_success($result);
+        } else {
+            wp_send_json_success(['exists' => false]);
+        }
+    }
+    
+    /**
      * Initialize cron job for ETA notifications
      */
     public function init_cron() {
@@ -506,13 +589,11 @@ class TMSEta extends TMSReportsHelper {
         $time_diff = $ny_now->diff($notification_time);
         $minutes_diff = ($time_diff->h * 60) + $time_diff->i;
         
-        // Send notification if we're within 5 minutes of the notification time
-        if (abs($minutes_diff) <= 5 && $ny_now >= $notification_time) {
-            $this->send_eta_notification($record, $eta_ny_time);
-            
-            // Mark as sent to avoid duplicate notifications
-            $this->mark_eta_as_sent($record->id);
-        }
+        // Email notifications disabled - all updates are shown in TMS interface
+        // if (abs($minutes_diff) <= 5 && $ny_now >= $notification_time) {
+        //     $this->send_eta_notification($record, $eta_ny_time);
+        //     $this->mark_eta_as_sent($record->id);
+        // }
     }
     
     /**

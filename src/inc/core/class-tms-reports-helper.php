@@ -1436,6 +1436,8 @@ Kindly confirm once you've received this message." ) . "\n";
 		
 		$second_unit_number_name = esc_html( get_field_value( $meta, 'second_unit_number_name' ) );
 		$second_driver_phone     = esc_html( get_field_value( $meta, 'second_driver_phone' ) );
+		$third_unit_number_name  = esc_html( get_field_value( $meta, 'third_unit_number_name' ) );
+		$third_driver_phone      = esc_html( get_field_value( $meta, 'third_driver_phone' ) );
 		$shared_with_client      = get_field_value( $meta, 'shared_with_client' );
 		ob_start();
 		
@@ -1466,6 +1468,14 @@ Kindly confirm once you've received this message." ) . "\n";
 				<?php if ( $second_driver_phone ) { ?>
                     <span class="text-small relative">
                                 <?php echo $second_driver_phone; ?>
+                            </span>
+				<?php } ?>
+			<?php endif; ?>
+			<?php if ( $third_unit_number_name && $third_driver_phone ): ?>
+                <p class=" m-0"><?php echo $third_unit_number_name; ?></p>
+				<?php if ( $third_driver_phone ) { ?>
+                    <span class="text-small relative">
+                                <?php echo $third_driver_phone; ?>
                             </span>
 				<?php } ?>
 			<?php endif; ?>
@@ -1516,11 +1526,12 @@ Kindly confirm once you've received this message." ) . "\n";
 			$state = end($parts); // Get last part (state)
 		}
 
-		// Get timezone for the state
-		$timezone = $this->get_timezone_by_state($state);
+		// Get timezone for the state (use date from location data to determine DST)
+		$date = $location_data['date'] ?? '';
+		$timezone = $this->get_timezone_by_state($state, $date);
 
 		return [
-			'date' => $location_data['date'] ?? '',
+			'date' => $date,
 			'time' => $location_data['time_start'] ?? '',
 			'state' => $state,
 			'timezone' => $timezone
@@ -1529,71 +1540,168 @@ Kindly confirm once you've received this message." ) . "\n";
 
 	/**
 	 * Get timezone abbreviation by state code
+	 * Determines DST (Daylight Saving Time) vs Standard Time based on date
+	 * 
+	 * @param string $state State code (e.g., 'WA', 'CA')
+	 * @param string $date Date string (Y-m-d format) - if empty, uses current date
+	 * @return string Timezone string (e.g., 'PST (UTC-8)' or 'PDT (UTC-7)')
 	 */
-	function get_timezone_by_state($state) {
+	function get_timezone_by_state($state, $date = '') {
+		// Use current date if no date provided
+		if (empty($date)) {
+			$date = date('Y-m-d');
+		}
+		
+		// Parse date
+		$date_obj = DateTime::createFromFormat('Y-m-d', $date);
+		if (!$date_obj) {
+			// Fallback to current date if parsing fails
+			$date_obj = new DateTime();
+		}
+		
+		$year = (int)$date_obj->format('Y');
+		$month = (int)$date_obj->format('m');
+		$day = (int)$date_obj->format('d');
+		
+		// Determine if DST is active for the date
+		// DST in US: Second Sunday in March (2:00 AM) to First Sunday in November (2:00 AM)
+		// Reference: https://time.gov/
+		$is_dst = $this->is_dst_active($year, $month, $day);
+		
+		// Timezone maps: [state => [DST => 'abbrev (offset)', Standard => 'abbrev (offset)']]
+		// Based on official US time zones from time.gov
 		$timezone_map = [
-			// Alaska Time (AKDT UTC-8)
-			'AK' => 'AKDT (UTC-8)',
+			// Alaska Time
+			'AK' => ['dst' => 'AKDT (UTC-8)', 'standard' => 'AKST (UTC-9)'],
 			
-			// Pacific Time (PDT UTC-7)
-			'CA' => 'PDT (UTC-7)',
-			'NV' => 'PDT (UTC-7)',
-			'WA' => 'PDT (UTC-7)',
-			'OR' => 'PDT (UTC-7)',
+			// Pacific Time (PST UTC-8, PDT UTC-7)
+			// States: WA, OR, CA, NV (per time.gov)
+			'CA' => ['dst' => 'PDT (UTC-7)', 'standard' => 'PST (UTC-8)'],
+			'NV' => ['dst' => 'PDT (UTC-7)', 'standard' => 'PST (UTC-8)'],
+			'WA' => ['dst' => 'PDT (UTC-7)', 'standard' => 'PST (UTC-8)'],
+			'OR' => ['dst' => 'PDT (UTC-7)', 'standard' => 'PST (UTC-8)'],
 			
-			// Mountain Time (MDT UTC-6)
-			'AZ' => 'MDT (UTC-6)',
-			'CO' => 'MDT (UTC-6)',
-			'ID' => 'MDT (UTC-6)',
-			'MT' => 'MDT (UTC-6)',
-			'NM' => 'MDT (UTC-6)',
-			'UT' => 'MDT (UTC-6)',
-			'WY' => 'MDT (UTC-6)',
+			// Mountain Time (MST UTC-7, MDT UTC-6)
+			// Arizona does NOT observe DST - always MST (UTC-7) per time.gov
+			'AZ' => ['dst' => 'MST (UTC-7)', 'standard' => 'MST (UTC-7)'], // Arizona doesn't observe DST
+			'CO' => ['dst' => 'MDT (UTC-6)', 'standard' => 'MST (UTC-7)'],
+			'ID' => ['dst' => 'MDT (UTC-6)', 'standard' => 'MST (UTC-7)'],
+			'MT' => ['dst' => 'MDT (UTC-6)', 'standard' => 'MST (UTC-7)'],
+			'NM' => ['dst' => 'MDT (UTC-6)', 'standard' => 'MST (UTC-7)'],
+			'UT' => ['dst' => 'MDT (UTC-6)', 'standard' => 'MST (UTC-7)'],
+			'WY' => ['dst' => 'MDT (UTC-6)', 'standard' => 'MST (UTC-7)'],
 			
-			// Central Time (CDT UTC-5)
-			'AL' => 'CDT (UTC-5)',
-			'AR' => 'CDT (UTC-5)',
-			'IA' => 'CDT (UTC-5)',
-			'IL' => 'CDT (UTC-5)',
-			'IN' => 'CDT (UTC-5)',
-			'KS' => 'CDT (UTC-5)',
-			'KY' => 'CDT (UTC-5)',
-			'LA' => 'CDT (UTC-5)',
-			'MN' => 'CDT (UTC-5)',
-			'MO' => 'CDT (UTC-5)',
-			'MS' => 'CDT (UTC-5)',
-			'ND' => 'CDT (UTC-5)',
-			'NE' => 'CDT (UTC-5)',
-			'OK' => 'CDT (UTC-5)',
-			'SD' => 'CDT (UTC-5)',
-			'TN' => 'CDT (UTC-5)',
-			'TX' => 'CDT (UTC-5)',
-			'WI' => 'CDT (UTC-5)',
+			// Central Time
+			'AL' => ['dst' => 'CDT (UTC-5)', 'standard' => 'CST (UTC-6)'],
+			'AR' => ['dst' => 'CDT (UTC-5)', 'standard' => 'CST (UTC-6)'],
+			'IA' => ['dst' => 'CDT (UTC-5)', 'standard' => 'CST (UTC-6)'],
+			'IL' => ['dst' => 'CDT (UTC-5)', 'standard' => 'CST (UTC-6)'],
+			'IN' => ['dst' => 'CDT (UTC-5)', 'standard' => 'CST (UTC-6)'],
+			'KS' => ['dst' => 'CDT (UTC-5)', 'standard' => 'CST (UTC-6)'],
+			'KY' => ['dst' => 'CDT (UTC-5)', 'standard' => 'CST (UTC-6)'],
+			'LA' => ['dst' => 'CDT (UTC-5)', 'standard' => 'CST (UTC-6)'],
+			'MN' => ['dst' => 'CDT (UTC-5)', 'standard' => 'CST (UTC-6)'],
+			'MO' => ['dst' => 'CDT (UTC-5)', 'standard' => 'CST (UTC-6)'],
+			'MS' => ['dst' => 'CDT (UTC-5)', 'standard' => 'CST (UTC-6)'],
+			'ND' => ['dst' => 'CDT (UTC-5)', 'standard' => 'CST (UTC-6)'],
+			'NE' => ['dst' => 'CDT (UTC-5)', 'standard' => 'CST (UTC-6)'],
+			'OK' => ['dst' => 'CDT (UTC-5)', 'standard' => 'CST (UTC-6)'],
+			'SD' => ['dst' => 'CDT (UTC-5)', 'standard' => 'CST (UTC-6)'],
+			'TN' => ['dst' => 'CDT (UTC-5)', 'standard' => 'CST (UTC-6)'],
+			'TX' => ['dst' => 'CDT (UTC-5)', 'standard' => 'CST (UTC-6)'],
+			'WI' => ['dst' => 'CDT (UTC-5)', 'standard' => 'CST (UTC-6)'],
 			
-			// Eastern Time (EDT UTC-4)
-			'CT' => 'EDT (UTC-4)',
-			'DC' => 'EDT (UTC-4)',
-			'DE' => 'EDT (UTC-4)',
-			'FL' => 'EDT (UTC-4)',
-			'GA' => 'EDT (UTC-4)',
-			'MA' => 'EDT (UTC-4)',
-			'MD' => 'EDT (UTC-4)',
-			'ME' => 'EDT (UTC-4)',
-			'MI' => 'EDT (UTC-4)',
-			'NC' => 'EDT (UTC-4)',
-			'NH' => 'EDT (UTC-4)',
-			'NJ' => 'EDT (UTC-4)',
-			'NY' => 'EDT (UTC-4)',
-			'OH' => 'EDT (UTC-4)',
-			'PA' => 'EDT (UTC-4)',
-			'RI' => 'EDT (UTC-4)',
-			'SC' => 'EDT (UTC-4)',
-			'VA' => 'EDT (UTC-4)',
-			'VT' => 'EDT (UTC-4)',
-			'WV' => 'EDT (UTC-4)',
+			// Eastern Time
+			'CT' => ['dst' => 'EDT (UTC-4)', 'standard' => 'EST (UTC-5)'],
+			'DC' => ['dst' => 'EDT (UTC-4)', 'standard' => 'EST (UTC-5)'],
+			'DE' => ['dst' => 'EDT (UTC-4)', 'standard' => 'EST (UTC-5)'],
+			'FL' => ['dst' => 'EDT (UTC-4)', 'standard' => 'EST (UTC-5)'],
+			'GA' => ['dst' => 'EDT (UTC-4)', 'standard' => 'EST (UTC-5)'],
+			'MA' => ['dst' => 'EDT (UTC-4)', 'standard' => 'EST (UTC-5)'],
+			'MD' => ['dst' => 'EDT (UTC-4)', 'standard' => 'EST (UTC-5)'],
+			'ME' => ['dst' => 'EDT (UTC-4)', 'standard' => 'EST (UTC-5)'],
+			'MI' => ['dst' => 'EDT (UTC-4)', 'standard' => 'EST (UTC-5)'],
+			'NC' => ['dst' => 'EDT (UTC-4)', 'standard' => 'EST (UTC-5)'],
+			'NH' => ['dst' => 'EDT (UTC-4)', 'standard' => 'EST (UTC-5)'],
+			'NJ' => ['dst' => 'EDT (UTC-4)', 'standard' => 'EST (UTC-5)'],
+			'NY' => ['dst' => 'EDT (UTC-4)', 'standard' => 'EST (UTC-5)'],
+			'OH' => ['dst' => 'EDT (UTC-4)', 'standard' => 'EST (UTC-5)'],
+			'PA' => ['dst' => 'EDT (UTC-4)', 'standard' => 'EST (UTC-5)'],
+			'RI' => ['dst' => 'EDT (UTC-4)', 'standard' => 'EST (UTC-5)'],
+			'SC' => ['dst' => 'EDT (UTC-4)', 'standard' => 'EST (UTC-5)'],
+			'VA' => ['dst' => 'EDT (UTC-4)', 'standard' => 'EST (UTC-5)'],
+			'VT' => ['dst' => 'EDT (UTC-4)', 'standard' => 'EST (UTC-5)'],
+			'WV' => ['dst' => 'EDT (UTC-4)', 'standard' => 'EST (UTC-5)'],
 		];
 
-		return $timezone_map[$state] ?? '';
+		if (!isset($timezone_map[$state])) {
+			return '';
+		}
+		
+		$timezone_info = $timezone_map[$state];
+		return $is_dst ? $timezone_info['dst'] : $timezone_info['standard'];
+	}
+	
+	/**
+	 * Check if DST (Daylight Saving Time) is active for a given date
+	 * According to time.gov: DST starts second Sunday in March at 2:00 AM, ends first Sunday in November at 2:00 AM
+	 * Reference: https://time.gov/
+	 * 
+	 * @param int $year Year
+	 * @param int $month Month (1-12)
+	 * @param int $day Day of month
+	 * @return bool True if DST is active, false otherwise
+	 */
+	private function is_dst_active($year, $month, $day) {
+		// DST starts: Second Sunday in March at 2:00 AM (local time)
+		$dst_start = $this->get_nth_sunday($year, 3, 2); // Second Sunday of March
+		$dst_start->setTime(2, 0, 0);
+		
+		// DST ends: First Sunday in November at 2:00 AM (local time)
+		// After 2:00 AM on first Sunday, clocks "fall back" 1 hour, so standard time begins
+		$dst_end = $this->get_nth_sunday($year, 11, 1); // First Sunday of November
+		$dst_end->setTime(2, 0, 0);
+		
+		// Create date object for comparison (use noon to avoid edge cases at 2:00 AM transition)
+		$check_date = new DateTime();
+		$check_date->setDate($year, $month, $day);
+		$check_date->setTime(12, 0, 0);
+		
+		// DST is active if:
+		// - Date is on or after DST start (second Sunday in March at 2:00 AM)
+		// - Date is before DST end (first Sunday in November at 2:00 AM)
+		// After DST ends, standard time is used
+		return $check_date >= $dst_start && $check_date < $dst_end;
+	}
+	
+	/**
+	 * Get the Nth Sunday of a given month and year
+	 * 
+	 * @param int $year Year
+	 * @param int $month Month (1-12)
+	 * @param int $n Nth Sunday (1 = first, 2 = second, etc.)
+	 * @return DateTime DateTime object for the Nth Sunday
+	 */
+	private function get_nth_sunday($year, $month, $n) {
+		// Start with the first day of the month
+		$date = new DateTime();
+		$date->setDate($year, $month, 1);
+		
+		// Find the first Sunday
+		$day_of_week = (int)$date->format('w'); // 0 = Sunday, 6 = Saturday
+		$days_to_first_sunday = (7 - $day_of_week) % 7;
+		
+		// If today is not Sunday, move to the first Sunday
+		if ($days_to_first_sunday > 0) {
+			$date->modify("+{$days_to_first_sunday} days");
+		}
+		
+		// Move to the Nth Sunday (n-1 weeks after first Sunday)
+		if ($n > 1) {
+			$date->modify('+' . (($n - 1) * 7) . ' days');
+		}
+		
+		return $date;
 	}
 	
 	function get_locations_template( $row, $template = 'default' ) {

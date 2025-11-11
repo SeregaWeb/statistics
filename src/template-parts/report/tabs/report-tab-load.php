@@ -52,6 +52,10 @@ $second_driver           = '';
 $second_unit_number_name = '';
 $second_driver_rate      = '';
 $second_driver_phone     = '';
+$third_driver            = '';
+$third_unit_number_name  = '';
+$third_driver_rate       = '';
+$third_driver_phone      = '';
 $additional_fees         = '';
 $additional_fees_val     = '';
 $additional_fees_driver  = '';
@@ -92,6 +96,18 @@ if ( $report_object ) {
 		if ( !empty( $unit_number_name ) && preg_match( '/^\((\d+)\)/', $unit_number_name, $matches ) ) {
 			$unit_number = $matches[1];
 		}
+		
+		// Extract second unit number from second_unit_number_name
+		$second_unit_number = '';
+		if ( !empty( $second_unit_number_name ) && preg_match( '/^\((\d+)\)/', $second_unit_number_name, $matches ) ) {
+			$second_unit_number = $matches[1];
+		}
+		
+		// Extract third unit number from third_unit_number_name
+		$third_unit_number = '';
+		if ( !empty( $third_unit_number_name ) && preg_match( '/^\((\d+)\)/', $third_unit_number_name, $matches ) ) {
+			$third_unit_number = $matches[1];
+		}
 		$booked_rate            = get_field_value( $meta, 'booked_rate' );
 		$driver_rate            = get_field_value( $meta, 'driver_rate' );
 		$driver_phone           = get_field_value( $meta, 'driver_phone' );
@@ -122,6 +138,11 @@ if ( $report_object ) {
 		$second_unit_number_name = get_field_value( $meta, 'second_unit_number_name' );
 		$second_driver_rate      = get_field_value( $meta, 'second_driver_rate' );
 		$second_driver_phone     = get_field_value( $meta, 'second_driver_phone' );
+		
+		$third_driver           = get_field_value( $meta, 'third_driver' );
+		$third_unit_number_name = get_field_value( $meta, 'third_unit_number_name' );
+		$third_driver_rate      = get_field_value( $meta, 'third_driver_rate' );
+		$third_driver_phone     = get_field_value( $meta, 'third_driver_phone' );
 		
 		$post_status = get_field_value( $main, 'status_post' );
 		
@@ -585,6 +606,80 @@ $read_only = $TMSUsers->check_read_only( $post_status );
                 </div>
             </div>
 
+            <div class="col-12"></div>
+
+            <div class="mb-2 col-12 col-md-6 col-xl-4">
+                <div class="form-check form-switch p-0 mt-1">
+                    <input disabled class="form-check-input ml-0 js-toggle"
+                           data-block-toggle="js-third-driver" <?php echo is_numeric( $third_driver ) ? 'checked'
+						: ''; ?>
+                           id="fake_third_driver" name="fake_third_driver"
+                           type="checkbox">
+                    <label class="form-check-label ml-2" for="fake_third_driver">Third driver 
+                    </label>
+
+                    <input type="hidden" name="third_driver" value="<?php echo $third_driver; ?>">
+                </div>
+            </div>
+
+            <div class="col-12"></div>
+
+            <div class="col-12 border-1 border-primary border bg-light ml-2 pt-3 pb-3 mb-3 rounded js-third-driver <?php echo ( ! $third_driver )
+				? 'd-none' : ''; ?>">
+
+                <input type="hidden" name="third_unit_number_name"
+                       value="<?php echo stripslashes( $third_unit_number_name ); ?>"/>
+                <input type="hidden" name="third_driver_rate"
+                       value="<?php echo stripslashes( $third_driver_rate ); ?>"/>
+                <input type="hidden" name="third_driver_phone"
+                       value="<?php echo stripslashes( $third_driver_phone ); ?>"/>
+                       
+
+                <div class="row">
+                    <div class="col-12">
+                        <p class="h5">Third Driver </p>
+                    </div>
+                    <div class="mb-2 col-12 col-md-6 col-xl-4">
+                        <label for="unit_number_name" class="form-label">Third Unit Number & Name</label>
+                        <div class="d-flex gap-1 js-container-number">
+                            <input disabled type="text" name="fake_third_unit_number_name"
+                                   data-value="<?php echo $third_unit_number_name; ?>"
+                                   value="<?php echo stripslashes( $third_unit_number_name ); ?>" class="form-control"
+                            >
+                            <button class="btn btn-primary js-fill-driver" disabled
+                                    data-phone=".js-third-phone-driver">Fill
+                            </button>
+                        </div>
+                        <input type="hidden" name="old_third_unit_number_name"
+                               value="<?php echo $third_unit_number_name; ?>">
+                    </div>
+
+                    <div class="mb-2 col-12 col-md-6 col-xl-4">
+                        <label for="third_driver_rate" class="form-label">Third Driver Rate</label>
+                        <div class="input-group">
+                            <span class="input-group-text">$</span>
+                            <input disabled type="text" name="fake_third_driver_rate"
+                                   data-value="<?php echo $third_driver_rate; ?>"
+                                   value="<?php echo $tbd ? 0 : $third_driver_rate; ?>"
+                                   class="form-control js-money js-driver-third-value">
+
+                            <input type="hidden" class="js-old_value_third_driver_rate"
+                                   name="old_value_third_driver_rate"
+                                   value="<?php echo $third_driver_rate; ?>">
+                        </div>
+                    </div>
+
+                    <div class="col-12"></div>
+
+                    <div class="mb-2 col-12 col-md-6 col-xl-4">
+                        <label for="third_driver_phone" class="form-label ">Third Driver phone</label>
+                        <input disabled type="text" data-value="<?php echo $third_driver_phone; ?>"
+                               name="fake_third_driver_phone" value="<?php echo $third_driver_phone; ?>"
+                               class="form-control js-tel-mask js-third-phone-driver">
+                        <input type="hidden" name="old_third_driver_phone" value="<?php echo $third_driver_phone; ?>">
+                    </div>
+                </div>
+            </div>
 
             <div class="col-12"></div>
 		
@@ -612,7 +707,8 @@ $read_only = $TMSUsers->check_read_only( $post_status );
 
             <style>
                 .js-driver-dropdown .dropdown-item,
-                .js-second-driver-dropdown .dropdown-item {
+                .js-second-driver-dropdown .dropdown-item,
+                .js-third-driver-dropdown .dropdown-item {
                     padding: 8px 12px;
                     cursor: pointer;
                     border-bottom: 1px solid #eee;
@@ -620,11 +716,14 @@ $read_only = $TMSUsers->check_read_only( $post_status );
                 .js-driver-dropdown .dropdown-item:hover,
                 .js-driver-dropdown .dropdown-item.active,
                 .js-second-driver-dropdown .dropdown-item:hover,
-                .js-second-driver-dropdown .dropdown-item.active {
+                .js-second-driver-dropdown .dropdown-item.active,
+                .js-third-driver-dropdown .dropdown-item:hover,
+                .js-third-driver-dropdown .dropdown-item.active {
                     background-color: #f8f9fa;
                 }
                 .js-driver-dropdown .dropdown-item:last-child,
-                .js-second-driver-dropdown .dropdown-item:last-child {
+                .js-second-driver-dropdown .dropdown-item:last-child,
+                .js-third-driver-dropdown .dropdown-item:last-child {
                     border-bottom: none;
                 }
             </style>
@@ -759,6 +858,75 @@ $read_only = $TMSUsers->check_read_only( $post_status );
                                name="second_driver_phone" value="<?php echo $second_driver_phone; ?>"
                                class="form-control js-tel-mask js-second-phone-driver">
                         <input type="hidden" name="old_second_driver_phone" value="<?php echo $second_driver_phone; ?>">
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-12"></div>
+
+            <div class="mb-2 col-12 col-md-6 col-xl-4">
+                <div class="form-check form-switch p-0 mt-1">
+                    <input class="form-check-input ml-0 js-toggle js-switch-and-clear"
+                           data-block-toggle="js-third-driver" <?php echo is_numeric( $third_driver ) ? 'checked'
+						: ''; ?>
+                           data-target="js-third-driver"
+                           id="third_driver" name="third_driver"
+                           type="checkbox">
+                    <label class="form-check-label ml-2" for="third_driver">Third driver
+                    </label>
+                </div>
+            </div>
+
+            <div class="col-12"></div>
+
+            <div class="col-12 border-1 border-primary border bg-light ml-2 pt-3 pb-3 mb-3 rounded js-third-driver <?php echo ( ! $third_driver )
+				? 'd-none' : ''; ?>">
+                <div class="row">
+                    <div class="col-12">
+                        <p class="h5">Third Driver </p>
+                    </div>
+                    <div class="mb-2 col-12 col-md-6 col-xl-4">
+                        <label for="third_unit_number" class="form-label">Third Unit Number</label>
+                        <div class="position-relative">
+                            <input type="text" id="third_unit_number" name="third_unit_number" 
+                                   value="<?php echo $third_unit_number; ?>" class="form-control js-third-unit-number-input" 
+                                   placeholder="Enter unit number..." autocomplete="off">
+                            <div class="js-third-driver-dropdown dropdown-menu w-100" style="display: none; max-height: 200px; overflow-y: auto; position: absolute; top: 100%; left: 0; z-index: 1000; background: white; border: 1px solid #ccc; border-radius: 4px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                                <!-- Driver options will be populated here -->
+                            </div>
+                        </div>
+                        
+                        
+                        <!-- Hidden fields -->
+                        <input type="hidden" name="attached_third_driver" value="<?php echo get_field_value( $meta, 'attached_third_driver' ); ?>">
+                        <input type="hidden" name="third_unit_number_name" value="<?php echo $third_unit_number_name; ?>">
+                        <input type="hidden" name="old_third_unit_number_name" value="<?php echo $third_unit_number_name; ?>">
+                        <input type="hidden" id="third-driver-search-nonce" value="<?php echo wp_create_nonce('driver_search_nonce'); ?>">
+                    </div>
+
+                    <div class="mb-2 col-12 col-md-6 col-xl-4">
+                        <label for="third_driver_rate" class="form-label">Third Driver Rate</label>
+                        <div class="input-group">
+                            <span class="input-group-text">$</span>
+                            <input type="text" name="third_driver_rate"
+                                   data-value="<?php echo $third_driver_rate; ?>"
+                                   value="<?php echo $tbd ? 0 : $third_driver_rate; ?>"
+                                   class="form-control js-money js-driver-third-value">
+
+                            <input type="hidden" class="js-old_value_third_driver_rate"
+                                   name="old_value_third_driver_rate"
+                                   value="<?php echo $third_driver_rate; ?>">
+                        </div>
+                    </div>
+
+                    <div class="col-12"></div>
+
+                    <div class="mb-2 col-12 col-md-6 col-xl-4">
+                        <label for="third_driver_phone" class="form-label ">Third Driver phone</label>
+                        <input type="text" data-value="<?php echo $third_driver_phone; ?>"
+                               name="third_driver_phone" value="<?php echo $third_driver_phone; ?>"
+                               class="form-control js-tel-mask js-third-phone-driver">
+                        <input type="hidden" name="old_third_driver_phone" value="<?php echo $third_driver_phone; ?>">
                     </div>
                 </div>
             </div>

@@ -136,10 +136,24 @@ if ( ! empty( $results ) ) :
 			
 			$second_driver_rate_raw = get_field_value( $meta, 'second_driver_rate' );
 			$second_driver_rate     = esc_html( '$' . $helper->format_currency( $second_driver_rate_raw ) );
+
+			$third_driver_rate_raw = get_field_value( $meta, 'third_driver_rate' );
+			$third_driver_rate     = esc_html( '$' . $helper->format_currency( $third_driver_rate_raw ) );
+
+
+
+			$clear_rate = $driver_rate_raw;
+
+			if ( $second_driver_rate && $second_driver_rate_raw !== '0' ) {
+				$clear_rate = $second_driver_rate_raw;
+			}
+
+			if ( $third_driver_rate && $third_driver_rate_raw !== '0' ) {
+				$clear_rate = $third_driver_rate_raw;
+			}
 			
 			$all_miles = get_field_value( $meta, 'all_miles' );
-			$miles     = $helper->calculate_price_per_mile( $booked_rate_raw, ( $second_driver_rate && $second_driver_rate_raw !== '0' )
-				? $second_driver_rate_raw : $driver_rate_raw, $all_miles );
+			$miles     = $helper->calculate_price_per_mile( $booked_rate_raw, $clear_rate, $all_miles );
 			
 			$tbd          = get_field_value( $meta, 'tbd' );
 			$profit_raw   = get_field_value( $meta, 'profit' );
@@ -233,7 +247,12 @@ if ( ! empty( $results ) ) :
                         <br><br>
                         <span class="<?php echo $modify_driver_price_class; ?>"><?php echo $second_driver_rate; ?></span>
 					<?php endif; ?>
-					
+
+					<?php if ( $third_driver_rate !== '$0' && $third_driver_rate_raw ): ?>
+                        <br><br>
+                        <span class="<?php echo $modify_driver_price_class; ?>"><?php echo $third_driver_rate; ?></span>
+					<?php endif; ?>
+					<br><br>
 					<?php if ( ! empty( $miles[ 'driver_rate_per_mile' ] ) ): ?>
                         <p class="text-small mb-0 mt-1"><?php echo '$' . $miles[ 'driver_rate_per_mile' ] . ' per mile'; ?></p>
 					<?php endif; ?>

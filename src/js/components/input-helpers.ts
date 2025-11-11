@@ -28,6 +28,7 @@ export function initMoneyMask() {
     const allValueInput = document.querySelector('.js-all-value') as HTMLInputElement;
     const driverValueInput = document.querySelector('.js-driver-value') as HTMLInputElement;
     const secondDriverValueInput = document.querySelector('.js-driver-second-value') as HTMLInputElement;
+    const thirdDriverValueInput = document.querySelector('.js-driver-third-value') as HTMLInputElement;
     const moneyTotalInput = document.querySelector('.js-money-total') as HTMLInputElement;
     const processingFeesInput = document.querySelector('.js-processing_fees') as HTMLInputElement;
     const typePayInput = document.querySelector('.js-type_pay') as HTMLInputElement;
@@ -65,7 +66,7 @@ export function initMoneyMask() {
             let allValue = parseNumber(allValueInput.value);
             const driverValue = parseNumber(driverValueInput.value);
             const secondDriverValue = parseNumber(secondDriverValueInput.value) || 0;
-
+            const thirdDriverValue = parseNumber(thirdDriverValueInput.value) || 0;
             const processingFees = parseFloat(processingFeesInput.value) || 0;
             const typePay = typePayInput.value;
             const percentQuickPay = parseFloat(percentQuickPayInput.value) || 0;
@@ -94,7 +95,7 @@ export function initMoneyMask() {
             if (tbd.checked) {
                 moneyTotalMask.value = '0';
             } else {
-                const remaining = allValue - (driverValue + secondDriverValue);
+                const remaining = allValue - (driverValue + secondDriverValue + thirdDriverValue);
                 // @ts-ignore
                 moneyTotalMask.value = remaining.toString();
             }
@@ -104,6 +105,7 @@ export function initMoneyMask() {
             allValueInput.addEventListener('input', calculateRemaining);
             driverValueInput.addEventListener('input', calculateRemaining);
             secondDriverValueInput.addEventListener('input', calculateRemaining);
+            thirdDriverValueInput.addEventListener('input', calculateRemaining);
 
             tbd &&
                 tbd.addEventListener('change', (event) => {
@@ -117,10 +119,12 @@ export function initMoneyMask() {
                     const secondInputDirverValue = document.querySelector(
                         '.js-driver-second-value'
                     ) as HTMLInputElement;
-
+                    const thirdInputDirverValue = document.querySelector(
+                        '.js-driver-third-value'
+                    ) as HTMLInputElement;
                     const inputTotal = document.querySelector('.js-money-total') as HTMLInputElement;
 
-                    if (!inputDriver || !inputDriverPhone || !inputDriverValue) return;
+                    if (!inputDriver || !inputDriverPhone || !inputDriverValue || !thirdInputDirverValue) return;
 
                     if (target) {
                         // @ts-ignore
@@ -129,12 +133,14 @@ export function initMoneyMask() {
                             inputDriverPhone.value = 'TBD';
                             inputDriverValue.value = '0';
                             secondInputDirverValue.value = '0';
+                            thirdInputDirverValue.value = '0';
                             inputTotal.value = '0';
 
                             inputDriver.setAttribute('readonly', 'readonly');
                             inputDriverPhone.setAttribute('readonly', 'readonly');
                             inputDriverValue.setAttribute('readonly', 'readonly');
                             secondInputDirverValue.setAttribute('readonly', 'readonly');
+                            thirdInputDirverValue.setAttribute('readonly', 'readonly');
                             inputTotal.setAttribute('readonly', 'readonly');
                         } else {
                             const driverVal = inputDriver.getAttribute('data-value');
@@ -149,13 +155,15 @@ export function initMoneyMask() {
                             // @ts-ignore
                             secondInputDirverValue.value = secondInputDirverValue.getAttribute('data-value');
                             // @ts-ignore
+                            thirdInputDirverValue.value = thirdInputDirverValue.getAttribute('data-value');
+                            // @ts-ignore
                             inputTotal.value = inputTotal.getAttribute('data-value');
 
                             inputDriver.removeAttribute('readonly');
                             inputDriverPhone.removeAttribute('readonly');
                             inputDriverValue.removeAttribute('readonly');
                             secondInputDirverValue.removeAttribute('readonly');
-
+                            thirdInputDirverValue.removeAttribute('readonly');
                             calculateRemaining();
                         }
                     }

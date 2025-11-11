@@ -142,16 +142,20 @@ if ( ! $show_filter_by_office ) {
 								<?php
 								$data                      = $statistics->get_monthly_fuctoring_stats( $year_param, $mount_param, $office, $is_flt );
 								$second_driver_rate        = floatval( $data[ 'total_second_driver_rate' ] );
-								$general_profit            = floatval( $data[ 'total_booked_rate' ] ) - ( floatval( $data[ 'total_driver_rate' ] ) + $second_driver_rate );
+								$third_driver_rate         = floatval( $data[ 'total_third_driver_rate' ] );
+								$general_profit            = floatval( $data[ 'total_booked_rate' ] ) - ( floatval( $data[ 'total_driver_rate' ] ) + $second_driver_rate + $third_driver_rate );
 								$total_percent_booked_rate = floatval( $data[ 'total_percent_booked_rate' ] );
 								$paid_to_factoring         = $total_percent_booked_rate;
 								$general_true_profit       = $general_profit - $paid_to_factoring;
 								$after_factoring           = floatval( $data[ 'total_booked_rate' ] ) - $paid_to_factoring;
-								$driver_rate               = floatval( $data[ 'total_driver_rate' ] ) + $second_driver_rate;
+								$driver_rate               = floatval( $data[ 'total_driver_rate' ] ) + $second_driver_rate + $third_driver_rate;
 								$processed_invoices        = floatval( $data[ 'total_processed_invoices' ] );
 								$paid_loads                = floatval( $data[ 'total_paid_loads' ] );
                                 $total_loads               = floatval( $data[ 'post_count' ] );
-								
+
+                                $paid_loads_second_driver  = floatval( $data[ 'total_paid_loads_second_driver' ] );
+                                $paid_loads_third_driver   = floatval( $data[ 'total_paid_loads_third_driver' ] );
+								$paid_loads += $paid_loads_second_driver + $paid_loads_third_driver;
 								?>
 
                                 <div class="table-values">

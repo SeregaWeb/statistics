@@ -2929,8 +2929,13 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 				"second_driver_rate"      => FILTER_SANITIZE_STRING,
 				"second_driver_phone"     => FILTER_SANITIZE_STRING,
 				"second_driver"           => FILTER_VALIDATE_BOOLEAN,
+				"third_unit_number_name"  => FILTER_SANITIZE_STRING,
+				"third_driver_rate"       => FILTER_SANITIZE_STRING,
+				"third_driver_phone"      => FILTER_SANITIZE_STRING,
+				"third_driver"            => FILTER_VALIDATE_BOOLEAN,
 				"attached_driver"         => FILTER_SANITIZE_STRING,
 				"attached_second_driver"  => FILTER_SANITIZE_STRING,
+				"attached_third_driver"   => FILTER_SANITIZE_STRING,
 				"tbd"                     => FILTER_VALIDATE_BOOLEAN,
 				"old_tbd"                 => FILTER_VALIDATE_BOOLEAN,
 				"additional_fees"         => FILTER_VALIDATE_BOOLEAN,
@@ -2955,12 +2960,17 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 			if (empty($MY_INPUT[ 'attached_second_driver' ]) && $MY_INPUT[ 'second_driver' ]) {
 				wp_send_json_error( [ 'message' => 'Error adding load: You need to attach a second driver. To do this, select the second driver from the drop-down list (by clicking on it)' ] );
 			}
+
+			if (empty($MY_INPUT[ 'attached_third_driver' ]) && $MY_INPUT[ 'third_driver' ]) {
+				wp_send_json_error( [ 'message' => 'Error adding load: You need to attach a third driver. To do this, select the third driver from the drop-down list (by clicking on it)' ] );
+			}
 			
 			if ( $MY_INPUT[ 'load_status' ] === 'cancelled' ) {
 				$MY_INPUT[ "booked_rate" ]        = '0.00';
 				$MY_INPUT[ "driver_rate" ]        = '0.00';
 				$MY_INPUT[ "profit" ]             = '0.00';
 				$MY_INPUT[ "second_driver_rate" ] = '0.00';
+				$MY_INPUT[ "third_driver_rate" ]  = '0.00';
 			} else {
 				$MY_INPUT = $this->count_all_sum( $MY_INPUT );
 			}
@@ -2991,10 +3001,11 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 		$MY_INPUT[ "booked_rate" ]        = $this->convert_to_number( $MY_INPUT[ "booked_rate" ] );
 		$MY_INPUT[ "driver_rate" ]        = $this->convert_to_number( $MY_INPUT[ "driver_rate" ] );
 		$MY_INPUT[ "second_driver_rate" ] = $this->convert_to_number( $MY_INPUT[ "second_driver_rate" ] );
+		$MY_INPUT[ "third_driver_rate" ]  = $this->convert_to_number( $MY_INPUT[ "third_driver_rate" ] );
 		$MY_INPUT[ "profit" ]             = $this->convert_to_number( $MY_INPUT[ "profit" ] );
 		
-		if ( is_numeric( $MY_INPUT[ "second_driver_rate" ] ) && is_numeric( $MY_INPUT[ "driver_rate" ] ) ) {
-			$with_second_sum = $MY_INPUT[ "driver_rate" ] + $MY_INPUT[ "second_driver_rate" ];
+		if ( is_numeric( $MY_INPUT[ "second_driver_rate" ] ) && is_numeric( $MY_INPUT[ "driver_rate" ] ) && is_numeric( $MY_INPUT[ "third_driver_rate" ] ) ) {
+			$with_second_sum = $MY_INPUT[ "driver_rate" ] + $MY_INPUT[ "second_driver_rate" ] + $MY_INPUT[ "third_driver_rate" ];
 		}
 		
 		$booked_rait         = $MY_INPUT[ "booked_rate" ];
@@ -3057,7 +3068,7 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 			$MY_INPUT[ 'true_profit' ]        = 0;
 			$MY_INPUT[ "driver_rate" ]        = 0;
 			$MY_INPUT[ "second_driver_rate" ] = 0;
-			
+			$MY_INPUT[ "third_driver_rate" ]  = 0;
 		}
 		
 		return $MY_INPUT;
@@ -3814,6 +3825,7 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 			$post_meta[ 'driver_rate' ]        = '0.00';
 			$post_meta[ 'profit' ]             = '0.00';
 			$post_meta[ 'second_driver_rate' ] = '0.00';
+			$post_meta[ 'third_driver_rate' ]  = '0.00';
 		}
 		
 		// Specify the condition (WHERE clause)
@@ -4557,8 +4569,13 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 			'second_driver_rate'      => $data[ 'second_driver_rate' ],
 			'second_driver_phone'     => $data[ 'second_driver_phone' ],
 			'second_driver'           => $data[ 'second_driver' ],
+			'third_unit_number_name'  => $data[ 'third_unit_number_name' ],
+			'third_driver_rate'       => $data[ 'third_driver_rate' ],
+			'third_driver_phone'      => $data[ 'third_driver_phone' ],
+			'third_driver'            => $data[ 'third_driver' ],
 			'attached_driver'         => $data[ 'attached_driver' ] ?? '',
 			'attached_second_driver'  => $data[ 'attached_second_driver' ] ?? '',
+			'attached_third_driver'   => $data[ 'attached_third_driver' ] ?? '',
 			'additional_fees'         => $data[ 'additional_fees' ],
 			'additional_fees_val'     => $data[ 'additional_fees_val' ],
 			'additional_fees_driver'  => $data[ 'additional_fees_driver' ],

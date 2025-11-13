@@ -503,6 +503,7 @@ if ( ! empty( $results ) ) : ?>
 	
 	
 	echo esc_html( get_template_part( TEMPLATE_PATH . 'report', 'pagination', array(
+        'position'     => 'left',
 		'total_pages'  => $total_pages,
 		'current_page' => $current_pages,
 	) ) );

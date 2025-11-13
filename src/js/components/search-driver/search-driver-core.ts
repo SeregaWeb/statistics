@@ -1,4 +1,4 @@
-import { autoFillAddressHero, initCopyDriverPhones } from './driver-hero';
+import { autoFillAddressHero, initCopyDriverEmails, initCopyDriverPhones } from './driver-hero';
 import { printMessage } from '../info-messages';
 import { cleanUrlByFilterDriverSearch } from '../filter-clean';
 
@@ -134,4 +134,5 @@ export const initialSearchDriver = (varFromPhp) => {
 
     // Initialize copy driver phones functionality
     initCopyDriverPhones();
+    initCopyDriverEmails();
 };

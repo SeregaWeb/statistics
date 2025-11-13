@@ -1,4 +1,13 @@
-<div class="pagination">
+<?php
+$position = get_field_value( $args, 'position' );
+
+if ( $position === 'left' ) {
+	$position = 'justify-content-start';
+} else {
+	$position = 'justify-content-end';
+}
+?>
+<div class="pagination <?php echo $position; ?>">
 	<?php
 	
 	// Выводим ссылки на страницы

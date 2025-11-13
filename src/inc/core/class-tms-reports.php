@@ -3043,6 +3043,12 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 				"reference_number"        => FILTER_SANITIZE_STRING,
 				"unit_number_name"        => FILTER_SANITIZE_STRING,
 				"old_unit_number_name"    => FILTER_SANITIZE_STRING,
+				"old_second_unit_number_name" => FILTER_SANITIZE_STRING,
+				"old_third_unit_number_name" => FILTER_SANITIZE_STRING,
+				"old_second_driver_phone" => FILTER_SANITIZE_STRING,
+				"old_third_driver_phone" => FILTER_SANITIZE_STRING,
+				"old_value_second_driver_rate" => FILTER_SANITIZE_STRING,
+				"old_value_third_driver_rate" => FILTER_SANITIZE_STRING,
 				"booked_rate"             => FILTER_SANITIZE_STRING,
 				"old_value_booked_rate"   => FILTER_SANITIZE_STRING,
 				"processing_fees"         => FILTER_SANITIZE_STRING,
@@ -4596,40 +4602,149 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 				}
 			}
 			
-			if ( $data[ 'old_unit_number_name' ] && ! empty( $data[ 'old_unit_number_name' ] ) ) {
-				if ( $data[ 'old_unit_number_name' ] !== $data[ 'unit_number_name' ] ) {
-					
-					$this->log_controller->create_one_log( array(
-						'user_id' => $user_id,
-						'post_id' => $data[ 'post_id' ],
-						'message' => 'Changed driver: ' . 'New value: ' . $data[ 'unit_number_name' ] . ' Old value: ' . $data[ 'old_unit_number_name' ]
-					) );
-					
-					$select_emails = $this->email_helper->get_selected_emails( $this->user_emails, array(
-						'tracking_email',
-						'admin_email',
-						'team_leader_email'
-					) );
-					
-					
-					$who_changed = 'driver';
-					$this->email_helper->send_custom_email( $select_emails, array(
-						'subject'      => 'Changed driver',
-						'project_name' => $this->project,
-						'subtitle'     => $user_name[ 'full_name' ] . ' has changed the ' . $who_changed . ' for the load ' . $link,
-						'message'      => '<del>' . $data[ 'old_unit_number_name' ] . '</del>, now: ' . $data[ 'unit_number_name' ],
-					) );
+			// Collect all second driver changes into one log
+			$second_driver_changes = array();
+			$second_driver_name_changed = false;
+			
+			// Check second driver name/number
+			if ( $data[ 'old_second_unit_number_name' ] && ! empty( $data[ 'old_second_unit_number_name' ] ) ) {
+				if ( $data[ 'old_second_unit_number_name' ] !== $data[ 'second_unit_number_name' ] ) {
+					$second_driver_changes[] = 'driver: New value: ' . $data[ 'second_unit_number_name' ] . ' Old value: ' . $data[ 'old_second_unit_number_name' ];
+					$second_driver_name_changed = true;
 				}
 			}
 			
+			// Check second driver phone
+			if ( $data[ 'old_second_driver_phone' ] && ! empty( $data[ 'old_second_driver_phone' ] ) ) {
+				if ( $data[ 'second_driver_phone' ] !== $data[ 'old_second_driver_phone' ] ) {
+					$second_driver_changes[] = 'phone: New value: ' . $data[ 'second_driver_phone' ] . ' Old value: ' . $data[ 'old_second_driver_phone' ];
+				}
+			}
+			
+			// Check second driver rate
+			if ( is_numeric( $data[ 'old_value_second_driver_rate' ] ) ) {
+				if ( $data[ 'second_driver_rate' ] !== floatval( $data[ 'old_value_second_driver_rate' ] ) ) {
+					$second_driver_changes[] = 'rate: New value: $' . $data[ 'second_driver_rate' ] . ' Old value: $' . $data[ 'old_value_second_driver_rate' ];
+				}
+			}
+			
+			// Create single log if there are any changes
+			if ( ! empty( $second_driver_changes ) ) {
+				$message = 'Changed Second Driver<br>' . implode( '<br>', $second_driver_changes );
+				$this->log_controller->create_one_log( array(
+					'user_id' => $user_id,
+					'post_id' => $data[ 'post_id' ],
+					'message' => $message
+				) );
+			}
+
+			// Collect all first driver changes into one log (with email notifications)
+			$first_driver_changes = array();
+			$first_driver_name_changed = false;
+			$first_driver_rate_changed = false;
+			
+			// Check first driver name/number
+			if ( $data[ 'old_unit_number_name' ] && ! empty( $data[ 'old_unit_number_name' ] ) ) {
+				if ( $data[ 'old_unit_number_name' ] !== $data[ 'unit_number_name' ] ) {
+					$first_driver_changes[] = 'driver: New value: ' . $data[ 'unit_number_name' ] . ' Old value: ' . $data[ 'old_unit_number_name' ];
+					$first_driver_name_changed = true;
+				}
+			}
+			
+			// Check first driver phone
 			if ( $data[ 'old_driver_phone' ] && ! empty( $data[ 'old_driver_phone' ] ) ) {
 				if ( $data[ 'driver_phone' ] !== $data[ 'old_driver_phone' ] ) {
-					$this->log_controller->create_one_log( array(
-						'user_id' => $user_id,
-						'post_id' => $data[ 'post_id' ],
-						'message' => 'Changed Driver phone: ' . 'New value: ' . $data[ 'driver_phone' ] . ' Old value: ' . $data[ 'old_driver_phone' ]
-					) );
+					$first_driver_changes[] = 'phone: New value: ' . $data[ 'driver_phone' ] . ' Old value: ' . $data[ 'old_driver_phone' ];
 				}
+			}
+			
+			// Check first driver rate
+			if ( is_numeric( $data[ 'old_value_driver_rate' ] ) ) {
+				if ( $data[ 'driver_rate' ] !== floatval( $data[ 'old_value_driver_rate' ] ) ) {
+					$first_driver_changes[] = 'rate: New value: $' . $data[ 'driver_rate' ] . ' Old value: $' . $data[ 'old_value_driver_rate' ];
+					$first_driver_rate_changed = true;
+				}
+			}
+			
+			// Send email notification if driver name changed
+			if ( $first_driver_name_changed ) {
+				$select_emails = $this->email_helper->get_selected_emails( $this->user_emails, array(
+					'tracking_email',
+					'admin_email',
+					'team_leader_email'
+				) );
+				
+				$who_changed = 'driver';
+				$this->email_helper->send_custom_email( $select_emails, array(
+					'subject'      => 'Changed driver',
+					'project_name' => $this->project,
+					'subtitle'     => $user_name[ 'full_name' ] . ' has changed the ' . $who_changed . ' for the load ' . $link,
+					'message'      => '<del>' . $data[ 'old_unit_number_name' ] . '</del>, now: ' . $data[ 'unit_number_name' ],
+				) );
+			}
+			
+			// Send email notification if driver rate changed
+			if ( $first_driver_rate_changed ) {
+				$select_emails = $this->email_helper->get_selected_emails( $this->user_emails, array(
+					'admin_email',
+					'billing_email',
+					'team_leader_email',
+					'accounting_email',
+				) );
+				
+				$who_changed = 'Driver rate';
+				$this->email_helper->send_custom_email( $select_emails, array(
+					'subject'      => 'Changed Driver rate',
+					'project_name' => $this->project,
+					'subtitle'     => $user_name[ 'full_name' ] . ' has changed the ' . $who_changed . ' for the load ' . $link,
+					'message'      => '<del>$' . $data[ 'old_value_driver_rate' ] . '</del>, now: $' . $data[ 'driver_rate' ],
+				) );
+				
+				$data[ 'modify_driver_price' ] = '1';
+			}
+			
+			// Create single log if there are any changes
+			if ( ! empty( $first_driver_changes ) ) {
+				$message = 'Changed Driver<br>' . implode( '<br>', $first_driver_changes );
+				$this->log_controller->create_one_log( array(
+					'user_id' => $user_id,
+					'post_id' => $data[ 'post_id' ],
+					'message' => $message
+				) );
+			}
+
+			// Collect all third driver changes into one log
+			$third_driver_changes = array();
+			
+			// Check third driver name/number
+			if ( $data[ 'old_third_unit_number_name' ] && ! empty( $data[ 'old_third_unit_number_name' ] ) ) {
+				if ( $data[ 'old_third_unit_number_name' ] !== $data[ 'third_unit_number_name' ] ) {
+					$third_driver_changes[] = 'driver: New value: ' . $data[ 'third_unit_number_name' ] . ' Old value: ' . $data[ 'old_third_unit_number_name' ];
+				}
+			}
+			
+			// Check third driver phone
+			if ( $data[ 'old_third_driver_phone' ] && ! empty( $data[ 'old_third_driver_phone' ] ) ) {
+				if ( $data[ 'third_driver_phone' ] !== $data[ 'old_third_driver_phone' ] ) {
+					$third_driver_changes[] = 'phone: New value: ' . $data[ 'third_driver_phone' ] . ' Old value: ' . $data[ 'old_third_driver_phone' ];
+				}
+			}
+			
+			// Check third driver rate
+			if ( is_numeric( $data[ 'old_value_third_driver_rate' ] ) ) {
+				if ( $data[ 'third_driver_rate' ] !== floatval( $data[ 'old_value_third_driver_rate' ] ) ) {
+					$third_driver_changes[] = 'rate: New value: $' . $data[ 'third_driver_rate' ] . ' Old value: $' . $data[ 'old_value_third_driver_rate' ];
+				}
+			}
+			
+			// Create single log if there are any changes
+			if ( ! empty( $third_driver_changes ) ) {
+				$message = 'Changed Third Driver<br>' . implode( '<br>', $third_driver_changes );
+				$this->log_controller->create_one_log( array(
+					'user_id' => $user_id,
+					'post_id' => $data[ 'post_id' ],
+					'message' => $message
+				) );
 			}
 			
 			if ( $data[ 'weight' ] && ! empty( $data[ 'weight' ] ) ) {
@@ -4677,33 +4792,8 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 				}
 			}
 			
-			if ( is_numeric( $data[ 'old_value_driver_rate' ] ) ) {
-				if ( $data[ 'driver_rate' ] !== floatval( $data[ 'old_value_driver_rate' ] ) ) {
-					$this->log_controller->create_one_log( array(
-						'user_id' => $user_id,
-						'post_id' => $data[ 'post_id' ],
-						'message' => 'Changed Driver rate: ' . 'New value: ' . $data[ 'driver_rate' ] . ' Old value: $' . $data[ 'old_value_driver_rate' ]
-					) );
-					
-					$select_emails = $this->email_helper->get_selected_emails( $this->user_emails, array(
-						'admin_email',
-						'billing_email',
-						'team_leader_email',
-						'accounting_email',
-					) );
-					
-					$who_changed = 'Driver rate';
-					$this->email_helper->send_custom_email( $select_emails, array(
-						'subject'      => 'Changed Driver rate',
-						'project_name' => $this->project,
-						'subtitle'     => $user_name[ 'full_name' ] . ' has changed the ' . $who_changed . ' for the load ' . $link,
-						'message'      => '<del>$' . $data[ 'old_value_driver_rate' ] . '</del>, now: $' . $data[ 'driver_rate' ],
-					) );
-					
-					$data[ 'modify_driver_price' ] = '1';
-					
-				}
-			}
+
+
 			if ( is_numeric( $data[ 'old_value_booked_rate' ] ) ) {
 				if ( $data[ 'booked_rate' ] !== floatval( $data[ 'old_value_booked_rate' ] ) ) {
 					
@@ -5469,6 +5559,13 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 				$userHelper  = new TMSUsers();
 				$name_user   = $userHelper->get_user_full_name_by_id( $user_id );
 				$time_pinned = date( 'm/d/Y H:i', $pinned_array[ 'time_pinned' ] );
+
+				$this->log_controller->create_one_log( array(
+					'user_id' => $user_id,
+					'post_id' => $post_id,
+					'message' => 'Pinned message: ' . $pinned_message
+				) );
+
 				
 				wp_send_json_success( array(
 					'message' => 'Message pinned',

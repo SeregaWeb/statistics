@@ -91,12 +91,12 @@ $billing_info    = $TMSUsers->check_user_role_access( array( 'administrator', 'b
 $accounting_info = $TMSUsers->check_user_role_access( array( 'administrator', 'billing', 'accounting' ), true );
 
 $tracking_tl = false;
-if ( $TMSUsers->check_user_role_access( array( 'tracking-tl' ), true ) && isset( $meta ) ) {
-	$full_only_view = true;
-	$tracking_tl    = true;
-}
+// if ( $TMSUsers->check_user_role_access( array( 'tracking-tl' ), true ) && isset( $meta ) ) {
+// 	$full_only_view = true;
+// 	$tracking_tl    = true;
+// }
 
-if ( $TMSUsers->check_user_role_access( array( 'morning_tracking', 'nightshift_tracking' ), true ) && isset( $meta ) ) {
+if ( $TMSUsers->check_user_role_access( array('tracking-tl', 'morning_tracking', 'nightshift_tracking' ), true ) && isset( $meta ) ) {
 	$full_only_view = false;
 	$tracking_tl    = true;
 }

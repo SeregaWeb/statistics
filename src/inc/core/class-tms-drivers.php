@@ -817,6 +817,7 @@ class TMSDrivers extends TMSDriversHelper {
 		$month      = trim( get_field_value( $_GET, 'fmonth' ) ?? '' );
 		$source     = trim( get_field_value( $_GET, 'source' ) ?? '' );
 		$additional = trim( get_field_value( $_GET, 'additional' ) ?? '' );
+		$driver_status = trim( get_field_value( $_GET, 'driver_status' ) ?? '' );
 		
 		if ( $my_search ) {
 			$args[ 'my_search' ] = $my_search;
@@ -839,7 +840,10 @@ class TMSDrivers extends TMSDriversHelper {
 		if ( $source ) {
 			$args[ 'source' ] = $source;
 		}
-		
+
+		if ( $driver_status ) {
+			$args[ 'driver_status' ] = $driver_status;
+		}
 		
 		return $args;
 	}
@@ -1014,6 +1018,11 @@ class TMSDrivers extends TMSDriversHelper {
         AND MONTH(main.date_created) = %d";
 			$where_values[]     = $args[ 'month' ];
 		}
+
+		if ( ! empty( $args[ 'driver_status' ] ) ) {
+			$where_conditions[] = "driver_status.meta_value = %s";
+			$where_values[]     = $args[ 'driver_status' ];
+		}
 		
 		// Add driver visibility condition based on user role
 		$driverHelper    = new TMSDriversHelper();
@@ -1099,6 +1108,7 @@ class TMSDrivers extends TMSDriversHelper {
 			'current_pages' => $current_page,
 		);
 	}
+
 	public function get_table_items_search( $args = array() ) {
 		global $wpdb;
 		
@@ -3359,6 +3369,30 @@ class TMSDrivers extends TMSDriversHelper {
 		}
 		
 		return $available_loads;
+	}
+	
+	/**
+	 * Check if rating exists for order number
+	 * 
+	 * @param string $order_number Order number (reference_number)
+	 * @return bool True if rating exists, false otherwise
+	 */
+	public function has_rating_for_order_number( $order_number ) {
+		global $wpdb;
+		
+		if ( empty( $order_number ) ) {
+			return false;
+		}
+		
+		$table_name = $wpdb->prefix . $this->table_raiting;
+		
+		$count = $wpdb->get_var( $wpdb->prepare( "
+			SELECT COUNT(id)
+			FROM $table_name
+			WHERE order_number = %s
+		", sanitize_text_field( $order_number ) ) );
+		
+		return (int) $count > 0;
 	}
 	
 	function insert_driver_notice( $driver_id, $name, $date, $message = '', $status = false ) {

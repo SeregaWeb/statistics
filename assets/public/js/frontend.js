@@ -9709,12 +9709,14 @@ var cleanUrlByFilterDriver = function cleanUrlByFilterDriver() {
       var mySearch = form.elements.namedItem('my_search');
       var source = form.elements.namedItem('source');
       var additional = form.elements.namedItem('additional');
+      var driverStatus = form.elements.namedItem('driver_status');
       if (recruiter === null || recruiter === void 0 ? void 0 : recruiter.value) params.append('recruiter', recruiter.value);
       if (fmonth === null || fmonth === void 0 ? void 0 : fmonth.value) params.append('fmonth', fmonth.value);
       if (fyear === null || fyear === void 0 ? void 0 : fyear.value) params.append('fyear', fyear.value);
       if (additional === null || additional === void 0 ? void 0 : additional.value) params.append('additional', additional.value);
       if (mySearch === null || mySearch === void 0 ? void 0 : mySearch.value) params.append('my_search', mySearch.value);
       if (source === null || source === void 0 ? void 0 : source.value) params.append('source', source.value);
+      if (driverStatus === null || driverStatus === void 0 ? void 0 : driverStatus.value) params.append('driver_status', driverStatus.value);
       window.location.href = "?".concat(params.toString());
     });
   }
@@ -11456,8 +11458,10 @@ var addSearchAction = function addSearchAction(ajaxUrl) {
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   autoFillAddressHero: function() { return /* binding */ autoFillAddressHero; },
+/* harmony export */   copyDriverEmails: function() { return /* binding */ copyDriverEmails; },
 /* harmony export */   copyDriverPhones: function() { return /* binding */ copyDriverPhones; },
 /* harmony export */   getLocationDataByZipCodeHero: function() { return /* binding */ getLocationDataByZipCodeHero; },
+/* harmony export */   initCopyDriverEmails: function() { return /* binding */ initCopyDriverEmails; },
 /* harmony export */   initCopyDriverPhones: function() { return /* binding */ initCopyDriverPhones; }
 /* harmony export */ });
 /* harmony import */ var _info_messages__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ../info-messages */ "./src/js/components/info-messages.ts");
@@ -11627,6 +11631,45 @@ var initCopyDriverPhones = function initCopyDriverPhones() {
     copyBtn.addEventListener('click', copyDriverPhones);
   }
 };
+var copyDriverEmails = function copyDriverEmails() {
+  var emailElements = document.querySelectorAll('.driver-email[data-email]');
+  var emails = [];
+  emailElements.forEach(function (element) {
+    var email = element.getAttribute('data-email');
+    if (email && email.trim() !== '') {
+      emails.push(email.trim());
+    }
+  });
+  if (emails.length === 0) {
+    (0,_info_messages__WEBPACK_IMPORTED_MODULE_0__.printMessage)('No emails found on this page.', 'warning', 3000);
+    return;
+  }
+  var emailList = emails.join('\n');
+  navigator.clipboard.writeText(emailList).then(function () {
+    var copyBtn = document.getElementById('copy-driver-emails-btn');
+    if (copyBtn) {
+      var originalText = copyBtn.innerHTML;
+      copyBtn.innerHTML = 'Copied!';
+      copyBtn.classList.remove('btn-outline-primary');
+      copyBtn.classList.add('btn-success');
+      setTimeout(function () {
+        copyBtn.innerHTML = originalText;
+        copyBtn.classList.remove('btn-success');
+        copyBtn.classList.add('btn-outline-primary');
+      }, 2000);
+    }
+    (0,_info_messages__WEBPACK_IMPORTED_MODULE_0__.printMessage)("Successfully copied ".concat(emails.length, " emails to clipboard."), 'success', 3000);
+  }).catch(function (err) {
+    console.error('Failed to copy emails: ', err);
+    (0,_info_messages__WEBPACK_IMPORTED_MODULE_0__.printMessage)('Failed to copy emails to clipboard.', 'danger', 5000);
+  });
+};
+var initCopyDriverEmails = function initCopyDriverEmails() {
+  var copyBtn = document.getElementById('copy-driver-emails-btn');
+  if (copyBtn) {
+    copyBtn.addEventListener('click', copyDriverEmails);
+  }
+};
 
 /***/ }),
 
@@ -11742,6 +11785,7 @@ var initialSearchDriver = function initialSearchDriver(varFromPhp) {
     });
   }
   (0,_driver_hero__WEBPACK_IMPORTED_MODULE_0__.initCopyDriverPhones)();
+  (0,_driver_hero__WEBPACK_IMPORTED_MODULE_0__.initCopyDriverEmails)();
 };
 
 /***/ }),

@@ -10,7 +10,9 @@ $month              = get_field_value( $_GET, 'fmonth' );
 $year_param         = get_field_value( $_GET, 'fyear' );
 $source             = trim( get_field_value( $_GET, 'source' ) ?? '' );
 $additional         = trim( get_field_value( $_GET, 'additional' ) ?? '' );
+$driver_status      = trim( get_field_value( $_GET, 'driver_status' ) ?? '' );
 $current_year       = date( 'Y' );
+$driver_statuses    = $driver_helper->status;
 
 
 $driver_capabilities = array(
@@ -114,6 +116,17 @@ $driver_capabilities = array(
 						<?php endforeach; ?>
 					<?php endif; ?>
                 </select>
+
+			 <select class="form-select w-auto" name="driver_status" aria-label=".form-select-sm example">
+				<option value="">Driver status</option>
+				<?php if ( is_array( $driver_statuses ) ): ?>
+					<?php foreach ( $driver_statuses as $key => $val ): ?>
+						<option value="<?php echo $key; ?>" <?php echo $driver_status === $key ? 'selected' : '' ?> >
+							<?php echo $val; ?>
+						</option>
+					<?php endforeach; ?>
+				<?php endif; ?>
+			</select>
 				
 				<?php if ( ! empty( $_GET ) ): ?>
                     <a class="btn btn-outline-danger" href="<?php echo get_the_permalink(); ?>">Reset</a>

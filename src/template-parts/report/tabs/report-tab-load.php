@@ -87,6 +87,8 @@ if ( $report_object ) {
         $current_user_id = get_current_user_id();
         $exclusive_access = $current_user_id === intval( 22 ) && $role_dispatcher === 'dispatcher';
 
+        $tracking_access = $TMSUsers->check_user_role_access( array( 'tracking-tl', 'morning_tracking', 'nightshift_tracking' ), true );
+    
 
 		$reference_number       = get_field_value( $meta, 'reference_number' );
 		$unit_number_name       = get_field_value( $meta, 'unit_number_name' );

@@ -76,6 +76,7 @@ $driver_capabilities = array(
                 </select>
 
                 <select class="form-select w-auto" name="radius" aria-label=".form-select-sm example">
+                    <option value="50" <?php echo (isset($_GET['radius']) && $_GET['radius'] === '50') ? 'selected' : ''; ?>>50 miles</option>
                     <option value="100" <?php echo (isset($_GET['radius']) && $_GET['radius'] === '100') ? 'selected' : ''; ?>>100 miles</option>
                     <option value="150" <?php echo (isset($_GET['radius']) && $_GET['radius'] === '150') ? 'selected' : ''; ?>>150 miles</option>
                     <option value="200" <?php echo (isset($_GET['radius']) && $_GET['radius'] === '200') ? 'selected' : ''; ?>>200 miles</option>
@@ -84,6 +85,9 @@ $driver_capabilities = array(
                     <option value="400" <?php echo (isset($_GET['radius']) && $_GET['radius'] === '400') ? 'selected' : ''; ?>>400 miles</option>
                     <option value="500" <?php echo (isset($_GET['radius']) && $_GET['radius'] === '500') ? 'selected' : ''; ?>>500 miles</option>
                     <option value="600" <?php echo (isset($_GET['radius']) && $_GET['radius'] === '600') ? 'selected' : ''; ?>>600 miles</option>
+                    <option value="800" <?php echo (isset($_GET['radius']) && $_GET['radius'] === '800') ? 'selected' : ''; ?>>800 miles</option>
+                    <option value="1000" <?php echo (isset($_GET['radius']) && $_GET['radius'] === '1000') ? 'selected' : ''; ?>>1000 miles</option>
+
                 </select>
 
                 <button class="btn btn-outline-dark" type="submit">Search</button>

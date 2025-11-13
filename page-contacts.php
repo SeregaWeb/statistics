@@ -8,6 +8,12 @@
 
 get_header();
 
+global $global_options;
+
+if ( is_array( $global_options ) ) {
+	$link_broker = isset( $global_options['single_page_broker'] ) ? $global_options['single_page_broker'] : '';
+}
+
 $reports     = new TMSReports();
 $TMSUsers    = new TMSUsers();
 $TMSContacts = new TMSContacts();
@@ -344,7 +350,7 @@ $current_pages = get_field_value( $data[ 'pagination' ], 'current_page' );
                                             <td>
                                                 <input type="hidden" name="id"
                                                        value="<?php echo esc_attr( $item[ 'id' ] ); ?>">
-												<?php echo esc_html( $item[ 'company_name' ] ); ?>
+												<a href="<?php echo $link_broker . '?broker_id=' . $item[ 'company_id' ]; ?>"><?php echo esc_html( $item[ 'company_name' ] ); ?></a>
                                             </td>
                                             <td><?php echo esc_html( $item[ 'city' ] ); ?>,
 												<?php echo esc_html( $item[ 'state' ] ); ?>

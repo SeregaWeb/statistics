@@ -3,6 +3,7 @@ $drivers      = new TMSDrivers();
 $helper       = new TMSReportsHelper();
 $icons        = new TMSReportsIcons();
 $driverHelper = new TMSDriversHelper();
+$TMSUsers     = new TMSUsers();
 
 $results       = get_field_value( $args, 'results' );
 $total_pages   = get_field_value( $args, 'total_pages' );
@@ -10,10 +11,21 @@ $current_pages = get_field_value( $args, 'current_pages' );
 $is_draft      = get_field_value( $args, 'is_draft' );
 $is_archive    = get_field_value( $args, 'is_archive' );
 
+$access_copy_email = $TMSUsers->check_user_role_access( array( 'administrator', 'recruiter', 'recruiter-tl' ), true );
+
 if ( ! empty( $results ) ) : ?>
 	
 	<?php if ( $driverHelper->can_copy_driver_phones() && !$is_archive && !$is_draft ): ?>
-        <div class="mb-3 d-flex justify-content-end">
+        <div class="mb-3 d-flex gap-1 justify-content-end">
+
+            <?php if ( $access_copy_email ): ?>
+
+                <button type="button" class="btn btn-outline-success" id="copy-driver-emails-btn">
+                    Copy All Emails
+                </button>
+
+            <?php endif; ?>
+                
             <button type="button" class="btn btn-outline-primary" id="copy-driver-phones-btn">
                 Copy All Phone Numbers
             </button>
@@ -165,6 +177,10 @@ if ( ! empty( $results ) ) : ?>
                         </div>
                         <span class="text-small driver-phone"
                               data-phone="<?php echo esc_attr( $driver_phone ); ?>"><?php echo $driver_phone; ?></span>
+                        <?php if ( $access_copy_email ): ?>
+                            <span class="text-small driver-email"
+                                  data-email="<?php echo esc_attr( $driver_email ); ?>"><?php echo $driver_email; ?></span>
+                        <?php endif; ?>
                     </div>
                 </td>
                 <td>

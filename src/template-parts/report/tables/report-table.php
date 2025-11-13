@@ -11,6 +11,7 @@ if ( $flt ) {
 $TMSUsers  = new TMSUsers();
 $TMSHelper = new TMSReportsHelper();
 $TMSBroker = new TMSReportsCompany();
+$TMSDrivers = new TMSDrivers();
 
 $results                   = get_field_value( $args, 'results' );
 $total_pages               = get_field_value( $args, 'total_pages' );
@@ -128,6 +129,9 @@ if ( ! empty( $results ) ) :
 			
 			$reference_number = esc_html( get_field_value( $meta, 'reference_number' ) );
 			
+			// Check if rating exists for this order number
+			$has_rating = $TMSDrivers->has_rating_for_order_number( $reference_number );
+			
 			$booked_rate_raw = get_field_value( $meta, 'booked_rate' );
 			$booked_rate     = esc_html( '$' . $helper->format_currency( $booked_rate_raw ) );
 			
@@ -225,16 +229,21 @@ if ( ! empty( $results ) ) :
                         </span>
                         </p>
                         <span class="text-small platform-<?php echo isset( $broker[ 'platform' ] )
-							? $broker[ 'platform' ] : ""; ?>"
+							? $broker[ 'platform' ] : ""; ?> <?php echo $has_rating ? 'has-rating' : ''; ?>"
                               title="<?php echo isset( $broker[ 'platform' ] ) ? strtoupper( $broker[ 'platform' ] )
-							      : ""; ?>">
-                            <?php echo $reference_number; ?>
+							      : ""; ?><?php echo $has_rating ? ' | Has rating' : ''; ?>">
+                              <?php echo $reference_number; ?>
                         </span>
                     </div>
                 </td>
                 <td><?php echo $pdlocations[ 'pick_up_template' ]; ?></td>
                 <td><?php echo $pdlocations[ 'delivery_template' ]; ?></td>
-                <td><?php echo $driver_with_macropoint; ?></td>
+                <td>
+				<div class="d-flex gap-1 align-items-start">
+				<?php echo $driver_with_macropoint; ?>
+				<?php echo $has_rating ? $TMSHelper->get_icon_rating() : ''; ?>
+				</div>
+			</td>
                 <td>
                     <span class="<?php echo $modify_class; ?>"><?php echo $booked_rate; ?></span>
 					<?php if ( ! empty( $miles[ 'booked_rate_per_mile' ] ) ): ?>

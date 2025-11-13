@@ -106,6 +106,7 @@ export const cleanUrlByFilterDriver = () => {
             const mySearch = form.elements.namedItem('my_search') as HTMLInputElement | null;
             const source = form.elements.namedItem('source') as HTMLInputElement | null;
             const additional = form.elements.namedItem('additional') as HTMLInputElement | null;
+            const driverStatus = form.elements.namedItem('driver_status') as HTMLInputElement | null;
 
             // Проверяем и добавляем параметры только если элементы существуют и не пусты
             if (recruiter?.value) params.append('recruiter', recruiter.value);
@@ -114,7 +115,7 @@ export const cleanUrlByFilterDriver = () => {
             if (additional?.value) params.append('additional', additional.value);
             if (mySearch?.value) params.append('my_search', mySearch.value);
             if (source?.value) params.append('source', source.value);
-
+            if (driverStatus?.value) params.append('driver_status', driverStatus.value);
             // Перенаправляем на URL с параметрами
             window.location.href = `?${params.toString()}`;
         });

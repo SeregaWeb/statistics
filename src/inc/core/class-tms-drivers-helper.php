@@ -137,7 +137,9 @@ class TMSDriversHelper {
 	public $driverLicenceTypes = array(
 		'regular'  => 'Regular',
 		'cdl'      => 'CDL',
-		'enhanced' => 'Enhanced'
+		'enhanced' => 'Enhanced',
+		'temporary' => 'Temporary',
+		'chauffeurs-licence' => 'Chauffeur\'s licence',
 	);
 	
 	

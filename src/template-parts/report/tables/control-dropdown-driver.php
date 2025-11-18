@@ -12,10 +12,6 @@ $TMSIcons     = new TMSReportsIcons();
 
 $is_admin = $TMSUsers->check_user_role_access( array( 'administrator', 'recruiter-tl' ), true );
 
-if ($is_archive) {
-    $is_admin = $TMSUsers->check_user_role_access( array( 'administrator' ), true );
-}
-
 
 if ( $is_admin || $is_draft ): ?>
     <div class="dropdown">

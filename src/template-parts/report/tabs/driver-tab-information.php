@@ -241,6 +241,12 @@ $access_vehicle = $TMSUsers->check_user_role_access( [
 	<?php if ( $access_vehicle ): ?>
         <div class="mb-3 d-flex justify-content-between align-items-center">
             <h2>Owner & Drivers Information</h2>
+
+            <div class="d-flex align-items-center gap-2">
+
+            <?php if ( $post_id && !$full_only_view ): ?>
+                <button class='btn btn-outline-success js-remote-send-form' data-form="js-update-driver-information">Save</button>
+            <?php endif; ?>
 			<?php if ( $total_images > 2 ): ?>
                 <div class=" <?php echo ( $total_images === 3 ) ? 'show-more-hide-desktop' : 'd-flex '; ?>">
                     <button class="js-toggle btn btn-primary change-text"
@@ -250,6 +256,8 @@ $access_vehicle = $TMSUsers->check_user_role_access( [
                     </button>
                 </div>
 			<?php endif; ?>
+            </div>
+
         </div>
 		
 		<?php if ( $total_images > 0 ): ?>

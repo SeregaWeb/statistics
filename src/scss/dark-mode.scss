@@ -31,9 +31,29 @@ body.dark-mode {
         }
     }
 
-    #main-wrapper .table tr:hover {
-        filter: brightness(0.8);
-        border-left: 4px solid $dark-accent;
+    #main-wrapper .table tbody tr {
+        position: relative;
+        &:hover {
+            &::after {
+                content: '';
+                position: absolute;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background-color: rgba(0, 0, 0, 0.2);
+                z-index: 1;
+                pointer-events: none;
+            }
+
+            border-left: 4px solid $dark-accent;
+            
+            // Ensure dropdown-menu is above the overlay
+            .dropdown-menu {
+                z-index: 1050 !important;
+                position: relative;
+            }
+        }
     }
 
     #main-wrapper .table-performance tr input {

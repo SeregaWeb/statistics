@@ -11,7 +11,29 @@ if (!defined('ABSPATH')) {
 
 // Ensure WordPress is fully loaded
 if (!function_exists('get_current_user_id')) {
-    echo '<div class="alert alert-danger">WordPress not fully loaded. Please refresh the page.</div>';
+    echo '<div class="col-12 alert alert-danger">WordPress not fully loaded. Please refresh the page.</div>';
+    return;
+}
+
+// Check access - restrict tracking roles
+if (!class_exists('TMSUsers')) {
+    echo '<div class="col-12 alert alert-danger">Access denied. TMSUsers class not found.</div>';
+    return;
+}
+
+$TMSUsers = new TMSUsers();
+
+// Check if user has restricted role (tracking roles)
+$restricted_roles = array(
+    'tracking',
+    'tracking-tl',
+    'morning_tracking',
+    'nightshift_tracking',
+);
+
+// If user has any of the restricted roles, deny access
+if (!$TMSUsers->check_user_role_access($restricted_roles, false)) {
+    echo '<div class="col-12 alert alert-danger">Access denied. You are not allowed to access this page.</div>';
     return;
 }
 

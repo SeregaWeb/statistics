@@ -95,7 +95,15 @@ $access_vehicle = $TMSUsers->check_user_role_access( [
 
 <div class="container mt-4 pb-5">
 	<?php if ( $access_vehicle ): ?>
-    <h2 class="mb-3">Owner & Drivers Information</h2>
+        <div class="mb-3 d-flex justify-content-between align-items-center">
+            <h2>Owner & Drivers Information</h2>
+
+            <?php if ( $post_id && !$full_only_view ): ?>
+            <div class="d-flex align-items-center gap-2">
+                <button class='btn btn-outline-success js-remote-send-form' data-form="js-update-driver">Save</button>
+            </div>
+            <?php endif; ?>
+        </div>
 	<?php if ( $full_only_view ): ?>
     <form>
 		<?php else: ?>

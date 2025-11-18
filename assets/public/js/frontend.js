@@ -7063,6 +7063,7 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */   driverCoreInit: function() { return /* binding */ driverCoreInit; },
 /* harmony export */   driversActions: function() { return /* binding */ driversActions; },
 /* harmony export */   helperDisabledChecbox: function() { return /* binding */ helperDisabledChecbox; },
+/* harmony export */   remoteSendForm: function() { return /* binding */ remoteSendForm; },
 /* harmony export */   removeFullDriver: function() { return /* binding */ removeFullDriver; },
 /* harmony export */   removeOneFileInitial: function() { return /* binding */ removeOneFileInitial; },
 /* harmony export */   restoreDriver: function() { return /* binding */ restoreDriver; },
@@ -7661,6 +7662,71 @@ var copyText = function copyText() {
     });
   });
 };
+var remoteSendForm = function remoteSendForm(urlAjax) {
+  var buttons = document.querySelectorAll('.js-remote-send-form');
+  if (!buttons.length) return;
+  var formActionMap = {
+    'js-update-driver': 'update_driver_contact',
+    'js-update-driver-information': 'update_driver_information',
+    'js-driver-finance-form': 'update_driver_finance',
+    'js-driver-document-form': 'update_driver_document'
+  };
+  buttons.forEach(function (button) {
+    button.addEventListener('click', function (e) {
+      e.preventDefault();
+      var target = button;
+      var formSelector = target.getAttribute('data-form');
+      if (!formSelector) {
+        (0,_info_messages__WEBPACK_IMPORTED_MODULE_0__.printMessage)('Form selector not found in data-form attribute', 'danger', 5000);
+        return;
+      }
+      var form = document.querySelector(".".concat(formSelector)) || document.querySelector("#".concat(formSelector));
+      if (!form || !(form instanceof HTMLFormElement)) {
+        (0,_info_messages__WEBPACK_IMPORTED_MODULE_0__.printMessage)("Form with selector \"".concat(formSelector, "\" not found"), 'danger', 5000);
+        return;
+      }
+      var action = formActionMap[formSelector];
+      if (!action) {
+        (0,_info_messages__WEBPACK_IMPORTED_MODULE_0__.printMessage)("Action not found for form \"".concat(formSelector, "\""), 'danger', 5000);
+        return;
+      }
+      var submitButton = target;
+      var originalText = submitButton.textContent;
+      submitButton.disabled = true;
+      if (originalText) {
+        submitButton.textContent = 'Saving...';
+      }
+      (0,_disabled_btn_in_form__WEBPACK_IMPORTED_MODULE_2__.disabledBtnInForm)(form);
+      var formData = new FormData(form);
+      formData.append('action', action);
+      var options = {
+        method: 'POST',
+        body: formData
+      };
+      fetch(urlAjax, options).then(function (res) {
+        return res.json();
+      }).then(function (requestStatus) {
+        var _a, _b;
+        if (requestStatus.success) {
+          (0,_info_messages__WEBPACK_IMPORTED_MODULE_0__.printMessage)(((_a = requestStatus.data) === null || _a === void 0 ? void 0 : _a.message) || 'Saved successfully', 'success', 5000);
+          (0,_disabled_btn_in_form__WEBPACK_IMPORTED_MODULE_2__.disabledBtnInForm)(form, true);
+        } else {
+          (0,_info_messages__WEBPACK_IMPORTED_MODULE_0__.printMessage)(((_b = requestStatus.data) === null || _b === void 0 ? void 0 : _b.message) || 'Error saving form', 'danger', 8000);
+          (0,_disabled_btn_in_form__WEBPACK_IMPORTED_MODULE_2__.disabledBtnInForm)(form, true);
+        }
+      }).catch(function (error) {
+        (0,_info_messages__WEBPACK_IMPORTED_MODULE_0__.printMessage)("Request failed: ".concat(error), 'danger', 8000);
+        (0,_disabled_btn_in_form__WEBPACK_IMPORTED_MODULE_2__.disabledBtnInForm)(form, true);
+        console.error('Request failed:', error);
+      }).finally(function () {
+        submitButton.disabled = false;
+        if (originalText) {
+          submitButton.textContent = originalText;
+        }
+      });
+    });
+  });
+};
 var driversActions = function driversActions(urlAjax) {
   createDriver(urlAjax);
   removeFullDriver(urlAjax);
@@ -7673,6 +7739,7 @@ var driversActions = function driversActions(urlAjax) {
   updateStatusDriver(urlAjax);
   uploadFileDriver(urlAjax);
   copyText();
+  remoteSendForm(urlAjax);
   helperDisabledChecbox();
 };
 var driverCoreInit = function driverCoreInit(urlAjax) {
@@ -8919,6 +8986,368 @@ var driverPopupsInstance = null;
 driverPopupsInstance = new DriverPopups();
 /* harmony default export */ __webpack_exports__["default"] = (DriverPopups);
 
+
+/***/ }),
+
+/***/ "./src/js/components/drivers-map.ts":
+/*!******************************************!*\
+  !*** ./src/js/components/drivers-map.ts ***!
+  \******************************************/
+/***/ (function(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+function _typeof(o) { "@babel/helpers - typeof"; return _typeof = "function" == typeof Symbol && "symbol" == typeof Symbol.iterator ? function (o) { return typeof o; } : function (o) { return o && "function" == typeof Symbol && o.constructor === Symbol && o !== Symbol.prototype ? "symbol" : typeof o; }, _typeof(o); }
+function _classCallCheck(a, n) { if (!(a instanceof n)) throw new TypeError("Cannot call a class as a function"); }
+function _defineProperties(e, r) { for (var t = 0; t < r.length; t++) { var o = r[t]; o.enumerable = o.enumerable || !1, o.configurable = !0, "value" in o && (o.writable = !0), Object.defineProperty(e, _toPropertyKey(o.key), o); } }
+function _createClass(e, r, t) { return r && _defineProperties(e.prototype, r), t && _defineProperties(e, t), Object.defineProperty(e, "prototype", { writable: !1 }), e; }
+function _toPropertyKey(t) { var i = _toPrimitive(t, "string"); return "symbol" == _typeof(i) ? i : i + ""; }
+function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e = t[Symbol.toPrimitive]; if (void 0 !== e) { var i = e.call(t, r || "default"); if ("object" != _typeof(i)) return i; throw new TypeError("@@toPrimitive must return a primitive value."); } return ("string" === r ? String : Number)(t); }
+var DriversMap = /*#__PURE__*/function () {
+  function DriversMap(ajaxUrl, apiKey) {
+    _classCallCheck(this, DriversMap);
+    this.map = null;
+    this.platform = null;
+    this.mapEvents = null;
+    this.mapUI = null;
+    this.markers = [];
+    this.bubbles = [];
+    this.markerGroup = null;
+    this.markerClickHandler = null;
+    this.driverProfileUrl = '';
+    this.statusColors = {
+      'available': '#00d200',
+      'available_on': '#cefece',
+      'loaded_enroute': '#cefece',
+      'available_off': '#e06665',
+      'banned': '#ffb261',
+      'no_interview': '#d60000',
+      'expired_documents': '#d60000',
+      'blocked': '#d60000',
+      'on_vocation': '#ffb4d3',
+      'on_hold': '#b2b2b2',
+      'need_update': '#f1cfcf',
+      'no_updates': '#ff3939',
+      'unknown': '#808080'
+    };
+    this.statusLabels = {
+      'available': 'Available',
+      'available_on': 'Available on',
+      'available_off': 'Not available',
+      'loaded_enroute': 'Loaded & Enroute',
+      'banned': 'Out of service',
+      'on_vocation': 'On vacation',
+      'no_updates': 'No updates',
+      'blocked': 'Blocked',
+      'expired_documents': 'Expired documents',
+      'no_interview': 'No Interview',
+      'no_Interview': 'No Interview',
+      'on_hold': 'On hold',
+      'need_update': 'Need update',
+      'unknown': 'Unknown'
+    };
+    this.ajaxUrl = ajaxUrl;
+    this.apiKey = apiKey;
+    this.init();
+  }
+  return _createClass(DriversMap, [{
+    key: "init",
+    value: function init() {
+      var _this = this;
+      var modal = document.getElementById('driversMapModal');
+      if (!modal) return;
+      var profileUrlAttr = modal.getAttribute('data-driver-profile-url');
+      if (profileUrlAttr) {
+        this.driverProfileUrl = profileUrlAttr;
+      }
+      modal.addEventListener('shown.bs.modal', function () {
+        _this.loadHereMapsScript().then(function () {
+          _this.initializeMap();
+        });
+      });
+      modal.addEventListener('hidden.bs.modal', function () {
+        _this.cleanup();
+      });
+    }
+  }, {
+    key: "loadHereMapsScript",
+    value: function loadHereMapsScript() {
+      return new Promise(function (resolve, reject) {
+        if (window.H && window.H.service && window.H.mapevents) {
+          resolve();
+          return;
+        }
+        var script = document.createElement('script');
+        script.type = 'text/javascript';
+        script.src = "https://js.api.here.com/v3/3.1/mapsjs-core.js";
+        script.async = true;
+        script.onload = function () {
+          var mapeventsScript = document.createElement('script');
+          mapeventsScript.type = 'text/javascript';
+          mapeventsScript.src = "https://js.api.here.com/v3/3.1/mapsjs-mapevents.js";
+          mapeventsScript.async = true;
+          mapeventsScript.onload = function () {
+            var serviceScript = document.createElement('script');
+            serviceScript.type = 'text/javascript';
+            serviceScript.src = "https://js.api.here.com/v3/3.1/mapsjs-service.js";
+            serviceScript.async = true;
+            serviceScript.onload = function () {
+              var uiScript = document.createElement('script');
+              uiScript.type = 'text/javascript';
+              uiScript.src = "https://js.api.here.com/v3/3.1/mapsjs-ui.js";
+              uiScript.async = true;
+              uiScript.onload = function () {
+                var link = document.createElement('link');
+                link.rel = 'stylesheet';
+                link.type = 'text/css';
+                link.href = 'https://js.api.here.com/v3/3.1/mapsjs-ui.css';
+                document.head.appendChild(link);
+                resolve();
+              };
+              uiScript.onerror = reject;
+              document.head.appendChild(uiScript);
+            };
+            serviceScript.onerror = reject;
+            document.head.appendChild(serviceScript);
+          };
+          mapeventsScript.onerror = reject;
+          document.head.appendChild(mapeventsScript);
+        };
+        script.onerror = reject;
+        document.head.appendChild(script);
+      });
+    }
+  }, {
+    key: "initializeMap",
+    value: function initializeMap() {
+      var _this2 = this;
+      var container = document.getElementById('driversMapContainer');
+      if (!container) return;
+      this.platform = new window.H.service.Platform({
+        apikey: this.apiKey
+      });
+      var defaultLayers = this.platform.createDefaultLayers();
+      this.map = new window.H.Map(container, defaultLayers.vector.normal.map, {
+        zoom: 4,
+        center: {
+          lat: 39.8283,
+          lng: -98.5795
+        },
+        pixelRatio: window.devicePixelRatio || 1
+      });
+      var mapEvents = new window.H.mapevents.MapEvents(this.map);
+      var behavior = new window.H.mapevents.Behavior(mapEvents);
+      var ui = window.H.ui.UI.createDefault(this.map, defaultLayers);
+      this.mapEvents = mapEvents;
+      this.mapUI = ui;
+      this.map.addEventListener('tap', function (evt) {
+        if (evt.target === _this2.map) {
+          _this2.bubbles.forEach(function (bubble) {
+            ui.removeBubble(bubble);
+          });
+        }
+      });
+      this.loadDrivers();
+    }
+  }, {
+    key: "loadDrivers",
+    value: function loadDrivers() {
+      var _this3 = this;
+      var formData = new FormData();
+      formData.append('action', 'get_drivers_for_map');
+      var modal = document.getElementById('driversMapModal');
+      var driverIds = [];
+      if (modal) {
+        var driverIdsAttr = modal.getAttribute('data-driver-ids');
+        if (driverIdsAttr) {
+          try {
+            driverIds = JSON.parse(driverIdsAttr);
+          } catch (e) {
+            console.warn('Failed to parse driver IDs from data attribute:', e);
+          }
+        }
+      }
+      if (driverIds.length > 0) {
+        driverIds.forEach(function (id) {
+          formData.append('driver_ids[]', id.toString());
+        });
+      } else {
+        var urlParams = new URLSearchParams(window.location.search);
+        var mySearch = urlParams.get('my_search') || '';
+        var extendedSearch = urlParams.get('extended_search') || '';
+        var radius = urlParams.get('radius') || '';
+        var country = urlParams.get('country') || '';
+        var capabilities = [];
+        urlParams.forEach(function (value, key) {
+          if (key === 'capabilities[]' || key === 'capabilities') {
+            capabilities.push(value);
+          }
+        });
+        if (mySearch) {
+          formData.append('my_search', mySearch);
+        }
+        if (extendedSearch) {
+          formData.append('extended_search', extendedSearch);
+        }
+        if (radius) {
+          formData.append('radius', radius);
+        }
+        if (country) {
+          formData.append('country', country);
+        }
+        capabilities.forEach(function (cap) {
+          formData.append('capabilities[]', cap);
+        });
+      }
+      fetch(this.ajaxUrl, {
+        method: 'POST',
+        body: formData
+      }).then(function (response) {
+        return response.json();
+      }).then(function (data) {
+        if (data.success && data.data.drivers) {
+          _this3.displayDrivers(data.data.drivers);
+        } else {
+          console.error('Failed to load drivers:', data);
+        }
+      }).catch(function (error) {
+        console.error('Error loading drivers:', error);
+      });
+    }
+  }, {
+    key: "displayDrivers",
+    value: function displayDrivers(drivers) {
+      var _this4 = this;
+      if (!this.map || !drivers || drivers.length === 0) return;
+      this.clearMarkers();
+      this.markerGroup = new window.H.map.Group();
+      drivers.forEach(function (driver) {
+        if (!driver.lat || !driver.lng) return;
+        var color = _this4.statusColors[driver.status] || _this4.statusColors['unknown'];
+        var icon = new window.H.map.Icon(_this4.createMarkerSVG(color), {
+          size: {
+            w: 34,
+            h: 48
+          },
+          anchor: {
+            x: 17,
+            y: 48
+          }
+        });
+        var marker = new window.H.map.Marker({
+          lat: driver.lat,
+          lng: driver.lng
+        }, {
+          icon: icon,
+          data: driver
+        });
+        var bubbleContent = _this4.createBubbleContent(driver);
+        var bubble = new window.H.ui.InfoBubble({
+          lat: driver.lat,
+          lng: driver.lng
+        }, {
+          content: bubbleContent
+        });
+        marker.bubble = bubble;
+        marker.driverData = driver;
+        _this4.bubbles.push(bubble);
+        marker.addEventListener('tap', function (evt) {
+          evt.stopPropagation();
+          _this4.openBubble(bubble);
+        });
+        _this4.markerGroup.addObject(marker);
+        _this4.markers.push(marker);
+      });
+      this.map.addObject(this.markerGroup);
+      if (drivers.length > 0) {
+        this.map.getViewModel().setLookAtData({
+          bounds: this.markerGroup.getBoundingBox()
+        });
+      }
+    }
+  }, {
+    key: "createMarkerSVG",
+    value: function createMarkerSVG(color) {
+      var svg = "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"34\" height=\"48\" viewBox=\"0 0 34 48\">\n            <!-- Shadow (simple offset) -->\n            <path d=\"M17 2 C10.373 2 5 7.373 5 14 C5 20 17 46 17 46 C17 46 29 20 29 14 C29 7.373 23.627 2 17 2 Z\" \n                  fill=\"#000000\" \n                  opacity=\"0.15\" \n                  transform=\"translate(1, 2)\"/>\n            <!-- Main teardrop shape -->\n            <path d=\"M17 2 C10.373 2 5 7.373 5 14 C5 20 17 46 17 46 C17 46 29 20 29 14 C29 7.373 23.627 2 17 2 Z\" \n                  fill=\"".concat(color, "\" \n                  stroke=\"#ffffff\" \n                  stroke-width=\"2\"/>\n            <!-- Inner circle -->\n            <circle cx=\"17\" cy=\"14\" r=\"6\" fill=\"#ffffff\"/>\n        </svg>");
+      return "data:image/svg+xml;charset=UTF-8,".concat(encodeURIComponent(svg));
+    }
+  }, {
+    key: "openBubble",
+    value: function openBubble(bubble) {
+      var _this5 = this;
+      if (!this.mapUI) return;
+      this.bubbles.forEach(function (b) {
+        if (b !== bubble) {
+          _this5.mapUI.removeBubble(b);
+        }
+      });
+      this.mapUI.addBubble(bubble);
+    }
+  }, {
+    key: "createBubbleContent",
+    value: function createBubbleContent(driver) {
+      var statusLabel = this.statusLabels[driver.status] || driver.status.replace(/_/g, ' ').replace(/\b\w/g, function (l) {
+        return l.toUpperCase();
+      });
+      if ((driver.status === 'available_on' || driver.status === 'loaded_enroute') && driver.available_date) {
+        try {
+          var date = new Date(driver.available_date);
+          if (!isNaN(date.getTime())) {
+            var month = String(date.getMonth() + 1).padStart(2, '0');
+            var day = String(date.getDate()).padStart(2, '0');
+            var year = date.getFullYear();
+            var hours = date.getHours();
+            var minutes = String(date.getMinutes()).padStart(2, '0');
+            var ampm = hours >= 12 ? 'pm' : 'am';
+            var displayHours = hours % 12 || 12;
+            var formattedDate = "".concat(month, "/").concat(day, "/").concat(year, " ").concat(displayHours, ":").concat(minutes, " ").concat(ampm);
+            statusLabel += " (".concat(formattedDate, ")");
+          }
+        } catch (e) {}
+      }
+      var location = [driver.city, driver.state].filter(Boolean).join(', ') || 'N/A';
+      var dimensions = driver.dimensions || 'N/A';
+      var payload = driver.payload || 'N/A';
+      var vehicleType = driver.vehicle_type || 'N/A';
+      var capabilities = driver.capabilities && driver.capabilities.length > 0 ? driver.capabilities.join(', ') : 'None';
+      return "\n            <div style=\"padding: 15px; min-width: 280px; max-width: 400px; font-family: Arial, sans-serif;\">\n                <h6 style=\"margin: 0 0 12px 0; font-weight: bold; font-size: 16px; border-bottom: 2px solid #e0e0e0; padding-bottom: 8px;\">\n                    Unit #".concat(driver.unit || driver.id, "\n                </h6>\n                \n                <div style=\"margin-bottom: 10px;\">\n                    ").concat(driver.name ? "<p style=\"margin: 4px 0; font-size: 14px;\"><strong>Name:</strong> ".concat(this.driverProfileUrl ? "<a href=\"".concat(this.driverProfileUrl, "?driver=").concat(driver.id, "\" target=\"_blank\" rel=\"noopener noreferrer\" style=\"color: #007bff; text-decoration: none;\">").concat(driver.name, "</a>") : driver.name, "</p>") : '', "\n                    ").concat(driver.phone ? "<p style=\"margin: 4px 0; font-size: 14px;\"><strong>Phone:</strong> <a href=\"tel:".concat(driver.phone, "\" style=\"color: #007bff; text-decoration: none;\">").concat(driver.phone, "</a></p>") : '', "\n                </div>\n                \n                <div style=\"margin-bottom: 10px; padding-top: 8px; border-top: 1px solid #f0f0f0;\">\n                    <p style=\"margin: 4px 0; font-size: 14px;\"><strong>Location:</strong> ").concat(location, "</p>\n                </div>\n                \n                <div style=\"margin-bottom: 10px; padding-top: 8px; border-top: 1px solid #f0f0f0;\">\n                    <p style=\"margin: 4px 0; font-size: 14px;\"><strong>Dimensions:</strong> ").concat(dimensions, "</p>\n                    <p style=\"margin: 4px 0; font-size: 14px;\"><strong>Payload:</strong> ").concat(payload, "</p>\n                    ").concat(vehicleType !== 'N/A' ? "<p style=\"margin: 4px 0; font-size: 14px;\"><strong>Vehicle Type:</strong> ".concat(vehicleType, "</p>") : '', "\n                </div>\n                \n                <div style=\"margin-bottom: 8px; padding-top: 8px; border-top: 1px solid #f0f0f0;\">\n                    <p style=\"margin: 0 0 6px 0; font-size: 14px; font-weight: bold;\">Additional Details:</p>\n                    <p style=\"margin: 0; font-size: 13px; color: #555; line-height: 1.6;\">").concat(capabilities, "</p>\n                </div>\n                \n                <div style=\"margin-top: 10px; padding-top: 8px; border-top: 1px solid #f0f0f0;\">\n                    <p style=\"margin: 0; font-size: 12px; color: #888;\"><strong>Status:</strong> ").concat(statusLabel, "</p>\n                </div>\n            </div>\n        ");
+    }
+  }, {
+    key: "clearMarkers",
+    value: function clearMarkers() {
+      var _this6 = this;
+      if (this.map) {
+        if (this.bubbles.length > 0 && this.mapUI) {
+          this.bubbles.forEach(function (bubble) {
+            _this6.mapUI.removeBubble(bubble);
+          });
+          this.bubbles = [];
+        }
+        if (this.markerGroup) {
+          try {
+            this.map.removeObject(this.markerGroup);
+          } catch (e) {}
+          this.markerGroup = null;
+        }
+        this.markers = [];
+      }
+    }
+  }, {
+    key: "cleanup",
+    value: function cleanup() {
+      this.clearMarkers();
+      if (this.map) {
+        this.map.dispose();
+        this.map = null;
+      }
+      this.platform = null;
+      this.mapEvents = null;
+      this.mapUI = null;
+      this.markerClickHandler = null;
+    }
+  }]);
+}();
+/* harmony default export */ __webpack_exports__["default"] = (DriversMap);
 
 /***/ }),
 
@@ -26241,6 +26670,8 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _components_timer_control__WEBPACK_IMPORTED_MODULE_45__ = __webpack_require__(/*! ./components/timer-control */ "./src/js/components/timer-control.ts");
 /* harmony import */ var _components_timer_analytics__WEBPACK_IMPORTED_MODULE_46__ = __webpack_require__(/*! ./components/timer-analytics */ "./src/js/components/timer-analytics.ts");
 /* harmony import */ var _components_dark_mode_toggle__WEBPACK_IMPORTED_MODULE_47__ = __webpack_require__(/*! ./components/dark-mode-toggle */ "./src/js/components/dark-mode-toggle.ts");
+/* harmony import */ var _components_drivers_map__WEBPACK_IMPORTED_MODULE_48__ = __webpack_require__(/*! ./components/drivers-map */ "./src/js/components/drivers-map.ts");
+
 
 
 
@@ -26381,6 +26812,9 @@ function ready() {
   (0,_components_quick_status_update__WEBPACK_IMPORTED_MODULE_35__.initQuickStatusUpdate)(urlAjax);
   (0,_components_eta_popup__WEBPACK_IMPORTED_MODULE_36__.initEtaPopups)();
   (0,_components_eta_timer__WEBPACK_IMPORTED_MODULE_37__.initEtaTimers)();
+  if (hereApi) {
+    new _components_drivers_map__WEBPACK_IMPORTED_MODULE_48__["default"](urlAjax, hereApi);
+  }
   (0,_components_create_report__WEBPACK_IMPORTED_MODULE_4__.additionalContactsInit)();
   (0,_components_create_report__WEBPACK_IMPORTED_MODULE_4__.addShipperPointInit)();
   (0,_components_input_helpers__WEBPACK_IMPORTED_MODULE_3__.initMoneyMask)();

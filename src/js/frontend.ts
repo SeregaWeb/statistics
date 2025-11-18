@@ -90,7 +90,8 @@ import DriverAutocomplete from './components/driver-autocomplete';
 import AudioHelper from './components/common/audio-helper';
 import { TimerControl } from './components/timer-control';
 import { TimerAnalytics } from './components/timer-analytics';
-import DarkModeToggle from './components/dark-mode-toggle'; 
+import DarkModeToggle from './components/dark-mode-toggle';
+import DriversMap from './components/drivers-map'; 
 
 function ready() {
     console.log('ready'); 
@@ -223,6 +224,11 @@ function ready() {
     initQuickStatusUpdate(urlAjax);
     initEtaPopups();
     initEtaTimers();
+    
+    // Initialize Drivers Map
+    if (hereApi) {
+        new DriversMap(urlAjax, hereApi);
+    }
 
     // DRIVER END
     additionalContactsInit();

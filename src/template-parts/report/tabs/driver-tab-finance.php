@@ -163,15 +163,22 @@ $access_vehicle = $TMSUsers->check_user_role_access( [
 <?php if ( $access_vehicle ): ?>
     <div class="mb-3 d-flex justify-content-between align-items-center">
         <h2>Finance</h2>
-		<?php if ( $total_images > 2 ): ?>
-            <div class=" <?php echo ( $total_images === 3 ) ? 'show-more-hide-desktop' : 'd-flex '; ?>">
-                <button class="js-toggle btn btn-primary change-text"
-                        data-block-toggle="js-hide-upload-finance-container">
-                    <span class="unactive-text">Show more images (<?php echo $total_images; ?>)</span>
-                    <span class="active-text">Show less images (<?php echo $total_images; ?>)</span>
-                </button>
-            </div>
-		<?php endif; ?>
+
+        <div class="d-flex align-items-center gap-2">
+            <?php if ( $post_id && !$full_only_view ): ?>
+                <button class='btn btn-outline-success js-remote-send-form' data-form="js-driver-finance-form">Save</button>
+            <?php endif; ?>
+
+            <?php if ( $total_images > 2 ): ?>
+                <div class=" <?php echo ( $total_images === 3 ) ? 'show-more-hide-desktop' : 'd-flex '; ?>">
+                    <button class="js-toggle btn btn-primary change-text"
+                            data-block-toggle="js-hide-upload-finance-container">
+                        <span class="unactive-text">Show more images (<?php echo $total_images; ?>)</span>
+                        <span class="active-text">Show less images (<?php echo $total_images; ?>)</span>
+                    </button>
+                </div>
+            <?php endif; ?>
+        </div>
     </div>
 	
 	<?php if ( $total_images > 0 ): ?>

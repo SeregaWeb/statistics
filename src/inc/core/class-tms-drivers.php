@@ -70,6 +70,7 @@ class TMSDrivers extends TMSDriversHelper {
 			'get_driver_ratings'           => 'get_driver_ratings',
 			'get_driver_notices'           => 'get_driver_notices',
 			'get_all_driver_loads'         => 'ajax_get_all_driver_loads',
+			'get_drivers_for_map'          => 'ajax_get_drivers_for_map',
 		);
 		
 		foreach ( $actions as $ajax_action => $method ) {
@@ -1567,11 +1568,16 @@ class TMSDrivers extends TMSDriversHelper {
 			'current_pages' => $current_page,
 		);
 		
+		// Collect all filtered driver IDs (for map optimization)
+		$all_filtered_driver_ids = array();
+		
 		// Add distance data if available
 		if ( isset( $args[ 'has_distance_data' ] ) && $args[ 'has_distance_data' ] && ! empty( $args[ 'filtered_drivers' ] ) ) {
 			$return_data[ 'id_posts' ]          = $args[ 'filtered_drivers' ];
 			$return_data[ 'has_distance_data' ] = true;
 			
+			// Get all filtered driver IDs (not just current page)
+			$all_filtered_driver_ids = array_keys( $args[ 'filtered_drivers' ] );
 			
 			// Sort results by the order from filtered_drivers
 			if ( ! empty( $main_results ) ) {
@@ -1598,6 +1604,29 @@ class TMSDrivers extends TMSDriversHelper {
 				// Update the results with sorted order
 				$return_data[ 'results' ] = $sorted_results;
 			}
+		} else {
+			// For non-distance searches, get all filtered driver IDs from the query
+			// We need to get IDs without pagination
+			if ( ! empty( $where_conditions ) ) {
+				$count_sql = "SELECT main.id" . $join_builder . " WHERE 1=1";
+				if ( ! empty( $where_conditions ) ) {
+					$count_sql .= ' AND ' . implode( ' AND ', $where_conditions );
+				}
+				$count_sql .= " ORDER BY main.$sort_by $sort_order";
+				
+				if ( ! empty( $where_values ) ) {
+					$all_results = $wpdb->get_results( $wpdb->prepare( $count_sql, ...$where_values ), ARRAY_A );
+				} else {
+					$all_results = $wpdb->get_results( $count_sql, ARRAY_A );
+				}
+				
+				$all_filtered_driver_ids = wp_list_pluck( $all_results, 'id' );
+			}
+		}
+		
+		// Add all filtered driver IDs to return data (for map optimization)
+		if ( ! empty( $all_filtered_driver_ids ) ) {
+			$return_data[ 'all_filtered_driver_ids' ] = $all_filtered_driver_ids;
 		}
 		
 		return $return_data;
@@ -2744,8 +2773,8 @@ class TMSDrivers extends TMSDriversHelper {
 				: '';
 			$immigration_letter      = isset( $_POST[ 'immigration_letter' ] )
 				? sanitize_text_field( $_POST[ 'immigration_letter' ] ) : '';
-			$immigration_expiration  = isset( $_POST[ 'immigration_expiration' ] )
-				? sanitize_text_field( $_POST[ 'immigration_expiration' ] ) : '';
+			// $immigration_expiration  = isset( $_POST[ 'immigration_expiration' ] )
+			// 	? sanitize_text_field( $_POST[ 'immigration_expiration' ] ) : '';
 			$background_check        = isset( $_POST[ 'background_check' ] )
 				? sanitize_text_field( $_POST[ 'background_check' ] ) : '';
 			$background_date         = isset( $_POST[ 'background_date' ] )
@@ -2819,8 +2848,8 @@ class TMSDrivers extends TMSDriversHelper {
 			$immigration_file_team_driver = isset( $_POST[ 'immigration_file_team_driver' ] )
 				? sanitize_text_field( $_POST[ 'immigration_file_team_driver' ] ) : '';
 			
-			$immigration_expiration_team_driver = isset( $_POST[ 'immigration_expiration_team_driver' ] )
-				? sanitize_text_field( $_POST[ 'immigration_expiration_team_driver' ] ) : '';
+			// $immigration_expiration_team_driver = isset( $_POST[ 'immigration_expiration_team_driver' ] )
+			// 	? sanitize_text_field( $_POST[ 'immigration_expiration_team_driver' ] ) : '';
 			
 			$legal_document_team_driver = isset( $_POST[ 'legal_document_team_driver' ] )
 				? sanitize_text_field( $_POST[ 'legal_document_team_driver' ] ) : '';
@@ -2880,7 +2909,7 @@ class TMSDrivers extends TMSDriversHelper {
 				'legal_document_expiration'             => $legal_document_expiration,
 				'nationality'                           => $nationality,
 				'immigration_letter'                    => $immigration_letter,
-				'immigration_expiration'                => $immigration_expiration,
+				// 'immigration_expiration'                => $immigration_expiration,
 				'background_check'                      => $background_check,
 				'background_date'                       => $background_date,
 				'canada_transition_proof'               => $canada_transition_proof,
@@ -2909,7 +2938,7 @@ class TMSDrivers extends TMSDriversHelper {
 				'tanker_endorsement_team_driver'        => $tanker_endorsement_team_driver,
 				'hazmat_endorsement_team_driver'        => $hazmat_endorsement_team_driver,
 				'immigration_letter_team_driver'        => $immigration_letter_team_driver,
-				'immigration_expiration_team_driver'    => $immigration_expiration_team_driver,
+				// 'immigration_expiration_team_driver'    => $immigration_expiration_team_driver,
 				'legal_document_expiration_team_driver' => $legal_document_expiration_team_driver,
 				'nationality_team_driver'               => $nationality_team_driver,
 				'legal_document_type_team_driver'       => $legal_document_type_team_driver,
@@ -2946,7 +2975,7 @@ class TMSDrivers extends TMSDriversHelper {
 				'legal_document_expiration',
 				'nationality',
 				'immigration_letter',
-				'immigration_expiration',
+				// 'immigration_expiration',
 				'background_check',
 				'background_date',
 				'canada_transition_proof',
@@ -2974,7 +3003,7 @@ class TMSDrivers extends TMSDriversHelper {
 				'tanker_endorsement_team_driver',
 				'hazmat_endorsement_team_driver',
 				'immigration_letter_team_driver',
-				'immigration_expiration_team_driver',
+				// 'immigration_expiration_team_driver',
 				'legal_document_expiration_team_driver',
 				'nationality_team_driver',
 				'legal_document_type_team_driver',
@@ -3192,8 +3221,12 @@ class TMSDrivers extends TMSDriversHelper {
 	
 	/**
 	 * Get all loads for a specific driver
+	 * 
+	 * @param int $driver_id Driver ID
+	 * @param bool $for_rating If true, filter loads to only include 'delivered' and 'tonu' status, and exclude TBD loads
+	 * @return array Array of loads
 	 */
-	public function get_driver_loads( $driver_id ) {
+	public function get_driver_loads( $driver_id, $for_rating = false ) {
 		global $wpdb;
 		
 		if ( empty( $driver_id ) || ! is_numeric( $driver_id ) ) {
@@ -3238,6 +3271,15 @@ class TMSDrivers extends TMSDriversHelper {
 			$where_values[] = (string)$current_user_id;
 		}
 		
+		// Add rating filters if requested
+		if ( $for_rating ) {
+			// Only allow 'delivered' and 'tonu' status
+			// Using INNER JOIN ensures status exists, so we just check the value
+			$where_conditions[] = "load_status_meta.meta_value IN ('delivered', 'tonu')";
+			// Exclude TBD loads
+			$where_conditions[] = "(tbd_meta.meta_value IS NULL OR tbd_meta.meta_value != '1')";
+		}
+		
 		$where_clause = implode(' AND ', $where_conditions);
 		
 		// Get loads from regular reports
@@ -3247,12 +3289,20 @@ class TMSDrivers extends TMSDriversHelper {
 			LEFT JOIN $reports_meta_table rm ON r.id = rm.post_id AND rm.meta_key = 'attached_driver'
 			LEFT JOIN $reports_meta_table rm2 ON r.id = rm2.post_id AND rm2.meta_key = 'attached_second_driver'
 			LEFT JOIN $reports_meta_table rm3 ON r.id = rm3.post_id AND rm3.meta_key = 'attached_third_driver'
-			LEFT JOIN $reports_meta_table ref_meta ON r.id = ref_meta.post_id AND ref_meta.meta_key = 'reference_number'
-		";
+			LEFT JOIN $reports_meta_table ref_meta ON r.id = ref_meta.post_id AND ref_meta.meta_key = 'reference_number'";
+		
+		// Add rating-related joins if requested
+		if ( $for_rating ) {
+			// Use INNER JOIN for load_status to ensure status exists, LEFT JOIN for tbd
+			$regular_query .= "
+			INNER JOIN $reports_meta_table load_status_meta ON r.id = load_status_meta.post_id AND load_status_meta.meta_key = 'load_status'
+			LEFT JOIN $reports_meta_table tbd_meta ON r.id = tbd_meta.post_id AND tbd_meta.meta_key = 'tbd'";
+		}
 		
 		// Add dispatcher join if user is dispatcher
 		if ($is_dispatcher) {
-			$regular_query .= "LEFT JOIN $reports_meta_table disp_meta ON r.id = disp_meta.post_id AND disp_meta.meta_key = 'dispatcher_initials'";
+			$regular_query .= "
+			LEFT JOIN $reports_meta_table disp_meta ON r.id = disp_meta.post_id AND disp_meta.meta_key = 'dispatcher_initials'";
 		}
 		
 		$regular_query .= " WHERE $where_clause ORDER BY r.date_created DESC";
@@ -3274,6 +3324,15 @@ class TMSDrivers extends TMSDriversHelper {
 				$flt_where_values[] = (string)$current_user_id;
 			}
 			
+			// Add rating filters if requested
+			if ( $for_rating ) {
+				// Only allow 'delivered' and 'tonu' status
+				// Using INNER JOIN ensures status exists, so we just check the value
+				$flt_where_conditions[] = "flt_load_status_meta.meta_value IN ('delivered', 'tonu')";
+				// Exclude TBD loads
+				$flt_where_conditions[] = "(flt_tbd_meta.meta_value IS NULL OR flt_tbd_meta.meta_value != '1')";
+			}
+			
 			$flt_where_clause = implode(' AND ', $flt_where_conditions);
 			
 			// Build FLT query with same conditions
@@ -3283,12 +3342,20 @@ class TMSDrivers extends TMSDriversHelper {
 				LEFT JOIN $reports_flt_meta_table rfm ON rf.id = rfm.post_id AND rfm.meta_key = 'attached_driver'
 				LEFT JOIN $reports_flt_meta_table rfm2 ON rf.id = rfm2.post_id AND rfm2.meta_key = 'attached_second_driver'
 				LEFT JOIN $reports_flt_meta_table rfm3 ON rf.id = rfm3.post_id AND rfm3.meta_key = 'attached_third_driver'
-				LEFT JOIN $reports_flt_meta_table ref_meta ON rf.id = ref_meta.post_id AND ref_meta.meta_key = 'reference_number'
-			";
+				LEFT JOIN $reports_flt_meta_table ref_meta ON rf.id = ref_meta.post_id AND ref_meta.meta_key = 'reference_number'";
+			
+			// Add rating-related joins if requested
+			if ( $for_rating ) {
+				// Use INNER JOIN for load_status to ensure status exists, LEFT JOIN for tbd
+				$flt_query .= "
+				INNER JOIN $reports_flt_meta_table flt_load_status_meta ON rf.id = flt_load_status_meta.post_id AND flt_load_status_meta.meta_key = 'load_status'
+				LEFT JOIN $reports_flt_meta_table flt_tbd_meta ON rf.id = flt_tbd_meta.post_id AND flt_tbd_meta.meta_key = 'tbd'";
+			}
 			
 			// Add dispatcher join if user is dispatcher
 			if ($is_dispatcher) {
-				$flt_query .= "LEFT JOIN $reports_flt_meta_table disp_meta ON rf.id = disp_meta.post_id AND disp_meta.meta_key = 'dispatcher_initials'";
+				$flt_query .= "
+				LEFT JOIN $reports_flt_meta_table disp_meta ON rf.id = disp_meta.post_id AND disp_meta.meta_key = 'dispatcher_initials'";
 			}
 			
 			$flt_query .= " WHERE $flt_where_clause ORDER BY rf.date_created DESC";
@@ -3347,9 +3414,11 @@ class TMSDrivers extends TMSDriversHelper {
 	}
 	/**
 	 * Get available loads for rating (loads without existing ratings by current user)
+	 * Only includes loads with status 'delivered' or 'tonu' and excludes TBD loads
 	 */
 	public function get_available_loads_for_rating( $driver_id, $user_id = null ) {
-		$all_loads = $this->get_driver_loads( $driver_id );
+		// Get loads filtered for rating (only delivered/tonu, no TBD)
+		$all_loads = $this->get_driver_loads( $driver_id, true );
 		$existing_ratings = $this->get_user_ratings_for_driver( $driver_id, $user_id );
 		
 		// Get load numbers that already have ratings
@@ -3393,6 +3462,323 @@ class TMSDrivers extends TMSDriversHelper {
 		", sanitize_text_field( $order_number ) ) );
 		
 		return (int) $count > 0;
+	}
+	
+	/**
+	 * Get dispatcher rating statistics
+	 * Returns statistics for dispatchers showing total loads and rated loads count
+	 * 
+	 * @param int|null $year Year filter (default: current year)
+	 * @param int|null $month Month filter (default: current month)
+	 * @param bool $is_flt If true, only count FLT loads; if false, only count regular loads; if null, count both
+	 * @return array Array of dispatcher statistics
+	 */
+	public function get_dispatcher_rating_statistics( $year = null, $month = null, $is_flt = null ) {
+		global $wpdb;
+		
+		// Get current project
+		$user_id = get_current_user_id();
+		$current_project = get_field( 'current_select', 'user_' . $user_id );
+		if ( empty( $current_project ) ) {
+			$current_project = 'odysseia';
+		}
+		
+		// Set default to current month/year if not provided
+		if ( $year === null ) {
+			$year = (int) date( 'Y' );
+		}
+		if ( $month === null ) {
+			$month = (int) date( 'm' );
+		}
+		
+		// Build table names
+		$reports_table = $wpdb->prefix . 'reports_' . strtolower( $current_project );
+		$reports_meta_table = $wpdb->prefix . 'reportsmeta_' . strtolower( $current_project );
+		$reports_flt_table = $wpdb->prefix . 'reports_flt_' . strtolower( $current_project );
+		$reports_flt_meta_table = $wpdb->prefix . 'reportsmeta_flt_' . strtolower( $current_project );
+		$rating_table = $wpdb->prefix . $this->table_raiting;
+		
+		// Get all dispatchers with roles: dispatcher, dispatcher-tl, expedite_manager
+		$all_dispatchers = get_users( array(
+			'role__in' => array( 'dispatcher', 'dispatcher-tl', 'expedite_manager' ),
+			'orderby'  => 'display_name',
+			'order'    => 'ASC',
+		) );
+		
+		// Filter dispatchers by project access and FLT access (if filtering by FLT)
+		$dispatchers = array();
+		$helper = new TMSReportsHelper();
+		foreach ( $all_dispatchers as $dispatcher ) {
+			$access = get_field( 'permission_view', 'user_' . $dispatcher->ID );
+			// Check project access
+			if ( ! ( is_array( $access ) && in_array( $current_project, $access ) ) ) {
+				continue;
+			}
+			
+			// If filtering by FLT only, check FLT access
+			if ( $is_flt === true ) {
+				$dispatcher_flt_access = get_field( 'flt', 'user_' . $dispatcher->ID );
+				$dispatcher_is_admin = user_can( $dispatcher->ID, 'administrator' );
+				if ( ! $dispatcher_flt_access && ! $dispatcher_is_admin ) {
+					continue; // Skip dispatchers without FLT access
+				}
+			}
+			
+			$dispatchers[] = $dispatcher;
+		}
+		
+		$statistics = array();
+		
+		foreach ( $dispatchers as $dispatcher ) {
+			$dispatcher_id = $dispatcher->ID;
+			
+			// Get dispatcher full name
+			$user_info = $helper->get_user_full_name_by_id( $dispatcher_id );
+			$dispatcher_name = $user_info ? $user_info['full_name'] : $dispatcher->display_name;
+			
+			// Get dispatcher role
+			$dispatcher_roles = $dispatcher->roles;
+			$dispatcher_role_key = ! empty( $dispatcher_roles ) ? $dispatcher_roles[0] : '';
+			$TMSUsers = new TMSUsers();
+			$dispatcher_role_label = $dispatcher_role_key ? $TMSUsers->get_role_label( $dispatcher_role_key ) : '';
+			
+			// Count total loads for this dispatcher in the selected month/year
+			$total_loads = 0;
+			
+			// Count regular loads (if not FLT only)
+			if ( $is_flt !== true ) {
+				$total_loads_query = $wpdb->prepare( "
+					SELECT COUNT(DISTINCT r.id) as total_loads
+					FROM $reports_table r
+					INNER JOIN $reports_meta_table dispatcher_meta ON r.id = dispatcher_meta.post_id 
+						AND dispatcher_meta.meta_key = 'dispatcher_initials'
+						AND dispatcher_meta.meta_value = %s
+					WHERE r.status_post = 'publish'
+						AND YEAR(r.date_booked) = %d
+						AND MONTH(r.date_booked) = %d
+				", $dispatcher_id, $year, $month );
+				
+				$total_loads += (int) $wpdb->get_var( $total_loads_query );
+			}
+			
+			// Count FLT loads (if not regular only)
+			if ( $is_flt !== false ) {
+				$flt_meta_table_exists = $wpdb->get_var( "SHOW TABLES LIKE '$reports_flt_meta_table'" );
+				if ( $flt_meta_table_exists ) {
+					$flt_total_loads_query = $wpdb->prepare( "
+						SELECT COUNT(DISTINCT rf.id) as total_loads
+						FROM $reports_flt_table rf
+						INNER JOIN $reports_flt_meta_table dispatcher_meta ON rf.id = dispatcher_meta.post_id 
+							AND dispatcher_meta.meta_key = 'dispatcher_initials'
+							AND dispatcher_meta.meta_value = %s
+						WHERE rf.status_post = 'publish'
+							AND YEAR(rf.date_booked) = %d
+							AND MONTH(rf.date_booked) = %d
+					", $dispatcher_id, $year, $month );
+					
+					$flt_total_loads = (int) $wpdb->get_var( $flt_total_loads_query );
+					$total_loads += $flt_total_loads;
+				}
+			}
+			
+			// Count rated loads for this dispatcher
+			// Get all reference_numbers for this dispatcher's loads
+			$reference_numbers = array();
+			
+			// Get regular reference numbers (if not FLT only)
+			if ( $is_flt !== true ) {
+				$reference_numbers_query = $wpdb->prepare( "
+					SELECT DISTINCT ref_meta.meta_value as reference_number
+					FROM $reports_table r
+					INNER JOIN $reports_meta_table dispatcher_meta ON r.id = dispatcher_meta.post_id 
+						AND dispatcher_meta.meta_key = 'dispatcher_initials'
+						AND dispatcher_meta.meta_value = %s
+					INNER JOIN $reports_meta_table ref_meta ON r.id = ref_meta.post_id 
+						AND ref_meta.meta_key = 'reference_number'
+						AND ref_meta.meta_value IS NOT NULL
+						AND ref_meta.meta_value != ''
+					WHERE r.status_post = 'publish'
+						AND YEAR(r.date_booked) = %d
+						AND MONTH(r.date_booked) = %d
+				", $dispatcher_id, $year, $month );
+				
+				$reference_numbers = $wpdb->get_col( $reference_numbers_query );
+			}
+			
+			// Add FLT reference numbers (if not regular only)
+			if ( $is_flt !== false ) {
+				$flt_meta_table_exists = $wpdb->get_var( "SHOW TABLES LIKE '$reports_flt_meta_table'" );
+				if ( $flt_meta_table_exists ) {
+					$flt_reference_numbers_query = $wpdb->prepare( "
+						SELECT DISTINCT ref_meta.meta_value as reference_number
+						FROM $reports_flt_table rf
+						INNER JOIN $reports_flt_meta_table dispatcher_meta ON rf.id = dispatcher_meta.post_id 
+							AND dispatcher_meta.meta_key = 'dispatcher_initials'
+							AND dispatcher_meta.meta_value = %s
+						INNER JOIN $reports_flt_meta_table ref_meta ON rf.id = ref_meta.post_id 
+							AND ref_meta.meta_key = 'reference_number'
+							AND ref_meta.meta_value IS NOT NULL
+							AND ref_meta.meta_value != ''
+						WHERE rf.status_post = 'publish'
+							AND YEAR(rf.date_booked) = %d
+							AND MONTH(rf.date_booked) = %d
+					", $dispatcher_id, $year, $month );
+					
+					$flt_reference_numbers = $wpdb->get_col( $flt_reference_numbers_query );
+					$reference_numbers = array_merge( $reference_numbers, $flt_reference_numbers );
+				}
+			}
+			
+			// Count how many of these reference_numbers have ratings and calculate average rating
+			$rated_loads = 0;
+			$average_rating = 0;
+			if ( ! empty( $reference_numbers ) ) {
+				$reference_numbers = array_filter( $reference_numbers ); // Remove empty values
+				$reference_numbers = array_unique( $reference_numbers ); // Remove duplicates
+				
+				if ( ! empty( $reference_numbers ) ) {
+					$placeholders = implode( ',', array_fill( 0, count( $reference_numbers ), '%s' ) );
+					$rated_query = $wpdb->prepare( "
+						SELECT COUNT(DISTINCT order_number) as rated_count,
+						       AVG(reit) as avg_rating
+						FROM $rating_table
+						WHERE order_number IN ($placeholders)
+					", ...$reference_numbers );
+					
+					$rated_result = $wpdb->get_row( $rated_query, ARRAY_A );
+					$rated_loads = (int) ( $rated_result['rated_count'] ?? 0 );
+					$average_rating = $rated_result['avg_rating'] ? round( (float) $rated_result['avg_rating'], 1 ) : 0;
+				}
+			}
+			
+			$statistics[] = array(
+				'dispatcher_id' => $dispatcher_id,
+				'dispatcher_name' => $dispatcher_name,
+				'dispatcher_role' => $dispatcher_role_label,
+				'total_loads' => $total_loads,
+				'rated_loads' => $rated_loads,
+				'average_rating' => $average_rating,
+			);
+		}
+		
+		// Sort by total loads descending
+		usort( $statistics, function( $a, $b ) {
+			return $b['total_loads'] - $a['total_loads'];
+		} );
+		
+		return $statistics;
+	}
+	
+	/**
+	 * Get detailed dispatcher ratings for a specific period
+	 * Returns all rating records for dispatcher's loads in the selected month/year
+	 * 
+	 * @param int $dispatcher_id Dispatcher user ID
+	 * @param int $year Year filter
+	 * @param int $month Month filter
+	 * @return array Array of rating records with details
+	 */
+	public function get_dispatcher_detailed_ratings( $dispatcher_id, $year, $month ) {
+		global $wpdb;
+		
+		if ( empty( $dispatcher_id ) || ! is_numeric( $dispatcher_id ) ) {
+			return array();
+		}
+		
+		$dispatcher_id = (int) $dispatcher_id;
+		$year = (int) $year;
+		$month = (int) $month;
+		
+		// Get current project
+		$user_id = get_current_user_id();
+		$current_project = get_field( 'current_select', 'user_' . $user_id );
+		if ( empty( $current_project ) ) {
+			$current_project = 'odysseia';
+		}
+		
+		// Build table names
+		$reports_table = $wpdb->prefix . 'reports_' . strtolower( $current_project );
+		$reports_meta_table = $wpdb->prefix . 'reportsmeta_' . strtolower( $current_project );
+		$reports_flt_table = $wpdb->prefix . 'reports_flt_' . strtolower( $current_project );
+		$reports_flt_meta_table = $wpdb->prefix . 'reportsmeta_flt_' . strtolower( $current_project );
+		$rating_table = $wpdb->prefix . $this->table_raiting;
+		
+		// Get all reference_numbers for this dispatcher's loads in the period
+		$reference_numbers = array();
+		
+		// Get regular reference numbers (if not FLT only)
+		if ( $is_flt !== true ) {
+			$reference_numbers_query = $wpdb->prepare( "
+				SELECT DISTINCT ref_meta.meta_value as reference_number
+				FROM $reports_table r
+				INNER JOIN $reports_meta_table dispatcher_meta ON r.id = dispatcher_meta.post_id 
+					AND dispatcher_meta.meta_key = 'dispatcher_initials'
+					AND dispatcher_meta.meta_value = %s
+				INNER JOIN $reports_meta_table ref_meta ON r.id = ref_meta.post_id 
+					AND ref_meta.meta_key = 'reference_number'
+					AND ref_meta.meta_value IS NOT NULL
+					AND ref_meta.meta_value != ''
+				WHERE r.status_post = 'publish'
+					AND YEAR(r.date_booked) = %d
+					AND MONTH(r.date_booked) = %d
+			", $dispatcher_id, $year, $month );
+			
+			$reference_numbers = $wpdb->get_col( $reference_numbers_query );
+		}
+		
+		// Add FLT reference numbers (if not regular only)
+		if ( $is_flt !== false ) {
+			$flt_meta_table_exists = $wpdb->get_var( "SHOW TABLES LIKE '$reports_flt_meta_table'" );
+			if ( $flt_meta_table_exists ) {
+				$flt_reference_numbers_query = $wpdb->prepare( "
+					SELECT DISTINCT ref_meta.meta_value as reference_number
+					FROM $reports_flt_table rf
+					INNER JOIN $reports_flt_meta_table dispatcher_meta ON rf.id = dispatcher_meta.post_id 
+						AND dispatcher_meta.meta_key = 'dispatcher_initials'
+						AND dispatcher_meta.meta_value = %s
+					INNER JOIN $reports_flt_meta_table ref_meta ON rf.id = ref_meta.post_id 
+						AND ref_meta.meta_key = 'reference_number'
+						AND ref_meta.meta_value IS NOT NULL
+						AND ref_meta.meta_value != ''
+					WHERE rf.status_post = 'publish'
+						AND YEAR(rf.date_booked) = %d
+						AND MONTH(rf.date_booked) = %d
+				", $dispatcher_id, $year, $month );
+				
+				$flt_reference_numbers = $wpdb->get_col( $flt_reference_numbers_query );
+				$reference_numbers = array_merge( $reference_numbers, $flt_reference_numbers );
+			}
+		}
+		
+		// Get all ratings for these reference_numbers
+		$ratings = array();
+		if ( ! empty( $reference_numbers ) ) {
+			$reference_numbers = array_filter( $reference_numbers ); // Remove empty values
+			$reference_numbers = array_unique( $reference_numbers ); // Remove duplicates
+			
+			if ( ! empty( $reference_numbers ) ) {
+				$placeholders = implode( ',', array_fill( 0, count( $reference_numbers ), '%s' ) );
+				$ratings_query = $wpdb->prepare( "
+					SELECT id, name, time, reit, message, order_number
+					FROM $rating_table
+					WHERE order_number IN ($placeholders)
+					ORDER BY time DESC
+				", ...$reference_numbers );
+				
+				$ratings = $wpdb->get_results( $ratings_query, ARRAY_A );
+				
+				// Clean escaped slashes from message field
+				if ( $ratings && is_array( $ratings ) ) {
+					foreach ( $ratings as $key => $rating ) {
+						if ( isset( $rating['message'] ) ) {
+							$ratings[ $key ]['message'] = stripslashes( $rating['message'] );
+						}
+					}
+				}
+			}
+		}
+		
+		return $ratings;
 	}
 	
 	function insert_driver_notice( $driver_id, $name, $date, $message = '', $status = false ) {
@@ -4789,6 +5175,519 @@ class TMSDrivers extends TMSDriversHelper {
 			];
 			
 			wp_send_json_success( $response_data );
+		}
+	}
+	
+	/**
+	 * AJAX endpoint to get drivers with coordinates for map display
+	 * Applies the same filters as get_table_items_search
+	 */
+	public function ajax_get_drivers_for_map() {
+		if ( defined( 'DOING_AJAX' ) && DOING_AJAX ) {
+			// Check if driver_ids are provided (optimization - skip filtering)
+			$driver_ids = array();
+			if ( isset( $_POST['driver_ids'] ) && is_array( $_POST['driver_ids'] ) ) {
+				$driver_ids = array_map( 'absint', $_POST['driver_ids'] );
+				$driver_ids = array_filter( $driver_ids ); // Remove empty values
+			}
+			
+			// If we have driver IDs, use them directly (skip all filtering)
+			if ( ! empty( $driver_ids ) ) {
+				// Get full driver data for map
+				global $wpdb;
+				$table_main = $wpdb->prefix . $this->table_main;
+				$table_meta = $wpdb->prefix . $this->table_meta;
+				
+				$drivers = array();
+				foreach ( $driver_ids as $driver_id ) {
+					// Get date_available from main table
+					$main_data = $wpdb->get_row( $wpdb->prepare( "
+						SELECT date_available 
+						FROM $table_main 
+						WHERE id = %d
+					", $driver_id ), ARRAY_A );
+					
+					$date_available = isset( $main_data['date_available'] ) ? $main_data['date_available'] : '';
+					
+					// Get all meta data for this driver
+					$meta_data = $wpdb->get_results( $wpdb->prepare( "
+						SELECT meta_key, meta_value 
+						FROM $table_meta 
+						WHERE post_id = %d
+					", $driver_id ), ARRAY_A );
+					
+					// Skip if no coordinates
+					$has_coordinates = false;
+					$meta = array();
+					foreach ( $meta_data as $meta_item ) {
+						$meta[ $meta_item['meta_key'] ] = $meta_item['meta_value'];
+						if ( ( $meta_item['meta_key'] === 'latitude' || $meta_item['meta_key'] === 'longitude' ) && ! empty( $meta_item['meta_value'] ) ) {
+							$has_coordinates = true;
+						}
+					}
+					
+					if ( ! $has_coordinates || empty( $meta['latitude'] ) || empty( $meta['longitude'] ) ) {
+						continue;
+					}
+					
+					// Get driver status
+					$driver_status = isset( $meta['driver_status'] ) ? $meta['driver_status'] : 'unknown';
+					
+					// Skip banned/blocked/expired drivers
+					if ( in_array( $driver_status, array( 'banned', 'blocked', 'expired_documents' ) ) ) {
+						continue;
+					}
+					
+					// Get capabilities
+					$capabilities = array();
+					if ( ! empty( $meta['twic'] ) ) $capabilities[] = 'TWIC';
+					if ( ! empty( $meta['tsa_approved'] ) ) $capabilities[] = 'TSA';
+					if ( ! empty( $meta['pallet_jack'] ) ) $capabilities[] = 'Pallet Jack';
+					if ( ! empty( $meta['lift_gate'] ) ) $capabilities[] = 'Lift Gate';
+					if ( ! empty( $meta['ppe'] ) ) $capabilities[] = 'PPE';
+					if ( ! empty( $meta['load_bars'] ) ) $capabilities[] = 'Load bars';
+					if ( ! empty( $meta['printer'] ) ) $capabilities[] = 'Printer';
+					if ( ! empty( $meta['cdl'] ) || ( isset( $meta['driver_licence_type'] ) && $meta['driver_licence_type'] === 'cdl' ) ) $capabilities[] = 'CDL';
+					if ( ! empty( $meta['tanker_endorsement'] ) ) $capabilities[] = 'Tanker endorsement';
+					if ( ! empty( $meta['ramp'] ) ) $capabilities[] = 'Ramp';
+					if ( ! empty( $meta['dock_high'] ) ) $capabilities[] = 'Dock High';
+					if ( ! empty( $meta['e_tracks'] ) ) $capabilities[] = 'E-tracks';
+					if ( ! empty( $meta['hazmat_certificate'] ) ) $capabilities[] = 'Hazmat Certificate';
+					if ( ! empty( $meta['hazmat_endorsement'] ) ) $capabilities[] = 'Hazmat Endorsement';
+					if ( ! empty( $meta['real_id'] ) ) $capabilities[] = 'Real ID';
+					if ( ! empty( $meta['team_driver_enabled'] ) ) $capabilities[] = 'Team Driver';
+					
+					// Get vehicle type label
+					$vehicle_type = isset( $meta['vehicle_type'] ) ? $meta['vehicle_type'] : '';
+					if ( $vehicle_type ) {
+						$vehicle_type = ucwords( str_replace( array( '-', '_' ), ' ', $vehicle_type ) );
+					}
+					
+					$drivers[] = array(
+						'id' => (int) $driver_id,
+						'lat' => (float) $meta['latitude'],
+						'lng' => (float) $meta['longitude'],
+						'status' => $driver_status,
+						'name' => isset( $meta['driver_name'] ) ? $meta['driver_name'] : '',
+						'phone' => isset( $meta['driver_phone'] ) ? $meta['driver_phone'] : '',
+						'unit' => isset( $meta['unit_number'] ) ? $meta['unit_number'] : $driver_id,
+						'city' => isset( $meta['current_city'] ) ? $meta['current_city'] : '',
+						'state' => isset( $meta['current_location'] ) ? $meta['current_location'] : '',
+						'dimensions' => isset( $meta['dimensions'] ) ? $meta['dimensions'] : '',
+						'payload' => isset( $meta['payload'] ) ? $meta['payload'] : '',
+						'vehicle_type' => $vehicle_type,
+						'capabilities' => $capabilities,
+						'available_date' => $date_available,
+					);
+				}
+				
+				wp_send_json_success( array( 'drivers' => $drivers ) );
+				return;
+			}
+			
+			// Get filter parameters from POST (same as from GET in set_filter_params_search)
+			$args = array();
+			$my_search = isset( $_POST['my_search'] ) ? trim( sanitize_text_field( $_POST['my_search'] ) ) : '';
+			$extended_search = isset( $_POST['extended_search'] ) ? trim( sanitize_text_field( $_POST['extended_search'] ) ) : '';
+			$radius = isset( $_POST['radius'] ) ? trim( sanitize_text_field( $_POST['radius'] ) ) : '';
+			$country = isset( $_POST['country'] ) ? trim( sanitize_text_field( $_POST['country'] ) ) : '';
+			
+			// Handle capabilities from POST (FormData sends as capabilities[])
+			$capabilities = array();
+			if ( isset( $_POST['capabilities'] ) && is_array( $_POST['capabilities'] ) ) {
+				$capabilities = array_map( 'sanitize_text_field', $_POST['capabilities'] );
+			} elseif ( isset( $_POST['capabilities'] ) ) {
+				$capabilities = array( sanitize_text_field( $_POST['capabilities'] ) );
+			}
+			
+			if ( $my_search ) {
+				$args['my_search'] = $my_search;
+			}
+			if ( $extended_search ) {
+				$args['extended_search'] = $extended_search;
+			}
+			if ( $radius ) {
+				$args['radius'] = $radius;
+			}
+			if ( $country ) {
+				$args['country'] = $country;
+			}
+			if ( ! empty( $capabilities ) ) {
+				$args['capabilities'] = is_array( $capabilities ) ? $capabilities : array( $capabilities );
+			}
+			
+			// Use the same filtering logic as get_table_items_search
+			// Get filtered driver IDs using the same method
+			$filtered_args = $args;
+			
+			// Check if we have a search address for geocoding
+			if ( isset( $filtered_args['my_search'] ) && $filtered_args['my_search'] ) {
+				global $global_options;
+				
+				$api_key_here_map = get_field_value( $global_options, 'api_key_here_map' );
+				$geocoder = get_field_value( $global_options, 'use_geocoder' );
+				$url_pelias = get_field_value( $global_options, 'url_pelias' );
+				
+				// Get coordinates for the search address
+				$search_coordinates = $this->get_coordinates_by_address( $filtered_args['my_search'], $geocoder, array(
+					'api_key'      => $api_key_here_map,
+					'url_pelias'   => $url_pelias,
+					'region_value' => isset( $filtered_args['country'] ) ? $filtered_args['country'] : ''
+				) );
+				
+				// If we have coordinates, use advanced distance-based filtering
+				if ( $search_coordinates ) {
+					$filtered_args['search_lat'] = $search_coordinates['lat'];
+					$filtered_args['search_lng'] = $search_coordinates['lng'];
+					
+					// Get all available drivers
+					$all_drivers = $this->get_all_available_driver( true );
+					
+					// Filter and sort drivers by distance
+					$max_distance = isset( $filtered_args['radius'] ) ? intval( $filtered_args['radius'] ) : 300;
+					$capabilities_filter = isset( $filtered_args['capabilities'] ) ? $filtered_args['capabilities'] : array();
+					
+					$valid_drivers = $this->filter_and_sort_drivers_by_distance( $all_drivers, $search_coordinates['lat'], $search_coordinates['lng'], $max_distance, $capabilities_filter );
+					
+					// Get real road distances using mapping service
+					if ( ! empty( $valid_drivers ) ) {
+						$MapController = new Map_Controller();
+						
+						// Prepare start location
+						$start_location = array(
+							array(
+								"lat" => (float) $search_coordinates['lat'],
+								"lng" => (float) $search_coordinates['lng']
+							)
+						);
+						
+						// Prepare driver locations
+						$driver_locations = array();
+						foreach ( $valid_drivers as $driver ) {
+							$driver_locations[] = array(
+								"lat" => (float) $driver['lat'],
+								"lng" => (float) $driver['lon']
+							);
+						}
+						
+						// Get real distances
+						$real_distances = $MapController->getDistances( $start_location, $driver_locations );
+						
+						// Update drivers with real distances
+						if ( $real_distances && is_array( $real_distances ) ) {
+							$i = 0;
+							foreach ( $valid_drivers as $driver_id => &$driver ) {
+								if ( isset( $real_distances[$i] ) ) {
+									$distance_value = $real_distances[$i];
+									if ( is_array( $distance_value ) && isset( $distance_value['distance'] ) ) {
+										$distance_value = $distance_value['distance'];
+									}
+									if ( is_numeric( $distance_value ) ) {
+										$driver['real_distance'] = round( $distance_value, 2 );
+									}
+								}
+								$i++;
+							}
+						}
+						
+						// Filter drivers by max_distance after getting real distances
+						$filtered_by_distance = array();
+						foreach ( $valid_drivers as $key => $driver ) {
+							if ( isset( $driver['real_distance'] ) && is_numeric( $driver['real_distance'] ) && $driver['real_distance'] <= $max_distance ) {
+								$filtered_by_distance[$key] = $driver;
+							} elseif ( isset( $driver['distance'] ) && is_numeric( $driver['distance'] ) && $driver['distance'] <= $max_distance ) {
+								$filtered_by_distance[$key] = $driver;
+							}
+						}
+						$valid_drivers = $filtered_by_distance;
+					}
+					
+					// Get driver IDs from filtered drivers
+					$driver_ids = array_keys( $valid_drivers );
+				} else {
+					// No coordinates found, return empty
+					wp_send_json_success( array( 'drivers' => array() ) );
+					return;
+				}
+			} elseif ( ! empty( $filtered_args['extended_search'] ) || ! empty( $filtered_args['capabilities'] ) ) {
+				// No distance search, use regular filtering
+				// Build query similar to get_table_items_search but without pagination
+				global $wpdb;
+				
+				$table_main = $wpdb->prefix . $this->table_main;
+				$table_meta = $wpdb->prefix . $this->table_meta;
+				
+				// Build WHERE conditions similar to get_table_items_search
+				$where_conditions = array();
+				$where_values = array();
+				
+				// Base condition: drivers with coordinates
+				$where_conditions[] = "lat.meta_value != ''";
+				$where_conditions[] = "lng.meta_value != ''";
+				$where_conditions[] = "lat.meta_value IS NOT NULL";
+				$where_conditions[] = "lng.meta_value IS NOT NULL";
+				$where_conditions[] = "(status.meta_value IS NULL OR status.meta_value NOT IN ('banned', 'blocked', 'expired_documents'))";
+				
+				// Handle extended_search filtering
+				if ( ! empty( $filtered_args['extended_search'] ) ) {
+					$search_term = $filtered_args['extended_search'];
+					$vehicle_key = $this->get_vehicle_key_by_value( $search_term );
+					
+					if ( $vehicle_key !== false ) {
+						$where_conditions[] = "vehicle_type.meta_value = %s";
+						$where_values[] = $vehicle_key;
+					} else {
+						$search_lower = strtolower( trim( $search_term ) );
+						
+						if ( $search_lower === 'human tested' ) {
+							$where_conditions[] = "mc_dot_human_tested.meta_value IN ('1', 'on')";
+						} elseif ( $search_lower === 'dot' ) {
+							$where_conditions[] = "dot.meta_value IS NOT NULL AND dot.meta_value != ''";
+						} elseif ( $search_lower === 'mc' ) {
+							$where_conditions[] = "mc.meta_value IS NOT NULL AND mc.meta_value != ''";
+						} elseif ( $search_lower === 'clean background' ) {
+							$where_conditions[] = "clear_background.meta_value IN ('1', 'on')";
+						} else {
+							$status_key = $this->searchStatusKey( $search_term, $this->status );
+							
+							if ( $status_key !== null ) {
+								$where_conditions[] = "driver_status.meta_value = %s";
+								$where_values[] = $status_key;
+							} else {
+								$phone_detected = $this->is_phone_number( $search_term );
+								
+								if ( $phone_detected ) {
+									$formatted_phone = $this->format_phone_number( $search_term );
+									$where_conditions[] = "driver_phone.meta_value = %s";
+									$where_values[] = $formatted_phone;
+								} elseif ( is_numeric( $search_term ) ) {
+									$where_conditions[] = "main.id = %s";
+									$where_values[] = $search_term;
+								} else {
+									$search_like = '%' . $wpdb->esc_like( $search_term ) . '%';
+									$where_conditions[] = "(driver_name.meta_value LIKE %s OR vin.meta_value LIKE %s OR driver_email.meta_value LIKE %s OR driver_phone.meta_value LIKE %s OR vehicle_type.meta_value LIKE %s OR mc.meta_value LIKE %s OR dot.meta_value LIKE %s)";
+									$where_values = array_merge( $where_values, array_fill( 0, 7, $search_like ) );
+								}
+							}
+						}
+					}
+				}
+				
+				// Handle capabilities filtering
+				if ( ! empty( $filtered_args['capabilities'] ) && is_array( $filtered_args['capabilities'] ) ) {
+					$capability_conditions = array();
+					$has_hazmat_certificate = in_array( 'hazmat_certificate', $filtered_args['capabilities'] );
+					$has_hazmat_endorsement = in_array( 'hazmat_endorsement', $filtered_args['capabilities'] );
+					$hazmat_processed = false;
+					
+					foreach ( $filtered_args['capabilities'] as $capability ) {
+						$alias = 'cap_' . $capability;
+						
+						if ( ( $capability === 'hazmat_certificate' || $capability === 'hazmat_endorsement' ) && $has_hazmat_certificate && $has_hazmat_endorsement && ! $hazmat_processed ) {
+							$alias_cert = 'cap_hazmat_certificate';
+							$alias_endorsement = 'cap_hazmat_endorsement';
+							$capability_conditions[] = "(($alias_cert.meta_value IS NOT NULL AND $alias_cert.meta_value != '' AND $alias_cert.meta_value IN ('1','on','yes')) OR ($alias_endorsement.meta_value IS NOT NULL AND $alias_endorsement.meta_value != '' AND $alias_endorsement.meta_value IN ('1','on','yes')))";
+							$hazmat_processed = true;
+							continue;
+						}
+						
+						if ( ( $capability === 'hazmat_certificate' || $capability === 'hazmat_endorsement' ) && $has_hazmat_certificate && $has_hazmat_endorsement && $hazmat_processed ) {
+							continue;
+						}
+						
+						switch ( $capability ) {
+							case 'cross_border_canada':
+								$capability_conditions[] = "(cap_cross_border.meta_value IS NOT NULL AND cap_cross_border.meta_value != '' AND cap_cross_border.meta_value LIKE '%canada%')";
+								break;
+							case 'cross_border_mexico':
+								$capability_conditions[] = "(cap_cross_border.meta_value IS NOT NULL AND cap_cross_border.meta_value != '' AND cap_cross_border.meta_value LIKE '%mexico%')";
+								break;
+							case 'team_driver_enabled':
+								$capability_conditions[] = "($alias.meta_value = 'on')";
+								break;
+							case 'hazmat_certificate':
+								$alias_endorsement = 'cap_hazmat_endorsement';
+								$capability_conditions[] = "(($alias.meta_value IS NOT NULL AND $alias.meta_value != '' AND $alias.meta_value IN ('1','on','yes')) OR ($alias_endorsement.meta_value IS NOT NULL AND $alias_endorsement.meta_value != '' AND $alias_endorsement.meta_value IN ('1','on','yes')))";
+								break;
+							default:
+								$capability_conditions[] = "($alias.meta_value IS NOT NULL AND $alias.meta_value != '' AND $alias.meta_value IN ('1', 'on', 'yes'))";
+								break;
+						}
+					}
+					
+					if ( ! empty( $capability_conditions ) ) {
+						$where_conditions[] = '(' . implode( ' AND ', $capability_conditions ) . ')';
+					}
+				}
+				
+				// Build JOINs for capabilities
+				$capabilities_joins = array();
+				$processed_joins = array();
+				
+				if ( ! empty( $filtered_args['capabilities'] ) && is_array( $filtered_args['capabilities'] ) ) {
+					foreach ( $filtered_args['capabilities'] as $capability ) {
+						if ( $capability === 'cross_border_canada' || $capability === 'cross_border_mexico' ) {
+							$alias = 'cap_cross_border';
+							$meta_key = 'cross_border';
+						} else {
+							$alias = 'cap_' . $capability;
+							$meta_key = $capability;
+						}
+						
+						if ( ! in_array( $alias, $processed_joins ) ) {
+							$capabilities_joins[] = "LEFT JOIN $table_meta AS $alias ON main.id = $alias.post_id AND $alias.meta_key = '$meta_key'";
+							$processed_joins[] = $alias;
+						}
+						
+						if ( $capability === 'hazmat_certificate' ) {
+							$alias_endorsement = 'cap_hazmat_endorsement';
+							if ( ! in_array( $alias_endorsement, $processed_joins ) ) {
+								$capabilities_joins[] = "LEFT JOIN $table_meta AS $alias_endorsement ON main.id = $alias_endorsement.post_id AND $alias_endorsement.meta_key = 'hazmat_endorsement'";
+								$processed_joins[] = $alias_endorsement;
+							}
+						}
+					}
+				}
+				
+				// Build JOINs for extended_search
+				$extended_search_joins = array();
+				if ( ! empty( $filtered_args['extended_search'] ) ) {
+					$extended_search_joins[] = "LEFT JOIN $table_meta AS vehicle_type ON main.id = vehicle_type.post_id AND vehicle_type.meta_key = 'vehicle_type'";
+					$extended_search_joins[] = "LEFT JOIN $table_meta AS driver_name ON main.id = driver_name.post_id AND driver_name.meta_key = 'driver_name'";
+					$extended_search_joins[] = "LEFT JOIN $table_meta AS driver_phone ON main.id = driver_phone.post_id AND driver_phone.meta_key = 'driver_phone'";
+					$extended_search_joins[] = "LEFT JOIN $table_meta AS driver_email ON main.id = driver_email.post_id AND driver_email.meta_key = 'driver_email'";
+					$extended_search_joins[] = "LEFT JOIN $table_meta AS vin ON main.id = vin.post_id AND vin.meta_key = 'vin'";
+					$extended_search_joins[] = "LEFT JOIN $table_meta AS mc ON main.id = mc.post_id AND mc.meta_key = 'mc_enabled'";
+					$extended_search_joins[] = "LEFT JOIN $table_meta AS dot ON main.id = dot.post_id AND dot.meta_key = 'dot_enabled'";
+					$extended_search_joins[] = "LEFT JOIN $table_meta AS mc_dot_human_tested ON main.id = mc_dot_human_tested.post_id AND mc_dot_human_tested.meta_key = 'mc_dot_human_tested'";
+					$extended_search_joins[] = "LEFT JOIN $table_meta AS clear_background ON main.id = clear_background.post_id AND clear_background.meta_key = 'clear_background'";
+					$extended_search_joins[] = "LEFT JOIN $table_meta AS driver_status ON main.id = driver_status.post_id AND driver_status.meta_key = 'driver_status'";
+				}
+				
+				// Combine all JOINs
+				$all_joins = array_merge( $extended_search_joins, $capabilities_joins );
+				$joins_sql = ! empty( $all_joins ) ? "\n" . implode( "\n", $all_joins ) : '';
+				
+				// Build query
+				$query = "
+					SELECT DISTINCT main.id as driver_id
+					FROM $table_main main
+					INNER JOIN $table_meta lat ON main.id = lat.post_id AND lat.meta_key = 'latitude'
+					INNER JOIN $table_meta lng ON main.id = lng.post_id AND lng.meta_key = 'longitude'
+					LEFT JOIN $table_meta status ON main.id = status.post_id AND status.meta_key = 'driver_status'
+					$joins_sql
+					WHERE " . implode( ' AND ', $where_conditions );
+				
+				if ( ! empty( $where_values ) ) {
+					$driver_ids = $wpdb->get_col( $wpdb->prepare( $query, $where_values ) );
+				} else {
+					$driver_ids = $wpdb->get_col( $query );
+				}
+			} else {
+				// No filters, get all drivers with coordinates
+				global $wpdb;
+				
+				$table_main = $wpdb->prefix . $this->table_main;
+				$table_meta = $wpdb->prefix . $this->table_meta;
+				
+				$query = "
+					SELECT DISTINCT main.id as driver_id
+					FROM $table_main main
+					INNER JOIN $table_meta lat ON main.id = lat.post_id AND lat.meta_key = 'latitude'
+					INNER JOIN $table_meta lng ON main.id = lng.post_id AND lng.meta_key = 'longitude'
+					LEFT JOIN $table_meta status ON main.id = status.post_id AND status.meta_key = 'driver_status'
+					WHERE lat.meta_value != '' 
+					AND lng.meta_value != ''
+					AND lat.meta_value IS NOT NULL
+					AND lng.meta_value IS NOT NULL
+					AND (status.meta_value IS NULL OR status.meta_value NOT IN ('banned', 'blocked', 'expired_documents'))
+				";
+				
+				$driver_ids = $wpdb->get_col( $query );
+			}
+			
+			// If no driver IDs found, return empty array
+			if ( empty( $driver_ids ) ) {
+				wp_send_json_success( array( 'drivers' => array() ) );
+				return;
+			}
+			
+			// Get full driver data for map
+			global $wpdb;
+			$table_main = $wpdb->prefix . $this->table_main;
+			$table_meta = $wpdb->prefix . $this->table_meta;
+			
+			$drivers = array();
+			foreach ( $driver_ids as $driver_id ) {
+				// Get date_available from main table
+				$main_data = $wpdb->get_row( $wpdb->prepare( "
+					SELECT date_available 
+					FROM $table_main 
+					WHERE id = %d
+				", $driver_id ), ARRAY_A );
+				
+				$date_available = isset( $main_data['date_available'] ) ? $main_data['date_available'] : '';
+				
+				// Get all meta data for this driver
+				$meta_data = $wpdb->get_results( $wpdb->prepare( "
+					SELECT meta_key, meta_value 
+					FROM $table_meta 
+					WHERE post_id = %d
+				", $driver_id ), ARRAY_A );
+				
+				// Convert to associative array
+				$meta = array();
+				foreach ( $meta_data as $meta_item ) {
+					$meta[ $meta_item['meta_key'] ] = $meta_item['meta_value'];
+				}
+				
+				// Get driver status
+				$driver_status = isset( $meta['driver_status'] ) ? $meta['driver_status'] : 'unknown';
+				
+				// Get capabilities
+				$capabilities = array();
+				if ( ! empty( $meta['twic'] ) ) $capabilities[] = 'TWIC';
+				if ( ! empty( $meta['tsa_approved'] ) ) $capabilities[] = 'TSA';
+				if ( ! empty( $meta['pallet_jack'] ) ) $capabilities[] = 'Pallet Jack';
+				if ( ! empty( $meta['lift_gate'] ) ) $capabilities[] = 'Lift Gate';
+				if ( ! empty( $meta['ppe'] ) ) $capabilities[] = 'PPE';
+				if ( ! empty( $meta['load_bars'] ) ) $capabilities[] = 'Load bars';
+				if ( ! empty( $meta['printer'] ) ) $capabilities[] = 'Printer';
+				if ( ! empty( $meta['cdl'] ) || ( isset( $meta['driver_licence_type'] ) && $meta['driver_licence_type'] === 'cdl' ) ) $capabilities[] = 'CDL';
+				if ( ! empty( $meta['tanker_endorsement'] ) ) $capabilities[] = 'Tanker endorsement';
+				if ( ! empty( $meta['ramp'] ) ) $capabilities[] = 'Ramp';
+				if ( ! empty( $meta['dock_high'] ) ) $capabilities[] = 'Dock High';
+				if ( ! empty( $meta['e_tracks'] ) ) $capabilities[] = 'E-tracks';
+				if ( ! empty( $meta['hazmat_certificate'] ) ) $capabilities[] = 'Hazmat Certificate';
+				if ( ! empty( $meta['hazmat_endorsement'] ) ) $capabilities[] = 'Hazmat Endorsement';
+				if ( ! empty( $meta['real_id'] ) ) $capabilities[] = 'Real ID';
+				if ( ! empty( $meta['team_driver_enabled'] ) ) $capabilities[] = 'Team Driver';
+				
+				// Get vehicle type label
+				$vehicle_type = isset( $meta['vehicle_type'] ) ? $meta['vehicle_type'] : '';
+				if ( $vehicle_type ) {
+					$vehicle_type = ucwords( str_replace( array( '-', '_' ), ' ', $vehicle_type ) );
+				}
+				
+				$drivers[] = array(
+					'id' => (int) $driver_id,
+					'lat' => (float) $meta['latitude'],
+					'lng' => (float) $meta['longitude'],
+					'status' => $driver_status,
+					'name' => isset( $meta['driver_name'] ) ? $meta['driver_name'] : '',
+					'phone' => isset( $meta['driver_phone'] ) ? $meta['driver_phone'] : '',
+					'unit' => isset( $meta['unit_number'] ) ? $meta['unit_number'] : $driver_id,
+					'city' => isset( $meta['current_city'] ) ? $meta['current_city'] : '',
+					'state' => isset( $meta['current_location'] ) ? $meta['current_location'] : '',
+					'dimensions' => isset( $meta['dimensions'] ) ? $meta['dimensions'] : '',
+					'payload' => isset( $meta['payload'] ) ? $meta['payload'] : '',
+					'vehicle_type' => $vehicle_type,
+					'capabilities' => $capabilities,
+					'available_date' => $date_available,
+				);
+			}
+			
+			wp_send_json_success( array( 'drivers' => $drivers ) );
 		}
 	}
 	

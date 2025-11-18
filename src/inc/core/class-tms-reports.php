@@ -392,6 +392,18 @@ class TMSReports extends TMSReportsHelper {
 		$sort_order   = ! empty( $args[ 'sort_order' ] ) && strtolower( $args[ 'sort_order' ] ) == 'asc' ? 'ASC'
 			: 'DESC';
 		
+		// Check if search is "Not rated" or "Rated" to add rating table JOIN
+		$is_not_rated_search = false;
+		$is_rated_search = false;
+		if ( ! empty( $args[ 'my_search' ] ) ) {
+			$search_lower = strtolower( trim( $args[ 'my_search' ] ) );
+			if ( $search_lower === 'not rated' ) {
+				$is_not_rated_search = true;
+			} elseif ( $search_lower === 'rated' ) {
+				$is_rated_search = true;
+			}
+		}
+		
 		$join_builder = "
 			FROM $table_main AS main
 			LEFT JOIN $table_meta AS dispatcher
@@ -438,7 +450,19 @@ class TMSReports extends TMSReportsHelper {
 				AND pick_up_location.meta_key = 'pick_up_location'
 			LEFT JOIN $table_meta AS delivery_location
 				ON main.id = delivery_location.post_id
-				AND delivery_location.meta_key = 'delivery_location'
+				AND delivery_location.meta_key = 'delivery_location'";
+		
+		// Add rating table JOIN if searching for "Not rated" or "Rated"
+		if ( $is_not_rated_search || $is_rated_search ) {
+			$table_rating = $wpdb->prefix . 'drivers_raiting';
+			$join_builder .= "
+			LEFT JOIN $table_rating AS rating
+				ON reference.meta_value = rating.order_number
+				AND reference.meta_value IS NOT NULL
+				AND reference.meta_value != ''";
+		}
+		
+		$join_builder .= "
 			WHERE 1=1";
 		
 		// Основной запрос
@@ -446,7 +470,7 @@ class TMSReports extends TMSReportsHelper {
 			dispatcher.meta_value AS dispatcher_initials_value,
 			reference.meta_value AS reference_number_value,
 			unit_number.meta_value AS unit_number_value
-	" . $join_builder;
+		" . $join_builder;
 		
 		$where_conditions = array();
 		$where_values     = array();
@@ -542,7 +566,7 @@ class TMSReports extends TMSReportsHelper {
         driver_pay_statuses.meta_value = 'paid'
         AND driver_pay_statuses.meta_value IS NOT NULL
         AND driver_pay_statuses.meta_value != ''
-    )";
+   	 )";
 		}
 		
 		
@@ -568,12 +592,21 @@ class TMSReports extends TMSReportsHelper {
 		
 		// Фильтрация по reference_number
 		if ( ! empty( $args[ 'my_search' ] ) ) {
-			$where_conditions[] = "(reference.meta_value LIKE %s OR unit_number.meta_value LIKE %s OR pick_up_location.meta_value LIKE %s OR delivery_location.meta_value LIKE %s)";
-			$search_value       = '%' . $wpdb->esc_like( $args[ 'my_search' ] ) . '%';
-			$where_values[]     = $search_value;
-			$where_values[]     = $search_value;
-			$where_values[]     = $search_value;
-			$where_values[]     = $search_value;
+			if ( $is_not_rated_search ) {
+				// Show only loads where reference_number is not in ratings table
+				$where_conditions[] = "(rating.order_number IS NULL AND reference.meta_value IS NOT NULL AND reference.meta_value != '')";
+			} elseif ( $is_rated_search ) {
+				// Show only loads where reference_number exists in ratings table
+				$where_conditions[] = "(rating.order_number IS NOT NULL AND reference.meta_value IS NOT NULL AND reference.meta_value != '')";
+			} else {
+				// Regular search
+				$where_conditions[] = "(reference.meta_value LIKE %s OR unit_number.meta_value LIKE %s OR pick_up_location.meta_value LIKE %s OR delivery_location.meta_value LIKE %s)";
+				$search_value       = '%' . $wpdb->esc_like( $args[ 'my_search' ] ) . '%';
+				$where_values[]     = $search_value;
+				$where_values[]     = $search_value;
+				$where_values[]     = $search_value;
+				$where_values[]     = $search_value;
+			}
 		}
 		
 		if ( ! empty( $args[ 'month' ] ) && ! empty( $args[ 'year' ] ) ) {

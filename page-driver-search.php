@@ -20,6 +20,10 @@ $args = $Drivers->set_filter_params_search( $args );
 
 $items = $Drivers->get_table_items_search( $args );
 
+// Make items available globally for driver-search-filter template
+global $driver_search_items;
+$driver_search_items = $items;
+
 ?>
     <div class="container-fluid">
         <div class="row">

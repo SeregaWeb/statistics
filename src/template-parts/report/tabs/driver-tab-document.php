@@ -25,7 +25,6 @@ $tsa_expiration                        = get_field_value( $meta, 'tsa_expiration
 $legal_document_type                   = get_field_value( $meta, 'legal_document_type' );
 $nationality                           = get_field_value( $meta, 'nationality' );
 $immigration_letter                    = get_field_value( $meta, 'immigration_letter' );
-$immigration_expiration                = get_field_value( $meta, 'immigration_expiration' );
 $background_check                      = get_field_value( $meta, 'background_check' );
 $background_date                       = get_field_value( $meta, 'background_date' );
 $canada_transition_proof               = get_field_value( $meta, 'canada_transition_proof' );
@@ -75,7 +74,6 @@ $tanker_endorsement_team_driver        = get_field_value( $meta, 'tanker_endorse
 $hazmat_endorsement_team_driver        = get_field_value( $meta, 'hazmat_endorsement_team_driver' );
 $driver_licence_expiration_team_driver = get_field_value( $meta, 'driver_licence_expiration_team_driver' );
 $immigration_file_team_driver          = get_field_value( $meta, 'immigration_file_team_driver' );
-$immigration_expiration_team_driver    = get_field_value( $meta, 'immigration_expiration_team_driver' );
 $immigration_letter_team_driver        = get_field_value( $meta, 'immigration_letter_team_driver' );
 $legal_document_team_driver            = get_field_value( $meta, 'legal_document_team_driver' );
 $legal_document_expiration_team_driver = get_field_value( $meta, 'legal_document_expiration_team_driver' );
@@ -452,7 +450,11 @@ $access_vehicle = $TMSUsers->check_user_role_access( [
 
     <div class="mb-3 d-flex justify-content-between align-items-center">
         <h2>Documents</h2>
-		<?php if ( $total_images > 2 ): ?>
+	   <div class="d-flex align-items-center gap-2">
+            <?php if ( $post_id && !$full_only_view ): ?>
+                <button class='btn btn-outline-success js-remote-send-form' data-form="js-driver-document-form">Save</button>
+            <?php endif; ?>
+            <?php if ( $total_images > 2 ): ?>
             <div class=" <?php echo ( $total_images === 3 ) ? 'show-more-hide-desktop' : 'd-flex '; ?>">
                 <button class="js-toggle btn btn-primary change-text"
                         data-block-toggle="js-hide-upload-doc-container">
@@ -461,6 +463,8 @@ $access_vehicle = $TMSUsers->check_user_role_access( [
                 </button>
             </div>
 		<?php endif; ?>
+        </div>
+		
     </div>
 	
 	<?php if ( $access_vehicle ): ?>
@@ -938,11 +942,7 @@ $access_vehicle = $TMSUsers->check_user_role_access( [
 						];
 						echo esc_html( get_template_part( TEMPLATE_PATH . 'common/simple', 'file-upload', $simple_upload_args ) );
 						?>
-                        <div class="col-12 col-md-6 ">
-                            <label class="form-label">Expiration date</label>
-                            <input type="text" class="form-control js-new-format-date" name="immigration_expiration"
-                                   value="<?php echo $immigration_expiration; ?>">
-                        </div>
+                       
                     </div>
                 </div>
 				
@@ -966,12 +966,7 @@ $access_vehicle = $TMSUsers->check_user_role_access( [
 							];
 							echo esc_html( get_template_part( TEMPLATE_PATH . 'common/simple', 'file-upload', $simple_upload_args ) );
 							?>
-                            <div class="col-12 col-md-6 ">
-                                <label class="form-label">Expiration date (Team driver)</label>
-                                <input type="text" class="form-control js-new-format-date"
-                                       name="immigration_expiration_team_driver"
-                                       value="<?php echo $immigration_expiration_team_driver; ?>">
-                            </div>
+                            
                         </div>
                     </div>
 				

@@ -750,6 +750,103 @@ export const copyText = () => {
         });
     });
 };
+/**
+ * Universal form submit handler for remote send buttons
+ * Handles buttons with class js-remote-send-form and data-form attribute
+ */
+export const remoteSendForm = (urlAjax) => {
+    const buttons = document.querySelectorAll('.js-remote-send-form');
+    
+    if (!buttons.length) return;
+    
+    // Map form selectors to their corresponding actions
+    const formActionMap: Record<string, string> = {
+        'js-update-driver': 'update_driver_contact',
+        'js-update-driver-information': 'update_driver_information',
+        'js-driver-finance-form': 'update_driver_finance',
+        'js-driver-document-form': 'update_driver_document',
+    };
+    
+    
+    
+    buttons.forEach((button) => {
+        button.addEventListener('click', (e: Event) => {
+            e.preventDefault();
+            
+            const target = button as HTMLElement;
+            const formSelector = target.getAttribute('data-form');
+            
+            if (!formSelector) {
+                printMessage('Form selector not found in data-form attribute', 'danger', 5000);
+                return;
+            }
+            
+            // Find form by selector (can be class or ID)
+            const form = document.querySelector(`.${formSelector}`) || document.querySelector(`#${formSelector}`);
+            
+            if (!form || !(form instanceof HTMLFormElement)) {
+                printMessage(`Form with selector "${formSelector}" not found`, 'danger', 5000);
+                return;
+            }
+            
+            // Get action from map
+            const action = formActionMap[formSelector];
+            if (!action) {
+                printMessage(`Action not found for form "${formSelector}"`, 'danger', 5000);
+                return;
+            }
+            
+            // Disable button and form
+            const submitButton = target as HTMLButtonElement;
+            const originalText = submitButton.textContent;
+            submitButton.disabled = true;
+            if (originalText) {
+                submitButton.textContent = 'Saving...';
+            }
+            
+            disabledBtnInForm(form);
+            
+            // Prepare form data
+            const formData = new FormData(form);
+            formData.append('action', action);
+            
+            const options = {
+                method: 'POST',
+                body: formData,
+            };
+            
+            // Get next target tab if exists
+            
+            fetch(urlAjax, options)
+                .then((res) => res.json())
+                .then((requestStatus) => {
+                    if (requestStatus.success) {
+                        printMessage(requestStatus.data?.message || 'Saved successfully', 'success', 5000);
+                        
+                    
+                        
+                        disabledBtnInForm(form, true);
+                    } else {
+                        printMessage(requestStatus.data?.message || 'Error saving form', 'danger', 8000);
+                        disabledBtnInForm(form, true);
+                    }
+                })
+                .catch((error) => {
+                    printMessage(`Request failed: ${error}`, 'danger', 8000);
+                    disabledBtnInForm(form, true);
+                    console.error('Request failed:', error);
+                })
+                .finally(() => {
+                    // Re-enable button
+                    submitButton.disabled = false;
+                    if (originalText) {
+                        submitButton.textContent = originalText;
+                    }
+                });
+        });
+    });
+};
+
 export const driversActions = (urlAjax) => {
     createDriver(urlAjax);
     removeFullDriver(urlAjax);
@@ -762,6 +859,7 @@ export const driversActions = (urlAjax) => {
     updateStatusDriver(urlAjax);
     uploadFileDriver(urlAjax);
     copyText();
+    remoteSendForm(urlAjax);
 
     helperDisabledChecbox();
 };

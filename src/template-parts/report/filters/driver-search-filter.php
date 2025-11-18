@@ -135,6 +135,9 @@ $driver_capabilities = array(
                 <div class="text-small text-nowrap">Available on: <span class="text-primary"><?php echo $drivers_stats['available_on']; ?></span></div>
                 <div class="text-small text-nowrap">Not updated: <span class="text-primary"><?php echo $drivers_stats['not_updated']; ?></span></div>
             </div>
+            <div>
+                <button class="btn btn-outline-success" type="button" data-bs-toggle="modal" data-bs-target="#driversMapModal">Show map</button>
+            </div>
         </div>
         </div>
     </div>
@@ -153,4 +156,34 @@ $driver_capabilities = array(
             </div>
         </div>
         <?php endif; ?>
+
+<?php
+// Get filtered driver IDs from items (passed from page-driver-search.php)
+global $driver_search_items, $global_options;
+$all_filtered_driver_ids = array();
+if ( isset( $driver_search_items['all_filtered_driver_ids'] ) && ! empty( $driver_search_items['all_filtered_driver_ids'] ) ) {
+	$all_filtered_driver_ids = $driver_search_items['all_filtered_driver_ids'];
+}
+
+// Get driver profile URL
+$add_new_driver = get_field_value( $global_options, 'add_new_driver' );
+$driver_profile_url = $add_new_driver ? $add_new_driver : '';
+?>
+
+<!-- Drivers Map Modal -->
+<div class="modal fade" id="driversMapModal" tabindex="-1" aria-labelledby="driversMapModalLabel" aria-hidden="true" 
+     data-driver-ids="<?php echo esc_attr( json_encode( $all_filtered_driver_ids ) ); ?>"
+     data-driver-profile-url="<?php echo esc_attr( $driver_profile_url ); ?>">
+    <div class="modal-dialog modal-xl drivers-map-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="driversMapModalLabel">Drivers Map</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-0">
+                <div id="driversMapContainer" style="width: 100%; height: 100%; min-height: 600px;"></div>
+            </div>
+        </div>
+    </div>
+</div>
 

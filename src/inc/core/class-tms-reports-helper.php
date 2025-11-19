@@ -1632,6 +1632,32 @@ Kindly confirm once you've received this message." ) . "\n";
 			'VA' => ['dst' => 'EDT (UTC-4)', 'standard' => 'EST (UTC-5)'],
 			'VT' => ['dst' => 'EDT (UTC-4)', 'standard' => 'EST (UTC-5)'],
 			'WV' => ['dst' => 'EDT (UTC-4)', 'standard' => 'EST (UTC-5)'],
+			
+			// Canada - Pacific Time
+			'BC' => ['dst' => 'PDT (UTC-7)', 'standard' => 'PST (UTC-8)'], // British Columbia
+			'YT' => ['dst' => 'PDT (UTC-7)', 'standard' => 'PST (UTC-8)'], // Yukon
+			
+			// Canada - Mountain Time
+			'AB' => ['dst' => 'MDT (UTC-6)', 'standard' => 'MST (UTC-7)'], // Alberta
+			'NT' => ['dst' => 'MDT (UTC-6)', 'standard' => 'MST (UTC-7)'], // Northwest Territories
+			// Saskatchewan - most of the province does NOT observe DST (always CST UTC-6)
+			'SK' => ['dst' => 'CST (UTC-6)', 'standard' => 'CST (UTC-6)'], // Saskatchewan doesn't observe DST
+			
+			// Canada - Central Time
+			'MB' => ['dst' => 'CDT (UTC-5)', 'standard' => 'CST (UTC-6)'], // Manitoba
+			// Ontario - most uses Eastern, but western part uses Central
+			'ON' => ['dst' => 'EDT (UTC-4)', 'standard' => 'EST (UTC-5)'], // Ontario (most of province)
+			
+			// Canada - Eastern Time
+			'QC' => ['dst' => 'EDT (UTC-4)', 'standard' => 'EST (UTC-5)'], // Quebec
+			'NU' => ['dst' => 'EDT (UTC-4)', 'standard' => 'EST (UTC-5)'], // Nunavut (most of territory)
+			
+			// Canada - Atlantic Time (AST UTC-4, ADT UTC-3)
+			'NB' => ['dst' => 'ADT (UTC-3)', 'standard' => 'AST (UTC-4)'], // New Brunswick
+			'NS' => ['dst' => 'ADT (UTC-3)', 'standard' => 'AST (UTC-4)'], // Nova Scotia
+			'PE' => ['dst' => 'ADT (UTC-3)', 'standard' => 'AST (UTC-4)'], // Prince Edward Island
+			// Newfoundland and Labrador - most uses Atlantic, but Newfoundland uses Newfoundland Time
+			'NL' => ['dst' => 'NDT (UTC-2.5)', 'standard' => 'NST (UTC-3.5)'], // Newfoundland and Labrador (Newfoundland Time)
 		];
 
 		if (!isset($timezone_map[$state])) {

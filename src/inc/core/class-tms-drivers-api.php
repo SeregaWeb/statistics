@@ -21,6 +21,7 @@ class TMSDriversAPI {
      */
     const ENDPOINT_DRIVER = 'driver';
     const ENDPOINT_DRIVER_UPDATE = 'driver/update';
+    const ENDPOINT_DRIVER_LOCATION_UPDATE = 'driver/location/update';
     const ENDPOINT_DRIVERS = 'drivers';
     const ENDPOINT_DRIVER_LOADS = 'driver/loads';
     const ENDPOINT_LOAD_DETAIL = 'load';
@@ -91,6 +92,27 @@ class TMSDriversAPI {
         register_rest_route(self::API_NAMESPACE, '/' . self::ENDPOINT_DRIVER_UPDATE, array(
             'methods' => 'POST',
             'callback' => array($this, 'update_driver'),
+            'permission_callback' => array($this, 'check_api_permission'),
+            'args' => array(
+                'driver_id' => array(
+                    'required' => true,
+                    'validate_callback' => function($param, $request, $key) {
+                        return is_numeric($param) && $param > 0;
+                    }
+                ),
+                'user_id' => array(
+                    'required' => true,
+                    'validate_callback' => function($param, $request, $key) {
+                        return is_numeric($param) && $param > 0;
+                    }
+                )
+            )
+        ));
+        
+        // Driver location update endpoint
+        register_rest_route(self::API_NAMESPACE, '/' . self::ENDPOINT_DRIVER_LOCATION_UPDATE, array(
+            'methods' => 'POST',
+            'callback' => array($this, 'update_driver_location'),
             'permission_callback' => array($this, 'check_api_permission'),
             'args' => array(
                 'driver_id' => array(
@@ -527,6 +549,195 @@ class TMSDriversAPI {
             return new WP_Error(
                 'api_error',
                 'An error occurred while updating driver: ' . $e->getMessage(),
+                array('status' => 500)
+            );
+        }
+    }
+    
+    /**
+     * Update driver location
+     * 
+     * @param WP_REST_Request $request
+     * @return WP_REST_Response|WP_Error
+     */
+    public function update_driver_location($request) {
+        try {
+            $driver_id = $request->get_param('driver_id');
+            $user_id = $request->get_param('user_id');
+            $json_params = $request->get_json_params();
+            
+            if (empty($driver_id)) {
+                return new WP_Error(
+                    'missing_driver_id',
+                    'Driver ID parameter is required.',
+                    array('status' => 400)
+                );
+            }
+            
+            if (empty($user_id)) {
+                return new WP_Error(
+                    'missing_user_id',
+                    'User ID parameter is required for logging.',
+                    array('status' => 400)
+                );
+            }
+            
+            if (empty($json_params)) {
+                return new WP_Error(
+                    'missing_data',
+                    'Request body is required.',
+                    array('status' => 400)
+                );
+            }
+            
+            // Validate user exists
+            $user_info = get_userdata($user_id);
+            if (!$user_info) {
+                return new WP_Error(
+                    'user_not_found',
+                    'User not found.',
+                    array('status' => 404)
+                );
+            }
+            
+            // Validate driver exists
+            $drivers = $this->get_drivers();
+            $driver_data = $drivers->get_driver_by_id($driver_id);
+            
+            if (!$driver_data) {
+                return new WP_Error(
+                    'driver_not_found',
+                    'Driver not found.',
+                    array('status' => 404)
+                );
+            }
+            
+            // Validate required location fields
+            if (empty($json_params['latitude']) || empty($json_params['longitude'])) {
+                return new WP_Error(
+                    'missing_coordinates',
+                    'Latitude and longitude are required.',
+                    array('status' => 400)
+                );
+            }
+            
+            // Get current driver meta values for comparison
+            $current_meta = $this->get_all_driver_meta_values($driver_id);
+            
+            // Prepare update data
+            $update_data = array(
+                'driver_id' => intval($driver_id),
+                'driver_status' => isset($json_params['driver_status']) ? sanitize_text_field($json_params['driver_status']) : '',
+                'status_date' => isset($json_params['status_date']) ? sanitize_text_field($json_params['status_date']) : '',
+                'current_location' => isset($json_params['current_location']) ? sanitize_text_field($json_params['current_location']) : '',
+                'current_city' => isset($json_params['current_city']) ? sanitize_text_field($json_params['current_city']) : '',
+                'current_zipcode' => isset($json_params['current_zipcode']) ? sanitize_text_field($json_params['current_zipcode']) : '',
+                'latitude' => sanitize_text_field($json_params['latitude']),
+                'longitude' => sanitize_text_field($json_params['longitude']),
+                'country' => isset($json_params['country']) ? sanitize_text_field($json_params['country']) : '',
+                'current_country' => isset($json_params['current_country']) ? sanitize_text_field($json_params['current_country']) : '',
+            );
+            
+            // Add notes if provided
+            if (isset($json_params['notes'])) {
+                $update_data['notes'] = sanitize_textarea_field($json_params['notes']);
+            }
+            
+            // Get user full name for logging
+            $name_user = $drivers->get_user_full_name_by_id($user_id);
+            
+            // Get current time in New York timezone and format it properly
+            $ny_timezone = new DateTimeZone('America/New_York');
+            $ny_time = new DateTime('now', $ny_timezone);
+            $formatted_time = $ny_time->format('m/d/Y g:i a');
+            
+            $update_data['last_user_update'] = 'Last update: ' . $name_user['full_name'] . ' - ' . $formatted_time;
+            
+            // Compare old and new values to track changes
+            $changed_fields = array();
+            $location_fields = array(
+                'driver_status' => 'driver_status',
+                'status_date' => 'status_date',
+                'current_location' => 'current_location',
+                'current_city' => 'current_city',
+                'current_zipcode' => 'current_zipcode',
+                'latitude' => 'latitude',
+                'longitude' => 'longitude',
+                'country' => 'country',
+                'current_country' => 'current_country',
+            );
+            
+            foreach ($location_fields as $field_key => $meta_key) {
+                if (isset($update_data[$field_key]) && $update_data[$field_key] !== '') {
+                    $old_value = $current_meta[$meta_key] ?? '';
+                    $new_value = $update_data[$field_key];
+                    
+                    if ($old_value != $new_value) {
+                        $changed_fields[] = array(
+                            'field' => $meta_key,
+                            'old_value' => $old_value ?: '(empty)',
+                            'new_value' => $new_value
+                        );
+                    }
+                }
+            }
+            
+            // Update driver location in database
+            $result = $drivers->update_driver_in_db($update_data);
+            
+            if ($result) {
+                // Create log entry if there were changes
+                $log_created = false;
+                if (!empty($changed_fields)) {
+                    $log_result = $this->create_driver_location_update_log($driver_id, $user_id, $changed_fields);
+                    $log_created = $log_result['success'];
+                }
+                
+                // Get updated driver data using public method
+                $driver_data = $drivers->get_driver_by_id($driver_id);
+                $updated_driver_data = null;
+                
+                if ($driver_data) {
+                    // Extract basic info for response
+                    $main_result = $driver_data['main'];
+                    $meta_data = $driver_data['meta'];
+                    
+                    $updated_driver_data = array(
+                        'id' => $main_result['id'],
+                        'driver_name' => $meta_data['driver_name'] ?? null,
+                        'driver_status' => $meta_data['driver_status'] ?? null,
+                        'current_location' => $meta_data['current_location'] ?? null,
+                        'current_city' => $meta_data['current_city'] ?? null,
+                        'current_zipcode' => $meta_data['current_zipcode'] ?? null,
+                        'latitude' => $meta_data['latitude'] ?? null,
+                        'longitude' => $meta_data['longitude'] ?? null,
+                        'date_updated' => $main_result['date_updated'] ?? null
+                    );
+                }
+                
+                return new WP_REST_Response(array(
+                    'success' => true,
+                    'message' => 'Driver location updated successfully',
+                    'driver_id' => $driver_id,
+                    'data' => $update_data,
+                    'changed_fields' => $changed_fields,
+                    'log_created' => $log_created,
+                    'updated_driver' => $updated_driver_data,
+                    'timestamp' => current_time('mysql'),
+                    'api_version' => '1.0'
+                ), 200);
+            } else {
+                return new WP_Error(
+                    'update_failed',
+                    'Failed to update driver location',
+                    array('status' => 500)
+                );
+            }
+            
+        } catch (Exception $e) {
+            return new WP_Error(
+                'api_error',
+                'An error occurred while updating driver location: ' . $e->getMessage(),
                 array('status' => 500)
             );
         }
@@ -2974,6 +3185,49 @@ class TMSDriversAPI {
             
         } catch (Exception $e) {
             error_log('TMSDriversAPI create_driver_update_log error: ' . $e->getMessage());
+            return array(
+                'success' => false,
+                'log_id' => null
+            );
+        }
+    }
+    
+    /**
+     * Create driver location update log entry
+     * 
+     * @param int $driver_id
+     * @param int $user_id
+     * @param array $changed_fields
+     * @return array
+     */
+    private function create_driver_location_update_log($driver_id, $user_id, $changed_fields) {
+        try {
+            // Create log message
+            $log_message = '<strong>Driver location updated via API</strong><br><br>';
+            
+            foreach ($changed_fields as $change) {
+                $field_name = $this->format_field_name($change['field']);
+                $log_message .= '<strong>' . $field_name . '</strong> - Value changed<br>';
+                $log_message .= '<strong>Old value</strong>: <span style="color: red">' . esc_html($change['old_value']) . '</span><br>';
+                $log_message .= '<strong>New value</strong>: <span style="color: green">' . esc_html($change['new_value']) . '</span><br><br>';
+            }
+            
+            // Create log entry using TMSLogs
+            $log_controller = new TMSLogs();
+            $log_result = $log_controller->create_one_log(array(
+                'user_id' => $user_id,
+                'post_id' => $driver_id,
+                'message' => $log_message,
+                'post_type' => 'driver'
+            ));
+            
+            return array(
+                'success' => $log_result['insert'] !== false,
+                'log_id' => $log_result['insert'] ?? null
+            );
+            
+        } catch (Exception $e) {
+            error_log('TMSDriversAPI create_driver_location_update_log error: ' . $e->getMessage());
             return array(
                 'success' => false,
                 'log_id' => null

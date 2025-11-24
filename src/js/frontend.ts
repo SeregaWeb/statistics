@@ -163,6 +163,62 @@ function ready() {
         nonceInput: '#third-driver-search-nonce',
     });
 
+    // Show/hide referer block based on source selection
+    const sourceSelect = document.querySelector('.js-source') as HTMLSelectElement;
+    const refererBlock = document.querySelector('.js-referer-block') as HTMLElement;
+    
+    // Initialize Referer Driver Autocomplete (for recommendation source)
+    // Initialize only if referer block exists (it might be hidden initially)
+    let refererAutocomplete: DriverAutocomplete | null = null;
+    
+    if (refererBlock) {
+        // Make sure block is visible temporarily to initialize autocomplete
+        const wasVisible = refererBlock.style.display !== 'none';
+        if (!wasVisible) {
+            refererBlock.style.display = 'block';
+        }
+        
+        refererAutocomplete = new DriverAutocomplete(urlAjax, {
+            unitInput: '.js-referer-unit-number-input',
+            dropdown: '.js-referer-driver-dropdown',
+            attachedDriverInput: '#referer_by',
+            phoneInput: '', // No phone field for referer
+            unitNumberNameInput: '#referer_name',
+            nonceInput: '#referer-driver-search-nonce',
+        });
+        
+        // Restore original visibility
+        if (!wasVisible) {
+            refererBlock.style.display = 'none';
+        }
+    }
+    
+    if (sourceSelect && refererBlock) {
+        // Check initial state
+        if (sourceSelect.value === 'recommendation') {
+            refererBlock.style.display = 'block';
+        }
+        
+        sourceSelect.addEventListener('change', (e) => {
+            const target = e.target as HTMLSelectElement;
+            if (target.value === 'recommendation') {
+                refererBlock.style.display = 'block';
+            } else {
+                refererBlock.style.display = 'none';
+                // Clear referer fields when hidden (only if user explicitly changes source away from recommendation)
+                const refererUnitInput = document.querySelector('.js-referer-unit-number-input') as HTMLInputElement;
+                const refererByInput = document.getElementById('referer_by') as HTMLInputElement;
+                const refererNameInput = document.getElementById('referer_name') as HTMLInputElement;
+                if (refererUnitInput) {
+                    refererUnitInput.value = '';
+                    refererUnitInput.placeholder = 'Enter unit number...';
+                }
+                if (refererByInput) refererByInput.value = '';
+                if (refererNameInput) refererNameInput.value = '';
+            }
+        });
+    }
+
     // Add driver validation
     initDriverValidation();
     

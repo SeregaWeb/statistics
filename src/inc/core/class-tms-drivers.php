@@ -2444,8 +2444,18 @@ class TMSDrivers extends TMSDriversHelper {
 					? sanitize_text_field( $_POST[ 'emergency_contact_relation' ] ) : '',
 				'mc_dot_human_tested'        => isset( $_POST[ 'mc_dot_human_tested' ] )
 					? sanitize_text_field( $_POST[ 'mc_dot_human_tested' ] ) : '',
+				'referer_by'                 => isset( $_POST[ 'referer_by' ] )
+					? sanitize_text_field( $_POST[ 'referer_by' ] ) : '',
+				'referer_name'               => isset( $_POST[ 'referer_name' ] )
+					? sanitize_text_field( $_POST[ 'referer_name' ] ) : '',
 			
 			);
+			
+			// Debug: log referer fields
+			error_log( 'TMSDrivers update_driver_contact - referer_by: ' . ( $data[ 'referer_by' ] ?? 'NOT SET' ) );
+			error_log( 'TMSDrivers update_driver_contact - referer_name: ' . ( $data[ 'referer_name' ] ?? 'NOT SET' ) );
+			error_log( 'TMSDrivers update_driver_contact - POST referer_by: ' . ( $_POST[ 'referer_by' ] ?? 'NOT SET' ) );
+			error_log( 'TMSDrivers update_driver_contact - POST referer_name: ' . ( $_POST[ 'referer_name' ] ?? 'NOT SET' ) );
 			
 			
 			$driver_object = $this->get_driver_by_id( $data[ 'driver_id' ] );
@@ -2478,6 +2488,8 @@ class TMSDrivers extends TMSDriversHelper {
 				'source',
 				'mc_dot_human_tested',
 				'clear_background',
+				'referer_by',
+				'referer_name',
 			);
 			
 			if ( $post_status === 'publish' ) {
@@ -3553,6 +3565,9 @@ class TMSDrivers extends TMSDriversHelper {
 					INNER JOIN $reports_meta_table dispatcher_meta ON r.id = dispatcher_meta.post_id 
 						AND dispatcher_meta.meta_key = 'dispatcher_initials'
 						AND dispatcher_meta.meta_value = %s
+					INNER JOIN $reports_meta_table load_status_meta ON r.id = load_status_meta.post_id 
+						AND load_status_meta.meta_key = 'load_status'
+						AND load_status_meta.meta_value IN ('delivered', 'tonu')
 					WHERE r.status_post = 'publish'
 						AND YEAR(r.date_booked) = %d
 						AND MONTH(r.date_booked) = %d
@@ -3571,6 +3586,9 @@ class TMSDrivers extends TMSDriversHelper {
 						INNER JOIN $reports_flt_meta_table dispatcher_meta ON rf.id = dispatcher_meta.post_id 
 							AND dispatcher_meta.meta_key = 'dispatcher_initials'
 							AND dispatcher_meta.meta_value = %s
+						INNER JOIN $reports_flt_meta_table load_status_meta ON rf.id = load_status_meta.post_id 
+							AND load_status_meta.meta_key = 'load_status'
+							AND load_status_meta.meta_value IN ('delivered', 'tonu')
 						WHERE rf.status_post = 'publish'
 							AND YEAR(rf.date_booked) = %d
 							AND MONTH(rf.date_booked) = %d
@@ -3593,6 +3611,9 @@ class TMSDrivers extends TMSDriversHelper {
 					INNER JOIN $reports_meta_table dispatcher_meta ON r.id = dispatcher_meta.post_id 
 						AND dispatcher_meta.meta_key = 'dispatcher_initials'
 						AND dispatcher_meta.meta_value = %s
+					INNER JOIN $reports_meta_table load_status_meta ON r.id = load_status_meta.post_id 
+						AND load_status_meta.meta_key = 'load_status'
+						AND load_status_meta.meta_value IN ('delivered', 'tonu')
 					INNER JOIN $reports_meta_table ref_meta ON r.id = ref_meta.post_id 
 						AND ref_meta.meta_key = 'reference_number'
 						AND ref_meta.meta_value IS NOT NULL
@@ -3615,6 +3636,9 @@ class TMSDrivers extends TMSDriversHelper {
 						INNER JOIN $reports_flt_meta_table dispatcher_meta ON rf.id = dispatcher_meta.post_id 
 							AND dispatcher_meta.meta_key = 'dispatcher_initials'
 							AND dispatcher_meta.meta_value = %s
+						INNER JOIN $reports_flt_meta_table load_status_meta ON rf.id = load_status_meta.post_id 
+							AND load_status_meta.meta_key = 'load_status'
+							AND load_status_meta.meta_value IN ('delivered', 'tonu')
 						INNER JOIN $reports_flt_meta_table ref_meta ON rf.id = ref_meta.post_id 
 							AND ref_meta.meta_key = 'reference_number'
 							AND ref_meta.meta_value IS NOT NULL
@@ -3672,13 +3696,15 @@ class TMSDrivers extends TMSDriversHelper {
 	/**
 	 * Get detailed dispatcher ratings for a specific period
 	 * Returns all rating records for dispatcher's loads in the selected month/year
+	 * Only includes loads with status 'delivered' or 'tonu'
 	 * 
 	 * @param int $dispatcher_id Dispatcher user ID
 	 * @param int $year Year filter
 	 * @param int $month Month filter
+	 * @param bool|null $is_flt If true, only count FLT loads; if false, only count regular loads; if null, count both
 	 * @return array Array of rating records with details
 	 */
-	public function get_dispatcher_detailed_ratings( $dispatcher_id, $year, $month ) {
+	public function get_dispatcher_detailed_ratings( $dispatcher_id, $year, $month, $is_flt = null ) {
 		global $wpdb;
 		
 		if ( empty( $dispatcher_id ) || ! is_numeric( $dispatcher_id ) ) {
@@ -3714,6 +3740,9 @@ class TMSDrivers extends TMSDriversHelper {
 				INNER JOIN $reports_meta_table dispatcher_meta ON r.id = dispatcher_meta.post_id 
 					AND dispatcher_meta.meta_key = 'dispatcher_initials'
 					AND dispatcher_meta.meta_value = %s
+				INNER JOIN $reports_meta_table load_status_meta ON r.id = load_status_meta.post_id 
+					AND load_status_meta.meta_key = 'load_status'
+					AND load_status_meta.meta_value IN ('delivered', 'tonu')
 				INNER JOIN $reports_meta_table ref_meta ON r.id = ref_meta.post_id 
 					AND ref_meta.meta_key = 'reference_number'
 					AND ref_meta.meta_value IS NOT NULL
@@ -3736,6 +3765,9 @@ class TMSDrivers extends TMSDriversHelper {
 					INNER JOIN $reports_flt_meta_table dispatcher_meta ON rf.id = dispatcher_meta.post_id 
 						AND dispatcher_meta.meta_key = 'dispatcher_initials'
 						AND dispatcher_meta.meta_value = %s
+					INNER JOIN $reports_flt_meta_table load_status_meta ON rf.id = load_status_meta.post_id 
+						AND load_status_meta.meta_key = 'load_status'
+						AND load_status_meta.meta_value IN ('delivered', 'tonu')
 					INNER JOIN $reports_flt_meta_table ref_meta ON rf.id = ref_meta.post_id 
 						AND ref_meta.meta_key = 'reference_number'
 						AND ref_meta.meta_value IS NOT NULL
@@ -3870,7 +3902,37 @@ class TMSDrivers extends TMSDriversHelper {
 		global $wpdb;
 		$table_meta_name = $wpdb->prefix . $this->table_meta;
 		
+		// Fields that should not be saved as meta (they are main table fields or special fields)
+		$excluded_fields = array(
+			'driver_id',
+			'recruiter_add',
+			'current_zipcode',
+			'status_date',
+			'user_id_updated',
+			'date_updated',
+			'user_id_added',
+			'date_created',
+		);
+		
 		foreach ( $meta_data as $meta_key => $meta_value ) {
+			// Skip excluded fields
+			if ( in_array( $meta_key, $excluded_fields ) ) {
+				continue;
+			}
+			
+			// Always save referer fields, even if empty (to allow clearing)
+			$is_referer_field = ( $meta_key === 'referer_name' || $meta_key === 'referer_by' );
+			
+			// Skip empty values for most fields, but always save referer fields
+			if ( $meta_value === '' && ! $is_referer_field ) {
+				continue;
+			}
+			
+			// For referer fields, convert empty string to NULL for database
+			if ( $is_referer_field && $meta_value === '' ) {
+				$meta_value = null;
+			}
+			
 			$existing = $wpdb->get_var( $wpdb->prepare( "
             SELECT id FROM $table_meta_name
             WHERE post_id = %d AND meta_key = %s

@@ -6834,13 +6834,31 @@ var DriverAutocomplete = /*#__PURE__*/function () {
         unitInput.value = '';
         unitInput.placeholder = "Selected: ".concat(driver.display_name);
       }
-      var phoneInput = document.querySelector(this.selectors.phoneInput);
-      if (phoneInput && driver.phone) {
-        phoneInput.value = driver.phone;
+      if (this.selectors.phoneInput) {
+        var phoneInput = document.querySelector(this.selectors.phoneInput);
+        if (phoneInput && driver.phone) {
+          phoneInput.value = driver.phone;
+        }
       }
       var unitNumberNameInput = document.querySelector(this.selectors.unitNumberNameInput);
       if (unitNumberNameInput) {
-        unitNumberNameInput.value = driver.display_name;
+        var displayName = driver.display_name || '';
+        unitNumberNameInput.value = displayName;
+        if (this.selectors.unitNumberNameInput === '#referer_name') {
+          console.log('DriverAutocomplete: Setting referer_name');
+          console.log('DriverAutocomplete: Selector:', this.selectors.unitNumberNameInput);
+          console.log('DriverAutocomplete: Found element:', unitNumberNameInput);
+          console.log('DriverAutocomplete: Driver display_name:', driver.display_name);
+          console.log('DriverAutocomplete: Setting value to:', displayName);
+          console.log('DriverAutocomplete: Element value after setting:', unitNumberNameInput.value);
+          console.log('DriverAutocomplete: Full driver object:', driver);
+        }
+      } else {
+        if (this.selectors.unitNumberNameInput === '#referer_name') {
+          console.error('DriverAutocomplete: referer_name element not found!');
+          console.error('DriverAutocomplete: Selector:', this.selectors.unitNumberNameInput);
+          console.error('DriverAutocomplete: All selectors:', this.selectors);
+        }
       }
       this.triggerValidation();
     }
@@ -6871,12 +6889,15 @@ var DriverAutocomplete = /*#__PURE__*/function () {
     value: function restoreSelectedDriver() {
       var attachedDriverInput = document.querySelector(this.selectors.attachedDriverInput);
       var unitNumberNameInput = document.querySelector(this.selectors.unitNumberNameInput);
-      var phoneInput = document.querySelector(this.selectors.phoneInput);
-      if (attachedDriverInput && attachedDriverInput.value && unitNumberNameInput && unitNumberNameInput.value && phoneInput && phoneInput.value) {
+      var phoneInput = this.selectors.phoneInput ? document.querySelector(this.selectors.phoneInput) : null;
+      var hasPhone = phoneInput && phoneInput.value;
+      var hasDriverData = attachedDriverInput && attachedDriverInput.value && unitNumberNameInput && unitNumberNameInput.value;
+      var shouldRestore = this.selectors.phoneInput ? hasDriverData && hasPhone : hasDriverData;
+      if (shouldRestore) {
         var driver = {
           driver_id: attachedDriverInput.value,
           display_name: unitNumberNameInput.value,
-          phone: phoneInput.value,
+          phone: phoneInput ? phoneInput.value : '',
           unit_number: attachedDriverInput.value
         };
         this.selectedDriver = driver;
@@ -26765,6 +26786,48 @@ function ready() {
     unitNumberNameInput: 'input[name="third_unit_number_name"]',
     nonceInput: '#third-driver-search-nonce'
   });
+  var sourceSelect = document.querySelector('.js-source');
+  var refererBlock = document.querySelector('.js-referer-block');
+  var refererAutocomplete = null;
+  if (refererBlock) {
+    var wasVisible = refererBlock.style.display !== 'none';
+    if (!wasVisible) {
+      refererBlock.style.display = 'block';
+    }
+    refererAutocomplete = new _components_driver_autocomplete__WEBPACK_IMPORTED_MODULE_43__["default"](urlAjax, {
+      unitInput: '.js-referer-unit-number-input',
+      dropdown: '.js-referer-driver-dropdown',
+      attachedDriverInput: '#referer_by',
+      phoneInput: '',
+      unitNumberNameInput: '#referer_name',
+      nonceInput: '#referer-driver-search-nonce'
+    });
+    if (!wasVisible) {
+      refererBlock.style.display = 'none';
+    }
+  }
+  if (sourceSelect && refererBlock) {
+    if (sourceSelect.value === 'recommendation') {
+      refererBlock.style.display = 'block';
+    }
+    sourceSelect.addEventListener('change', function (e) {
+      var target = e.target;
+      if (target.value === 'recommendation') {
+        refererBlock.style.display = 'block';
+      } else {
+        refererBlock.style.display = 'none';
+        var refererUnitInput = document.querySelector('.js-referer-unit-number-input');
+        var refererByInput = document.getElementById('referer_by');
+        var refererNameInput = document.getElementById('referer_name');
+        if (refererUnitInput) {
+          refererUnitInput.value = '';
+          refererUnitInput.placeholder = 'Enter unit number...';
+        }
+        if (refererByInput) refererByInput.value = '';
+        if (refererNameInput) refererNameInput.value = '';
+      }
+    });
+  }
   initDriverValidation();
   if (document.getElementById('driver-statistics-container')) {
     var driverIdInput = document.querySelector('input[name="driver_id"]');

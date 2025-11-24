@@ -308,8 +308,8 @@ if ( $dispatcher_id > 0 ) {
                                         <label class="form-label">Load Type</label>
                                         <select class="form-select" name="load_type">
                                             <option value="all" <?php selected( $load_type, 'all' ); ?>>All Loads</option>
-                                            <option value="regular" <?php selected( $load_type, 'regular' ); ?>>Regular Only</option>
-                                            <option value="flt" <?php selected( $load_type, 'flt' ); ?>>FLT Only</option>
+                                            <option value="regular" <?php selected( $load_type, 'regular' ); ?>>Expedite</option>
+                                            <option value="flt" <?php selected( $load_type, 'flt' ); ?>>FLT</option>
                                         </select>
                                     </div>
                                 <?php endif; ?>

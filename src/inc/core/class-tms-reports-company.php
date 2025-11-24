@@ -423,6 +423,29 @@ class TMSReportsCompany extends TMSReportsHelper {
 		$user_id    = get_current_user_id();
 		$record_id  = $data[ 'broker_id' ];
 		
+		// Build full address for geocoding
+		$st      = ! empty( $data[ 'Addr1' ] ) ? $data[ 'Addr1' ] . ', ' : '';
+		$city    = ! empty( $data[ 'City' ] ) ? $data[ 'City' ] . ', ' : '';
+		$state   = ! empty( $data[ 'State' ] ) ? $data[ 'State' ] . ' ' : '';
+		$zip     = ! empty( $data[ 'ZipCode' ] ) ? $data[ 'ZipCode' ] : ' ';
+		$country = $data[ 'country' ] !== 'USA' ? ' ' . $data[ 'country' ] : '';
+		$full_address = $st . $city . $state . $zip . $country;
+		
+		// Geocode address
+		$latitude = null;
+		$longitude = null;
+		$timezone = null;
+		if ( ! empty( $full_address ) ) {
+			$coordinates = $this->geocode_address( $full_address, $data[ 'country' ] ?? '' );
+			if ( $coordinates !== false && isset( $coordinates[ 'lat' ] ) && isset( $coordinates[ 'lng' ] ) ) {
+				$latitude = $coordinates[ 'lat' ];
+				$longitude = $coordinates[ 'lng' ];
+				
+				// Get timezone once when address is updated
+				$timezone = $this->get_timezone_by_coordinates( $latitude, $longitude );
+			}
+		}
+		
 		$result = $wpdb->update( $table_name, // Table name
 			array(       // Columns to update
 				'company_name'         => $data[ 'company_name' ],
@@ -438,6 +461,9 @@ class TMSReportsCompany extends TMSReportsHelper {
 				'email'                => $data[ 'Email' ],
 				'mc_number'            => $data[ 'MotorCarrNo' ],
 				'dot_number'           => $data[ 'DotNo' ],
+				'latitude'             => $latitude,
+				'longitude'            => $longitude,
+				'timezone'             => $timezone,
 				'user_id_updated'      => $user_id,
 				'date_updated'         => current_time( 'mysql' ),
 				'set_up'               => $data[ 'set_up' ],
@@ -458,6 +484,8 @@ class TMSReportsCompany extends TMSReportsHelper {
 				'%s',
 				'%s',
 				'%s',
+				'%f',
+				'%f',
 				'%s',
 				'%d',
 				'%s',
@@ -497,11 +525,72 @@ class TMSReportsCompany extends TMSReportsHelper {
 		}
 	}
 	
+	/**
+	 * Geocode address using HERE Maps API
+	 * 
+	 * @param string $address Full address string
+	 * @param string $country Country code
+	 * @return array|false Array with 'lat' and 'lng' or false on error
+	 */
+	private function geocode_address( $address, $country = '' ) {
+		$Drivers = new TMSDrivers();
+		global $global_options;
+		
+		$api_key_here_map = get_field_value( $global_options, 'api_key_here_map' );
+		$geocoder = get_field_value( $global_options, 'use_geocoder' );
+		$url_pelias = get_field_value( $global_options, 'url_pelias' );
+		
+		$options = array(
+			'api_key' => $api_key_here_map,
+			'url_pelias' => $url_pelias,
+			'region_value' => $country
+		);
+		
+		return $Drivers->get_coordinates_by_address( $address, $geocoder, $options );
+	}
+	
+	/**
+	 * Get timezone by coordinates using HERE Time Zone API
+	 * This is called once when address is created/updated to save timezone in DB
+	 * 
+	 * @param float $latitude Latitude coordinate
+	 * @param float $longitude Longitude coordinate
+	 * @param string $date Date string (Y-m-d format) - if empty, uses current date
+	 * @return string Timezone string (e.g., 'PST (UTC-8)' or 'PDT (UTC-7)') or empty string
+	 */
+	public function get_timezone_by_coordinates( $latitude, $longitude, $date = '' ) {
+		$helper = new TMSReportsHelper();
+		return $helper->get_timezone_by_coordinates( $latitude, $longitude, $date );
+	}
+	
 	public function add_company( $data ) {
 		global $wpdb;
 		
 		$table_name = $wpdb->prefix . $this->table_main;
 		$user_id    = get_current_user_id();
+		
+		// Build full address for geocoding
+		$st      = ! empty( $data[ 'Addr1' ] ) ? $data[ 'Addr1' ] . ', ' : '';
+		$city    = ! empty( $data[ 'City' ] ) ? $data[ 'City' ] . ', ' : '';
+		$state   = ! empty( $data[ 'State' ] ) ? $data[ 'State' ] . ' ' : '';
+		$zip     = ! empty( $data[ 'ZipCode' ] ) ? $data[ 'ZipCode' ] : ' ';
+		$country = $data[ 'country' ] !== 'USA' ? ' ' . $data[ 'country' ] : '';
+		$full_address = $st . $city . $state . $zip . $country;
+		
+		// Geocode address
+		$latitude = null;
+		$longitude = null;
+		$timezone = null;
+		if ( ! empty( $full_address ) ) {
+			$coordinates = $this->geocode_address( $full_address, $data[ 'country' ] ?? '' );
+			if ( $coordinates !== false && isset( $coordinates[ 'lat' ] ) && isset( $coordinates[ 'lng' ] ) ) {
+				$latitude = $coordinates[ 'lat' ];
+				$longitude = $coordinates[ 'lng' ];
+				
+				// Get timezone once when address is created
+				$timezone = $this->get_timezone_by_coordinates( $latitude, $longitude );
+			}
+		}
 		
 		$insert_params = array(
 			'company_name'         => $data[ 'company_name' ],
@@ -517,6 +606,9 @@ class TMSReportsCompany extends TMSReportsHelper {
 			'email'                => $data[ 'Email' ],
 			'mc_number'            => $data[ 'MotorCarrNo' ],
 			'dot_number'           => $data[ 'DotNo' ],
+			'latitude'             => $latitude,
+			'longitude'            => $longitude,
+			'timezone'             => $timezone,
 			'user_id_added'        => $user_id,
 			'date_created'         => current_time( 'mysql' ),
 			'user_id_updated'      => $user_id,
@@ -540,6 +632,9 @@ class TMSReportsCompany extends TMSReportsHelper {
 			'%s',  // email
 			'%s',  // mc_number
 			'%s',  // dot_number
+			'%f',  // latitude
+			'%f',  // longitude
+			'%s',  // timezone
 			'%d',  // user_id_added
 			'%s',  // date_created
 			'%d',  // user_id_updated
@@ -874,6 +969,9 @@ class TMSReportsCompany extends TMSReportsHelper {
         email varchar(255) NOT NULL,
         mc_number varchar(50),
         dot_number varchar(50),
+        latitude decimal(10,8) NULL,
+        longitude decimal(11,8) NULL,
+        timezone varchar(50) NULL,
         user_id_added mediumint(9) NOT NULL,
         date_created datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
         user_id_updated mediumint(9) NULL,
@@ -887,7 +985,8 @@ class TMSReportsCompany extends TMSReportsHelper {
         INDEX idx_company_name (company_name),
         INDEX idx_mc_number (mc_number),
         INDEX idx_dot_number (dot_number),
-        INDEX idx_email (email)
+        INDEX idx_email (email),
+        INDEX idx_latitude_longitude (latitude, longitude)
     ) $charset_collate;";
 		dbDelta( $sql );
 		

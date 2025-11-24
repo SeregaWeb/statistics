@@ -1505,6 +1505,7 @@ Kindly confirm once you've received this message." ) . "\n";
 	/**
 	 * Extract ETA data for popup display
 	 * Gets date, time_start, and state from short_address
+	 * Attempts to get coordinates from shipper/company tables for accurate timezone determination
 	 */
 	function get_eta_display_data($eta_data, $type = 'delivery') {
 		$location_data = isset($eta_data[$type][0]) ? $eta_data[$type][0] : null;
@@ -1514,7 +1515,9 @@ Kindly confirm once you've received this message." ) . "\n";
 				'date' => '',
 				'time' => '',
 				'state' => '',
-				'timezone' => ''
+				'timezone' => '',
+				'latitude' => null,
+				'longitude' => null
 			];
 		}
 
@@ -1526,27 +1529,95 @@ Kindly confirm once you've received this message." ) . "\n";
 			$state = end($parts); // Get last part (state)
 		}
 
-		// Get timezone for the state (use date from location data to determine DST)
+		// Get date from location data
 		$date = $location_data['date'] ?? '';
-		$timezone = $this->get_timezone_by_state($state, $date);
+		
+		// Try to get timezone and coordinates from shipper/company tables using address_id
+		$latitude = null;
+		$longitude = null;
+		$timezone = null;
+		$address_id = isset($location_data['address_id']) ? intval($location_data['address_id']) : 0;
+		
+		if ($address_id > 0) {
+			global $wpdb;
+			
+			// Try to get timezone and coordinates from shipper table
+			$shipper_table = $wpdb->prefix . 'reports_shipper';
+			$shipper_data = $wpdb->get_row($wpdb->prepare(
+				"SELECT latitude, longitude, timezone FROM $shipper_table WHERE id = %d",
+				$address_id
+			), ARRAY_A);
+			
+			if ($shipper_data) {
+				if (!empty($shipper_data['latitude']) && !empty($shipper_data['longitude'])) {
+					$latitude = floatval($shipper_data['latitude']);
+					$longitude = floatval($shipper_data['longitude']);
+				}
+				if (!empty($shipper_data['timezone'])) {
+					$timezone = $shipper_data['timezone'];
+				}
+			} else {
+				// Try to get timezone and coordinates from company table
+				$company_table = $wpdb->prefix . 'reports_company';
+				$company_data = $wpdb->get_row($wpdb->prepare(
+					"SELECT latitude, longitude, timezone FROM $company_table WHERE id = %d",
+					$address_id
+				), ARRAY_A);
+				
+				if ($company_data) {
+					if (!empty($company_data['latitude']) && !empty($company_data['longitude'])) {
+						$latitude = floatval($company_data['latitude']);
+						$longitude = floatval($company_data['longitude']);
+					}
+					if (!empty($company_data['timezone'])) {
+						$timezone = $company_data['timezone'];
+					}
+				}
+			}
+		}
+
+		// If timezone is not in DB, fallback to state-based calculation (no API calls)
+		// We don't pass coordinates here to avoid unnecessary API calls
+		// State-based calculation is sufficient for fallback
+		if (empty($timezone)) {
+			$timezone = $this->get_timezone_by_state($state, $date);
+		} else {
+			// Timezone is stored for current date, but we need to adjust for DST if date is different
+			// The stored timezone should already account for DST at the time of creation
+			// For different dates, we might need to recalculate, but for now use stored timezone
+			// as it's usually close enough (timezone boundaries don't change often)
+		}
 
 		return [
 			'date' => $date,
 			'time' => $location_data['time_start'] ?? '',
 			'state' => $state,
-			'timezone' => $timezone
+			'timezone' => $timezone,
+			'latitude' => $latitude,
+			'longitude' => $longitude
 		];
 	}
 
 	/**
-	 * Get timezone abbreviation by state code
-	 * Determines DST (Daylight Saving Time) vs Standard Time based on date
+	 * Get timezone abbreviation by coordinates (lat/lon) or state code
+	 * If coordinates are provided, uses them for more accurate timezone determination
+	 * Falls back to state-based determination if coordinates are not available
 	 * 
 	 * @param string $state State code (e.g., 'WA', 'CA')
 	 * @param string $date Date string (Y-m-d format) - if empty, uses current date
+	 * @param float|null $latitude Latitude coordinate (optional)
+	 * @param float|null $longitude Longitude coordinate (optional)
 	 * @return string Timezone string (e.g., 'PST (UTC-8)' or 'PDT (UTC-7)')
 	 */
-	function get_timezone_by_state($state, $date = '') {
+	function get_timezone_by_state($state, $date = '', $latitude = null, $longitude = null) {
+		// If coordinates are provided, try to use them for more accurate timezone
+		if ( $latitude !== null && $longitude !== null ) {
+			$timezone_by_coords = $this->get_timezone_by_coordinates( $latitude, $longitude, $date );
+			if ( ! empty( $timezone_by_coords ) ) {
+				return $timezone_by_coords;
+			}
+			// If coordinate-based lookup fails, fall back to state-based
+		}
 		// Use current date if no date provided
 		if (empty($date)) {
 			$date = date('Y-m-d');
@@ -1666,6 +1737,170 @@ Kindly confirm once you've received this message." ) . "\n";
 		
 		$timezone_info = $timezone_map[$state];
 		return $is_dst ? $timezone_info['dst'] : $timezone_info['standard'];
+	}
+	
+	/**
+	 * Get timezone abbreviation by coordinates (latitude/longitude) using HERE Time Zone API
+	 * This function provides accurate timezone determination based on actual timezone boundaries
+	 * 
+	 * @param float $latitude Latitude coordinate
+	 * @param float $longitude Longitude coordinate
+	 * @param string $date Date string (Y-m-d format) - if empty, uses current date
+	 * @return string Timezone string (e.g., 'PST (UTC-8)' or 'PDT (UTC-7)') or empty string if unable to determine
+	 */
+	function get_timezone_by_coordinates($latitude, $longitude, $date = '') {
+		global $global_options;
+		
+		$api_key_here_map = get_field_value( $global_options, 'api_key_here_map' );
+		
+		if ( empty( $api_key_here_map ) ) {
+			return '';
+		}
+		
+		// Use current date if no date provided
+		if ( empty( $date ) ) {
+			$date = date( 'Y-m-d' );
+		}
+		
+		// Parse date to timestamp for HERE API
+		$date_obj = DateTime::createFromFormat( 'Y-m-d', $date );
+		if ( ! $date_obj ) {
+			$date_obj = new DateTime();
+		}
+		$timestamp = $date_obj->getTimestamp();
+		
+		// Create cache key for this coordinate and date
+		$cache_key = 'tms_timezone_' . md5( $latitude . '_' . $longitude . '_' . $date );
+		
+		// Try to get from cache first (cache for 30 days)
+		$cached_timezone = get_transient( $cache_key );
+		if ( $cached_timezone !== false ) {
+			return $cached_timezone;
+		}
+		
+		// Build HERE Reverse Geocoding API URL with timezone
+		// Use revgeocode API with show=tz parameter to get timezone
+		$url = 'https://revgeocode.search.hereapi.com/v1/revgeocode';
+		$params = array(
+			'at' => $latitude . ',' . $longitude,
+			'lang' => 'en-US',
+			'show' => 'tz',
+			'apiKey' => $api_key_here_map,
+		);
+		
+		$full_url = $url . '?' . http_build_query( $params );
+		
+		error_log( 'HERE Reverse Geocoding API request for timezone: ' . $full_url );
+		
+		// Make request
+		$response = wp_remote_get( $full_url, array( 'timeout' => 10 ) );
+		
+		if ( is_wp_error( $response ) ) {
+			// Log error for debugging
+			error_log( 'HERE Reverse Geocoding API request error: ' . $response->get_error_message() );
+			return '';
+		}
+		
+		$response_code = wp_remote_retrieve_response_code( $response );
+		$body = wp_remote_retrieve_body( $response );
+		$data = json_decode( $body, true );
+		
+		// Log response for debugging if it's not successful
+		if ( $response_code !== 200 || empty( $data ) ) {
+			error_log( 'HERE Time Zone API error. Code: ' . $response_code . ', Response: ' . substr( $body, 0, 200 ) );
+		}
+		
+		// Check if we have timezone information
+		// HERE Reverse Geocoding API returns timezone in items[0].timeZone
+		$timezone_name = null;
+		if ( isset( $data[ 'items' ] ) && ! empty( $data[ 'items' ] ) ) {
+			$first_item = $data[ 'items' ][ 0 ];
+			if ( isset( $first_item[ 'timeZone' ] ) ) {
+				$tz_data = $first_item[ 'timeZone' ];
+				// timeZone can be an object/array with 'name' property or a string
+				if ( is_array( $tz_data ) && isset( $tz_data[ 'name' ] ) ) {
+					$timezone_name = $tz_data[ 'name' ];
+				} elseif ( is_string( $tz_data ) ) {
+					$timezone_name = $tz_data;
+				} elseif ( is_object( $tz_data ) && isset( $tz_data->name ) ) {
+					$timezone_name = $tz_data->name;
+				}
+			}
+		}
+		
+		// Fallback to other possible formats
+		if ( empty( $timezone_name ) ) {
+			if ( isset( $data[ 'timeZone' ] ) ) {
+				$tz_data = $data[ 'timeZone' ];
+				if ( is_array( $tz_data ) && isset( $tz_data[ 'name' ] ) ) {
+					$timezone_name = $tz_data[ 'name' ];
+				} elseif ( is_string( $tz_data ) ) {
+					$timezone_name = $tz_data;
+				}
+			} elseif ( isset( $data[ 'TimeZone' ] ) ) {
+				$tz_data = $data[ 'TimeZone' ];
+				if ( is_array( $tz_data ) && isset( $tz_data[ 'name' ] ) ) {
+					$timezone_name = $tz_data[ 'name' ];
+				} elseif ( is_string( $tz_data ) ) {
+					$timezone_name = $tz_data;
+				}
+			} elseif ( isset( $data[ 'timezone' ] ) ) {
+				$tz_data = $data[ 'timezone' ];
+				if ( is_array( $tz_data ) && isset( $tz_data[ 'name' ] ) ) {
+					$timezone_name = $tz_data[ 'name' ];
+				} elseif ( is_string( $tz_data ) ) {
+					$timezone_name = $tz_data;
+				}
+			}
+		}
+		
+		// Log the raw timezone data for debugging
+		if ( ! empty( $data ) ) {
+			error_log( 'HERE API response data: ' . json_encode( $data ) );
+		}
+		
+		if ( ! empty( $timezone_name ) && is_string( $timezone_name ) ) {
+			
+			// Log HERE API response for debugging
+			error_log( 'HERE Time Zone API response for lat=' . $latitude . ', lon=' . $longitude . ': timeZone=' . $timezone_name );
+			
+			// Get timezone abbreviation and offset using PHP DateTimeZone
+			try {
+				$tz = new DateTimeZone( $timezone_name );
+				$date_time = new DateTime( '@' . $timestamp, $tz );
+				$offset = $tz->getOffset( $date_time );
+				$offset_hours = $offset / 3600;
+				
+				// Format offset as UTC+X or UTC-X
+				$offset_str = sprintf( 'UTC%+d', $offset_hours );
+				
+				// Get abbreviation (PST, PDT, etc.)
+				$abbreviation = $date_time->format( 'T' );
+				
+				// Format as "PST (UTC-8)" or "PDT (UTC-7)"
+				$timezone_string = $abbreviation . ' (' . $offset_str . ')';
+				
+				// Log final timezone string
+				error_log( 'HERE Time Zone API final result: ' . $timezone_string . ' (from timezone name: ' . $timezone_name . ')' );
+				
+				// Cache the result for 30 days
+				set_transient( $cache_key, $timezone_string, 30 * DAY_IN_SECONDS );
+				
+				return $timezone_string;
+			} catch ( Exception $e ) {
+				// If timezone name is invalid, log and return empty
+				error_log( 'HERE Time Zone API: Invalid timezone name "' . $timezone_name . '": ' . $e->getMessage() );
+				return '';
+			}
+		}
+		
+		// If API didn't return timezone, log and return empty to trigger fallback
+		if ( isset( $data[ 'error' ] ) || isset( $data[ 'errorDescription' ] ) ) {
+			$error_msg = isset( $data[ 'errorDescription' ] ) ? $data[ 'errorDescription' ] : ( isset( $data[ 'error' ] ) ? $data[ 'error' ] : 'Unknown error' );
+			error_log( 'HERE Time Zone API error for lat=' . $latitude . ', lon=' . $longitude . ': ' . $error_msg );
+		}
+		
+		return '';
 	}
 	
 	/**

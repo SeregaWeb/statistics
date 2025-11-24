@@ -185,7 +185,6 @@ if ( ! empty( $results ) ) :
                     $helper = new TMSReportsHelper();
                     $eta_data = $helper->get_eta_data($row);
                     $pickup_data = $helper->get_eta_display_data($eta_data, 'pick_up');
-                    
                     // Get ETA record for display (for all users)
                     $pickup_eta_record = $eta_manager->get_eta_record_for_display($row['id'], 'pickup', $flt, $TMSReports->project);
                     $pickup_button_class = $pickup_eta_record['exists'] ? 'btn-success' : 'btn-outline-primary';
@@ -193,11 +192,14 @@ if ( ! empty( $results ) ) :
                     // Use ETA record data if exists, otherwise use location data
                     $pickup_date = $pickup_eta_record['exists'] ? $pickup_eta_record['date'] : $pickup_data['date'];
                     $pickup_time = $pickup_eta_record['exists'] ? $pickup_eta_record['time'] : $pickup_data['time'];
+            
                     
                     // Recalculate timezone based on ETA date and state (to fix incorrect timezones in DB)
                     // This ensures timezone is correct for the ETA date, accounting for DST
+                    // Use state-based calculation only (no API calls) since timezone is already saved in DB
                     if ($pickup_eta_record['exists'] && $pickup_data['state']) {
                         // Recalculate timezone for ETA date to ensure DST is correct
+                        // Use state only to avoid unnecessary API calls - timezone is already in DB
                         $recalculated_timezone = $helper->get_timezone_by_state($pickup_data['state'], $pickup_date);
                         $pickup_timezone = $recalculated_timezone ?: $pickup_eta_record['timezone'];
                     } else {
@@ -254,9 +256,12 @@ if ( ! empty( $results ) ) :
                     
                     // Recalculate timezone based on ETA date and state (to fix incorrect timezones in DB)
                     // This ensures timezone is correct for the ETA date, accounting for DST
+                    // Use state-based calculation only (no API calls) since timezone is already saved in DB
                     if ($delivery_eta_record['exists'] && $delivery_data['state']) {
                         // Recalculate timezone for ETA date to ensure DST is correct
+                        // Use state only to avoid unnecessary API calls - timezone is already in DB
                         $recalculated_timezone = $helper->get_timezone_by_state($delivery_data['state'], $delivery_date);
+                        
                         $delivery_timezone = $recalculated_timezone ?: $delivery_eta_record['timezone'];
                     } else {
                         $delivery_timezone = $delivery_data['timezone'];
@@ -328,7 +333,7 @@ if ( ! empty( $results ) ) :
                     </div>
                 </td>
 
-                <td width="300">
+                <td width="300" style="max-width: 300px;">
                     <div class="d-flex flex-column gap-1">
                         <div class="d-flex align-items-start gap-1 w-100">
                             <div class="w-100 js-log-wrapper">

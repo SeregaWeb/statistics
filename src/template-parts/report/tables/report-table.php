@@ -164,6 +164,15 @@ if ( ! empty( $results ) ) :
 			$profit_class = $profit_raw < 0 ? 'modified-price' : '';
 			$profit       = esc_html( '$' . $helper->format_currency( $profit_raw ) );
 			
+			// Determine if we should hide zeros based on status
+			$is_tbd = ! empty( $tbd );
+			$is_cancelled = ( $load_status === 'cancelled' );
+			
+			// Check if values are zero
+			$booked_rate_is_zero = ( empty( $booked_rate_raw ) || $booked_rate_raw == '0' || $booked_rate_raw == 0 );
+			$driver_rate_is_zero = ( empty( $driver_rate_raw ) || $driver_rate_raw == '0' || $driver_rate_raw == 0 );
+			$profit_is_zero = ( empty( $profit_raw ) || $profit_raw == '0' || $profit_raw == 0 );
+			
 			$instructions = $helper->get_label_by_key( get_field_value( $meta, 'instructions' ), 'instructions' );
 			$source       = esc_html( $helper->get_label_by_key( get_field_value( $meta, 'source' ), 'sources' ) );
 			
@@ -245,29 +254,45 @@ if ( ! empty( $results ) ) :
 				</div>
 			</td>
                 <td>
-                    <span class="<?php echo $modify_class; ?>"><?php echo $booked_rate; ?></span>
-					<?php if ( ! empty( $miles[ 'booked_rate_per_mile' ] ) ): ?>
-                        <p class="text-small mb-0 mt-1"><?php echo '$' . $miles[ 'booked_rate_per_mile' ] . ' per mile'; ?></p>
+					<?php 
+					// Hide Gross rate if cancelled and value is zero
+					if ( ! ( $is_cancelled && $booked_rate_is_zero ) ): ?>
+                        <span class="<?php echo $modify_class; ?>"><?php echo $booked_rate; ?></span>
+						<?php if ( ! empty( $miles[ 'booked_rate_per_mile' ] ) ): ?>
+                            <p class="text-small mb-0 mt-1"><?php echo '$' . $miles[ 'booked_rate_per_mile' ] . ' per mile'; ?></p>
+						<?php endif; ?>
 					<?php endif; ?>
                 </td>
                 <td>
-                    <span class="<?php echo $modify_driver_price_class; ?>"><?php echo $driver_rate; ?></span>
-					<?php if ( $second_driver_rate !== '$0' && $second_driver_rate_raw ): ?>
-                        <br><br>
-                        <span class="<?php echo $modify_driver_price_class; ?>"><?php echo $second_driver_rate; ?></span>
-					<?php endif; ?>
+					<?php 
+					// Hide Driver rate if (TBD or Cancelled) and value is zero
+					if ( ! ( ( $is_tbd || $is_cancelled ) && $driver_rate_is_zero ) ): ?>
+                        <span class="<?php echo $modify_driver_price_class; ?>"><?php echo $driver_rate; ?></span>
+						<?php if ( $second_driver_rate !== '$0' && $second_driver_rate_raw ): ?>
+                            <br><br>
+                            <span class="<?php echo $modify_driver_price_class; ?>"><?php echo $second_driver_rate; ?></span>
+						<?php endif; ?>
 
-					<?php if ( $third_driver_rate !== '$0' && $third_driver_rate_raw ): ?>
-                        <br><br>
-                        <span class="<?php echo $modify_driver_price_class; ?>"><?php echo $third_driver_rate; ?></span>
-					<?php endif; ?>
-					<br><br>
-					<?php if ( ! empty( $miles[ 'driver_rate_per_mile' ] ) ): ?>
-                        <p class="text-small mb-0 mt-1"><?php echo '$' . $miles[ 'driver_rate_per_mile' ] . ' per mile'; ?></p>
+						<?php if ( $third_driver_rate !== '$0' && $third_driver_rate_raw ): ?>
+                            <br><br>
+                            <span class="<?php echo $modify_driver_price_class; ?>"><?php echo $third_driver_rate; ?></span>
+						<?php endif; ?>
+						<br><br>
+						<?php if ( ! empty( $miles[ 'driver_rate_per_mile' ] ) ): ?>
+                            <p class="text-small mb-0 mt-1"><?php echo '$' . $miles[ 'driver_rate_per_mile' ] . ' per mile'; ?></p>
+						<?php endif; ?>
 					<?php endif; ?>
                 </td>
-                <td><span class="<?php echo $profit_class; ?>">
-					<?php if ( $load_status !== 'waiting-on-rc' ): echo $profit; endif; ?></span></td>
+                <td>
+					<span class="<?php echo $profit_class; ?>">
+						<?php 
+						// Hide Profit if (TBD or Cancelled) and value is zero, or if waiting-on-rc
+						if ( $load_status !== 'waiting-on-rc' && ! ( ( $is_tbd || $is_cancelled ) && $profit_is_zero ) ): 
+							echo $profit; 
+						endif; 
+						?>
+					</span>
+				</td>
                 <td><?php echo is_numeric( $all_miles ) ? $all_miles : ''; ?></td>
                 <td><?php echo $pdlocations[ 'pick_up_date' ]; ?></td>
                 <td class="<?php echo $load_status; ?>"><span><?php echo $status; ?></span></td>

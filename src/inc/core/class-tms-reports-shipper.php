@@ -229,11 +229,87 @@ class TMSReportsShipper extends TMSReportsHelper {
 		}
 	}
 	
+	/**
+	 * Geocode address using HERE Maps API
+	 * 
+	 * @param string $address Full address string
+	 * @param string $country Country code
+	 * @return array|false Array with 'lat' and 'lng' or false on error
+	 */
+	private function geocode_address( $address, $country = '' ) {
+		$Drivers = new TMSDrivers();
+		global $global_options;
+		
+		$api_key_here_map = get_field_value( $global_options, 'api_key_here_map' );
+		$geocoder = get_field_value( $global_options, 'use_geocoder' );
+		$url_pelias = get_field_value( $global_options, 'url_pelias' );
+		
+		$options = array(
+			'api_key' => $api_key_here_map,
+			'url_pelias' => $url_pelias,
+			'region_value' => $country
+		);
+		
+		return $Drivers->get_coordinates_by_address( $address, $geocoder, $options );
+	}
+	
+	/**
+	 * Get timezone by coordinates using HERE Time Zone API
+	 * This is called once when address is created/updated to save timezone in DB
+	 * 
+	 * @param float $latitude Latitude coordinate
+	 * @param float $longitude Longitude coordinate
+	 * @param string $date Date string (Y-m-d format) - if empty, uses current date
+	 * @return string Timezone string (e.g., 'PST (UTC-8)' or 'PDT (UTC-7)') or empty string
+	 */
+	public function get_timezone_by_coordinates( $latitude, $longitude, $date = '' ) {
+		$helper = new TMSReportsHelper();
+		return $helper->get_timezone_by_coordinates( $latitude, $longitude, $date );
+	}
+	
 	public function add_shipper( $data ) {
 		global $wpdb;
 		
 		$table_name = $wpdb->prefix . $this->table_main;
 		$user_id    = get_current_user_id();
+		
+		// Geocode address if full_address is available
+		$latitude = null;
+		$longitude = null;
+		$timezone = null;
+		if ( ! empty( $data[ 'full_address' ] ) ) {
+			$coordinates = $this->geocode_address( $data[ 'full_address' ], $data[ 'country' ] ?? '' );
+			if ( $coordinates !== false && isset( $coordinates[ 'lat' ] ) && isset( $coordinates[ 'lng' ] ) ) {
+				$latitude = $coordinates[ 'lat' ];
+				$longitude = $coordinates[ 'lng' ];
+				
+				// Get timezone once when address is created (makes HERE API request)
+				error_log( 'TMSReportsShipper: Requesting timezone from HERE API for address: ' . $data[ 'full_address' ] . ' (lat: ' . $latitude . ', lon: ' . $longitude . ', state: ' . ( $data[ 'State' ] ?? 'N/A' ) . ')' );
+				$timezone = $this->get_timezone_by_coordinates( $latitude, $longitude );
+				
+				// Log HERE API result
+				if ( ! empty( $timezone ) ) {
+					error_log( 'TMSReportsShipper: Timezone from HERE API: ' . $timezone . ' for address: ' . $data[ 'full_address' ] );
+				} else {
+					error_log( 'TMSReportsShipper: HERE API did not return timezone for address: ' . $data[ 'full_address' ] . ' (lat: ' . $latitude . ', lon: ' . $longitude . ')' );
+				}
+				
+				// Fallback to state-based timezone if HERE API fails (no API call, uses state only)
+				// Pass coordinates to get_timezone_by_state for accurate timezone determination (e.g., Nebraska split)
+				if ( empty( $timezone ) && ! empty( $data[ 'State' ] ) ) {
+					$helper = new TMSReportsHelper();
+					$timezone = $helper->get_timezone_by_state( $data[ 'State' ], date( 'Y-m-d' ), $latitude, $longitude );
+					if ( ! empty( $timezone ) ) {
+						error_log( 'TMSReportsShipper: Using fallback state-based timezone: ' . $timezone . ' for state: ' . $data[ 'State' ] );
+					}
+				}
+				
+				// Log if timezone lookup failed completely
+				if ( empty( $timezone ) ) {
+					error_log( 'TMSReportsShipper: Timezone lookup failed completely for address: ' . $data[ 'full_address' ] . ' (lat: ' . $latitude . ', lon: ' . $longitude . ', state: ' . ( $data[ 'State' ] ?? 'N/A' ) . ')' );
+				}
+			}
+		}
 		
 		$insert_params = array(
 			'shipper_name'       => $data[ 'shipper_name' ],
@@ -252,10 +328,13 @@ class TMSReportsShipper extends TMSReportsHelper {
 			'user_id_updated'    => $user_id,
 			'date_updated'       => current_time( 'mysql' ),
 			'full_address'       => $data[ 'full_address' ],
+			'latitude'           => $latitude,
+			'longitude'          => $longitude,
+			'timezone'           => $timezone,
 		);
 		
 		$result = $wpdb->insert( $table_name, $insert_params, array(
-			'%s',  // company_name
+			'%s',  // shipper_name
 			'%s',  // country
 			'%s',  // address1
 			'%s',  // address2
@@ -271,6 +350,9 @@ class TMSReportsShipper extends TMSReportsHelper {
 			'%d',  // user_id_updated
 			'%s',  // date_updated
 			'%s',  // full_address
+			'%f',  // latitude
+			'%f',  // longitude
+			'%s',  // timezone
 		) );
 		
 		// Check if the insert was successful
@@ -299,6 +381,32 @@ class TMSReportsShipper extends TMSReportsHelper {
 		$user_id    = get_current_user_id();
 		$shipper_id = $data[ 'shipper_id' ];
 		
+		// Geocode address if full_address is available
+		$latitude = null;
+		$longitude = null;
+		$timezone = null;
+		if ( ! empty( $data[ 'full_address' ] ) ) {
+			$coordinates = $this->geocode_address( $data[ 'full_address' ], $data[ 'country' ] ?? '' );
+			if ( $coordinates !== false && isset( $coordinates[ 'lat' ] ) && isset( $coordinates[ 'lng' ] ) ) {
+				$latitude = $coordinates[ 'lat' ];
+				$longitude = $coordinates[ 'lng' ];
+				
+				// Get timezone once when address is updated
+				$timezone = $this->get_timezone_by_coordinates( $latitude, $longitude );
+				
+				// Fallback to state-based timezone if HERE API fails
+				if ( empty( $timezone ) && ! empty( $data[ 'State' ] ) ) {
+					$helper = new TMSReportsHelper();
+					$timezone = $helper->get_timezone_by_state( $data[ 'State' ], date( 'Y-m-d' ) );
+				}
+				
+				// Log if timezone lookup failed completely
+				if ( empty( $timezone ) ) {
+					error_log( 'TMSReportsShipper: Timezone lookup failed for address: ' . $data[ 'full_address' ] . ' (lat: ' . $latitude . ', lon: ' . $longitude . ')' );
+				}
+			}
+		}
+		
 		$update_params = array(
 			'shipper_name'       => $data[ 'shipper_name' ],
 			'country'            => $data[ 'country' ],
@@ -314,6 +422,9 @@ class TMSReportsShipper extends TMSReportsHelper {
 			'user_id_updated'    => $user_id,
 			'date_updated'       => current_time( 'mysql' ),
 			'full_address'       => $data[ 'full_address' ],
+			'latitude'           => $latitude,
+			'longitude'          => $longitude,
+			'timezone'           => $timezone,
 		);
 		
 		$where = array(
@@ -335,6 +446,9 @@ class TMSReportsShipper extends TMSReportsHelper {
 			'%d', // user_id_updated
 			'%s', // date_updated
 			'%s', // full_address
+			'%f', // latitude
+			'%f', // longitude
+			'%s', // timezone
 		), array( '%d' ) // Data type for the 'id' column in the WHERE clause
 		);
 		
@@ -377,6 +491,9 @@ class TMSReportsShipper extends TMSReportsHelper {
         phone_number varchar(20),
         email varchar(255),
         full_address varchar(255),
+        latitude decimal(10,8) NULL,
+        longitude decimal(11,8) NULL,
+        timezone varchar(50) NULL,
         user_id_added mediumint(9) NOT NULL,
         date_created datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
         user_id_updated mediumint(9) NULL,
@@ -386,7 +503,8 @@ class TMSReportsShipper extends TMSReportsHelper {
         INDEX idx_full_address (full_address),
         INDEX idx_shipper_name (shipper_name),
         INDEX idx_email (email),
-        INDEX idx_phone_number (phone_number)
+        INDEX idx_phone_number (phone_number),
+        INDEX idx_latitude_longitude (latitude, longitude)
     ) $charset_collate;";
 		
 		dbDelta( $sql );

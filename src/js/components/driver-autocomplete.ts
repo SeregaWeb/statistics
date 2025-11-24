@@ -244,16 +244,37 @@ class DriverAutocomplete {
             unitInput.placeholder = `Selected: ${driver.display_name}`;
         }
 
-        // Update phone field
-        const phoneInput = document.querySelector(this.selectors.phoneInput) as HTMLInputElement;
-        if (phoneInput && driver.phone) {
-            phoneInput.value = driver.phone;
+        // Update phone field (only if phoneInput selector is provided)
+        if (this.selectors.phoneInput) {
+            const phoneInput = document.querySelector(this.selectors.phoneInput) as HTMLInputElement;
+            if (phoneInput && driver.phone) {
+                phoneInput.value = driver.phone;
+            }
         }
 
         // Update unit_number_name field
         const unitNumberNameInput = document.querySelector(this.selectors.unitNumberNameInput) as HTMLInputElement;
         if (unitNumberNameInput) {
-            unitNumberNameInput.value = driver.display_name;
+            const displayName = driver.display_name || '';
+            unitNumberNameInput.value = displayName;
+            
+            // Debug log for referer fields
+            if (this.selectors.unitNumberNameInput === '#referer_name') {
+                console.log('DriverAutocomplete: Setting referer_name');
+                console.log('DriverAutocomplete: Selector:', this.selectors.unitNumberNameInput);
+                console.log('DriverAutocomplete: Found element:', unitNumberNameInput);
+                console.log('DriverAutocomplete: Driver display_name:', driver.display_name);
+                console.log('DriverAutocomplete: Setting value to:', displayName);
+                console.log('DriverAutocomplete: Element value after setting:', unitNumberNameInput.value);
+                console.log('DriverAutocomplete: Full driver object:', driver);
+            }
+        } else {
+            // Debug if element not found
+            if (this.selectors.unitNumberNameInput === '#referer_name') {
+                console.error('DriverAutocomplete: referer_name element not found!');
+                console.error('DriverAutocomplete: Selector:', this.selectors.unitNumberNameInput);
+                console.error('DriverAutocomplete: All selectors:', this.selectors);
+            }
         }
 
         // Trigger validation event
@@ -295,17 +316,25 @@ class DriverAutocomplete {
         // Check if there's already a selected driver from hidden fields
         const attachedDriverInput = document.querySelector(this.selectors.attachedDriverInput) as HTMLInputElement;
         const unitNumberNameInput = document.querySelector(this.selectors.unitNumberNameInput) as HTMLInputElement;
-        const phoneInput = document.querySelector(this.selectors.phoneInput) as HTMLInputElement;
+        const phoneInput = this.selectors.phoneInput ? document.querySelector(this.selectors.phoneInput) as HTMLInputElement : null;
 
-        if (attachedDriverInput && attachedDriverInput.value && 
-            unitNumberNameInput && unitNumberNameInput.value &&
-            phoneInput && phoneInput.value) {
-            
+        // For referer field, phoneInput might be empty, so we only require attachedDriverInput and unitNumberNameInput
+        const hasPhone = phoneInput && phoneInput.value;
+        const hasDriverData = attachedDriverInput && attachedDriverInput.value && 
+            unitNumberNameInput && unitNumberNameInput.value;
+        
+        // If phone is required (not empty selector), both driver data and phone must exist
+        // If phone is optional (empty selector), only driver data is required
+        const shouldRestore = this.selectors.phoneInput 
+            ? (hasDriverData && hasPhone)
+            : hasDriverData;
+
+        if (shouldRestore) {
             // Reconstruct driver object from existing data
             const driver = {
                 driver_id: attachedDriverInput.value,
                 display_name: unitNumberNameInput.value,
-                phone: phoneInput.value,
+                phone: phoneInput ? phoneInput.value : '',
                 unit_number: attachedDriverInput.value
             };
 

@@ -56,6 +56,8 @@ $cross_border               = get_field_value( $meta, 'cross_border' );
 $source                     = get_field_value( $meta, 'source' );
 $recruiter_add              = get_field_value( $meta, 'recruiter_add' );
 $show_phone                 = get_field_value( $meta, 'show_phone' );
+$referer_by                 = get_field_value( $meta, 'referer_by' );
+$referer_name               = get_field_value( $meta, 'referer_name' );
 
 $interview_file            = get_field_value( $meta, 'interview_file' );
 $interview_file_arr        = $driver->process_file_attachment( $interview_file );
@@ -490,6 +492,46 @@ $access_vehicle = $TMSUsers->check_user_role_access( [
                     </div>
                     <?php endif; ?>
             </div>
+
+                            <!-- Referer block - shown when source is "recommendation" -->
+                            <div class="col-12 mb-3 js-referer-block" style="display: <?php echo $source === 'recommendation' ? 'block' : 'none'; ?>;">
+                    <div class="row">
+                    <div class="col-12">
+                        <p class="h5">Referer</p>
+                    </div>
+                    <div class="col-12 col-md-6 col-xl-4 mb-3">
+                            
+                            <label for="referer_unit_number" class="form-label">Unit Number</label>
+                            <div class="position-relative">
+                                <input type="text" id="referer_unit_number" name="referer_unit_number" 
+                                       value="<?php echo !empty($referer_name) && preg_match('/^\((\d+)\)/', $referer_name, $matches) ? $matches[1] : ''; ?>" 
+                                       class="form-control js-referer-unit-number-input" 
+                                       placeholder="Enter unit number..." autocomplete="off">
+                                <div class="js-referer-driver-dropdown dropdown-menu w-100" style="display: none; max-height: 200px; overflow-y: auto; position: absolute; top: 100%; left: 0; z-index: 1000; background: white; border: 1px solid #ccc; border-radius: 4px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                                    <!-- Driver options will be populated here -->
+                                </div>
+                            </div>
+                            
+                            <!-- Hidden fields -->
+                            <input type="hidden" name="referer_by" id="referer_by" value="<?php echo $referer_by; ?>">
+                            <input type="hidden" name="referer_name" id="referer_name" value="<?php echo $referer_name; ?>">
+                            <input type="hidden" name="old_referer_name" value="<?php echo $referer_name; ?>">
+                            <input type="hidden" id="referer-driver-search-nonce" value="<?php echo wp_create_nonce('driver_search_nonce'); ?>">
+                        </div>
+                    </div>
+                    
+                    <style>
+                        .js-referer-driver-dropdown .dropdown-item {
+                            padding: 8px 12px;
+                            cursor: pointer;
+                            border-bottom: 1px solid #eee;
+                        }
+                        .js-referer-driver-dropdown .dropdown-item:hover,
+                        .js-referer-driver-dropdown .dropdown-item.active {
+                            background-color: #f8f9fa;
+                        }
+                    </style>
+                </div>
 
                 <div class="col-12 mb-3">
                     <div class="form-check form-switch">

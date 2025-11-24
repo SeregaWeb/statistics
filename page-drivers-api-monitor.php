@@ -72,6 +72,10 @@ $access = true;
                                                     <br><small class="text-muted">Update driver data (current_location, contact, vehicle)</small>
                                                 </li>
                                                 <li class="list-group-item">
+                                                    <strong>POST</strong> <?php echo home_url('/wp-json/tms/v1/driver/location/update?driver_id={driver_id}&user_id={user_id}'); ?>
+                                                    <br><small class="text-muted">Update driver location only (coordinates, city, state, zipcode, status)</small>
+                                                </li>
+                                                <li class="list-group-item">
                                                     <strong>GET</strong> <?php echo home_url('/wp-json/tms/v1/driver/loads?driver_id={driver_id}&project={project}&is_flt={is_flt}&page={page}&per_page={per_page}'); ?>
                                                     <br><small class="text-muted">Get driver loads with pagination (default: 20 per page)</small>
                                                 </li>
@@ -372,6 +376,113 @@ curl -X POST \
                                                         </div>
                                                         <button type="button" class="btn btn-warning btn-sm" onclick="testDriverUpdateAPI()">Test Update</button>
                                                         <div id="api-test-result-driver-update" class="mt-3"></div>
+                                                    </div>
+                                                </div>
+                                                
+                                                <!-- Driver Location Update API Section -->
+                                                <div class="card mb-4">
+                                                    <div class="card-header">
+                                                        <h5 class="mb-0">Driver Location Update API - Update Driver Location Only</h5>
+                                                    </div>
+                                                    <div class="card-body">
+                                                        <p><strong>Request:</strong></p>
+                                                        <pre class="bg-light p-3 rounded" style="word-wrap: break-word; overflow-x: auto; white-space: pre-wrap;">
+curl -X POST \
+  "<?php echo home_url('/wp-json/tms/v1/driver/location/update?driver_id=1234&user_id=1'); ?>" \
+  -H "X-API-Key: tms_api_key_2024_driver_access" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "driver_status": "available",
+    "status_date": "01/15/2024 10:30 AM",
+    "current_location": "NY",
+    "current_city": "New York",
+    "current_zipcode": "10001",
+    "latitude": "40.7128",
+    "longitude": "-74.0060",
+    "country": "USA",
+    "current_country": "USA",
+    "notes": "Driver is available for new loads"
+  }'
+                                                        </pre>
+                                                        
+                                                        <p><strong>Example Response:</strong></p>
+                                                        <pre class="bg-light p-3 rounded" style="word-wrap: break-word; overflow-x: auto; white-space: pre-wrap;">
+{
+  "success": true,
+  "message": "Driver location updated successfully",
+  "driver_id": 1234,
+  "data": {
+    "driver_id": 1234,
+    "driver_status": "available",
+    "status_date": "01/15/2024 10:30 AM",
+    "current_location": "NY",
+    "current_city": "New York",
+    "current_zipcode": "10001",
+    "latitude": "40.7128",
+    "longitude": "-74.0060",
+    "country": "USA",
+    "current_country": "USA",
+    "notes": "Driver is available for new loads",
+    "last_user_update": "Last update: John Doe - 01/15/2024 10:30 AM"
+  },
+  "updated_driver": {
+    "id": 1234,
+    "driver_name": "John Doe",
+    "driver_status": "available",
+    "current_location": "New York, NY",
+    ...
+  },
+  "timestamp": "2024-01-15 10:30:00",
+  "api_version": "1.0"
+}
+                                                        </pre>
+                                                        
+                                                        <p><strong>Required Fields:</strong></p>
+                                                        <ul>
+                                                            <li><code>driver_id</code> (query parameter) - Driver ID</li>
+                                                            <li><code>user_id</code> (query parameter) - User ID for logging</li>
+                                                            <li><code>latitude</code> (body) - Latitude coordinate (required)</li>
+                                                            <li><code>longitude</code> (body) - Longitude coordinate (required)</li>
+                                                        </ul>
+                                                        
+                                                        <p><strong>Optional Fields:</strong></p>
+                                                        <ul>
+                                                            <li><code>driver_status</code> - Driver status (e.g., "available", "loaded_enroute")</li>
+                                                            <li><code>status_date</code> - Status date in format "m/d/Y g:i a"</li>
+                                                            <li><code>current_location</code> - State abbreviation (e.g., "NY", "CA")</li>
+                                                            <li><code>current_city</code> - City name</li>
+                                                            <li><code>current_zipcode</code> - ZIP code</li>
+                                                            <li><code>country</code> - Country name</li>
+                                                            <li><code>current_country</code> - Current country</li>
+                                                            <li><code>notes</code> - Additional notes</li>
+                                                        </ul>
+                                                        
+                                                        <p><strong>Test Driver Location Update API:</strong></p>
+                                                        <div class="form-group mb-3">
+                                                            <label for="test-driver-id-location">Driver ID:</label>
+                                                            <input type="number" class="form-control" id="test-driver-id-location" placeholder="Enter driver ID" value="3343">
+                                                        </div>
+                                                        <div class="form-group mb-3">
+                                                            <label for="test-user-id-location">User ID:</label>
+                                                            <input type="number" class="form-control" id="test-user-id-location" placeholder="Enter user ID for logging" value="1">
+                                                        </div>
+                                                        <div class="form-group mb-3">
+                                                            <label for="test-location-data">Location Data (JSON):</label>
+                                                            <textarea class="form-control" id="test-location-data" rows="12" placeholder="Enter JSON data for location update">{
+    "driver_status": "available",
+    "status_date": "01/15/2024 10:30 AM",
+    "current_location": "NY",
+    "current_city": "New York",
+    "current_zipcode": "10001",
+    "latitude": "40.7128",
+    "longitude": "-74.0060",
+    "country": "USA",
+    "current_country": "USA",
+    "notes": "Driver location updated via API"
+}</textarea>
+                                                        </div>
+                                                        <button type="button" class="btn btn-warning btn-sm" onclick="testDriverLocationUpdateAPI()">Test Location Update</button>
+                                                        <div id="api-test-result-driver-location" class="mt-3"></div>
                                                     </div>
                                                 </div>
                                                 
@@ -909,6 +1020,69 @@ curl -X GET \
                                 })
                                 .catch(error => {
                                     resultDiv.innerHTML = '<div class="alert alert-danger"><h6>Drivers List API Error:</h6><pre style="word-wrap: break-word; overflow-x: auto; white-space: pre-wrap;">' + error.message + '</pre></div>';
+                                });
+                            }
+                            
+                            function testDriverLocationUpdateAPI() {
+                                const resultDiv = document.getElementById('api-test-result-driver-location');
+                                const driverId = document.getElementById('test-driver-id-location').value;
+                                const userId = document.getElementById('test-user-id-location').value;
+                                const locationData = document.getElementById('test-location-data').value;
+                                
+                                if (!driverId) {
+                                    resultDiv.innerHTML = '<div class="alert alert-warning">Please enter a driver ID</div>';
+                                    return;
+                                }
+                                
+                                if (!userId) {
+                                    resultDiv.innerHTML = '<div class="alert alert-warning">Please enter a user ID</div>';
+                                    return;
+                                }
+                                
+                                if (!locationData) {
+                                    resultDiv.innerHTML = '<div class="alert alert-warning">Please enter location data</div>';
+                                    return;
+                                }
+                                
+                                let jsonData;
+                                try {
+                                    jsonData = JSON.parse(locationData);
+                                } catch (e) {
+                                    resultDiv.innerHTML = '<div class="alert alert-warning">Invalid JSON format in location data</div>';
+                                    return;
+                                }
+                                
+                                // Validate required fields
+                                if (!jsonData.latitude || !jsonData.longitude) {
+                                    resultDiv.innerHTML = '<div class="alert alert-warning">Latitude and longitude are required</div>';
+                                    return;
+                                }
+                                
+                                resultDiv.innerHTML = '<div class="alert alert-info">Testing Driver Location Update API for driver ID: ' + driverId + ', user ID: ' + userId + '...</div>';
+                                
+                                const url = '<?php echo home_url('/wp-json/tms/v1/driver/location/update?driver_id='); ?>' + driverId + '&user_id=' + userId;
+                                
+                                fetch(url, {
+                                    method: 'POST',
+                                    headers: {
+                                        'X-API-Key': 'tms_api_key_2024_driver_access',
+                                        'Content-Type': 'application/json'
+                                    },
+                                    body: JSON.stringify(jsonData)
+                                })
+                                .then(response => {
+                                    if (!response.ok) {
+                                        return response.json().then(err => {
+                                            throw new Error(err.message || `HTTP error! status: ${response.status}`);
+                                        });
+                                    }
+                                    return response.json();
+                                })
+                                .then(data => {
+                                    resultDiv.innerHTML = '<div class="alert alert-success"><h6>Driver Location Update API Response:</h6><pre style="word-wrap: break-word; overflow-x: auto; white-space: pre-wrap;">' + JSON.stringify(data, null, 2) + '</pre></div>';
+                                })
+                                .catch(error => {
+                                    resultDiv.innerHTML = '<div class="alert alert-danger"><h6>API Error:</h6><pre style="word-wrap: break-word; overflow-x: auto; white-space: pre-wrap;">' + error.message + '</pre></div>';
                                 });
                             }
                             

@@ -19,9 +19,13 @@ define( 'TEMPLATE_PATH', 'src/template-parts/report/' );
 require THEME_DIR . '/src/inc/class-wp-rock.php';
 require 'vendor/autoload.php';
 
+// Core classes that admin tools depend on
+require THEME_DIR . '/src/inc/core/class-tms-geocode-addresses.php';
+
 // Admin tools (temporary)
 if (is_admin()) {
     require THEME_DIR . '/src/inc/admin/class-fix-driver-data.php';
+    require THEME_DIR . '/src/inc/admin/class-geocode-addresses-admin.php';
 }
 
 use Mpdf\Mpdf;
@@ -52,6 +56,7 @@ require THEME_DIR . '/src/inc/admin/user-sync-admin.php';
 require THEME_DIR . '/src/inc/core/class-tms-contacts.php';
 require THEME_DIR . '/src/inc/cron/driver-status-cron.php';
 require THEME_DIR . '/src/inc/cron/driver-rating-block-cron.php';
+require THEME_DIR . '/src/inc/cron/geocode-addresses-cron.php';
 require THEME_DIR . '/src/inc/core/class-tms-timer-logs.php';
 require THEME_DIR . '/src/inc/core/class-tms-reports-timer.php';
 require THEME_DIR . '/src/inc/core/class-tms-eta.php';

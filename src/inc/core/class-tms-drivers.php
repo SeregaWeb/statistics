@@ -237,7 +237,7 @@ class TMSDrivers extends TMSDriversHelper {
 				'country'          => $MY_INPUT[ 'country' ] ?? '',
 				'current_country'  => $MY_INPUT[ 'current_country' ] ?? '',
 			];
-			
+
 			// Добавляем notes только если они переданы в запросе
 			if ( isset( $MY_INPUT[ 'notes' ] ) ) {
 				$update_data[ 'notes' ] = $MY_INPUT[ 'notes' ];
@@ -258,12 +258,22 @@ class TMSDrivers extends TMSDriversHelper {
 			
 			$update_data[ 'last_user_update' ] = 'Last update: ' . $name_user[ 'full_name' ] . ' - ' . $formatted_time;
 			
+			// Debug: log what we're trying to update
+			error_log( 'TMSDrivers update_location_driver - Update data: ' . print_r( $update_data, true ) );
+			
 			// Обновляем данные водителя
 			$result = $this->update_driver_in_db( $update_data );
 			
 			if ( $result ) {
+				// Clear any caches before getting updated data
+				$this->clear_drivers_cache();
+				
 				// Get updated driver data
 				$updated_driver_data = $this->get_driver_data_for_table_row( $driver_id );
+				
+				// Debug: log what we got back
+				error_log( 'TMSDrivers update_location_driver - Updated driver data: ' . print_r( $updated_driver_data, true ) );
+				error_log( 'TMSDrivers update_location_driver - current_zipcode in response: ' . ( $updated_driver_data['current_zipcode'] ?? 'NOT SET' ) );
 				
 				wp_send_json_success( [
 					'message'        => 'Driver location updated successfully',
@@ -1432,7 +1442,6 @@ class TMSDrivers extends TMSDriversHelper {
 					} else {
 						// Check if the search term is a driver status and convert to key if found
 						$status_key = $this->searchStatusKey( $search_term, $this->status );
-						
 						if ( $status_key !== null ) {
 							// Search by status key in driver_status field
 							$where_conditions[] = "driver_status.meta_value = %s";
@@ -1941,19 +1950,59 @@ class TMSDrivers extends TMSDriversHelper {
 				return new WP_Error( 'invalid_field', 'Invalid field name.' );
 			}
 			
-			// Обновляем запись в таблице мета-данных
-			$result = $wpdb->update( $table_meta_name, array( 'meta_value' => $new_value ), array(
-				'post_id'  => $post_id,
-				'meta_key' => $image_field
-			), array( '%s' ),       // Формат для meta_value
-				array( '%d', '%s' ) // Форматы для post_id и meta_key
-			);
-			
-			// Удаляем вложение из медиа библиотеки
-			$deleted = wp_delete_attachment( $image_id, true );
-			
-			if ( ! $deleted ) {
-				return new WP_Error( 'delete_failed', 'Failed to delete the attachment.' );
+			// Special handling for payment_file - save to old_payment_file and don't delete physically
+			if ( $image_field === 'payment_file' ) {
+				// Save current value to old_payment_file
+				$old_payment_exists = $wpdb->get_var( $wpdb->prepare( "
+					SELECT id FROM $table_meta_name
+					WHERE post_id = %d AND meta_key = 'old_payment_file'
+				", $post_id ) );
+				
+				if ( $old_payment_exists ) {
+					// Update existing old_payment_file
+					$wpdb->update( $table_meta_name, 
+						array( 'meta_value' => $current_value ), 
+						array( 'post_id' => $post_id, 'meta_key' => 'old_payment_file' ),
+						array( '%s' ),
+						array( '%d', '%s' )
+					);
+				} else {
+					// Insert new old_payment_file
+					$wpdb->insert( $table_meta_name, 
+						array( 
+							'post_id' => $post_id,
+							'meta_key' => 'old_payment_file',
+							'meta_value' => $current_value
+						),
+						array( '%d', '%s', '%s' )
+					);
+				}
+				
+				// Update payment_file to empty string
+				$result = $wpdb->update( $table_meta_name, array( 'meta_value' => $new_value ), array(
+					'post_id'  => $post_id,
+					'meta_key' => $image_field
+				), array( '%s' ),       // Формат для meta_value
+					array( '%d', '%s' ) // Форматы для post_id и meta_key
+				);
+				
+				// Skip physical file deletion for payment_file
+				$deleted = true; // Set to true to skip the error check
+			} else {
+				// Обновляем запись в таблице мета-данных
+				$result = $wpdb->update( $table_meta_name, array( 'meta_value' => $new_value ), array(
+					'post_id'  => $post_id,
+					'meta_key' => $image_field
+				), array( '%s' ),       // Формат для meta_value
+					array( '%d', '%s' ) // Форматы для post_id и meta_key
+				);
+				
+				// Удаляем вложение из медиа библиотеки
+				$deleted = wp_delete_attachment( $image_id, true );
+				
+				if ( ! $deleted ) {
+					return new WP_Error( 'delete_failed', 'Failed to delete the attachment.' );
+				}
 			}
 			
 			// Проверяем результат обновления в базе данных
@@ -2591,6 +2640,47 @@ class TMSDrivers extends TMSDriversHelper {
 				$changes = $this->get_log_template( $array_track, $meta, $data );
 			}
 			
+			// Handle account_name change - save to old_account_name only if value actually changed
+			if ( isset( $data[ 'account_name' ] ) && ! empty( $data[ 'account_name' ] ) ) {
+				$current_account_name = get_field_value( $meta, 'account_name' );
+				
+				// Only save to old_account_name if value actually changed
+				if ( ! empty( $current_account_name ) && $current_account_name !== $data[ 'account_name' ] ) {
+					global $wpdb;
+					$table_meta_name = $wpdb->prefix . $this->table_meta;
+					
+					// Check if old_account_name exists
+					$old_exists = $wpdb->get_var( $wpdb->prepare( "
+						SELECT id FROM $table_meta_name
+						WHERE post_id = %d AND meta_key = 'old_account_name'
+					", $data[ 'driver_id' ] ) );
+					
+					if ( $old_exists ) {
+						// Update existing old_account_name with current value before it changes
+						$wpdb->update( $table_meta_name, 
+							array( 'meta_value' => $current_account_name ), 
+							array( 'post_id' => $data[ 'driver_id' ], 'meta_key' => 'old_account_name' ),
+							array( '%s' ),
+							array( '%d', '%s' )
+						);
+					} else {
+						// Insert new old_account_name with current value before it changes
+						$wpdb->insert( $table_meta_name, 
+							array( 
+								'post_id' => $data[ 'driver_id' ],
+								'meta_key' => 'old_account_name',
+								'meta_value' => $current_account_name
+							),
+							array( '%d', '%s', '%s' )
+						);
+					}
+					
+					// Check if we can send email (both old_payment_file and old_account_name are filled)
+					// Pass new account_name value so it's used in email instead of old value from DB
+					$this->send_payment_file_update_email( $data[ 'driver_id' ], $data[ 'account_name' ] );
+				}
+			}
+			
 			if ( $data[ 'w9_classification' ] === 'business' ) {
 				if ( empty( $data[ 'entity_name' ] ) ) {
 					wp_send_json_error( [ 'message' => 'Please fill in the entity name.' ] );
@@ -3139,6 +3229,54 @@ class TMSDrivers extends TMSDriversHelper {
 					$id_uploaded       = $this->upload_one_file( $_FILES[ $key_name ], $key_name );
 					$data[ $key_name ] = is_numeric( $id_uploaded ) ? $id_uploaded : '';
 					
+					// Special handling for payment_file - save current file to old_payment_file before updating
+					if ( $key_name === 'payment_file' && is_numeric( $id_uploaded ) ) {
+						$driver_object = $this->get_driver_by_id( $data[ 'driver_id' ] );
+						$meta          = get_field_value( $driver_object, 'meta' );
+						$current_payment_file = get_field_value( $meta, 'payment_file' );
+						
+						// Always save current payment_file to old_payment_file before updating (if current exists)
+						if ( ! empty( $current_payment_file ) ) {
+							global $wpdb;
+							$table_meta_name = $wpdb->prefix . $this->table_meta;
+							
+							// If there's an existing old_payment_file, delete it first (it was already processed or email was sent)
+							$existing_old = $wpdb->get_var( $wpdb->prepare( "
+								SELECT meta_value FROM $table_meta_name
+								WHERE post_id = %d AND meta_key = 'old_payment_file'
+							", $data[ 'driver_id' ] ) );
+							
+							if ( ! empty( $existing_old ) && is_numeric( $existing_old ) && $existing_old != $current_payment_file ) {
+								// Delete the old file from media library if it's different from current
+								wp_delete_attachment( $existing_old, true );
+							}
+							
+							// Update or insert old_payment_file with current value
+							$old_exists = $wpdb->get_var( $wpdb->prepare( "
+								SELECT id FROM $table_meta_name
+								WHERE post_id = %d AND meta_key = 'old_payment_file'
+							", $data[ 'driver_id' ] ) );
+							
+							if ( $old_exists ) {
+								$wpdb->update( $table_meta_name, 
+									array( 'meta_value' => $current_payment_file ), 
+									array( 'post_id' => $data[ 'driver_id' ], 'meta_key' => 'old_payment_file' ),
+									array( '%s' ),
+									array( '%d', '%s' )
+								);
+							} else {
+								$wpdb->insert( $table_meta_name, 
+									array( 
+										'post_id' => $data[ 'driver_id' ],
+										'meta_key' => 'old_payment_file',
+										'meta_value' => $current_payment_file
+									),
+									array( '%d', '%s', '%s' )
+								);
+							}
+						}
+					}
+					
 					if ( $post_status === 'publish' ) {
 						if ( $key_name == 'gvwr_placard' ) {
 							$changes .= '<strong>Uploaded GVWR placard </strong><br><br>';
@@ -3163,6 +3301,10 @@ class TMSDrivers extends TMSDriversHelper {
 						'post_type' => 'driver',
 					) );
 				}
+
+				// Send email notification about payment file update
+				$this->send_payment_file_update_email( $data[ 'driver_id' ] );
+
 				wp_send_json_success( [ 'message' => 'successfully upload', 'id_driver' => $result ] );
 			}
 			
@@ -3509,6 +3651,7 @@ class TMSDrivers extends TMSDriversHelper {
 		$reports_flt_table = $wpdb->prefix . 'reports_flt_' . strtolower( $current_project );
 		$reports_flt_meta_table = $wpdb->prefix . 'reportsmeta_flt_' . strtolower( $current_project );
 		$rating_table = $wpdb->prefix . $this->table_raiting;
+		$drivers_table = $wpdb->prefix . $this->table_main;
 		
 		// Get all dispatchers with roles: dispatcher, dispatcher-tl, expedite_manager
 		$all_dispatchers = get_users( array(
@@ -3557,6 +3700,10 @@ class TMSDrivers extends TMSDriversHelper {
 			// Count total loads for this dispatcher in the selected month/year
 			$total_loads = 0;
 			
+			$drivers_meta_table = $wpdb->prefix . $this->table_meta;
+			$restricted_statuses = array( 'no_Interview', 'expired_documents', 'blocked' );
+			$restricted_statuses_placeholders = implode( ',', array_fill( 0, count( $restricted_statuses ), '%s' ) );
+			
 			// Count regular loads (if not FLT only)
 			if ( $is_flt !== true ) {
 				$total_loads_query = $wpdb->prepare( "
@@ -3568,10 +3715,24 @@ class TMSDrivers extends TMSDriversHelper {
 					INNER JOIN $reports_meta_table load_status_meta ON r.id = load_status_meta.post_id 
 						AND load_status_meta.meta_key = 'load_status'
 						AND load_status_meta.meta_value IN ('delivered', 'tonu')
+					LEFT JOIN $reports_meta_table driver_meta ON r.id = driver_meta.post_id 
+						AND driver_meta.meta_key = 'attached_driver'
+					LEFT JOIN $reports_meta_table second_driver_meta ON r.id = second_driver_meta.post_id 
+						AND second_driver_meta.meta_key = 'attached_second_driver'
+					LEFT JOIN $reports_meta_table third_driver_meta ON r.id = third_driver_meta.post_id 
+						AND third_driver_meta.meta_key = 'attached_third_driver'
+					INNER JOIN $drivers_table d ON 
+						(COALESCE(NULLIF(third_driver_meta.meta_value, ''), NULLIF(second_driver_meta.meta_value, ''), driver_meta.meta_value)) = d.id 
+						AND d.status_post = 'publish'
+					LEFT JOIN $drivers_meta_table driver_status_meta ON 
+						(COALESCE(NULLIF(third_driver_meta.meta_value, ''), NULLIF(second_driver_meta.meta_value, ''), driver_meta.meta_value)) = driver_status_meta.post_id 
+						AND driver_status_meta.meta_key = 'driver_status'
 					WHERE r.status_post = 'publish'
+						AND (driver_status_meta.meta_value IS NULL OR driver_status_meta.meta_value NOT IN ($restricted_statuses_placeholders))
+						AND DATE(r.date_booked) < CURDATE()
 						AND YEAR(r.date_booked) = %d
 						AND MONTH(r.date_booked) = %d
-				", $dispatcher_id, $year, $month );
+				", array_merge( array( $dispatcher_id ), $restricted_statuses, array( $year, $month ) ) );
 				
 				$total_loads += (int) $wpdb->get_var( $total_loads_query );
 			}
@@ -3589,10 +3750,24 @@ class TMSDrivers extends TMSDriversHelper {
 						INNER JOIN $reports_flt_meta_table load_status_meta ON rf.id = load_status_meta.post_id 
 							AND load_status_meta.meta_key = 'load_status'
 							AND load_status_meta.meta_value IN ('delivered', 'tonu')
+						LEFT JOIN $reports_flt_meta_table driver_meta ON rf.id = driver_meta.post_id 
+							AND driver_meta.meta_key = 'attached_driver'
+						LEFT JOIN $reports_flt_meta_table second_driver_meta ON rf.id = second_driver_meta.post_id 
+							AND second_driver_meta.meta_key = 'attached_second_driver'
+						LEFT JOIN $reports_flt_meta_table third_driver_meta ON rf.id = third_driver_meta.post_id 
+							AND third_driver_meta.meta_key = 'attached_third_driver'
+						INNER JOIN $drivers_table d ON 
+							(COALESCE(NULLIF(third_driver_meta.meta_value, ''), NULLIF(second_driver_meta.meta_value, ''), driver_meta.meta_value)) = d.id 
+							AND d.status_post = 'publish'
+						LEFT JOIN $drivers_meta_table driver_status_meta ON 
+							(COALESCE(NULLIF(third_driver_meta.meta_value, ''), NULLIF(second_driver_meta.meta_value, ''), driver_meta.meta_value)) = driver_status_meta.post_id 
+							AND driver_status_meta.meta_key = 'driver_status'
 						WHERE rf.status_post = 'publish'
+							AND (driver_status_meta.meta_value IS NULL OR driver_status_meta.meta_value NOT IN ($restricted_statuses_placeholders))
+							AND DATE(rf.date_booked) < CURDATE()
 							AND YEAR(rf.date_booked) = %d
 							AND MONTH(rf.date_booked) = %d
-					", $dispatcher_id, $year, $month );
+					", array_merge( array( $dispatcher_id ), $restricted_statuses, array( $year, $month ) ) );
 					
 					$flt_total_loads = (int) $wpdb->get_var( $flt_total_loads_query );
 					$total_loads += $flt_total_loads;
@@ -3614,14 +3789,28 @@ class TMSDrivers extends TMSDriversHelper {
 					INNER JOIN $reports_meta_table load_status_meta ON r.id = load_status_meta.post_id 
 						AND load_status_meta.meta_key = 'load_status'
 						AND load_status_meta.meta_value IN ('delivered', 'tonu')
+					LEFT JOIN $reports_meta_table driver_meta ON r.id = driver_meta.post_id 
+						AND driver_meta.meta_key = 'attached_driver'
+					LEFT JOIN $reports_meta_table second_driver_meta ON r.id = second_driver_meta.post_id 
+						AND second_driver_meta.meta_key = 'attached_second_driver'
+					LEFT JOIN $reports_meta_table third_driver_meta ON r.id = third_driver_meta.post_id 
+						AND third_driver_meta.meta_key = 'attached_third_driver'
+					INNER JOIN $drivers_table d ON 
+						(COALESCE(NULLIF(third_driver_meta.meta_value, ''), NULLIF(second_driver_meta.meta_value, ''), driver_meta.meta_value)) = d.id 
+						AND d.status_post = 'publish'
+					LEFT JOIN $drivers_meta_table driver_status_meta ON 
+						(COALESCE(NULLIF(third_driver_meta.meta_value, ''), NULLIF(second_driver_meta.meta_value, ''), driver_meta.meta_value)) = driver_status_meta.post_id 
+						AND driver_status_meta.meta_key = 'driver_status'
 					INNER JOIN $reports_meta_table ref_meta ON r.id = ref_meta.post_id 
 						AND ref_meta.meta_key = 'reference_number'
 						AND ref_meta.meta_value IS NOT NULL
 						AND ref_meta.meta_value != ''
 					WHERE r.status_post = 'publish'
+						AND (driver_status_meta.meta_value IS NULL OR driver_status_meta.meta_value NOT IN ($restricted_statuses_placeholders))
+						AND DATE(r.date_booked) < CURDATE()
 						AND YEAR(r.date_booked) = %d
 						AND MONTH(r.date_booked) = %d
-				", $dispatcher_id, $year, $month );
+				", array_merge( array( $dispatcher_id ), $restricted_statuses, array( $year, $month ) ) );
 				
 				$reference_numbers = $wpdb->get_col( $reference_numbers_query );
 			}
@@ -3639,14 +3828,28 @@ class TMSDrivers extends TMSDriversHelper {
 						INNER JOIN $reports_flt_meta_table load_status_meta ON rf.id = load_status_meta.post_id 
 							AND load_status_meta.meta_key = 'load_status'
 							AND load_status_meta.meta_value IN ('delivered', 'tonu')
+						LEFT JOIN $reports_flt_meta_table driver_meta ON rf.id = driver_meta.post_id 
+							AND driver_meta.meta_key = 'attached_driver'
+						LEFT JOIN $reports_flt_meta_table second_driver_meta ON rf.id = second_driver_meta.post_id 
+							AND second_driver_meta.meta_key = 'attached_second_driver'
+						LEFT JOIN $reports_flt_meta_table third_driver_meta ON rf.id = third_driver_meta.post_id 
+							AND third_driver_meta.meta_key = 'attached_third_driver'
+						INNER JOIN $drivers_table d ON 
+							(COALESCE(NULLIF(third_driver_meta.meta_value, ''), NULLIF(second_driver_meta.meta_value, ''), driver_meta.meta_value)) = d.id 
+							AND d.status_post = 'publish'
+						LEFT JOIN $drivers_meta_table driver_status_meta ON 
+							(COALESCE(NULLIF(third_driver_meta.meta_value, ''), NULLIF(second_driver_meta.meta_value, ''), driver_meta.meta_value)) = driver_status_meta.post_id 
+							AND driver_status_meta.meta_key = 'driver_status'
 						INNER JOIN $reports_flt_meta_table ref_meta ON rf.id = ref_meta.post_id 
 							AND ref_meta.meta_key = 'reference_number'
 							AND ref_meta.meta_value IS NOT NULL
 							AND ref_meta.meta_value != ''
 						WHERE rf.status_post = 'publish'
+							AND (driver_status_meta.meta_value IS NULL OR driver_status_meta.meta_value NOT IN ($restricted_statuses_placeholders))
+							AND DATE(rf.date_booked) < CURDATE()
 							AND YEAR(rf.date_booked) = %d
 							AND MONTH(rf.date_booked) = %d
-					", $dispatcher_id, $year, $month );
+					", array_merge( array( $dispatcher_id ), $restricted_statuses, array( $year, $month ) ) );
 					
 					$flt_reference_numbers = $wpdb->get_col( $flt_reference_numbers_query );
 					$reference_numbers = array_merge( $reference_numbers, $flt_reference_numbers );
@@ -3728,6 +3931,10 @@ class TMSDrivers extends TMSDriversHelper {
 		$reports_flt_table = $wpdb->prefix . 'reports_flt_' . strtolower( $current_project );
 		$reports_flt_meta_table = $wpdb->prefix . 'reportsmeta_flt_' . strtolower( $current_project );
 		$rating_table = $wpdb->prefix . $this->table_raiting;
+		$drivers_table = $wpdb->prefix . $this->table_main;
+		$drivers_meta_table = $wpdb->prefix . $this->table_meta;
+		$restricted_statuses = array( 'no_Interview', 'expired_documents', 'blocked' );
+		$restricted_statuses_placeholders = implode( ',', array_fill( 0, count( $restricted_statuses ), '%s' ) );
 		
 		// Get all reference_numbers for this dispatcher's loads in the period
 		$reference_numbers = array();
@@ -3743,14 +3950,28 @@ class TMSDrivers extends TMSDriversHelper {
 				INNER JOIN $reports_meta_table load_status_meta ON r.id = load_status_meta.post_id 
 					AND load_status_meta.meta_key = 'load_status'
 					AND load_status_meta.meta_value IN ('delivered', 'tonu')
+				LEFT JOIN $reports_meta_table driver_meta ON r.id = driver_meta.post_id 
+					AND driver_meta.meta_key = 'attached_driver'
+				LEFT JOIN $reports_meta_table second_driver_meta ON r.id = second_driver_meta.post_id 
+					AND second_driver_meta.meta_key = 'attached_second_driver'
+				LEFT JOIN $reports_meta_table third_driver_meta ON r.id = third_driver_meta.post_id 
+					AND third_driver_meta.meta_key = 'attached_third_driver'
+				INNER JOIN $drivers_table d ON 
+					(COALESCE(NULLIF(third_driver_meta.meta_value, ''), NULLIF(second_driver_meta.meta_value, ''), driver_meta.meta_value)) = d.id 
+					AND d.status_post = 'publish'
+				LEFT JOIN $drivers_meta_table driver_status_meta ON 
+					(COALESCE(NULLIF(third_driver_meta.meta_value, ''), NULLIF(second_driver_meta.meta_value, ''), driver_meta.meta_value)) = driver_status_meta.post_id 
+					AND driver_status_meta.meta_key = 'driver_status'
 				INNER JOIN $reports_meta_table ref_meta ON r.id = ref_meta.post_id 
 					AND ref_meta.meta_key = 'reference_number'
 					AND ref_meta.meta_value IS NOT NULL
 					AND ref_meta.meta_value != ''
 				WHERE r.status_post = 'publish'
+					AND (driver_status_meta.meta_value IS NULL OR driver_status_meta.meta_value NOT IN ($restricted_statuses_placeholders))
+					AND DATE(r.date_booked) < CURDATE()
 					AND YEAR(r.date_booked) = %d
 					AND MONTH(r.date_booked) = %d
-			", $dispatcher_id, $year, $month );
+			", array_merge( array( $dispatcher_id ), $restricted_statuses, array( $year, $month ) ) );
 			
 			$reference_numbers = $wpdb->get_col( $reference_numbers_query );
 		}
@@ -3768,14 +3989,28 @@ class TMSDrivers extends TMSDriversHelper {
 					INNER JOIN $reports_flt_meta_table load_status_meta ON rf.id = load_status_meta.post_id 
 						AND load_status_meta.meta_key = 'load_status'
 						AND load_status_meta.meta_value IN ('delivered', 'tonu')
+					LEFT JOIN $reports_flt_meta_table driver_meta ON rf.id = driver_meta.post_id 
+						AND driver_meta.meta_key = 'attached_driver'
+					LEFT JOIN $reports_flt_meta_table second_driver_meta ON rf.id = second_driver_meta.post_id 
+						AND second_driver_meta.meta_key = 'attached_second_driver'
+					LEFT JOIN $reports_flt_meta_table third_driver_meta ON rf.id = third_driver_meta.post_id 
+						AND third_driver_meta.meta_key = 'attached_third_driver'
+					INNER JOIN $drivers_table d ON 
+						(COALESCE(NULLIF(third_driver_meta.meta_value, ''), NULLIF(second_driver_meta.meta_value, ''), driver_meta.meta_value)) = d.id 
+						AND d.status_post = 'publish'
+					LEFT JOIN $drivers_meta_table driver_status_meta ON 
+						(COALESCE(NULLIF(third_driver_meta.meta_value, ''), NULLIF(second_driver_meta.meta_value, ''), driver_meta.meta_value)) = driver_status_meta.post_id 
+						AND driver_status_meta.meta_key = 'driver_status'
 					INNER JOIN $reports_flt_meta_table ref_meta ON rf.id = ref_meta.post_id 
 						AND ref_meta.meta_key = 'reference_number'
 						AND ref_meta.meta_value IS NOT NULL
 						AND ref_meta.meta_value != ''
 					WHERE rf.status_post = 'publish'
+						AND (driver_status_meta.meta_value IS NULL OR driver_status_meta.meta_value NOT IN ($restricted_statuses_placeholders))
+						AND DATE(rf.date_booked) < CURDATE()
 						AND YEAR(rf.date_booked) = %d
 						AND MONTH(rf.date_booked) = %d
-				", $dispatcher_id, $year, $month );
+				", array_merge( array( $dispatcher_id ), $restricted_statuses, array( $year, $month ) ) );
 				
 				$flt_reference_numbers = $wpdb->get_col( $flt_reference_numbers_query );
 				$reference_numbers = array_merge( $reference_numbers, $flt_reference_numbers );
@@ -3811,6 +4046,232 @@ class TMSDrivers extends TMSDriversHelper {
 		}
 		
 		return $ratings;
+	}
+	
+	/**
+	 * Get dispatcher rating statistics summary
+	 * Returns total loads, rated loads, and percentage of unrated loads
+	 * Only includes loads with status 'delivered' or 'tonu'
+	 * 
+	 * @param int $dispatcher_id Dispatcher user ID
+	 * @param int $year Year filter (optional, if not provided counts all time)
+	 * @param int $month Month filter (optional, if not provided counts all time)
+	 * @param bool|null $is_flt If true, only count FLT loads; if false, only count regular loads; if null, count both
+	 * @return array Array with 'total_loads', 'rated_loads', 'unrated_loads', 'rated_percentage', 'unrated_percentage'
+	 */
+	public function get_dispatcher_rating_statistics_summary( $dispatcher_id, $year = null, $month = null, $is_flt = null ) {
+		global $wpdb;
+		
+		if ( empty( $dispatcher_id ) || ! is_numeric( $dispatcher_id ) ) {
+			return array(
+				'total_loads' => 0,
+				'rated_loads' => 0,
+				'unrated_loads' => 0,
+				'rated_percentage' => 0,
+				'unrated_percentage' => 0,
+			);
+		}
+		
+		$dispatcher_id = (int) $dispatcher_id;
+		
+		// Get current project
+		$user_id = get_current_user_id();
+		$current_project = get_field( 'current_select', 'user_' . $user_id );
+		if ( empty( $current_project ) ) {
+			$current_project = 'odysseia';
+		}
+		
+		// Build table names
+		$reports_table = $wpdb->prefix . 'reports_' . strtolower( $current_project );
+		$reports_meta_table = $wpdb->prefix . 'reportsmeta_' . strtolower( $current_project );
+		$reports_flt_table = $wpdb->prefix . 'reports_flt_' . strtolower( $current_project );
+		$reports_flt_meta_table = $wpdb->prefix . 'reportsmeta_flt_' . strtolower( $current_project );
+		$rating_table = $wpdb->prefix . $this->table_raiting;
+		
+		$total_loads = 0;
+		$rated_loads = 0;
+		
+		// Count regular loads (if not FLT only)
+		if ( $is_flt !== true ) {
+			// Build WHERE clause for date filters
+			$date_where = '';
+			$date_params = array();
+			if ( $year !== null && $month !== null ) {
+				$date_where = ' AND YEAR(r.date_booked) = %d AND MONTH(r.date_booked) = %d';
+				$date_params = array( (int) $year, (int) $month );
+			} elseif ( $year !== null ) {
+				$date_where = ' AND YEAR(r.date_booked) = %d';
+				$date_params = array( (int) $year );
+			}
+			
+			$drivers_table = $wpdb->prefix . $this->table_main;
+			$drivers_meta_table = $wpdb->prefix . $this->table_meta;
+			$restricted_statuses = array( 'no_Interview', 'expired_documents', 'blocked' );
+			$restricted_statuses_placeholders = implode( ',', array_fill( 0, count( $restricted_statuses ), '%s' ) );
+			
+			$total_query = $wpdb->prepare( "
+				SELECT COUNT(DISTINCT r.id) as total_loads
+				FROM $reports_table r
+				INNER JOIN $reports_meta_table dispatcher_meta ON r.id = dispatcher_meta.post_id 
+					AND dispatcher_meta.meta_key = 'dispatcher_initials'
+					AND dispatcher_meta.meta_value = %s
+				INNER JOIN $reports_meta_table load_status_meta ON r.id = load_status_meta.post_id 
+					AND load_status_meta.meta_key = 'load_status'
+					AND load_status_meta.meta_value IN ('delivered', 'tonu')
+				LEFT JOIN $reports_meta_table driver_meta ON r.id = driver_meta.post_id 
+					AND driver_meta.meta_key = 'attached_driver'
+				LEFT JOIN $reports_meta_table second_driver_meta ON r.id = second_driver_meta.post_id 
+					AND second_driver_meta.meta_key = 'attached_second_driver'
+				LEFT JOIN $reports_meta_table third_driver_meta ON r.id = third_driver_meta.post_id 
+					AND third_driver_meta.meta_key = 'attached_third_driver'
+				INNER JOIN $drivers_table d ON 
+					(COALESCE(NULLIF(third_driver_meta.meta_value, ''), NULLIF(second_driver_meta.meta_value, ''), driver_meta.meta_value)) = d.id 
+					AND d.status_post = 'publish'
+				LEFT JOIN $drivers_meta_table driver_status_meta ON 
+					(COALESCE(NULLIF(third_driver_meta.meta_value, ''), NULLIF(second_driver_meta.meta_value, ''), driver_meta.meta_value)) = driver_status_meta.post_id 
+					AND driver_status_meta.meta_key = 'driver_status'
+				WHERE r.status_post = 'publish'
+					AND (driver_status_meta.meta_value IS NULL OR driver_status_meta.meta_value NOT IN ($restricted_statuses_placeholders))
+					AND DATE(r.date_booked) < CURDATE()
+					$date_where
+			", array_merge( array( $dispatcher_id ), $restricted_statuses, $date_params ) );
+			
+			$total_loads += (int) $wpdb->get_var( $total_query );
+			
+			// Count rated loads (loads that have ratings)
+			$rated_query = $wpdb->prepare( "
+				SELECT COUNT(DISTINCT r.id) as rated_loads
+				FROM $reports_table r
+				INNER JOIN $reports_meta_table dispatcher_meta ON r.id = dispatcher_meta.post_id 
+					AND dispatcher_meta.meta_key = 'dispatcher_initials'
+					AND dispatcher_meta.meta_value = %s
+				INNER JOIN $reports_meta_table load_status_meta ON r.id = load_status_meta.post_id 
+					AND load_status_meta.meta_key = 'load_status'
+					AND load_status_meta.meta_value IN ('delivered', 'tonu')
+				LEFT JOIN $reports_meta_table driver_meta ON r.id = driver_meta.post_id 
+					AND driver_meta.meta_key = 'attached_driver'
+				LEFT JOIN $reports_meta_table second_driver_meta ON r.id = second_driver_meta.post_id 
+					AND second_driver_meta.meta_key = 'attached_second_driver'
+				LEFT JOIN $reports_meta_table third_driver_meta ON r.id = third_driver_meta.post_id 
+					AND third_driver_meta.meta_key = 'attached_third_driver'
+				INNER JOIN $drivers_table d ON 
+					(COALESCE(NULLIF(third_driver_meta.meta_value, ''), NULLIF(second_driver_meta.meta_value, ''), driver_meta.meta_value)) = d.id 
+					AND d.status_post = 'publish'
+				LEFT JOIN $drivers_meta_table driver_status_meta ON 
+					(COALESCE(NULLIF(third_driver_meta.meta_value, ''), NULLIF(second_driver_meta.meta_value, ''), driver_meta.meta_value)) = driver_status_meta.post_id 
+					AND driver_status_meta.meta_key = 'driver_status'
+				INNER JOIN $reports_meta_table ref_meta ON r.id = ref_meta.post_id 
+					AND ref_meta.meta_key = 'reference_number'
+					AND ref_meta.meta_value IS NOT NULL
+					AND ref_meta.meta_value != ''
+				INNER JOIN $rating_table rt ON ref_meta.meta_value = rt.order_number
+				WHERE r.status_post = 'publish'
+					AND (driver_status_meta.meta_value IS NULL OR driver_status_meta.meta_value NOT IN ($restricted_statuses_placeholders))
+					AND DATE(r.date_booked) < CURDATE()
+					$date_where
+			", array_merge( array( $dispatcher_id ), $restricted_statuses, $date_params ) );
+			
+			$rated_loads += (int) $wpdb->get_var( $rated_query );
+		}
+		
+		// Count FLT loads (if not regular only)
+		if ( $is_flt !== false ) {
+			$flt_meta_table_exists = $wpdb->get_var( "SHOW TABLES LIKE '$reports_flt_meta_table'" );
+			if ( $flt_meta_table_exists ) {
+				// Build WHERE clause for date filters
+				$date_where = '';
+				$date_params = array();
+				if ( $year !== null && $month !== null ) {
+					$date_where = ' AND YEAR(rf.date_booked) = %d AND MONTH(rf.date_booked) = %d';
+					$date_params = array( (int) $year, (int) $month );
+				} elseif ( $year !== null ) {
+					$date_where = ' AND YEAR(rf.date_booked) = %d';
+					$date_params = array( (int) $year );
+				}
+				
+				$flt_drivers_table = $wpdb->prefix . $this->table_main;
+				$flt_drivers_meta_table = $wpdb->prefix . $this->table_meta;
+				$flt_restricted_statuses = array( 'no_Interview', 'expired_documents', 'blocked' );
+				$flt_restricted_statuses_placeholders = implode( ',', array_fill( 0, count( $flt_restricted_statuses ), '%s' ) );
+				
+				$flt_total_query = $wpdb->prepare( "
+					SELECT COUNT(DISTINCT rf.id) as total_loads
+					FROM $reports_flt_table rf
+					INNER JOIN $reports_flt_meta_table dispatcher_meta ON rf.id = dispatcher_meta.post_id 
+						AND dispatcher_meta.meta_key = 'dispatcher_initials'
+						AND dispatcher_meta.meta_value = %s
+					INNER JOIN $reports_flt_meta_table load_status_meta ON rf.id = load_status_meta.post_id 
+						AND load_status_meta.meta_key = 'load_status'
+						AND load_status_meta.meta_value IN ('delivered', 'tonu')
+					LEFT JOIN $reports_flt_meta_table driver_meta ON rf.id = driver_meta.post_id 
+						AND driver_meta.meta_key = 'attached_driver'
+					LEFT JOIN $reports_flt_meta_table second_driver_meta ON rf.id = second_driver_meta.post_id 
+						AND second_driver_meta.meta_key = 'attached_second_driver'
+					LEFT JOIN $reports_flt_meta_table third_driver_meta ON rf.id = third_driver_meta.post_id 
+						AND third_driver_meta.meta_key = 'attached_third_driver'
+					INNER JOIN $drivers_table d ON 
+						(COALESCE(NULLIF(third_driver_meta.meta_value, ''), NULLIF(second_driver_meta.meta_value, ''), driver_meta.meta_value)) = d.id 
+						AND d.status_post = 'publish'
+					LEFT JOIN $drivers_meta_table driver_status_meta ON 
+						(COALESCE(NULLIF(third_driver_meta.meta_value, ''), NULLIF(second_driver_meta.meta_value, ''), driver_meta.meta_value)) = driver_status_meta.post_id 
+						AND driver_status_meta.meta_key = 'driver_status'
+					WHERE rf.status_post = 'publish'
+						AND (driver_status_meta.meta_value IS NULL OR driver_status_meta.meta_value NOT IN ($flt_restricted_statuses_placeholders))
+						AND DATE(rf.date_booked) < CURDATE()
+						$date_where
+				", array_merge( array( $dispatcher_id ), $flt_restricted_statuses, $date_params ) );
+				
+				$total_loads += (int) $wpdb->get_var( $flt_total_query );
+				
+				// Count rated FLT loads
+				$flt_rated_query = $wpdb->prepare( "
+					SELECT COUNT(DISTINCT rf.id) as rated_loads
+					FROM $reports_flt_table rf
+					INNER JOIN $reports_flt_meta_table dispatcher_meta ON rf.id = dispatcher_meta.post_id 
+						AND dispatcher_meta.meta_key = 'dispatcher_initials'
+						AND dispatcher_meta.meta_value = %s
+					INNER JOIN $reports_flt_meta_table load_status_meta ON rf.id = load_status_meta.post_id 
+						AND load_status_meta.meta_key = 'load_status'
+						AND load_status_meta.meta_value IN ('delivered', 'tonu')
+					LEFT JOIN $reports_flt_meta_table driver_meta ON rf.id = driver_meta.post_id 
+						AND driver_meta.meta_key = 'attached_driver'
+					LEFT JOIN $reports_flt_meta_table second_driver_meta ON rf.id = second_driver_meta.post_id 
+						AND second_driver_meta.meta_key = 'attached_second_driver'
+					LEFT JOIN $reports_flt_meta_table third_driver_meta ON rf.id = third_driver_meta.post_id 
+						AND third_driver_meta.meta_key = 'attached_third_driver'
+					INNER JOIN $flt_drivers_table d ON 
+						(COALESCE(NULLIF(third_driver_meta.meta_value, ''), NULLIF(second_driver_meta.meta_value, ''), driver_meta.meta_value)) = d.id 
+						AND d.status_post = 'publish'
+					LEFT JOIN $flt_drivers_meta_table driver_status_meta ON 
+						(COALESCE(NULLIF(third_driver_meta.meta_value, ''), NULLIF(second_driver_meta.meta_value, ''), driver_meta.meta_value)) = driver_status_meta.post_id 
+						AND driver_status_meta.meta_key = 'driver_status'
+					INNER JOIN $reports_flt_meta_table ref_meta ON rf.id = ref_meta.post_id 
+						AND ref_meta.meta_key = 'reference_number'
+						AND ref_meta.meta_value IS NOT NULL
+						AND ref_meta.meta_value != ''
+					INNER JOIN $rating_table rt ON ref_meta.meta_value = rt.order_number
+					WHERE rf.status_post = 'publish'
+						AND (driver_status_meta.meta_value IS NULL OR driver_status_meta.meta_value NOT IN ($flt_restricted_statuses_placeholders))
+						AND DATE(rf.date_booked) < CURDATE()
+						$date_where
+				", array_merge( array( $dispatcher_id ), $flt_restricted_statuses, $date_params ) );
+				
+				$rated_loads += (int) $wpdb->get_var( $flt_rated_query );
+			}
+		}
+		
+		// Calculate statistics
+		$unrated_loads = $total_loads - $rated_loads;
+		$rated_percentage = $total_loads > 0 ? round( ( $rated_loads / $total_loads ) * 100, 2 ) : 0;
+		$unrated_percentage = $total_loads > 0 ? round( ( $unrated_loads / $total_loads ) * 100, 2 ) : 0;
+		
+		return array(
+			'total_loads' => $total_loads,
+			'rated_loads' => $rated_loads,
+			'unrated_loads' => $unrated_loads,
+			'rated_percentage' => $rated_percentage,
+			'unrated_percentage' => $unrated_percentage,
+		);
 	}
 	
 	function insert_driver_notice( $driver_id, $name, $date, $message = '', $status = false ) {
@@ -3890,7 +4351,16 @@ class TMSDrivers extends TMSDriversHelper {
 		$update_result = $wpdb->update( $table_name, $data_main, array( 'id' => $driver_id ) );
 		
 		if ( $update_result !== false ) {
-			if ( $this->update_post_meta_data( $driver_id, $data ) ) {
+			// Filter out fields that should not be saved as meta (for API calls)
+			$meta_data = $data;
+			if ( isset( $data[ '_exclude_from_meta' ] ) && is_array( $data[ '_exclude_from_meta' ] ) ) {
+				foreach ( $data[ '_exclude_from_meta' ] as $excluded_field ) {
+					unset( $meta_data[ $excluded_field ] );
+				}
+				unset( $meta_data[ '_exclude_from_meta' ] ); // Remove the marker itself
+			}
+			
+			if ( $this->update_post_meta_data( $driver_id, $meta_data ) ) {
 				return $driver_id;
 			}
 		}
@@ -3898,27 +4368,129 @@ class TMSDrivers extends TMSDriversHelper {
 		return false;
 	}
 	
+	/**
+	 * Send email notification when payment file and account name are updated
+	 * 
+	 * @param int $driver_id Driver ID
+	 * @param string $new_account_name Optional new account name (if updating, pass the new value)
+	 * @return bool True if email was sent successfully, false otherwise
+	 */
+	private function send_payment_file_update_email( $driver_id, $new_account_name = null ) {
+		global $wpdb;
+
+		$driver_object = $this->get_driver_by_id( $driver_id );
+		if ( ! $driver_object ) {
+			return false;
+		}
+		
+		$meta = get_field_value( $driver_object, 'meta' );
+		$main = get_field_value( $driver_object, 'main' );
+		
+		$old_payment_file = get_field_value( $meta, 'old_payment_file' );
+		$old_account_name = get_field_value( $meta, 'old_account_name' );
+		
+		// Only send email if both old_payment_file and old_account_name are filled
+		if ( empty( $old_payment_file ) || empty( $old_account_name ) ) {
+			return false;
+		}
+		
+
+		// Get current values
+		$current_payment_file = get_field_value( $meta, 'payment_file' );
+		// Use new_account_name if provided (when updating), otherwise get from DB
+		$account_name = ! empty( $new_account_name ) ? $new_account_name : get_field_value( $meta, 'account_name' );
+		
+		// Get recruiter email from recruiter_add (meta) or user_id_added (main)
+		$recruiter_id = get_field_value( $meta, 'recruiter_add' );
+		if ( empty( $recruiter_id ) ) {
+			$recruiter_id = isset( $main[ 'user_id_added' ] ) ? $main[ 'user_id_added' ] : 0;
+		}
+		$recruiter_email = '';
+		if ( $recruiter_id ) {
+			$recruiter_user = get_userdata( $recruiter_id );
+			if ( $recruiter_user ) {
+				$recruiter_email = $recruiter_user->user_email;
+			}
+		}
+		
+		// Get file paths for attachments
+		$old_file_path = get_attached_file( $old_payment_file );
+		$new_file_path = ! empty( $current_payment_file ) ? get_attached_file( $current_payment_file ) : '';
+		$attachments = array();
+		if ( $old_file_path && file_exists( $old_file_path ) ) {
+			$attachments[] = $old_file_path;
+		}
+		if ( $new_file_path && file_exists( $new_file_path ) ) {
+			$attachments[] = $new_file_path;
+		}
+		
+		// Prepare email recipients
+		$recipients = array(
+			'operations@odysseia.one',
+			'iryna@odysseia.one',
+			'HR@odysseia.one'
+		);
+		
+		// Add recruiter email if available
+		if ( ! empty( $recruiter_email ) && is_email( $recruiter_email ) ) {
+			$recipients[] = $recruiter_email;
+		}
+		
+		// Get driver name for email
+		$driver_name = get_field_value( $meta, 'driver_name' );
+		$driver_name = ! empty( $driver_name ) ? $driver_name : 'Unknown Driver';
+		
+		// Prepare email content
+		$subject = 'Payment File Updated for Driver: (' . esc_html( $driver_id ) . ') ' . $driver_name;
+		$message = '<p>A new payment file has been uploaded for driver: <strong>(' . esc_html( $driver_id ) . ') ' . esc_html( $driver_name ) . '</strong></p>';
+		if ( ! empty( $recruiter_email ) ) {
+			$message .= '<p>Recruiter: ' . esc_html( $recruiter_email ) . '</p>';
+		}
+		$message .= '<p>Previous Account Name: <strong>' . esc_html( $old_account_name ) . '</strong></p>';
+		if ( ! empty( $account_name ) ) {
+			$message .= '<p>Current Account Name: <strong>' . esc_html( $account_name ) . '</strong></p>';
+		}
+		$message .= '<p>Please find attached the old and new payment files.</p>';
+		
+		// Send email with attachments
+		$headers = array(
+			'Content-Type: text/html; charset=UTF-8',
+			'From: TMS <no-reply@endurance-tms.com>'
+		);
+		
+		$email_sent = false;
+		if ( ! empty( $attachments ) ) {
+			$email_sent = wp_mail( $recipients, $subject, $message, $headers, $attachments );
+		} else {
+			// Send email even without attachments if we have the information
+			$email_sent = wp_mail( $recipients, $subject, $message, $headers );
+		}
+		
+		// If email was sent successfully, delete old_payment_file and clear it from database (but keep old_account_name)
+		if ( $email_sent ) {
+			// Delete the old payment file from media library
+			if ( ! empty( $old_payment_file ) && is_numeric( $old_payment_file ) ) {
+				wp_delete_attachment( $old_payment_file, true );
+			}
+			
+			// Clear old_payment_file from database
+			$table_meta_name = $wpdb->prefix . $this->table_meta;
+			$wpdb->update( $table_meta_name, 
+				array( 'meta_value' => '' ), 
+				array( 'post_id' => $driver_id, 'meta_key' => 'old_payment_file' ),
+				array( '%s' ),
+				array( '%d', '%s' )
+			);
+		}
+		
+		return $email_sent;
+	}
+	
 	function update_post_meta_data( $post_id, $meta_data ) {
 		global $wpdb;
 		$table_meta_name = $wpdb->prefix . $this->table_meta;
 		
-		// Fields that should not be saved as meta (they are main table fields or special fields)
-		$excluded_fields = array(
-			'driver_id',
-			'recruiter_add',
-			'current_zipcode',
-			'status_date',
-			'user_id_updated',
-			'date_updated',
-			'user_id_added',
-			'date_created',
-		);
-		
 		foreach ( $meta_data as $meta_key => $meta_value ) {
-			// Skip excluded fields
-			if ( in_array( $meta_key, $excluded_fields ) ) {
-				continue;
-			}
 			
 			// Always save referer fields, even if empty (to allow clearing)
 			$is_referer_field = ( $meta_key === 'referer_name' || $meta_key === 'referer_by' );

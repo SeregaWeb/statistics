@@ -43,6 +43,7 @@ $dispatcher_id = isset( $_GET['dispatcher'] ) && ! empty( $_GET['dispatcher'] ) 
 if ( $dispatcher_id > 0 ) {
 	// Show dispatcher profile with detailed ratings
 	$dispatcher_ratings = $Drivers->get_dispatcher_detailed_ratings( $dispatcher_id, $year, $month, $is_flt );
+    
 	$helper_user = new TMSReportsHelper();
 	$user_info = $helper_user->get_user_full_name_by_id( $dispatcher_id );
 	$dispatcher_name = $user_info ? $user_info['full_name'] : 'Unknown Dispatcher';
@@ -336,6 +337,17 @@ if ( $dispatcher_id > 0 ) {
                                                 ? round( ( $stat['rated_loads'] / $stat['total_loads'] ) * 100, 1 ) 
                                                 : 0;
                                             
+                                            $rated_badge_class = 'secondary';
+                                            if ( $stat['total_loads'] > 0 ) {
+                                                if ( $rating_rate >= 90 ) {
+                                                    $rated_badge_class = 'success';
+                                                } elseif ( $rating_rate >= 80 ) {
+                                                    $rated_badge_class = 'warning';
+                                                } else {
+                                                    $rated_badge_class = 'danger';
+                                                }
+                                            }
+                                            
                                             // Build profile link
                                             $profile_url_params = array(
                                                 'dispatcher' => $stat['dispatcher_id'],
@@ -371,7 +383,7 @@ if ( $dispatcher_id > 0 ) {
                                                     <?php echo esc_html( $stat['total_loads'] ); ?>
                                                 </td>
                                                 <td class="text-end">
-                                                    <span class="badge bg-<?php echo $stat['rated_loads'] > 0 ? 'success' : 'secondary'; ?>">
+                                                    <span class="badge bg-<?php echo esc_attr( $rated_badge_class ); ?>">
                                                         <?php echo esc_html( $stat['rated_loads'] ); ?>
                                                     </span>
                                                 </td>

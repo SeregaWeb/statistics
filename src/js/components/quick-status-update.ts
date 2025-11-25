@@ -187,6 +187,20 @@ class QuickStatusUpdate {
         // Update button data attributes
         const updateButton = tableRow.querySelector('.js-quick-status-update') as HTMLElement;
         if (updateButton) {
+            // Debug: log what we're updating
+            console.log('Quick Status Update - Updating button data attributes:', {
+                driver_status: driverData.driver_status,
+                current_location: driverData.current_location,
+                current_city: driverData.current_city,
+                current_zipcode: driverData.current_zipcode,
+                latitude: driverData.latitude,
+                longitude: driverData.longitude,
+                country: driverData.country,
+                status_date: driverData.status_date,
+                last_user_update: driverData.last_user_update,
+                notes: driverData.notes
+            });
+            
             updateButton.setAttribute('data-driver-status', driverData.driver_status || '');
             updateButton.setAttribute('data-current-location', driverData.current_location || '');
             updateButton.setAttribute('data-current-city', driverData.current_city || '');
@@ -197,6 +211,11 @@ class QuickStatusUpdate {
             updateButton.setAttribute('data-status-date', driverData.status_date || '');
             updateButton.setAttribute('data-last-user-update', driverData.last_user_update || '');
             updateButton.setAttribute('data-notes', driverData.notes || '');
+            
+            // Verify the update
+            console.log('Quick Status Update - Button zipcode after update:', updateButton.getAttribute('data-current-zipcode'));
+        } else {
+            console.warn('Quick Status Update - Update button not found in table row');
         }
 
         // Initialize tooltips for any new capability icons
@@ -376,13 +395,21 @@ class QuickStatusUpdate {
                 if (requestStatus.success) {
                     printMessage(requestStatus.data.message, 'success', 8000);
                     
+                    // Debug: log the response data
+                    console.log('Quick Status Update - Response data:', requestStatus.data);
+                    console.log('Quick Status Update - Updated driver data:', requestStatus.data.updated_driver);
+                    
                     // Close modal
                     if (this.modal) {
                         this.closeModal();
                     }
                     
                     // Update table row with new data
-                    this.updateTableRow(requestStatus.data.updated_driver);
+                    if (requestStatus.data.updated_driver) {
+                        this.updateTableRow(requestStatus.data.updated_driver);
+                    } else {
+                        console.warn('Quick Status Update - No updated_driver data in response');
+                    }
                 } else {
                     printMessage(`Error updating status: ${requestStatus.data.message}`, 'danger', 8000);
                 }

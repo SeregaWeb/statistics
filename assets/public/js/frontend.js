@@ -11425,6 +11425,18 @@ var QuickStatusUpdate = /*#__PURE__*/function () {
       }
       var updateButton = tableRow.querySelector('.js-quick-status-update');
       if (updateButton) {
+        console.log('Quick Status Update - Updating button data attributes:', {
+          driver_status: driverData.driver_status,
+          current_location: driverData.current_location,
+          current_city: driverData.current_city,
+          current_zipcode: driverData.current_zipcode,
+          latitude: driverData.latitude,
+          longitude: driverData.longitude,
+          country: driverData.country,
+          status_date: driverData.status_date,
+          last_user_update: driverData.last_user_update,
+          notes: driverData.notes
+        });
         updateButton.setAttribute('data-driver-status', driverData.driver_status || '');
         updateButton.setAttribute('data-current-location', driverData.current_location || '');
         updateButton.setAttribute('data-current-city', driverData.current_city || '');
@@ -11435,6 +11447,9 @@ var QuickStatusUpdate = /*#__PURE__*/function () {
         updateButton.setAttribute('data-status-date', driverData.status_date || '');
         updateButton.setAttribute('data-last-user-update', driverData.last_user_update || '');
         updateButton.setAttribute('data-notes', driverData.notes || '');
+        console.log('Quick Status Update - Button zipcode after update:', updateButton.getAttribute('data-current-zipcode'));
+      } else {
+        console.warn('Quick Status Update - Update button not found in table row');
       }
       (0,_tooltip_start__WEBPACK_IMPORTED_MODULE_1__.updateTooltip)();
     }
@@ -11582,10 +11597,16 @@ var QuickStatusUpdate = /*#__PURE__*/function () {
       }).then(function (requestStatus) {
         if (requestStatus.success) {
           (0,_info_messages__WEBPACK_IMPORTED_MODULE_0__.printMessage)(requestStatus.data.message, 'success', 8000);
+          console.log('Quick Status Update - Response data:', requestStatus.data);
+          console.log('Quick Status Update - Updated driver data:', requestStatus.data.updated_driver);
           if (_this3.modal) {
             _this3.closeModal();
           }
-          _this3.updateTableRow(requestStatus.data.updated_driver);
+          if (requestStatus.data.updated_driver) {
+            _this3.updateTableRow(requestStatus.data.updated_driver);
+          } else {
+            console.warn('Quick Status Update - No updated_driver data in response');
+          }
         } else {
           (0,_info_messages__WEBPACK_IMPORTED_MODULE_0__.printMessage)("Error updating status: ".concat(requestStatus.data.message), 'danger', 8000);
         }
@@ -11657,6 +11678,66 @@ var initQuickStatusUpdate = function initQuickStatusUpdate(ajaxUrl) {
     quickStatusUpdateInstance = new QuickStatusUpdate(ajaxUrl);
   }
 };
+
+/***/ }),
+
+/***/ "./src/js/components/rating-reminder-modal.ts":
+/*!****************************************************!*\
+  !*** ./src/js/components/rating-reminder-modal.ts ***!
+  \****************************************************/
+/***/ (function(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   initRatingReminderModal: function() { return /* binding */ initRatingReminderModal; }
+/* harmony export */ });
+function initRatingReminderModal() {
+  var modalElement = document.getElementById('ratingReminderModal');
+  if (!modalElement) {
+    return;
+  }
+  var userId = modalElement.getAttribute('data-user-id');
+  if (!userId) {
+    return;
+  }
+  var storageKey = "rating_reminder_shown_".concat(userId);
+  var lastShownTimestamp = localStorage.getItem(storageKey);
+  var now = Date.now();
+  var thirtyMinutes = 30 * 60 * 1000;
+  var shouldShow = true;
+  if (lastShownTimestamp) {
+    var timeSinceLastShown = now - parseInt(lastShownTimestamp, 10);
+    if (timeSinceLastShown < thirtyMinutes) {
+      shouldShow = false;
+    }
+  }
+  if (!shouldShow) {
+    return;
+  }
+  var saveCloseTimestamp = function saveCloseTimestamp() {
+    localStorage.setItem(storageKey, Date.now().toString());
+  };
+  if (typeof window.bootstrap !== 'undefined' && window.bootstrap.Modal) {
+    var modal = new window.bootstrap.Modal(modalElement);
+    modal.show();
+    modalElement.addEventListener('hidden.bs.modal', saveCloseTimestamp);
+  } else {
+    modalElement.classList.add('show');
+    modalElement.style.display = 'block';
+    modalElement.setAttribute('aria-hidden', 'false');
+    var closeHandler = function closeHandler() {
+      modalElement.classList.remove('show');
+      modalElement.style.display = 'none';
+      modalElement.setAttribute('aria-hidden', 'true');
+      saveCloseTimestamp();
+    };
+    var closeBtn = modalElement.querySelector('[data-bs-dismiss="modal"]');
+    if (closeBtn) {
+      closeBtn.addEventListener('click', closeHandler);
+    }
+  }
+}
 
 /***/ }),
 
@@ -26681,17 +26762,19 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _components_quick_status_update__WEBPACK_IMPORTED_MODULE_35__ = __webpack_require__(/*! ./components/quick-status-update */ "./src/js/components/quick-status-update.ts");
 /* harmony import */ var _components_eta_popup__WEBPACK_IMPORTED_MODULE_36__ = __webpack_require__(/*! ./components/eta-popup */ "./src/js/components/eta-popup.ts");
 /* harmony import */ var _components_eta_timer__WEBPACK_IMPORTED_MODULE_37__ = __webpack_require__(/*! ./components/eta-timer */ "./src/js/components/eta-timer.ts");
-/* harmony import */ var _components_quick_copy__WEBPACK_IMPORTED_MODULE_38__ = __webpack_require__(/*! ./components/quick-copy */ "./src/js/components/quick-copy.ts");
-/* harmony import */ var _components_driver_popups__WEBPACK_IMPORTED_MODULE_39__ = __webpack_require__(/*! ./components/driver-popups */ "./src/js/components/driver-popups.ts");
-/* harmony import */ var _components_driver_popup_forms__WEBPACK_IMPORTED_MODULE_40__ = __webpack_require__(/*! ./components/driver-popup-forms */ "./src/js/components/driver-popup-forms.ts");
-/* harmony import */ var _components_broker_popups__WEBPACK_IMPORTED_MODULE_41__ = __webpack_require__(/*! ./components/broker-popups */ "./src/js/components/broker-popups.ts");
-/* harmony import */ var _components_broker_popup_forms__WEBPACK_IMPORTED_MODULE_42__ = __webpack_require__(/*! ./components/broker-popup-forms */ "./src/js/components/broker-popup-forms.ts");
-/* harmony import */ var _components_driver_autocomplete__WEBPACK_IMPORTED_MODULE_43__ = __webpack_require__(/*! ./components/driver-autocomplete */ "./src/js/components/driver-autocomplete.ts");
-/* harmony import */ var _components_common_audio_helper__WEBPACK_IMPORTED_MODULE_44__ = __webpack_require__(/*! ./components/common/audio-helper */ "./src/js/components/common/audio-helper.ts");
-/* harmony import */ var _components_timer_control__WEBPACK_IMPORTED_MODULE_45__ = __webpack_require__(/*! ./components/timer-control */ "./src/js/components/timer-control.ts");
-/* harmony import */ var _components_timer_analytics__WEBPACK_IMPORTED_MODULE_46__ = __webpack_require__(/*! ./components/timer-analytics */ "./src/js/components/timer-analytics.ts");
-/* harmony import */ var _components_dark_mode_toggle__WEBPACK_IMPORTED_MODULE_47__ = __webpack_require__(/*! ./components/dark-mode-toggle */ "./src/js/components/dark-mode-toggle.ts");
-/* harmony import */ var _components_drivers_map__WEBPACK_IMPORTED_MODULE_48__ = __webpack_require__(/*! ./components/drivers-map */ "./src/js/components/drivers-map.ts");
+/* harmony import */ var _components_rating_reminder_modal__WEBPACK_IMPORTED_MODULE_38__ = __webpack_require__(/*! ./components/rating-reminder-modal */ "./src/js/components/rating-reminder-modal.ts");
+/* harmony import */ var _components_quick_copy__WEBPACK_IMPORTED_MODULE_39__ = __webpack_require__(/*! ./components/quick-copy */ "./src/js/components/quick-copy.ts");
+/* harmony import */ var _components_driver_popups__WEBPACK_IMPORTED_MODULE_40__ = __webpack_require__(/*! ./components/driver-popups */ "./src/js/components/driver-popups.ts");
+/* harmony import */ var _components_driver_popup_forms__WEBPACK_IMPORTED_MODULE_41__ = __webpack_require__(/*! ./components/driver-popup-forms */ "./src/js/components/driver-popup-forms.ts");
+/* harmony import */ var _components_broker_popups__WEBPACK_IMPORTED_MODULE_42__ = __webpack_require__(/*! ./components/broker-popups */ "./src/js/components/broker-popups.ts");
+/* harmony import */ var _components_broker_popup_forms__WEBPACK_IMPORTED_MODULE_43__ = __webpack_require__(/*! ./components/broker-popup-forms */ "./src/js/components/broker-popup-forms.ts");
+/* harmony import */ var _components_driver_autocomplete__WEBPACK_IMPORTED_MODULE_44__ = __webpack_require__(/*! ./components/driver-autocomplete */ "./src/js/components/driver-autocomplete.ts");
+/* harmony import */ var _components_common_audio_helper__WEBPACK_IMPORTED_MODULE_45__ = __webpack_require__(/*! ./components/common/audio-helper */ "./src/js/components/common/audio-helper.ts");
+/* harmony import */ var _components_timer_control__WEBPACK_IMPORTED_MODULE_46__ = __webpack_require__(/*! ./components/timer-control */ "./src/js/components/timer-control.ts");
+/* harmony import */ var _components_timer_analytics__WEBPACK_IMPORTED_MODULE_47__ = __webpack_require__(/*! ./components/timer-analytics */ "./src/js/components/timer-analytics.ts");
+/* harmony import */ var _components_dark_mode_toggle__WEBPACK_IMPORTED_MODULE_48__ = __webpack_require__(/*! ./components/dark-mode-toggle */ "./src/js/components/dark-mode-toggle.ts");
+/* harmony import */ var _components_drivers_map__WEBPACK_IMPORTED_MODULE_49__ = __webpack_require__(/*! ./components/drivers-map */ "./src/js/components/drivers-map.ts");
+
 
 
 
@@ -26756,12 +26839,12 @@ function ready() {
   };
   var popupInstance = new _parts_popup_window__WEBPACK_IMPORTED_MODULE_2__["default"]();
   popupInstance.init();
-  _components_common_audio_helper__WEBPACK_IMPORTED_MODULE_44__["default"].getInstance();
-  var driverPopupForms = new _components_driver_popup_forms__WEBPACK_IMPORTED_MODULE_40__["default"](urlAjax);
-  var brokerPopupForms = new _components_broker_popup_forms__WEBPACK_IMPORTED_MODULE_42__["default"](urlAjax);
+  _components_common_audio_helper__WEBPACK_IMPORTED_MODULE_45__["default"].getInstance();
+  var driverPopupForms = new _components_driver_popup_forms__WEBPACK_IMPORTED_MODULE_41__["default"](urlAjax);
+  var brokerPopupForms = new _components_broker_popup_forms__WEBPACK_IMPORTED_MODULE_43__["default"](urlAjax);
   var singlePageBrokerUrl = (var_from_php === null || var_from_php === void 0 ? void 0 : var_from_php.single_page_broker) || '';
-  var brokerPopups = new _components_broker_popups__WEBPACK_IMPORTED_MODULE_41__["default"](urlAjax, singlePageBrokerUrl);
-  new _components_driver_autocomplete__WEBPACK_IMPORTED_MODULE_43__["default"](urlAjax, {
+  var brokerPopups = new _components_broker_popups__WEBPACK_IMPORTED_MODULE_42__["default"](urlAjax, singlePageBrokerUrl);
+  new _components_driver_autocomplete__WEBPACK_IMPORTED_MODULE_44__["default"](urlAjax, {
     unitInput: '.js-unit-number-input',
     dropdown: '.js-driver-dropdown',
     attachedDriverInput: 'input[name="attached_driver"]',
@@ -26770,7 +26853,7 @@ function ready() {
     nonceInput: '#driver-search-nonce',
     driverValueInput: '.js-driver-value'
   });
-  new _components_driver_autocomplete__WEBPACK_IMPORTED_MODULE_43__["default"](urlAjax, {
+  new _components_driver_autocomplete__WEBPACK_IMPORTED_MODULE_44__["default"](urlAjax, {
     unitInput: '.js-second-unit-number-input',
     dropdown: '.js-second-driver-dropdown',
     attachedDriverInput: 'input[name="attached_second_driver"]',
@@ -26778,7 +26861,7 @@ function ready() {
     unitNumberNameInput: 'input[name="second_unit_number_name"]',
     nonceInput: '#second-driver-search-nonce'
   });
-  new _components_driver_autocomplete__WEBPACK_IMPORTED_MODULE_43__["default"](urlAjax, {
+  new _components_driver_autocomplete__WEBPACK_IMPORTED_MODULE_44__["default"](urlAjax, {
     unitInput: '.js-third-unit-number-input',
     dropdown: '.js-third-driver-dropdown',
     attachedDriverInput: 'input[name="attached_third_driver"]',
@@ -26794,7 +26877,7 @@ function ready() {
     if (!wasVisible) {
       refererBlock.style.display = 'block';
     }
-    refererAutocomplete = new _components_driver_autocomplete__WEBPACK_IMPORTED_MODULE_43__["default"](urlAjax, {
+    refererAutocomplete = new _components_driver_autocomplete__WEBPACK_IMPORTED_MODULE_44__["default"](urlAjax, {
       unitInput: '.js-referer-unit-number-input',
       dropdown: '.js-referer-driver-dropdown',
       attachedDriverInput: '#referer_by',
@@ -26835,9 +26918,9 @@ function ready() {
       driverPopupForms.loadDriverStatistics(parseInt(driverIdInput.value));
     }
   }
-  new _components_timer_control__WEBPACK_IMPORTED_MODULE_45__.TimerControl(urlAjax);
-  new _components_timer_analytics__WEBPACK_IMPORTED_MODULE_46__.TimerAnalytics(urlAjax);
-  new _components_dark_mode_toggle__WEBPACK_IMPORTED_MODULE_47__["default"](urlAjax);
+  new _components_timer_control__WEBPACK_IMPORTED_MODULE_46__.TimerControl(urlAjax);
+  new _components_timer_analytics__WEBPACK_IMPORTED_MODULE_47__.TimerAnalytics(urlAjax);
+  new _components_dark_mode_toggle__WEBPACK_IMPORTED_MODULE_48__["default"](urlAjax);
   (0,_components_create_report__WEBPACK_IMPORTED_MODULE_4__.actionCreateReportInit)(urlAjax);
   (0,_components_create_report__WEBPACK_IMPORTED_MODULE_4__.createDraftPosts)(urlAjax);
   (0,_components_create_report__WEBPACK_IMPORTED_MODULE_4__.updateFilesReportInit)(urlAjax);
@@ -26875,8 +26958,9 @@ function ready() {
   (0,_components_quick_status_update__WEBPACK_IMPORTED_MODULE_35__.initQuickStatusUpdate)(urlAjax);
   (0,_components_eta_popup__WEBPACK_IMPORTED_MODULE_36__.initEtaPopups)();
   (0,_components_eta_timer__WEBPACK_IMPORTED_MODULE_37__.initEtaTimers)();
+  (0,_components_rating_reminder_modal__WEBPACK_IMPORTED_MODULE_38__.initRatingReminderModal)();
   if (hereApi) {
-    new _components_drivers_map__WEBPACK_IMPORTED_MODULE_48__["default"](urlAjax, hereApi);
+    new _components_drivers_map__WEBPACK_IMPORTED_MODULE_49__["default"](urlAjax, hereApi);
   }
   (0,_components_create_report__WEBPACK_IMPORTED_MODULE_4__.additionalContactsInit)();
   (0,_components_create_report__WEBPACK_IMPORTED_MODULE_4__.addShipperPointInit)();

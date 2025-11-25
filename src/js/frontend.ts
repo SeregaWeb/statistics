@@ -81,6 +81,7 @@ import { initCapabilitiesFilter } from './components/capabilities-filter';
 import { initQuickStatusUpdate } from './components/quick-status-update';
 import { initEtaPopups } from './components/eta-popup';
 import { initEtaTimers, updateEtaTimer } from './components/eta-timer';
+import { initRatingReminderModal } from './components/rating-reminder-modal';
 import './components/quick-copy';
 import './components/driver-popups';
 import DriverPopupForms from './components/driver-popup-forms';
@@ -280,6 +281,7 @@ function ready() {
     initQuickStatusUpdate(urlAjax);
     initEtaPopups();
     initEtaTimers();
+    initRatingReminderModal();
     
     // Initialize Drivers Map
     if (hereApi) {

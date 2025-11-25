@@ -497,7 +497,7 @@ $access_vehicle = $TMSUsers->check_user_role_access( [
                             <div class="col-12 mb-3 js-referer-block" style="display: <?php echo $source === 'recommendation' ? 'block' : 'none'; ?>;">
                     <div class="row">
                     <div class="col-12">
-                        <p class="h5">Referer</p>
+                        <p class="h5">Referred by</p>
                     </div>
                     <div class="col-12 col-md-6 col-xl-4 mb-3">
                             

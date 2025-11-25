@@ -18,6 +18,23 @@ $curent_tables = get_field( 'current_select', 'user_' . $user_id );
 
 $TMSUsers = new TMSUsers();
 
+$modal_rated = $TMSUsers->check_user_role_access( array(
+	'dispatcher',
+	'dispatcher-tl',
+	'expedite_manager',
+), true );
+
+$exclude_dispatchers_modal = get_field_value( $global_options, 'exclude_users_rating_modal' );
+if ( is_array( $exclude_dispatchers_modal ) && ! empty( $exclude_dispatchers_modal ) ) {
+	$exclude_dispatchers_modal = array_map( 'intval', $exclude_dispatchers_modal );
+} else {
+    $exclude_dispatchers_modal = array();
+}
+
+if ( in_array( $user_id, $exclude_dispatchers_modal ) ) {
+	$modal_rated = false;
+}
+
 $add_broker  = $TMSUsers->check_user_role_access( array(
 	'dispatcher',
 	'dispatcher-tl',
@@ -107,3 +124,71 @@ $logout_url = wp_logout_url( ! empty( $login_link ) ? $login_link : home_url() )
         </div>
     </div>
 </header>
+
+<?php 
+// Alert banner for administrators
+if ($modal_rated) {
+	$Drivers = new TMSDrivers();
+	$current_month = date('m');
+	$current_year = date('Y');
+	
+	$user_hardcode = $user_id;
+	
+	$dispatcher_ratings = $Drivers->get_dispatcher_rating_statistics_summary( $user_hardcode, $current_year, $current_month );
+	
+	// Show alert only if there are unrated loads
+	if ( ! empty( $dispatcher_ratings ) && $dispatcher_ratings['unrated_loads'] > 0 ) {
+		$unrated_loads = $dispatcher_ratings['unrated_loads'];
+		$rated_percentage = $dispatcher_ratings['rated_percentage'];
+		
+		// Determine alert color: red if unrated > 5 OR rated < 50%, otherwise primary (blue)
+		$alert_class = ( $unrated_loads > 5 || $rated_percentage < 50 ) ? 'alert-danger' : 'alert-primary';
+		
+		?>
+		<div class="alert <?php echo esc_attr( $alert_class ); ?> d-flex align-items-center justify-content-center text-center mb-1" role="alert">
+			
+			<div>
+				You currently have <?php echo esc_html( $unrated_loads ); ?> unrated load<?php echo $unrated_loads !== 1 ? 's' : ''; ?>. Please take a moment to rate the drivers.
+			</div>
+		</div>
+		<?php
+	}
+}
+
+// Modal for dispatchers (shown once per 30 minutes)
+if ( $modal_rated ) {
+	$Drivers = new TMSDrivers();
+	$current_month = date('m');
+	$current_year = date('Y');
+	
+	$dispatcher_ratings = $Drivers->get_dispatcher_rating_statistics_summary( $user_hardcode, $current_year, $current_month );
+	
+	// Show modal only if there are unrated loads
+	if ( ! empty( $dispatcher_ratings ) && $dispatcher_ratings['unrated_loads'] > 0 ) {
+		$unrated_loads = $dispatcher_ratings['unrated_loads'];
+		$rated_percentage = $dispatcher_ratings['rated_percentage'];
+		
+		// Determine alert color: red if unrated > 5 OR rated < 50%, otherwise primary (blue)
+		$alert_class = ( $unrated_loads > 5 || $rated_percentage < 50 ) ? 'alert-danger' : 'alert-primary';
+		$icon_class = ( $unrated_loads > 5 || $rated_percentage < 50 ) ? 'exclamation-triangle-fill' : 'info-fill';
+		?>
+		<!-- Rating Reminder Modal -->
+		<div class="modal fade" id="ratingReminderModal" tabindex="-1" aria-labelledby="ratingReminderModalLabel" aria-hidden="true" data-bs-backdrop="false" data-user-id="<?php echo esc_attr( $user_id ); ?>">
+			<div class="modal-dialog">
+				<div class="modal-content">
+					<div class="modal-header border-0 pb-0">
+						<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+					</div>
+					<div class="modal-body text-center">
+						<h5 class="modal-title mb-3" id="ratingReminderModalLabel">Rating Reminder</h5>
+						<p class="mb-0">
+							You currently have <?php echo esc_html( $unrated_loads ); ?> unrated load<?php echo $unrated_loads !== 1 ? 's' : ''; ?>. Please take a moment to rate the drivers.
+						</p>
+					</div>
+				</div>
+			</div>
+		</div>
+		<?php
+	}
+}
+?>

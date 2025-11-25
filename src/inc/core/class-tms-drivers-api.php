@@ -682,6 +682,18 @@ class TMSDriversAPI {
                 }
             }
             
+            // Fields that should not be saved as meta (they are main table fields or special fields)
+            // Mark them in update_data so update_driver_in_db can filter them
+            $update_data['_exclude_from_meta'] = array(
+                'driver_id',
+                'recruiter_add',
+                'status_date', // status_date is converted to date_available in main table
+                'user_id_updated',
+                'date_updated',
+                'user_id_added',
+                'date_created',
+            );
+            
             // Update driver location in database
             $result = $drivers->update_driver_in_db($update_data);
             

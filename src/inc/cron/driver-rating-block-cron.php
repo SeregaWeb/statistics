@@ -104,7 +104,7 @@ function tms_auto_block_low_rated_drivers_function() {
 	$min_rating = 2.5;
 	
 	// Find drivers with average rating below threshold
-	// Exclude drivers that are already blocked or banned
+	// Exclude drivers that are already blocked or banned, and drivers excluded from auto blocking
 	$query = "
 		SELECT 
 			main.id as driver_id,
@@ -117,8 +117,12 @@ function tms_auto_block_low_rated_drivers_function() {
 		LEFT JOIN {$table_meta} AS status
 			ON main.id = status.post_id
 			AND status.meta_key = 'driver_status'
+		LEFT JOIN {$table_meta} AS exclude_auto_block
+			ON main.id = exclude_auto_block.post_id
+			AND exclude_auto_block.meta_key = 'exclude_from_auto_block'
 		WHERE main.status_post = 'publish'
 			AND (status.meta_value IS NULL OR status.meta_value NOT IN ('blocked', 'banned'))
+			AND (exclude_auto_block.meta_value IS NULL OR exclude_auto_block.meta_value != '1')
 		GROUP BY main.id
 		HAVING AVG(rating.reit) < %f
 			AND COUNT(rating.id) > 0

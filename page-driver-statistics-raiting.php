@@ -1,6 +1,6 @@
 <?php
 /**
- * Template Name: Page driver statistics rating
+ * Template Name: Statistics - ratings
  *
  * @package WP-rock
  * @since 4.4.0
@@ -259,8 +259,16 @@ if ( $dispatcher_id > 0 ) {
 	<?php
 } else {
 	// Show main statistics table
+
+
+$exclude_dispatchers = get_field( 'exclude_users', get_the_ID() ) ?? [];
+
+if ( ! empty( $exclude_dispatchers ) ) {
+	$exclude_dispatchers = array_map( 'intval', $exclude_dispatchers );
+}
+
 	// Get statistics
-	$statistics = $Drivers->get_dispatcher_rating_statistics( $year, $month, $is_flt );
+	$statistics = $Drivers->get_dispatcher_rating_statistics( $year, $month, $is_flt, $exclude_dispatchers );
 	
 	// Get months for dropdown
 	$months = $helper->get_months();

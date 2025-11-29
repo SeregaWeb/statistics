@@ -1,5 +1,6 @@
 export interface AvailableLoadItem {
     load_number: string;
+    load_status: string;
     date_created: string | number;
 }
 
@@ -15,7 +16,8 @@ export function populateLoadSelect(
         loads.forEach((load: AvailableLoadItem) => {
             const option = document.createElement('option');
             option.value = load.load_number;
-            option.textContent = `${load.load_number} - ${new Date(load.date_created as any).toLocaleDateString()}`;
+            const loadStatus = load.load_status === 'tonu' ? ' (TONU)': '';
+            option.textContent = `${load.load_number}${loadStatus} - ${new Date(load.date_created as any).toLocaleDateString()}`;
             loadSelect.appendChild(option);
         });
         loadsInfo.textContent = `${loads.length} available load(s) for rating`;

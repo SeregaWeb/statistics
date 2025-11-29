@@ -14,14 +14,50 @@ $driver_name = get_field_value( $meta, 'driver_name' );
 
 // Get driver statistics
 $driver_statistics = $driver->get_driver_statistics( $post_id, true );
+
+$TMSUsers = new TMSUsers();
+
+$access_change_auto_block = $TMSUsers->check_user_role_access( array(
+    'administrator',
+    'recruiter',
+    'recruiter-tl',
+), true );
+
 ?>
 
 <div class="container mt-4 pb-5">
     <h2 class="mb-3">Driver Statistics & Rating</h2>
     
     <div class="row">
+
+        <?php if ( $access_change_auto_block ) : ?>
+            <div class="col-12">
+
+                <form id="ratingForm">
+
+                    <input type="hidden" name="driver_id" value="<?php echo $post_id; ?>">
+
+                    <div class="form-check form-switch mb-3">
+                        <?php 
+                        $exclude_from_auto_block = get_field_value( $meta, 'exclude_from_auto_block' );
+                        $is_excluded = ! empty( $exclude_from_auto_block ) && $exclude_from_auto_block === '1';
+                        ?>
+                        <input class="form-check-input" type="checkbox" id="exclude-from-auto-block" 
+                            name="exclude_from_auto_block" value="1" 
+                            <?php echo $is_excluded ? 'checked' : ''; ?>>
+                        <label class="form-check-label" for="exclude-from-auto-block">
+                            Exclude from auto blocking (low rating)
+                        </label>
+                    </div>
+
+                </form>
+
+            </div>
+        <?php endif; ?>
+
         <!-- Rating Section -->
         <div class="col-md-6 mb-4">
+        
             <div class="card">
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <h5 class="mb-0">Rating</h5>
@@ -123,7 +159,7 @@ $driver_statistics = $driver->get_driver_statistics( $post_id, true );
                                                         <span class="text-small">Order: <?php echo esc_html( $order_number ); ?></strong>
                                                         <br>
                                                     <?php endif; ?>
-                                                <?php echo esc_html( $rating['message'] ); ?></td>
+                                                <?php echo stripslashes( $rating['message'] ); ?></td>
                                             </tr>
                                         <?php endforeach; ?>
                                     </tbody>

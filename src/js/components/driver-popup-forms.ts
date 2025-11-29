@@ -23,6 +23,7 @@ class DriverPopupForms {
         this.listenForPopupOpen();
         this.handleDriverPageRatingModal();
         this.setupRatingConstraints();
+        this.handleAutoBlockExclude();
 
         // Reset UI state on popup open
         document.addEventListener('tms:rating-popup-open', () => {
@@ -524,6 +525,62 @@ class DriverPopupForms {
         const messageType = type === 'error' ? 'danger' : type;
         
         printMessage(message, messageType, 3000);
+    }
+
+    /**
+     * Handle auto block exclude checkbox
+     */
+    private handleAutoBlockExclude(): void {
+        const checkbox = document.getElementById('exclude-from-auto-block') as HTMLInputElement;
+        if (!checkbox) {
+            return;
+        }
+
+        checkbox.addEventListener('change', (e) => {
+            const target = e.target as HTMLInputElement;
+            const driverIdInput = document.querySelector('input[name="driver_id"]') as HTMLInputElement;
+            
+            if (!driverIdInput) {
+                return;
+            }
+
+            const driverId = parseInt(driverIdInput.value, 10);
+            if (!driverId) {
+                return;
+            }
+
+            // Disable checkbox while saving
+            checkbox.disabled = true;
+
+            const formData = new FormData();
+            formData.append('action', 'update_driver_auto_block_exclude');
+            formData.append('driver_id', driverId.toString());
+            formData.append('exclude_from_auto_block', target.checked ? '1' : '0');
+
+            fetch(this.ajaxUrl, {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    printMessage(data.data?.message || 'Setting updated successfully', 'success', 3000);
+                } else {
+                    printMessage(data.data?.message || 'Failed to update setting', 'danger', 5000);
+                    // Revert checkbox state on error
+                    target.checked = !target.checked;
+                }
+            })
+            .catch(error => {
+                console.error('Error updating auto block exclude:', error);
+                printMessage('Network error occurred', 'danger', 5000);
+                // Revert checkbox state on error
+                target.checked = !target.checked;
+            })
+            .finally(() => {
+                checkbox.disabled = false;
+            });
+        });
     }
 
     /**

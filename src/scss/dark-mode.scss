@@ -1978,3 +1978,114 @@ body.dark-mode .js-eta-timer.eta-timer-red .js-eta-timer-text {
 body.dark-mode .js-eta-timer.eta-timer-black .js-eta-timer-text {
     color: #ff6b6b; /* red instead of black for dark mode (better visibility) */
 }
+
+/* Dark mode for Drivers Rate page */
+body.dark-mode {
+    /* Card footer */
+    .dr-card-footer {
+        background-color: $dark-bg-secondary;
+        border-top-color: $dark-border;
+        color: $dark-text-primary;
+        
+        small {
+            color: $dark-text-secondary;
+        }
+    }
+    
+    /* Navigation tabs */
+    .dr-nav-tabs {
+        background-color: $dark-bg-secondary;
+        border-bottom-color: $dark-border;
+        
+        .nav-link {
+            color: $dark-text-secondary;
+            background-color: transparent;
+            border-color: transparent;
+            
+            &:hover {
+                color: $dark-text-primary;
+                background-color: $dark-bg-tertiary;
+                border-bottom-color: $dark-border;
+            }
+            
+            &.active {
+                color: $dark-text-primary;
+                background-color: transparent;
+                border-bottom-color: $dark-accent;
+            }
+        }
+    }
+    
+    /* Table styles */
+    .dr-table {
+        th {
+            background-color: $dark-bg-tertiary;
+            border-bottom-color: $dark-border;
+            color: $dark-text-primary;
+        }
+        
+        td {
+            border-top-color: $dark-border;
+            color: $dark-text-primary;
+        }
+        
+        tbody tr:hover {
+            background-color: $dark-bg-tertiary;
+        }
+    }
+    
+    /* Card header */
+    .dr-card-header {
+        background: linear-gradient(135deg, #4a5568 0%, #5a3d6b 100%);
+        color: $dark-text-primary;
+    }
+    
+    /* Text colors */
+    .dr-text-muted {
+        color: $dark-text-secondary !important;
+    }
+    
+    .dr-rating-number {
+        color: $dark-text-primary;
+    }
+    
+    .dr-loads-number {
+        color: $dark-success;
+    }
+    
+    .dr-profit-amount {
+        color: $dark-success;
+    }
+    
+    .dr-earnings-amount {
+        color: $dark-accent;
+    }
+    
+    /* Driver name link */
+    .dr-driver-name-link {
+        color: $dark-text-primary;
+        
+        &:hover {
+            color: $dark-accent;
+            
+            strong {
+                color: $dark-accent;
+            }
+        }
+    }
+    
+    .dr-table td:first-child + td strong {
+        color: $dark-text-primary;
+    }
+    
+    .dr-table td:first-child + td small {
+        color: $dark-text-secondary;
+    }
+    
+    /* Badge */
+    .dr-badge-light {
+        background-color: $dark-bg-tertiary;
+        color: $dark-text-primary;
+        border-color: $dark-border;
+    }
+}

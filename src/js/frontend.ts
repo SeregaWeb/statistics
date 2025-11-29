@@ -82,6 +82,7 @@ import { initQuickStatusUpdate } from './components/quick-status-update';
 import { initEtaPopups } from './components/eta-popup';
 import { initEtaTimers, updateEtaTimer } from './components/eta-timer';
 import { initRatingReminderModal } from './components/rating-reminder-modal';
+import { initDriversRate } from './components/drivers-rate';
 import './components/quick-copy';
 import './components/driver-popups';
 import DriverPopupForms from './components/driver-popup-forms';
@@ -282,6 +283,7 @@ function ready() {
     initEtaPopups();
     initEtaTimers();
     initRatingReminderModal();
+    initDriversRate();
     
     // Initialize Drivers Map
     if (hereApi) {

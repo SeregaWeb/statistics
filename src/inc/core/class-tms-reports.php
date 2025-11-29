@@ -145,14 +145,20 @@ class TMSReports extends TMSReportsHelper {
 		// Создаем строку плейсхолдеров для дат
 		$date_placeholders = implode( ',', array_fill( 0, count( $array_dates ), '%s' ) );
 		// Формируем базовый SQL-запрос.
-		// В данном запросе получаем сумму прибыли (meta с meta_key = 'profit') для каждой даты.
+		// В данном запросе получаем сумму прибыли (meta с meta_key = 'profit') для каждой даты и source.
 		// Если задан офис (и он не 'all'), то добавляем LEFT JOIN для фильтрации по метаполю office_dispatcher.
 		$query = "
-        SELECT DATE(main.date_booked) AS date, AVG(profit.meta_value) AS average_profit, SUM(profit.meta_value) AS total_profit
+        SELECT 
+            DATE(main.date_booked) AS date, 
+            COALESCE(source_meta.meta_value, '') AS source,
+            AVG(profit.meta_value) AS average_profit, 
+            SUM(profit.meta_value) AS total_profit,
+            COUNT(main.id) AS load_count
         FROM $table_main AS main
         LEFT JOIN $table_meta AS profit ON main.id = profit.post_id AND profit.meta_key = 'profit'
      	INNER JOIN $table_meta AS load_status ON main.id = load_status.post_id AND load_status.meta_key = 'load_status'
-    ";
+     	LEFT JOIN $table_meta AS source_meta ON main.id = source_meta.post_id AND source_meta.meta_key = 'source'
+    			";
 		
 		// Массив параметров для плейсхолдеров. Сначала передаем даты.
 		$params = array_values( $array_dates );
@@ -171,8 +177,8 @@ class TMSReports extends TMSReportsHelper {
 			$params[] = $office;
 		}
 		
-		$query .= " GROUP BY DATE(main.date_booked)
-                ORDER BY DATE(main.date_booked) ASC ";
+		$query .= " GROUP BY DATE(main.date_booked), source_meta.meta_value
+                ORDER BY DATE(main.date_booked) ASC, source_meta.meta_value ASC ";
 		
 		// Подготавливаем запрос с переданными параметрами
 		$query = $wpdb->prepare( $query, ...$params );
@@ -187,14 +193,65 @@ class TMSReports extends TMSReportsHelper {
 			return array();
 		}
 		
-		// Преобразуем результат в ассоциативный массив вида: 'YYYY-MM-DD' => сумма профита
+		// Преобразуем результат в ассоциативный массив вида: 'YYYY-MM-DD' => сумма профита + профит по source
 		$profit_by_date = array();
+		$date_totals = array(); // Для хранения общего профита и количества грузов по датам
+		
 		foreach ( $results as $row ) {
 			if ( ! empty( $row[ 'date' ] ) ) {
-				$profit_by_date[ $row[ 'date' ] ][ 'total' ]   = (float) $row[ 'total_profit' ];
-				$profit_by_date[ $row[ 'date' ] ][ 'average' ] = (float) $row[ 'average_profit' ];
+				$date = $row[ 'date' ];
+				$source = ! empty( $row[ 'source' ] ) ? $row[ 'source' ] : '';
+				$total_profit = (float) $row[ 'total_profit' ];
+				$average_profit = (float) $row[ 'average_profit' ];
+				$load_count = isset( $row[ 'load_count' ] ) ? (int) $row[ 'load_count' ] : 0;
+				
+				// Инициализируем структуру для даты, если еще не создана
+				if ( ! isset( $profit_by_date[ $date ] ) ) {
+					$profit_by_date[ $date ] = array(
+						'total' => 0,
+						'average' => 0,
+					);
+					$date_totals[ $date ] = array(
+						'total_profit' => 0,
+						'total_count' => 0,
+					);
+				}
+				
+				// Добавляем к общему профиту и количеству грузов
+				$profit_by_date[ $date ][ 'total' ] += $total_profit;
+				$date_totals[ $date ][ 'total_profit' ] += $total_profit;
+				$date_totals[ $date ][ 'total_count' ] += $load_count;
+				
+				// Сохраняем профит по source
+				if ( ! empty( $source ) ) {
+					if ( ! isset( $profit_by_date[ $date ][ $source ] ) ) {
+						$profit_by_date[ $date ][ $source ] = array(
+							'total' => 0,
+							'average' => 0,
+							'count' => 0,
+						);
+					}
+					$profit_by_date[ $date ][ $source ][ 'total' ] += $total_profit;
+					$profit_by_date[ $date ][ $source ][ 'count' ] += $load_count;
+					// Для среднего по source используем среднее значение из запроса (AVG уже рассчитан для этой группы)
+					$profit_by_date[ $date ][ $source ][ 'average' ] = $average_profit;
+				}
+				
+				// Подсчитываем количество грузов для расчета общего среднего
+				// Используем количество грузов из запроса (можно получить через COUNT, но пока используем приблизительный расчет)
+				// Для точности нужно будет добавить COUNT в SELECT
 			}
 		}
+		
+		// Пересчитываем общее среднее для каждой даты: общий профит / общее количество грузов
+		foreach ( $profit_by_date as $date => &$data ) {
+			if ( isset( $date_totals[ $date ] ) && $date_totals[ $date ][ 'total_count' ] > 0 ) {
+				$data[ 'average' ] = $date_totals[ $date ][ 'total_profit' ] / $date_totals[ $date ][ 'total_count' ];
+			} else {
+				$data[ 'average' ] = 0;
+			}
+		}
+		unset( $data ); // Убираем ссылку
 		
 		return $profit_by_date;
 	}

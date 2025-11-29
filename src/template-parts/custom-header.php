@@ -131,13 +131,15 @@ if ($modal_rated) {
 	$Drivers = new TMSDrivers();
 	$current_month = date('m');
 	$current_year = date('Y');
+
+	// if (current_user_can('administrator')) {
+	// 	$user_id = 51;
+	// } 
 	
-	$user_hardcode = $user_id;
-	
-	$dispatcher_ratings = $Drivers->get_dispatcher_rating_statistics_summary( $user_hardcode, $current_year, $current_month );
+	$dispatcher_ratings = $Drivers->get_dispatcher_rating_statistics_summary( $user_id, $current_year, $current_month );
 	
 	// Show alert only if there are unrated loads
-	if ( ! empty( $dispatcher_ratings ) && $dispatcher_ratings['unrated_loads'] > 0 ) {
+	if ( ! empty( $dispatcher_ratings ) && $dispatcher_ratings['unrated_loads'] > 0 && $dispatcher_ratings['rated_percentage'] < 90 ) {
 		$unrated_loads = $dispatcher_ratings['unrated_loads'];
 		$rated_percentage = $dispatcher_ratings['rated_percentage'];
 		
@@ -151,27 +153,7 @@ if ($modal_rated) {
 				You currently have <?php echo esc_html( $unrated_loads ); ?> unrated load<?php echo $unrated_loads !== 1 ? 's' : ''; ?>. Please take a moment to rate the drivers.
 			</div>
 		</div>
-		<?php
-	}
-}
 
-// Modal for dispatchers (shown once per 30 minutes)
-if ( $modal_rated ) {
-	$Drivers = new TMSDrivers();
-	$current_month = date('m');
-	$current_year = date('Y');
-	
-	$dispatcher_ratings = $Drivers->get_dispatcher_rating_statistics_summary( $user_hardcode, $current_year, $current_month );
-	
-	// Show modal only if there are unrated loads
-	if ( ! empty( $dispatcher_ratings ) && $dispatcher_ratings['unrated_loads'] > 0 ) {
-		$unrated_loads = $dispatcher_ratings['unrated_loads'];
-		$rated_percentage = $dispatcher_ratings['rated_percentage'];
-		
-		// Determine alert color: red if unrated > 5 OR rated < 50%, otherwise primary (blue)
-		$alert_class = ( $unrated_loads > 5 || $rated_percentage < 50 ) ? 'alert-danger' : 'alert-primary';
-		$icon_class = ( $unrated_loads > 5 || $rated_percentage < 50 ) ? 'exclamation-triangle-fill' : 'info-fill';
-		?>
 		<!-- Rating Reminder Modal -->
 		<div class="modal fade" id="ratingReminderModal" tabindex="-1" aria-labelledby="ratingReminderModalLabel" aria-hidden="true" data-bs-backdrop="false" data-user-id="<?php echo esc_attr( $user_id ); ?>">
 			<div class="modal-dialog">

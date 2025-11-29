@@ -1,0 +1,302 @@
+/**
+ * Drivers Rate Statistics Page Styles
+ * Unique selectors with dr- prefix
+ */
+
+.dr-card {
+    border: none;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+.dr-card-body {
+    padding: 0;
+}
+
+/* Avatar styling */
+.dr-avatar-sm {
+    width: 45px;
+    height: 45px;
+    font-size: 16px;
+    font-weight: bold;
+    margin-right: 12px;
+    border: 2px solid rgba(255, 255, 255, 0.2);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* Table styling */
+.dr-table {
+    margin-bottom: 0;
+}
+
+.dr-table th {
+    border-top: none;
+    font-weight: 600;
+    font-size: 0.9rem;
+    padding: 1rem 0.75rem;
+    background-color: #f8f9fa;
+    border-bottom: 2px solid #dee2e6;
+}
+
+.dr-table td {
+    vertical-align: middle;
+    border-top: 1px solid #dee2e6;
+    padding: 1rem 0.75rem;
+}
+
+.dr-table tbody tr:hover {
+    background-color: #f8f9fa;
+    transform: translateY(-1px);
+    transition: all 0.2s ease;
+}
+
+/* Rating display */
+.dr-rating-display {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.dr-rating-stars {
+    display: flex;
+    gap: 2px;
+    font-size: 1.1rem;
+}
+
+.dr-rating-stars i {
+    font-size: 1rem;
+}
+
+.dr-rating-number {
+    font-size: 1.1rem;
+    color: #495057;
+}
+
+/* Loads display */
+.dr-loads-display {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.dr-loads-icon {
+    font-size: 1.2rem;
+}
+
+.dr-loads-number {
+    font-size: 1.2rem;
+    color: #28a745;
+}
+
+/* Profit display */
+.dr-profit-display {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.dr-profit-icon {
+    font-size: 1.2rem;
+}
+
+.dr-profit-amount {
+    font-size: 1.1rem;
+    color: #28a745;
+}
+
+/* Earnings display */
+.dr-earnings-display {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.dr-earnings-icon {
+    font-size: 1.2rem;
+}
+
+.dr-earnings-amount {
+    font-size: 1.1rem;
+    color: #007bff;
+}
+
+/* Card header */
+.dr-card-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border-bottom: none;
+    padding: 1.5rem;
+}
+
+.dr-card-header .dr-card-title {
+    margin: 0;
+    font-weight: 600;
+    font-size: 1.5rem;
+}
+
+.dr-card-header .badge {
+    background-color: rgba(255, 255, 255, 0.2);
+    color: white;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    font-size: 0.9rem;
+    padding: 0.5rem 1rem;
+}
+
+/* Icons and decorations */
+.dr-fa-trophy,
+.dr-fa-medal {
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
+    font-size: 1.2rem;
+}
+
+.dr-fa-trophy {
+    color: #ffc107 !important;
+}
+
+.dr-fa-medal {
+    color: #6c757d !important;
+}
+
+/* Color scheme */
+.dr-text-warning {
+    color: #ffc107 !important;
+}
+
+.dr-text-success {
+    color: #28a745 !important;
+}
+
+.dr-text-primary {
+    color: #007bff !important;
+}
+
+.dr-text-muted {
+    color: #6c757d !important;
+}
+
+/* Badge styling */
+.dr-badge-light {
+    background-color: #f8f9fa;
+    color: #495057;
+    border: 1px solid #dee2e6;
+    font-size: 0.9rem;
+    padding: 0.4rem 0.8rem;
+    border-radius: 6px;
+}
+
+/* Card footer */
+.dr-card-footer {
+    background-color: #f8f9fa;
+    border-top: 1px solid #dee2e6;
+    padding: 1rem 1.5rem;
+}
+
+.dr-card-footer small {
+    font-size: 0.85rem;
+}
+
+/* Tabs styling */
+.dr-nav-tabs {
+    border-bottom: 2px solid #dee2e6;
+    background-color: #f8f9fa;
+    padding: 0.5rem 1rem 0;
+}
+
+.dr-nav-tabs .nav-link {
+    border: none;
+    border-bottom: 3px solid transparent;
+    color: #6c757d;
+    font-weight: 500;
+    padding: 0.75rem 1.5rem;
+    transition: all 0.3s ease;
+}
+
+.dr-nav-tabs .nav-link:hover {
+    border-bottom-color: #dee2e6;
+    color: #495057;
+}
+
+.dr-nav-tabs .nav-link.active {
+    color: #495057;
+    background-color: transparent;
+    border-bottom-color: #667eea;
+}
+
+.dr-nav-tabs .nav-link i {
+    margin-right: 0.5rem;
+}
+
+.dr-tab-content {
+    min-height: 400px;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .dr-table th,
+    .dr-table td {
+        padding: 0.75rem 0.5rem;
+        font-size: 0.9rem;
+    }
+    
+    .dr-rating-stars {
+        font-size: 0.9rem;
+    }
+    
+    .dr-loads-number,
+    .dr-profit-amount,
+    .dr-earnings-amount {
+        font-size: 1rem;
+    }
+}
+
+/* Animation for table rows */
+.dr-table tbody tr {
+    transition: all 0.2s ease;
+}
+
+/* Enhanced hover effects */
+.dr-table tbody tr:hover {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* Driver name styling */
+.dr-table td:first-child + td {
+    padding-left: 1.5rem;
+}
+
+.dr-table td:first-child + td strong {
+    font-size: 1.1rem;
+    color: #495057;
+}
+
+.dr-table td:first-child + td small {
+    font-size: 0.85rem;
+    color: #6c757d;
+}
+
+/* Driver name link styling */
+.dr-driver-name-link {
+    text-decoration: none;
+    color: #495057;
+    transition: all 0.2s ease;
+}
+
+.dr-driver-name-link:hover {
+    color: #007bff;
+    text-decoration: none;
+}
+
+.dr-driver-name-link strong {
+    transition: all 0.2s ease;
+}
+
+.dr-driver-name-link:hover strong {
+    color: #007bff;
+    transform: translateX(2px);
+}
+

@@ -8093,6 +8093,7 @@ var DriverPopupForms = /*#__PURE__*/function () {
       this.listenForPopupOpen();
       this.handleDriverPageRatingModal();
       this.setupRatingConstraints();
+      this.handleAutoBlockExclude();
       document.addEventListener('tms:rating-popup-open', function () {
         _this.resetRatingUIState();
       });
@@ -8469,9 +8470,54 @@ var DriverPopupForms = /*#__PURE__*/function () {
       (0,_info_messages__WEBPACK_IMPORTED_MODULE_0__.printMessage)(message, messageType, 3000);
     }
   }, {
+    key: "handleAutoBlockExclude",
+    value: function handleAutoBlockExclude() {
+      var _this10 = this;
+      var checkbox = document.getElementById('exclude-from-auto-block');
+      if (!checkbox) {
+        return;
+      }
+      checkbox.addEventListener('change', function (e) {
+        var target = e.target;
+        var driverIdInput = document.querySelector('input[name="driver_id"]');
+        if (!driverIdInput) {
+          return;
+        }
+        var driverId = parseInt(driverIdInput.value, 10);
+        if (!driverId) {
+          return;
+        }
+        checkbox.disabled = true;
+        var formData = new FormData();
+        formData.append('action', 'update_driver_auto_block_exclude');
+        formData.append('driver_id', driverId.toString());
+        formData.append('exclude_from_auto_block', target.checked ? '1' : '0');
+        fetch(_this10.ajaxUrl, {
+          method: 'POST',
+          body: formData
+        }).then(function (response) {
+          return response.json();
+        }).then(function (data) {
+          var _a, _b;
+          if (data.success) {
+            (0,_info_messages__WEBPACK_IMPORTED_MODULE_0__.printMessage)(((_a = data.data) === null || _a === void 0 ? void 0 : _a.message) || 'Setting updated successfully', 'success', 3000);
+          } else {
+            (0,_info_messages__WEBPACK_IMPORTED_MODULE_0__.printMessage)(((_b = data.data) === null || _b === void 0 ? void 0 : _b.message) || 'Failed to update setting', 'danger', 5000);
+            target.checked = !target.checked;
+          }
+        }).catch(function (error) {
+          console.error('Error updating auto block exclude:', error);
+          (0,_info_messages__WEBPACK_IMPORTED_MODULE_0__.printMessage)('Network error occurred', 'danger', 5000);
+          target.checked = !target.checked;
+        }).finally(function () {
+          checkbox.disabled = false;
+        });
+      });
+    }
+  }, {
     key: "loadDriverStatistics",
     value: function loadDriverStatistics(driverId) {
-      var _this10 = this;
+      var _this11 = this;
       var container = document.getElementById('driver-statistics-container');
       if (!container) {
         return;
@@ -8490,13 +8536,13 @@ var DriverPopupForms = /*#__PURE__*/function () {
         return response.json();
       }).then(function (data) {
         if (data.success) {
-          _this10.displayDriverStatistics(data.data);
+          _this11.displayDriverStatistics(data.data);
         } else {
-          _this10.showStatisticsError(data.data || 'Failed to load statistics');
+          _this11.showStatisticsError(data.data || 'Failed to load statistics');
         }
       }).catch(function (error) {
         console.error('Error loading driver statistics:', error);
-        _this10.showStatisticsError('Network error occurred');
+        _this11.showStatisticsError('Network error occurred');
       });
     }
   }, {
@@ -9369,6 +9415,54 @@ var DriversMap = /*#__PURE__*/function () {
   }]);
 }();
 /* harmony default export */ __webpack_exports__["default"] = (DriversMap);
+
+/***/ }),
+
+/***/ "./src/js/components/drivers-rate.ts":
+/*!*******************************************!*\
+  !*** ./src/js/components/drivers-rate.ts ***!
+  \*******************************************/
+/***/ (function(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   initDriversRate: function() { return /* binding */ initDriversRate; }
+/* harmony export */ });
+function initDriversRate() {
+  var performanceTab = document.getElementById('dr-performance-tab');
+  var ratingsTab = document.getElementById('dr-ratings-tab');
+  var footerInfoText = document.getElementById('dr-footer-info-text');
+  var footerCountText = document.getElementById('dr-footer-count-text');
+  if (!performanceTab || !ratingsTab || !footerInfoText || !footerCountText) {
+    return;
+  }
+  var performanceInfo = performanceTab.getAttribute('data-info') || 'Sorted by delivered loads count, then by total profit';
+  var performanceCount = performanceTab.getAttribute('data-count') || '0 drivers';
+  var ratingsInfo = ratingsTab.getAttribute('data-info') || 'Sorted by rating count (desc), then by average rating (desc)';
+  var ratingsCount = ratingsTab.getAttribute('data-count') || '0 drivers';
+  function updateFooter(isPerformance) {
+    if (footerInfoText && footerCountText) {
+      if (isPerformance) {
+        footerInfoText.textContent = performanceInfo;
+        footerCountText.textContent = performanceCount;
+      } else {
+        footerInfoText.textContent = ratingsInfo;
+        footerCountText.textContent = ratingsCount;
+      }
+    }
+  }
+  if (performanceTab) {
+    performanceTab.addEventListener('shown.bs.tab', function () {
+      updateFooter(true);
+    });
+  }
+  if (ratingsTab) {
+    ratingsTab.addEventListener('shown.bs.tab', function () {
+      updateFooter(false);
+    });
+  }
+}
 
 /***/ }),
 
@@ -13995,7 +14089,8 @@ function populateLoadSelect(loadSelect, loadsInfo, loads) {
     loads.forEach(function (load) {
       var option = document.createElement('option');
       option.value = load.load_number;
-      option.textContent = "".concat(load.load_number, " - ").concat(new Date(load.date_created).toLocaleDateString());
+      var loadStatus = load.load_status === 'tonu' ? ' (TONU)' : '';
+      option.textContent = "".concat(load.load_number).concat(loadStatus, " - ").concat(new Date(load.date_created).toLocaleDateString());
       loadSelect.appendChild(option);
     });
     loadsInfo.textContent = "".concat(loads.length, " available load(s) for rating");
@@ -26763,17 +26858,19 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _components_eta_popup__WEBPACK_IMPORTED_MODULE_36__ = __webpack_require__(/*! ./components/eta-popup */ "./src/js/components/eta-popup.ts");
 /* harmony import */ var _components_eta_timer__WEBPACK_IMPORTED_MODULE_37__ = __webpack_require__(/*! ./components/eta-timer */ "./src/js/components/eta-timer.ts");
 /* harmony import */ var _components_rating_reminder_modal__WEBPACK_IMPORTED_MODULE_38__ = __webpack_require__(/*! ./components/rating-reminder-modal */ "./src/js/components/rating-reminder-modal.ts");
-/* harmony import */ var _components_quick_copy__WEBPACK_IMPORTED_MODULE_39__ = __webpack_require__(/*! ./components/quick-copy */ "./src/js/components/quick-copy.ts");
-/* harmony import */ var _components_driver_popups__WEBPACK_IMPORTED_MODULE_40__ = __webpack_require__(/*! ./components/driver-popups */ "./src/js/components/driver-popups.ts");
-/* harmony import */ var _components_driver_popup_forms__WEBPACK_IMPORTED_MODULE_41__ = __webpack_require__(/*! ./components/driver-popup-forms */ "./src/js/components/driver-popup-forms.ts");
-/* harmony import */ var _components_broker_popups__WEBPACK_IMPORTED_MODULE_42__ = __webpack_require__(/*! ./components/broker-popups */ "./src/js/components/broker-popups.ts");
-/* harmony import */ var _components_broker_popup_forms__WEBPACK_IMPORTED_MODULE_43__ = __webpack_require__(/*! ./components/broker-popup-forms */ "./src/js/components/broker-popup-forms.ts");
-/* harmony import */ var _components_driver_autocomplete__WEBPACK_IMPORTED_MODULE_44__ = __webpack_require__(/*! ./components/driver-autocomplete */ "./src/js/components/driver-autocomplete.ts");
-/* harmony import */ var _components_common_audio_helper__WEBPACK_IMPORTED_MODULE_45__ = __webpack_require__(/*! ./components/common/audio-helper */ "./src/js/components/common/audio-helper.ts");
-/* harmony import */ var _components_timer_control__WEBPACK_IMPORTED_MODULE_46__ = __webpack_require__(/*! ./components/timer-control */ "./src/js/components/timer-control.ts");
-/* harmony import */ var _components_timer_analytics__WEBPACK_IMPORTED_MODULE_47__ = __webpack_require__(/*! ./components/timer-analytics */ "./src/js/components/timer-analytics.ts");
-/* harmony import */ var _components_dark_mode_toggle__WEBPACK_IMPORTED_MODULE_48__ = __webpack_require__(/*! ./components/dark-mode-toggle */ "./src/js/components/dark-mode-toggle.ts");
-/* harmony import */ var _components_drivers_map__WEBPACK_IMPORTED_MODULE_49__ = __webpack_require__(/*! ./components/drivers-map */ "./src/js/components/drivers-map.ts");
+/* harmony import */ var _components_drivers_rate__WEBPACK_IMPORTED_MODULE_39__ = __webpack_require__(/*! ./components/drivers-rate */ "./src/js/components/drivers-rate.ts");
+/* harmony import */ var _components_quick_copy__WEBPACK_IMPORTED_MODULE_40__ = __webpack_require__(/*! ./components/quick-copy */ "./src/js/components/quick-copy.ts");
+/* harmony import */ var _components_driver_popups__WEBPACK_IMPORTED_MODULE_41__ = __webpack_require__(/*! ./components/driver-popups */ "./src/js/components/driver-popups.ts");
+/* harmony import */ var _components_driver_popup_forms__WEBPACK_IMPORTED_MODULE_42__ = __webpack_require__(/*! ./components/driver-popup-forms */ "./src/js/components/driver-popup-forms.ts");
+/* harmony import */ var _components_broker_popups__WEBPACK_IMPORTED_MODULE_43__ = __webpack_require__(/*! ./components/broker-popups */ "./src/js/components/broker-popups.ts");
+/* harmony import */ var _components_broker_popup_forms__WEBPACK_IMPORTED_MODULE_44__ = __webpack_require__(/*! ./components/broker-popup-forms */ "./src/js/components/broker-popup-forms.ts");
+/* harmony import */ var _components_driver_autocomplete__WEBPACK_IMPORTED_MODULE_45__ = __webpack_require__(/*! ./components/driver-autocomplete */ "./src/js/components/driver-autocomplete.ts");
+/* harmony import */ var _components_common_audio_helper__WEBPACK_IMPORTED_MODULE_46__ = __webpack_require__(/*! ./components/common/audio-helper */ "./src/js/components/common/audio-helper.ts");
+/* harmony import */ var _components_timer_control__WEBPACK_IMPORTED_MODULE_47__ = __webpack_require__(/*! ./components/timer-control */ "./src/js/components/timer-control.ts");
+/* harmony import */ var _components_timer_analytics__WEBPACK_IMPORTED_MODULE_48__ = __webpack_require__(/*! ./components/timer-analytics */ "./src/js/components/timer-analytics.ts");
+/* harmony import */ var _components_dark_mode_toggle__WEBPACK_IMPORTED_MODULE_49__ = __webpack_require__(/*! ./components/dark-mode-toggle */ "./src/js/components/dark-mode-toggle.ts");
+/* harmony import */ var _components_drivers_map__WEBPACK_IMPORTED_MODULE_50__ = __webpack_require__(/*! ./components/drivers-map */ "./src/js/components/drivers-map.ts");
+
 
 
 
@@ -26839,12 +26936,12 @@ function ready() {
   };
   var popupInstance = new _parts_popup_window__WEBPACK_IMPORTED_MODULE_2__["default"]();
   popupInstance.init();
-  _components_common_audio_helper__WEBPACK_IMPORTED_MODULE_45__["default"].getInstance();
-  var driverPopupForms = new _components_driver_popup_forms__WEBPACK_IMPORTED_MODULE_41__["default"](urlAjax);
-  var brokerPopupForms = new _components_broker_popup_forms__WEBPACK_IMPORTED_MODULE_43__["default"](urlAjax);
+  _components_common_audio_helper__WEBPACK_IMPORTED_MODULE_46__["default"].getInstance();
+  var driverPopupForms = new _components_driver_popup_forms__WEBPACK_IMPORTED_MODULE_42__["default"](urlAjax);
+  var brokerPopupForms = new _components_broker_popup_forms__WEBPACK_IMPORTED_MODULE_44__["default"](urlAjax);
   var singlePageBrokerUrl = (var_from_php === null || var_from_php === void 0 ? void 0 : var_from_php.single_page_broker) || '';
-  var brokerPopups = new _components_broker_popups__WEBPACK_IMPORTED_MODULE_42__["default"](urlAjax, singlePageBrokerUrl);
-  new _components_driver_autocomplete__WEBPACK_IMPORTED_MODULE_44__["default"](urlAjax, {
+  var brokerPopups = new _components_broker_popups__WEBPACK_IMPORTED_MODULE_43__["default"](urlAjax, singlePageBrokerUrl);
+  new _components_driver_autocomplete__WEBPACK_IMPORTED_MODULE_45__["default"](urlAjax, {
     unitInput: '.js-unit-number-input',
     dropdown: '.js-driver-dropdown',
     attachedDriverInput: 'input[name="attached_driver"]',
@@ -26853,7 +26950,7 @@ function ready() {
     nonceInput: '#driver-search-nonce',
     driverValueInput: '.js-driver-value'
   });
-  new _components_driver_autocomplete__WEBPACK_IMPORTED_MODULE_44__["default"](urlAjax, {
+  new _components_driver_autocomplete__WEBPACK_IMPORTED_MODULE_45__["default"](urlAjax, {
     unitInput: '.js-second-unit-number-input',
     dropdown: '.js-second-driver-dropdown',
     attachedDriverInput: 'input[name="attached_second_driver"]',
@@ -26861,7 +26958,7 @@ function ready() {
     unitNumberNameInput: 'input[name="second_unit_number_name"]',
     nonceInput: '#second-driver-search-nonce'
   });
-  new _components_driver_autocomplete__WEBPACK_IMPORTED_MODULE_44__["default"](urlAjax, {
+  new _components_driver_autocomplete__WEBPACK_IMPORTED_MODULE_45__["default"](urlAjax, {
     unitInput: '.js-third-unit-number-input',
     dropdown: '.js-third-driver-dropdown',
     attachedDriverInput: 'input[name="attached_third_driver"]',
@@ -26877,7 +26974,7 @@ function ready() {
     if (!wasVisible) {
       refererBlock.style.display = 'block';
     }
-    refererAutocomplete = new _components_driver_autocomplete__WEBPACK_IMPORTED_MODULE_44__["default"](urlAjax, {
+    refererAutocomplete = new _components_driver_autocomplete__WEBPACK_IMPORTED_MODULE_45__["default"](urlAjax, {
       unitInput: '.js-referer-unit-number-input',
       dropdown: '.js-referer-driver-dropdown',
       attachedDriverInput: '#referer_by',
@@ -26918,9 +27015,9 @@ function ready() {
       driverPopupForms.loadDriverStatistics(parseInt(driverIdInput.value));
     }
   }
-  new _components_timer_control__WEBPACK_IMPORTED_MODULE_46__.TimerControl(urlAjax);
-  new _components_timer_analytics__WEBPACK_IMPORTED_MODULE_47__.TimerAnalytics(urlAjax);
-  new _components_dark_mode_toggle__WEBPACK_IMPORTED_MODULE_48__["default"](urlAjax);
+  new _components_timer_control__WEBPACK_IMPORTED_MODULE_47__.TimerControl(urlAjax);
+  new _components_timer_analytics__WEBPACK_IMPORTED_MODULE_48__.TimerAnalytics(urlAjax);
+  new _components_dark_mode_toggle__WEBPACK_IMPORTED_MODULE_49__["default"](urlAjax);
   (0,_components_create_report__WEBPACK_IMPORTED_MODULE_4__.actionCreateReportInit)(urlAjax);
   (0,_components_create_report__WEBPACK_IMPORTED_MODULE_4__.createDraftPosts)(urlAjax);
   (0,_components_create_report__WEBPACK_IMPORTED_MODULE_4__.updateFilesReportInit)(urlAjax);
@@ -26959,8 +27056,9 @@ function ready() {
   (0,_components_eta_popup__WEBPACK_IMPORTED_MODULE_36__.initEtaPopups)();
   (0,_components_eta_timer__WEBPACK_IMPORTED_MODULE_37__.initEtaTimers)();
   (0,_components_rating_reminder_modal__WEBPACK_IMPORTED_MODULE_38__.initRatingReminderModal)();
+  (0,_components_drivers_rate__WEBPACK_IMPORTED_MODULE_39__.initDriversRate)();
   if (hereApi) {
-    new _components_drivers_map__WEBPACK_IMPORTED_MODULE_49__["default"](urlAjax, hereApi);
+    new _components_drivers_map__WEBPACK_IMPORTED_MODULE_50__["default"](urlAjax, hereApi);
   }
   (0,_components_create_report__WEBPACK_IMPORTED_MODULE_4__.additionalContactsInit)();
   (0,_components_create_report__WEBPACK_IMPORTED_MODULE_4__.addShipperPointInit)();

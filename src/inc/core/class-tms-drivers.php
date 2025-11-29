@@ -71,6 +71,7 @@ class TMSDrivers extends TMSDriversHelper {
 			'get_driver_notices'           => 'get_driver_notices',
 			'get_all_driver_loads'         => 'ajax_get_all_driver_loads',
 			'get_drivers_for_map'          => 'ajax_get_drivers_for_map',
+			'update_driver_auto_block_exclude' => 'ajax_update_driver_auto_block_exclude',
 		);
 		
 		foreach ( $actions as $ajax_action => $method ) {
@@ -1778,6 +1779,7 @@ class TMSDrivers extends TMSDriversHelper {
 			wp_send_json_error( [ 'message' => 'Invalid request' ] );
 		}
 	}
+	
 	public function update_driver_status_in_db( $data ) {
 		global $wpdb;
 		
@@ -2353,11 +2355,9 @@ class TMSDrivers extends TMSDriversHelper {
 				// Additional date validation might be required
 				'owner_enabled'              => isset( $_POST[ 'owner_enabled' ] )
 					? sanitize_text_field( $_POST[ 'owner_enabled' ] ) : '',
-				'mc_enabled'                 => isset( $_POST[ 'mc_enabled' ] )
-					? sanitize_text_field( $_POST[ 'mc_enabled' ] ) : '',
+				'mc_enabled'                 => isset( $_POST[ 'mc_enabled' ] ) ? 'on' : '',
 				'mc'                         => isset( $_POST[ 'mc' ] ) ? sanitize_text_field( $_POST[ 'mc' ] ) : '',
-				'dot_enabled'                => isset( $_POST[ 'dot_enabled' ] )
-					? sanitize_text_field( $_POST[ 'dot_enabled' ] ) : '',
+				'dot_enabled'                => isset( $_POST[ 'dot_enabled' ] ) ? 'on' : '',
 				'dot'                        => isset( $_POST[ 'dot' ] ) ? sanitize_text_field( $_POST[ 'dot' ] ) : '',
 				'owner_name'                 => isset( $_POST[ 'owner_name' ] )
 					? sanitize_text_field( $_POST[ 'owner_name' ] ) : '',
@@ -2458,11 +2458,9 @@ class TMSDrivers extends TMSDriversHelper {
 				// Additional date validation might be required
 				'recruiter_add'              => isset( $_POST[ 'recruiter_add' ] )
 					? sanitize_text_field( $_POST[ 'recruiter_add' ] ) : '',
-				'mc_enabled'                 => isset( $_POST[ 'mc_enabled' ] )
-					? sanitize_text_field( $_POST[ 'mc_enabled' ] ) : '',
+				'mc_enabled'                 => isset( $_POST[ 'mc_enabled' ] ) ? 'on' : '',
 				'mc'                         => isset( $_POST[ 'mc' ] ) ? sanitize_text_field( $_POST[ 'mc' ] ) : '',
-				'dot_enabled'                => isset( $_POST[ 'dot_enabled' ] )
-					? sanitize_text_field( $_POST[ 'dot_enabled' ] ) : '',
+				'dot_enabled'                => isset( $_POST[ 'dot_enabled' ] ) ? 'on' : '',
 				'dot'                        => isset( $_POST[ 'dot' ] ) ? sanitize_text_field( $_POST[ 'dot' ] ) : '',
 				'owner_enabled'              => isset( $_POST[ 'owner_enabled' ] )
 					? sanitize_text_field( $_POST[ 'owner_enabled' ] ) : '',
@@ -2544,6 +2542,9 @@ class TMSDrivers extends TMSDriversHelper {
 			if ( $post_status === 'publish' ) {
 				$changes = $this->get_log_template( $array_track, $meta, $data );
 			}
+
+			// var_dump($data);
+			// die();
 			// At this point, the data is sanitized and ready for further processing or saving to the database
 			$result = $this->update_driver_in_db( $data );
 			
@@ -3438,18 +3439,18 @@ class TMSDrivers extends TMSDriversHelper {
 		
 		// Get loads from regular reports
 		$regular_query = "
-			SELECT DISTINCT r.id, ref_meta.meta_value as load_number, r.date_created, 'regular' as load_type
+			SELECT DISTINCT r.id, load_status_meta.meta_value as load_status, ref_meta.meta_value as load_number, r.date_created, 'regular' as load_type
 			FROM $reports_table r
 			LEFT JOIN $reports_meta_table rm ON r.id = rm.post_id AND rm.meta_key = 'attached_driver'
 			LEFT JOIN $reports_meta_table rm2 ON r.id = rm2.post_id AND rm2.meta_key = 'attached_second_driver'
 			LEFT JOIN $reports_meta_table rm3 ON r.id = rm3.post_id AND rm3.meta_key = 'attached_third_driver'
-			LEFT JOIN $reports_meta_table ref_meta ON r.id = ref_meta.post_id AND ref_meta.meta_key = 'reference_number'";
+			LEFT JOIN $reports_meta_table ref_meta ON r.id = ref_meta.post_id AND ref_meta.meta_key = 'reference_number'
+			LEFT JOIN $reports_meta_table load_status_meta ON r.id = load_status_meta.post_id AND load_status_meta.meta_key = 'load_status'";
 		
 		// Add rating-related joins if requested
 		if ( $for_rating ) {
-			// Use INNER JOIN for load_status to ensure status exists, LEFT JOIN for tbd
+			// Add LEFT JOIN for tbd (load_status already joined above)
 			$regular_query .= "
-			INNER JOIN $reports_meta_table load_status_meta ON r.id = load_status_meta.post_id AND load_status_meta.meta_key = 'load_status'
 			LEFT JOIN $reports_meta_table tbd_meta ON r.id = tbd_meta.post_id AND tbd_meta.meta_key = 'tbd'";
 		}
 		
@@ -3491,18 +3492,18 @@ class TMSDrivers extends TMSDriversHelper {
 			
 			// Build FLT query with same conditions
 			$flt_query = "
-				SELECT DISTINCT rf.id, ref_meta.meta_value as load_number, rf.date_created, 'flt' as load_type
+				SELECT DISTINCT rf.id, load_status_meta.meta_value as load_status, ref_meta.meta_value as load_number, rf.date_created, 'flt' as load_type
 				FROM $reports_flt_table rf
 				LEFT JOIN $reports_flt_meta_table rfm ON rf.id = rfm.post_id AND rfm.meta_key = 'attached_driver'
 				LEFT JOIN $reports_flt_meta_table rfm2 ON rf.id = rfm2.post_id AND rfm2.meta_key = 'attached_second_driver'
 				LEFT JOIN $reports_flt_meta_table rfm3 ON rf.id = rfm3.post_id AND rfm3.meta_key = 'attached_third_driver'
-				LEFT JOIN $reports_flt_meta_table ref_meta ON rf.id = ref_meta.post_id AND ref_meta.meta_key = 'reference_number'";
+				LEFT JOIN $reports_flt_meta_table ref_meta ON rf.id = ref_meta.post_id AND ref_meta.meta_key = 'reference_number'
+				LEFT JOIN $reports_flt_meta_table load_status_meta ON rf.id = load_status_meta.post_id AND load_status_meta.meta_key = 'load_status'";
 			
 			// Add rating-related joins if requested
 			if ( $for_rating ) {
-				// Use INNER JOIN for load_status to ensure status exists, LEFT JOIN for tbd
+				// Add LEFT JOIN for tbd (load_status already joined above)
 				$flt_query .= "
-				INNER JOIN $reports_flt_meta_table flt_load_status_meta ON rf.id = flt_load_status_meta.post_id AND flt_load_status_meta.meta_key = 'load_status'
 				LEFT JOIN $reports_flt_meta_table flt_tbd_meta ON rf.id = flt_tbd_meta.post_id AND flt_tbd_meta.meta_key = 'tbd'";
 			}
 			
@@ -3574,7 +3575,7 @@ class TMSDrivers extends TMSDriversHelper {
 		// Get loads filtered for rating (only delivered/tonu, no TBD)
 		$all_loads = $this->get_driver_loads( $driver_id, true );
 		$existing_ratings = $this->get_user_ratings_for_driver( $driver_id, $user_id );
-		
+
 		// Get load numbers that already have ratings
 		$rated_load_numbers = array();
 		foreach ( $existing_ratings as $rating ) {
@@ -3625,9 +3626,10 @@ class TMSDrivers extends TMSDriversHelper {
 	 * @param int|null $year Year filter (default: current year)
 	 * @param int|null $month Month filter (default: current month)
 	 * @param bool $is_flt If true, only count FLT loads; if false, only count regular loads; if null, count both
+	 * @param array $exclude_dispatchers Array of dispatcher IDs to exclude from statistics
 	 * @return array Array of dispatcher statistics
 	 */
-	public function get_dispatcher_rating_statistics( $year = null, $month = null, $is_flt = null ) {
+	public function get_dispatcher_rating_statistics( $year = null, $month = null, $is_flt = null, $exclude_dispatchers = array() ) {
 		global $wpdb;
 		
 		// Get current project
@@ -3654,11 +3656,18 @@ class TMSDrivers extends TMSDriversHelper {
 		$drivers_table = $wpdb->prefix . $this->table_main;
 		
 		// Get all dispatchers with roles: dispatcher, dispatcher-tl, expedite_manager
-		$all_dispatchers = get_users( array(
+		$query_args = array(
 			'role__in' => array( 'dispatcher', 'dispatcher-tl', 'expedite_manager' ),
 			'orderby'  => 'display_name',
 			'order'    => 'ASC',
-		) );
+		);
+		
+		// Exclude specified dispatchers if provided
+		if ( ! empty( $exclude_dispatchers ) && is_array( $exclude_dispatchers ) ) {
+			$query_args['exclude'] = array_map( 'intval', $exclude_dispatchers );
+		}
+		
+		$all_dispatchers = get_users( $query_args );
 		
 		// Filter dispatchers by project access and FLT access (if filtering by FLT)
 		$dispatchers = array();
@@ -4495,11 +4504,6 @@ class TMSDrivers extends TMSDriversHelper {
 			// Always save referer fields, even if empty (to allow clearing)
 			$is_referer_field = ( $meta_key === 'referer_name' || $meta_key === 'referer_by' );
 			
-			// Skip empty values for most fields, but always save referer fields
-			if ( $meta_value === '' && ! $is_referer_field ) {
-				continue;
-			}
-			
 			// For referer fields, convert empty string to NULL for database
 			if ( $is_referer_field && $meta_value === '' ) {
 				$meta_value = null;
@@ -5329,7 +5333,7 @@ class TMSDrivers extends TMSDriversHelper {
 		if ( ! wp_verify_nonce( $_POST[ 'tms_rating_nonce' ], 'tms_add_rating' ) ) {
 			wp_send_json_error( 'Security check failed' );
 		}
-		
+
 		$driver_id   = intval( $_POST[ 'driver_id' ] ?? 0 );
 		$rating      = intval( $_POST[ 'rating' ] ?? 0 );
 		$load_number = sanitize_text_field( $_POST[ 'load_number' ] ?? '' );
@@ -5339,7 +5343,88 @@ class TMSDrivers extends TMSDriversHelper {
 			wp_send_json_error( 'Invalid data provided' );
 		}
 		
-
+		// If load_number is provided, try to detect load status by reference_number
+		// If status is 'tonu', prepend (TONU) to comments
+		if ( ! empty( $load_number ) ) {
+			global $wpdb;
+			
+			// Detect current project (same logic as in get_driver_financial_statistics)
+			$current_user_id  = get_current_user_id();
+			$current_project  = get_field( 'current_select', 'user_' . $current_user_id );
+			
+			if ( empty( $current_project ) ) {
+				$current_project = 'odysseia';
+			}
+			
+			$current_project = strtolower( $current_project );
+			
+			// Project-specific tables
+			$reports_table        = $wpdb->prefix . 'reports_' . $current_project;
+			$reports_meta_table   = $wpdb->prefix . 'reportsmeta_' . $current_project;
+			$reports_flt_table    = $wpdb->prefix . 'reports_flt_' . $current_project;
+			$reports_flt_meta_table = $wpdb->prefix . 'reportsmeta_flt_' . $current_project;
+			
+			$load_status = null;
+			
+			// Try to find status in regular reports by reference_number
+			// Use TRIM to handle potential whitespace issues
+			$regular_status_query = $wpdb->prepare(
+				"
+				SELECT ls.meta_value AS load_status
+				FROM {$reports_table} r
+				INNER JOIN {$reports_meta_table} ref
+					ON r.id = ref.post_id
+					AND ref.meta_key = 'reference_number'
+					AND TRIM(ref.meta_value) = %s
+				LEFT JOIN {$reports_meta_table} ls
+					ON r.id = ls.post_id
+					AND ls.meta_key = 'load_status'
+				LIMIT 1
+				",
+				trim( $load_number )
+			);
+			
+			$load_status = $wpdb->get_var( $regular_status_query );
+			
+			// Debug: log the query result
+			error_log( "TMS Rating: Regular query for load_number '{$load_number}' returned status: " . ( $load_status ? $load_status : 'NULL' ) );
+			
+			// If not found in regular reports, try FLT reports
+			if ( empty( $load_status ) ) {
+				$flt_status_query = $wpdb->prepare(
+					"
+					SELECT ls.meta_value AS load_status
+					FROM {$reports_flt_table} rf
+					INNER JOIN {$reports_flt_meta_table} ref
+						ON rf.id = ref.post_id
+						AND ref.meta_key = 'reference_number'
+						AND TRIM(ref.meta_value) = %s
+					LEFT JOIN {$reports_flt_meta_table} ls
+						ON rf.id = ls.post_id
+						AND ls.meta_key = 'load_status'
+					LIMIT 1
+					",
+					trim( $load_number )
+				);
+				
+				$load_status = $wpdb->get_var( $flt_status_query );
+				
+				// Debug: log the query result
+				error_log( "TMS Rating: FLT query for load_number '{$load_number}' returned status: " . ( $load_status ? $load_status : 'NULL' ) );
+			}
+			
+			// If status is TONU, prepend marker to comments
+			if ( ! empty( $load_status ) && strtolower( trim( $load_status ) ) === 'tonu' ) {
+				// Only prepend if not already present
+				if ( strpos( $comments, '(TONU)' ) === false ) {
+					$comments = '(TONU) ' . $comments;
+				}
+			}
+			
+			// Debug logging
+			error_log( "TMS Rating: load_number={$load_number}, load_status={$load_status}, comments_before={$comments}" );
+		}
+		
 		$result = $this->add_driver_rating( $driver_id, $rating, $load_number, $comments );
 		
 		if ( $result ) {
@@ -5727,7 +5812,7 @@ class TMSDrivers extends TMSDriversHelper {
 			
 			// Get available loads for rating
 			$available_loads = $this->get_available_loads_for_rating( $driver_id );
-			
+
 			$response_data = [
 				'ratings' => $ratings ? $ratings : [],
 				'available_loads' => $available_loads
@@ -5795,10 +5880,8 @@ class TMSDrivers extends TMSDriversHelper {
 			
 			// Get all loads
 			$all_loads = $this->get_driver_loads( $driver_id );
-			
 			// Get available loads for rating
 			$available_loads = $this->get_available_loads_for_rating( $driver_id );
-			
 			// Get existing ratings
 			$existing_ratings = $this->get_user_ratings_for_driver( $driver_id );
 			
@@ -8286,6 +8369,107 @@ class TMSDrivers extends TMSDriversHelper {
 	}
 
 	/**
+	 * Get top drivers by ratings (quantity and quality)
+	 * Criteria: minimum 5 ratings, sorted by rating count (desc), then by average rating (desc)
+	 * 
+	 * @param int $limit Maximum number of drivers to return
+	 * @param int $min_ratings Minimum number of ratings required (default: 5)
+	 * @return array Array of driver statistics
+	 */
+	public function get_top_drivers_by_ratings($limit = 25, $min_ratings = 5) {
+		global $wpdb;
+		
+		$drivers_table = $wpdb->prefix . 'drivers';
+		$drivers_meta_table = $wpdb->prefix . 'drivers_meta';
+		$drivers_rating_table = $wpdb->prefix . $this->table_raiting;
+		
+		// Get drivers with minimum ratings requirement, sorted by rating then count
+		// This ensures that drivers with higher ratings are prioritized, even if they have slightly fewer ratings
+		$ratings_query = "
+			SELECT 
+				r.driver_id,
+				COUNT(r.id) as rating_count,
+				ROUND(AVG(r.reit), 2) as avg_rating,
+				main.status_post
+			FROM {$drivers_rating_table} r
+			INNER JOIN {$drivers_table} main ON r.driver_id = main.id
+			WHERE main.status_post = 'publish'
+			GROUP BY r.driver_id
+			HAVING COUNT(r.id) >= %d
+			ORDER BY avg_rating DESC, rating_count DESC
+			LIMIT %d
+		";
+		
+		$rated_drivers = $wpdb->get_results($wpdb->prepare($ratings_query, $min_ratings, $limit));
+		
+		if (empty($rated_drivers)) {
+			return [];
+		}
+		
+		// Extract driver IDs
+		$driver_ids = array_map(function($driver) {
+			return intval($driver->driver_id);
+		}, $rated_drivers);
+		
+		// Create placeholders for IN clause
+		$placeholders = implode(',', array_fill(0, count($driver_ids), '%d'));
+		
+		// Create rating lookup arrays
+		$rating_lookup = [];
+		$rating_count_lookup = [];
+		foreach ($rated_drivers as $driver) {
+			$driver_id = intval($driver->driver_id);
+			$rating_lookup[$driver_id] = floatval($driver->avg_rating);
+			$rating_count_lookup[$driver_id] = intval($driver->rating_count);
+		}
+		
+		// Get driver names and recruiter IDs
+		$drivers_info_query = "
+			SELECT 
+				main.id as driver_id,
+				name_meta.meta_value as driver_name,
+				main.user_id_added as recruiter_id
+			FROM {$drivers_table} main
+			LEFT JOIN {$drivers_meta_table} name_meta ON main.id = name_meta.post_id AND name_meta.meta_key = 'driver_name'
+			WHERE main.id IN ($placeholders)
+			AND main.status_post = 'publish'
+		";
+		
+		$drivers_info = $wpdb->get_results($wpdb->prepare($drivers_info_query, $driver_ids));
+		
+		// Create lookup arrays
+		$name_lookup = [];
+		$recruiter_lookup = [];
+		foreach ($drivers_info as $driver) {
+			$driver_id = intval($driver->driver_id);
+			$name_lookup[$driver_id] = $driver->driver_name ?: 'Unknown';
+			$recruiter_lookup[$driver_id] = intval($driver->recruiter_id);
+		}
+		
+		// Build result array maintaining the order from ratings query
+		$driver_stats = [];
+		foreach ($rated_drivers as $driver) {
+			$driver_id = intval($driver->driver_id);
+			
+			$driver_stats[] = [
+				'driver_id' => $driver_id,
+				'driver_name' => $name_lookup[$driver_id] ?? 'Unknown',
+				'recruiter_id' => $recruiter_lookup[$driver_id] ?? 0,
+				'rating' => $rating_lookup[$driver_id] ?? 0.0,
+				'rating_count' => $rating_count_lookup[$driver_id] ?? 0,
+				'delivered_loads' => 0, // Not needed for this view, but keeping structure consistent
+				'first_driver_loads' => 0,
+				'second_driver_loads' => 0,
+				'third_driver_loads' => 0,
+				'total_profit' => 0, // Not needed for this view
+				'total_earnings' => 0 // Not needed for this view
+			];
+		}
+		
+		return $driver_stats;
+	}
+
+	/**
 	 * AJAX handler for getting driver statistics
 	 */
 	public function ajax_get_driver_statistics() {
@@ -8313,6 +8497,70 @@ class TMSDrivers extends TMSDriversHelper {
 		error_log( "=== END AJAX DRIVER STATISTICS DEBUG ===" );
 		
 		wp_send_json_success( $statistics );
+	}
+
+	/**
+	 * AJAX handler for updating driver auto block exclude setting
+	 */
+	public function ajax_update_driver_auto_block_exclude() {
+		if ( ! defined( 'DOING_AJAX' ) || ! DOING_AJAX ) {
+			return;
+		}
+
+		$driver_id = intval( $_POST['driver_id'] ?? 0 );
+		$exclude = isset( $_POST['exclude_from_auto_block'] ) && $_POST['exclude_from_auto_block'] === '1' ? '1' : '0';
+
+		if ( empty( $driver_id ) ) {
+			wp_send_json_error( [ 'message' => 'Driver ID is required' ] );
+			return;
+		}
+
+		global $wpdb;
+		$table_meta = $wpdb->prefix . $this->table_meta;
+
+		// Check if record exists
+		$existing = $wpdb->get_var( $wpdb->prepare( "
+			SELECT id FROM $table_meta
+			WHERE post_id = %d AND meta_key = 'exclude_from_auto_block'
+		", $driver_id ) );
+
+		if ( $existing ) {
+			// Update existing record
+			$result = $wpdb->update(
+				$table_meta,
+				array( 'meta_value' => $exclude ),
+				array(
+					'post_id' => $driver_id,
+					'meta_key' => 'exclude_from_auto_block'
+				),
+				array( '%s' ),
+				array( '%d', '%s' )
+			);
+		} else {
+			// Insert new record
+			$result = $wpdb->insert(
+				$table_meta,
+				array(
+					'post_id' => $driver_id,
+					'meta_key' => 'exclude_from_auto_block',
+					'meta_value' => $exclude
+				),
+				array( '%d', '%s', '%s' )
+			);
+		}
+
+		if ( $result !== false ) {
+			// Clear driver cache
+			$this->clear_drivers_cache();
+			
+			$message = $exclude === '1' 
+				? 'Driver excluded from auto blocking' 
+				: 'Driver included in auto blocking';
+			
+			wp_send_json_success( [ 'message' => $message ] );
+		} else {
+			wp_send_json_error( [ 'message' => 'Failed to update setting' ] );
+		}
 	}
 
 	/**

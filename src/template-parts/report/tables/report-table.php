@@ -109,7 +109,6 @@ if ( ! empty( $results ) ) :
 		endforeach;
 		$array_date     = array_unique( $array_date );
 		$new_array_date = $TMSReports->get_profit_by_dates( $array_date, $office );
-		
 		$index                      = 0;
 		foreach ( $results as $row ) :
 			$meta = get_field_value( $row, 'meta_data' );
@@ -194,6 +193,7 @@ if ( ! empty( $results ) ) :
 				$date_search = substr( $date_booked_raw, 0, 10 );
 				$profit_mod  = '';
 				$average_mod = '';
+				$source_mod  = '';
 				
 				if ( $date_booked_raw && isset( $new_array_date[ $date_search ] ) && ! $helper->hasUrlParams( [
 						"fmonth",
@@ -209,6 +209,28 @@ if ( ! empty( $results ) ) :
 					$formatted_average = esc_html( '$' . $helper->format_currency( $new_array_date[ $date_search ][ 'average' ] ) );
 					$average_mod       = '<span style="text-transform: capitalize; margin-left: 40px;">Average: <b>' . $formatted_average . '</b></span>';
 					
+					// Build source breakdown
+					$source_mod = '';
+					$sources = $TMSHelper->sources;
+					$source_parts = array();
+					
+					foreach ( $sources as $source_key => $source_name ) {
+						if ( isset( $new_array_date[ $date_search ][ $source_key ] ) ) {
+							$source_data = $new_array_date[ $date_search ][ $source_key ];
+							$source_count = isset( $source_data[ 'count' ] ) ? (int) $source_data[ 'count' ] : 0;
+							$source_total = isset( $source_data[ 'total' ] ) ? (float) $source_data[ 'total' ] : 0;
+							
+							if ( $source_count > 0 && $source_total > 0 ) {
+								$formatted_source_total = esc_html( '$' . $helper->format_currency( $source_total ) );
+								$source_parts[] = $source_name . ' (' . $source_count . ') ' . $formatted_source_total;
+							}
+						}
+					}
+					
+					if ( ! empty( $source_parts ) ) {
+						$source_mod = '<span style="margin-left: 40px; text-transform: capitalize; font-size: 12px;">' . implode( ' | ', $source_parts ) . '</span>';
+					}
+					
 				}
 				
 				$index          = 1;
@@ -216,7 +238,12 @@ if ( ! empty( $results ) ) :
 				?>
                 <tr>
                     <td colspan="14" class="separator-date">
+					<div>
 						<?php echo $date_booked . ' ' . $profit_mod . ' ' . $average_mod; ?>
+						<?php if ( ! empty( $source_mod ) ) : ?>
+							<?php echo $source_mod; ?>
+						<?php endif; ?>
+					</div>
                     </td>
                 </tr>
 				<?php

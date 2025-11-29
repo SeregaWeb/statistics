@@ -29,6 +29,13 @@
                 "operator": "==",
                 "value": "page-performance.php"
             }
+        ],
+        [
+            {
+                "param": "page_template",
+                "operator": "==",
+                "value": "page-driver-statistics-raiting.php"
+            }
         ]
     ],
     "menu_order": 0,
@@ -40,5 +47,5 @@
     "active": true,
     "description": "",
     "show_in_rest": 0,
-    "modified": 1751103255
+    "modified": 1764343969
 }

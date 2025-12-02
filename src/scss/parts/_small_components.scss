@@ -755,3 +755,129 @@ ul.result-search-el {
         height: 100%;
     }
 }
+
+// Hold Drivers Section Styles
+.hold-drivers-section {
+    .hold-badge {
+        font-size: 0.75rem;
+    }
+
+    .hold-section-content {
+        .table {
+            th {
+                font-weight: 600;
+                vertical-align: middle;
+                white-space: nowrap;
+            }
+
+            td {
+                vertical-align: middle;
+            }
+        }
+    }
+
+    .on-hold {
+        .badge {
+            font-size: 0.75rem;
+            padding: 0.35em 0.65em;
+        }
+    }
+
+    .hold-location-cell {
+        min-width: 200px;
+        max-width: 270px;
+
+        .hold-location {
+            font-size: 0.875rem;
+            line-height: 1.4;
+        }
+    }
+
+    .driver-name-hold {
+        font-weight: 500;
+        line-height: 1.4;
+    }
+
+    .hold-info-display {
+        .hold-by-text {
+            font-size: 0.875rem;
+            line-height: 1.4;
+        }
+    }
+
+    .hold-comments-cell {
+        min-width: 150px;
+        font-size: 0.875rem;
+        line-height: 1.4;
+    }
+
+    .rating-button,
+    .notes-button {
+        min-width: 60px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.25rem;
+        padding: 0.25rem 0.5rem;
+
+        .rating-value,
+        .notes-count {
+            font-weight: 600;
+        }
+
+        .rating-icon,
+        .notes-icon {
+            flex-shrink: 0;
+        }
+
+        &.disabled {
+            cursor: not-allowed;
+        }
+    }
+
+    .btn-hold-driver {
+        width: 28px;
+        height: 28px;
+        padding: 0;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        color: #dc3545;
+        border: 1px solid #dc3545;
+        background-color: transparent;
+        transition: all 0.2s ease;
+
+        &:hover {
+            background-color: #dc3545;
+            color: white;
+        }
+
+        &:focus {
+            box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.25);
+        }
+
+        .hold-icon {
+            pointer-events: none;
+        }
+    }
+
+    // Responsive adjustments
+    @media (max-width: 1200px) {
+        .hold-location-cell {
+            min-width: 180px;
+            max-width: 220px;
+        }
+    }
+
+    @media (max-width: 768px) {
+        .table-responsive {
+            font-size: 0.875rem;
+        }
+
+        .rating-button,
+        .notes-button {
+            min-width: 50px;
+            padding: 0.2rem 0.4rem;
+        }
+    }
+}

@@ -72,6 +72,7 @@ import {
     createDocumentSettlementSummaryActions,
 } from './components/document-create-money-check';
 import { driversActions, driverCoreInit } from './components/driver-core';
+import { trailersActions } from './components/trailer-core';
 import { initContactsHandler } from './components/contacts/contacts-init';
 import { moveDispatcher } from './components/move-dispatcher';
 import { initialSearchDriver } from './components/search-driver/search-driver-core';
@@ -83,6 +84,10 @@ import { initEtaPopups } from './components/eta-popup';
 import { initEtaTimers, updateEtaTimer } from './components/eta-timer';
 import { initRatingReminderModal } from './components/rating-reminder-modal';
 import { initDriversRate } from './components/drivers-rate';
+import { initAdminRatingManager } from './components/admin-rating-manager';
+import { initDriversStatisticsCharts } from './components/charts/drivers-statistics-charts';
+import { initFinanceStatisticsCharts } from './components/charts/finance-statistics-charts';
+import { initSourceStatisticsCharts } from './components/charts/source-statistics-charts';
 import './components/quick-copy';
 import './components/driver-popups';
 import DriverPopupForms from './components/driver-popup-forms';
@@ -274,6 +279,7 @@ function ready() {
 
     // DRIVER START
     driversActions(urlAjax);
+    trailersActions(urlAjax);
     cleanUrlByFilterDriver();
     cleanUrlByFilterDriverSearch();
     driverHoldInit(urlAjax);
@@ -284,6 +290,10 @@ function ready() {
     initEtaTimers();
     initRatingReminderModal();
     initDriversRate();
+    initAdminRatingManager();
+    initDriversStatisticsCharts();
+    initFinanceStatisticsCharts();
+    initSourceStatisticsCharts();
     
     // Initialize Drivers Map
     if (hereApi) {
@@ -313,8 +323,8 @@ function ready() {
     triggerCurrentTime();
     triggerDisableBtnInit();
     changeStopType();
-    setStatusPaid();
-    telMaskInit();
+    setStatusPaid(); 
+    telMaskInit(); 
     masksAllSite();
     tabUrlUpdeter();
     timeStrictChange();
@@ -365,7 +375,7 @@ function ready() {
                 });
         }, 200);
     }
-}
+} 
 
 function initDriverValidation(): void {
     // Track driver selection state

@@ -271,6 +271,16 @@ class  TMSUsers extends TMSReportsHelper {
 		
 		return strtolower( $curent_tables );
 	}
+
+	function get_flt_access($user_id) {
+		$flt_access = get_field( 'flt', 'user_' . $user_id ) ?? false;
+		return $flt_access;
+	}
+
+	function is_flt_access($user_id) {
+		$flt_access = $this->get_flt_access($user_id);
+		return $flt_access;
+	}
 	
 	function is_bookmarked( $id, $is_flt = false ) {
 		$meta_key       = $is_flt ? 'user_bookmarks_flt_' . $this->project_for_bookmark

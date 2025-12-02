@@ -81,6 +81,9 @@ $createDocuments->init();
 $TMSDrivers = new TMSDrivers();
 $TMSDrivers->init();
 
+$TMSTrailers = new TMSTrailers();
+$TMSTrailers->init();
+
 $TMSContact = new TMSContacts();
 $TMSContact->init();
 
@@ -128,8 +131,8 @@ function import_drivers( $drivers, $page = 1 ) {
 		$fields = $driver[ 'fields' ];
 		$data   = $fields[ 'driver' ];
 
-//		$status          = $data[ 'status' ][ 'value' ] ?? '';
-//		$status_label    = $data[ 'status' ][ 'label' ] ?? '';
+	//		$status          = $data[ 'status' ][ 'value' ] ?? '';
+	//		$status_label    = $data[ 'status' ][ 'label' ] ?? '';
 		
 		$date_hr      = $data[ 'date_hr' ] ?? '';
 		$date_created = null;
@@ -143,9 +146,9 @@ function import_drivers( $drivers, $page = 1 ) {
 		}
 		
 		$date = $date_created;
-//		$availability    = $data[ 'availability' ] ?? '';
-//		$top_driver      = $data[ 'top_driver' ] ?? false;
-//		$paid            = $data[ 'paid' ] ?? false;
+	//		$availability    = $data[ 'availability' ] ?? '';
+	//		$top_driver      = $data[ 'top_driver' ] ?? false;
+	//		$paid            = $data[ 'paid' ] ?? false;
 		$owner_driver    = $data[ 'owner_driver' ] ?? '';
 		$owner_phone     = $data[ 'owner_phone' ] ?? '';
 		$owner_home_city = $data[ 'owner_home_city' ] ?? '';
@@ -359,10 +362,10 @@ function import_drivers( $drivers, $page = 1 ) {
 	$import_dir = $theme_dir . '/import-drivers';
 	$filename   = $import_dir . '/drivers-page-' . intval( $page ) . '.json';
 
-// Новый путь с префиксом added
+	// Новый путь с префиксом added
 	$renamed_filename = $import_dir . '/added-drivers-page-' . intval( $page ) . '.json';
 
-// Переименовываем файл
+	// Переименовываем файл
 	if ( file_exists( $filename ) ) {
 		rename( $filename, $renamed_filename );
 	}

@@ -72,6 +72,9 @@ class TMSDrivers extends TMSDriversHelper {
 			'get_all_driver_loads'         => 'ajax_get_all_driver_loads',
 			'get_drivers_for_map'          => 'ajax_get_drivers_for_map',
 			'update_driver_auto_block_exclude' => 'ajax_update_driver_auto_block_exclude',
+			'admin_get_driver_ratings'     => 'admin_get_driver_ratings',
+			'admin_delete_driver_ratings'  => 'admin_delete_driver_ratings',
+			'move_recruiter_drivers_to_or' => 'ajax_move_recruiter_drivers_to_or',
 		);
 		
 		foreach ( $actions as $ajax_action => $method ) {
@@ -99,7 +102,14 @@ class TMSDrivers extends TMSDriversHelper {
 			SUM(CASE WHEN tm4.meta_key = 'vehicle_type' AND tm4.meta_value = 'cargo-van' THEN 1 ELSE 0 END) AS cargo_van,
 			SUM(CASE WHEN tm5.meta_key = 'vehicle_type' AND tm5.meta_value = 'sprinter-van' THEN 1 ELSE 0 END) AS sprinter_van,
 			SUM(CASE WHEN tm6.meta_key = 'vehicle_type' AND tm6.meta_value = 'box-truck' THEN 1 ELSE 0 END) AS box_truck,
-			SUM(CASE WHEN tm7.meta_key = 'vehicle_type' AND tm7.meta_value = 'reefer' THEN 1 ELSE 0 END) AS reefer
+			SUM(CASE WHEN tm7.meta_key = 'vehicle_type' AND tm7.meta_value = 'reefer' THEN 1 ELSE 0 END) AS reefer,
+			SUM(CASE WHEN tm8.meta_key = 'driver_licence_type' AND tm8.meta_value = 'cdl' 
+				AND (COALESCE(tm3.meta_value, '') = 'on' OR COALESCE(tm9.meta_value, '') = 'on') THEN 1 ELSE 0 END) AS hazmat_cdl,
+			SUM(CASE WHEN tm9.meta_key = 'hazmat_certificate' AND tm9.meta_value = 'on' THEN 1 ELSE 0 END) AS hazmat_certificate,
+			SUM(CASE WHEN tm10.meta_key = 'tsa_approved' AND tm10.meta_value = 'on' THEN 1 ELSE 0 END) AS tsa,
+			SUM(CASE WHEN tm11.meta_key = 'change_9_training' AND tm11.meta_value = 'on' THEN 1 ELSE 0 END) AS change_9,
+			SUM(CASE WHEN tm12.meta_key = 'sleeper' AND tm12.meta_value = 'on' THEN 1 ELSE 0 END) AS sleeper,
+			SUM(CASE WHEN tm13.meta_key = 'printer' AND tm13.meta_value = 'on' THEN 1 ELSE 0 END) AS printer
 		FROM $table_main AS m
 		LEFT JOIN $table_meta AS tm1 ON tm1.post_id = m.id AND tm1.meta_key = 'tanker_endorsement'
 		LEFT JOIN $table_meta AS tm2 ON tm2.post_id = m.id AND tm2.meta_key = 'twic'
@@ -108,6 +118,13 @@ class TMSDrivers extends TMSDriversHelper {
 		LEFT JOIN $table_meta AS tm5 ON tm5.post_id = m.id AND tm5.meta_key = 'vehicle_type' AND tm5.meta_value = 'sprinter-van'
 		LEFT JOIN $table_meta AS tm6 ON tm6.post_id = m.id AND tm6.meta_key = 'vehicle_type' AND tm6.meta_value = 'box-truck'
 		LEFT JOIN $table_meta AS tm7 ON tm7.post_id = m.id AND tm7.meta_key = 'vehicle_type' AND tm7.meta_value = 'reefer'
+		LEFT JOIN $table_meta AS tm8 ON tm8.post_id = m.id AND tm8.meta_key = 'driver_licence_type'
+		LEFT JOIN $table_meta AS tm9 ON tm9.post_id = m.id AND tm9.meta_key = 'hazmat_certificate'
+		LEFT JOIN $table_meta AS tm10 ON tm10.post_id = m.id AND tm10.meta_key = 'tsa_approved'
+		LEFT JOIN $table_meta AS tm11 ON tm11.post_id = m.id AND tm11.meta_key = 'change_9_training'
+		LEFT JOIN $table_meta AS tm12 ON tm12.post_id = m.id AND tm12.meta_key = 'sleeper'
+		LEFT JOIN $table_meta AS tm13 ON tm13.post_id = m.id AND tm13.meta_key = 'printer'
+		WHERE m.status_post = 'publish'
 		GROUP BY m.user_id_added
 	";
 		
@@ -517,6 +534,7 @@ class TMSDrivers extends TMSDriversHelper {
 					'nec_file_martlet',
 					'nec_file_endurance',
 					'hazmat_certificate_file',
+					'global_entry_file',
 					'driving_record',
 					'driver_licence',
 					'legal_document',
@@ -1915,6 +1933,7 @@ class TMSDrivers extends TMSDriversHelper {
 				'nec_file_martlet',
 				'nec_file_endurance',
 				'hazmat_certificate_file',
+				'global_entry_file',
 				'driving_record',
 				'driver_licence',
 				'legal_document',
@@ -2860,6 +2879,10 @@ class TMSDrivers extends TMSDriversHelper {
 			
 			$hazmat_expiration         = isset( $_POST[ 'hazmat_expiration' ] )
 				? sanitize_text_field( $_POST[ 'hazmat_expiration' ] ) : '';
+			$global_entry              = isset( $_POST[ 'global_entry' ] )
+				? sanitize_text_field( $_POST[ 'global_entry' ] ) : '';
+			$global_entry_expiration   = isset( $_POST[ 'global_entry_expiration' ] )
+				? sanitize_text_field( $_POST[ 'global_entry_expiration' ] ) : '';
 			$twic                      = isset( $_POST[ 'twic' ] ) ? sanitize_text_field( $_POST[ 'twic' ] ) : '';
 			$twic_expiration           = isset( $_POST[ 'twic_expiration' ] )
 				? sanitize_text_field( $_POST[ 'twic_expiration' ] ) : '';
@@ -3004,6 +3027,8 @@ class TMSDrivers extends TMSDriversHelper {
 				'hazmat_endorsement'                    => $hazmat_endorsement,
 				'hazmat_certificate'                    => $hazmat_certificate,
 				'hazmat_expiration'                     => $hazmat_expiration,
+				'global_entry'                          => $global_entry,
+				'global_entry_expiration'                => $global_entry_expiration,
 				'twic'                                  => $twic,
 				'twic_expiration'                       => $twic_expiration,
 				'tsa_approved'                          => $tsa_approved,
@@ -3069,7 +3094,9 @@ class TMSDrivers extends TMSDriversHelper {
 				'tanker_endorsement',
 				'hazmat_endorsement',
 				'hazmat_certificate',
+				'global_entry',
 				'hazmat_expiration',
+				'global_entry_expiration',
 				'twic',
 				'twic_expiration',
 				'tsa_approved',
@@ -3196,6 +3223,7 @@ class TMSDrivers extends TMSDriversHelper {
 				'nec_file_martlet',
 				'nec_file_endurance',
 				'hazmat_certificate_file',
+				'global_entry_file',
 				'driving_record',
 				'driver_licence',
 				'legal_document',
@@ -5864,6 +5892,142 @@ class TMSDrivers extends TMSDriversHelper {
 	}
 	
 	/**
+	 * Admin: Get driver ratings for deletion management
+	 */
+	public function admin_get_driver_ratings() {
+		if ( defined( 'DOING_AJAX' ) && DOING_AJAX ) {
+			// Check if user is administrator
+			if ( ! current_user_can( 'administrator' ) ) {
+				wp_send_json_error( [ 'message' => 'Access denied. Administrator privileges required.' ] );
+				return;
+			}
+			
+			$MY_INPUT = filter_var_array( $_POST, [
+				"driver_id" => FILTER_SANITIZE_NUMBER_INT,
+			] );
+			
+			if ( ! isset( $MY_INPUT[ 'driver_id' ] ) || empty( $MY_INPUT[ 'driver_id' ] ) ) {
+				wp_send_json_error( [ 'message' => 'Driver ID is required' ] );
+				return;
+			}
+			
+			$driver_id = (int) $MY_INPUT[ 'driver_id' ];
+			
+			// Verify driver exists
+			global $wpdb;
+			$table_main = $wpdb->prefix . $this->table_main;
+			$driver_exists = $wpdb->get_var( $wpdb->prepare( "
+				SELECT id FROM $table_main WHERE id = %d AND status_post = 'publish'
+			", $driver_id ) );
+			
+			if ( ! $driver_exists ) {
+				wp_send_json_error( [ 'message' => 'Driver not found' ] );
+				return;
+			}
+			
+			// Get driver name
+			$table_meta = $wpdb->prefix . $this->table_meta;
+			$driver_name = $wpdb->get_var( $wpdb->prepare( "
+				SELECT meta_value FROM $table_meta 
+				WHERE post_id = %d AND meta_key = 'driver_name'
+			", $driver_id ) );
+			
+			// Get all ratings
+			$table_rating = $wpdb->prefix . $this->table_raiting;
+			$ratings = $wpdb->get_results( $wpdb->prepare( "
+				SELECT id, name, time, reit, message, order_number
+				FROM $table_rating
+				WHERE driver_id = %d
+				ORDER BY time DESC
+			", $driver_id ), ARRAY_A );
+			
+			// Format ratings
+			if ( $ratings && is_array( $ratings ) ) {
+				foreach ( $ratings as $key => $rating ) {
+					if ( isset( $rating[ 'message' ] ) ) {
+						$ratings[ $key ][ 'message' ] = stripslashes( $rating[ 'message' ] );
+					}
+					$ratings[ $key ][ 'formatted_time' ] = date( 'Y-m-d H:i:s', $rating[ 'time' ] );
+				}
+			}
+			
+			wp_send_json_success( [
+				'driver_id' => $driver_id,
+				'driver_name' => $driver_name ?: 'Unknown',
+				'ratings' => $ratings ? $ratings : []
+			] );
+		}
+	}
+	
+	/**
+	 * Admin: Delete driver ratings
+	 */
+	public function admin_delete_driver_ratings() {
+		if ( defined( 'DOING_AJAX' ) && DOING_AJAX ) {
+			// Check if user is administrator
+			if ( ! current_user_can( 'administrator' ) ) {
+				wp_send_json_error( [ 'message' => 'Access denied. Administrator privileges required.' ] );
+				return;
+			}
+			
+			// Get rating_ids from POST (should be array when sent as rating_ids[])
+			$rating_ids = isset( $_POST[ 'rating_ids' ] ) ? $_POST[ 'rating_ids' ] : array();
+			
+			// Handle case where it might be a single value or array
+			if ( ! is_array( $rating_ids ) ) {
+				if ( is_string( $rating_ids ) ) {
+					// Try to decode as JSON
+					$decoded = json_decode( wp_unslash( $rating_ids ), true );
+					if ( json_last_error() === JSON_ERROR_NONE && is_array( $decoded ) ) {
+						$rating_ids = $decoded;
+					} else {
+						// Try comma-separated string
+						$rating_ids = array_filter( array_map( 'trim', explode( ',', $rating_ids ) ) );
+					}
+				} else {
+					$rating_ids = array( $rating_ids );
+				}
+			}
+			
+			if ( empty( $rating_ids ) || ! is_array( $rating_ids ) ) {
+				wp_send_json_error( [ 'message' => 'Rating IDs are required and must be an array' ] );
+				return;
+			}
+			
+			$rating_ids = array_map( 'intval', $rating_ids );
+			$rating_ids = array_filter( $rating_ids ); // Remove empty values
+			
+			if ( empty( $rating_ids ) ) {
+				wp_send_json_error( [ 'message' => 'No valid rating IDs provided' ] );
+				return;
+			}
+			
+			global $wpdb;
+			$table_rating = $wpdb->prefix . $this->table_raiting;
+			
+			// Create placeholders for IN clause
+			$placeholders = implode( ',', array_fill( 0, count( $rating_ids ), '%d' ) );
+			
+			// Delete ratings
+			$query = $wpdb->prepare( "
+				DELETE FROM $table_rating
+				WHERE id IN ($placeholders)
+			", $rating_ids );
+			
+			$deleted = $wpdb->query( $query );
+			
+			if ( $deleted !== false ) {
+				wp_send_json_success( [
+					'message' => sprintf( 'Successfully deleted %d rating(s)', $deleted ),
+					'deleted_count' => $deleted
+				] );
+			} else {
+				wp_send_json_error( [ 'message' => 'Failed to delete ratings: ' . $wpdb->last_error ] );
+			}
+		}
+	}
+	
+	/**
 	 * AJAX endpoint to get all driver loads for testing
 	 */
 	public function ajax_get_all_driver_loads() {
@@ -6486,6 +6650,7 @@ class TMSDrivers extends TMSDriversHelper {
 		LEFT JOIN $table_meta lng ON main.id = lng.post_id AND lng.meta_key = 'longitude'
 		LEFT JOIN $table_meta status ON main.id = status.post_id AND status.meta_key = 'driver_status'
 		WHERE 1=1
+		AND main.status_post = 'publish'
 		";
 		
 		if ( ! $all ) {
@@ -6527,6 +6692,7 @@ class TMSDrivers extends TMSDriversHelper {
 			LEFT JOIN $table_meta lng ON main.id = lng.post_id AND lng.meta_key = 'longitude'
 			LEFT JOIN $table_meta status ON main.id = status.post_id AND status.meta_key = 'driver_status'
 			WHERE status.meta_value = 'banned'
+			AND main.status_post = 'publish'
 			AND lat.meta_value != ''
 			AND lng.meta_value != ''
 			";
@@ -8692,5 +8858,47 @@ class TMSDrivers extends TMSDriversHelper {
 		error_log( "=== END SEARCH DRIVERS BY UNIT DEBUG ===" );
 		
 		return $drivers;
+	}
+
+	/**
+	 * AJAX handler to move drivers from a recruiter to empty recruiter (OR)
+	 */
+	public function ajax_move_recruiter_drivers_to_or() {
+		if ( ! defined( 'DOING_AJAX' ) || ! DOING_AJAX ) {
+			return;
+		}
+
+		// Check if user is administrator
+		if ( ! current_user_can( 'administrator' ) ) {
+			wp_send_json_error( [ 'message' => 'Access denied. Administrator privileges required.' ] );
+			return;
+		}
+
+		// Verify nonce
+		$nonce = sanitize_text_field( $_POST['nonce'] ?? '' );
+		if ( ! wp_verify_nonce( $nonce, 'move_recruiter_drivers_nonce' ) ) {
+			wp_send_json_error( [ 'message' => 'Invalid security token.' ] );
+			return;
+		}
+
+		$recruiter_id = intval( $_POST['recruiter_id'] ?? 0 );
+
+		if ( empty( $recruiter_id ) ) {
+			wp_send_json_error( [ 'message' => 'Recruiter ID is required.' ] );
+			return;
+		}
+
+		// Use existing function to move drivers
+		$result = $this->move_driver_for_new_recruiter( $recruiter_id );
+
+		if ( is_wp_error( $result ) ) {
+			wp_send_json_error( [ 'message' => $result->get_error_message() ] );
+			return;
+		}
+
+		wp_send_json_success( [ 
+			'message' => 'Drivers successfully moved to OR.',
+			'result' => $result
+		] );
 	}
 }

@@ -27,6 +27,7 @@ if ( ! empty( $capabilities ) ) {
 $driver_capabilities = array(
 	'hazmat_certificate'      => 'Hazmat Certificate',
     'hazmat_endorsement'      => 'Hazmat Endorsement',
+    'global_entry'             => 'Global Entry',
 	'twic'                    => 'TWIC',
 	'cross_border_canada'     => 'Canada', // Special handling for cross_border
 	'cross_border_mexico'     => 'Mexico', // Special handling for cross_border

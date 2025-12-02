@@ -1,0 +1,44 @@
+/**
+ * Admin Rating Manager Styles
+ */
+
+.admin-rating-manager {
+    .table th {
+        font-size: 0.875rem;
+    }
+    
+    .table td {
+        font-size: 0.875rem;
+        vertical-align: middle;
+    }
+    
+    .rating-stars-display {
+        color: #ffc107;
+    }
+    
+    /* Make checkboxes larger and more clickable */
+    .rating-checkbox,
+    #admin-select-all-ratings {
+        width: 20px;
+        height: 20px;
+        cursor: pointer;
+        margin: 0;
+    }
+    
+    /* Make table rows clickable */
+    .table tbody tr {
+        cursor: pointer;
+        transition: background-color 0.2s ease;
+        user-select: none;
+        -webkit-user-select: none;
+        
+        &:hover {
+            background-color: #f8f9fa;
+        }
+        
+        &.selected {
+            background-color: #e7f3ff;
+        }
+    }
+}
+

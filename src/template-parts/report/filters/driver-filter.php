@@ -20,6 +20,7 @@ $driver_capabilities = array(
 	'tsa_approved'            => 'TSA',
 	'hazmat_certificate'      => 'Hazmat certificate',
 	'hazmat_endorsement'      => 'Hazmat endorsement',
+	'global_entry'             => 'Global Entry',
 	'change_9_training'       => 'Change 9',
 	'canada_transition_proof' => 'Canada transition proof',
 	'tanker_endorsement'      => 'Tanker endorsement',

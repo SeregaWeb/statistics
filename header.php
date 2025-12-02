@@ -51,35 +51,6 @@ if ( function_exists( 'get_field' ) ) {
     <?php do_action( 'wp_rock_before_close_head_tag' ); ?>
 </head>
 
-<?php
-
-?>
-
-<pre class="d-none">
-
-Для Martlet Express & Endurance Transport нужно написать уникальный текст при автоматической отправке Tracking Chain через кнопку на грузе.
-
-MARTLET EXPRESS
-
-Hello,
-In this chain we will provide you with updates during the whole trip.
-If you need an immediate update or assistance please send us an email and we will give back to you in a few moments.
-Feel free to add to this chain your team members to keep them updated as well.
-Thank you for all the business you are turning our way!
-
-------------
-ENDURANCE TRANSPORT
-
-Hello, it's Endurance Transport team.
-We will keep you updated during the whole process in this email thread. If you need to add any other email for the updates, please to do that.
-We will immediately let you know once the truck is on-site.
-------------
-
-сделать разбивку емаила для чейн на разные проекты
-
-Если у груза статус "Waiting on RC" нужно чтобы подгрузка Rate confirmation & Dispatch message не была обязательная. Так же в Trip, не обязательно вводить информацию Shipper, Receiver.
-</pre>
-
 <body <?php 
 $dark_mode_class = '';
 if (class_exists('DarkMode')) {
@@ -128,6 +99,9 @@ body_class($body_classes);
                         continue;
                     }
                 
+                    $flt_access_all = $block['flt_access_all'] ?? false;
+                    if ($flt_access_all && !$flt_user_access && !$is_admin) {continue;}
+
                     $exclude = array_search($role, $block['exclude_role_all_list']);
                     
                     $target_top = $block['menu'][0]['link']['target'];
@@ -136,8 +110,10 @@ body_class($body_classes);
                         if (isset($block['menu'][0]['link']) && is_array($block['menu'][0]['link'])): ?>
                         <div class="left-sidebar__block">
                             
-                            <a class="left-sidebar__btn full js-toggle active" target="<?php echo !empty($target_top) ? $target_top : '_self' ?>" data-block-toggle="js-menu-block_<?php echo $key; ?>" href="<?php echo $block['menu'][0]['link']['url'];
-                                ?>">
+                            <a class="left-sidebar__btn full js-toggle active" 
+                               target="<?php echo !empty($target_top) ? $target_top : '_self' ?>" 
+                               data-block-toggle="js-menu-block_<?php echo $key; ?>" 
+                               href="<?php echo $block['menu'][0]['link']['url'];?>">
                                 <?php if (!empty($block['icon'])): ?>
                                 <img class="left-sidebar__icon" src="<?php echo wp_get_attachment_image_url($block['icon']); ?>" alt="icon">
                                 <?php endif; ?>

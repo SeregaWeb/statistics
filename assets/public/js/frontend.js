@@ -2988,6 +2988,279 @@ function withinMaxClamp(min, value, max) {
 
 /***/ }),
 
+/***/ "./src/js/components/admin-rating-manager.ts":
+/*!***************************************************!*\
+  !*** ./src/js/components/admin-rating-manager.ts ***!
+  \***************************************************/
+/***/ (function(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   AdminRatingManager: function() { return /* binding */ AdminRatingManager; },
+/* harmony export */   initAdminRatingManager: function() { return /* binding */ initAdminRatingManager; }
+/* harmony export */ });
+function _typeof(o) { "@babel/helpers - typeof"; return _typeof = "function" == typeof Symbol && "symbol" == typeof Symbol.iterator ? function (o) { return typeof o; } : function (o) { return o && "function" == typeof Symbol && o.constructor === Symbol && o !== Symbol.prototype ? "symbol" : typeof o; }, _typeof(o); }
+function _classCallCheck(a, n) { if (!(a instanceof n)) throw new TypeError("Cannot call a class as a function"); }
+function _defineProperties(e, r) { for (var t = 0; t < r.length; t++) { var o = r[t]; o.enumerable = o.enumerable || !1, o.configurable = !0, "value" in o && (o.writable = !0), Object.defineProperty(e, _toPropertyKey(o.key), o); } }
+function _createClass(e, r, t) { return r && _defineProperties(e.prototype, r), t && _defineProperties(e, t), Object.defineProperty(e, "prototype", { writable: !1 }), e; }
+function _toPropertyKey(t) { var i = _toPrimitive(t, "string"); return "symbol" == _typeof(i) ? i : i + ""; }
+function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e = t[Symbol.toPrimitive]; if (void 0 !== e) { var i = e.call(t, r || "default"); if ("object" != _typeof(i)) return i; throw new TypeError("@@toPrimitive must return a primitive value."); } return ("string" === r ? String : Number)(t); }
+var AdminRatingManager = /*#__PURE__*/function () {
+  function AdminRatingManager() {
+    _classCallCheck(this, AdminRatingManager);
+    this.currentDriverId = null;
+    this.driverIdInput = document.getElementById('admin-driver-id-input');
+    this.findBtn = document.getElementById('admin-find-driver-btn');
+    this.driverInfo = document.getElementById('admin-driver-info');
+    this.driverNameSpan = document.getElementById('admin-driver-name');
+    this.driverIdDisplay = document.getElementById('admin-driver-id-display');
+    this.ratingsContainer = document.getElementById('admin-ratings-container');
+    this.ratingsTableBody = document.getElementById('admin-ratings-table-body');
+    this.ratingsCount = document.getElementById('admin-ratings-count');
+    this.selectAllCheckbox = document.getElementById('admin-select-all-ratings');
+    this.deleteBtn = document.getElementById('admin-delete-ratings-btn');
+    this.messageDiv = document.getElementById('admin-ratings-message');
+    var managerElement = document.querySelector('.admin-rating-manager');
+    if (managerElement) {
+      this.ajaxUrl = managerElement.getAttribute('data-ajax-url') || '';
+      this.nonce = managerElement.getAttribute('data-nonce') || '';
+    } else {
+      if (typeof window.var_from_php !== 'undefined' && window.var_from_php.ajax_url) {
+        this.ajaxUrl = window.var_from_php.ajax_url;
+      } else {
+        this.ajaxUrl = '/wp-admin/admin-ajax.php';
+      }
+      this.nonce = '';
+    }
+    if (this.driverIdInput && this.findBtn) {
+      this.init();
+    }
+  }
+  return _createClass(AdminRatingManager, [{
+    key: "init",
+    value: function init() {
+      var _this = this;
+      this.findBtn.addEventListener('click', function () {
+        return _this.handleFindDriver();
+      });
+      this.driverIdInput.addEventListener('keypress', function (e) {
+        if (e.key === 'Enter') {
+          _this.handleFindDriver();
+        }
+      });
+      if (this.selectAllCheckbox) {
+        this.selectAllCheckbox.addEventListener('change', function () {
+          return _this.handleSelectAll();
+        });
+      }
+      if (this.deleteBtn) {
+        this.deleteBtn.addEventListener('click', function () {
+          return _this.handleDeleteRatings();
+        });
+      }
+    }
+  }, {
+    key: "showMessage",
+    value: function showMessage(text) {
+      var _this2 = this;
+      var type = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 'info';
+      if (!this.messageDiv) return;
+      this.messageDiv.innerHTML = "<div class=\"alert alert-".concat(type, "\">").concat(text, "</div>");
+      setTimeout(function () {
+        _this2.messageDiv.innerHTML = '';
+      }, 5000);
+    }
+  }, {
+    key: "updateDeleteButton",
+    value: function updateDeleteButton() {
+      if (!this.deleteBtn) return;
+      var checked = document.querySelectorAll('#admin-ratings-table-body input[type="checkbox"]:checked');
+      this.deleteBtn.disabled = checked.length === 0;
+    }
+  }, {
+    key: "updateRowSelection",
+    value: function updateRowSelection(row, isChecked) {
+      if (isChecked) {
+        row.classList.add('selected');
+      } else {
+        row.classList.remove('selected');
+      }
+    }
+  }, {
+    key: "renderRatings",
+    value: function renderRatings(ratings) {
+      var _this3 = this;
+      if (!this.ratingsTableBody || !this.ratingsCount) return;
+      this.ratingsTableBody.innerHTML = '';
+      this.ratingsCount.textContent = ratings.length.toString();
+      if (ratings.length === 0) {
+        this.ratingsTableBody.innerHTML = '<tr><td colspan="7" class="text-center">No ratings found</td></tr>';
+        return;
+      }
+      ratings.forEach(function (rating) {
+        var row = document.createElement('tr');
+        var stars = '★'.repeat(rating.reit) + '☆'.repeat(5 - rating.reit);
+        var checkbox = document.createElement('input');
+        checkbox.type = 'checkbox';
+        checkbox.className = 'rating-checkbox';
+        checkbox.value = rating.id.toString();
+        checkbox.addEventListener('change', function () {
+          _this3.updateRowSelection(row, checkbox.checked);
+          _this3.updateDeleteButton();
+        });
+        row.addEventListener('click', function (e) {
+          if (e.target !== checkbox && e.target.tagName !== 'INPUT') {
+            checkbox.checked = !checkbox.checked;
+            _this3.updateRowSelection(row, checkbox.checked);
+            _this3.updateDeleteButton();
+          }
+        });
+        row.innerHTML = "\n                <td></td>\n                <td>".concat(rating.id, "</td>\n                <td>").concat(rating.name || 'N/A', "</td>\n                <td><span class=\"rating-stars-display\">").concat(stars, "</span> (").concat(rating.reit, ")</td>\n                <td>").concat(rating.order_number || 'N/A', "</td>\n                <td>").concat(rating.formatted_time || 'N/A', "</td>\n                <td>").concat(rating.message ? rating.message.substring(0, 50) + (rating.message.length > 50 ? '...' : '') : 'N/A', "</td>\n            ");
+        var firstCell = row.querySelector('td:first-child');
+        if (firstCell) {
+          firstCell.appendChild(checkbox);
+        }
+        _this3.ratingsTableBody.appendChild(row);
+      });
+      this.updateDeleteButton();
+    }
+  }, {
+    key: "handleFindDriver",
+    value: function handleFindDriver() {
+      var _this4 = this;
+      if (!this.driverIdInput || !this.findBtn) return;
+      var driverId = this.driverIdInput.value.trim();
+      if (!driverId) {
+        this.showMessage('Please enter a driver ID', 'warning');
+        return;
+      }
+      this.findBtn.disabled = true;
+      this.findBtn.textContent = 'Loading...';
+      var formData = new FormData();
+      formData.append('action', 'admin_get_driver_ratings');
+      formData.append('driver_id', driverId);
+      if (this.nonce) {
+        formData.append('nonce', this.nonce);
+      }
+      fetch(this.ajaxUrl, {
+        method: 'POST',
+        body: formData
+      }).then(function (response) {
+        return response.json();
+      }).then(function (data) {
+        var _a;
+        _this4.findBtn.disabled = false;
+        _this4.findBtn.textContent = 'Find';
+        if (data.success) {
+          _this4.currentDriverId = data.data.driver_id;
+          if (_this4.driverNameSpan) {
+            _this4.driverNameSpan.textContent = data.data.driver_name;
+          }
+          if (_this4.driverIdDisplay) {
+            _this4.driverIdDisplay.textContent = data.data.driver_id.toString();
+          }
+          if (_this4.driverInfo) {
+            _this4.driverInfo.style.display = 'block';
+          }
+          if (_this4.ratingsContainer) {
+            _this4.ratingsContainer.style.display = 'block';
+          }
+          _this4.renderRatings(data.data.ratings);
+          _this4.showMessage('Driver ratings loaded successfully', 'success');
+        } else {
+          _this4.showMessage(((_a = data.data) === null || _a === void 0 ? void 0 : _a.message) || 'Error loading ratings', 'danger');
+          if (_this4.driverInfo) {
+            _this4.driverInfo.style.display = 'none';
+          }
+          if (_this4.ratingsContainer) {
+            _this4.ratingsContainer.style.display = 'none';
+          }
+        }
+      }).catch(function (error) {
+        _this4.findBtn.disabled = false;
+        _this4.findBtn.textContent = 'Find';
+        _this4.showMessage('Network error: ' + error.message, 'danger');
+      });
+    }
+  }, {
+    key: "handleSelectAll",
+    value: function handleSelectAll() {
+      var _this5 = this;
+      if (!this.selectAllCheckbox) return;
+      document.querySelectorAll('#admin-ratings-table-body .rating-checkbox').forEach(function (cb) {
+        var checkbox = cb;
+        checkbox.checked = _this5.selectAllCheckbox.checked;
+        var row = checkbox.closest('tr');
+        if (row) {
+          if (_this5.selectAllCheckbox.checked) {
+            row.classList.add('selected');
+          } else {
+            row.classList.remove('selected');
+          }
+        }
+      });
+      this.updateDeleteButton();
+    }
+  }, {
+    key: "handleDeleteRatings",
+    value: function handleDeleteRatings() {
+      var _this6 = this;
+      if (!this.deleteBtn) return;
+      var checked = Array.from(document.querySelectorAll('#admin-ratings-table-body input[type="checkbox"]:checked')).map(function (cb) {
+        return cb.value;
+      });
+      if (checked.length === 0) {
+        this.showMessage('Please select at least one rating to delete', 'warning');
+        return;
+      }
+      if (!confirm("Are you sure you want to delete ".concat(checked.length, " rating(s)? This action cannot be undone."))) {
+        return;
+      }
+      this.deleteBtn.disabled = true;
+      this.deleteBtn.textContent = 'Deleting...';
+      var formData = new FormData();
+      formData.append('action', 'admin_delete_driver_ratings');
+      checked.forEach(function (id) {
+        formData.append('rating_ids[]', id);
+      });
+      if (this.nonce) {
+        formData.append('nonce', this.nonce);
+      }
+      fetch(this.ajaxUrl, {
+        method: 'POST',
+        body: formData
+      }).then(function (response) {
+        return response.json();
+      }).then(function (data) {
+        var _a, _b;
+        _this6.deleteBtn.disabled = false;
+        _this6.deleteBtn.textContent = 'Delete Selected';
+        if (data.success) {
+          _this6.showMessage(((_a = data.data) === null || _a === void 0 ? void 0 : _a.message) || 'Ratings deleted successfully', 'success');
+          if (_this6.currentDriverId) {
+            _this6.driverIdInput.value = _this6.currentDriverId.toString();
+            _this6.handleFindDriver();
+          }
+        } else {
+          _this6.showMessage(((_b = data.data) === null || _b === void 0 ? void 0 : _b.message) || 'Error deleting ratings', 'danger');
+        }
+      }).catch(function (error) {
+        _this6.deleteBtn.disabled = false;
+        _this6.deleteBtn.textContent = 'Delete Selected';
+        _this6.showMessage('Network error: ' + error.message, 'danger');
+      });
+    }
+  }]);
+}();
+function initAdminRatingManager() {
+  if (document.querySelector('.admin-rating-manager')) {
+    new AdminRatingManager();
+  }
+}
+
+/***/ }),
+
 /***/ "./src/js/components/auth-users.ts":
 /*!*****************************************!*\
   !*** ./src/js/components/auth-users.ts ***!
@@ -4036,6 +4309,266 @@ var changeTableInit = function changeTableInit(ajaxUrl) {
     });
   });
 };
+
+/***/ }),
+
+/***/ "./src/js/components/charts/drivers-statistics-charts.ts":
+/*!***************************************************************!*\
+  !*** ./src/js/components/charts/drivers-statistics-charts.ts ***!
+  \***************************************************************/
+/***/ (function(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   initDriversStatisticsCharts: function() { return /* binding */ initDriversStatisticsCharts; }
+/* harmony export */ });
+/* harmony import */ var _google_charts_utils__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./google-charts-utils */ "./src/js/components/charts/google-charts-utils.ts");
+
+function initDriversStatisticsCharts() {
+  var endorsementsChartElement = document.getElementById('endorsementsChart');
+  var capabilitiesChartElement = document.getElementById('capabilitiesChart');
+  if (!endorsementsChartElement && !capabilitiesChartElement) {
+    return;
+  }
+  var endorsementChartData = (0,_google_charts_utils__WEBPACK_IMPORTED_MODULE_0__.parseChartDataFromAttribute)(endorsementsChartElement);
+  var capabilitiesChartData = (0,_google_charts_utils__WEBPACK_IMPORTED_MODULE_0__.parseChartDataFromAttribute)(capabilitiesChartElement);
+  if (!endorsementChartData && !capabilitiesChartData) {
+    return;
+  }
+  (0,_google_charts_utils__WEBPACK_IMPORTED_MODULE_0__.initGoogleCharts)(function () {
+    if (endorsementsChartElement && endorsementChartData && endorsementChartData.length > 0) {
+      var dataArray = (0,_google_charts_utils__WEBPACK_IMPORTED_MODULE_0__.convertToChartDataArray)(endorsementChartData, ['Type', 'Count']);
+      (0,_google_charts_utils__WEBPACK_IMPORTED_MODULE_0__.drawPieChart)(endorsementsChartElement, dataArray, {
+        legend: {
+          position: 'right'
+        }
+      });
+    }
+    if (capabilitiesChartElement && capabilitiesChartData && capabilitiesChartData.length > 0) {
+      var _dataArray = (0,_google_charts_utils__WEBPACK_IMPORTED_MODULE_0__.convertToChartDataArray)(capabilitiesChartData, ['Type', 'Count']);
+      (0,_google_charts_utils__WEBPACK_IMPORTED_MODULE_0__.drawPieChart)(capabilitiesChartElement, _dataArray, {
+        legend: {
+          position: 'right'
+        }
+      });
+    }
+  });
+}
+
+/***/ }),
+
+/***/ "./src/js/components/charts/finance-statistics-charts.ts":
+/*!***************************************************************!*\
+  !*** ./src/js/components/charts/finance-statistics-charts.ts ***!
+  \***************************************************************/
+/***/ (function(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   initFinanceStatisticsCharts: function() { return /* binding */ initFinanceStatisticsCharts; }
+/* harmony export */ });
+/* harmony import */ var _google_charts_utils__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./google-charts-utils */ "./src/js/components/charts/google-charts-utils.ts");
+
+function initFinanceStatisticsCharts() {
+  var loadsChartElement = document.getElementById('mainChart');
+  var profitChartElement = document.getElementById('mainChartPrise');
+  if (!loadsChartElement && !profitChartElement) {
+    return;
+  }
+  var dispatcherData = (0,_google_charts_utils__WEBPACK_IMPORTED_MODULE_0__.parseChartDataFromAttribute)(loadsChartElement || profitChartElement);
+  if (!dispatcherData || dispatcherData.length === 0) {
+    return;
+  }
+  (0,_google_charts_utils__WEBPACK_IMPORTED_MODULE_0__.initGoogleCharts)(function () {
+    if (loadsChartElement) {
+      var dataArray = [['Dispatcher', 'Post Count']];
+      dispatcherData.forEach(function (item) {
+        var postCount = parseInt(String(item.post_count), 10);
+        if (postCount < 0) {
+          postCount = 0;
+        }
+        dataArray.push(["".concat(item.dispatcher_initials, " \n").concat(item.post_count), postCount]);
+      });
+      (0,_google_charts_utils__WEBPACK_IMPORTED_MODULE_0__.drawPieChart)(loadsChartElement, dataArray, {
+        title: 'Loads'
+      });
+    }
+    if (profitChartElement) {
+      var _dataArray = [['Dispatcher', 'Profit']];
+      dispatcherData.forEach(function (item) {
+        var itemTotal = parseFloat(String(item.total_profit || 0));
+        var itemAverage = parseFloat(String(item.average_profit || 0));
+        if (itemTotal < 0) {
+          itemTotal = 0;
+        }
+        var formattedTotal = itemTotal.toFixed(2);
+        var formattedAverage = itemAverage.toFixed(2);
+        _dataArray.push(["".concat(item.dispatcher_initials, "\n $").concat(formattedTotal, "\n $").concat(formattedAverage), itemTotal]);
+      });
+      (0,_google_charts_utils__WEBPACK_IMPORTED_MODULE_0__.drawPieChart)(profitChartElement, _dataArray, {
+        title: 'Profit',
+        formatDollar: true
+      });
+    }
+  });
+}
+
+/***/ }),
+
+/***/ "./src/js/components/charts/google-charts-utils.ts":
+/*!*********************************************************!*\
+  !*** ./src/js/components/charts/google-charts-utils.ts ***!
+  \*********************************************************/
+/***/ (function(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   convertToChartDataArray: function() { return /* binding */ convertToChartDataArray; },
+/* harmony export */   drawPieChart: function() { return /* binding */ drawPieChart; },
+/* harmony export */   formatDollarColumn: function() { return /* binding */ formatDollarColumn; },
+/* harmony export */   initGoogleCharts: function() { return /* binding */ initGoogleCharts; },
+/* harmony export */   isGoogleChartsLoaded: function() { return /* binding */ isGoogleChartsLoaded; },
+/* harmony export */   parseChartDataFromAttribute: function() { return /* binding */ parseChartDataFromAttribute; }
+/* harmony export */ });
+var __rest = undefined && undefined.__rest || function (s, e) {
+  var t = {};
+  for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p) && e.indexOf(p) < 0) t[p] = s[p];
+  if (s != null && typeof Object.getOwnPropertySymbols === "function") for (var i = 0, p = Object.getOwnPropertySymbols(s); i < p.length; i++) {
+    if (e.indexOf(p[i]) < 0 && Object.prototype.propertyIsEnumerable.call(s, p[i])) t[p[i]] = s[p[i]];
+  }
+  return t;
+};
+function isGoogleChartsLoaded() {
+  return typeof window.google !== 'undefined' && !!window.google.charts;
+}
+function initGoogleCharts(callback) {
+  if (!isGoogleChartsLoaded()) {
+    console.error('Google Charts not loaded');
+    return;
+  }
+  window.google.charts.load('current', {
+    packages: ['corechart']
+  });
+  window.google.charts.setOnLoadCallback(callback);
+}
+function parseChartDataFromAttribute(element) {
+  var attributeName = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 'data-chart-data';
+  if (!element) {
+    return null;
+  }
+  var dataAttr = element.getAttribute(attributeName);
+  if (!dataAttr) {
+    return null;
+  }
+  try {
+    return JSON.parse(dataAttr);
+  } catch (e) {
+    console.error('Error parsing chart data:', e);
+    return null;
+  }
+}
+function drawPieChart(element, dataArray) {
+  var options = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : {};
+  if (!window.google || !window.google.visualization) {
+    console.error('Google Charts visualization not available');
+    return;
+  }
+  var chartData = window.google.visualization.arrayToDataTable(dataArray);
+  if (options.formatDollar) {
+    formatDollarColumn(chartData, 1);
+  }
+  var formatDollar = options.formatDollar,
+    chartOptions = __rest(options, ["formatDollar"]);
+  var defaultOptions = {
+    pieSliceText: 'value',
+    legend: {
+      position: 'center'
+    }
+  };
+  var finalOptions = Object.assign(Object.assign({}, defaultOptions), chartOptions);
+  var chart = new window.google.visualization.PieChart(element);
+  chart.draw(chartData, finalOptions);
+}
+function formatDollarColumn(data) {
+  var columnIndex = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 1;
+  if (!window.google || !window.google.visualization) {
+    return;
+  }
+  var formatter = new window.google.visualization.NumberFormat({
+    prefix: '$'
+  });
+  formatter.format(data, columnIndex);
+}
+function convertToChartDataArray(data, headers, valueExtractor) {
+  var dataArray = [headers];
+  if (Array.isArray(data)) {
+    data.forEach(function (item) {
+      var value = valueExtractor ? valueExtractor(item) : typeof item.value === 'number' ? item.value : parseFloat(String(item.value));
+      dataArray.push([item.label, value]);
+    });
+  } else {
+    Object.keys(data).forEach(function (key) {
+      var item = data[key];
+      var value = valueExtractor ? valueExtractor(item, key) : typeof item.value === 'number' ? item.value : parseFloat(String(item.value));
+      dataArray.push([item.label, value]);
+    });
+  }
+  return dataArray;
+}
+
+/***/ }),
+
+/***/ "./src/js/components/charts/source-statistics-charts.ts":
+/*!**************************************************************!*\
+  !*** ./src/js/components/charts/source-statistics-charts.ts ***!
+  \**************************************************************/
+/***/ (function(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   initSourceStatisticsCharts: function() { return /* binding */ initSourceStatisticsCharts; }
+/* harmony export */ });
+/* harmony import */ var _google_charts_utils__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./google-charts-utils */ "./src/js/components/charts/google-charts-utils.ts");
+
+function initSourceStatisticsCharts() {
+  var postCountChartElement = document.getElementById('sourcePostCountChart');
+  var profitChartElement = document.getElementById('sourceProfitChart');
+  if (!postCountChartElement && !profitChartElement) {
+    return;
+  }
+  var sourcesData = (0,_google_charts_utils__WEBPACK_IMPORTED_MODULE_0__.parseChartDataFromAttribute)(postCountChartElement || profitChartElement);
+  if (!sourcesData || Object.keys(sourcesData).length === 0) {
+    return;
+  }
+  (0,_google_charts_utils__WEBPACK_IMPORTED_MODULE_0__.initGoogleCharts)(function () {
+    if (postCountChartElement) {
+      var dataArray = [['Source', 'Post Count']];
+      Object.keys(sourcesData).forEach(function (key) {
+        var source = sourcesData[key];
+        dataArray.push([source.label, parseInt(String(source.post_count), 10)]);
+      });
+      (0,_google_charts_utils__WEBPACK_IMPORTED_MODULE_0__.drawPieChart)(postCountChartElement, dataArray, {
+        title: 'Loads'
+      });
+    }
+    if (profitChartElement) {
+      var _dataArray = [['Source', 'Total Profit']];
+      Object.keys(sourcesData).forEach(function (key) {
+        var source = sourcesData[key];
+        var profit = parseFloat(String(source.total_profit).replace(/,/g, ''));
+        _dataArray.push([source.label, profit]);
+      });
+      (0,_google_charts_utils__WEBPACK_IMPORTED_MODULE_0__.drawPieChart)(profitChartElement, _dataArray, {
+        title: 'Profit',
+        formatDollar: true
+      });
+    }
+  });
+}
 
 /***/ }),
 
@@ -7099,6 +7632,13 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _create_report__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./create-report */ "./src/js/components/create-report.ts");
 /* harmony import */ var _disabled_btn_in_form__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./disabled-btn-in-form */ "./src/js/components/disabled-btn-in-form.ts");
 /* harmony import */ var _parts_popup_window__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ../parts/popup-window */ "./src/js/parts/popup-window.js");
+function _slicedToArray(r, e) { return _arrayWithHoles(r) || _iterableToArrayLimit(r, e) || _unsupportedIterableToArray(r, e) || _nonIterableRest(); }
+function _nonIterableRest() { throw new TypeError("Invalid attempt to destructure non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method."); }
+function _iterableToArrayLimit(r, l) { var t = null == r ? null : "undefined" != typeof Symbol && r[Symbol.iterator] || r["@@iterator"]; if (null != t) { var e, n, i, u, a = [], f = !0, o = !1; try { if (i = (t = t.call(r)).next, 0 === l) { if (Object(t) !== t) return; f = !1; } else for (; !(f = (e = i.call(t)).done) && (a.push(e.value), a.length !== l); f = !0); } catch (r) { o = !0, n = r; } finally { try { if (!f && null != t.return && (u = t.return(), Object(u) !== u)) return; } finally { if (o) throw n; } } return a; } }
+function _arrayWithHoles(r) { if (Array.isArray(r)) return r; }
+function _createForOfIteratorHelper(r, e) { var t = "undefined" != typeof Symbol && r[Symbol.iterator] || r["@@iterator"]; if (!t) { if (Array.isArray(r) || (t = _unsupportedIterableToArray(r)) || e && r && "number" == typeof r.length) { t && (r = t); var _n = 0, F = function F() {}; return { s: F, n: function n() { return _n >= r.length ? { done: !0 } : { done: !1, value: r[_n++] }; }, e: function e(r) { throw r; }, f: F }; } throw new TypeError("Invalid attempt to iterate non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method."); } var o, a = !0, u = !1; return { s: function s() { t = t.call(r); }, n: function n() { var r = t.next(); return a = r.done, r; }, e: function e(r) { u = !0, o = r; }, f: function f() { try { a || null == t.return || t.return(); } finally { if (u) throw o; } } }; }
+function _unsupportedIterableToArray(r, a) { if (r) { if ("string" == typeof r) return _arrayLikeToArray(r, a); var t = {}.toString.call(r).slice(8, -1); return "Object" === t && r.constructor && (t = r.constructor.name), "Map" === t || "Set" === t ? Array.from(r) : "Arguments" === t || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(t) ? _arrayLikeToArray(r, a) : void 0; } }
+function _arrayLikeToArray(r, a) { (null == a || a > r.length) && (a = r.length); for (var e = 0, n = Array(a); e < a; e++) n[e] = r[e]; return n; }
 
 
 
@@ -7690,7 +8230,8 @@ var remoteSendForm = function remoteSendForm(urlAjax) {
     'js-update-driver': 'update_driver_contact',
     'js-update-driver-information': 'update_driver_information',
     'js-driver-finance-form': 'update_driver_finance',
-    'js-driver-document-form': 'update_driver_document'
+    'js-driver-document-form': 'update_driver_document',
+    'js-trailer-form': 'update_trailer'
   };
   buttons.forEach(function (button) {
     button.addEventListener('click', function (e) {
@@ -7719,6 +8260,40 @@ var remoteSendForm = function remoteSendForm(urlAjax) {
       }
       (0,_disabled_btn_in_form__WEBPACK_IMPORTED_MODULE_2__.disabledBtnInForm)(form);
       var formData = new FormData(form);
+      if (formSelector === 'js-trailer-form') {
+        var existingData = new Map();
+        var _iterator = _createForOfIteratorHelper(formData.entries()),
+          _step;
+        try {
+          for (_iterator.s(); !(_step = _iterator.n()).done;) {
+            var _step$value = _slicedToArray(_step.value, 2),
+              key = _step$value[0],
+              value = _step$value[1];
+            existingData.set(key, value);
+          }
+        } catch (err) {
+          _iterator.e(err);
+        } finally {
+          _iterator.f();
+        }
+        var allInputs = form.querySelectorAll('input[type="number"], input[type="text"], input[type="checkbox"], select');
+        allInputs.forEach(function (input) {
+          var htmlInput = input;
+          if (htmlInput.name && !htmlInput.disabled) {
+            var parentBlock = htmlInput.closest('.js-dimensions-default, .js-dimensions-rgn, .js-dimensions-step-deck, .js-dimensions-flatbed-hotshot');
+            var isVisible = !parentBlock || parentBlock.style.display !== 'none';
+            if (htmlInput.type === 'checkbox') {
+              formData.set(htmlInput.name, htmlInput.checked ? '1' : '');
+            } else {
+              var value = htmlInput.value || '';
+              var existingValue = formData.get(htmlInput.name);
+              if (isVisible || value !== '' || !existingValue || existingValue === '') {
+                formData.set(htmlInput.name, value);
+              }
+            }
+          }
+        });
+      }
       formData.append('action', action);
       var options = {
         method: 'POST',
@@ -8032,10 +8607,11 @@ var driverHoldInit = function driverHoldInit(ajaxUrl) {
                 } else {
                   target.setAttribute('data-hold', dispatcherId);
                 }
-                (0,_info_messages__WEBPACK_IMPORTED_MODULE_0__.printMessage)(result.data || 'Статус водителя обновлен', 'success', 8000);
+                (0,_info_messages__WEBPACK_IMPORTED_MODULE_0__.printMessage)(result.data || 'Driver hold status updated', 'success', 8000);
+                window.location.reload();
               } else {
                 console.error('Error updating driver hold status:', result.data);
-                (0,_info_messages__WEBPACK_IMPORTED_MODULE_0__.printMessage)(result.data || 'Ошибка при обновлении статуса', 'danger', 8000);
+                (0,_info_messages__WEBPACK_IMPORTED_MODULE_0__.printMessage)(result.data || 'Error updating driver hold status', 'danger', 8000);
               }
               _context.next = 27;
               break;
@@ -8043,7 +8619,7 @@ var driverHoldInit = function driverHoldInit(ajaxUrl) {
               _context.prev = 23;
               _context.t0 = _context["catch"](13);
               console.error('Request failed:', _context.t0);
-              (0,_info_messages__WEBPACK_IMPORTED_MODULE_0__.printMessage)('Ошибка сети', 'danger', 8000);
+              (0,_info_messages__WEBPACK_IMPORTED_MODULE_0__.printMessage)('Network error', 'danger', 8000);
             case 27:
             case "end":
               return _context.stop();
@@ -14068,6 +14644,391 @@ var updateTooltip = function updateTooltip() {
       new bootstrap__WEBPACK_IMPORTED_MODULE_0__.Tooltip(tooltipTriggerEl);
     });
   }
+};
+
+/***/ }),
+
+/***/ "./src/js/components/trailer-core.ts":
+/*!*******************************************!*\
+  !*** ./src/js/components/trailer-core.ts ***!
+  \*******************************************/
+/***/ (function(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   createTrailer: function() { return /* binding */ createTrailer; },
+/* harmony export */   removeOneTrailerFile: function() { return /* binding */ removeOneTrailerFile; },
+/* harmony export */   trailersActions: function() { return /* binding */ trailersActions; },
+/* harmony export */   uploadFileTrailer: function() { return /* binding */ uploadFileTrailer; }
+/* harmony export */ });
+/* harmony import */ var _info_messages__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./info-messages */ "./src/js/components/info-messages.ts");
+/* harmony import */ var _disabled_btn_in_form__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./disabled-btn-in-form */ "./src/js/components/disabled-btn-in-form.ts");
+/* harmony import */ var _parts_popup_window__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ../parts/popup-window */ "./src/js/parts/popup-window.js");
+
+
+
+var createTrailer = function createTrailer(urlAjax) {
+  var form = document.querySelector('.js-create-trailer');
+  if (!form) return;
+  form.addEventListener('submit', function (e) {
+    var _a;
+    e.preventDefault();
+    var target = e.target;
+    (0,_disabled_btn_in_form__WEBPACK_IMPORTED_MODULE_1__.disabledBtnInForm)(target);
+    var formData = new FormData(target);
+    var allInputs = target.querySelectorAll('input[type="number"], input[type="text"], input[type="checkbox"], select');
+    allInputs.forEach(function (input) {
+      var htmlInput = input;
+      if (htmlInput.name && !htmlInput.disabled) {
+        var parentBlock = htmlInput.closest('.js-dimensions-default, .js-dimensions-rgn, .js-dimensions-step-deck, .js-dimensions-flatbed-hotshot');
+        var isVisible = !parentBlock || parentBlock.style.display !== 'none';
+        if (htmlInput.type === 'checkbox') {
+          formData.set(htmlInput.name, htmlInput.checked ? '1' : '');
+        } else {
+          var value = htmlInput.value || '';
+          var existingValue = formData.get(htmlInput.name);
+          if (isVisible || value !== '' || !existingValue || existingValue === '') {
+            formData.set(htmlInput.name, value);
+          }
+        }
+      }
+    });
+    formData.append('action', 'add_trailer');
+    formData.append('nonce', ((_a = form.querySelector('input[name="nonce"]')) === null || _a === void 0 ? void 0 : _a.value) || '');
+    var options = {
+      method: 'POST',
+      body: formData
+    };
+    fetch(urlAjax, options).then(function (res) {
+      return res.json();
+    }).then(function (requestStatus) {
+      if (requestStatus.success) {
+        var newUrl = new URL(window.location.href);
+        newUrl.searchParams.set('trailer', requestStatus.data.trailer_id);
+        window.location.href = newUrl.toString();
+        return true;
+      }
+      (0,_info_messages__WEBPACK_IMPORTED_MODULE_0__.printMessage)("".concat(requestStatus.data.message), 'danger', 8000);
+      (0,_disabled_btn_in_form__WEBPACK_IMPORTED_MODULE_1__.disabledBtnInForm)(target, true);
+      return false;
+    }).catch(function (error) {
+      (0,_info_messages__WEBPACK_IMPORTED_MODULE_0__.printMessage)("'Request failed' ".concat(error), 'danger', 8000);
+      (0,_disabled_btn_in_form__WEBPACK_IMPORTED_MODULE_1__.disabledBtnInForm)(target, true);
+      return false;
+    });
+  });
+};
+var uploadFileTrailer = function uploadFileTrailer(ajaxUrl) {
+  var forms = document.querySelectorAll('.js-upload-trailer-helper');
+  forms.forEach(function (form) {
+    form.addEventListener('submit', function (e) {
+      e.preventDefault();
+      e.stopPropagation();
+      e.stopImmediatePropagation();
+      var target = e.target;
+      var submitBtn = target.querySelector('button[type="submit"], button.btn-success');
+      var originalText = null;
+      if (submitBtn) {
+        submitBtn.disabled = true;
+        originalText = submitBtn.textContent;
+        if (originalText) {
+          submitBtn.textContent = 'Uploading...';
+        }
+      }
+      var action = 'upload_trailer_helper';
+      var popupInstance = new _parts_popup_window__WEBPACK_IMPORTED_MODULE_2__["default"]();
+      var formData = new FormData(target);
+      formData.append('action', action);
+      var options = {
+        method: 'POST',
+        body: formData
+      };
+      fetch(ajaxUrl, options).then(function (res) {
+        return res.json();
+      }).then(function (requestStatus) {
+        if (requestStatus.success) {
+          (0,_info_messages__WEBPACK_IMPORTED_MODULE_0__.printMessage)(requestStatus.data.message, 'success', 8000);
+          var mainPopup = e.target.closest('.js-upload-popup');
+          var searchBtn = null;
+          if (mainPopup) {
+            var id = mainPopup.id;
+            searchBtn = document.querySelector("button[data-href=\"#".concat(id, "\"]"));
+          }
+          popupInstance.forceCloseAllPopup();
+          if (searchBtn) {
+            var _form = e.target;
+            var fileInput = _form.querySelector('input[name="file_name"]');
+            var fieldName = fileInput === null || fileInput === void 0 ? void 0 : fileInput.value;
+            if (fieldName) {
+              updateFileUploadUI(fieldName, true);
+            }
+          }
+        } else {
+          (0,_info_messages__WEBPACK_IMPORTED_MODULE_0__.printMessage)("Error upload file: ".concat(requestStatus.data.message), 'danger', 8000);
+          if (submitBtn) {
+            submitBtn.disabled = false;
+            if (originalText) {
+              submitBtn.textContent = originalText;
+            }
+          }
+        }
+      }).catch(function (error) {
+        (0,_info_messages__WEBPACK_IMPORTED_MODULE_0__.printMessage)("Request failed: ".concat(error), 'danger', 8000);
+        console.error('Request failed:', error);
+        if (submitBtn) {
+          submitBtn.disabled = false;
+          if (originalText) {
+            submitBtn.textContent = originalText;
+          }
+        }
+      });
+    }, true);
+  });
+};
+var removeOneTrailerFile = function removeOneTrailerFile(ajaxUrl) {
+  var deleteForms = document.querySelectorAll('.js-remove-one-trailer');
+  var deleteFormsNoFormBtn = document.querySelectorAll('.js-remove-one-no-form-btn');
+  deleteForms && deleteForms.forEach(function (item) {
+    item.addEventListener('submit', function (event) {
+      event.preventDefault();
+      var target = event.target;
+      (0,_disabled_btn_in_form__WEBPACK_IMPORTED_MODULE_1__.disabledBtnInForm)(target);
+      var formData = new FormData(target);
+      var action = 'remove_one_trailer';
+      formData.append('action', action);
+      var options = {
+        method: 'POST',
+        body: formData
+      };
+      fetch(ajaxUrl, options).then(function (res) {
+        return res.json();
+      }).then(function (requestStatus) {
+        var _a, _b;
+        if (requestStatus.success) {
+          var message = ((_a = requestStatus.data) === null || _a === void 0 ? void 0 : _a.message) || 'File removed successfully';
+          (0,_info_messages__WEBPACK_IMPORTED_MODULE_0__.printMessage)(message, 'success', 8000);
+          var form = target;
+          var fieldInput = form.querySelector('input[name="image-fields"]');
+          var fieldName = fieldInput === null || fieldInput === void 0 ? void 0 : fieldInput.value;
+          setTimeout(function () {
+            window.location.reload();
+          }, 100);
+        } else {
+          (0,_disabled_btn_in_form__WEBPACK_IMPORTED_MODULE_1__.disabledBtnInForm)(target, true);
+          var errorMessage = ((_b = requestStatus.data) === null || _b === void 0 ? void 0 : _b.message) || requestStatus.message || 'Error removing file';
+          (0,_info_messages__WEBPACK_IMPORTED_MODULE_0__.printMessage)("Error: ".concat(errorMessage), 'danger', 8000);
+        }
+      }).catch(function (error) {
+        (0,_info_messages__WEBPACK_IMPORTED_MODULE_0__.printMessage)("Request failed: ".concat(error), 'danger', 8000);
+        (0,_disabled_btn_in_form__WEBPACK_IMPORTED_MODULE_1__.disabledBtnInForm)(target, true);
+        console.error('Request failed:', error);
+      });
+    });
+  });
+  deleteFormsNoFormBtn && deleteFormsNoFormBtn.forEach(function (button) {
+    button.addEventListener('click', function (event) {
+      event.preventDefault();
+      var parentDiv = button.closest('.js-remove-one-no-form');
+      if (!parentDiv) return;
+      var isTrailer = parentDiv.classList.contains('js-remove-one-trailer') || parentDiv.querySelector('.js-remove-one-trailer') !== null;
+      if (!isTrailer) return;
+      var btn = button;
+      if (btn.disabled) return;
+      btn.disabled = true;
+      var originalText = btn.textContent;
+      if (originalText) {
+        btn.textContent = 'Deleting...';
+      }
+      var formData = new FormData();
+      var hiddenInputs = parentDiv.querySelectorAll('input[type="hidden"]');
+      hiddenInputs.forEach(function (input) {
+        formData.append(input.name, input.value);
+      });
+      formData.append('action', 'remove_one_trailer');
+      var options = {
+        method: 'POST',
+        body: formData
+      };
+      fetch(ajaxUrl, options).then(function (res) {
+        return res.json();
+      }).then(function (requestStatus) {
+        var _a, _b;
+        if (requestStatus.success) {
+          var message = ((_a = requestStatus.data) === null || _a === void 0 ? void 0 : _a.message) || 'File removed successfully';
+          (0,_info_messages__WEBPACK_IMPORTED_MODULE_0__.printMessage)(message, 'success', 8000);
+          setTimeout(function () {
+            window.location.reload();
+          }, 1000);
+        } else {
+          btn.disabled = false;
+          if (originalText) {
+            btn.textContent = originalText;
+          }
+          var errorMessage = ((_b = requestStatus.data) === null || _b === void 0 ? void 0 : _b.message) || requestStatus.message || 'Error removing file';
+          (0,_info_messages__WEBPACK_IMPORTED_MODULE_0__.printMessage)(errorMessage, 'danger', 8000);
+        }
+      }).catch(function (error) {
+        (0,_info_messages__WEBPACK_IMPORTED_MODULE_0__.printMessage)("Request failed: ".concat(error), 'danger', 8000);
+        btn.disabled = false;
+        if (originalText) {
+          btn.textContent = originalText;
+        }
+        console.error('Request failed:', error);
+      });
+    });
+  });
+};
+var handleCreateButton = function handleCreateButton(urlAjax) {
+  var createBtn = document.querySelector('.js-submit-create-trailer');
+  if (!createBtn) return;
+  createBtn.addEventListener('click', function (e) {
+    e.preventDefault();
+    var form = document.querySelector('.js-create-trailer');
+    if (!form) return;
+    form.dispatchEvent(new Event('submit', {
+      bubbles: true,
+      cancelable: true
+    }));
+  });
+};
+var updateFileUploadUI = function updateFileUploadUI(fieldName, isUploaded) {
+  var fieldToPopupMap = {
+    'license_plate_file': 'popup_upload_license_plate_file',
+    'trailer_registration': 'popup_upload_trailer_registration',
+    'lease_agreement': 'popup_upload_lease_agreement'
+  };
+  var popupId = fieldToPopupMap[fieldName];
+  if (!popupId) return;
+  var uploadBtn = document.querySelector("button[data-href=\"#".concat(popupId, "\"]"));
+  if (isUploaded) {
+    if (uploadBtn) {
+      uploadBtn.style.display = 'none';
+      var container = null;
+      var label = null;
+      if (fieldName === 'license_plate_file') {
+        container = uploadBtn.closest('.col-md-4') || null;
+        label = container ? container.querySelector('.form-label') : null;
+      } else {
+        container = uploadBtn.closest('.js-add-new-report') || null;
+        label = container ? container.querySelector('.form-label') : null;
+      }
+      if (label && !label.querySelector('.uploaded-icon')) {
+        var icon = document.createElement('span');
+        icon.className = 'uploaded-icon d-flex';
+        icon.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" fill="green" width="18px" height="18px" viewBox="0 0 14 14"><path d="M0 7a7 7 0 1 1 14 0A7 7 0 0 1 0 7z M6.278 7.697L5.045 6.464a.296.296 0 0 0-.42-.002l-.613.614a.298.298 0 0 0 .002.42l1.91 1.909a.5.5 0 0 0 .703.005l.265-.265L9.997 6.04a.291.291 0 0 0-.009-.408l-.614-.614a.29.29 0 0 0-.408-.009L6.278 7.697z" fill-rule="evenodd"></path></svg>';
+        label.appendChild(icon);
+      }
+    }
+  } else {
+    if (uploadBtn) {
+      uploadBtn.style.display = '';
+      var _container = null;
+      var _label = null;
+      if (fieldName === 'license_plate_file') {
+        _container = uploadBtn.closest('.col-md-4') || null;
+        _label = _container ? _container.querySelector('.form-label') : null;
+      } else {
+        _container = uploadBtn.closest('.js-add-new-report') || null;
+        _label = _container ? _container.querySelector('.form-label') : null;
+      }
+      if (_label) {
+        var _icon = _label.querySelector('.uploaded-icon');
+        if (_icon) {
+          _icon.remove();
+        }
+      }
+    }
+  }
+};
+var deleteTrailer = function deleteTrailer(ajaxUrl) {
+  var deleteButtons = document.querySelectorAll('.js-delete-trailer, .js-delete-trailer-single');
+  deleteButtons.forEach(function (button) {
+    button.addEventListener('click', function (e) {
+      var _a;
+      e.preventDefault();
+      var btn = button;
+      var trailerId = btn.getAttribute('data-trailer-id');
+      if (!trailerId) {
+        (0,_info_messages__WEBPACK_IMPORTED_MODULE_0__.printMessage)('Trailer ID not found', 'danger', 5000);
+        return;
+      }
+      var confirmed = confirm('Are you sure you want to delete this trailer?\n\n' + 'This action cannot be undone. All trailer data and files will be permanently deleted.\n\n' + 'Click OK to confirm deletion.');
+      if (!confirmed) {
+        return;
+      }
+      btn.disabled = true;
+      var originalText = btn.textContent;
+      btn.textContent = 'Deleting...';
+      var formData = new FormData();
+      formData.append('action', 'delete_trailer');
+      formData.append('trailer_id', trailerId);
+      formData.append('nonce', ((_a = document.querySelector('input[name="nonce"]')) === null || _a === void 0 ? void 0 : _a.value) || '');
+      var options = {
+        method: 'POST',
+        body: formData
+      };
+      fetch(ajaxUrl, options).then(function (res) {
+        return res.json();
+      }).then(function (requestStatus) {
+        var _a;
+        if (requestStatus.success) {
+          (0,_info_messages__WEBPACK_IMPORTED_MODULE_0__.printMessage)(requestStatus.data.message || 'Trailer deleted successfully', 'success', 5000);
+          var isListPage = btn.classList.contains('js-delete-trailer');
+          var isSinglePage = btn.classList.contains('js-delete-trailer-single');
+          if (isListPage) {
+            var row = btn.closest('tr');
+            if (row) {
+              row.remove();
+            }
+            setTimeout(function () {
+              window.location.reload();
+            }, 1500);
+          } else if (isSinglePage) {
+            var trailersUrlInput = document.querySelector('#trailers-list-url');
+            var trailersListUrl = trailersUrlInput === null || trailersUrlInput === void 0 ? void 0 : trailersUrlInput.value;
+            if (trailersListUrl) {
+              setTimeout(function () {
+                window.location.href = trailersListUrl;
+              }, 1500);
+            } else {
+              var trailersLink = document.querySelector('a[href*="trailers"]:not([href*="trailer-add"])');
+              if (trailersLink) {
+                setTimeout(function () {
+                  window.location.href = trailersLink.href;
+                }, 1500);
+              } else {
+                setTimeout(function () {
+                  window.location.reload();
+                }, 1500);
+              }
+            }
+          }
+        } else {
+          btn.disabled = false;
+          if (originalText) {
+            btn.textContent = originalText;
+          }
+          var errorMessage = ((_a = requestStatus.data) === null || _a === void 0 ? void 0 : _a.message) || 'Error deleting trailer';
+          (0,_info_messages__WEBPACK_IMPORTED_MODULE_0__.printMessage)(errorMessage, 'danger', 8000);
+        }
+      }).catch(function (error) {
+        btn.disabled = false;
+        if (originalText) {
+          btn.textContent = originalText;
+        }
+        (0,_info_messages__WEBPACK_IMPORTED_MODULE_0__.printMessage)("Request failed: ".concat(error), 'danger', 8000);
+        console.error('Request failed:', error);
+      });
+    });
+  });
+};
+var trailersActions = function trailersActions(urlAjax) {
+  createTrailer(urlAjax);
+  handleCreateButton(urlAjax);
+  uploadFileTrailer(urlAjax);
+  removeOneTrailerFile(urlAjax);
+  deleteTrailer(urlAjax);
 };
 
 /***/ }),
@@ -26848,28 +27809,38 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _components_auto_submit_form__WEBPACK_IMPORTED_MODULE_26__ = __webpack_require__(/*! ./components/auto-submit-form */ "./src/js/components/auto-submit-form.ts");
 /* harmony import */ var _components_document_create_money_check__WEBPACK_IMPORTED_MODULE_27__ = __webpack_require__(/*! ./components/document-create-money-check */ "./src/js/components/document-create-money-check.ts");
 /* harmony import */ var _components_driver_core__WEBPACK_IMPORTED_MODULE_28__ = __webpack_require__(/*! ./components/driver-core */ "./src/js/components/driver-core.ts");
-/* harmony import */ var _components_contacts_contacts_init__WEBPACK_IMPORTED_MODULE_29__ = __webpack_require__(/*! ./components/contacts/contacts-init */ "./src/js/components/contacts/contacts-init.ts");
-/* harmony import */ var _components_move_dispatcher__WEBPACK_IMPORTED_MODULE_30__ = __webpack_require__(/*! ./components/move-dispatcher */ "./src/js/components/move-dispatcher.ts");
-/* harmony import */ var _components_search_driver_search_driver_core__WEBPACK_IMPORTED_MODULE_31__ = __webpack_require__(/*! ./components/search-driver/search-driver-core */ "./src/js/components/search-driver/search-driver-core.ts");
-/* harmony import */ var _components_driver_hold__WEBPACK_IMPORTED_MODULE_32__ = __webpack_require__(/*! ./components/driver-hold */ "./src/js/components/driver-hold.ts");
-/* harmony import */ var _components_common_hold_section__WEBPACK_IMPORTED_MODULE_33__ = __webpack_require__(/*! ./components/common/hold-section */ "./src/js/components/common/hold-section.ts");
-/* harmony import */ var _components_capabilities_filter__WEBPACK_IMPORTED_MODULE_34__ = __webpack_require__(/*! ./components/capabilities-filter */ "./src/js/components/capabilities-filter.ts");
-/* harmony import */ var _components_quick_status_update__WEBPACK_IMPORTED_MODULE_35__ = __webpack_require__(/*! ./components/quick-status-update */ "./src/js/components/quick-status-update.ts");
-/* harmony import */ var _components_eta_popup__WEBPACK_IMPORTED_MODULE_36__ = __webpack_require__(/*! ./components/eta-popup */ "./src/js/components/eta-popup.ts");
-/* harmony import */ var _components_eta_timer__WEBPACK_IMPORTED_MODULE_37__ = __webpack_require__(/*! ./components/eta-timer */ "./src/js/components/eta-timer.ts");
-/* harmony import */ var _components_rating_reminder_modal__WEBPACK_IMPORTED_MODULE_38__ = __webpack_require__(/*! ./components/rating-reminder-modal */ "./src/js/components/rating-reminder-modal.ts");
-/* harmony import */ var _components_drivers_rate__WEBPACK_IMPORTED_MODULE_39__ = __webpack_require__(/*! ./components/drivers-rate */ "./src/js/components/drivers-rate.ts");
-/* harmony import */ var _components_quick_copy__WEBPACK_IMPORTED_MODULE_40__ = __webpack_require__(/*! ./components/quick-copy */ "./src/js/components/quick-copy.ts");
-/* harmony import */ var _components_driver_popups__WEBPACK_IMPORTED_MODULE_41__ = __webpack_require__(/*! ./components/driver-popups */ "./src/js/components/driver-popups.ts");
-/* harmony import */ var _components_driver_popup_forms__WEBPACK_IMPORTED_MODULE_42__ = __webpack_require__(/*! ./components/driver-popup-forms */ "./src/js/components/driver-popup-forms.ts");
-/* harmony import */ var _components_broker_popups__WEBPACK_IMPORTED_MODULE_43__ = __webpack_require__(/*! ./components/broker-popups */ "./src/js/components/broker-popups.ts");
-/* harmony import */ var _components_broker_popup_forms__WEBPACK_IMPORTED_MODULE_44__ = __webpack_require__(/*! ./components/broker-popup-forms */ "./src/js/components/broker-popup-forms.ts");
-/* harmony import */ var _components_driver_autocomplete__WEBPACK_IMPORTED_MODULE_45__ = __webpack_require__(/*! ./components/driver-autocomplete */ "./src/js/components/driver-autocomplete.ts");
-/* harmony import */ var _components_common_audio_helper__WEBPACK_IMPORTED_MODULE_46__ = __webpack_require__(/*! ./components/common/audio-helper */ "./src/js/components/common/audio-helper.ts");
-/* harmony import */ var _components_timer_control__WEBPACK_IMPORTED_MODULE_47__ = __webpack_require__(/*! ./components/timer-control */ "./src/js/components/timer-control.ts");
-/* harmony import */ var _components_timer_analytics__WEBPACK_IMPORTED_MODULE_48__ = __webpack_require__(/*! ./components/timer-analytics */ "./src/js/components/timer-analytics.ts");
-/* harmony import */ var _components_dark_mode_toggle__WEBPACK_IMPORTED_MODULE_49__ = __webpack_require__(/*! ./components/dark-mode-toggle */ "./src/js/components/dark-mode-toggle.ts");
-/* harmony import */ var _components_drivers_map__WEBPACK_IMPORTED_MODULE_50__ = __webpack_require__(/*! ./components/drivers-map */ "./src/js/components/drivers-map.ts");
+/* harmony import */ var _components_trailer_core__WEBPACK_IMPORTED_MODULE_29__ = __webpack_require__(/*! ./components/trailer-core */ "./src/js/components/trailer-core.ts");
+/* harmony import */ var _components_contacts_contacts_init__WEBPACK_IMPORTED_MODULE_30__ = __webpack_require__(/*! ./components/contacts/contacts-init */ "./src/js/components/contacts/contacts-init.ts");
+/* harmony import */ var _components_move_dispatcher__WEBPACK_IMPORTED_MODULE_31__ = __webpack_require__(/*! ./components/move-dispatcher */ "./src/js/components/move-dispatcher.ts");
+/* harmony import */ var _components_search_driver_search_driver_core__WEBPACK_IMPORTED_MODULE_32__ = __webpack_require__(/*! ./components/search-driver/search-driver-core */ "./src/js/components/search-driver/search-driver-core.ts");
+/* harmony import */ var _components_driver_hold__WEBPACK_IMPORTED_MODULE_33__ = __webpack_require__(/*! ./components/driver-hold */ "./src/js/components/driver-hold.ts");
+/* harmony import */ var _components_common_hold_section__WEBPACK_IMPORTED_MODULE_34__ = __webpack_require__(/*! ./components/common/hold-section */ "./src/js/components/common/hold-section.ts");
+/* harmony import */ var _components_capabilities_filter__WEBPACK_IMPORTED_MODULE_35__ = __webpack_require__(/*! ./components/capabilities-filter */ "./src/js/components/capabilities-filter.ts");
+/* harmony import */ var _components_quick_status_update__WEBPACK_IMPORTED_MODULE_36__ = __webpack_require__(/*! ./components/quick-status-update */ "./src/js/components/quick-status-update.ts");
+/* harmony import */ var _components_eta_popup__WEBPACK_IMPORTED_MODULE_37__ = __webpack_require__(/*! ./components/eta-popup */ "./src/js/components/eta-popup.ts");
+/* harmony import */ var _components_eta_timer__WEBPACK_IMPORTED_MODULE_38__ = __webpack_require__(/*! ./components/eta-timer */ "./src/js/components/eta-timer.ts");
+/* harmony import */ var _components_rating_reminder_modal__WEBPACK_IMPORTED_MODULE_39__ = __webpack_require__(/*! ./components/rating-reminder-modal */ "./src/js/components/rating-reminder-modal.ts");
+/* harmony import */ var _components_drivers_rate__WEBPACK_IMPORTED_MODULE_40__ = __webpack_require__(/*! ./components/drivers-rate */ "./src/js/components/drivers-rate.ts");
+/* harmony import */ var _components_admin_rating_manager__WEBPACK_IMPORTED_MODULE_41__ = __webpack_require__(/*! ./components/admin-rating-manager */ "./src/js/components/admin-rating-manager.ts");
+/* harmony import */ var _components_charts_drivers_statistics_charts__WEBPACK_IMPORTED_MODULE_42__ = __webpack_require__(/*! ./components/charts/drivers-statistics-charts */ "./src/js/components/charts/drivers-statistics-charts.ts");
+/* harmony import */ var _components_charts_finance_statistics_charts__WEBPACK_IMPORTED_MODULE_43__ = __webpack_require__(/*! ./components/charts/finance-statistics-charts */ "./src/js/components/charts/finance-statistics-charts.ts");
+/* harmony import */ var _components_charts_source_statistics_charts__WEBPACK_IMPORTED_MODULE_44__ = __webpack_require__(/*! ./components/charts/source-statistics-charts */ "./src/js/components/charts/source-statistics-charts.ts");
+/* harmony import */ var _components_quick_copy__WEBPACK_IMPORTED_MODULE_45__ = __webpack_require__(/*! ./components/quick-copy */ "./src/js/components/quick-copy.ts");
+/* harmony import */ var _components_driver_popups__WEBPACK_IMPORTED_MODULE_46__ = __webpack_require__(/*! ./components/driver-popups */ "./src/js/components/driver-popups.ts");
+/* harmony import */ var _components_driver_popup_forms__WEBPACK_IMPORTED_MODULE_47__ = __webpack_require__(/*! ./components/driver-popup-forms */ "./src/js/components/driver-popup-forms.ts");
+/* harmony import */ var _components_broker_popups__WEBPACK_IMPORTED_MODULE_48__ = __webpack_require__(/*! ./components/broker-popups */ "./src/js/components/broker-popups.ts");
+/* harmony import */ var _components_broker_popup_forms__WEBPACK_IMPORTED_MODULE_49__ = __webpack_require__(/*! ./components/broker-popup-forms */ "./src/js/components/broker-popup-forms.ts");
+/* harmony import */ var _components_driver_autocomplete__WEBPACK_IMPORTED_MODULE_50__ = __webpack_require__(/*! ./components/driver-autocomplete */ "./src/js/components/driver-autocomplete.ts");
+/* harmony import */ var _components_common_audio_helper__WEBPACK_IMPORTED_MODULE_51__ = __webpack_require__(/*! ./components/common/audio-helper */ "./src/js/components/common/audio-helper.ts");
+/* harmony import */ var _components_timer_control__WEBPACK_IMPORTED_MODULE_52__ = __webpack_require__(/*! ./components/timer-control */ "./src/js/components/timer-control.ts");
+/* harmony import */ var _components_timer_analytics__WEBPACK_IMPORTED_MODULE_53__ = __webpack_require__(/*! ./components/timer-analytics */ "./src/js/components/timer-analytics.ts");
+/* harmony import */ var _components_dark_mode_toggle__WEBPACK_IMPORTED_MODULE_54__ = __webpack_require__(/*! ./components/dark-mode-toggle */ "./src/js/components/dark-mode-toggle.ts");
+/* harmony import */ var _components_drivers_map__WEBPACK_IMPORTED_MODULE_55__ = __webpack_require__(/*! ./components/drivers-map */ "./src/js/components/drivers-map.ts");
+
+
+
+
+
 
 
 
@@ -26928,7 +27899,7 @@ function ready() {
   var linkEndurance = var_from_php.link_web_service_endurance;
   var linkMartlet = var_from_php.link_web_service_martlet;
   var hereApi = var_from_php.here_api_key;
-  (0,_components_search_driver_search_driver_core__WEBPACK_IMPORTED_MODULE_31__.initialSearchDriver)(var_from_php);
+  (0,_components_search_driver_search_driver_core__WEBPACK_IMPORTED_MODULE_32__.initialSearchDriver)(var_from_php);
   var useServices = {
     Odysseia: linkOdysseia,
     Endurance: linkEndurance,
@@ -26936,12 +27907,12 @@ function ready() {
   };
   var popupInstance = new _parts_popup_window__WEBPACK_IMPORTED_MODULE_2__["default"]();
   popupInstance.init();
-  _components_common_audio_helper__WEBPACK_IMPORTED_MODULE_46__["default"].getInstance();
-  var driverPopupForms = new _components_driver_popup_forms__WEBPACK_IMPORTED_MODULE_42__["default"](urlAjax);
-  var brokerPopupForms = new _components_broker_popup_forms__WEBPACK_IMPORTED_MODULE_44__["default"](urlAjax);
+  _components_common_audio_helper__WEBPACK_IMPORTED_MODULE_51__["default"].getInstance();
+  var driverPopupForms = new _components_driver_popup_forms__WEBPACK_IMPORTED_MODULE_47__["default"](urlAjax);
+  var brokerPopupForms = new _components_broker_popup_forms__WEBPACK_IMPORTED_MODULE_49__["default"](urlAjax);
   var singlePageBrokerUrl = (var_from_php === null || var_from_php === void 0 ? void 0 : var_from_php.single_page_broker) || '';
-  var brokerPopups = new _components_broker_popups__WEBPACK_IMPORTED_MODULE_43__["default"](urlAjax, singlePageBrokerUrl);
-  new _components_driver_autocomplete__WEBPACK_IMPORTED_MODULE_45__["default"](urlAjax, {
+  var brokerPopups = new _components_broker_popups__WEBPACK_IMPORTED_MODULE_48__["default"](urlAjax, singlePageBrokerUrl);
+  new _components_driver_autocomplete__WEBPACK_IMPORTED_MODULE_50__["default"](urlAjax, {
     unitInput: '.js-unit-number-input',
     dropdown: '.js-driver-dropdown',
     attachedDriverInput: 'input[name="attached_driver"]',
@@ -26950,7 +27921,7 @@ function ready() {
     nonceInput: '#driver-search-nonce',
     driverValueInput: '.js-driver-value'
   });
-  new _components_driver_autocomplete__WEBPACK_IMPORTED_MODULE_45__["default"](urlAjax, {
+  new _components_driver_autocomplete__WEBPACK_IMPORTED_MODULE_50__["default"](urlAjax, {
     unitInput: '.js-second-unit-number-input',
     dropdown: '.js-second-driver-dropdown',
     attachedDriverInput: 'input[name="attached_second_driver"]',
@@ -26958,7 +27929,7 @@ function ready() {
     unitNumberNameInput: 'input[name="second_unit_number_name"]',
     nonceInput: '#second-driver-search-nonce'
   });
-  new _components_driver_autocomplete__WEBPACK_IMPORTED_MODULE_45__["default"](urlAjax, {
+  new _components_driver_autocomplete__WEBPACK_IMPORTED_MODULE_50__["default"](urlAjax, {
     unitInput: '.js-third-unit-number-input',
     dropdown: '.js-third-driver-dropdown',
     attachedDriverInput: 'input[name="attached_third_driver"]',
@@ -26974,7 +27945,7 @@ function ready() {
     if (!wasVisible) {
       refererBlock.style.display = 'block';
     }
-    refererAutocomplete = new _components_driver_autocomplete__WEBPACK_IMPORTED_MODULE_45__["default"](urlAjax, {
+    refererAutocomplete = new _components_driver_autocomplete__WEBPACK_IMPORTED_MODULE_50__["default"](urlAjax, {
       unitInput: '.js-referer-unit-number-input',
       dropdown: '.js-referer-driver-dropdown',
       attachedDriverInput: '#referer_by',
@@ -27015,9 +27986,9 @@ function ready() {
       driverPopupForms.loadDriverStatistics(parseInt(driverIdInput.value));
     }
   }
-  new _components_timer_control__WEBPACK_IMPORTED_MODULE_47__.TimerControl(urlAjax);
-  new _components_timer_analytics__WEBPACK_IMPORTED_MODULE_48__.TimerAnalytics(urlAjax);
-  new _components_dark_mode_toggle__WEBPACK_IMPORTED_MODULE_49__["default"](urlAjax);
+  new _components_timer_control__WEBPACK_IMPORTED_MODULE_52__.TimerControl(urlAjax);
+  new _components_timer_analytics__WEBPACK_IMPORTED_MODULE_53__.TimerAnalytics(urlAjax);
+  new _components_dark_mode_toggle__WEBPACK_IMPORTED_MODULE_54__["default"](urlAjax);
   (0,_components_create_report__WEBPACK_IMPORTED_MODULE_4__.actionCreateReportInit)(urlAjax);
   (0,_components_create_report__WEBPACK_IMPORTED_MODULE_4__.createDraftPosts)(urlAjax);
   (0,_components_create_report__WEBPACK_IMPORTED_MODULE_4__.updateFilesReportInit)(urlAjax);
@@ -27047,18 +28018,23 @@ function ready() {
   (0,_components_create_shipper__WEBPACK_IMPORTED_MODULE_6__.ActionDeleteShipperInit)(urlAjax);
   (0,_components_driver_Info__WEBPACK_IMPORTED_MODULE_11__.initGetInfoDriver)(urlAjax, useServices);
   (0,_components_driver_core__WEBPACK_IMPORTED_MODULE_28__.driversActions)(urlAjax);
+  (0,_components_trailer_core__WEBPACK_IMPORTED_MODULE_29__.trailersActions)(urlAjax);
   (0,_components_filter_clean__WEBPACK_IMPORTED_MODULE_16__.cleanUrlByFilterDriver)();
   (0,_components_filter_clean__WEBPACK_IMPORTED_MODULE_16__.cleanUrlByFilterDriverSearch)();
-  (0,_components_driver_hold__WEBPACK_IMPORTED_MODULE_32__.driverHoldInit)(urlAjax);
+  (0,_components_driver_hold__WEBPACK_IMPORTED_MODULE_33__.driverHoldInit)(urlAjax);
   (0,_components_driver_core__WEBPACK_IMPORTED_MODULE_28__.driverCoreInit)(urlAjax);
-  (0,_components_capabilities_filter__WEBPACK_IMPORTED_MODULE_34__.initCapabilitiesFilter)();
-  (0,_components_quick_status_update__WEBPACK_IMPORTED_MODULE_35__.initQuickStatusUpdate)(urlAjax);
-  (0,_components_eta_popup__WEBPACK_IMPORTED_MODULE_36__.initEtaPopups)();
-  (0,_components_eta_timer__WEBPACK_IMPORTED_MODULE_37__.initEtaTimers)();
-  (0,_components_rating_reminder_modal__WEBPACK_IMPORTED_MODULE_38__.initRatingReminderModal)();
-  (0,_components_drivers_rate__WEBPACK_IMPORTED_MODULE_39__.initDriversRate)();
+  (0,_components_capabilities_filter__WEBPACK_IMPORTED_MODULE_35__.initCapabilitiesFilter)();
+  (0,_components_quick_status_update__WEBPACK_IMPORTED_MODULE_36__.initQuickStatusUpdate)(urlAjax);
+  (0,_components_eta_popup__WEBPACK_IMPORTED_MODULE_37__.initEtaPopups)();
+  (0,_components_eta_timer__WEBPACK_IMPORTED_MODULE_38__.initEtaTimers)();
+  (0,_components_rating_reminder_modal__WEBPACK_IMPORTED_MODULE_39__.initRatingReminderModal)();
+  (0,_components_drivers_rate__WEBPACK_IMPORTED_MODULE_40__.initDriversRate)();
+  (0,_components_admin_rating_manager__WEBPACK_IMPORTED_MODULE_41__.initAdminRatingManager)();
+  (0,_components_charts_drivers_statistics_charts__WEBPACK_IMPORTED_MODULE_42__.initDriversStatisticsCharts)();
+  (0,_components_charts_finance_statistics_charts__WEBPACK_IMPORTED_MODULE_43__.initFinanceStatisticsCharts)();
+  (0,_components_charts_source_statistics_charts__WEBPACK_IMPORTED_MODULE_44__.initSourceStatisticsCharts)();
   if (hereApi) {
-    new _components_drivers_map__WEBPACK_IMPORTED_MODULE_50__["default"](urlAjax, hereApi);
+    new _components_drivers_map__WEBPACK_IMPORTED_MODULE_55__["default"](urlAjax, hereApi);
   }
   (0,_components_create_report__WEBPACK_IMPORTED_MODULE_4__.additionalContactsInit)();
   (0,_components_create_report__WEBPACK_IMPORTED_MODULE_4__.addShipperPointInit)();
@@ -27090,13 +28066,13 @@ function ready() {
   (0,_components_tel_mask__WEBPACK_IMPORTED_MODULE_21__.dateMaskInit)();
   (0,_components_input_helpers__WEBPACK_IMPORTED_MODULE_3__.dragAnDropInit)();
   (0,_components_input_helpers__WEBPACK_IMPORTED_MODULE_3__.unrequiderInit)();
-  (0,_components_common_hold_section__WEBPACK_IMPORTED_MODULE_33__.holdSectionInit)();
+  (0,_components_common_hold_section__WEBPACK_IMPORTED_MODULE_34__.holdSectionInit)();
   (0,_components_document_create_money_check__WEBPACK_IMPORTED_MODULE_27__.createDocumentInvoice)();
   (0,_components_document_create_money_check__WEBPACK_IMPORTED_MODULE_27__.createDocumentInvoiceActions)(urlAjax);
   (0,_components_document_create_money_check__WEBPACK_IMPORTED_MODULE_27__.createDocumentBolActions)(urlAjax);
   (0,_components_document_create_money_check__WEBPACK_IMPORTED_MODULE_27__.createDocumentSettlementSummaryActions)(urlAjax);
-  (0,_components_move_dispatcher__WEBPACK_IMPORTED_MODULE_30__.moveDispatcher)(urlAjax);
-  (0,_components_contacts_contacts_init__WEBPACK_IMPORTED_MODULE_29__.initContactsHandler)(urlAjax);
+  (0,_components_move_dispatcher__WEBPACK_IMPORTED_MODULE_31__.moveDispatcher)(urlAjax);
+  (0,_components_contacts_contacts_init__WEBPACK_IMPORTED_MODULE_30__.initContactsHandler)(urlAjax);
   (0,_components_create_report__WEBPACK_IMPORTED_MODULE_4__.pinnedMessageInit)(urlAjax);
   (0,_components_create_report__WEBPACK_IMPORTED_MODULE_4__.addDeletePinnedHandler)(urlAjax);
   (0,_components_input_helpers__WEBPACK_IMPORTED_MODULE_3__.applyZipCodeMask)('.js-zip-code-mask');

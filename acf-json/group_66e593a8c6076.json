@@ -107,6 +107,27 @@
                     "parent_repeater": "field_66e593d9bdfa7"
                 },
                 {
+                    "key": "field_692efe9748b04",
+                    "label": "FLT access",
+                    "name": "flt_access_all",
+                    "aria-label": "",
+                    "type": "true_false",
+                    "instructions": "",
+                    "required": 0,
+                    "conditional_logic": 0,
+                    "wrapper": {
+                        "width": "25",
+                        "class": "",
+                        "id": ""
+                    },
+                    "message": "Vision only FLT access users",
+                    "default_value": 0,
+                    "ui_on_text": "",
+                    "ui_off_text": "",
+                    "ui": 1,
+                    "parent_repeater": "field_66e593d9bdfa7"
+                },
+                {
                     "key": "field_66e59430bdfa9",
                     "label": "Label block",
                     "name": "label_block",
@@ -447,6 +468,22 @@
             "key": "field_67f4311fa9f0a",
             "label": "Add new driver",
             "name": "add_new_driver",
+            "aria-label": "",
+            "type": "link",
+            "instructions": "this link need for loads draft edit",
+            "required": 1,
+            "conditional_logic": 0,
+            "wrapper": {
+                "width": "",
+                "class": "",
+                "id": ""
+            },
+            "return_format": "url"
+        },
+        {
+            "key": "field_692ecf8fa94b5",
+            "label": "Add new trailer",
+            "name": "add_new_trailer",
             "aria-label": "",
             "type": "link",
             "instructions": "this link need for loads draft edit",
@@ -1584,5 +1621,5 @@
     "active": true,
     "description": "",
     "show_in_rest": 0,
-    "modified": 1763989281
+    "modified": 1764687589
 }

@@ -18,6 +18,8 @@ $tanker_endorsement                    = get_field_value( $meta, 'tanker_endorse
 $hazmat_endorsement                    = get_field_value( $meta, 'hazmat_endorsement' );
 $hazmat_certificate                    = get_field_value( $meta, 'hazmat_certificate' );
 $hazmat_expiration                     = get_field_value( $meta, 'hazmat_expiration' );
+$global_entry                          = get_field_value( $meta, 'global_entry' );
+$global_entry_expiration               = get_field_value( $meta, 'global_entry_expiration' );
 $twic                                  = get_field_value( $meta, 'twic' );
 $twic_expiration                       = get_field_value( $meta, 'twic_expiration' );
 $tsa_approved                          = get_field_value( $meta, 'tsa_approved' );
@@ -47,6 +49,7 @@ $status                                = get_field_value( $meta, 'status' );
 $cancellation_date                     = get_field_value( $meta, 'cancellation_date' );
 $notes                                 = get_field_value( $meta, 'notes' );
 $hazmat_certificate_file               = get_field_value( $meta, 'hazmat_certificate_file' );
+$global_entry_file                     = get_field_value( $meta, 'global_entry_file' );
 $driving_record                        = get_field_value( $meta, 'driving_record' );
 $driver_licence                        = get_field_value( $meta, 'driver_licence' );
 $legal_document                        = get_field_value( $meta, 'legal_document' );
@@ -97,6 +100,7 @@ $total_images = 0;
 
 // Process each file and store in respective arrays
 $hazmat_certificate_file_arr            = $driver->process_file_attachment( $hazmat_certificate_file );
+$global_entry_file_arr                  = $driver->process_file_attachment( $global_entry_file );
 $driving_record_arr                     = $driver->process_file_attachment( $driving_record );
 $driver_licence_arr                     = $driver->process_file_attachment( $driver_licence );
 $legal_document_arr                     = $driver->process_file_attachment( $legal_document );
@@ -126,6 +130,7 @@ $interview_endurance_arr                = $driver->process_file_attachment( $int
 
 $files_check = array(
 	$hazmat_certificate_file_arr,
+	$global_entry_file_arr,
 	$driving_record_arr,
 	$driver_licence_arr,
 	$legal_document_arr,
@@ -169,6 +174,17 @@ $files = array(
 		'class_name'     => 'hazmat-certificate-file',
 		'field_name'     => 'hazmat_certificate_file',
 		'field_label'    => 'Hazmat certificate',
+		'delete_action'  => 'js-remove-one-driver',
+		'active_tab'     => 'pills-driver-documents-tab',
+	),
+	array(
+		'file_arr'       => $global_entry_file_arr,
+		'file'           => $global_entry_file,
+		'full_only_view' => $full_only_view,
+		'post_id'        => $post_id,
+		'class_name'     => 'global-entry-file',
+		'field_name'     => 'global_entry_file',
+		'field_label'    => 'Global Entry',
 		'delete_action'  => 'js-remove-one-driver',
 		'active_tab'     => 'pills-driver-documents-tab',
 	),
@@ -709,7 +725,7 @@ $access_vehicle = $TMSUsers->check_user_role_access( [
                 <div class="col-12  mb-3 js-hazmat-certificate">
 
                     <div class="row">
-                        <div class="col-12  mb-3">
+                        <div class="col-12">
                             <div class="form-check form-switch">
                                 <input class="form-check-input js-toggle"
                                        data-block-toggle="js-hazmat-certificate-files" type="checkbox"
@@ -720,7 +736,7 @@ $access_vehicle = $TMSUsers->check_user_role_access( [
                         </div>
                     </div>
 
-                    <div class="row border-1 border-primary border bg-light pt-3 pb-3 mb-3 rounded js-hazmat-certificate-files  <?php echo $hazmat_certificate
+                    <div class="row border-1 border-primary border bg-light pt-3 pb-3 mb-3 mt-3 rounded js-hazmat-certificate-files  <?php echo $hazmat_certificate
 						? '' : 'd-none'; ?>">
 						<?php
 						// Hazmat Certificate
@@ -738,6 +754,42 @@ $access_vehicle = $TMSUsers->check_user_role_access( [
                             <label class="form-label ">Expiration date</label>
                             <input type="text" class="form-control js-new-format-date" name="hazmat_expiration"
                                    value="<?php echo $hazmat_expiration; ?>">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-12  mb-3 js-global-entry">
+
+                    <div class="row">
+                        <div class="col-12 ">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input js-toggle"
+                                       data-block-toggle="js-global-entry-files" type="checkbox"
+                                       name="global_entry"
+                                       id="global_entry" <?php echo $global_entry ? 'checked' : ''; ?>>
+                                <label class="form-check-label" for="global_entry">Global Entry</label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row border-1 border-primary border bg-light pt-3 pb-3 mb-3 mt-3 rounded js-global-entry-files  <?php echo $global_entry
+						? '' : 'd-none'; ?>">
+						<?php
+						// Global Entry
+						$simple_upload_args = [
+							'full_only_view' => $full_only_view,
+							'field_name' => 'global_entry_file',
+							'label'      => 'Global Entry',
+							'file_value' => $global_entry_file,
+							'popup_id'   => 'popup_upload_global_entry_file',
+							'col_class'  => 'col-12 col-md-6'
+						];
+						echo esc_html( get_template_part( TEMPLATE_PATH . 'common/simple', 'file-upload', $simple_upload_args ) );
+						?>
+                        <div class="col-12 col-md-6 ">
+                            <label class="form-label ">Expiration date</label>
+                            <input type="text" class="form-control js-new-format-date" name="global_entry_expiration"
+                                   value="<?php echo $global_entry_expiration; ?>">
                         </div>
                     </div>
                 </div>
@@ -1463,6 +1515,12 @@ $access_vehicle = $TMSUsers->check_user_role_access( [
 			array(
 				'title'     => 'Upload Hazmat Certificate File',
 				'file_name' => 'hazmat_certificate_file',
+				'multiply'  => false,
+				'driver_id' => $post_id,
+			),
+			array(
+				'title'     => 'Upload Global Entry File',
+				'file_name' => 'global_entry_file',
 				'multiply'  => false,
 				'driver_id' => $post_id,
 			),

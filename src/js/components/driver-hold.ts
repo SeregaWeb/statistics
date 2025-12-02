@@ -44,25 +44,23 @@ export const driverHoldInit = (ajaxUrl: string) => {
                 if (result.success) {
                     console.log('Driver hold status updated successfully:', result.data);
                     
-                    // Обновляем UI - можно добавить визуальную индикацию
-                    // Например, изменить цвет кнопки или добавить класс
                     if (holdUserId && holdUserId !== 'null') {
-                        // Водитель освобожден
+                        // Driver released
                         target.setAttribute('data-hold', 'null');
                     } else {
-                        // Водитель удержан
+                        // Driver held
                         target.setAttribute('data-hold', dispatcherId);
                     }
                     
-                    // Показываем уведомление
-                    printMessage(result.data || 'Статус водителя обновлен', 'success', 8000);
+                    printMessage(result.data || 'Driver hold status updated', 'success', 8000);
+                    window.location.reload();
                 } else {
                     console.error('Error updating driver hold status:', result.data);
-                    printMessage(result.data || 'Ошибка при обновлении статуса', 'danger', 8000);
+                    printMessage(result.data || 'Error updating driver hold status', 'danger', 8000);
                 }
             } catch (error) {
                 console.error('Request failed:', error);
-                printMessage('Ошибка сети', 'danger', 8000);
+                printMessage('Network error', 'danger', 8000);
             }
         });
     });

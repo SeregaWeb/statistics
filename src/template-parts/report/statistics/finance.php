@@ -61,8 +61,12 @@ if ( $show_filter_by_office ): ?>
     </form>
 <?php endif; ?>
 
-<div id="mainChart" style="width:100%; max-width:600px; height:400px;"></div>
-<div id="mainChartPrise" style="width:100%; max-width:600px; height:400px;"></div>
+<div id="mainChart" 
+	 data-chart-data="<?php echo esc_attr( $dispatcher_json ); ?>" 
+	 style="width:100%; max-width:600px; height:400px;"></div>
+<div id="mainChartPrise" 
+	 data-chart-data="<?php echo esc_attr( $dispatcher_json ); ?>" 
+	 style="width:100%; max-width:600px; height:400px;"></div>
 <?php
 
 if ( ! empty( $dispatcher_arr ) ) {
@@ -123,90 +127,4 @@ if ( ! empty( $dispatcher_arr ) ) {
 }
 
 ?>
-<script>
-  
-  const dispatcherData = <?php echo $dispatcher_json; ?>;
-  console.log('dispatcherData', dispatcherData)
-  window.document.addEventListener('DOMContentLoaded', () => {
-    google.charts.load('current', { 'packages': ['corechart'] })
-    google.charts.setOnLoadCallback(drawChart)
-    
-    function drawChart () {
-      // Prepare the data in Google Charts format
-      const dataArray = [['Dispatcher', 'Post Count']]
-      
-      dispatcherData.forEach((item) => {
-        // Parse post_count and if negative, set it to 0
-        let postCount = parseInt(item.post_count)
-        if (postCount < 0) {
-          postCount = 0
-        }
-        dataArray.push([
-          `${ item.dispatcher_initials } \n${ item.post_count }`,
-          postCount
-        ])
-      })
-      
-      const data = google.visualization.arrayToDataTable(dataArray)
-      
-      const options = {
-        title       : 'Loads',
-        pieSliceText: 'value',
-        legend      : { position: 'center' },
-        // pieHole: 0.2,  // Optional: make it a donut chart
-      }
-      
-      const chart = new google.visualization.PieChart(document.getElementById('mainChart'))
-      chart.draw(data, options)
-    }
-    
-    google.charts.setOnLoadCallback(drawChartPrice)
-    
-    function drawChartPrice () {
-      // Prepare the data in Google Charts format
-      const dataArray = [['Dispatcher', 'Profit']]
-      
-      dispatcherData.forEach(item => {
-        // Parse total_profit and average_profit, rounding to two decimals as strings
-        // Then convert total_profit to a number for the chart
-        let item_total = parseFloat(item?.total_profit)
-        let item_average = parseFloat(item?.average_profit)
-        
-        // If total profit is negative, set it to 0
-        if (item_total < 0) {
-          item_total = 0
-        }
-        
-        // Format numbers to two decimals for display purposes
-        const formattedTotal = item_total.toFixed(2)
-        const formattedAverage = item_average.toFixed(2)
-        
-        dataArray.push([
-          `${ item.dispatcher_initials }\n $${ formattedTotal }\n $${ formattedAverage }`,
-          item_total
-        ])
-      })
-      
-      const data = google.visualization.arrayToDataTable(dataArray)
-      
-      // Create a formatter for dollar values
-      const formatter = new google.visualization.NumberFormat({
-        prefix: '$',
-      })
-      
-      // Apply the formatter to the numeric column (index 1)
-      formatter.format(data, 1)
-      
-      const options = {
-        title       : 'Profit',
-        pieSliceText: 'value',
-        legend      : { position: 'center' },
-      }
-      
-      const chart = new google.visualization.PieChart(document.getElementById('mainChartPrise'))
-      chart.draw(data, options)
-    }
-    
-  })
-</script>
 						

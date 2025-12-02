@@ -35,23 +35,6 @@ if ( in_array( $user_id, $exclude_dispatchers_modal ) ) {
 	$modal_rated = false;
 }
 
-$add_broker  = $TMSUsers->check_user_role_access( array(
-	'dispatcher',
-	'dispatcher-tl',
-	'expedite_manager',
-	'administrator',
-	'billing'
-), true );
-$add_shipper = $TMSUsers->check_user_role_access( array(
-	'dispatcher',
-	'dispatcher-tl',
-	'expedite_manager',
-	'administrator',
-	'tracking',
-	'morning_tracking',
-	'nightshift_tracking',
-), true );
-
 $login_link = get_field_value( $global_options, 'link_to_login' );
 $logout_url = wp_logout_url( ! empty( $login_link ) ? $login_link : home_url() );
 
@@ -61,17 +44,6 @@ $logout_url = wp_logout_url( ! empty( $login_link ) ? $login_link : home_url() )
     <div class="container-fluid">
         <div class="row justify-content-between align-items-center pt-2 pb-2">
             <div class="col main-menu js-main-menu order-2 d-flex gap-2 justify-content-end align-items-center">
-				<?php if ( $add_broker ): ?>
-                    <button class="btn btn-outline-primary js-open-popup-activator" data-href="#popup_add_company">Add
-                        broker
-                    </button>
-				<?php endif; ?>
-				
-				<?php if ( $add_shipper ): ?>
-                    <button class="btn btn-outline-primary js-open-popup-activator" data-href="#popup_add_shipper">Add
-                        shipper
-                    </button>
-				<?php endif; ?>
 				<?php if ( is_array( $view_tables ) && sizeof( $view_tables ) > 0 ) ?>
                 <div>
                     <select class="form-select js-select-current-table" aria-label="Default select example">

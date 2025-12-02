@@ -765,6 +765,7 @@ export const remoteSendForm = (urlAjax) => {
         'js-update-driver-information': 'update_driver_information',
         'js-driver-finance-form': 'update_driver_finance',
         'js-driver-document-form': 'update_driver_document',
+        'js-trailer-form': 'update_trailer',
     };
     
     
@@ -808,6 +809,41 @@ export const remoteSendForm = (urlAjax) => {
             
             // Prepare form data
             const formData = new FormData(form);
+            
+            // For trailer form, manually include all fields (including hidden dimension fields)
+            if (formSelector === 'js-trailer-form') {
+                // First, get all values from FormData
+                const existingData = new Map<string, string>();
+                for (const [key, value] of formData.entries()) {
+                    existingData.set(key, value as string);
+                }
+                
+                // Then, overwrite/add all input fields, including hidden ones
+                // This ensures fields in display:none blocks are included
+                // But prioritize visible fields over hidden ones
+                const allInputs = form.querySelectorAll('input[type="number"], input[type="text"], input[type="checkbox"], select');
+                allInputs.forEach((input) => {
+                    const htmlInput = input as HTMLInputElement | HTMLSelectElement;
+                    if (htmlInput.name && !htmlInput.disabled) {
+                        // Check if input is in a visible block
+                        const parentBlock = htmlInput.closest('.js-dimensions-default, .js-dimensions-rgn, .js-dimensions-step-deck, .js-dimensions-flatbed-hotshot');
+                        const isVisible = !parentBlock || (parentBlock as HTMLElement).style.display !== 'none';
+                        
+                        if (htmlInput.type === 'checkbox') {
+                            formData.set(htmlInput.name, (htmlInput as HTMLInputElement).checked ? '1' : '');
+                        } else {
+                            const value = htmlInput.value || '';
+                            // If field already exists with a non-empty value, don't overwrite with empty
+                            // But always overwrite if current input is visible or has a non-empty value
+                            const existingValue = formData.get(htmlInput.name);
+                            if (isVisible || value !== '' || !existingValue || existingValue === '') {
+                                formData.set(htmlInput.name, value);
+                            }
+                        }
+                    }
+                });
+            }
+            
             formData.append('action', action);
             
             const options = {

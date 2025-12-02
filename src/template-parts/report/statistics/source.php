@@ -132,72 +132,11 @@ $show_filter_by_office = $TMSUsers->check_user_role_access( array(
 
         <div class="d-flex">
             <div id="sourcePostCountChart"
+                 data-chart-data="<?php echo esc_attr( $dispatcher_json ); ?>"
                  style="width:100%; max-width:50%; height:50vh;"></div>
             <div id="sourceProfitChart"
+                 data-chart-data="<?php echo esc_attr( $dispatcher_json ); ?>"
                  style="width:100%; max-width:50%; height:50vh;"></div>
         </div>
     </div>
 </div>
-
-<script>
-  
-  const sourcesData = <?php echo $dispatcher_json; ?>;
-  console.log('sourcesData', sourcesData)
-  window.document.addEventListener('DOMContentLoaded', () => {
-    google.charts.load('current', { 'packages': ['corechart'] })
-    
-    google.charts.setOnLoadCallback(drawSourcePostCountChart)
-    google.charts.setOnLoadCallback(drawSourceProfitChart)
-    
-    // График количества постов по источникам
-    function drawSourcePostCountChart () {
-      const dataArray = [['Source', 'Post Count']]
-      
-      Object.keys(sourcesData).forEach(key => {
-        const source = sourcesData[key]
-        dataArray.push([source.label, parseInt(source.post_count)])
-      })
-      
-      const data = google.visualization.arrayToDataTable(dataArray)
-      
-      const options = {
-        title       : 'Loads',
-        pieSliceText: 'value',
-        legend      : { position: 'center' },
-      }
-      
-      const chart = new google.visualization.PieChart(document.getElementById('sourcePostCountChart'))
-      chart.draw(data, options)
-    }
-    
-    // График суммарного профита по источникам
-    function drawSourceProfitChart () {
-      const dataArray = [['Source', 'Total Profit']]
-      
-      Object.keys(sourcesData).forEach(key => {
-        const source = sourcesData[key]
-        const profit = parseFloat(source.total_profit.replace(',', '')) // Убираем $ и запятые
-        dataArray.push([source.label, profit])
-      })
-      
-      const data = google.visualization.arrayToDataTable(dataArray)
-      
-      // Создаем форматтер для добавления доллара
-      const formatter = new google.visualization.NumberFormat({
-        prefix: '$',
-      })
-      
-      // Применяем форматтер к колонке с числами (индекс 1)
-      formatter.format(data, 1)
-      
-      const options = {
-        title       : 'Profit',
-        pieSliceText: 'value',
-        legend      : { position: 'center' },
-      }
-      
-      const chart = new google.visualization.PieChart(document.getElementById('sourceProfitChart'))
-      chart.draw(data, options)
-    }
-  })
-</script>

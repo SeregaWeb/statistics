@@ -176,7 +176,7 @@ $logshowcontent = isset( $_COOKIE[ 'logshow' ] ) && + $_COOKIE[ 'logshow' ] !== 
 								$pick_up_location  = get_field_value( $meta, 'pick_up_location' );
 								$delivery_location = get_field_value( $meta, 'delivery_location' );
 								
-								if ( $access_for_btn && isset( $status_publish ) && $status_publish === 'publish' && ! empty( $pick_up_location ) && ! empty( $delivery_location ) ) {
+								if ( $project === 'Odysseia' && $access_for_btn && isset( $status_publish ) && $status_publish === 'publish' && ! empty( $pick_up_location ) && ! empty( $delivery_location ) ) {
 									if ( ! isset( $send_mesaage ) || ! $send_mesaage ) {
 										?>
 										<form class="w-100 d-flex justify-content-end mb-3 js-send-email-chain">

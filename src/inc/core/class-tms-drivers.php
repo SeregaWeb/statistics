@@ -285,7 +285,6 @@ class TMSDrivers extends TMSDriversHelper {
 			if ( $result ) {
 				// Clear any caches before getting updated data
 				$this->clear_drivers_cache();
-				
 				// Get updated driver data
 				$updated_driver_data = $this->get_driver_data_for_table_row( $driver_id );
 				
@@ -1849,9 +1848,6 @@ class TMSDrivers extends TMSDriversHelper {
 		
 		// Clear drivers cache when driver status is updated
 		$this->clear_drivers_cache();
-		
-		// Also clear search cache to ensure fresh data
-		delete_transient( 'tms_all_available_drivers' );
 		
 		
 		// Возвращаем true если оба обновления прошли успешно
@@ -4492,7 +4488,7 @@ class TMSDrivers extends TMSDriversHelper {
 		// Send email with attachments
 		$headers = array(
 			'Content-Type: text/html; charset=UTF-8',
-			'From: TMS <no-reply@endurance-tms.com>'
+			'From: TMS <no-reply@odysseia-transport.com>'
 		);
 		
 		$email_sent = false;
@@ -7255,6 +7251,8 @@ class TMSDrivers extends TMSDriversHelper {
 				'hold_user_id' => FILTER_SANITIZE_NUMBER_INT
 			] );
 			
+
+
 			$driver_id     = $MY_INPUT[ 'id_driver' ];
 			$dispatcher_id = $MY_INPUT[ 'id_user' ];
 			$hold_user_id  = $MY_INPUT[ 'hold_user_id' ];
@@ -7264,6 +7262,7 @@ class TMSDrivers extends TMSDriversHelper {
 			
 			// Проверяем, не удерживается ли водитель другим диспетчером
 			$driver_holded = $this->check_driver_on_hold( $driver_id );
+		
 			
 			if ( ! is_null( $driver_holded ) && (int) $driver_holded->dispatcher_id !== (int) $dispatcher_id ) {
 				wp_send_json_error( 'This driver is already on hold by another dispatcher' );
@@ -7272,6 +7271,7 @@ class TMSDrivers extends TMSDriversHelper {
 			if ( $hold_user_id ) {
 				// Освобождаем водителя
 				$hold_record = $this->check_driver_on_hold( $driver_id );
+
 				if ( $hold_record && $hold_record->driver_status ) {
 					// Проверяем, что восстановленный статус не on_hold
 					$restore_status = $hold_record->driver_status;
@@ -7457,20 +7457,16 @@ class TMSDrivers extends TMSDriversHelper {
 			ORDER BY update_date ASC
 		", $current_user_id, $current_time ) );
 		
+
 		
 		if ( empty( $driver_ids ) ) {
 			return array();
 		}
 		
-		// Получаем полную информацию о водителях используя существующий метод
-		$args = array(
-			'status_post' => 'publish',
-			'id_posts'    => $driver_ids
-		);
-		
-		$drivers_data = $this->get_table_items_search( $args );
+		// Получаем полную информацию о водителях по списку ID без пагинации
+		$drivers_data = $this->get_drivers_by_ids( $driver_ids, 'publish' );
 		$results      = isset( $drivers_data[ 'results' ] ) ? $drivers_data[ 'results' ] : array();
-		
+	
 		$drivers_on_hold = array();
 		
 		foreach ( $results as $driver ) {
@@ -7491,6 +7487,89 @@ class TMSDrivers extends TMSDriversHelper {
 		
 		
 		return $drivers_on_hold;
+	}
+	
+	/**
+	 * Get drivers by IDs without pagination
+	 * 
+	 * @param array $driver_ids Array of driver IDs
+	 * @param string $status_post Status filter (default: 'publish')
+	 * @return array Array with 'results' key containing driver data
+	 */
+	public function get_drivers_by_ids( $driver_ids, $status_post = 'publish' ) {
+		global $wpdb;
+		
+		if ( empty( $driver_ids ) || ! is_array( $driver_ids ) ) {
+			return array( 'results' => array() );
+		}
+		
+		// Sanitize IDs
+		$driver_ids = array_map( 'absint', $driver_ids );
+		$driver_ids = array_filter( $driver_ids );
+		
+		if ( empty( $driver_ids ) ) {
+			return array( 'results' => array() );
+		}
+		
+		$table_main = $wpdb->prefix . $this->table_main;
+		$table_meta = $wpdb->prefix . $this->table_meta;
+		
+		// Sanitize IDs for IN clause (already sanitized above, but ensure they're integers)
+		$ids_string = implode( ',', array_map( 'absint', $driver_ids ) );
+		$status_post_escaped = esc_sql( $status_post );
+		
+		// Get main data for specified IDs
+		// Using esc_sql for status_post and absint for IDs (already sanitized)
+		$sql = "
+			SELECT main.*
+			FROM $table_main AS main
+			WHERE main.id IN ($ids_string)
+			AND main.status_post = '$status_post_escaped'
+			ORDER BY FIELD(main.id, $ids_string)
+		";
+		
+		$main_results = $wpdb->get_results( $sql, ARRAY_A );
+		
+		if ( empty( $main_results ) ) {
+			return array( 'results' => array() );
+		}
+		
+		// Get all post IDs
+		$post_ids = wp_list_pluck( $main_results, 'id' );
+		
+		// Get meta data for all drivers
+		$meta_data = array();
+		if ( ! empty( $post_ids ) ) {
+			// Sanitize post IDs for IN clause
+			$post_ids_string = implode( ',', array_map( 'absint', $post_ids ) );
+			
+			$meta_sql = "
+				SELECT post_id, meta_key, meta_value
+				FROM $table_meta
+				WHERE post_id IN ($post_ids_string)
+			";
+			
+			$meta_results = $wpdb->get_results( $meta_sql, ARRAY_A );
+			
+			// Transform meta data into associative array by post_id
+			foreach ( $meta_results as $meta_row ) {
+				$post_id = $meta_row['post_id'];
+				if ( ! isset( $meta_data[ $post_id ] ) ) {
+					$meta_data[ $post_id ] = array();
+				}
+				$meta_data[ $post_id ][ $meta_row['meta_key'] ] = $meta_row['meta_value'];
+			}
+		}
+		
+		// Merge main data with meta data
+		foreach ( $main_results as $key => $result ) {
+			$post_id = $result['id'];
+			$main_results[ $key ]['meta_data'] = isset( $meta_data[ $post_id ] ) ? $meta_data[ $post_id ] : array();
+		}
+		
+		return array(
+			'results' => $main_results
+		);
 	}
 	
 	/**
@@ -8718,7 +8797,8 @@ class TMSDrivers extends TMSDriversHelper {
 		if ( $result !== false ) {
 			// Clear driver cache
 			$this->clear_drivers_cache();
-			
+			delete_transient( 'tms_all_available_drivers' );
+
 			$message = $exclude === '1' 
 				? 'Driver excluded from auto blocking' 
 				: 'Driver included in auto blocking';

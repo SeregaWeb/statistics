@@ -274,7 +274,7 @@ class TMSEmails extends TMSUsers {
 		
 		$headers = array(
 			'Content-Type: text/html; charset=UTF-8',
-			'From: TMS <no-reply@endurance-tms.com>' // Replace with your sender name and email
+			'From: TMS <no-reply@odysseia-transport.com>' // Replace with your sender name and email
 		);
 		
 		// Send the email to each recipient
@@ -316,7 +316,7 @@ class TMSEmails extends TMSUsers {
 		
 		$headers = array(
 			'Content-Type: text/html; charset=UTF-8',
-			'From: TMS <no-reply@endurance-tms.com>' // Replace with your sender name and email
+			'From: TMS <no-reply@odysseia-transport.com>' // Replace with your sender name and email
 		);
 		
 		// Send the email to each recipient
@@ -579,12 +579,12 @@ class TMSEmails extends TMSUsers {
 		
 		// Получение HTML-контента и email-адресов
 		$html_body  = $email_content[ 'html' ];
-		$all_emails = $email_content[ 'all_emails' ];
+		$all_emails = $email_content[ 'all_emails' ] . ',' . $data[ 'project_email' ];
 		
 		// Настройка заголовков для HTML email
 		$headers = array(
 			'Content-Type: text/html; charset=UTF-8',
-			'From: Tracking chain <' . $data[ 'project_email' ] . '>'
+			'From: Tracking chain <tracking@odysseia-transport.com>'
 		);
 		
 		

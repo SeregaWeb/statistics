@@ -194,3 +194,176 @@ function test_brokersnapshot_api() {
 }
 
 add_action('template_redirect', 'test_brokersnapshot_api');
+
+/**
+ * Test email functionality
+ * Usage: ?test_email=1 (admin only)
+ * Debug info is logged to error_log
+ */
+function test_email_functionality() {
+	if (!isset($_GET['test_email']) || $_GET['test_email'] !== '1') {
+		return;
+	}
+	
+	// Check if user is admin
+	if (!current_user_can('administrator')) {
+		return; // Silent return for non-admins
+	}
+	
+	$to = 'milchenko2k16@gmail.com';
+	$subject = 'Test Email from TMS Statistics';
+	$current_time = current_time('mysql');
+	$site_name = get_bloginfo('name');
+	$site_url = home_url();
+	
+	$message = '
+		<html>
+		<head>
+			<title>Test Email</title>
+		</head>
+		<body>
+			<h2>Test Email</h2>
+			<p>This is a test email to verify email functionality.</p>
+			<p><strong>Time:</strong> ' . $current_time . '</p>
+			<p><strong>Site:</strong> ' . $site_name . '</p>
+			<p><strong>URL:</strong> ' . $site_url . '</p>
+			<hr>
+			<p>If you received this email, the email system is working correctly!</p>
+		</body>
+		</html>
+	';
+	
+	// Use existing admin email as sender to avoid delivery issues
+	$admin_email = get_option('admin_email');
+	$from_email = $admin_email ?: 'operations@odysseia.one';
+	$from_name = 'TMS Statistics';
+	
+	$headers = array(
+		'Content-Type: text/html; charset=UTF-8',
+		'From: TMS <no-reply@odysseia-transport.com>'
+	);
+	
+	// Log debug info before sending
+	error_log('=== EMAIL TEST START ===');
+	error_log('To: ' . $to);
+	error_log('Subject: ' . $subject);
+	error_log('Time: ' . $current_time);
+	error_log('Site: ' . $site_name);
+	error_log('URL: ' . $site_url);
+	error_log('User ID: ' . get_current_user_id());
+	error_log('User Email: ' . wp_get_current_user()->user_email);
+	
+	// Check if SMTP is configured
+	$smtp_host = defined('SMTP_HOST') ? SMTP_HOST : 'Not defined';
+	$smtp_port = defined('SMTP_PORT') ? SMTP_PORT : 'Not defined';
+	$smtp_user = defined('SMTP_USER') ? SMTP_USER : 'Not defined';
+	error_log('SMTP_HOST: ' . $smtp_host);
+	error_log('SMTP_PORT: ' . $smtp_port);
+	error_log('SMTP_USER: ' . $smtp_user);
+	
+	// Check WordPress mail settings
+	error_log('WordPress admin_email: ' . get_option('admin_email'));
+	error_log('WordPress mail_from: ' . get_option('mail_from'));
+	error_log('WordPress mail_from_name: ' . get_option('mail_from_name'));
+	error_log('Using From Email: ' . $from_email);
+	error_log('Using From Name: ' . $from_name);
+	
+	// Log headers
+	error_log('Headers: ' . print_r($headers, true));
+	
+	// Warning about mail() function
+	error_log('⚠️ WARNING: Using PHP mail() function. Emails may:');
+	error_log('   - Go to spam folder');
+	error_log('   - Be blocked by recipient server');
+	error_log('   - Not be delivered if SPF/DKIM not configured');
+	error_log('   - Consider configuring SMTP for better delivery');
+	
+	// Hook into PHPMailer to capture detailed info
+	add_action('phpmailer_init', function($phpmailer) {
+		error_log('PHPMailer initialized');
+		error_log('PHPMailer Host: ' . $phpmailer->Host);
+		error_log('PHPMailer Port: ' . $phpmailer->Port);
+		error_log('PHPMailer SMTPAuth: ' . ($phpmailer->SMTPAuth ? 'true' : 'false'));
+		error_log('PHPMailer Username: ' . $phpmailer->Username);
+		error_log('PHPMailer From: ' . $phpmailer->From);
+		error_log('PHPMailer FromName: ' . $phpmailer->FromName);
+		error_log('PHPMailer Mailer: ' . $phpmailer->Mailer);
+		error_log('PHPMailer SMTPDebug: ' . $phpmailer->SMTPDebug);
+	}, 10, 1);
+	
+	// Enable SMTP debug temporarily
+	add_action('phpmailer_init', function($phpmailer) {
+		$phpmailer->SMTPDebug = 2; // Enable verbose debug output
+		$phpmailer->Debugoutput = function($str, $level) {
+			error_log('PHPMailer Debug [' . $level . ']: ' . $str);
+		};
+	}, 20, 1);
+	
+	// Send email
+	$result = wp_mail($to, $subject, $message, $headers);
+	
+	// Get PHPMailer instance after sending
+	global $phpmailer;
+	
+	// Log result
+	if ($result) {
+		error_log('✅ wp_mail() returned: true');
+		error_log('Result: true');
+	} else {
+		error_log('❌ wp_mail() returned: false');
+		error_log('Result: false');
+	}
+	
+	// Always check PHPMailer for errors (even if wp_mail returned true)
+	if (isset($phpmailer)) {
+		error_log('PHPMailer ErrorInfo: ' . ($phpmailer->ErrorInfo ?: 'No error info'));
+		error_log('PHPMailer Host: ' . ($phpmailer->Host ?: 'Not set'));
+		error_log('PHPMailer Mailer: ' . ($phpmailer->Mailer ?: 'mail()'));
+		
+		if (!empty($phpmailer->ErrorInfo)) {
+			error_log('⚠️ WARNING: PHPMailer has error info even though wp_mail() returned true!');
+			error_log('PHPMailer Error: ' . $phpmailer->ErrorInfo);
+		}
+	} else {
+		error_log('⚠️ WARNING: PHPMailer global not available');
+	}
+	
+	// Check if mail function exists
+	if (!function_exists('mail')) {
+		error_log('⚠️ WARNING: PHP mail() function is not available!');
+	}
+	
+	// Log last error if available
+	$last_error = error_get_last();
+	if ($last_error && $last_error['type'] === E_ERROR) {
+		error_log('Last PHP Error: ' . print_r($last_error, true));
+	}
+	
+	error_log('=== EMAIL TEST END ===');
+	
+	// Show simple message only to admin
+	$message = 'Email test completed. Check error_log for details.<br><br>';
+	
+	if ($result) {
+		$message .= '<p style="color: orange;"><strong>⚠️ Note:</strong> wp_mail() returned true, but email may not be delivered.</p>';
+		$message .= '<p>Possible issues:</p>';
+		$message .= '<ul>';
+		$message .= '<li>Email may be in spam folder</li>';
+		$message .= '<li>Server may not be configured for mail delivery</li>';
+		$message .= '<li>SPF/DKIM records may not be set up</li>';
+		$message .= '<li>Consider using SMTP plugin for better delivery</li>';
+		$message .= '</ul>';
+		$message .= '<p><strong>From:</strong> ' . esc_html($from_email) . '</p>';
+		$message .= '<p><strong>To:</strong> ' . esc_html($to) . '</p>';
+	}
+	
+	$message .= '<br><a href="' . esc_url(home_url()) . '">← Back to home</a>';
+	
+	wp_die(
+		$message,
+		'Email Test',
+		array('response' => 200)
+	);
+}
+
+add_action('template_redirect', 'test_email_functionality');

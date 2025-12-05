@@ -277,6 +277,17 @@ $access_change_auto_block = $TMSUsers->check_user_role_access( array(
                     <?php wp_nonce_field( 'tms_add_rating', 'tms_rating_nonce' ); ?>
                     
                     <div class="mb-3">
+                        <label for="loadNumber" class="form-label">Load number</label>
+                        <select class="form-control" id="loadNumber" required name="load_number">
+                            <option value="">Select a load...</option>
+                            <option value="Canceled">Canceled</option>
+                        </select>
+                        <div class="form-text">
+                            <small class="text-muted" id="loadsInfo">Loading available loads...</small>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
                         <label class="form-label">Select Rating</label>
                         <div class="d-flex gap-2">
                             <?php 
@@ -300,17 +311,6 @@ $access_change_auto_block = $TMSUsers->check_user_role_access( array(
                             <?php endfor; ?>
                         </div>
                         <input type="hidden" name="rating" id="selectedRating" required>
-                    </div>
-                    
-                    <div class="mb-3">
-                        <label for="loadNumber" class="form-label">Load number</label>
-                        <select class="form-control" id="loadNumber" required name="load_number">
-                            <option value="">Select a load...</option>
-                            <option value="Canceled">Canceled</option>
-                        </select>
-                        <div class="form-text">
-                            <small class="text-muted" id="loadsInfo">Loading available loads...</small>
-                        </div>
                     </div>
                     
                     <div class="mb-3">

@@ -217,36 +217,25 @@ $access_vehicle = $TMSUsers->check_user_role_access( [
         <div class="row">
             <div class="col-6 mb-3">
                 <label class="form-label">Account Type<span class="required-star text-danger">*</span></label>
-                <select name="account_type" required class="form-control form-select">
-                    <option value="Business" <?php echo $account_type === 'Business' ? 'selected' : ''; ?>>Business
-                    </option>
-                    <option value="Individual" <?php echo $account_type === 'Individual' ? 'selected' : ''; ?>>
-                        Individual
-                    </option>
-                </select>
+                <div class="form-control-plaintext" style="min-height: 38px; padding: 0.375rem 0.75rem; border: 1px solid #ced4da; border-radius: 0.25rem; background-color: #f8f9fa;">
+                    <?php echo esc_html($account_type ?: '—'); ?>
+                </div>
             </div>
 
             <div class="col-6 mb-3">
                 <label class="form-label">Account Name<span class="required-star text-danger">*</span></label>
-                <input type="text" class="form-control" name="account_name" required
-                       value="<?php echo $account_name; ?>">
+                <div class="form-control-plaintext" style="min-height: 38px; padding: 0.375rem 0.75rem; border: 1px solid #ced4da; border-radius: 0.25rem; background-color: #f8f9fa;">
+                    <?php echo esc_html($account_name ?: '—'); ?>
+                </div>
             </div>
 
             <div class="col-12"></div>
 
             <div class="col-6 mb-3">
                 <label class="form-label">Payment Instruction<span class="required-star text-danger">*</span></label>
-                <select name="payment_instruction" required class="form-control form-select">
-                    <option value="Void check" <?php echo $payment_instruction === 'Void check' ? 'selected' : ''; ?>>
-                        Void check
-                    </option>
-                    <option value="Direct deposit form" <?php echo $payment_instruction === 'Direct deposit form'
-						? 'selected' : ''; ?>>Direct deposit form
-                    </option>
-                    <option value="Bank statement" <?php echo $payment_instruction === 'Bank statement' ? 'selected'
-						: ''; ?>>Bank statement
-                    </option>
-                </select>
+                <div class="form-control-plaintext" style="min-height: 38px; padding: 0.375rem 0.75rem; border: 1px solid #ced4da; border-radius: 0.25rem; background-color: #f8f9fa;">
+                    <?php echo esc_html($payment_instruction ?: '—'); ?>
+                </div>
             </div>
 
             <div class="col-12 mb-3">
@@ -276,11 +265,10 @@ $access_vehicle = $TMSUsers->check_user_role_access( [
                     <div class="col-12 mb-3">
                         <label class="form-label d-flex align-items-center gap-1">Payment File <?php echo $payment_file
 								? $reports->get_icon_uploaded_file() : ''; ?></label>
-						<?php if ( ! $payment_file ): ?>
-
-                            <button <?php echo $full_only_view ? 'disabled' : ''; ?> data-href="#popup_upload_payment_file"
-                                    class="btn btn-success js-open-popup-activator mt-1">
-                                Upload file
+						<?php if ( ! $full_only_view ): ?>
+                            <button data-href="#popup_update_payment_information"
+                                    class="btn btn-primary js-open-popup-activator mt-1">
+                                Update payment information
                             </button>
 						<?php endif; ?>
                     </div>
@@ -572,6 +560,16 @@ $access_vehicle = $TMSUsers->check_user_role_access( [
 	foreach ( $popups_upload as $popup ):
 		echo esc_html( get_template_part( TEMPLATE_PATH . 'popups/upload', 'file', $popup ) );
 	endforeach;
+	
+	// Add popup for updating payment information
+	if ( $post_id && ! $full_only_view ):
+		get_template_part( TEMPLATE_PATH . 'popups/update', 'payment-information', array(
+			'driver_id' => $post_id,
+			'account_type' => $account_type,
+			'account_name' => $account_name,
+			'payment_instruction' => $payment_instruction,
+		) );
+	endif;
 
 else: ?> 
     <div class="alert alert-info">You do not have permission to upload documents.</div>

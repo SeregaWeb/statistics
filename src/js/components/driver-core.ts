@@ -717,6 +717,79 @@ export const uploadFileDriver = (ajaxUrl) => {
     });
 };
 
+/**
+ * Handle update payment information form in popup
+ */
+export const updatePaymentInformation = (ajaxUrl) => {
+    const form = document.querySelector('.js-update-payment-information-form');
+    if (!form) return;
+
+    form.addEventListener('submit', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+
+        const target = e.target as HTMLFormElement;
+        const submitBtn = target.querySelector<HTMLButtonElement>('button[type="submit"]');
+        const popupInstance = new Popup();
+        
+        // Disable submit button
+        let originalText: string | null = null;
+        if (submitBtn) {
+            submitBtn.disabled = true;
+            originalText = submitBtn.textContent;
+            if (originalText) {
+                submitBtn.textContent = 'Updating...';
+            }
+        }
+
+        const formData = new FormData(target);
+        formData.append('action', 'update_payment_information');
+
+        const options = {
+            method: 'POST',
+            body: formData,
+        };
+
+        fetch(ajaxUrl, options)
+            .then((res) => res.json())
+            .then((requestStatus) => {
+                if (requestStatus.success) {
+                    printMessage(requestStatus.data?.message || 'Payment information updated successfully', 'success', 8000);
+                    
+                    // Close popup
+                    popupInstance.forceCloseAllPopup();
+                    
+                    // Reload page to show updated information
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 1000);
+                } else {
+                    printMessage(requestStatus.data?.message || 'Error updating payment information', 'danger', 8000);
+                    
+                    // Re-enable button on error
+                    if (submitBtn) {
+                        submitBtn.disabled = false;
+                        if (originalText) {
+                            submitBtn.textContent = originalText;
+                        }
+                    }
+                }
+            })
+            .catch((error) => {
+                printMessage(`Request failed: ${error}`, 'danger', 8000);
+                console.error('Request failed:', error);
+                
+                // Re-enable button on error
+                if (submitBtn) {
+                    submitBtn.disabled = false;
+                    if (originalText) {
+                        submitBtn.textContent = originalText;
+                    }
+                }
+            });
+    });
+};
+
 export const copyText = () => {
     const buttons = document.querySelectorAll('.js-copy-text');
 
@@ -894,6 +967,7 @@ export const driversActions = (urlAjax) => {
     removeOneFileInitial(urlAjax);
     updateStatusDriver(urlAjax);
     uploadFileDriver(urlAjax);
+    updatePaymentInformation(urlAjax);
     copyText();
     remoteSendForm(urlAjax);
 

@@ -25,16 +25,20 @@ class DriverPopupForms {
         this.setupRatingConstraints();
         this.handleAutoBlockExclude();
 
-        // Reset UI state on popup open
+        // Reset UI state on popup open and update currentDriverId
         document.addEventListener('tms:rating-popup-open', () => {
             this.resetRatingUIState();
+            // Update currentDriverId from popup element when it opens
+            const driverId = this.getDriverIdFromPopup('driverRatingName');
+            if (driverId) {
+                this.currentDriverId = driverId;
+            }
         });
         
         // Update currentDriverId when notice popup opens
         document.addEventListener('tms:notice-popup-open', (e: any) => {
             if (e.detail && e.detail.driverId) {
                 this.currentDriverId = e.detail.driverId;
-                console.log('Updated currentDriverId from notice popup event:', this.currentDriverId);
             }
         });
     }
@@ -91,13 +95,17 @@ class DriverPopupForms {
      * Handle rating form submission
      */
     private handleRatingForm(): void {
-        const form = document.getElementById('ratingForm') as HTMLFormElement;
-        if (!form) {
-            return;
-        }
-
-        form.addEventListener('submit', (e) => {
+        // Use event delegation to handle forms that may be created dynamically (e.g., in modals)
+        document.addEventListener('submit', (e) => {
+            const target = e.target as HTMLFormElement;
+            
+            // Check if this is the rating form
+            if (!target || target.id !== 'ratingForm') {
+                return;
+            }
+            
             e.preventDefault();
+            e.stopPropagation();
             // Validate constraint on submit as well
             const selectedRatingInput = document.getElementById('selectedRating') as HTMLInputElement;
             const selectedRatingVal = selectedRatingInput ? parseInt(selectedRatingInput.value || '0', 10) : 0;
@@ -106,23 +114,38 @@ class DriverPopupForms {
                 return;
             }
             
-            // Check if driver_id is already in the form (for modal windows)
-            const existingDriverId = form.querySelector('input[name="driver_id"]') as HTMLInputElement;
-            let driverId = existingDriverId ? existingDriverId.value : null;
+            // Priority 1: ALWAYS get driver_id from popup element FIRST (most reliable, updated immediately on click)
+            // This ensures we get the current driver ID even if form field hasn't been updated yet
+            let driverId = this.getDriverIdFromPopup('driverRatingName');
             
-            // If no driver_id in form, try to get it from popup or current context
+            // Priority 2: If not found in popup, check if driver_id is already in the form (for modal windows)
             if (!driverId) {
-                driverId = this.currentDriverId || this.getDriverIdFromPopup('driverRatingName');
-                
-                // Set the driver ID in the hidden field if it exists
+                const existingDriverId = target.querySelector('input[name="driver_id"]') as HTMLInputElement;
+                driverId = existingDriverId ? existingDriverId.value : null;
+            }
+            
+            // Priority 3: If still not found, try currentDriverId as fallback
+            if (!driverId) {
+                driverId = this.currentDriverId;
+            }
+            
+            // Always update the hidden field in the form with the correct driver_id
+            if (driverId) {
                 const driverIdField = document.getElementById('ratingDriverId') as HTMLInputElement;
-                if (driverIdField && driverId) {
+                if (driverIdField) {
                     driverIdField.value = driverId;
                 }
+                // Also ensure the form field has the correct value
+                const existingDriverId = target.querySelector('input[name="driver_id"]') as HTMLInputElement;
+                if (existingDriverId && existingDriverId.value !== driverId) {
+                    existingDriverId.value = driverId;
+                }
+                // Also update currentDriverId for consistency
+                this.currentDriverId = driverId;
             }
             
             if (driverId) {
-                const formData = new FormData(form);
+                const formData = new FormData(target);
                 
                 // Add action for AJAX
                 formData.set('action', 'add_driver_rating');
@@ -238,8 +261,6 @@ class DriverPopupForms {
                 }
             }
             
-            console.log('Submitting notice form with driver ID:', driverId);
-            
             if (driverId && driverId.trim() !== '') {
                 const formData = new FormData(form);
                 
@@ -350,7 +371,13 @@ class DriverPopupForms {
         const ratingPopup = document.getElementById('driver-rating-popup');
         const noticePopup = document.getElementById('driver-notice-popup');
         
-        return !!(ratingPopup || noticePopup);
+        // Also check if we're in a Bootstrap modal (not a popup)
+        const ratingModal = document.getElementById('ratingModal');
+        const noticeModal = document.getElementById('noticeModal');
+        
+        // Return true only if it's a popup, not a modal
+        // Modals should trigger page reload, popups should update without reload
+        return !!(ratingPopup || noticePopup) && !(ratingModal || noticeModal);
     }
 
     /**

@@ -50,7 +50,6 @@ class DriverPopups {
             
             const { default: Popup } = await import('../parts/popup-window.js');
             this.popupSystem = new Popup();
-            console.log('Popup system initialized successfully');
         } catch (error) {
             console.warn('Popup system not available:', error);
         }
@@ -115,11 +114,6 @@ class DriverPopups {
         const driverName = button.getAttribute('data-driver-name');
         const rating = button.getAttribute('data-rating');
 
-        console.log('Rating button clicked:', button);
-        console.log('Driver ID from button:', driverId);
-        console.log('Driver name from button:', driverName);
-        console.log('Rating from button:', rating);
-
         if (!driverId) {
             this.showMessage('Driver ID not found', 'danger');
             return;
@@ -129,13 +123,18 @@ class DriverPopups {
         const nameElement = document.getElementById('driverRatingName');
         const scoreElement = document.getElementById('driverRatingScore');
         const fullPageLink = document.getElementById('driverRatingFullPage') as HTMLAnchorElement;
+        const driverIdField = document.getElementById('ratingDriverId') as HTMLInputElement;
 
         if (nameElement) {
             nameElement.textContent = driverName || 'Unknown Driver';
             nameElement.setAttribute('data-driver-id', driverId);
-            console.log('Setting driver ID for ratings:', driverId);
-            console.log('Element after setting:', nameElement);
         }
+        
+        // Update hidden field in form immediately to ensure correct driver_id on fast submit
+        if (driverIdField) {
+            driverIdField.value = driverId;
+        }
+        
         if (scoreElement) scoreElement.textContent = rating || '0';
         if (fullPageLink) {
             fullPageLink.href = `${this.addNewLoadUrl}?driver=${driverId}&tab=pills-driver-stats-tab`;
@@ -197,11 +196,6 @@ class DriverPopups {
         const driverName = button.getAttribute('data-driver-name');
         const noticeCount = button.getAttribute('data-notice-count');
 
-        console.log('Notice button clicked:', button);
-        console.log('Driver ID from button:', driverId);
-        console.log('Driver name from button:', driverName);
-        console.log('Notice count from button:', noticeCount);
-
         if (!driverId) {
             this.showMessage('Driver ID not found', 'danger');
             return;
@@ -216,14 +210,11 @@ class DriverPopups {
         if (nameElement) {
             nameElement.textContent = driverName || 'Unknown Driver';
             nameElement.setAttribute('data-driver-id', driverId);
-            console.log('Setting driver ID for notices:', driverId);
-            console.log('Element after setting:', nameElement);
         }
         
         // Update hidden driver_id field in the form
         if (driverIdField) {
             driverIdField.value = driverId;
-            console.log('Updated noticeDriverId field:', driverId);
         }
         
         if (countElement) countElement.textContent = noticeCount || '0';
@@ -270,8 +261,6 @@ class DriverPopups {
     }
 
     private openPopup(selector: string): void {
-        console.log('Opening popup:', selector, 'Popup system available:', !!this.popupSystem);
-        
         // Always use manual opening to avoid fadeOut conflicts
         const popupElement = document.querySelector(selector) as HTMLElement;
         if (popupElement) {
@@ -462,8 +451,6 @@ class DriverPopups {
     private showMessage(message: string, type: 'success' | 'danger' | 'warning'): void {
         if (typeof (window as any).printMessage === 'function') {
             (window as any).printMessage(message, type, 3000);
-        } else {
-            console.log(`${type.toUpperCase()}: ${message}`);
         }
     }
 }

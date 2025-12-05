@@ -49,6 +49,7 @@ class TMSDrivers extends TMSDriversHelper {
 			'update_driver_contact'        => 'update_driver_contact',
 			'update_driver_information'    => 'update_driver_information',
 			'update_driver_finance'        => 'update_driver_finance',
+			'update_payment_information'   => 'update_payment_information',
 			'delete_open_image_driver'     => 'delete_open_image_driver',
 			'update_driver_document'       => 'update_driver_document',
 			'update_driver_status'         => 'update_driver_status',
@@ -1277,6 +1278,10 @@ class TMSDrivers extends TMSDriversHelper {
 				ON main.id = driver_name.post_id AND driver_name.meta_key = 'driver_name'
 			LEFT JOIN $table_meta AS driver_phone
 				ON main.id = driver_phone.post_id AND driver_phone.meta_key = 'driver_phone'
+			LEFT JOIN $table_meta AS team_driver_phone
+				ON main.id = team_driver_phone.post_id AND team_driver_phone.meta_key = 'team_driver_phone'
+			LEFT JOIN $table_meta AS owner_phone
+				ON main.id = owner_phone.post_id AND owner_phone.meta_key = 'owner_phone'
 			LEFT JOIN $table_meta AS driver_email
 				ON main.id = driver_email.post_id AND driver_email.meta_key = 'driver_email'
 			LEFT JOIN $table_meta AS vehicle_type
@@ -1469,9 +1474,11 @@ class TMSDrivers extends TMSDriversHelper {
 							$phone_detected = $this->is_phone_number( $search_term );
 							
 							if ( $phone_detected ) {
-								// Format phone number and search in driver_phone field
+								// Format phone number and search in all phone fields (driver_phone, team_driver_phone, owner_phone)
 								$formatted_phone    = $this->format_phone_number( $search_term );
-								$where_conditions[] = "driver_phone.meta_value = %s";
+								$where_conditions[] = "(driver_phone.meta_value = %s OR team_driver_phone.meta_value = %s OR owner_phone.meta_value = %s)";
+								$where_values[]     = $formatted_phone;
+								$where_values[]     = $formatted_phone;
 								$where_values[]     = $formatted_phone;
 							} elseif ( is_numeric( $search_term ) ) {
 								// For numeric search that's not a phone, search by ID
@@ -1957,53 +1964,63 @@ class TMSDrivers extends TMSDriversHelper {
 				'interview_martlet',
 				'interview_endurance',
 			], true ) ) {
-				// Для полей attached_file_required и updated_rate_confirmation
-				if ( $current_value == $image_id ) {
-					$new_value = ''; // Удаляем значение, если оно совпадает
+				// Special handling for payment_file - save to old_payment_file before checking
+				if ( $image_field === 'payment_file' ) {
+					// For payment_file, save current value to old_payment_file before deletion
+					if ( ! empty( $current_value ) && $current_value == $image_id ) {
+						// Save current payment_file to old_payment_file
+						$old_payment_exists = $wpdb->get_var( $wpdb->prepare( "
+							SELECT id FROM $table_meta_name
+							WHERE post_id = %d AND meta_key = 'old_payment_file'
+						", $post_id ) );
+						
+						if ( $old_payment_exists ) {
+							// Update existing old_payment_file
+							$wpdb->update( $table_meta_name, 
+								array( 'meta_value' => $current_value ), 
+								array( 'post_id' => $post_id, 'meta_key' => 'old_payment_file' ),
+								array( '%s' ),
+								array( '%d', '%s' )
+							);
+						} else {
+							// Insert new old_payment_file
+							$wpdb->insert( $table_meta_name, 
+								array( 
+									'post_id' => $post_id,
+									'meta_key' => 'old_payment_file',
+									'meta_value' => $current_value
+								),
+								array( '%d', '%s', '%s' )
+							);
+						}
+						
+						$new_value = ''; // Set to empty to remove from payment_file
+					} else {
+						return new WP_Error( 'id_not_found', 'The specified ID was not found in the payment_file field.' );
+					}
 				} else {
-					return new WP_Error( 'id_not_found', 'The specified ID was not found in the field.' );
+					// For other fields
+					if ( $current_value == $image_id ) {
+						$new_value = ''; // Удаляем значение, если оно совпадает
+					} else {
+						return new WP_Error( 'id_not_found', 'The specified ID was not found in the field.' );
+					}
 				}
 			} else {
 				return new WP_Error( 'invalid_field', 'Invalid field name.' );
 			}
 			
-			// Special handling for payment_file - save to old_payment_file and don't delete physically
+			// Update the field in database
+			$result = $wpdb->update( $table_meta_name, array( 'meta_value' => $new_value ), array(
+				'post_id'  => $post_id,
+				'meta_key' => $image_field
+			), array( '%s' ),       // Формат для meta_value
+				array( '%d', '%s' ) // Форматы для post_id и meta_key
+			);
+			
+			// Special handling for payment_file - don't delete physically
 			if ( $image_field === 'payment_file' ) {
-				// Save current value to old_payment_file
-				$old_payment_exists = $wpdb->get_var( $wpdb->prepare( "
-					SELECT id FROM $table_meta_name
-					WHERE post_id = %d AND meta_key = 'old_payment_file'
-				", $post_id ) );
-				
-				if ( $old_payment_exists ) {
-					// Update existing old_payment_file
-					$wpdb->update( $table_meta_name, 
-						array( 'meta_value' => $current_value ), 
-						array( 'post_id' => $post_id, 'meta_key' => 'old_payment_file' ),
-						array( '%s' ),
-						array( '%d', '%s' )
-					);
-				} else {
-					// Insert new old_payment_file
-					$wpdb->insert( $table_meta_name, 
-						array( 
-							'post_id' => $post_id,
-							'meta_key' => 'old_payment_file',
-							'meta_value' => $current_value
-						),
-						array( '%d', '%s', '%s' )
-					);
-				}
-				
-				// Update payment_file to empty string
-				$result = $wpdb->update( $table_meta_name, array( 'meta_value' => $new_value ), array(
-					'post_id'  => $post_id,
-					'meta_key' => $image_field
-				), array( '%s' ),       // Формат для meta_value
-					array( '%d', '%s' ) // Форматы для post_id и meta_key
-				);
-				
-				// Skip physical file deletion for payment_file
+				// Skip physical file deletion for payment_file (file is saved in old_payment_file)
 				$deleted = true; // Set to true to skip the error check
 			} else {
 				// Обновляем запись в таблице мета-данных
@@ -2594,12 +2611,6 @@ class TMSDrivers extends TMSDriversHelper {
 			$data = array(
 				'driver_id'           => isset( $_POST[ 'driver_id' ] ) ? sanitize_text_field( $_POST[ 'driver_id' ] )
 					: '',
-				'account_type'        => isset( $_POST[ 'account_type' ] )
-					? sanitize_text_field( $_POST[ 'account_type' ] ) : '',
-				'account_name'        => isset( $_POST[ 'account_name' ] )
-					? sanitize_text_field( $_POST[ 'account_name' ] ) : '',
-				'payment_instruction' => isset( $_POST[ 'payment_instruction' ] )
-					? sanitize_text_field( $_POST[ 'payment_instruction' ] ) : '',
 				
 				'w9_classification' => isset( $_POST[ 'w9_classification' ] )
 					? sanitize_text_field( $_POST[ 'w9_classification' ] ) : '',
@@ -2637,9 +2648,6 @@ class TMSDrivers extends TMSDriversHelper {
 			$file_EIN      = get_field_value( $meta, 'ein_file' );
 			$file_SSN      = get_field_value( $meta, 'ssn_file' );
 			$array_track   = array(
-				'account_type',
-				'account_name',
-				'payment_instruction',
 				'w9_classification',
 				'address',
 				'city_state_zip',
@@ -2657,45 +2665,45 @@ class TMSDrivers extends TMSDriversHelper {
 			}
 			
 			// Handle account_name change - save to old_account_name only if value actually changed
-			if ( isset( $data[ 'account_name' ] ) && ! empty( $data[ 'account_name' ] ) ) {
-				$current_account_name = get_field_value( $meta, 'account_name' );
+			// if ( isset( $data[ 'account_name' ] ) && ! empty( $data[ 'account_name' ] ) ) {
+			// 	$current_account_name = get_field_value( $meta, 'account_name' );
 				
-				// Only save to old_account_name if value actually changed
-				if ( ! empty( $current_account_name ) && $current_account_name !== $data[ 'account_name' ] ) {
-					global $wpdb;
-					$table_meta_name = $wpdb->prefix . $this->table_meta;
+			// 	// Only save to old_account_name if value actually changed
+			// 	if ( ! empty( $current_account_name ) && $current_account_name !== $data[ 'account_name' ] ) {
+			// 		global $wpdb;
+			// 		$table_meta_name = $wpdb->prefix . $this->table_meta;
 					
-					// Check if old_account_name exists
-					$old_exists = $wpdb->get_var( $wpdb->prepare( "
-						SELECT id FROM $table_meta_name
-						WHERE post_id = %d AND meta_key = 'old_account_name'
-					", $data[ 'driver_id' ] ) );
+			// 		// Check if old_account_name exists
+			// 		$old_exists = $wpdb->get_var( $wpdb->prepare( "
+			// 			SELECT id FROM $table_meta_name
+			// 			WHERE post_id = %d AND meta_key = 'old_account_name'
+			// 		", $data[ 'driver_id' ] ) );
 					
-					if ( $old_exists ) {
-						// Update existing old_account_name with current value before it changes
-						$wpdb->update( $table_meta_name, 
-							array( 'meta_value' => $current_account_name ), 
-							array( 'post_id' => $data[ 'driver_id' ], 'meta_key' => 'old_account_name' ),
-							array( '%s' ),
-							array( '%d', '%s' )
-						);
-					} else {
-						// Insert new old_account_name with current value before it changes
-						$wpdb->insert( $table_meta_name, 
-							array( 
-								'post_id' => $data[ 'driver_id' ],
-								'meta_key' => 'old_account_name',
-								'meta_value' => $current_account_name
-							),
-							array( '%d', '%s', '%s' )
-						);
-					}
+			// 		if ( $old_exists ) {
+			// 			// Update existing old_account_name with current value before it changes
+			// 			$wpdb->update( $table_meta_name, 
+			// 				array( 'meta_value' => $current_account_name ), 
+			// 				array( 'post_id' => $data[ 'driver_id' ], 'meta_key' => 'old_account_name' ),
+			// 				array( '%s' ),
+			// 				array( '%d', '%s' )
+			// 			);
+			// 		} else {
+			// 			// Insert new old_account_name with current value before it changes
+			// 			$wpdb->insert( $table_meta_name, 
+			// 				array( 
+			// 					'post_id' => $data[ 'driver_id' ],
+			// 					'meta_key' => 'old_account_name',
+			// 					'meta_value' => $current_account_name
+			// 				),
+			// 				array( '%d', '%s', '%s' )
+			// 			);
+			// 		}
 					
-					// Check if we can send email (both old_payment_file and old_account_name are filled)
-					// Pass new account_name value so it's used in email instead of old value from DB
-					$this->send_payment_file_update_email( $data[ 'driver_id' ], $data[ 'account_name' ] );
-				}
-			}
+			// 		// Check if we can send email (both old_payment_file and old_account_name are filled)
+			// 		// Pass new account_name value so it's used in email instead of old value from DB
+			// 		$this->send_payment_file_update_email( $data[ 'driver_id' ], $data[ 'account_name' ] );
+			// 	}
+			// }
 			
 			if ( $data[ 'w9_classification' ] === 'business' ) {
 				if ( empty( $data[ 'entity_name' ] ) ) {
@@ -2732,6 +2740,64 @@ class TMSDrivers extends TMSDriversHelper {
 				}
 			}
 			
+			// Handle payment_file upload if provided
+			// if ( ! empty( $_FILES[ 'payment_file' ] && $_FILES[ 'payment_file' ][ 'size' ] > 0 ) ) {
+			// 	$id_uploaded = $this->upload_one_file( $_FILES[ 'payment_file' ], 'payment_file' );
+			// 	$data[ 'payment_file' ] = is_numeric( $id_uploaded ) ? $id_uploaded : '';
+				
+			// 	// Special handling for payment_file - save current file to old_payment_file before updating
+			// 	if ( is_numeric( $id_uploaded ) ) {
+			// 		$driver_object = $this->get_driver_by_id( $data[ 'driver_id' ] );
+			// 		$meta          = get_field_value( $driver_object, 'meta' );
+			// 		$current_payment_file = get_field_value( $meta, 'payment_file' );
+					
+			// 		// Always save current payment_file to old_payment_file before updating (if current exists)
+			// 		if ( ! empty( $current_payment_file ) ) {
+			// 			global $wpdb;
+			// 			$table_meta_name = $wpdb->prefix . $this->table_meta;
+						
+			// 			// If there's an existing old_payment_file, delete it first (it was already processed or email was sent)
+			// 			$existing_old = $wpdb->get_var( $wpdb->prepare( "
+			// 				SELECT meta_value FROM $table_meta_name
+			// 				WHERE post_id = %d AND meta_key = 'old_payment_file'
+			// 			", $data[ 'driver_id' ] ) );
+						
+			// 			if ( ! empty( $existing_old ) && is_numeric( $existing_old ) && $existing_old != $current_payment_file ) {
+			// 				// Delete the old file from media library if it's different from current
+			// 				wp_delete_attachment( $existing_old, true );
+			// 			}
+						
+			// 			// Update or insert old_payment_file with current value
+			// 			$old_exists = $wpdb->get_var( $wpdb->prepare( "
+			// 				SELECT id FROM $table_meta_name
+			// 				WHERE post_id = %d AND meta_key = 'old_payment_file'
+			// 			", $data[ 'driver_id' ] ) );
+						
+			// 			if ( $old_exists ) {
+			// 				$wpdb->update( $table_meta_name, 
+			// 					array( 'meta_value' => $current_payment_file ), 
+			// 					array( 'post_id' => $data[ 'driver_id' ], 'meta_key' => 'old_payment_file' ),
+			// 					array( '%s' ),
+			// 					array( '%d', '%s' )
+			// 				);
+			// 			} else {
+			// 				$wpdb->insert( $table_meta_name, 
+			// 					array( 
+			// 						'post_id' => $data[ 'driver_id' ],
+			// 						'meta_key' => 'old_payment_file',
+			// 						'meta_value' => $current_payment_file
+			// 					),
+			// 					array( '%d', '%s', '%s' )
+			// 				);
+			// 			}
+			// 		}
+					
+			// 		// Send email notification about payment file update
+			// 		$this->send_payment_file_update_email( $data[ 'driver_id' ], $data[ 'account_name' ] );
+			// 	}
+			// }
+
+			
 			$result = $this->update_driver_in_db( $data );
 			
 			if ( $result ) {
@@ -2750,6 +2816,124 @@ class TMSDrivers extends TMSDriversHelper {
 			}
 			
 			wp_send_json_error( [ 'message' => 'Driver not update, error add in database' ] );
+		}
+	}
+	
+	/**
+	 * Update only payment information (account_type, account_name, payment_instruction, payment_file)
+	 * This is a separate endpoint to avoid updating other finance fields
+	 */
+	public function update_payment_information() {
+		if ( defined( 'DOING_AJAX' ) && DOING_AJAX ) {
+			check_ajax_referer( 'tms_update_payment_info', 'tms_payment_info_nonce' );
+			
+			// Only get the 4 payment-related fields
+			$data = array(
+				'driver_id'           => isset( $_POST[ 'driver_id' ] ) ? sanitize_text_field( $_POST[ 'driver_id' ] ) : '',
+				'account_type'        => isset( $_POST[ 'account_type' ] ) ? sanitize_text_field( $_POST[ 'account_type' ] ) : '',
+				'account_name'        => isset( $_POST[ 'account_name' ] ) ? sanitize_text_field( $_POST[ 'account_name' ] ) : '',
+				'payment_instruction' => isset( $_POST[ 'payment_instruction' ] ) ? sanitize_text_field( $_POST[ 'payment_instruction' ] ) : '',
+			);
+			
+			if ( empty( $data[ 'driver_id' ] ) ) {
+				wp_send_json_error( [ 'message' => 'Driver ID is required' ] );
+			}
+			
+			if ( empty( $data[ 'account_type' ] ) || empty( $data[ 'account_name' ] ) || empty( $data[ 'payment_instruction' ] ) ) {
+				wp_send_json_error( [ 'message' => 'Account Type, Account Name, and Payment Instruction are required' ] );
+			}
+			
+			$driver_object = $this->get_driver_by_id( $data[ 'driver_id' ] );
+			if ( ! $driver_object ) {
+				wp_send_json_error( [ 'message' => 'Driver not found' ] );
+			}
+			
+			$meta = get_field_value( $driver_object, 'meta' );
+			
+			// Get old values BEFORE updating (for email comparison)
+			$old_account_type = get_field_value( $meta, 'account_type' );
+			$old_account_name = get_field_value( $meta, 'account_name' );
+			$old_payment_instruction = get_field_value( $meta, 'payment_instruction' );
+			$current_payment_file = get_field_value( $meta, 'payment_file' );
+			
+			// Handle payment_file upload if provided
+			if ( ! empty( $_FILES[ 'payment_file' ] && $_FILES[ 'payment_file' ][ 'size' ] > 0 ) ) {
+				// Get existing old_payment_file BEFORE uploading new file (in case file was deleted previously)
+				global $wpdb;
+				$table_meta_name = $wpdb->prefix . $this->table_meta;
+				$existing_old_payment_file = $wpdb->get_var( $wpdb->prepare( "
+					SELECT meta_value FROM $table_meta_name
+					WHERE post_id = %d AND meta_key = 'old_payment_file'
+				", $data[ 'driver_id' ] ) );
+				
+				// Save current payment_file to old_payment_file BEFORE uploading new file
+				// Use the value we got before upload (line 2857)
+				$file_to_save_as_old = $current_payment_file;
+				
+				$id_uploaded = $this->upload_one_file( $_FILES[ 'payment_file' ], 'payment_file' );
+				$data[ 'payment_file' ] = is_numeric( $id_uploaded ) ? $id_uploaded : '';
+				
+				// Special handling for payment_file - save previous file to old_payment_file
+				if ( is_numeric( $id_uploaded ) ) {
+					// If current_payment_file exists, save it to old_payment_file
+					// If current_payment_file is empty (file was deleted), keep existing old_payment_file
+					if ( ! empty( $file_to_save_as_old ) ) {
+						// Current file exists - save it to old_payment_file
+						// If there's an existing old_payment_file that's different, delete it first
+						if ( ! empty( $existing_old_payment_file ) && is_numeric( $existing_old_payment_file ) && $existing_old_payment_file != $file_to_save_as_old ) {
+							// Delete the old file from media library if it's different from the one we're about to save
+							wp_delete_attachment( $existing_old_payment_file, true );
+						}
+						
+						// Update or insert old_payment_file with previous file value
+						$old_exists = $wpdb->get_var( $wpdb->prepare( "
+							SELECT id FROM $table_meta_name
+							WHERE post_id = %d AND meta_key = 'old_payment_file'
+						", $data[ 'driver_id' ] ) );
+						
+						if ( $old_exists ) {
+							$wpdb->update( $table_meta_name, 
+								array( 'meta_value' => $file_to_save_as_old ), 
+								array( 'post_id' => $data[ 'driver_id' ], 'meta_key' => 'old_payment_file' ),
+								array( '%s' ),
+								array( '%d', '%s' )
+							);
+						} else {
+							$wpdb->insert( $table_meta_name, 
+								array( 
+									'post_id' => $data[ 'driver_id' ],
+									'meta_key' => 'old_payment_file',
+									'meta_value' => $file_to_save_as_old
+								),
+								array( '%d', '%s', '%s' )
+							);
+						}
+					}
+					// If $file_to_save_as_old is empty (file was deleted), keep existing old_payment_file as is
+					// It will be used in email and deleted after email is sent
+				}
+			}
+			
+			// Update only the payment-related fields
+			$result = $this->update_driver_in_db( $data );
+			
+			if ( $result ) {
+				// Send email notification about payment information update (always, not just when file is uploaded)
+				// Pass both old and new values for comparison
+				$this->send_payment_file_update_email( 
+					$data[ 'driver_id' ], 
+					$old_account_type, 
+					$old_account_name, 
+					$old_payment_instruction,
+					$data[ 'account_type' ], 
+					$data[ 'account_name' ], 
+					$data[ 'payment_instruction' ] 
+				);
+				
+				wp_send_json_success( [ 'message' => 'Payment information updated successfully', 'id_driver' => $result ] );
+			}
+
+			wp_send_json_error( [ 'message' => 'Error updating payment information' ] );
 		}
 	}
 	
@@ -3327,8 +3511,8 @@ class TMSDrivers extends TMSDriversHelper {
 					) );
 				}
 
-				// Send email notification about payment file update
-				$this->send_payment_file_update_email( $data[ 'driver_id' ] );
+				// Note: Email notification for payment_file is now sent from update_payment_information() method
+				// when payment information is updated through the dedicated popup
 
 				wp_send_json_success( [ 'message' => 'successfully upload', 'id_driver' => $result ] );
 			}
@@ -4402,13 +4586,18 @@ class TMSDrivers extends TMSDriversHelper {
 	}
 	
 	/**
-	 * Send email notification when payment file and account name are updated
+	 * Send email notification when payment information is updated
 	 * 
 	 * @param int $driver_id Driver ID
-	 * @param string $new_account_name Optional new account name (if updating, pass the new value)
+	 * @param string $old_account_type Old Account Type (Business/Individual)
+	 * @param string $old_account_name Old Account Name
+	 * @param string $old_payment_instruction Old Payment Instruction
+	 * @param string $new_account_type New Account Type (Business/Individual)
+	 * @param string $new_account_name New Account Name
+	 * @param string $new_payment_instruction New Payment Instruction
 	 * @return bool True if email was sent successfully, false otherwise
 	 */
-	private function send_payment_file_update_email( $driver_id, $new_account_name = null ) {
+	private function send_payment_file_update_email( $driver_id, $old_account_type = null, $old_account_name = null, $old_payment_instruction = null, $new_account_type = null, $new_account_name = null, $new_payment_instruction = null ) {
 		global $wpdb;
 
 		$driver_object = $this->get_driver_by_id( $driver_id );
@@ -4419,19 +4608,28 @@ class TMSDrivers extends TMSDriversHelper {
 		$meta = get_field_value( $driver_object, 'meta' );
 		$main = get_field_value( $driver_object, 'main' );
 		
-		$old_payment_file = get_field_value( $meta, 'old_payment_file' );
-		$old_account_name = get_field_value( $meta, 'old_account_name' );
-		
-		// Only send email if both old_payment_file and old_account_name are filled
-		if ( empty( $old_payment_file ) || empty( $old_account_name ) ) {
-			return false;
+		// Get current values from DB if not provided
+		if ( $old_account_type === null ) {
+			$old_account_type = get_field_value( $meta, 'account_type' );
+		}
+		if ( $old_account_name === null ) {
+			$old_account_name = get_field_value( $meta, 'account_name' );
+		}
+		if ( $old_payment_instruction === null ) {
+			$old_payment_instruction = get_field_value( $meta, 'payment_instruction' );
+		}
+		if ( $new_account_type === null ) {
+			$new_account_type = get_field_value( $meta, 'account_type' );
+		}
+		if ( $new_account_name === null ) {
+			$new_account_name = get_field_value( $meta, 'account_name' );
+		}
+		if ( $new_payment_instruction === null ) {
+			$new_payment_instruction = get_field_value( $meta, 'payment_instruction' );
 		}
 		
-
-		// Get current values
+		$old_payment_file = get_field_value( $meta, 'old_payment_file' );
 		$current_payment_file = get_field_value( $meta, 'payment_file' );
-		// Use new_account_name if provided (when updating), otherwise get from DB
-		$account_name = ! empty( $new_account_name ) ? $new_account_name : get_field_value( $meta, 'account_name' );
 		
 		// Get recruiter email from recruiter_add (meta) or user_id_added (main)
 		$recruiter_id = get_field_value( $meta, 'recruiter_add' );
@@ -4447,14 +4645,49 @@ class TMSDrivers extends TMSDriversHelper {
 		}
 		
 		// Get file paths for attachments
-		$old_file_path = get_attached_file( $old_payment_file );
-		$new_file_path = ! empty( $current_payment_file ) ? get_attached_file( $current_payment_file ) : '';
+		$old_file_path = '';
+		$new_file_path = '';
+		
+		if ( ! empty( $old_payment_file ) && is_numeric( $old_payment_file ) ) {
+			$old_file_path = get_attached_file( $old_payment_file );
+			// get_attached_file() should return absolute path, but verify it exists
+			if ( $old_file_path && ! file_exists( $old_file_path ) ) {
+				// Try to get file URL and convert to path
+				$old_file_url = wp_get_attachment_url( $old_payment_file );
+				if ( $old_file_url ) {
+					$upload_dir = wp_upload_dir();
+					$old_file_path = str_replace( $upload_dir['baseurl'], $upload_dir['basedir'], $old_file_url );
+				}
+			}
+		}
+		
+		if ( ! empty( $current_payment_file ) && is_numeric( $current_payment_file ) ) {
+			$new_file_path = get_attached_file( $current_payment_file );
+			// get_attached_file() should return absolute path, but verify it exists
+			if ( $new_file_path && ! file_exists( $new_file_path ) ) {
+				// Try to get file URL and convert to path
+				$new_file_url = wp_get_attachment_url( $current_payment_file );
+				if ( $new_file_url ) {
+					$upload_dir = wp_upload_dir();
+					$new_file_path = str_replace( $upload_dir['baseurl'], $upload_dir['basedir'], $new_file_url );
+				}
+			}
+		}
+		
 		$attachments = array();
-		if ( $old_file_path && file_exists( $old_file_path ) ) {
+		if ( $old_file_path && file_exists( $old_file_path ) && is_readable( $old_file_path ) ) {
 			$attachments[] = $old_file_path;
 		}
-		if ( $new_file_path && file_exists( $new_file_path ) ) {
+		if ( $new_file_path && file_exists( $new_file_path ) && is_readable( $new_file_path ) ) {
 			$attachments[] = $new_file_path;
+		}
+		
+		// Log for debugging (admin only)
+		if ( current_user_can( 'administrator' ) ) {
+			error_log( 'Payment file email - Driver ID: ' . $driver_id );
+			error_log( 'Payment file email - Old file ID: ' . ( $old_payment_file ?: 'empty' ) . ', Path: ' . ( $old_file_path ?: 'empty' ) . ', Exists: ' . ( $old_file_path && file_exists( $old_file_path ) ? 'yes' : 'no' ) );
+			error_log( 'Payment file email - New file ID: ' . ( $current_payment_file ?: 'empty' ) . ', Path: ' . ( $new_file_path ?: 'empty' ) . ', Exists: ' . ( $new_file_path && file_exists( $new_file_path ) ? 'yes' : 'no' ) );
+			error_log( 'Payment file email - Attachments count: ' . count( $attachments ) );
 		}
 		
 		// Prepare email recipients
@@ -4479,11 +4712,45 @@ class TMSDrivers extends TMSDriversHelper {
 		if ( ! empty( $recruiter_email ) ) {
 			$message .= '<p>Recruiter: ' . esc_html( $recruiter_email ) . '</p>';
 		}
-		$message .= '<p>Previous Account Name: <strong>' . esc_html( $old_account_name ) . '</strong></p>';
-		if ( ! empty( $account_name ) ) {
-			$message .= '<p>Current Account Name: <strong>' . esc_html( $account_name ) . '</strong></p>';
+		
+		// Show comparison of old and new values
+		$has_changes = false;
+		if ( $old_account_type !== $new_account_type || $old_account_name !== $new_account_name || $old_payment_instruction !== $new_payment_instruction ) {
+			$has_changes = true;
+			$message .= '<p><strong>Payment Information Changes:</strong></p>';
+			$message .= '<table border="1" cellpadding="5" cellspacing="0" style="border-collapse: collapse; width: 100%;">';
+			$message .= '<tr><th style="text-align: left;">Field</th><th style="text-align: left;">Previous Value</th><th style="text-align: left;">New Value</th></tr>';
+			
+			if ( $old_account_type !== $new_account_type ) {
+				$message .= '<tr><td>Account Type</td><td>' . esc_html( $old_account_type ?: 'N/A' ) . '</td><td><strong>' . esc_html( $new_account_type ?: 'N/A' ) . '</strong></td></tr>';
+			}
+			if ( $old_account_name !== $new_account_name ) {
+				$message .= '<tr><td>Account Name</td><td>' . esc_html( $old_account_name ?: 'N/A' ) . '</td><td><strong>' . esc_html( $new_account_name ?: 'N/A' ) . '</strong></td></tr>';
+			}
+			if ( $old_payment_instruction !== $new_payment_instruction ) {
+				$message .= '<tr><td>Payment Instruction</td><td>' . esc_html( $old_payment_instruction ?: 'N/A' ) . '</td><td><strong>' . esc_html( $new_payment_instruction ?: 'N/A' ) . '</strong></td></tr>';
+			}
+			
+			$message .= '</table>';
 		}
-		$message .= '<p>Please find attached the old and new payment files.</p>';
+		
+		// Always show current values
+		$message .= '<p><strong>Current Payment Information:</strong></p>';
+		$message .= '<ul>';
+		if ( ! empty( $new_account_type ) ) {
+			$message .= '<li>Account Type: <strong>' . esc_html( $new_account_type ) . '</strong></li>';
+		}
+		if ( ! empty( $new_account_name ) ) {
+			$message .= '<li>Account Name: <strong>' . esc_html( $new_account_name ) . '</strong></li>';
+		}
+		if ( ! empty( $new_payment_instruction ) ) {
+			$message .= '<li>Payment Instruction: <strong>' . esc_html( $new_payment_instruction ) . '</strong></li>';
+		}
+		$message .= '</ul>';
+		
+		if ( ! empty( $attachments ) ) {
+			$message .= '<p>Please find attached the old and new payment files.</p>';
+		}
 		
 		// Send email with attachments
 		$headers = array(
@@ -4491,20 +4758,19 @@ class TMSDrivers extends TMSDriversHelper {
 			'From: TMS <no-reply@odysseia-transport.com>'
 		);
 		
+		// Send email (always, not only when attachments exist)
+		// Note: wp_mail() requires absolute file paths, not URLs
 		$email_sent = false;
 		if ( ! empty( $attachments ) ) {
 			$email_sent = wp_mail( $recipients, $subject, $message, $headers, $attachments );
 		} else {
-			// Send email even without attachments if we have the information
 			$email_sent = wp_mail( $recipients, $subject, $message, $headers );
 		}
 		
-		// If email was sent successfully, delete old_payment_file and clear it from database (but keep old_account_name)
-		if ( $email_sent ) {
+		// If email was sent successfully and old_payment_file exists, delete it from media library and clear from database
+		if ( $email_sent && ! empty( $old_payment_file ) && is_numeric( $old_payment_file ) ) {
 			// Delete the old payment file from media library
-			if ( ! empty( $old_payment_file ) && is_numeric( $old_payment_file ) ) {
-				wp_delete_attachment( $old_payment_file, true );
-			}
+			wp_delete_attachment( $old_payment_file, true );
 			
 			// Clear old_payment_file from database
 			$table_meta_name = $wpdb->prefix . $this->table_meta;
@@ -8025,12 +8291,6 @@ class TMSDrivers extends TMSDriversHelper {
 		// Convert to lowercase for table names
 		$current_project = strtolower( $current_project );
 		
-		// Debug logging (enabled for debugging)
-		error_log( "=== DRIVER STATISTICS DEBUG ===" );
-		error_log( "Driver ID: $driver_id" );
-		error_log( "Current user ID: $current_user_id" );
-		error_log( "Current project: $current_project" );
-		error_log( "Function called from: " . debug_backtrace()[1]['function'] ?? 'unknown' );
 		
 		$stats = array(
 			'total_gross' => 0,
@@ -8052,7 +8312,6 @@ class TMSDrivers extends TMSDriversHelper {
 		$regular_meta_exists = $wpdb->get_var( $wpdb->prepare( "SHOW TABLES LIKE %s", $regular_meta_table ) );
 		
 		if ( $regular_table_exists && $regular_meta_exists ) {
-			error_log( "Regular tables exist, executing stats query..." );
 			
 			// Use the same approach as get_top_drivers() - single query with proper aggregation
 			$stats_query = "
@@ -8082,11 +8341,8 @@ class TMSDrivers extends TMSDriversHelper {
 				AND (%d IN (rm_driver.meta_value, rm_second_driver.meta_value, rm_third_driver.meta_value))
 			";
 			
-			error_log( "Stats query: " . $stats_query );
-			error_log( "Query params: driver_id=$driver_id, driver_id=$driver_id, driver_id=$driver_id, driver_id=$driver_id" );
 			
 			$regular_results = $wpdb->get_row( $wpdb->prepare( $stats_query, $driver_id, $driver_id, $driver_id, $driver_id ) );
-			error_log( "Regular results: " . print_r( $regular_results, true ) );
 			
 			// Debug: Get all load IDs for this driver
 			$debug_load_ids_query = "
@@ -8101,8 +8357,6 @@ class TMSDrivers extends TMSDriversHelper {
 				ORDER BY r.ID
 			";
 			$debug_load_ids = $wpdb->get_col( $wpdb->prepare( $debug_load_ids_query, $driver_id ) );
-			error_log( "INDIVIDUAL STATS - Load IDs for driver $driver_id: " . implode(', ', $debug_load_ids) );
-			error_log( "INDIVIDUAL STATS - Total count: " . count($debug_load_ids) );
 			
 			if ( $regular_results ) {
 				$stats['total_gross'] += floatval( $regular_results->total_gross );
@@ -8121,7 +8375,6 @@ class TMSDrivers extends TMSDriversHelper {
 		$access_flt = get_field( 'flt', 'user_' . $current_user_id );
 		$user_roles = wp_get_current_user()->roles;
 		
-		error_log( "FLT access check: access_flt=$access_flt, user_roles=" . print_r($user_roles, true) );
 		
 		if ( $access_flt || in_array( 'administrator', $user_roles ) ) {
 			$flt_table = $wpdb->prefix . 'reports_flt_' . $current_project;
@@ -8132,7 +8385,6 @@ class TMSDrivers extends TMSDriversHelper {
 			$flt_meta_exists = $wpdb->get_var( $wpdb->prepare( "SHOW TABLES LIKE %s", $flt_meta_table ) );
 			
 			if ( $flt_table_exists && $flt_meta_exists ) {
-				error_log( "FLT tables exist, checking FLT loads..." );
 				
 				// Debug: Get FLT load IDs for this driver
 				$flt_debug_load_ids_query = "
@@ -8147,8 +8399,6 @@ class TMSDrivers extends TMSDriversHelper {
 					ORDER BY rf.ID
 				";
 				$flt_debug_load_ids = $wpdb->get_col( $wpdb->prepare( $flt_debug_load_ids_query, $driver_id ) );
-				error_log( "INDIVIDUAL STATS - FLT Load IDs for driver $driver_id: " . implode(', ', $flt_debug_load_ids) );
-				error_log( "INDIVIDUAL STATS - FLT Total count: " . count($flt_debug_load_ids) );
 				
 				// Use the same approach as get_top_drivers() - single query with proper aggregation
 				$flt_stats_query = "
@@ -8189,8 +8439,6 @@ class TMSDrivers extends TMSDriversHelper {
 			}
 		}
 		
-		error_log( "Final stats: " . print_r( $stats, true ) );
-		error_log( "=== END DRIVER STATISTICS DEBUG ===" );
 		
 		return $stats;
 	}
@@ -8813,28 +9061,21 @@ class TMSDrivers extends TMSDriversHelper {
 	 * AJAX handler for searching drivers by unit number
 	 */
 	public function ajax_search_drivers_by_unit() {
-		error_log( "=== DRIVER SEARCH DEBUG ===" );
-		error_log( "POST data: " . print_r( $_POST, true ) );
 		
 		// Verify nonce
 		if ( !wp_verify_nonce( $_POST['nonce'] ?? '', 'driver_search_nonce' ) ) {
-			error_log( "Invalid nonce" );
 			wp_send_json_error( 'Invalid nonce' );
 			return;
 		}
 		
 		$unit_number = sanitize_text_field( $_POST['unit_number'] ?? '' );
-		error_log( "Unit number: $unit_number" );
 		
 		if ( empty( $unit_number ) ) {
-			error_log( "Unit number is empty" );
 			wp_send_json_error( 'Unit number is required' );
 			return;
 		}
 		
 		$drivers = $this->search_drivers_by_unit_number( $unit_number );
-		error_log( "Found drivers: " . print_r( $drivers, true ) );
-		error_log( "=== END DRIVER SEARCH DEBUG ===" );
 		
 		wp_send_json_success( $drivers );
 	}

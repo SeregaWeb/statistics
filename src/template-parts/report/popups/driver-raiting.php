@@ -34,6 +34,17 @@ $rating_access = $TMSUsers->check_user_role_access( [
                             <?php wp_nonce_field( 'tms_add_rating', 'tms_rating_nonce' ); ?>
                             
                             <div class="col-12">
+                                <label for="loadNumber" class="form-label">Load number</label>
+                                <select class="form-control" id="loadNumber" required name="load_number">
+                                    <option value="">Select a load...</option>
+                                    <option value="Canceled">Canceled</option>
+                                </select>
+                                <div class="form-text">
+                                    <small class="text-muted" id="loadsInfo">Loading available loads...</small>
+                                </div>
+                            </div>
+                            
+                            <div class="col-12">
                                 <label class="form-label">Select Rating</label>
                                 <div class="d-flex gap-2">
                                     <?php 
@@ -57,17 +68,6 @@ $rating_access = $TMSUsers->check_user_role_access( [
                                     <?php endfor; ?>
                                 </div>
                                 <input type="hidden" name="rating" id="selectedRating" required>
-                            </div>
-                            
-                            <div class="col-12">
-                                <label for="loadNumber" class="form-label">Load number</label>
-                                <select class="form-control" id="loadNumber" required name="load_number">
-                                    <option value="">Select a load...</option>
-                                    <option value="Canceled">Canceled</option>
-                                </select>
-                                <div class="form-text">
-                                    <small class="text-muted" id="loadsInfo">Loading available loads...</small>
-                                </div>
                             </div>
                             
                             <div class="col-12">

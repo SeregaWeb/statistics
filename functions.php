@@ -235,7 +235,7 @@ function test_email_functionality() {
 	
 	// Use existing admin email as sender to avoid delivery issues
 	$admin_email = get_option('admin_email');
-	$from_email = $admin_email ?: 'operations@odysseia.one';
+	$from_email = 'no-reply@odysseia-transport.com';
 	$from_name = 'TMS Statistics';
 	
 	$headers = array(

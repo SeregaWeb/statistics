@@ -177,6 +177,8 @@ if ( ! empty( $results ) ) :
 			
 			$modify_class              = $helper->get_modify_class( $meta, 'modify_price' );
 			$modify_driver_price_class = $helper->get_modify_class( $meta, 'modify_driver_price' );
+			$modify_second_driver_price_class = $helper->get_modify_class( $meta, 'modify_second_driver_price' );
+			$modify_third_driver_price_class = $helper->get_modify_class( $meta, 'modify_third_driver_price' );
 			
 			if ( $previous_date !== $date_booked && ! is_null( $previous_date ) ) {
 				$show_separator = true;
@@ -297,12 +299,12 @@ if ( ! empty( $results ) ) :
                         <span class="<?php echo $modify_driver_price_class; ?>"><?php echo $driver_rate; ?></span>
 						<?php if ( $second_driver_rate !== '$0' && $second_driver_rate_raw ): ?>
                             <br><br>
-                            <span class="<?php echo $modify_driver_price_class; ?>"><?php echo $second_driver_rate; ?></span>
+                            <span class="<?php echo $modify_second_driver_price_class; ?>"><?php echo $second_driver_rate; ?></span>
 						<?php endif; ?>
 
 						<?php if ( $third_driver_rate !== '$0' && $third_driver_rate_raw ): ?>
                             <br><br>
-                            <span class="<?php echo $modify_driver_price_class; ?>"><?php echo $third_driver_rate; ?></span>
+                            <span class="<?php echo $modify_third_driver_price_class; ?>"><?php echo $third_driver_rate; ?></span>
 						<?php endif; ?>
 						<br><br>
 						<?php if ( ! empty( $miles[ 'driver_rate_per_mile' ] ) ): ?>

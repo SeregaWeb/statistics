@@ -11155,31 +11155,51 @@ function checboxesHelperInit() {
     });
   });
 }
+function calculateQuickPayForDriver(selectMethodElement, quickPayInputSelector, afterCountSelector, selectPercentPrefix) {
+  var quickPayInput = document.querySelector(quickPayInputSelector);
+  var afterCount = document.querySelector(afterCountSelector);
+  var value = selectMethodElement.value;
+  if (value) {
+    var selectPercent = document.querySelector("".concat(selectPercentPrefix, "-").concat(value));
+    if (!selectPercent) return;
+    var selectPercentValue = selectPercent.value;
+    var driverReit = selectPercent.getAttribute('data-reit');
+    var commission = selectPercent.getAttribute('data-commission');
+    if (!driverReit || !commission) return;
+    var persent = +driverReit * (+selectPercentValue / 100);
+    var persentTotal = persent + parseFloat(commission);
+    if (!quickPayInput) return;
+    quickPayInput.value = persentTotal.toFixed(2);
+    if (!afterCount) return;
+    afterCount.innerHTML = "Sum to pay $".concat((parseFloat(driverReit) - persentTotal).toFixed(2));
+  } else {
+    if (!quickPayInput) return;
+    quickPayInput.value = '';
+    if (afterCount) {
+      afterCount.innerHTML = '';
+    }
+  }
+}
 function quickPayMethod() {
   var selectMethod = document.querySelector('.js-quick-pay-method');
   selectMethod && selectMethod.addEventListener('change', function (event) {
     var target = event.target;
     if (target) {
-      var value = target.value;
-      console.log('value', value);
-      var quickPayInput = document.querySelector('.js-quick-pay-driver');
-      var afterCount = document.querySelector('.js-sum-after-count');
-      if (value) {
-        var selectPercent = document.querySelector(".js-select-quick-".concat(value));
-        if (!selectPercent) return;
-        var selectPercentValue = selectPercent.value;
-        var driverReit = selectPercent.getAttribute('data-reit');
-        var commission = selectPercent.getAttribute('data-commission');
-        if (!driverReit || !commission) return;
-        var persent = +driverReit * (+selectPercentValue / 100);
-        var persentTotal = persent + parseFloat(commission);
-        if (!quickPayInput) return;
-        quickPayInput.value = persentTotal.toFixed(2);
-        if (!afterCount) return;
-        afterCount.innerHTML = "Sum to pay $".concat((parseFloat(driverReit) - persentTotal).toFixed(2));
-      } else {
-        quickPayInput.value = '';
-      }
+      calculateQuickPayForDriver(target, '.js-quick-pay-driver', '.js-sum-after-count', '.js-select-quick');
+    }
+  });
+  var secondSelectMethod = document.querySelector('.js-second-quick-pay-method');
+  secondSelectMethod && secondSelectMethod.addEventListener('change', function (event) {
+    var target = event.target;
+    if (target) {
+      calculateQuickPayForDriver(target, '.js-second-quick-pay-driver', '.js-second-sum-after-count', '.js-select-second-quick');
+    }
+  });
+  var thirdSelectMethod = document.querySelector('.js-third-quick-pay-method');
+  thirdSelectMethod && thirdSelectMethod.addEventListener('change', function (event) {
+    var target = event.target;
+    if (target) {
+      calculateQuickPayForDriver(target, '.js-third-quick-pay-driver', '.js-third-sum-after-count', '.js-select-third-quick');
     }
   });
 }

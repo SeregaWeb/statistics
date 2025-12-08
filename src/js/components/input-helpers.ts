@@ -233,42 +233,91 @@ export function checboxesHelperInit() {
         });
 }
 
+// Helper function to calculate quick pay for a driver
+function calculateQuickPayForDriver(
+    selectMethodElement: HTMLElement,
+    quickPayInputSelector: string,
+    afterCountSelector: string,
+    selectPercentPrefix: string
+) {
+    const quickPayInput = document.querySelector(quickPayInputSelector);
+    const afterCount = document.querySelector(afterCountSelector);
+    
+    // @ts-ignore
+    const value = selectMethodElement.value;
+    
+    if (value) {
+        const selectPercent = document.querySelector(`${selectPercentPrefix}-${value}`);
+        if (!selectPercent) return;
+        // @ts-ignore
+        const selectPercentValue = selectPercent.value;
+        const driverReit = selectPercent.getAttribute('data-reit');
+        const commission = selectPercent.getAttribute('data-commission');
+        if (!driverReit || !commission) return;
+        const persent = +driverReit * (+selectPercentValue / 100);
+        const persentTotal = persent + parseFloat(commission);
+        if (!quickPayInput) return;
+        // @ts-ignore
+        quickPayInput.value = persentTotal.toFixed(2);
+
+        if (!afterCount) return;
+        // @ts-ignore
+        afterCount.innerHTML = `Sum to pay $${(parseFloat(driverReit) - persentTotal).toFixed(2)}`;
+    } else {
+        if (!quickPayInput) return;
+        // @ts-ignore
+        quickPayInput.value = '';
+        if (afterCount) {
+            // @ts-ignore
+            afterCount.innerHTML = '';
+        }
+    }
+}
+
 // eslint-disable-next-line camelcase
 export function quickPayMethod() {
+    // First driver
     const selectMethod = document.querySelector('.js-quick-pay-method');
-
     selectMethod &&
         selectMethod.addEventListener('change', (event) => {
             const { target } = event;
-
             if (target) {
-                // @ts-ignore
-                const { value } = target;
+                calculateQuickPayForDriver(
+                    target as HTMLElement,
+                    '.js-quick-pay-driver',
+                    '.js-sum-after-count',
+                    '.js-select-quick'
+                );
+            }
+        });
 
-                console.log('value', value);
-                const quickPayInput = document.querySelector('.js-quick-pay-driver');
-                const afterCount = document.querySelector('.js-sum-after-count');
-                if (value) {
-                    const selectPercent = document.querySelector(`.js-select-quick-${value}`);
-                    if (!selectPercent) return;
-                    // @ts-ignore
-                    const selectPercentValue = selectPercent.value;
-                    const driverReit = selectPercent.getAttribute('data-reit');
-                    const commission = selectPercent.getAttribute('data-commission');
-                    if (!driverReit || !commission) return;
-                    const persent = +driverReit * (+selectPercentValue / 100);
-                    const persentTotal = persent + parseFloat(commission);
-                    if (!quickPayInput) return;
-                    // @ts-ignore
-                    quickPayInput.value = persentTotal.toFixed(2);
+    // Second driver
+    const secondSelectMethod = document.querySelector('.js-second-quick-pay-method');
+    secondSelectMethod &&
+        secondSelectMethod.addEventListener('change', (event) => {
+            const { target } = event;
+            if (target) {
+                calculateQuickPayForDriver(
+                    target as HTMLElement,
+                    '.js-second-quick-pay-driver',
+                    '.js-second-sum-after-count',
+                    '.js-select-second-quick'
+                );
+            }
+        });
 
-                    if (!afterCount) return;
-                    // @ts-ignore
-                    afterCount.innerHTML = `Sum to pay $${(parseFloat(driverReit) - persentTotal).toFixed(2)}`;
-                } else {
-                    // @ts-ignore
-                    quickPayInput.value = '';
-                }
+    // Third driver
+    const thirdSelectMethod = document.querySelector('.js-third-quick-pay-method');
+    thirdSelectMethod &&
+        thirdSelectMethod.addEventListener('change', (event) => {
+            const { target } = event;
+            if (target) {
+                calculateQuickPayForDriver(
+                    target as HTMLElement,
+                    '.js-third-quick-pay-driver',
+                    '.js-third-sum-after-count',
+                    '.js-select-third-quick'
+                );
             }
         });
 }

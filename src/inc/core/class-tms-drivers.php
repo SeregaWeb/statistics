@@ -2918,17 +2918,23 @@ class TMSDrivers extends TMSDriversHelper {
 			$result = $this->update_driver_in_db( $data );
 			
 			if ( $result ) {
-				// Send email notification about payment information update (always, not just when file is uploaded)
-				// Pass both old and new values for comparison
-				$this->send_payment_file_update_email( 
-					$data[ 'driver_id' ], 
-					$old_account_type, 
-					$old_account_name, 
-					$old_payment_instruction,
-					$data[ 'account_type' ], 
-					$data[ 'account_name' ], 
-					$data[ 'payment_instruction' ] 
-				);
+				// Send email notification about payment information update
+				// Only send if this is an update (not first-time addition)
+				// Check if at least one old value exists - if all are empty, this is first-time addition, skip email
+				$has_old_data = ! empty( $old_account_type ) || ! empty( $old_account_name ) || ! empty( $old_payment_instruction );
+				
+				if ( $has_old_data ) {
+					// Pass both old and new values for comparison
+					$this->send_payment_file_update_email( 
+						$data[ 'driver_id' ], 
+						$old_account_type, 
+						$old_account_name, 
+						$old_payment_instruction,
+						$data[ 'account_type' ], 
+						$data[ 'account_name' ], 
+						$data[ 'payment_instruction' ] 
+					);
+				}
 				
 				wp_send_json_success( [ 'message' => 'Payment information updated successfully', 'id_driver' => $result ] );
 			}
@@ -4694,7 +4700,8 @@ class TMSDrivers extends TMSDriversHelper {
 		$recipients = array(
 			'operations@odysseia.one',
 			'iryna@odysseia.one',
-			'HR@odysseia.one'
+			'HR@odysseia.one',
+			'julia@odysseia.one',
 		);
 		
 		// Add recruiter email if available

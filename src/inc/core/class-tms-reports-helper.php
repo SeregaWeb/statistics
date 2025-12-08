@@ -2365,5 +2365,71 @@ Kindly confirm once you've received this message." ) . "\n";
 		}
 	}
 
+	/**
+	 * Check driver rate change and send email notification if changed
+	 * 
+	 * @param string|float $old_rate Old driver rate value
+	 * @param string|float $new_rate New driver rate value
+	 * @param int $driver_number Driver number (1, 2, or 3)
+	 * @param array $user_name User name array with 'full_name' key
+	 * @param string $link Link to the load
+	 * @return bool True if rate was changed, false otherwise
+	 */
+	public function handle_driver_rate_change( $old_rate, $new_rate, $driver_number, $user_name, $link ) {
+		// Temporary logging for debugging
+		error_log( '=== handle_driver_rate_change CALLED ===' );
+		error_log( 'Driver number: ' . $driver_number );
+		error_log( 'Old rate: ' . $old_rate . ' (is_numeric: ' . ( is_numeric( $old_rate ) ? 'yes' : 'no' ) . ')' );
+		error_log( 'New rate: ' . $new_rate );
+		error_log( 'User name: ' . ( isset( $user_name[ 'full_name' ] ) ? $user_name[ 'full_name' ] : 'N/A' ) );
+		error_log( 'Link: ' . $link );
+		error_log( 'Project: ' . $this->project );
+		
+		// Check if rate changed
+		if ( ! is_numeric( $old_rate ) ) {
+			error_log( 'EXIT: old_rate is not numeric' );
+			return false;
+		}
+		
+		if ( $new_rate === floatval( $old_rate ) ) {
+			error_log( 'EXIT: rates are equal (old: ' . floatval( $old_rate ) . ', new: ' . $new_rate . ')' );
+			return false;
+		}
+		
+		// Determine driver label for email
+		$driver_labels = array(
+			1 => 'Driver rate',
+			2 => 'Second driver rate',
+			3 => 'Third driver rate'
+		);
+		
+		$driver_label = isset( $driver_labels[ $driver_number ] ) ? $driver_labels[ $driver_number ] : 'Driver rate';
+		error_log( 'Driver label: ' . $driver_label );
+		
+		// Send email notification
+		$select_emails = $this->email_helper->get_selected_emails( $this->user_emails, array(
+			'admin_email',
+			'billing_email',
+			'team_leader_email',
+			'accounting_email',
+		) );
+		
+		error_log( 'Selected emails count: ' . count( $select_emails ) );
+		error_log( 'Email subject: Changed ' . $driver_label );
+		error_log( 'Email message: <del>$' . $old_rate . '</del>, now: $' . $new_rate );
+		
+		$this->email_helper->send_custom_email( $select_emails, array(
+			'subject'      => 'Changed ' . $driver_label,
+			'project_name' => $this->project,
+			'subtitle'     => $user_name[ 'full_name' ] . ' has changed the ' . $driver_label . ' for the load ' . $link,
+			'message'      => '<del>$' . $old_rate . '</del>, now: $' . $new_rate,
+		) );
+		
+		error_log( 'Email sent successfully' );
+		error_log( '=== handle_driver_rate_change COMPLETED ===' );
+		
+		return true;
+	}
+
 }
 

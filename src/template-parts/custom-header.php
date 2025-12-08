@@ -111,7 +111,7 @@ if ($modal_rated) {
 	$dispatcher_ratings = $Drivers->get_dispatcher_rating_statistics_summary( $user_id, $current_year, $current_month );
 	
 	// Show alert only if there are unrated loads
-	if ( ! empty( $dispatcher_ratings ) && $dispatcher_ratings['unrated_loads'] > 0 && $dispatcher_ratings['rated_percentage'] < 90 ) {
+	if ( ! empty( $dispatcher_ratings ) && $dispatcher_ratings['unrated_loads'] >= 5 && $dispatcher_ratings['rated_percentage'] < 90 ) {
 		$unrated_loads = $dispatcher_ratings['unrated_loads'];
 		$rated_percentage = $dispatcher_ratings['rated_percentage'];
 		

@@ -88,6 +88,9 @@ if ( ! empty( $results ) ) : ?>
 			$booked_rate     = esc_html( '$' . $helper->format_currency( $booked_rate_raw ) );
 			
 			$driver_rate_raw = get_field_value( $meta, 'driver_rate' );
+
+
+			$sum_driver_rate_raw += $driver_rate_raw ;
 			
 			$additional_fees        = get_field_value( $meta, 'additional_fees' );
 			$additional_fees_val    = get_field_value( $meta, 'additional_fees_val' );
@@ -99,16 +102,29 @@ if ( ! empty( $results ) ) : ?>
 			$third_driver_rate_raw = get_field_value( $meta, 'third_driver_rate' );
 			$third_driver = get_field_value( $meta, 'third_driver' );
 
+			// First driver quick pay amount
 			$quick_pay_driver_amount = get_field_value( $meta, 'quick_pay_driver_amount' );
+			// Second driver quick pay amount
+			$second_quick_pay_driver_amount = get_field_value( $meta, 'second_quick_pay_driver_amount' );
+			// Third driver quick pay amount
+			$third_quick_pay_driver_amount = get_field_value( $meta, 'third_quick_pay_driver_amount' );
+			
 			$second_driver_rate      = null;
 			$third_driver_rate       = null;
 			
+			// Subtract quick pay amount from first driver rate
 			if ( ! is_null( $quick_pay_driver_amount ) ) {
 				$driver_rate_raw = floatval( $driver_rate_raw ) - floatval( $quick_pay_driver_amount );
-				if ( $additional_fees_driver ) {
-					$second_driver_rate_raw = floatval( $second_driver_rate_raw ) - floatval( $quick_pay_driver_amount );
-					$third_driver_rate_raw = floatval( $third_driver_rate_raw ) - floatval( $quick_pay_driver_amount );
-				}
+			}
+			
+			// Subtract quick pay amount from second driver rate (use second driver's own amount)
+			if ( $additional_fees_driver && ! is_null( $second_quick_pay_driver_amount ) ) {
+				$second_driver_rate_raw = floatval( $second_driver_rate_raw ) - floatval( $second_quick_pay_driver_amount );
+			}
+			
+			// Subtract quick pay amount from third driver rate (use third driver's own amount)
+			if ( $additional_fees_driver && ! is_null( $third_quick_pay_driver_amount ) ) {
+				$third_driver_rate_raw = floatval( $third_driver_rate_raw ) - floatval( $third_quick_pay_driver_amount );
 			}
 			
 			if ( $additional_fees && is_null( $additional_fees_driver ) ) {
@@ -158,29 +174,37 @@ if ( ! empty( $results ) ) : ?>
 			$bank_status       = $helper->get_label_by_key( $bank_status, 'bank_statuses' );
 			$driver_pay_status = $helper->get_label_by_key( $driver_pay_status, 'driver_payment_statuses' );
 			
+			// First driver quick pay
 			$quick_pay_driver_amount = get_field_value( $meta, 'quick_pay_driver_amount' );
 			$quick_pay_method        = get_field_value( $meta, 'quick_pay_method' );
+			$component_quick_pay     = null;
 			if ( $quick_pay_driver_amount && $quick_pay_method ) {
 				$quick_pay_show        = floatval( $driver_rate_raw );
 				$quick_pay_show_method = $helper->get_quick_pay_methods_for_accounting( $quick_pay_method );
 				$component_quick_pay   = "<span class='text-small'>$" . $quick_pay_show . " - " . $quick_pay_show_method . "</span>";
-				
 				$driver_rate_raw += floatval( $quick_pay_driver_amount );
-				
-				if ( $second_driver_rate_raw ) {
-					$second_quick_pay_show        = floatval( $second_driver_rate_raw );
-					$second_quick_pay_show_method = $helper->get_quick_pay_methods_for_accounting( $quick_pay_method );
-					$second_component_quick_pay   = "<span class='text-small'>$" . $second_quick_pay_show . " - " . $second_quick_pay_show_method . "</span>";
-					$second_driver_rate_raw       += floatval( $quick_pay_driver_amount );
-					
-				}
+			}
+			
+			// Second driver quick pay
+			$second_quick_pay_driver_amount = get_field_value( $meta, 'second_quick_pay_driver_amount' );
+			$second_quick_pay_method        = get_field_value( $meta, 'second_quick_pay_method' );
+			$second_component_quick_pay     = null;
+			if ( $second_driver_rate_raw && $second_quick_pay_driver_amount && $second_quick_pay_method ) {
+				$second_quick_pay_show        = floatval( $second_driver_rate_raw );
+				$second_quick_pay_show_method = $helper->get_quick_pay_methods_for_accounting( $second_quick_pay_method );
+				$second_component_quick_pay   = "<span class='text-small'>$" . $second_quick_pay_show . " - " . $second_quick_pay_show_method . "</span>";
+				$second_driver_rate_raw       += floatval( $second_quick_pay_driver_amount );
+			}
 
-				if ( $third_driver_rate_raw ) {
-					$third_quick_pay_show        = floatval( $third_driver_rate_raw );
-					$third_quick_pay_show_method = $helper->get_quick_pay_methods_for_accounting( $quick_pay_method );
-					$third_component_quick_pay   = "<span class='text-small'>$" . $third_quick_pay_show . " - " . $third_quick_pay_show_method . "</span>";
-					$third_driver_rate_raw       += floatval( $quick_pay_driver_amount );
-				}
+			// Third driver quick pay
+			$third_quick_pay_driver_amount = get_field_value( $meta, 'third_quick_pay_driver_amount' );
+			$third_quick_pay_method        = get_field_value( $meta, 'third_quick_pay_method' );
+			$third_component_quick_pay     = null;
+			if ( $third_driver_rate_raw && $third_quick_pay_driver_amount && $third_quick_pay_method ) {
+				$third_quick_pay_show        = floatval( $third_driver_rate_raw );
+				$third_quick_pay_show_method = $helper->get_quick_pay_methods_for_accounting( $third_quick_pay_method );
+				$third_component_quick_pay   = "<span class='text-small'>$" . $third_quick_pay_show . " - " . $third_quick_pay_show_method . "</span>";
+				$third_driver_rate_raw       += floatval( $third_quick_pay_driver_amount );
 			}
 			
 			$driver_rate = esc_html( '$' . $helper->format_currency( $driver_rate_raw ) );
@@ -241,18 +265,18 @@ if ( ! empty( $results ) ) : ?>
                 <td>
                     <div class="d-flex flex-column gap-0">
                         <span><?php echo $driver_rate; ?></span>
-						<?php if ( $quick_pay_method ):
+						<?php if ( $quick_pay_method && $component_quick_pay ):
 							echo $component_quick_pay;
 						endif; ?>
 						<?php if ( $second_driver_rate_raw && $second_driver_rate_raw !== '0' ): ?>
                             <span><?php echo $second_driver_rate; ?></span>
-							<?php if ( $quick_pay_method ):
+							<?php if ( $second_quick_pay_method && $second_component_quick_pay ):
 								echo $second_component_quick_pay;
 							endif;
 						endif; ?>
 						<?php if ( $third_driver && $third_driver_rate && $third_driver_rate_raw !== '0' ): ?>
                             <span><?php echo $third_driver_rate; ?></span>
-							<?php if ( $quick_pay_method ):
+							<?php if ( $third_quick_pay_method && $third_component_quick_pay ):
 								echo $third_component_quick_pay;
 							endif;
 						endif; ?>
@@ -310,6 +334,12 @@ if ( ! empty( $results ) ) : ?>
 		'total_pages'  => $total_pages,
 		'current_page' => $current_pages,
 	) ) );
+
+
+     if (current_user_can('administrator')):
+        echo '<p>Sum of driver rates: $' . $sum_driver_rate_raw . '</p>';
+     endif;
+
 	?>
 
 <?php else : ?>

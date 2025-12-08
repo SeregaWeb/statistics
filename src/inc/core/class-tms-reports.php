@@ -2671,8 +2671,30 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 				"quick_pay_accounting"    => FILTER_VALIDATE_BOOLEAN,
 				"quick_pay_method"        => FILTER_SANITIZE_STRING,
 				"quick_pay_driver_amount" => FILTER_SANITIZE_STRING,
+				"second_bank_payment_status"     => FILTER_SANITIZE_STRING,
+				"second_driver_pay_statuses"     => FILTER_SANITIZE_STRING,
+				"second_quick_pay_accounting"    => FILTER_VALIDATE_BOOLEAN,
+				"second_quick_pay_method"        => FILTER_SANITIZE_STRING,
+				"second_quick_pay_driver_amount" => FILTER_SANITIZE_STRING,
+				"third_bank_payment_status"     => FILTER_SANITIZE_STRING,
+				"third_driver_pay_statuses"     => FILTER_SANITIZE_STRING,
+				"third_quick_pay_accounting"    => FILTER_VALIDATE_BOOLEAN,
+				"third_quick_pay_method"        => FILTER_SANITIZE_STRING,
+				"third_quick_pay_driver_amount" => FILTER_SANITIZE_STRING,
 				"project"                 => FILTER_SANITIZE_STRING,
 			] );
+			
+			// Handle checkboxes - if not present in POST, set to false
+			// Checkboxes only appear in POST when checked, so we need to explicitly set them to false if missing
+			if ( ! isset( $MY_INPUT[ 'quick_pay_accounting' ] ) || $MY_INPUT[ 'quick_pay_accounting' ] === null ) {
+				$MY_INPUT[ 'quick_pay_accounting' ] = false;
+			}
+			if ( ! isset( $MY_INPUT[ 'second_quick_pay_accounting' ] ) || $MY_INPUT[ 'second_quick_pay_accounting' ] === null ) {
+				$MY_INPUT[ 'second_quick_pay_accounting' ] = false;
+			}
+			if ( ! isset( $MY_INPUT[ 'third_quick_pay_accounting' ] ) || $MY_INPUT[ 'third_quick_pay_accounting' ] === null ) {
+				$MY_INPUT[ 'third_quick_pay_accounting' ] = false;
+			}
 			
 			if ( isset( $MY_INPUT[ 'project' ] ) && $MY_INPUT[ 'project' ] !== $this->project ) {
 				wp_send_json_error( [
@@ -3946,6 +3968,18 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 			$data[ 'quick_pay_driver_amount' ] = null;
 		}
 		
+		// Second driver quick pay cleanup
+		if ( ! $data[ 'second_quick_pay_accounting' ] ) {
+			$data[ 'second_quick_pay_method' ]        = null;
+			$data[ 'second_quick_pay_driver_amount' ] = null;
+		}
+		
+		// Third driver quick pay cleanup
+		if ( ! $data[ 'third_quick_pay_accounting' ] ) {
+			$data[ 'third_quick_pay_method' ]        = null;
+			$data[ 'third_quick_pay_driver_amount' ] = null;
+		}
+		
 		$old_data = $this->get_report_by_id( $post_id );
 		
 		$post_meta = array(
@@ -3956,12 +3990,48 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 			"quick_pay_driver_amount" => $data[ 'quick_pay_driver_amount' ],
 		);
 		
+		// Add second driver fields - always include quick_pay_accounting (even if false), others only if set
+		if ( isset( $data[ 'second_bank_payment_status' ] ) ) {
+			$post_meta[ 'second_bank_payment_status' ] = $data[ 'second_bank_payment_status' ];
+		}
+		if ( isset( $data[ 'second_driver_pay_statuses' ] ) ) {
+			$post_meta[ 'second_driver_pay_statuses' ] = $data[ 'second_driver_pay_statuses' ];
+		}
+		// Always include quick_pay_accounting to save checkbox state (true or false)
+		$post_meta[ 'second_quick_pay_accounting' ] = isset( $data[ 'second_quick_pay_accounting' ] ) ? $data[ 'second_quick_pay_accounting' ] : false;
+		// Always include method and amount - set to null if quick_pay_accounting is false
+		$post_meta[ 'second_quick_pay_method' ] = isset( $data[ 'second_quick_pay_method' ] ) ? $data[ 'second_quick_pay_method' ] : null;
+		$post_meta[ 'second_quick_pay_driver_amount' ] = isset( $data[ 'second_quick_pay_driver_amount' ] ) ? $data[ 'second_quick_pay_driver_amount' ] : null;
+		
+		// Add third driver fields - always include quick_pay_accounting (even if false), others only if set
+		if ( isset( $data[ 'third_bank_payment_status' ] ) ) {
+			$post_meta[ 'third_bank_payment_status' ] = $data[ 'third_bank_payment_status' ];
+		}
+		if ( isset( $data[ 'third_driver_pay_statuses' ] ) ) {
+			$post_meta[ 'third_driver_pay_statuses' ] = $data[ 'third_driver_pay_statuses' ];
+		}
+		// Always include quick_pay_accounting to save checkbox state (true or false)
+		$post_meta[ 'third_quick_pay_accounting' ] = isset( $data[ 'third_quick_pay_accounting' ] ) ? $data[ 'third_quick_pay_accounting' ] : false;
+		// Always include method and amount - set to null if quick_pay_accounting is false
+		$post_meta[ 'third_quick_pay_method' ] = isset( $data[ 'third_quick_pay_method' ] ) ? $data[ 'third_quick_pay_method' ] : null;
+		$post_meta[ 'third_quick_pay_driver_amount' ] = isset( $data[ 'third_quick_pay_driver_amount' ] ) ? $data[ 'third_quick_pay_driver_amount' ] : null;
+		
 		$label_fields = array(
 			"bank_payment_status"     => 'Bank status',
 			"driver_pay_statuses"     => 'Driver pay status',
 			"quick_pay_accounting"    => 'Quick pay',
 			"quick_pay_method"        => 'Quick pay method',
 			"quick_pay_driver_amount" => 'Will charge the driver',
+			"second_bank_payment_status"     => 'Bank status (Second Driver)',
+			"second_driver_pay_statuses"     => 'Driver pay status (Second Driver)',
+			"second_quick_pay_accounting"    => 'Quick pay (Second Driver)',
+			"second_quick_pay_method"        => 'Quick pay method (Second Driver)',
+			"second_quick_pay_driver_amount" => 'Will charge the driver (Second Driver)',
+			"third_bank_payment_status"     => 'Bank status (Third Driver)',
+			"third_driver_pay_statuses"     => 'Driver pay status (Third Driver)',
+			"third_quick_pay_accounting"    => 'Quick pay (Third Driver)',
+			"third_quick_pay_method"        => 'Quick pay method (Third Driver)',
+			"third_quick_pay_driver_amount" => 'Will charge the driver (Third Driver)',
 		);
 		
 		if ( isset( $data[ 'log_file' ] ) && is_numeric( $data[ 'log_file' ] ) ) {
@@ -4712,9 +4782,18 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 			}
 			
 			// Check second driver rate
+			$second_driver_rate_changed = false;
 			if ( is_numeric( $data[ 'old_value_second_driver_rate' ] ) ) {
 				if ( $data[ 'second_driver_rate' ] !== floatval( $data[ 'old_value_second_driver_rate' ] ) ) {
 					$second_driver_changes[] = 'rate: New value: $' . $data[ 'second_driver_rate' ] . ' Old value: $' . $data[ 'old_value_second_driver_rate' ];
+					// Send email notification if second driver rate changed
+					$second_driver_rate_changed = $this->handle_driver_rate_change(
+						$data[ 'old_value_second_driver_rate' ],
+						$data[ 'second_driver_rate' ],
+						2,
+						$user_name,
+						$link
+					);
 				}
 			}
 			
@@ -4752,7 +4831,13 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 			if ( is_numeric( $data[ 'old_value_driver_rate' ] ) ) {
 				if ( $data[ 'driver_rate' ] !== floatval( $data[ 'old_value_driver_rate' ] ) ) {
 					$first_driver_changes[] = 'rate: New value: $' . $data[ 'driver_rate' ] . ' Old value: $' . $data[ 'old_value_driver_rate' ];
-					$first_driver_rate_changed = true;
+					$first_driver_rate_changed = $this->handle_driver_rate_change(
+						$data[ 'old_value_driver_rate' ],
+						$data[ 'driver_rate' ],
+						1,
+						$user_name,
+						$link
+					);
 				}
 			}
 			
@@ -4771,26 +4856,6 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 					'subtitle'     => $user_name[ 'full_name' ] . ' has changed the ' . $who_changed . ' for the load ' . $link,
 					'message'      => '<del>' . $data[ 'old_unit_number_name' ] . '</del>, now: ' . $data[ 'unit_number_name' ],
 				) );
-			}
-			
-			// Send email notification if driver rate changed
-			if ( $first_driver_rate_changed ) {
-				$select_emails = $this->email_helper->get_selected_emails( $this->user_emails, array(
-					'admin_email',
-					'billing_email',
-					'team_leader_email',
-					'accounting_email',
-				) );
-				
-				$who_changed = 'Driver rate';
-				$this->email_helper->send_custom_email( $select_emails, array(
-					'subject'      => 'Changed Driver rate',
-					'project_name' => $this->project,
-					'subtitle'     => $user_name[ 'full_name' ] . ' has changed the ' . $who_changed . ' for the load ' . $link,
-					'message'      => '<del>$' . $data[ 'old_value_driver_rate' ] . '</del>, now: $' . $data[ 'driver_rate' ],
-				) );
-				
-				$data[ 'modify_driver_price' ] = '1';
 			}
 			
 			// Create single log if there are any changes
@@ -4821,9 +4886,18 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 			}
 			
 			// Check third driver rate
+			$third_driver_rate_changed = false;
 			if ( is_numeric( $data[ 'old_value_third_driver_rate' ] ) ) {
 				if ( $data[ 'third_driver_rate' ] !== floatval( $data[ 'old_value_third_driver_rate' ] ) ) {
 					$third_driver_changes[] = 'rate: New value: $' . $data[ 'third_driver_rate' ] . ' Old value: $' . $data[ 'old_value_third_driver_rate' ];
+					// Send email notification if third driver rate changed
+					$third_driver_rate_changed = $this->handle_driver_rate_change(
+						$data[ 'old_value_third_driver_rate' ],
+						$data[ 'third_driver_rate' ],
+						3,
+						$user_name,
+						$link
+					);
 				}
 			}
 			
@@ -4835,6 +4909,19 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 					'post_id' => $data[ 'post_id' ],
 					'message' => $message
 				) );
+			}
+			
+			// Set modify_driver_price flag if any driver rate was changed
+			if ( $first_driver_rate_changed ) {
+				$data[ 'modify_driver_price' ] = '1';
+			}
+
+			if ( $second_driver_rate_changed ) {
+				$data[ 'modify_second_driver_price' ] = '1';
+			}
+
+			if ( $third_driver_rate_changed ) {
+				$data[ 'modify_third_driver_price' ] = '1';
 			}
 			
 			if ( $data[ 'weight' ] && ! empty( $data[ 'weight' ] ) ) {
@@ -4974,6 +5061,14 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 		
 		if ( isset( $data[ 'modify_driver_price' ] ) ) {
 			$post_meta[ 'modify_driver_price' ] = $data[ 'modify_driver_price' ];
+		}
+
+		if ( isset( $data[ 'modify_second_driver_price' ] ) ) {
+			$post_meta[ 'modify_second_driver_price' ] = $data[ 'modify_second_driver_price' ];
+		}
+
+		if ( isset( $data[ 'modify_third_driver_price' ] ) ) {
+			$post_meta[ 'modify_third_driver_price' ] = $data[ 'modify_third_driver_price' ];
 		}
 		
 		if ( isset( $data[ 'read_only' ] ) ) {

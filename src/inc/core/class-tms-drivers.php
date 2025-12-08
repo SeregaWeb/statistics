@@ -278,7 +278,7 @@ class TMSDrivers extends TMSDriversHelper {
 			$update_data[ 'last_user_update' ] = 'Last update: ' . $name_user[ 'full_name' ] . ' - ' . $formatted_time;
 			
 			// Debug: log what we're trying to update
-			error_log( 'TMSDrivers update_location_driver - Update data: ' . print_r( $update_data, true ) );
+			// error_log( 'TMSDrivers update_location_driver - Update data: ' . print_r( $update_data, true ) );
 			
 			// Обновляем данные водителя
 			$result = $this->update_driver_in_db( $update_data );
@@ -290,8 +290,8 @@ class TMSDrivers extends TMSDriversHelper {
 				$updated_driver_data = $this->get_driver_data_for_table_row( $driver_id );
 				
 				// Debug: log what we got back
-				error_log( 'TMSDrivers update_location_driver - Updated driver data: ' . print_r( $updated_driver_data, true ) );
-				error_log( 'TMSDrivers update_location_driver - current_zipcode in response: ' . ( $updated_driver_data['current_zipcode'] ?? 'NOT SET' ) );
+				// error_log( 'TMSDrivers update_location_driver - Updated driver data: ' . print_r( $updated_driver_data, true ) );
+				//error_log( 'TMSDrivers update_location_driver - current_zipcode in response: ' . ( $updated_driver_data['current_zipcode'] ?? 'NOT SET' ) );
 				
 				wp_send_json_success( [
 					'message'        => 'Driver location updated successfully',
@@ -1964,26 +1964,30 @@ class TMSDrivers extends TMSDriversHelper {
 				'interview_martlet',
 				'interview_endurance',
 			], true ) ) {
-				// Special handling for payment_file - save to old_payment_file before checking
+				// Special handling for payment file - save to old payment file before checking
 				if ( $image_field === 'payment_file' ) {
-					// For payment_file, save current value to old_payment_file before deletion
+					// For payment_file, save current value to old payment file before deletion
 					if ( ! empty( $current_value ) && $current_value == $image_id ) {
-						// Save current payment_file to old_payment_file
+						// Save current payment file to old payment file
 						$old_payment_exists = $wpdb->get_var( $wpdb->prepare( "
 							SELECT id FROM $table_meta_name
 							WHERE post_id = %d AND meta_key = 'old_payment_file'
 						", $post_id ) );
+
+                              error_log($old_payment_exists . ' - old_payment_exists - delete_open_image_driver');
 						
 						if ( $old_payment_exists ) {
-							// Update existing old_payment_file
+							// Update existing old payment file
 							$wpdb->update( $table_meta_name, 
 								array( 'meta_value' => $current_value ), 
 								array( 'post_id' => $post_id, 'meta_key' => 'old_payment_file' ),
 								array( '%s' ),
 								array( '%d', '%s' )
 							);
+
+								error_log('Update existing old payment file - delete_open_image_driver');
 						} else {
-							// Insert new old_payment_file
+							// Insert new old payment file
 							$wpdb->insert( $table_meta_name, 
 								array( 
 									'post_id' => $post_id,
@@ -1992,6 +1996,7 @@ class TMSDrivers extends TMSDriversHelper {
 								),
 								array( '%d', '%s', '%s' )
 							);
+							error_log('Insert new old payment file - delete_open_image_driver');
 						}
 						
 						$new_value = ''; // Set to empty to remove from payment_file
@@ -2664,47 +2669,6 @@ class TMSDrivers extends TMSDriversHelper {
 				$changes = $this->get_log_template( $array_track, $meta, $data );
 			}
 			
-			// Handle account_name change - save to old_account_name only if value actually changed
-			// if ( isset( $data[ 'account_name' ] ) && ! empty( $data[ 'account_name' ] ) ) {
-			// 	$current_account_name = get_field_value( $meta, 'account_name' );
-				
-			// 	// Only save to old_account_name if value actually changed
-			// 	if ( ! empty( $current_account_name ) && $current_account_name !== $data[ 'account_name' ] ) {
-			// 		global $wpdb;
-			// 		$table_meta_name = $wpdb->prefix . $this->table_meta;
-					
-			// 		// Check if old_account_name exists
-			// 		$old_exists = $wpdb->get_var( $wpdb->prepare( "
-			// 			SELECT id FROM $table_meta_name
-			// 			WHERE post_id = %d AND meta_key = 'old_account_name'
-			// 		", $data[ 'driver_id' ] ) );
-					
-			// 		if ( $old_exists ) {
-			// 			// Update existing old_account_name with current value before it changes
-			// 			$wpdb->update( $table_meta_name, 
-			// 				array( 'meta_value' => $current_account_name ), 
-			// 				array( 'post_id' => $data[ 'driver_id' ], 'meta_key' => 'old_account_name' ),
-			// 				array( '%s' ),
-			// 				array( '%d', '%s' )
-			// 			);
-			// 		} else {
-			// 			// Insert new old_account_name with current value before it changes
-			// 			$wpdb->insert( $table_meta_name, 
-			// 				array( 
-			// 					'post_id' => $data[ 'driver_id' ],
-			// 					'meta_key' => 'old_account_name',
-			// 					'meta_value' => $current_account_name
-			// 				),
-			// 				array( '%d', '%s', '%s' )
-			// 			);
-			// 		}
-					
-			// 		// Check if we can send email (both old_payment_file and old_account_name are filled)
-			// 		// Pass new account_name value so it's used in email instead of old value from DB
-			// 		$this->send_payment_file_update_email( $data[ 'driver_id' ], $data[ 'account_name' ] );
-			// 	}
-			// }
-			
 			if ( $data[ 'w9_classification' ] === 'business' ) {
 				if ( empty( $data[ 'entity_name' ] ) ) {
 					wp_send_json_error( [ 'message' => 'Please fill in the entity name.' ] );
@@ -2739,65 +2703,7 @@ class TMSDrivers extends TMSDriversHelper {
 					wp_send_json_error( [ 'message' => 'SSN file is required.' ] );
 				}
 			}
-			
-			// Handle payment_file upload if provided
-			// if ( ! empty( $_FILES[ 'payment_file' ] && $_FILES[ 'payment_file' ][ 'size' ] > 0 ) ) {
-			// 	$id_uploaded = $this->upload_one_file( $_FILES[ 'payment_file' ], 'payment_file' );
-			// 	$data[ 'payment_file' ] = is_numeric( $id_uploaded ) ? $id_uploaded : '';
 				
-			// 	// Special handling for payment_file - save current file to old_payment_file before updating
-			// 	if ( is_numeric( $id_uploaded ) ) {
-			// 		$driver_object = $this->get_driver_by_id( $data[ 'driver_id' ] );
-			// 		$meta          = get_field_value( $driver_object, 'meta' );
-			// 		$current_payment_file = get_field_value( $meta, 'payment_file' );
-					
-			// 		// Always save current payment_file to old_payment_file before updating (if current exists)
-			// 		if ( ! empty( $current_payment_file ) ) {
-			// 			global $wpdb;
-			// 			$table_meta_name = $wpdb->prefix . $this->table_meta;
-						
-			// 			// If there's an existing old_payment_file, delete it first (it was already processed or email was sent)
-			// 			$existing_old = $wpdb->get_var( $wpdb->prepare( "
-			// 				SELECT meta_value FROM $table_meta_name
-			// 				WHERE post_id = %d AND meta_key = 'old_payment_file'
-			// 			", $data[ 'driver_id' ] ) );
-						
-			// 			if ( ! empty( $existing_old ) && is_numeric( $existing_old ) && $existing_old != $current_payment_file ) {
-			// 				// Delete the old file from media library if it's different from current
-			// 				wp_delete_attachment( $existing_old, true );
-			// 			}
-						
-			// 			// Update or insert old_payment_file with current value
-			// 			$old_exists = $wpdb->get_var( $wpdb->prepare( "
-			// 				SELECT id FROM $table_meta_name
-			// 				WHERE post_id = %d AND meta_key = 'old_payment_file'
-			// 			", $data[ 'driver_id' ] ) );
-						
-			// 			if ( $old_exists ) {
-			// 				$wpdb->update( $table_meta_name, 
-			// 					array( 'meta_value' => $current_payment_file ), 
-			// 					array( 'post_id' => $data[ 'driver_id' ], 'meta_key' => 'old_payment_file' ),
-			// 					array( '%s' ),
-			// 					array( '%d', '%s' )
-			// 				);
-			// 			} else {
-			// 				$wpdb->insert( $table_meta_name, 
-			// 					array( 
-			// 						'post_id' => $data[ 'driver_id' ],
-			// 						'meta_key' => 'old_payment_file',
-			// 						'meta_value' => $current_payment_file
-			// 					),
-			// 					array( '%d', '%s', '%s' )
-			// 				);
-			// 			}
-			// 		}
-					
-			// 		// Send email notification about payment file update
-			// 		$this->send_payment_file_update_email( $data[ 'driver_id' ], $data[ 'account_name' ] );
-			// 	}
-			// }
-
-			
 			$result = $this->update_driver_in_db( $data );
 			
 			if ( $result ) {
@@ -2883,6 +2789,7 @@ class TMSDrivers extends TMSDriversHelper {
 						if ( ! empty( $existing_old_payment_file ) && is_numeric( $existing_old_payment_file ) && $existing_old_payment_file != $file_to_save_as_old ) {
 							// Delete the old file from media library if it's different from the one we're about to save
 							wp_delete_attachment( $existing_old_payment_file, true );
+							error_log('Delete old payment file - delete_open_image_driver');
 						}
 						
 						// Update or insert old_payment_file with previous file value
@@ -2898,6 +2805,7 @@ class TMSDrivers extends TMSDriversHelper {
 								array( '%s' ),
 								array( '%d', '%s' )
 							);
+							error_log('Update existing old payment file - delete_open_image_driver');
 						} else {
 							$wpdb->insert( $table_meta_name, 
 								array( 
@@ -2907,6 +2815,7 @@ class TMSDrivers extends TMSDriversHelper {
 								),
 								array( '%d', '%s', '%s' )
 							);
+							error_log('Insert new old payment file - delete_open_image_driver');
 						}
 					}
 					// If $file_to_save_as_old is empty (file was deleted), keep existing old_payment_file as is
@@ -3464,6 +3373,7 @@ class TMSDrivers extends TMSDriversHelper {
 							if ( ! empty( $existing_old ) && is_numeric( $existing_old ) && $existing_old != $current_payment_file ) {
 								// Delete the old file from media library if it's different from current
 								wp_delete_attachment( $existing_old, true );
+								error_log('Delete old payment file - delete_open_image_driver');
 							}
 							
 							// Update or insert old_payment_file with current value
@@ -3471,6 +3381,7 @@ class TMSDrivers extends TMSDriversHelper {
 								SELECT id FROM $table_meta_name
 								WHERE post_id = %d AND meta_key = 'old_payment_file'
 							", $data[ 'driver_id' ] ) );
+							error_log('old_exists - delete_open_image_driver');
 							
 							if ( $old_exists ) {
 								$wpdb->update( $table_meta_name, 
@@ -3479,6 +3390,7 @@ class TMSDrivers extends TMSDriversHelper {
 									array( '%s' ),
 									array( '%d', '%s' )
 								);
+								error_log('Update existing old payment file - delete_open_image_driver');
 							} else {
 								$wpdb->insert( $table_meta_name, 
 									array( 
@@ -3488,6 +3400,7 @@ class TMSDrivers extends TMSDriversHelper {
 									),
 									array( '%d', '%s', '%s' )
 								);
+								error_log('Insert new old payment file - delete_open_image_driver');
 							}
 						}
 					}
@@ -4636,6 +4549,11 @@ class TMSDrivers extends TMSDriversHelper {
 		
 		$old_payment_file = get_field_value( $meta, 'old_payment_file' );
 		$current_payment_file = get_field_value( $meta, 'payment_file' );
+
+		error_log('old_payment_file');
+		error_log($old_payment_file);
+		error_log('current_payment_file');
+		error_log($current_payment_file);
 		
 		// Get recruiter email from recruiter_add (meta) or user_id_added (main)
 		$recruiter_id = get_field_value( $meta, 'recruiter_add' );
@@ -4650,33 +4568,118 @@ class TMSDrivers extends TMSDriversHelper {
 			}
 		}
 		
-		// Get file paths for attachments
+		// Create temporary uploads directory if it doesn't exist
+		$upload_dir = wp_upload_dir();
+		$tmp_uploads_dir = $upload_dir['basedir'] . '/tmp-uploads';
+		if ( ! file_exists( $tmp_uploads_dir ) ) {
+			$dir_created = wp_mkdir_p( $tmp_uploads_dir );
+			if ( ! $dir_created ) {
+				error_log( 'Failed to create temporary uploads directory: ' . $tmp_uploads_dir );
+			} elseif ( current_user_can( 'administrator' ) ) {
+				error_log( 'Created temporary uploads directory: ' . $tmp_uploads_dir );
+			}
+		}
+		
+		// Verify directory is writable
+		if ( ! is_writable( $tmp_uploads_dir ) ) {
+			error_log( 'Temporary uploads directory is not writable: ' . $tmp_uploads_dir );
+		}
+		
+		// Helper function to download file from Wasabi/CDN to temporary directory
+		$download_file_to_tmp = function( $attachment_id, $tmp_dir ) {
+			// First try to get local file path
+			$local_path = get_attached_file( $attachment_id );
+			
+			// Check if path contains S3 protocol (s3://, s3eucentral1://, etc.)
+			// If it does, we need to download the file, not use the S3 path
+			$is_s3_path = false;
+			if ( $local_path && ( strpos( $local_path, 's3://' ) === 0 || ( strpos( $local_path, 's3' ) === 0 && strpos( $local_path, '://' ) !== false ) ) ) {
+				$is_s3_path = true;
+				if ( current_user_can( 'administrator' ) ) {
+					error_log( 'Path is S3 protocol, will download from URL: ' . $local_path );
+				}
+			}
+			
+			// Only use local path if it's a real file path (not S3) and file exists
+			if ( ! $is_s3_path && $local_path && file_exists( $local_path ) && is_readable( $local_path ) ) {
+				// File exists locally, use it directly
+				return $local_path;
+			}
+			
+			// File not found locally or is S3 path, try to download from Wasabi/CDN
+			$file_url = wp_get_attachment_url( $attachment_id );
+			if ( ! $file_url ) {
+				return false;
+			}
+			
+			// Get file name from attachment
+			$file_name = basename( get_attached_file( $attachment_id ) );
+			if ( empty( $file_name ) ) {
+				// Fallback: extract filename from URL
+				$file_name = basename( parse_url( $file_url, PHP_URL_PATH ) );
+			}
+			
+			// Create unique filename to avoid conflicts
+			$tmp_file_name = $attachment_id . '_' . time() . '_' . $file_name;
+			$tmp_file_path = $tmp_dir . '/' . $tmp_file_name;
+			
+			// Download file from URL
+			$response = wp_remote_get( $file_url, array(
+				'timeout' => 30,
+			) );
+			
+			if ( is_wp_error( $response ) ) {
+				error_log( 'Failed to download file from Wasabi: ' . $response->get_error_message() );
+				return false;
+			}
+			
+			$response_code = wp_remote_retrieve_response_code( $response );
+			if ( $response_code !== 200 ) {
+				error_log( 'Failed to download file from Wasabi. Response code: ' . $response_code );
+				return false;
+			}
+			
+			// Get file content and save to temporary file
+			$file_content = wp_remote_retrieve_body( $response );
+			if ( empty( $file_content ) ) {
+				error_log( 'Downloaded file content is empty' );
+				return false;
+			}
+			
+			// Write file content to temporary file
+			$file_written = file_put_contents( $tmp_file_path, $file_content );
+			if ( $file_written === false ) {
+				error_log( 'Failed to write file to temporary directory: ' . $tmp_file_path );
+				return false;
+			}
+			
+			// Verify file was written and is readable
+			if ( ! file_exists( $tmp_file_path ) || ! is_readable( $tmp_file_path ) ) {
+				error_log( 'Downloaded file does not exist or is not readable: ' . $tmp_file_path );
+				return false;
+			}
+			
+				error_log( 'Successfully downloaded file from Wasabi to: ' . $tmp_file_path . ' (Size: ' . $file_written . ' bytes)' );
+			
+			return $tmp_file_path;
+		};
+		
+		// Download files to temporary directory
 		$old_file_path = '';
 		$new_file_path = '';
+		$temp_files = array(); // Track temporary files for cleanup
 		
 		if ( ! empty( $old_payment_file ) && is_numeric( $old_payment_file ) ) {
-			$old_file_path = get_attached_file( $old_payment_file );
-			// get_attached_file() should return absolute path, but verify it exists
-			if ( $old_file_path && ! file_exists( $old_file_path ) ) {
-				// Try to get file URL and convert to path
-				$old_file_url = wp_get_attachment_url( $old_payment_file );
-				if ( $old_file_url ) {
-					$upload_dir = wp_upload_dir();
-					$old_file_path = str_replace( $upload_dir['baseurl'], $upload_dir['basedir'], $old_file_url );
-				}
+			$old_file_path = $download_file_to_tmp( $old_payment_file, $tmp_uploads_dir );
+			if ( $old_file_path && strpos( $old_file_path, $tmp_uploads_dir ) !== false ) {
+				$temp_files[] = $old_file_path; // Mark as temporary file
 			}
 		}
 		
 		if ( ! empty( $current_payment_file ) && is_numeric( $current_payment_file ) ) {
-			$new_file_path = get_attached_file( $current_payment_file );
-			// get_attached_file() should return absolute path, but verify it exists
-			if ( $new_file_path && ! file_exists( $new_file_path ) ) {
-				// Try to get file URL and convert to path
-				$new_file_url = wp_get_attachment_url( $current_payment_file );
-				if ( $new_file_url ) {
-					$upload_dir = wp_upload_dir();
-					$new_file_path = str_replace( $upload_dir['baseurl'], $upload_dir['basedir'], $new_file_url );
-				}
+			$new_file_path = $download_file_to_tmp( $current_payment_file, $tmp_uploads_dir );
+			if ( $new_file_path && strpos( $new_file_path, $tmp_uploads_dir ) !== false ) {
+				$temp_files[] = $new_file_path; // Mark as temporary file
 			}
 		}
 		
@@ -4774,12 +4777,22 @@ class TMSDrivers extends TMSDriversHelper {
 			$email_sent = wp_mail( $recipients, $subject, $message, $headers );
 		}
 		
+		// Clean up temporary files after email is sent (success or failure)
+		foreach ( $temp_files as $temp_file ) {
+			if ( file_exists( $temp_file ) ) {
+				@unlink( $temp_file );
+				if ( current_user_can( 'administrator' ) ) {
+					error_log( 'Deleted temporary file: ' . $temp_file );
+				}
+			}
+		}
+		
 		// If email was sent successfully and old_payment_file exists, delete it from media library and clear from database
 		if ( $email_sent && ! empty( $old_payment_file ) && is_numeric( $old_payment_file ) ) {
 			// Delete the old payment file from media library
 			wp_delete_attachment( $old_payment_file, true );
 			
-			// Clear old_payment_file from database
+			// Clear old payment file from database
 			$table_meta_name = $wpdb->prefix . $this->table_meta;
 			$wpdb->update( $table_meta_name, 
 				array( 'meta_value' => '' ), 
@@ -8987,14 +9000,14 @@ class TMSDrivers extends TMSDriversHelper {
 		}
 		
 		// Debug logging
-		error_log( "=== AJAX DRIVER STATISTICS DEBUG ===" );
-		error_log( "Driver ID: $driver_id" );
-		error_log( "Calling get_driver_financial_statistics..." );
+		// error_log( "=== AJAX DRIVER STATISTICS DEBUG ===" );
+		// error_log( "Driver ID: $driver_id" );
+		// error_log( "Calling get_driver_financial_statistics..." );
 		
 		$statistics = $this->get_driver_financial_statistics( $driver_id );
 		
-		error_log( "Statistics result: " . print_r( $statistics, true ) );
-		error_log( "=== END AJAX DRIVER STATISTICS DEBUG ===" );
+		// error_log( "Statistics result: " . print_r( $statistics, true ) );
+		// error_log( "=== END AJAX DRIVER STATISTICS DEBUG ===" );
 		
 		wp_send_json_success( $statistics );
 	}

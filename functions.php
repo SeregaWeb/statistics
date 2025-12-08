@@ -367,3 +367,268 @@ function test_email_functionality() {
 }
 
 add_action('template_redirect', 'test_email_functionality');
+
+/**
+ * Override WordPress default email sender address
+ * Prevents WordPress from using wordpress@$sitename and uses no-reply@odysseia-transport.com instead
+ */
+add_filter( 'wp_mail_from', function( $from_email ) {
+	// Override default WordPress email address
+	return 'no-reply@odysseia-transport.com';
+}, 10, 1 );
+
+/**
+ * Override WordPress default email sender name
+ */
+add_filter( 'wp_mail_from_name', function( $from_name ) {
+	// Override default WordPress sender name
+	return 'TMS';
+}, 10, 1 );
+
+/**
+ * Test email with attachments from Wasabi
+ * Usage: ?test_email_attachments=1 (admin only)
+ * Tests downloading files from Wasabi and attaching them to email
+ */
+function test_email_with_attachments() {
+	if (!isset($_GET['test_email_attachments']) || $_GET['test_email_attachments'] !== '1') {
+		return;
+	}
+	
+	// Check if user is admin
+	if (!current_user_can('administrator')) {
+		return; // Silent return for non-admins
+	}
+	
+	$to = 'milchenko2k16@gmail.com';
+	$subject = 'Test Email with Attachments from Wasabi';
+	$current_time = current_time('mysql');
+	$site_name = get_bloginfo('name');
+	$site_url = home_url();
+	
+	// File IDs to test
+	$file_ids = array( 68766, 68765 );
+	
+	$message = '
+		<html>
+		<head>
+			<title>Test Email with Attachments</title>
+		</head>
+		<body>
+			<h2>Test Email with Attachments</h2>
+			<p>This is a test email to verify file attachment functionality from Wasabi.</p>
+			<p><strong>Time:</strong> ' . $current_time . '</p>
+			<p><strong>Site:</strong> ' . $site_name . '</p>
+			<p><strong>URL:</strong> ' . $site_url . '</p>
+			<p><strong>File IDs:</strong> ' . implode( ', ', $file_ids ) . '</p>
+			<hr>
+			<p>This email should have 2 file attachments.</p>
+		</body>
+		</html>
+	';
+	
+	$headers = array(
+		'Content-Type: text/html; charset=UTF-8',
+		'From: TMS <no-reply@odysseia-transport.com>'
+	);
+	
+	// Log debug info
+	error_log('=== EMAIL ATTACHMENTS TEST START ===');
+	error_log('To: ' . $to);
+	error_log('Subject: ' . $subject);
+	error_log('File IDs: ' . implode( ', ', $file_ids ) );
+	
+	// Create temporary uploads directory if it doesn't exist
+	$upload_dir = wp_upload_dir();
+	$tmp_uploads_dir = $upload_dir['basedir'] . '/tmp-uploads';
+	if ( ! file_exists( $tmp_uploads_dir ) ) {
+		$dir_created = wp_mkdir_p( $tmp_uploads_dir );
+		if ( ! $dir_created ) {
+			error_log( 'Failed to create temporary uploads directory: ' . $tmp_uploads_dir );
+		} else {
+			error_log( 'Created temporary uploads directory: ' . $tmp_uploads_dir );
+		}
+	}
+	
+	// Helper function to download file from Wasabi/CDN to temporary directory
+	$download_file_to_tmp = function( $attachment_id, $tmp_dir ) {
+		error_log( 'Processing file ID: ' . $attachment_id );
+		
+		// First try to get local file path
+		$local_path = get_attached_file( $attachment_id );
+		error_log( 'Local path from get_attached_file: ' . ( $local_path ?: 'empty' ) );
+		
+		// Check if path contains S3 protocol (s3://, s3eucentral1://, etc.)
+		// If it does, we need to download the file, not use the S3 path
+		$is_s3_path = false;
+		if ( $local_path && ( strpos( $local_path, 's3://' ) === 0 || strpos( $local_path, 's3' ) === 0 && strpos( $local_path, '://' ) !== false ) ) {
+			$is_s3_path = true;
+			error_log( 'Path is S3 protocol, will download from URL' );
+		}
+		
+		// Only use local path if it's a real file path (not S3) and file exists
+		if ( ! $is_s3_path && $local_path && file_exists( $local_path ) && is_readable( $local_path ) ) {
+			error_log( 'File exists locally, using: ' . $local_path );
+			return $local_path;
+		}
+		
+		// File not found locally or is S3 path, try to download from Wasabi/CDN
+		$file_url = wp_get_attachment_url( $attachment_id );
+		error_log( 'File URL from wp_get_attachment_url: ' . ( $file_url ?: 'empty' ) );
+		
+		if ( ! $file_url ) {
+			error_log( 'Failed to get file URL for attachment ID: ' . $attachment_id );
+			return false;
+		}
+		
+		// Get file name from attachment
+		$file_name = basename( get_attached_file( $attachment_id ) );
+		if ( empty( $file_name ) ) {
+			// Fallback: extract filename from URL
+			$file_name = basename( parse_url( $file_url, PHP_URL_PATH ) );
+		}
+		
+		if ( empty( $file_name ) ) {
+			$file_name = 'file_' . $attachment_id;
+		}
+		
+		error_log( 'File name: ' . $file_name );
+		
+		// Create unique filename to avoid conflicts
+		$tmp_file_name = $attachment_id . '_' . time() . '_' . $file_name;
+		$tmp_file_path = $tmp_dir . '/' . $tmp_file_name;
+		
+		error_log( 'Temporary file path: ' . $tmp_file_path );
+		
+		// Download file from URL
+		error_log( 'Downloading file from URL: ' . $file_url );
+		$response = wp_remote_get( $file_url, array(
+			'timeout' => 30,
+		) );
+		
+		if ( is_wp_error( $response ) ) {
+			error_log( 'Failed to download file from Wasabi: ' . $response->get_error_message() );
+			return false;
+		}
+		
+		$response_code = wp_remote_retrieve_response_code( $response );
+		error_log( 'Response code: ' . $response_code );
+		
+		if ( $response_code !== 200 ) {
+			error_log( 'Failed to download file from Wasabi. Response code: ' . $response_code );
+			return false;
+		}
+		
+		// Get file content and save to temporary file
+		$file_content = wp_remote_retrieve_body( $response );
+		if ( empty( $file_content ) ) {
+			error_log( 'Downloaded file content is empty' );
+			return false;
+		}
+		
+		error_log( 'File content size: ' . strlen( $file_content ) . ' bytes' );
+		
+		// Write file content to temporary file
+		$file_written = file_put_contents( $tmp_file_path, $file_content );
+		if ( $file_written === false ) {
+			error_log( 'Failed to write file to temporary directory: ' . $tmp_file_path );
+			return false;
+		}
+		
+		error_log( 'File written: ' . $file_written . ' bytes to ' . $tmp_file_path );
+		
+		// Verify file was written and is readable
+		if ( ! file_exists( $tmp_file_path ) || ! is_readable( $tmp_file_path ) ) {
+			error_log( 'Downloaded file does not exist or is not readable: ' . $tmp_file_path );
+			return false;
+		}
+		
+		error_log( 'Successfully downloaded file from Wasabi to: ' . $tmp_file_path . ' (Size: ' . $file_written . ' bytes)' );
+		
+		return $tmp_file_path;
+	};
+	
+	// Download files to temporary directory
+	$attachments = array();
+	$temp_files = array(); // Track temporary files
+	
+	foreach ( $file_ids as $file_id ) {
+		error_log( 'Processing file ID: ' . $file_id );
+		$file_path = $download_file_to_tmp( $file_id, $tmp_uploads_dir );
+		
+		if ( $file_path && file_exists( $file_path ) && is_readable( $file_path ) ) {
+			$attachments[] = $file_path;
+			// Mark as temporary if it's in tmp-uploads directory
+			if ( strpos( $file_path, $tmp_uploads_dir ) !== false ) {
+				$temp_files[] = $file_path;
+			}
+			error_log( 'File added to attachments: ' . $file_path );
+		} else {
+			error_log( 'Failed to get file path for ID: ' . $file_id );
+		}
+	}
+	
+	error_log( 'Total attachments: ' . count( $attachments ) );
+	error_log( 'Total temporary files: ' . count( $temp_files ) );
+	
+	// Send email
+	error_log( 'Sending email with ' . count( $attachments ) . ' attachments...' );
+	$result = false;
+	if ( ! empty( $attachments ) ) {
+		$result = wp_mail( $to, $subject, $message, $headers, $attachments );
+	} else {
+		$result = wp_mail( $to, $subject, $message, $headers );
+	}
+	
+	error_log( 'Email send result: ' . ( $result ? 'true' : 'false' ) );
+	
+	// Log attachment info
+	foreach ( $attachments as $index => $attachment_path ) {
+		$file_size = file_exists( $attachment_path ) ? filesize( $attachment_path ) : 0;
+		error_log( 'Attachment ' . ( $index + 1 ) . ': ' . $attachment_path . ' (Size: ' . $file_size . ' bytes)' );
+	}
+	
+	// NOTE: For testing, we do NOT delete temporary files
+	// In production, they should be deleted after email is sent
+	error_log( 'Temporary files kept for inspection (NOT deleted for testing):' );
+	foreach ( $temp_files as $temp_file ) {
+		error_log( '  - ' . $temp_file );
+	}
+	
+	error_log('=== EMAIL ATTACHMENTS TEST END ===');
+	
+	// Show result to admin
+	$result_message = 'Email attachments test completed. Check error_log for details.<br><br>';
+	
+	if ( $result ) {
+		$result_message .= '<p style="color: green;"><strong>✅ Email sent successfully!</strong></p>';
+	} else {
+		$result_message .= '<p style="color: red;"><strong>❌ Email sending failed!</strong></p>';
+	}
+	
+	$result_message .= '<p><strong>Attachments:</strong> ' . count( $attachments ) . '</p>';
+	$result_message .= '<ul>';
+	foreach ( $attachments as $attachment_path ) {
+		$file_size = file_exists( $attachment_path ) ? filesize( $attachment_path ) : 0;
+		$result_message .= '<li>' . esc_html( basename( $attachment_path ) ) . ' (' . size_format( $file_size ) . ')</li>';
+	}
+	$result_message .= '</ul>';
+	
+	$result_message .= '<p><strong>To:</strong> ' . esc_html( $to ) . '</p>';
+	$result_message .= '<p><strong>From:</strong> no-reply@odysseia-transport.com</p>';
+	
+	if ( ! empty( $temp_files ) ) {
+		$result_message .= '<p style="color: orange;"><strong>⚠️ Note:</strong> Temporary files were NOT deleted for testing purposes.</p>';
+		$result_message .= '<p>Temporary files location: ' . esc_html( $tmp_uploads_dir ) . '</p>';
+	}
+	
+	$result_message .= '<br><a href="' . esc_url( home_url() ) . '">← Back to home</a>';
+	
+	wp_die(
+		$result_message,
+		'Email Attachments Test',
+		array( 'response' => 200 )
+	);
+}
+
+add_action( 'template_redirect', 'test_email_with_attachments' );

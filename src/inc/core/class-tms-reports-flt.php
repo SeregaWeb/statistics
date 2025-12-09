@@ -859,6 +859,136 @@ class TMSReportsFlt extends TMSReportsHelper {
 			'current_pages' => $current_page,
 		);
 	}
+
+	/**
+	 * Aggregate Charge back & Short pay totals by broker (no pagination)
+	 *
+	 * @param array $args Same filters as in get_table_items_billing_shortpay
+	 * @return array Array of rows: [ 'customer_id' => int, 'charge_back_total' => float, 'short_pay_total' => float ]
+	 */
+	public function get_shortpay_stats_by_broker( $args = array() ) {
+		global $wpdb;
+
+		$table_main = $wpdb->prefix . $this->table_main;
+		$table_meta = $wpdb->prefix . $this->table_meta;
+
+		$join_builder = "
+			FROM $table_main AS main
+			LEFT JOIN $table_meta AS reference ON main.id = reference.post_id AND reference.meta_key = 'reference_number'
+			LEFT JOIN $table_meta AS unit_number ON main.id = unit_number.post_id AND unit_number.meta_key = 'unit_number_name'
+			LEFT JOIN $table_meta AS load_status ON main.id = load_status.post_id AND load_status.meta_key = 'load_status'
+			LEFT JOIN $table_meta AS invoiced_proof ON main.id = invoiced_proof.post_id AND invoiced_proof.meta_key = 'invoiced_proof'
+			LEFT JOIN $table_meta AS factoring_status ON main.id = factoring_status.post_id AND factoring_status.meta_key = 'factoring_status'
+			LEFT JOIN $table_meta AS processing ON main.id = processing.post_id AND processing.meta_key = 'processing'
+			LEFT JOIN $table_meta AS customer_id ON main.id = customer_id.post_id AND customer_id.meta_key = 'customer_id'
+			LEFT JOIN $table_meta AS short_pay ON main.id = short_pay.post_id AND short_pay.meta_key = 'short_pay'
+			LEFT JOIN $table_meta AS charge_back_rate ON main.id = charge_back_rate.post_id AND charge_back_rate.meta_key = 'charge_back_rate'
+			WHERE 1=1
+		";
+
+		$sql = "SELECT 
+			customer_id.meta_value AS customer_id,
+			SUM(CASE WHEN LOWER(factoring_status.meta_value) = 'charge-back' THEN 0 + COALESCE(charge_back_rate.meta_value, '0') ELSE 0 END) AS charge_back_total,
+			SUM(CASE WHEN LOWER(factoring_status.meta_value) = 'short-pay' THEN 0 + COALESCE(short_pay.meta_value, '0') ELSE 0 END) AS short_pay_total
+		" . $join_builder;
+
+		$where_conditions = array();
+		$where_values     = array();
+
+		if ( ! empty( $args['status_post'] ) ) {
+			$where_conditions[] = $wpdb->prepare( 'main.status_post = %s', $args['status_post'] );
+		}
+
+		if ( ! empty( $args['load_status'] ) ) {
+			$where_conditions[] = $wpdb->prepare( 'load_status.meta_value = %s', $args['load_status'] );
+		}
+
+		if ( ! empty( $args['exclude_factoring_status'] ) ) {
+			$exclude_factoring_status = implode( "','", array_map( 'esc_sql', (array) $args['exclude_factoring_status'] ) );
+			$where_conditions[]       = "(
+				factoring_status.meta_value NOT IN ('$exclude_factoring_status')
+				OR factoring_status.meta_value IS NULL
+				OR factoring_status.meta_value = ''
+			)";
+		}
+
+		if ( ! empty( $args['include_factoring_status'] ) ) {
+			$include_factoring_status = implode( "','", array_map( 'esc_sql', (array) $args['include_factoring_status'] ) );
+			$where_conditions[]       = "(
+				factoring_status.meta_value IN ('$include_factoring_status')
+				AND factoring_status.meta_value IS NOT NULL
+				AND factoring_status.meta_value != ''
+			)";
+		}
+
+		if ( isset( $args['exclude_status'] ) && ! empty( $args['exclude_status'] ) ) {
+			$exclude_status = array_map( 'esc_sql', (array) $args['exclude_status'] );
+			if ( isset( $args['load_status'] ) && $args['load_status'] === 'cancelled' ) {
+				$exclude_status = implode( "','", array_diff( $exclude_status, array( 'cancelled' ) ) );
+			} else {
+				$exclude_status = implode( "','", $exclude_status );
+			}
+			if ( ! empty( $exclude_status ) ) {
+				$where_conditions[] = "load_status.meta_value NOT IN ('" . $exclude_status . "')";
+			}
+		}
+
+		if ( isset( $args['include_status'] ) && ! empty( $args['include_status'] ) ) {
+			$include_status     = array_map( 'esc_sql', (array) $args['include_status'] );
+			$where_conditions[] = "load_status.meta_value IN ('" . implode( "','", $include_status ) . "')";
+		}
+
+		if ( ! empty( $args['invoice'] ) ) {
+			if ( $args['invoice'] === 'invoiced' ) {
+				$where_conditions[] = 'invoiced_proof.meta_value = %s';
+				$where_values[]     = '1';
+			} else {
+				$where_conditions[] = '(invoiced_proof.meta_value = %s OR invoiced_proof.meta_value IS NULL)';
+				$where_values[]     = '0';
+			}
+		}
+
+		if ( ! empty( $args['factoring'] ) ) {
+			$where_conditions[] = 'factoring_status.meta_value = %s';
+			$where_values[]     = $args['factoring'];
+		}
+
+		if ( ! empty( $args['my_search'] ) ) {
+			$where_conditions[] = '(reference.meta_value LIKE %s OR unit_number.meta_value LIKE %s)';
+			$search_value       = '%' . $wpdb->esc_like( $args['my_search'] ) . '%';
+			$where_values[]     = $search_value;
+			$where_values[]     = $search_value;
+		}
+
+		if ( ! empty( $args['month'] ) && ! empty( $args['year'] ) ) {
+			$where_conditions[] = "date_booked IS NOT NULL
+			AND YEAR(date_booked) = %d
+			AND MONTH(date_booked) = %d";
+			$where_values[]     = $args['year'];
+			$where_values[]     = $args['month'];
+		}
+
+		if ( ! empty( $args['year'] ) && empty( $args['month'] ) ) {
+			$where_conditions[] = "date_booked IS NOT NULL
+			AND YEAR(date_booked) = %d";
+			$where_values[]     = $args['year'];
+		}
+
+		if ( ! empty( $args['month'] ) && empty( $args['year'] ) ) {
+			$where_conditions[] = "date_booked IS NOT NULL
+			AND MONTH(date_booked) = %d";
+			$where_values[]     = $args['month'];
+		}
+
+		if ( ! empty( $where_conditions ) ) {
+			$sql .= ' AND ' . implode( ' AND ', $where_conditions );
+		}
+
+		$sql .= ' GROUP BY customer_id.meta_value';
+
+		$rows = $wpdb->get_results( $wpdb->prepare( $sql, ...$where_values ), ARRAY_A );
+		return is_array( $rows ) ? $rows : array();
+	}
 	
 	public function get_table_items_billing_shortpay( $args = array() ) {
 		global $wpdb;
@@ -888,7 +1018,7 @@ class TMSReportsFlt extends TMSReportsHelper {
 			dispatcher.meta_value AS dispatcher_initials_value,
 			reference.meta_value AS reference_number_value,
 			unit_number.meta_value AS unit_number_value
-	" . $join_builder;
+		" . $join_builder;
 		
 		$where_conditions = array();
 		$where_values     = array();

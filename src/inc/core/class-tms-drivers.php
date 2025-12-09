@@ -4555,6 +4555,16 @@ class TMSDrivers extends TMSDriversHelper {
 		error_log('current_payment_file');
 		error_log($current_payment_file);
 		
+		// Check that both files exist before sending email
+		// If one of them is missing, don't send the email
+		if ( empty( $old_payment_file ) || ! is_numeric( $old_payment_file ) ) {
+			return false;
+		}
+		
+		if ( empty( $current_payment_file ) || ! is_numeric( $current_payment_file ) ) {
+			return false;
+		}
+		
 		// Get recruiter email from recruiter_add (meta) or user_id_added (main)
 		$recruiter_id = get_field_value( $meta, 'recruiter_add' );
 		if ( empty( $recruiter_id ) ) {
@@ -4684,11 +4694,81 @@ class TMSDrivers extends TMSDriversHelper {
 		}
 		
 		$attachments = array();
+		
+		// Rename files with custom names before attaching
+		// Add driver_id to make filenames unique for concurrent requests
 		if ( $old_file_path && file_exists( $old_file_path ) && is_readable( $old_file_path ) ) {
-			$attachments[] = $old_file_path;
+			// Get file extension from original file
+			$file_extension = pathinfo( $old_file_path, PATHINFO_EXTENSION );
+			if ( empty( $file_extension ) && ! empty( $old_payment_file ) && is_numeric( $old_payment_file ) ) {
+				// Try to get extension from original filename
+				$original_name = basename( get_attached_file( $old_payment_file ) );
+				$file_extension = pathinfo( $original_name, PATHINFO_EXTENSION );
+			}
+			
+			// Create new filename with custom name and driver_id for uniqueness
+			$custom_name = 'Old Voided check_' . $driver_id;
+			$new_file_name = sanitize_file_name( $custom_name );
+			if ( ! empty( $file_extension ) ) {
+				$new_file_name .= '.' . $file_extension;
+			}
+			
+			// Create new path with custom name
+			$renamed_old_file_path = $tmp_uploads_dir . '/' . $new_file_name;
+			
+			// Copy file to new location with custom name
+			if ( copy( $old_file_path, $renamed_old_file_path ) ) {
+				$attachments[] = $renamed_old_file_path;
+				$temp_files[] = $renamed_old_file_path; // Mark as temporary file
+				// Remove old file from temp_files if it was there
+				$temp_files = array_values( array_filter( $temp_files, function( $file ) use ( $old_file_path ) {
+					return $file !== $old_file_path;
+				} ) );
+				// Delete original temporary file if it was in tmp-uploads directory
+				if ( strpos( $old_file_path, $tmp_uploads_dir ) !== false && $old_file_path !== $renamed_old_file_path ) {
+					@unlink( $old_file_path );
+				}
+			} else {
+				// If copy failed, use original path
+				$attachments[] = $old_file_path;
+			}
 		}
+		
 		if ( $new_file_path && file_exists( $new_file_path ) && is_readable( $new_file_path ) ) {
-			$attachments[] = $new_file_path;
+			// Get file extension from original file
+			$file_extension = pathinfo( $new_file_path, PATHINFO_EXTENSION );
+			if ( empty( $file_extension ) && ! empty( $current_payment_file ) && is_numeric( $current_payment_file ) ) {
+				// Try to get extension from original filename
+				$original_name = basename( get_attached_file( $current_payment_file ) );
+				$file_extension = pathinfo( $original_name, PATHINFO_EXTENSION );
+			}
+			
+			// Create new filename with custom name and driver_id for uniqueness
+			$custom_name = 'New Voided check_' . $driver_id;
+			$new_file_name = sanitize_file_name( $custom_name );
+			if ( ! empty( $file_extension ) ) {
+				$new_file_name .= '.' . $file_extension;
+			}
+			
+			// Create new path with custom name
+			$renamed_new_file_path = $tmp_uploads_dir . '/' . $new_file_name;
+			
+			// Copy file to new location with custom name
+			if ( copy( $new_file_path, $renamed_new_file_path ) ) {
+				$attachments[] = $renamed_new_file_path;
+				$temp_files[] = $renamed_new_file_path; // Mark as temporary file
+				// Remove old file from temp_files if it was there
+				$temp_files = array_values( array_filter( $temp_files, function( $file ) use ( $new_file_path ) {
+					return $file !== $new_file_path;
+				} ) );
+				// Delete original temporary file if it was in tmp-uploads directory
+				if ( strpos( $new_file_path, $tmp_uploads_dir ) !== false && $new_file_path !== $renamed_new_file_path ) {
+					@unlink( $new_file_path );
+				}
+			} else {
+				// If copy failed, use original path
+				$attachments[] = $new_file_path;
+			}
 		}
 		
 		// Log for debugging (admin only)
@@ -4762,6 +4842,13 @@ class TMSDrivers extends TMSDriversHelper {
 			$message .= '<p>Please find attached the old and new payment files.</p>';
 		}
 		
+		// Get unpaid loads for this driver
+		$unpaid_loads_message = $this->get_unpaid_loads_message( $driver_id );
+
+		if ( ! empty( $unpaid_loads_message ) ) {
+			$message .= $unpaid_loads_message;
+		}
+		
 		// Send email with attachments
 		$headers = array(
 			'Content-Type: text/html; charset=UTF-8',
@@ -4778,11 +4865,31 @@ class TMSDrivers extends TMSDriversHelper {
 		}
 		
 		// Clean up temporary files after email is sent (success or failure)
+		// Delete all files from temp_files array
 		foreach ( $temp_files as $temp_file ) {
 			if ( file_exists( $temp_file ) ) {
-				@unlink( $temp_file );
+				$deleted = @unlink( $temp_file );
 				if ( current_user_can( 'administrator' ) ) {
-					error_log( 'Deleted temporary file: ' . $temp_file );
+					error_log( 'Deleted temporary file: ' . $temp_file . ' (success: ' . ( $deleted ? 'yes' : 'no' ) . ')' );
+				}
+			}
+		}
+		
+		// Also clean up any remaining files with driver_id in filename (safety measure)
+		// This ensures files are deleted even if they weren't in temp_files array
+		if ( file_exists( $tmp_uploads_dir ) && is_dir( $tmp_uploads_dir ) ) {
+			$files_to_clean = glob( $tmp_uploads_dir . '/*' . $driver_id . '*' );
+			if ( $files_to_clean && is_array( $files_to_clean ) ) {
+				foreach ( $files_to_clean as $file_to_clean ) {
+					if ( file_exists( $file_to_clean ) && is_file( $file_to_clean ) ) {
+						// Only delete if it's not already in temp_files (to avoid double deletion)
+						if ( ! in_array( $file_to_clean, $temp_files ) ) {
+							$deleted = @unlink( $file_to_clean );
+							if ( current_user_can( 'administrator' ) ) {
+								error_log( 'Deleted orphaned temporary file: ' . $file_to_clean . ' (success: ' . ( $deleted ? 'yes' : 'no' ) . ')' );
+							}
+						}
+					}
 				}
 			}
 		}
@@ -4803,6 +4910,145 @@ class TMSDrivers extends TMSDriversHelper {
 		}
 		
 		return $email_sent;
+	}
+	
+	/**
+	 * Get unpaid loads message for driver
+	 * Searches in all three projects (endurance, martlet, odysseia) for loads with driver_pay_statuses = 'not-paid'
+	 * 
+	 * @param int $driver_id Driver ID
+	 * @return string HTML message with links to unpaid loads, or empty string if no unpaid loads found
+	 */
+	private function get_unpaid_loads_message( $driver_id ) {
+		global $wpdb, $global_options;
+		
+		if ( empty( $driver_id ) || ! is_numeric( $driver_id ) ) {
+			return '';
+		}
+		
+		$driver_id = (int) $driver_id;
+		$unpaid_loads = array();
+		
+		// Projects to check
+		$projects = array( 'endurance', 'martlet', 'odysseia' );
+		
+		// Get base URL for links
+		$add_new_load = get_field_value( $global_options, 'add_new_load' );
+		if ( empty( $add_new_load ) ) {
+			return '';
+		}
+		
+		// Search in each project's meta table
+		foreach ( $projects as $project ) {
+			$table_meta = $wpdb->prefix . 'reportsmeta_' . strtolower( $project );
+			
+			// Check if table exists
+			$table_exists = $wpdb->get_var( $wpdb->prepare( 
+				"SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = %s AND table_name = %s",
+				DB_NAME,
+				$table_meta
+			) );
+			
+			if ( ! $table_exists ) {
+				continue;
+			}
+			
+			// Query for unpaid loads where this driver is attached
+			// Need to check different pay status fields based on which driver position (first, second, or third)
+			// We'll use UNION to combine three separate queries for each driver position
+			$query = "
+				SELECT DISTINCT 
+					post_id,
+					reference_number
+				FROM (
+					-- First driver: check driver_pay_statuses
+					SELECT DISTINCT 
+						driver_meta.post_id,
+						ref_meta.meta_value as reference_number
+					FROM $table_meta driver_meta
+					LEFT JOIN $table_meta pay_status_meta 
+						ON driver_meta.post_id = pay_status_meta.post_id 
+						AND pay_status_meta.meta_key = 'driver_pay_statuses'
+					LEFT JOIN $table_meta ref_meta 
+						ON driver_meta.post_id = ref_meta.post_id 
+						AND ref_meta.meta_key = 'reference_number'
+					WHERE driver_meta.meta_key = 'attached_driver'
+					AND driver_meta.meta_value = %s
+					AND pay_status_meta.meta_value = 'not-paid'
+					
+					UNION
+					
+					-- Second driver: check second_driver_pay_statuses
+					SELECT DISTINCT 
+						second_driver_meta.post_id,
+						ref_meta.meta_value as reference_number
+					FROM $table_meta second_driver_meta
+					LEFT JOIN $table_meta pay_status_meta 
+						ON second_driver_meta.post_id = pay_status_meta.post_id 
+						AND pay_status_meta.meta_key = 'second_driver_pay_statuses'
+					LEFT JOIN $table_meta ref_meta 
+						ON second_driver_meta.post_id = ref_meta.post_id 
+						AND ref_meta.meta_key = 'reference_number'
+					WHERE second_driver_meta.meta_key = 'attached_second_driver'
+					AND second_driver_meta.meta_value = %s
+					AND pay_status_meta.meta_value = 'not-paid'
+					
+					UNION
+					
+					-- Third driver: check third_driver_pay_statuses
+					SELECT DISTINCT 
+						third_driver_meta.post_id,
+						ref_meta.meta_value as reference_number
+					FROM $table_meta third_driver_meta
+					LEFT JOIN $table_meta pay_status_meta 
+						ON third_driver_meta.post_id = pay_status_meta.post_id 
+						AND pay_status_meta.meta_key = 'third_driver_pay_statuses'
+					LEFT JOIN $table_meta ref_meta 
+						ON third_driver_meta.post_id = ref_meta.post_id 
+						AND ref_meta.meta_key = 'reference_number'
+					WHERE third_driver_meta.meta_key = 'attached_third_driver'
+					AND third_driver_meta.meta_value = %s
+					AND pay_status_meta.meta_value = 'not-paid'
+				) as combined_results
+			";
+			
+			$results = $wpdb->get_results( $wpdb->prepare( $query, $driver_id, $driver_id, $driver_id ), ARRAY_A );
+			
+			// Add results with project info
+			foreach ( $results as $load ) {
+				if ( ! empty( $load['post_id'] ) && ! empty( $load['reference_number'] ) ) {
+					$unpaid_loads[] = array(
+						'post_id' => $load['post_id'],
+						'reference_number' => $load['reference_number'],
+						'project' => $project
+					);
+				}
+			}
+		}
+		
+		// If no unpaid loads found, return empty string
+		if ( empty( $unpaid_loads ) ) {
+			return '';
+		}
+		
+		// Build message with links
+		$message = '<p><strong>Pay attention to loads delivered by this driver that are still not paid:</strong> ';
+		
+		$load_links = array();
+		foreach ( $unpaid_loads as $load ) {
+			$url = add_query_arg( array(
+				'post_id'    => $load['post_id'],
+				'use_driver' => $load['project'],
+				'tab'        => 'pills-accounting-tab',
+			), $add_new_load );
+			
+			$load_links[] = sprintf( '<a href="%s">%s</a>', esc_url( $url ), esc_html( $load['reference_number'] ) );
+		}
+		
+		$message .= implode( ', ', $load_links );
+		$message .= '</p>';
+		
+		return $message;
 	}
 	
 	function update_post_meta_data( $post_id, $meta_data ) {

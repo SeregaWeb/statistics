@@ -46,6 +46,7 @@ class TMSDriversHelper {
 		'facebook'       => 'Facebook',
 		'recommendation' => 'Recommendation',
 		'cbdriver'       => 'CBDriver',
+		'instagram'      => 'Instagram',
 		'other'          => 'Other',
 	);
 	

@@ -336,7 +336,7 @@ if ( ! empty( $results ) ) :
                 <td width="300" style="max-width: 300px;">
                     <div class="d-flex flex-column gap-1">
                         <div class="d-flex align-items-start gap-1 w-100">
-                            <div class="w-100 js-log-wrapper">
+                            <div class="w-100 js-log-wrapper" style="max-width: calc(100% - 38px);">
 						    <?php echo $tmpl; ?>
                             </div>
                             <?php if ( $access_quick_comment ): ?>

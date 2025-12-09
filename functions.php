@@ -407,7 +407,7 @@ function test_email_with_attachments() {
 	$site_url = home_url();
 	
 	// File IDs to test
-	$file_ids = array( 68766, 68765 );
+	$file_ids = array( 68981, 68765 );
 	
 	$message = '
 		<html>
@@ -552,17 +552,53 @@ function test_email_with_attachments() {
 	$attachments = array();
 	$temp_files = array(); // Track temporary files
 	
-	foreach ( $file_ids as $file_id ) {
+	// Custom names for files
+	$custom_names = array(
+		'New Voided check',
+		'Old Voided check'
+	);
+	
+	foreach ( $file_ids as $index => $file_id ) {
 		error_log( 'Processing file ID: ' . $file_id );
 		$file_path = $download_file_to_tmp( $file_id, $tmp_uploads_dir );
 		
 		if ( $file_path && file_exists( $file_path ) && is_readable( $file_path ) ) {
-			$attachments[] = $file_path;
-			// Mark as temporary if it's in tmp-uploads directory
-			if ( strpos( $file_path, $tmp_uploads_dir ) !== false ) {
-				$temp_files[] = $file_path;
+			// Get file extension from original file
+			$file_extension = pathinfo( $file_path, PATHINFO_EXTENSION );
+			if ( empty( $file_extension ) ) {
+				// Try to get extension from original filename
+				$original_name = basename( get_attached_file( $file_id ) );
+				$file_extension = pathinfo( $original_name, PATHINFO_EXTENSION );
 			}
-			error_log( 'File added to attachments: ' . $file_path );
+			
+			// Create new filename with custom name
+			$custom_name = isset( $custom_names[ $index ] ) ? $custom_names[ $index ] : 'File_' . ( $index + 1 );
+			$new_file_name = sanitize_file_name( $custom_name );
+			if ( ! empty( $file_extension ) ) {
+				$new_file_name .= '.' . $file_extension;
+			}
+			
+			// Create new path with custom name
+			$new_file_path = $tmp_uploads_dir . '/' . $new_file_name;
+			
+			// Copy file to new location with custom name
+			if ( copy( $file_path, $new_file_path ) ) {
+				$attachments[] = $new_file_path;
+				$temp_files[] = $new_file_path; // Mark as temporary file
+				error_log( 'File renamed and added to attachments: ' . $new_file_path . ' (original: ' . $file_path . ')' );
+				
+				// If original was a temporary file, delete it
+				if ( strpos( $file_path, $tmp_uploads_dir ) !== false && $file_path !== $new_file_path ) {
+					@unlink( $file_path );
+				}
+			} else {
+				// If copy failed, use original path
+				$attachments[] = $file_path;
+				if ( strpos( $file_path, $tmp_uploads_dir ) !== false ) {
+					$temp_files[] = $file_path;
+				}
+				error_log( 'Failed to rename file, using original: ' . $file_path );
+			}
 		} else {
 			error_log( 'Failed to get file path for ID: ' . $file_id );
 		}

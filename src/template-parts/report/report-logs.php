@@ -49,12 +49,12 @@ $logs_messages = $logs->get_user_logs_by_post( $post_id, $user_id, $post_type );
 	
 	<?php if ( $post_type === 'report' || $post_type === 'reports_flt' ) :
 		?>
-        <div class="js-pin-container">
+        <div class="js-pin-container d-flex flex-column gap-1">
 			<?php
-			echo esc_html( get_template_part( TEMPLATE_PATH . 'common/pinned', 'message', array(
+			get_template_part( TEMPLATE_PATH . 'common/pinned', 'message', array(
 				'id'   => $post_id,
 				'meta' => $meta,
-			) ) );
+			) );
 			?>
         </div>
 

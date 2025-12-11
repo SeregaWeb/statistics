@@ -1601,29 +1601,33 @@ export const pinnedMessageInit = (ajaxUrl) => {
                 .then((data) => {
                     if (data.success) {
                         printMessage(data.data.message, 'success', 8000);
-                        if (data.data.pinned) {
+                        if (data.data.pinned && Array.isArray(data.data.pinned)) {
                             const container = document.querySelector('.js-pin-container');
                             if (container) {
-                                const html = `
-                                <div class="pinned-message">
-                                    <div class="d-flex justify-content-between align-items-center pinned-message__header">
-                                        <span class="d-flex align-items-center">
-                                        <svg fill="#000000" width="18px" height="18px" viewBox="0 0 32 32" version="1.1"
-                                             xmlns="http://www.w3.org/2000/svg">
-                                            <path d="M18.973 17.802l-7.794-4.5c-0.956-0.553-2.18-0.225-2.732 0.731-0.552 0.957-0.224 2.18 0.732 2.732l7.793 4.5c0.957 0.553 2.18 0.225 2.732-0.732 0.554-0.956 0.226-2.179-0.731-2.731zM12.545 12.936l6.062 3.5 2.062-5.738-4.186-2.416-3.938 4.654zM8.076 27.676l5.799-7.044-2.598-1.5-3.201 8.544zM23.174 7.525l-5.195-3c-0.718-0.414-1.635-0.169-2.049 0.549-0.415 0.718-0.168 1.635 0.549 2.049l5.196 3c0.718 0.414 1.635 0.169 2.049-0.549s0.168-1.635-0.55-2.049z"></path>
-                                        </svg>${escapeHtml(data.data.pinned.full_name)}</span>
-                                        <span>${escapeHtml(data.data.pinned.time_pinned)}</span>
+                                // Build HTML for all pinned messages
+                                let html = '';
+                                data.data.pinned.forEach((pinned: any, index: number) => {
+                                    html += `
+                                    <div class="pinned-message">
+                                        <div class="d-flex justify-content-between align-items-center pinned-message__header">
+                                            <span class="d-flex align-items-center">
+                                            <svg fill="#000000" width="18px" height="18px" viewBox="0 0 32 32" version="1.1"
+                                                 xmlns="http://www.w3.org/2000/svg">
+                                                <path d="M18.973 17.802l-7.794-4.5c-0.956-0.553-2.18-0.225-2.732 0.731-0.552 0.957-0.224 2.18 0.732 2.732l7.793 4.5c0.957 0.553 2.18 0.225 2.732-0.732 0.554-0.956 0.226-2.179-0.731-2.731zM12.545 12.936l6.062 3.5 2.062-5.738-4.186-2.416-3.938 4.654zM8.076 27.676l5.799-7.044-2.598-1.5-3.201 8.544zM23.174 7.525l-5.195-3c-0.718-0.414-1.635-0.169-2.049 0.549-0.415 0.718-0.168 1.635 0.549 2.049l5.196 3c0.718 0.414 1.635 0.169 2.049-0.549s0.168-1.635-0.55-2.049z"></path>
+                                            </svg>${escapeHtml(pinned.full_name || '')}</span>
+                                            <span>${escapeHtml(pinned.time_pinned || '')}</span>
+                                        </div>
+                                        <div class="pinned-message__content">
+                                            ${escapeHtml(pinned.pinned_message || '')}
+                                        </div>
+                                        <div class="pinned-message__footer d-flex justify-content-end">
+                                            <button class="btn btn-danger btn-sm js-delete-pinned-message" 
+                                                    data-id="${escapeHtml(pinned.id)}" 
+                                                    data-message-index="${index}">Remove</button>
+                                        </div>
                                     </div>
-                                    <div class="pinned-message__content">
-                                        ${escapeHtml(data.data.pinned.pinned_message)}
-                                    </div>
-                                    <div class="pinned-message__footer d-flex justify-content-end">
-                                        <button class="btn btn-danger btn-sm js-delete-pinned-message" data-id="${escapeHtml(
-                                            data.data.pinned.id
-                                        )}">Remove</button>
-                                    </div>
-                                </div>
-                            `;
+                                `;
+                                });
                                 btnSubmit && btnSubmit.removeAttribute('disabled');
                                 container.innerHTML = html;
                                 addDeletePinnedHandler(ajaxUrl);
@@ -1639,37 +1643,48 @@ export const pinnedMessageInit = (ajaxUrl) => {
 };
 
 export function addDeletePinnedHandler(ajaxUrl: string) {
-    const btn = document.querySelector('.js-delete-pinned-message');
-    if (!btn) return;
-    btn.addEventListener('click', function (this: HTMLButtonElement, e) {
-        e.preventDefault();
-        const id = this.getAttribute('data-id');
-        if (!id) return;
-        // eslint-disable-next-line no-alert,no-restricted-globals
-        if (!confirm('Are you sure you want to remove this pinned message?')) return;
+    const btns = document.querySelectorAll('.js-delete-pinned-message');
+    if (!btns || btns.length === 0) return;
+    
+    btns.forEach((btn) => {
+        btn.addEventListener('click', function (this: HTMLButtonElement, e) {
+            e.preventDefault();
+            const id = this.getAttribute('data-id');
+            const messageIndex = this.getAttribute('data-message-index');
+            if (!id || messageIndex === null) return;
+            // eslint-disable-next-line no-alert,no-restricted-globals
+            if (!confirm('Are you sure you want to remove this pinned message?')) return;
 
-        const flt = document.querySelector('input[name="flt"]');
-        const action = flt ? 'delete_pinned_message_flt' : 'delete_pinned_message';
+            const flt = document.querySelector('input[name="flt"]');
+            const action = flt ? 'delete_pinned_message_flt' : 'delete_pinned_message';
 
-        fetch(ajaxUrl, {
-            method: 'POST',
-            body: new URLSearchParams({
+            const params = new URLSearchParams({
                 action,
                 id,
-            }),
-        })
-            .then((r) => r.json())
-            .then((data) => {
-                if (data.success) {
-                    const container = document.querySelector('.js-pin-container');
-                    if (container) container.innerHTML = '';
-                    if (typeof printMessage === 'function') {
-                        printMessage('Pinned message removed', 'success', 5000);
-                    }
-                } else if (typeof printMessage === 'function') {
-                    printMessage(data.data?.message || 'Error removing pinned message', 'danger', 5000);
-                }
+                message_index: messageIndex,
             });
+
+            fetch(ajaxUrl, {
+                method: 'POST',
+                body: params,
+            })
+                .then((r) => r.json())
+                .then((data) => {
+                    if (data.success) {
+                        // Reload the page or refresh pinned messages container
+                        const container = document.querySelector('.js-pin-container');
+                        if (container) {
+                            // Reload the page to show updated pinned messages
+                            location.reload();
+                        }
+                        if (typeof printMessage === 'function') {
+                            printMessage('Pinned message removed', 'success', 5000);
+                        }
+                    } else if (typeof printMessage === 'function') {
+                        printMessage(data.data?.message || 'Error removing pinned message', 'danger', 5000);
+                    }
+                });
+        });
     });
 }
 

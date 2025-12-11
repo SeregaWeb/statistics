@@ -351,7 +351,7 @@ if ( ! empty( $results ) ) :
                         </div>
 						<?php 
 						?>
-						<div class="w-100 js-pinned-wrapper">
+						<div class="w-100 js-pinned-wrapper d-flex flex-column gap-1">
 							<?php echo esc_html( get_template_part( TEMPLATE_PATH . 'common/pinned', 'message', array(
 								'id'        => $row[ 'id' ],
 								'meta'      => $meta,

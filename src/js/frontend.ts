@@ -88,6 +88,7 @@ import { initAdminRatingManager } from './components/admin-rating-manager';
 import { initDriversStatisticsCharts } from './components/charts/drivers-statistics-charts';
 import { initFinanceStatisticsCharts } from './components/charts/finance-statistics-charts';
 import { initSourceStatisticsCharts } from './components/charts/source-statistics-charts';
+import { initDriversStatisticsTabs } from './components/drivers-statistics-tabs';
 import './components/quick-copy';
 import './components/driver-popups';
 import DriverPopupForms from './components/driver-popup-forms';
@@ -294,6 +295,7 @@ function ready() {
     initDriversStatisticsCharts();
     initFinanceStatisticsCharts();
     initSourceStatisticsCharts();
+    initDriversStatisticsTabs();
     
     // Initialize Drivers Map
     if (hereApi) {

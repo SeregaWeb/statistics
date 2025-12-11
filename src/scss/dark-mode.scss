@@ -776,10 +776,10 @@ body.dark-mode  {
         color: $dark-accent;
     }
 
-    #mainChart, #mainChartPrise, #sourcePostCountChart, #sourceProfitChart, #endorsementsChart {
+    #mainChart, #mainChartPrise, #sourcePostCountChart, #sourceProfitChart, #endorsementsChart, #vehicleTypeChart, #stateChart, #nationalityChart, #languageChart {
         filter: invert(1);
         svg {
-            rect {
+            & >rect {
                 fill: transparent;
             }
         }

@@ -35,7 +35,9 @@ class QuickCopy {
             return;
         }
 
+        console.log('status', status);
         const phones = this.getPhonesByStatus(status);
+        console.log('phones', phones);
         if (phones.length === 0) {
             this.showMessage(`No drivers found with status: ${status}`, 'warning');
             return;
@@ -47,10 +49,12 @@ class QuickCopy {
 
     private getPhonesByStatus(targetStatus: string): string[] {
         const rows = document.querySelectorAll(this.tableSelector) as NodeListOf<HTMLElement>;
+        console.log('rows', rows);
         const phones: string[] = [];
 
         rows.forEach((row: HTMLElement) => {
             const driverData = this.extractDriverData(row);
+            console.log('driverData', driverData);
             if (driverData && this.matchesStatus(driverData.status, targetStatus)) {
                 if (driverData.phone && !phones.includes(driverData.phone)) {
                     phones.push(driverData.phone);
@@ -67,9 +71,11 @@ class QuickCopy {
             const statusElement = row.querySelector(this.statusColumnSelector) as HTMLElement;
             if (!statusElement) return null;
 
+            console.log('statusElement', statusElement);
             // Find phone element directly by class
             const phoneElement = row.querySelector(this.phoneColumnSelector) as HTMLElement;
             if (!phoneElement) return null;
+            console.log('phoneElement', phoneElement);
 
             console.log(statusElement.textContent?.trim(), phoneElement.textContent?.trim());
             const status = this.normalizeStatus(statusElement.textContent?.trim() || '');

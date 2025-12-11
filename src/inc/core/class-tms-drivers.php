@@ -104,6 +104,8 @@ class TMSDrivers extends TMSDriversHelper {
 			SUM(CASE WHEN tm5.meta_key = 'vehicle_type' AND tm5.meta_value = 'sprinter-van' THEN 1 ELSE 0 END) AS sprinter_van,
 			SUM(CASE WHEN tm6.meta_key = 'vehicle_type' AND tm6.meta_value = 'box-truck' THEN 1 ELSE 0 END) AS box_truck,
 			SUM(CASE WHEN tm7.meta_key = 'vehicle_type' AND tm7.meta_value = 'reefer' THEN 1 ELSE 0 END) AS reefer,
+			SUM(CASE WHEN tm14.meta_key = 'vehicle_type' AND tm14.meta_value = 'pickup' THEN 1 ELSE 0 END) AS pickup,
+			SUM(CASE WHEN tm15.meta_key = 'vehicle_type' AND tm15.meta_value = 'semi-truck' THEN 1 ELSE 0 END) AS semi_truck,
 			SUM(CASE WHEN tm8.meta_key = 'driver_licence_type' AND tm8.meta_value = 'cdl' 
 				AND (COALESCE(tm3.meta_value, '') = 'on' OR COALESCE(tm9.meta_value, '') = 'on') THEN 1 ELSE 0 END) AS hazmat_cdl,
 			SUM(CASE WHEN tm9.meta_key = 'hazmat_certificate' AND tm9.meta_value = 'on' THEN 1 ELSE 0 END) AS hazmat_certificate,
@@ -119,6 +121,8 @@ class TMSDrivers extends TMSDriversHelper {
 		LEFT JOIN $table_meta AS tm5 ON tm5.post_id = m.id AND tm5.meta_key = 'vehicle_type' AND tm5.meta_value = 'sprinter-van'
 		LEFT JOIN $table_meta AS tm6 ON tm6.post_id = m.id AND tm6.meta_key = 'vehicle_type' AND tm6.meta_value = 'box-truck'
 		LEFT JOIN $table_meta AS tm7 ON tm7.post_id = m.id AND tm7.meta_key = 'vehicle_type' AND tm7.meta_value = 'reefer'
+		LEFT JOIN $table_meta AS tm14 ON tm14.post_id = m.id AND tm14.meta_key = 'vehicle_type' AND tm14.meta_value = 'pickup'
+		LEFT JOIN $table_meta AS tm15 ON tm15.post_id = m.id AND tm15.meta_key = 'vehicle_type' AND tm15.meta_value = 'semi-truck'
 		LEFT JOIN $table_meta AS tm8 ON tm8.post_id = m.id AND tm8.meta_key = 'driver_licence_type'
 		LEFT JOIN $table_meta AS tm9 ON tm9.post_id = m.id AND tm9.meta_key = 'hazmat_certificate'
 		LEFT JOIN $table_meta AS tm10 ON tm10.post_id = m.id AND tm10.meta_key = 'tsa_approved'

@@ -4321,39 +4321,198 @@ var changeTableInit = function changeTableInit(ajaxUrl) {
 "use strict";
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   initChart: function() { return /* binding */ initChart; },
 /* harmony export */   initDriversStatisticsCharts: function() { return /* binding */ initDriversStatisticsCharts; }
 /* harmony export */ });
 /* harmony import */ var _google_charts_utils__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./google-charts-utils */ "./src/js/components/charts/google-charts-utils.ts");
+function _toConsumableArray(r) { return _arrayWithoutHoles(r) || _iterableToArray(r) || _unsupportedIterableToArray(r) || _nonIterableSpread(); }
+function _nonIterableSpread() { throw new TypeError("Invalid attempt to spread non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method."); }
+function _unsupportedIterableToArray(r, a) { if (r) { if ("string" == typeof r) return _arrayLikeToArray(r, a); var t = {}.toString.call(r).slice(8, -1); return "Object" === t && r.constructor && (t = r.constructor.name), "Map" === t || "Set" === t ? Array.from(r) : "Arguments" === t || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(t) ? _arrayLikeToArray(r, a) : void 0; } }
+function _iterableToArray(r) { if ("undefined" != typeof Symbol && null != r[Symbol.iterator] || null != r["@@iterator"]) return Array.from(r); }
+function _arrayWithoutHoles(r) { if (Array.isArray(r)) return _arrayLikeToArray(r); }
+function _arrayLikeToArray(r, a) { (null == a || a > r.length) && (a = r.length); for (var e = 0, n = Array(a); e < a; e++) n[e] = r[e]; return n; }
 
-function initDriversStatisticsCharts() {
-  var endorsementsChartElement = document.getElementById('endorsementsChart');
-  var capabilitiesChartElement = document.getElementById('capabilitiesChart');
-  if (!endorsementsChartElement && !capabilitiesChartElement) {
+function initChart(chartId) {
+  var useBarChart = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : false;
+  var chartElement = document.getElementById(chartId);
+  if (!chartElement) {
     return;
   }
-  var endorsementChartData = (0,_google_charts_utils__WEBPACK_IMPORTED_MODULE_0__.parseChartDataFromAttribute)(endorsementsChartElement);
-  var capabilitiesChartData = (0,_google_charts_utils__WEBPACK_IMPORTED_MODULE_0__.parseChartDataFromAttribute)(capabilitiesChartElement);
-  if (!endorsementChartData && !capabilitiesChartData) {
+  if (chartElement.dataset.initialized === 'true') {
     return;
   }
+  var chartData = (0,_google_charts_utils__WEBPACK_IMPORTED_MODULE_0__.parseChartDataFromAttribute)(chartElement);
+  if (!chartData || chartData.length === 0) {
+    return;
+  }
+  var getContainerSize = function getContainerSize() {
+    var rect = chartElement.getBoundingClientRect();
+    return {
+      width: rect.width || parseInt(getComputedStyle(chartElement).width, 10) || 800,
+      height: parseInt(getComputedStyle(chartElement).height, 10) || 600
+    };
+  };
   (0,_google_charts_utils__WEBPACK_IMPORTED_MODULE_0__.initGoogleCharts)(function () {
-    if (endorsementsChartElement && endorsementChartData && endorsementChartData.length > 0) {
-      var dataArray = (0,_google_charts_utils__WEBPACK_IMPORTED_MODULE_0__.convertToChartDataArray)(endorsementChartData, ['Type', 'Count']);
-      (0,_google_charts_utils__WEBPACK_IMPORTED_MODULE_0__.drawPieChart)(endorsementsChartElement, dataArray, {
+    var containerSize = getContainerSize();
+    var dataArray = (0,_google_charts_utils__WEBPACK_IMPORTED_MODULE_0__.convertToChartDataArray)(chartData, ['Type', 'Count']);
+    if (useBarChart) {
+      var dataCount = dataArray.length - 1;
+      var minBarHeight = 35;
+      var calculatedHeight = Math.max(containerSize.height, dataCount * minBarHeight + 100);
+      var dataWithAnnotations = dataArray.map(function (row, index) {
+        if (index === 0) {
+          return [].concat(_toConsumableArray(row), ['Annotation']);
+        }
+        return [].concat(_toConsumableArray(row), [String(row[1])]);
+      });
+      (0,_google_charts_utils__WEBPACK_IMPORTED_MODULE_0__.drawBarChart)(chartElement, dataWithAnnotations, {
+        width: containerSize.width,
+        height: calculatedHeight,
+        chartArea: {
+          left: '15%',
+          top: '0%',
+          width: '82%',
+          height: '98%',
+          right: '3%',
+          bottom: '2%'
+        },
+        hAxis: {
+          textStyle: {
+            fontSize: 13
+          },
+          baseline: 0,
+          gridlines: {
+            count: 5
+          },
+          viewWindow: {
+            min: 0
+          }
+        },
+        vAxis: {
+          textStyle: {
+            fontSize: 13
+          }
+        },
+        bars: {
+          groupWidth: '90%'
+        },
+        fontSize: 13,
+        colors: ['#4285f4'],
+        annotations: {
+          textStyle: {
+            fontSize: 12,
+            bold: true
+          },
+          alwaysOutside: false
+        }
+      });
+    } else {
+      (0,_google_charts_utils__WEBPACK_IMPORTED_MODULE_0__.drawPieChart)(chartElement, dataArray, {
+        width: containerSize.width,
+        height: containerSize.height,
+        pieSliceText: 'value',
+        pieSliceTextStyle: {
+          fontSize: 14,
+          bold: true
+        },
         legend: {
-          position: 'right'
+          position: 'right',
+          textStyle: {
+            fontSize: 12
+          }
+        },
+        chartArea: {
+          width: '75%',
+          height: '85%',
+          left: '5%',
+          top: '5%'
+        },
+        fontSize: 14,
+        tooltip: {
+          textStyle: {
+            fontSize: 12
+          }
         }
       });
     }
-    if (capabilitiesChartElement && capabilitiesChartData && capabilitiesChartData.length > 0) {
-      var _dataArray = (0,_google_charts_utils__WEBPACK_IMPORTED_MODULE_0__.convertToChartDataArray)(capabilitiesChartData, ['Type', 'Count']);
-      (0,_google_charts_utils__WEBPACK_IMPORTED_MODULE_0__.drawPieChart)(capabilitiesChartElement, _dataArray, {
-        legend: {
-          position: 'right'
+    chartElement.dataset.initialized = 'true';
+  });
+}
+function initDriversStatisticsCharts() {
+  var chartConfigs = [{
+    id: 'stateChart',
+    useBar: true,
+    container: 'home-location'
+  }, {
+    id: 'vehicleTypeChart',
+    useBar: false,
+    container: 'vehicle-type'
+  }, {
+    id: 'nationalityChart',
+    useBar: true,
+    container: 'nationality'
+  }, {
+    id: 'languageChart',
+    useBar: false,
+    container: 'languages'
+  }];
+  chartConfigs.forEach(function (config) {
+    var chartElement = document.getElementById(config.id);
+    if (chartElement) {
+      var container = chartElement.closest('.chart-container');
+      if (container) {
+        var isVisible = container.style.display !== 'none' && window.getComputedStyle(container).display !== 'none' || !container.hasAttribute('style');
+        if (isVisible) {
+          chartElement.dataset.initialized = 'false';
+          initChart(config.id, config.useBar);
         }
-      });
+      } else {
+        chartElement.dataset.initialized = 'false';
+        initChart(config.id, config.useBar);
+      }
     }
   });
+  var tabElements = document.querySelectorAll('#driversStatisticsTabs button[data-bs-toggle="tab"]');
+  tabElements.forEach(function (tabElement) {
+    tabElement.addEventListener('shown.bs.tab', function (event) {
+      var targetId = event.target.getAttribute('data-bs-target');
+      if (targetId) {
+        var tabPane = document.querySelector(targetId);
+        if (tabPane) {
+          var _chartConfigs = [{
+            id: 'stateChart',
+            useBar: true
+          }, {
+            id: 'vehicleTypeChart',
+            useBar: false
+          }, {
+            id: 'nationalityChart',
+            useBar: true
+          }, {
+            id: 'languageChart',
+            useBar: false
+          }];
+          _chartConfigs.forEach(function (config) {
+            var chartElement = document.getElementById(config.id);
+            if (chartElement) {
+              chartElement.dataset.initialized = 'false';
+            }
+          });
+          setTimeout(function () {
+            _chartConfigs.forEach(function (config) {
+              initChart(config.id, config.useBar);
+            });
+          }, 200);
+        }
+      }
+    });
+  });
+}
+if (typeof window !== 'undefined') {
+  window.initDriversChart = initChart;
+}
+if (typeof window !== 'undefined') {
+  window.initDriversChart = initChart;
 }
 
 /***/ }),
@@ -4427,12 +4586,19 @@ function initFinanceStatisticsCharts() {
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   convertToChartDataArray: function() { return /* binding */ convertToChartDataArray; },
+/* harmony export */   drawBarChart: function() { return /* binding */ drawBarChart; },
 /* harmony export */   drawPieChart: function() { return /* binding */ drawPieChart; },
 /* harmony export */   formatDollarColumn: function() { return /* binding */ formatDollarColumn; },
 /* harmony export */   initGoogleCharts: function() { return /* binding */ initGoogleCharts; },
 /* harmony export */   isGoogleChartsLoaded: function() { return /* binding */ isGoogleChartsLoaded; },
 /* harmony export */   parseChartDataFromAttribute: function() { return /* binding */ parseChartDataFromAttribute; }
 /* harmony export */ });
+function _toConsumableArray(r) { return _arrayWithoutHoles(r) || _iterableToArray(r) || _unsupportedIterableToArray(r) || _nonIterableSpread(); }
+function _nonIterableSpread() { throw new TypeError("Invalid attempt to spread non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method."); }
+function _unsupportedIterableToArray(r, a) { if (r) { if ("string" == typeof r) return _arrayLikeToArray(r, a); var t = {}.toString.call(r).slice(8, -1); return "Object" === t && r.constructor && (t = r.constructor.name), "Map" === t || "Set" === t ? Array.from(r) : "Arguments" === t || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(t) ? _arrayLikeToArray(r, a) : void 0; } }
+function _iterableToArray(r) { if ("undefined" != typeof Symbol && null != r[Symbol.iterator] || null != r["@@iterator"]) return Array.from(r); }
+function _arrayWithoutHoles(r) { if (Array.isArray(r)) return _arrayLikeToArray(r); }
+function _arrayLikeToArray(r, a) { (null == a || a > r.length) && (a = r.length); for (var e = 0, n = Array(a); e < a; e++) n[e] = r[e]; return n; }
 var __rest = undefined && undefined.__rest || function (s, e) {
   var t = {};
   for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p) && e.indexOf(p) < 0) t[p] = s[p];
@@ -4490,6 +4656,52 @@ function drawPieChart(element, dataArray) {
   };
   var finalOptions = Object.assign(Object.assign({}, defaultOptions), chartOptions);
   var chart = new window.google.visualization.PieChart(element);
+  chart.draw(chartData, finalOptions);
+}
+function drawBarChart(element, dataArray) {
+  var options = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : {};
+  if (!window.google || !window.google.visualization) {
+    console.error('Google Charts visualization not available');
+    return;
+  }
+  var processedData = [];
+  dataArray.forEach(function (row, index) {
+    if (index === 0 && row.length > 2 && row[row.length - 1] === 'Annotation') {
+      var newRow = _toConsumableArray(row);
+      newRow[row.length - 1] = {
+        type: 'string',
+        role: 'annotation'
+      };
+      processedData.push(newRow);
+    } else {
+      processedData.push(row);
+    }
+  });
+  var chartData = window.google.visualization.arrayToDataTable(processedData);
+  var defaultOptions = {
+    legend: {
+      position: 'none'
+    },
+    chartArea: {
+      left: '20%',
+      top: '5%',
+      width: '70%',
+      height: '90%'
+    },
+    hAxis: {
+      textStyle: {
+        fontSize: 12
+      }
+    },
+    vAxis: {
+      textStyle: {
+        fontSize: 12
+      }
+    },
+    fontSize: 12
+  };
+  var finalOptions = Object.assign(Object.assign({}, defaultOptions), options);
+  var chart = new window.google.visualization.BarChart(element);
   chart.draw(chartData, finalOptions);
 }
 function formatDollarColumn(data) {
@@ -6418,10 +6630,13 @@ var pinnedMessageInit = function pinnedMessageInit(ajaxUrl) {
     }).then(function (data) {
       if (data.success) {
         (0,_info_messages__WEBPACK_IMPORTED_MODULE_1__.printMessage)(data.data.message, 'success', 8000);
-        if (data.data.pinned) {
+        if (data.data.pinned && Array.isArray(data.data.pinned)) {
           var container = document.querySelector('.js-pin-container');
           if (container) {
-            var html = "\n                                <div class=\"pinned-message\">\n                                    <div class=\"d-flex justify-content-between align-items-center pinned-message__header\">\n                                        <span class=\"d-flex align-items-center\">\n                                        <svg fill=\"#000000\" width=\"18px\" height=\"18px\" viewBox=\"0 0 32 32\" version=\"1.1\"\n                                             xmlns=\"http://www.w3.org/2000/svg\">\n                                            <path d=\"M18.973 17.802l-7.794-4.5c-0.956-0.553-2.18-0.225-2.732 0.731-0.552 0.957-0.224 2.18 0.732 2.732l7.793 4.5c0.957 0.553 2.18 0.225 2.732-0.732 0.554-0.956 0.226-2.179-0.731-2.731zM12.545 12.936l6.062 3.5 2.062-5.738-4.186-2.416-3.938 4.654zM8.076 27.676l5.799-7.044-2.598-1.5-3.201 8.544zM23.174 7.525l-5.195-3c-0.718-0.414-1.635-0.169-2.049 0.549-0.415 0.718-0.168 1.635 0.549 2.049l5.196 3c0.718 0.414 1.635 0.169 2.049-0.549s0.168-1.635-0.55-2.049z\"></path>\n                                        </svg>".concat(escapeHtml(data.data.pinned.full_name), "</span>\n                                        <span>").concat(escapeHtml(data.data.pinned.time_pinned), "</span>\n                                    </div>\n                                    <div class=\"pinned-message__content\">\n                                        ").concat(escapeHtml(data.data.pinned.pinned_message), "\n                                    </div>\n                                    <div class=\"pinned-message__footer d-flex justify-content-end\">\n                                        <button class=\"btn btn-danger btn-sm js-delete-pinned-message\" data-id=\"").concat(escapeHtml(data.data.pinned.id), "\">Remove</button>\n                                    </div>\n                                </div>\n                            ");
+            var html = '';
+            data.data.pinned.forEach(function (pinned, index) {
+              html += "\n                                    <div class=\"pinned-message\">\n                                        <div class=\"d-flex justify-content-between align-items-center pinned-message__header\">\n                                            <span class=\"d-flex align-items-center\">\n                                            <svg fill=\"#000000\" width=\"18px\" height=\"18px\" viewBox=\"0 0 32 32\" version=\"1.1\"\n                                                 xmlns=\"http://www.w3.org/2000/svg\">\n                                                <path d=\"M18.973 17.802l-7.794-4.5c-0.956-0.553-2.18-0.225-2.732 0.731-0.552 0.957-0.224 2.18 0.732 2.732l7.793 4.5c0.957 0.553 2.18 0.225 2.732-0.732 0.554-0.956 0.226-2.179-0.731-2.731zM12.545 12.936l6.062 3.5 2.062-5.738-4.186-2.416-3.938 4.654zM8.076 27.676l5.799-7.044-2.598-1.5-3.201 8.544zM23.174 7.525l-5.195-3c-0.718-0.414-1.635-0.169-2.049 0.549-0.415 0.718-0.168 1.635 0.549 2.049l5.196 3c0.718 0.414 1.635 0.169 2.049-0.549s0.168-1.635-0.55-2.049z\"></path>\n                                            </svg>".concat(escapeHtml(pinned.full_name || ''), "</span>\n                                            <span>").concat(escapeHtml(pinned.time_pinned || ''), "</span>\n                                        </div>\n                                        <div class=\"pinned-message__content\">\n                                            ").concat(escapeHtml(pinned.pinned_message || ''), "\n                                        </div>\n                                        <div class=\"pinned-message__footer d-flex justify-content-end\">\n                                            <button class=\"btn btn-danger btn-sm js-delete-pinned-message\" \n                                                    data-id=\"").concat(escapeHtml(pinned.id), "\" \n                                                    data-message-index=\"").concat(index, "\">Remove</button>\n                                        </div>\n                                    </div>\n                                ");
+            });
             btnSubmit && btnSubmit.removeAttribute('disabled');
             container.innerHTML = html;
             addDeletePinnedHandler(ajaxUrl);
@@ -6436,34 +6651,41 @@ var pinnedMessageInit = function pinnedMessageInit(ajaxUrl) {
   });
 };
 function addDeletePinnedHandler(ajaxUrl) {
-  var btn = document.querySelector('.js-delete-pinned-message');
-  if (!btn) return;
-  btn.addEventListener('click', function (e) {
-    e.preventDefault();
-    var id = this.getAttribute('data-id');
-    if (!id) return;
-    if (!confirm('Are you sure you want to remove this pinned message?')) return;
-    var flt = document.querySelector('input[name="flt"]');
-    var action = flt ? 'delete_pinned_message_flt' : 'delete_pinned_message';
-    fetch(ajaxUrl, {
-      method: 'POST',
-      body: new URLSearchParams({
+  var btns = document.querySelectorAll('.js-delete-pinned-message');
+  if (!btns || btns.length === 0) return;
+  btns.forEach(function (btn) {
+    btn.addEventListener('click', function (e) {
+      e.preventDefault();
+      var id = this.getAttribute('data-id');
+      var messageIndex = this.getAttribute('data-message-index');
+      if (!id || messageIndex === null) return;
+      if (!confirm('Are you sure you want to remove this pinned message?')) return;
+      var flt = document.querySelector('input[name="flt"]');
+      var action = flt ? 'delete_pinned_message_flt' : 'delete_pinned_message';
+      var params = new URLSearchParams({
         action: action,
-        id: id
-      })
-    }).then(function (r) {
-      return r.json();
-    }).then(function (data) {
-      var _a;
-      if (data.success) {
-        var container = document.querySelector('.js-pin-container');
-        if (container) container.innerHTML = '';
-        if (typeof _info_messages__WEBPACK_IMPORTED_MODULE_1__.printMessage === 'function') {
-          (0,_info_messages__WEBPACK_IMPORTED_MODULE_1__.printMessage)('Pinned message removed', 'success', 5000);
+        id: id,
+        message_index: messageIndex
+      });
+      fetch(ajaxUrl, {
+        method: 'POST',
+        body: params
+      }).then(function (r) {
+        return r.json();
+      }).then(function (data) {
+        var _a;
+        if (data.success) {
+          var container = document.querySelector('.js-pin-container');
+          if (container) {
+            location.reload();
+          }
+          if (typeof _info_messages__WEBPACK_IMPORTED_MODULE_1__.printMessage === 'function') {
+            (0,_info_messages__WEBPACK_IMPORTED_MODULE_1__.printMessage)('Pinned message removed', 'success', 5000);
+          }
+        } else if (typeof _info_messages__WEBPACK_IMPORTED_MODULE_1__.printMessage === 'function') {
+          (0,_info_messages__WEBPACK_IMPORTED_MODULE_1__.printMessage)(((_a = data.data) === null || _a === void 0 ? void 0 : _a.message) || 'Error removing pinned message', 'danger', 5000);
         }
-      } else if (typeof _info_messages__WEBPACK_IMPORTED_MODULE_1__.printMessage === 'function') {
-        (0,_info_messages__WEBPACK_IMPORTED_MODULE_1__.printMessage)(((_a = data.data) === null || _a === void 0 ? void 0 : _a.message) || 'Error removing pinned message', 'danger', 5000);
-      }
+      });
     });
   });
 }
@@ -10100,6 +10322,35 @@ function initDriversRate() {
 
 /***/ }),
 
+/***/ "./src/js/components/drivers-statistics-tabs.ts":
+/*!******************************************************!*\
+  !*** ./src/js/components/drivers-statistics-tabs.ts ***!
+  \******************************************************/
+/***/ (function(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   initDriversStatisticsTabs: function() { return /* binding */ initDriversStatisticsTabs; }
+/* harmony export */ });
+function initDriversStatisticsTabs() {
+  var tabButtons = document.querySelectorAll('#driversStatisticsTabs button[data-tab-name]');
+  tabButtons.forEach(function (button) {
+    button.addEventListener('click', function (event) {
+      event.preventDefault();
+      event.stopPropagation();
+      var tabName = this.getAttribute('data-tab-name');
+      if (tabName) {
+        var url = new URL(window.location.href);
+        url.searchParams.set('tab', tabName);
+        window.location.href = url.toString();
+      }
+    });
+  });
+}
+
+/***/ }),
+
 /***/ "./src/js/components/eta-popup.ts":
 /*!****************************************!*\
   !*** ./src/js/components/eta-popup.ts ***!
@@ -11862,7 +12113,9 @@ var QuickCopy = /*#__PURE__*/function () {
         this.showMessage('Status not found', 'danger');
         return;
       }
+      console.log('status', status);
       var phones = this.getPhonesByStatus(status);
+      console.log('phones', phones);
       if (phones.length === 0) {
         this.showMessage("No drivers found with status: ".concat(status), 'warning');
         return;
@@ -11875,9 +12128,11 @@ var QuickCopy = /*#__PURE__*/function () {
     value: function getPhonesByStatus(targetStatus) {
       var _this2 = this;
       var rows = document.querySelectorAll(this.tableSelector);
+      console.log('rows', rows);
       var phones = [];
       rows.forEach(function (row) {
         var driverData = _this2.extractDriverData(row);
+        console.log('driverData', driverData);
         if (driverData && _this2.matchesStatus(driverData.status, targetStatus)) {
           if (driverData.phone && !phones.includes(driverData.phone)) {
             phones.push(driverData.phone);
@@ -11893,8 +12148,10 @@ var QuickCopy = /*#__PURE__*/function () {
       try {
         var statusElement = row.querySelector(this.statusColumnSelector);
         if (!statusElement) return null;
+        console.log('statusElement', statusElement);
         var phoneElement = row.querySelector(this.phoneColumnSelector);
         if (!phoneElement) return null;
+        console.log('phoneElement', phoneElement);
         console.log((_a = statusElement.textContent) === null || _a === void 0 ? void 0 : _a.trim(), (_b = phoneElement.textContent) === null || _b === void 0 ? void 0 : _b.trim());
         var status = this.normalizeStatus(((_c = statusElement.textContent) === null || _c === void 0 ? void 0 : _c.trim()) || '');
         var phone = ((_d = phoneElement.textContent) === null || _d === void 0 ? void 0 : _d.trim()) || '';
@@ -27903,17 +28160,19 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _components_charts_drivers_statistics_charts__WEBPACK_IMPORTED_MODULE_42__ = __webpack_require__(/*! ./components/charts/drivers-statistics-charts */ "./src/js/components/charts/drivers-statistics-charts.ts");
 /* harmony import */ var _components_charts_finance_statistics_charts__WEBPACK_IMPORTED_MODULE_43__ = __webpack_require__(/*! ./components/charts/finance-statistics-charts */ "./src/js/components/charts/finance-statistics-charts.ts");
 /* harmony import */ var _components_charts_source_statistics_charts__WEBPACK_IMPORTED_MODULE_44__ = __webpack_require__(/*! ./components/charts/source-statistics-charts */ "./src/js/components/charts/source-statistics-charts.ts");
-/* harmony import */ var _components_quick_copy__WEBPACK_IMPORTED_MODULE_45__ = __webpack_require__(/*! ./components/quick-copy */ "./src/js/components/quick-copy.ts");
-/* harmony import */ var _components_driver_popups__WEBPACK_IMPORTED_MODULE_46__ = __webpack_require__(/*! ./components/driver-popups */ "./src/js/components/driver-popups.ts");
-/* harmony import */ var _components_driver_popup_forms__WEBPACK_IMPORTED_MODULE_47__ = __webpack_require__(/*! ./components/driver-popup-forms */ "./src/js/components/driver-popup-forms.ts");
-/* harmony import */ var _components_broker_popups__WEBPACK_IMPORTED_MODULE_48__ = __webpack_require__(/*! ./components/broker-popups */ "./src/js/components/broker-popups.ts");
-/* harmony import */ var _components_broker_popup_forms__WEBPACK_IMPORTED_MODULE_49__ = __webpack_require__(/*! ./components/broker-popup-forms */ "./src/js/components/broker-popup-forms.ts");
-/* harmony import */ var _components_driver_autocomplete__WEBPACK_IMPORTED_MODULE_50__ = __webpack_require__(/*! ./components/driver-autocomplete */ "./src/js/components/driver-autocomplete.ts");
-/* harmony import */ var _components_common_audio_helper__WEBPACK_IMPORTED_MODULE_51__ = __webpack_require__(/*! ./components/common/audio-helper */ "./src/js/components/common/audio-helper.ts");
-/* harmony import */ var _components_timer_control__WEBPACK_IMPORTED_MODULE_52__ = __webpack_require__(/*! ./components/timer-control */ "./src/js/components/timer-control.ts");
-/* harmony import */ var _components_timer_analytics__WEBPACK_IMPORTED_MODULE_53__ = __webpack_require__(/*! ./components/timer-analytics */ "./src/js/components/timer-analytics.ts");
-/* harmony import */ var _components_dark_mode_toggle__WEBPACK_IMPORTED_MODULE_54__ = __webpack_require__(/*! ./components/dark-mode-toggle */ "./src/js/components/dark-mode-toggle.ts");
-/* harmony import */ var _components_drivers_map__WEBPACK_IMPORTED_MODULE_55__ = __webpack_require__(/*! ./components/drivers-map */ "./src/js/components/drivers-map.ts");
+/* harmony import */ var _components_drivers_statistics_tabs__WEBPACK_IMPORTED_MODULE_45__ = __webpack_require__(/*! ./components/drivers-statistics-tabs */ "./src/js/components/drivers-statistics-tabs.ts");
+/* harmony import */ var _components_quick_copy__WEBPACK_IMPORTED_MODULE_46__ = __webpack_require__(/*! ./components/quick-copy */ "./src/js/components/quick-copy.ts");
+/* harmony import */ var _components_driver_popups__WEBPACK_IMPORTED_MODULE_47__ = __webpack_require__(/*! ./components/driver-popups */ "./src/js/components/driver-popups.ts");
+/* harmony import */ var _components_driver_popup_forms__WEBPACK_IMPORTED_MODULE_48__ = __webpack_require__(/*! ./components/driver-popup-forms */ "./src/js/components/driver-popup-forms.ts");
+/* harmony import */ var _components_broker_popups__WEBPACK_IMPORTED_MODULE_49__ = __webpack_require__(/*! ./components/broker-popups */ "./src/js/components/broker-popups.ts");
+/* harmony import */ var _components_broker_popup_forms__WEBPACK_IMPORTED_MODULE_50__ = __webpack_require__(/*! ./components/broker-popup-forms */ "./src/js/components/broker-popup-forms.ts");
+/* harmony import */ var _components_driver_autocomplete__WEBPACK_IMPORTED_MODULE_51__ = __webpack_require__(/*! ./components/driver-autocomplete */ "./src/js/components/driver-autocomplete.ts");
+/* harmony import */ var _components_common_audio_helper__WEBPACK_IMPORTED_MODULE_52__ = __webpack_require__(/*! ./components/common/audio-helper */ "./src/js/components/common/audio-helper.ts");
+/* harmony import */ var _components_timer_control__WEBPACK_IMPORTED_MODULE_53__ = __webpack_require__(/*! ./components/timer-control */ "./src/js/components/timer-control.ts");
+/* harmony import */ var _components_timer_analytics__WEBPACK_IMPORTED_MODULE_54__ = __webpack_require__(/*! ./components/timer-analytics */ "./src/js/components/timer-analytics.ts");
+/* harmony import */ var _components_dark_mode_toggle__WEBPACK_IMPORTED_MODULE_55__ = __webpack_require__(/*! ./components/dark-mode-toggle */ "./src/js/components/dark-mode-toggle.ts");
+/* harmony import */ var _components_drivers_map__WEBPACK_IMPORTED_MODULE_56__ = __webpack_require__(/*! ./components/drivers-map */ "./src/js/components/drivers-map.ts");
+
 
 
 
@@ -27985,12 +28244,12 @@ function ready() {
   };
   var popupInstance = new _parts_popup_window__WEBPACK_IMPORTED_MODULE_2__["default"]();
   popupInstance.init();
-  _components_common_audio_helper__WEBPACK_IMPORTED_MODULE_51__["default"].getInstance();
-  var driverPopupForms = new _components_driver_popup_forms__WEBPACK_IMPORTED_MODULE_47__["default"](urlAjax);
-  var brokerPopupForms = new _components_broker_popup_forms__WEBPACK_IMPORTED_MODULE_49__["default"](urlAjax);
+  _components_common_audio_helper__WEBPACK_IMPORTED_MODULE_52__["default"].getInstance();
+  var driverPopupForms = new _components_driver_popup_forms__WEBPACK_IMPORTED_MODULE_48__["default"](urlAjax);
+  var brokerPopupForms = new _components_broker_popup_forms__WEBPACK_IMPORTED_MODULE_50__["default"](urlAjax);
   var singlePageBrokerUrl = (var_from_php === null || var_from_php === void 0 ? void 0 : var_from_php.single_page_broker) || '';
-  var brokerPopups = new _components_broker_popups__WEBPACK_IMPORTED_MODULE_48__["default"](urlAjax, singlePageBrokerUrl);
-  new _components_driver_autocomplete__WEBPACK_IMPORTED_MODULE_50__["default"](urlAjax, {
+  var brokerPopups = new _components_broker_popups__WEBPACK_IMPORTED_MODULE_49__["default"](urlAjax, singlePageBrokerUrl);
+  new _components_driver_autocomplete__WEBPACK_IMPORTED_MODULE_51__["default"](urlAjax, {
     unitInput: '.js-unit-number-input',
     dropdown: '.js-driver-dropdown',
     attachedDriverInput: 'input[name="attached_driver"]',
@@ -27999,7 +28258,7 @@ function ready() {
     nonceInput: '#driver-search-nonce',
     driverValueInput: '.js-driver-value'
   });
-  new _components_driver_autocomplete__WEBPACK_IMPORTED_MODULE_50__["default"](urlAjax, {
+  new _components_driver_autocomplete__WEBPACK_IMPORTED_MODULE_51__["default"](urlAjax, {
     unitInput: '.js-second-unit-number-input',
     dropdown: '.js-second-driver-dropdown',
     attachedDriverInput: 'input[name="attached_second_driver"]',
@@ -28007,7 +28266,7 @@ function ready() {
     unitNumberNameInput: 'input[name="second_unit_number_name"]',
     nonceInput: '#second-driver-search-nonce'
   });
-  new _components_driver_autocomplete__WEBPACK_IMPORTED_MODULE_50__["default"](urlAjax, {
+  new _components_driver_autocomplete__WEBPACK_IMPORTED_MODULE_51__["default"](urlAjax, {
     unitInput: '.js-third-unit-number-input',
     dropdown: '.js-third-driver-dropdown',
     attachedDriverInput: 'input[name="attached_third_driver"]',
@@ -28023,7 +28282,7 @@ function ready() {
     if (!wasVisible) {
       refererBlock.style.display = 'block';
     }
-    refererAutocomplete = new _components_driver_autocomplete__WEBPACK_IMPORTED_MODULE_50__["default"](urlAjax, {
+    refererAutocomplete = new _components_driver_autocomplete__WEBPACK_IMPORTED_MODULE_51__["default"](urlAjax, {
       unitInput: '.js-referer-unit-number-input',
       dropdown: '.js-referer-driver-dropdown',
       attachedDriverInput: '#referer_by',
@@ -28064,9 +28323,9 @@ function ready() {
       driverPopupForms.loadDriverStatistics(parseInt(driverIdInput.value));
     }
   }
-  new _components_timer_control__WEBPACK_IMPORTED_MODULE_52__.TimerControl(urlAjax);
-  new _components_timer_analytics__WEBPACK_IMPORTED_MODULE_53__.TimerAnalytics(urlAjax);
-  new _components_dark_mode_toggle__WEBPACK_IMPORTED_MODULE_54__["default"](urlAjax);
+  new _components_timer_control__WEBPACK_IMPORTED_MODULE_53__.TimerControl(urlAjax);
+  new _components_timer_analytics__WEBPACK_IMPORTED_MODULE_54__.TimerAnalytics(urlAjax);
+  new _components_dark_mode_toggle__WEBPACK_IMPORTED_MODULE_55__["default"](urlAjax);
   (0,_components_create_report__WEBPACK_IMPORTED_MODULE_4__.actionCreateReportInit)(urlAjax);
   (0,_components_create_report__WEBPACK_IMPORTED_MODULE_4__.createDraftPosts)(urlAjax);
   (0,_components_create_report__WEBPACK_IMPORTED_MODULE_4__.updateFilesReportInit)(urlAjax);
@@ -28111,8 +28370,9 @@ function ready() {
   (0,_components_charts_drivers_statistics_charts__WEBPACK_IMPORTED_MODULE_42__.initDriversStatisticsCharts)();
   (0,_components_charts_finance_statistics_charts__WEBPACK_IMPORTED_MODULE_43__.initFinanceStatisticsCharts)();
   (0,_components_charts_source_statistics_charts__WEBPACK_IMPORTED_MODULE_44__.initSourceStatisticsCharts)();
+  (0,_components_drivers_statistics_tabs__WEBPACK_IMPORTED_MODULE_45__.initDriversStatisticsTabs)();
   if (hereApi) {
-    new _components_drivers_map__WEBPACK_IMPORTED_MODULE_55__["default"](urlAjax, hereApi);
+    new _components_drivers_map__WEBPACK_IMPORTED_MODULE_56__["default"](urlAjax, hereApi);
   }
   (0,_components_create_report__WEBPACK_IMPORTED_MODULE_4__.additionalContactsInit)();
   (0,_components_create_report__WEBPACK_IMPORTED_MODULE_4__.addShipperPointInit)();

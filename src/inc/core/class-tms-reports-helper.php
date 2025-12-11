@@ -2373,9 +2373,12 @@ Kindly confirm once you've received this message." ) . "\n";
 	 * @param int $driver_number Driver number (1, 2, or 3)
 	 * @param array $user_name User name array with 'full_name' key
 	 * @param string $link Link to the load
+	 * @param int $post_id Post ID of the load (optional, for checking accounting fields)
 	 * @return bool True if rate was changed, false otherwise
 	 */
-	public function handle_driver_rate_change( $old_rate, $new_rate, $driver_number, $user_name, $link ) {
+	public function handle_driver_rate_change( $old_rate, $new_rate, $driver_number, $user_name, $link, $post_id = null ) {
+		global $wpdb;
+		
 		// Temporary logging for debugging
 		error_log( '=== handle_driver_rate_change CALLED ===' );
 		error_log( 'Driver number: ' . $driver_number );
@@ -2384,6 +2387,7 @@ Kindly confirm once you've received this message." ) . "\n";
 		error_log( 'User name: ' . ( isset( $user_name[ 'full_name' ] ) ? $user_name[ 'full_name' ] : 'N/A' ) );
 		error_log( 'Link: ' . $link );
 		error_log( 'Project: ' . $this->project );
+		error_log( 'Post ID: ' . ( $post_id ?: 'not provided' ) );
 		
 		// Check if rate changed
 		if ( ! is_numeric( $old_rate ) ) {
@@ -2406,6 +2410,67 @@ Kindly confirm once you've received this message." ) . "\n";
 		$driver_label = isset( $driver_labels[ $driver_number ] ) ? $driver_labels[ $driver_number ] : 'Driver rate';
 		error_log( 'Driver label: ' . $driver_label );
 		
+		// Check if accounting fields are filled (payment status or quick pay method)
+		$accounting_fields_filled = false;
+		if ( ! empty( $post_id ) && is_numeric( $post_id ) ) {
+			$table_meta = $wpdb->prefix . $this->table_meta;
+			
+			// Determine which fields to check based on driver number
+			$pay_status_key = '';
+			$quick_pay_key = '';
+			
+			if ( $driver_number === 1 ) {
+				$pay_status_key = 'driver_pay_statuses';
+				$quick_pay_key = 'quick_pay_method';
+			} elseif ( $driver_number === 2 ) {
+				$pay_status_key = 'second_driver_pay_statuses';
+				$quick_pay_key = 'second_quick_pay_method';
+			} elseif ( $driver_number === 3 ) {
+				$pay_status_key = 'third_driver_pay_statuses';
+				$quick_pay_key = 'third_quick_pay_method';
+			}
+			
+			if ( ! empty( $pay_status_key ) && ! empty( $quick_pay_key ) ) {
+				// Get accounting fields from database
+				$pay_status = $wpdb->get_var( $wpdb->prepare(
+					"SELECT meta_value FROM $table_meta WHERE post_id = %d AND meta_key = %s",
+					$post_id,
+					$pay_status_key
+				) );
+				
+				$quick_pay_method = $wpdb->get_var( $wpdb->prepare(
+					"SELECT meta_value FROM $table_meta WHERE post_id = %d AND meta_key = %s",
+					$post_id,
+					$quick_pay_key
+				) );
+				
+				// Check if at least one field is filled
+				$accounting_fields_filled = ! empty( $pay_status ) || ! empty( $quick_pay_method );
+				
+				error_log( 'Accounting check - Pay status: ' . ( $pay_status ?: 'empty' ) . ', Quick pay: ' . ( $quick_pay_method ?: 'empty' ) );
+				error_log( 'Accounting fields filled: ' . ( $accounting_fields_filled ? 'yes' : 'no' ) );
+			}
+		}
+		
+		// Get reference number from link or extract from post_id
+		$reference_number = '';
+		if ( ! empty( $post_id ) && is_numeric( $post_id ) ) {
+			$table_meta = $wpdb->prefix . $this->table_meta;
+			$reference_number = $wpdb->get_var( $wpdb->prepare(
+				"SELECT meta_value FROM $table_meta WHERE post_id = %d AND meta_key = 'reference_number'",
+				$post_id
+			) );
+		}
+		
+		// If reference number not found, try to extract from link
+		if ( empty( $reference_number ) && ! empty( $link ) ) {
+			// Link format: <a href="...">reference_number</a>
+			preg_match( '/>([^<]+)</', $link, $matches );
+			if ( ! empty( $matches[1] ) ) {
+				$reference_number = $matches[1];
+			}
+		}
+		
 		// Send email notification
 		$select_emails = $this->email_helper->get_selected_emails( $this->user_emails, array(
 			'admin_email',
@@ -2413,20 +2478,177 @@ Kindly confirm once you've received this message." ) . "\n";
 			'team_leader_email',
 			'accounting_email',
 		) );
-		
-		error_log( 'Selected emails count: ' . count( $select_emails ) );
-		error_log( 'Email subject: Changed ' . $driver_label );
-		error_log( 'Email message: <del>$' . $old_rate . '</del>, now: $' . $new_rate );
-		
-		$this->email_helper->send_custom_email( $select_emails, array(
-			'subject'      => 'Changed ' . $driver_label,
-			'project_name' => $this->project,
-			'subtitle'     => $user_name[ 'full_name' ] . ' has changed the ' . $driver_label . ' for the load ' . $link,
-			'message'      => '<del>$' . $old_rate . '</del>, now: $' . $new_rate,
+
+		$select_emails_billing = $this->email_helper->get_selected_emails( $this->user_emails, array(
+			'admin_email',
+			'billing_email',
 		) );
+
+
+		if (is_array($select_emails_billing) && count($select_emails_billing) > 0) {
+			array_push($select_emails_billing, 'billing@odysseia.one');
+		}
+		
+		// If accounting fields are filled, send special warning email
+		if ( $accounting_fields_filled ) {
+			error_log( 'Sending WARNING email - accounting fields were filled before rate change' );
+			
+			$warning_subject = 'Someone made changes after the Payment';
+			$warning_subtitle = '<span style="color: red; font-weight: bold;">Attention, ' . esc_html( $user_name[ 'full_name' ] ) . ' has made changes on the load ' . esc_html( $reference_number ) . '. Driver rate was changed from $' . esc_html( $old_rate ) . ' to $' . esc_html( $new_rate ) . '.</span>';
+			$warning_message = '<span style="color: red;">Please immediately contact the person who made these changes and head of Expedite department to clarify the situation.</span>';
+			
+			$this->email_helper->send_custom_email( $select_emails, array(
+				'subject'      => $warning_subject,
+				'project_name' => $this->project,
+				'subtitle'     => $warning_subtitle,
+				'message'      => $warning_message,
+			) );
+		} else {
+			error_log( 'Sending NORMAL email - accounting fields were not filled' );
+			error_log( 'Email subject: Changed ' . $driver_label );
+			error_log( 'Email message: <del>$' . $old_rate . '</del>, now: $' . $new_rate );
+			
+			$this->email_helper->send_custom_email( $select_emails, array(
+				'subject'      => 'Changed ' . $driver_label,
+				'project_name' => $this->project,
+				'subtitle'     => $user_name[ 'full_name' ] . ' has changed the ' . $driver_label . ' for the load ' . $link,
+				'message'      => '<del>$' . $old_rate . '</del>, now: $' . $new_rate,
+			) );
+		}
 		
 		error_log( 'Email sent successfully' );
 		error_log( '=== handle_driver_rate_change COMPLETED ===' );
+		
+		return true;
+	}
+	
+	/**
+	 * Check booked rate change and send email notification if changed
+	 * Sends warning email if billing fields (processing or factoring_status) are filled
+	 * 
+	 * @param string|float $old_rate Old booked rate value
+	 * @param string|float $new_rate New booked rate value
+	 * @param array $user_name User name array with 'full_name' key
+	 * @param string $link Link to the load
+	 * @param int $post_id Post ID of the load (for checking billing fields)
+	 * @return bool True if rate was changed, false otherwise
+	 */
+	public function handle_booked_rate_change( $old_rate, $new_rate, $user_name, $link, $post_id = null ) {
+		global $wpdb;
+		
+		error_log( '=== handle_booked_rate_change CALLED ===' );
+		error_log( 'Old rate: ' . $old_rate . ' (is_numeric: ' . ( is_numeric( $old_rate ) ? 'yes' : 'no' ) . ')' );
+		error_log( 'New rate: ' . $new_rate );
+		error_log( 'User name: ' . ( isset( $user_name[ 'full_name' ] ) ? $user_name[ 'full_name' ] : 'N/A' ) );
+		error_log( 'Link: ' . $link );
+		error_log( 'Project: ' . $this->project );
+		error_log( 'Post ID: ' . ( $post_id ?: 'not provided' ) );
+		
+		// Check if rate changed
+		if ( ! is_numeric( $old_rate ) ) {
+			error_log( 'EXIT: old_rate is not numeric' );
+			return false;
+		}
+		
+		if ( $new_rate === floatval( $old_rate ) ) {
+			error_log( 'EXIT: rates are equal (old: ' . floatval( $old_rate ) . ', new: ' . $new_rate . ')' );
+			return false;
+		}
+		
+		// Check if billing fields are filled (processing or factoring_status)
+		$billing_fields_filled = false;
+		if ( ! empty( $post_id ) && is_numeric( $post_id ) ) {
+			$table_meta = $wpdb->prefix . $this->table_meta;
+			
+			// Get billing fields from database
+			$processing = $wpdb->get_var( $wpdb->prepare(
+				"SELECT meta_value FROM $table_meta WHERE post_id = %d AND meta_key = 'processing'",
+				$post_id
+			) );
+			
+			$factoring_status = $wpdb->get_var( $wpdb->prepare(
+				"SELECT meta_value FROM $table_meta WHERE post_id = %d AND meta_key = 'factoring_status'",
+				$post_id
+			) );
+			
+			// Check if at least one field is filled
+			$billing_fields_filled = ! empty( $processing ) || ! empty( $factoring_status );
+			
+			error_log( 'Billing check - Processing: ' . ( $processing ?: 'empty' ) . ', Factoring status: ' . ( $factoring_status ?: 'empty' ) );
+			error_log( 'Billing fields filled: ' . ( $billing_fields_filled ? 'yes' : 'no' ) );
+		}
+		
+		// Get reference number from link or extract from post_id
+		$reference_number = '';
+		if ( ! empty( $post_id ) && is_numeric( $post_id ) ) {
+			$table_meta = $wpdb->prefix . $this->table_meta;
+			$reference_number = $wpdb->get_var( $wpdb->prepare(
+				"SELECT meta_value FROM $table_meta WHERE post_id = %d AND meta_key = 'reference_number'",
+				$post_id
+			) );
+		}
+		
+		// If reference number not found, try to extract from link
+		if ( empty( $reference_number ) && ! empty( $link ) ) {
+			// Link format: <a href="...">reference_number</a>
+			preg_match( '/>([^<]+)</', $link, $matches );
+			if ( ! empty( $matches[1] ) ) {
+				$reference_number = $matches[1];
+			}
+		}
+		
+		// Get billing emails
+		$select_emails_billing = $this->email_helper->get_selected_emails( $this->user_emails, array(
+			'admin_email',
+			'billing_email',
+		) );
+		
+		// Add required billing emails
+		$required_billing_emails = array(
+			'billing@odysseia.one',
+			'operations@odysseia.one',
+			'daniel@odysseia.one'
+		);
+		
+		if ( is_array( $select_emails_billing ) ) {
+			foreach ( $required_billing_emails as $email ) {
+				if ( ! in_array( $email, $select_emails_billing ) ) {
+					$select_emails_billing[] = $email;
+				}
+			}
+		} else {
+			$select_emails_billing = $required_billing_emails;
+		}
+		
+		// If billing fields are filled, send special warning email
+		if ( $billing_fields_filled ) {
+			error_log( 'Sending WARNING email - billing fields were filled before booked rate change' );
+			
+			$warning_subject = 'Someone made changes after the Payment';
+			$warning_subtitle = '<span style="color: red; font-weight: bold;">Attention, ' . esc_html( $user_name[ 'full_name' ] ) . ' has made changes on the load ' . esc_html( $reference_number ) . '. Booked rate was changed from $' . esc_html( $old_rate ) . ' to $' . esc_html( $new_rate ) . '.</span>';
+			$warning_message = '<span style="color: red;">Please immediately contact the person who made these changes and head of Expedite department to clarify the situation.</span>';
+			
+			$this->email_helper->send_custom_email( $select_emails_billing, array(
+				'subject'      => $warning_subject,
+				'project_name' => $this->project,
+				'subtitle'     => $warning_subtitle,
+				'message'      => $warning_message,
+			) );
+		} else {
+			error_log( 'Sending NORMAL email - billing fields were not filled' );
+			error_log( 'Email subject: Changed Booked rate' );
+			error_log( 'Email message: <del>$' . $old_rate . '</del>, now: $' . $new_rate );
+			
+			$this->email_helper->send_custom_email( $select_emails_billing, array(
+				'subject'      => 'Changed Booked rate',
+				'project_name' => $this->project,
+				'subtitle'     => $user_name[ 'full_name' ] . ' has changed the Booked rate for the load ' . $link,
+				'message'      => '<del>$' . $old_rate . '</del>, now: $' . $new_rate,
+			) );
+		}
+		
+		error_log( 'Email sent successfully' );
+		error_log( '=== handle_booked_rate_change COMPLETED ===' );
 		
 		return true;
 	}

@@ -56,7 +56,7 @@ if ( $post_id && is_numeric( $post_id ) ) {
 		$hold_info = $driver->get_driver_hold_info( $post_id );
 		
 		// Administrator can always edit
-		if ( $TMSUsers->check_user_role_access( array( 'administrator' ), true ) ) {
+		if ( $TMSUsers->check_user_role_access( array( 'administrator','recruiter','recruiter-tl' ), true ) ) {
 			$can_edit_on_hold = true;
 		} elseif ( $hold_info && isset( $hold_info['dispatcher_id'] ) 
 			&& (int) $hold_info['dispatcher_id'] === (int) $current_user_id ) {
@@ -223,6 +223,7 @@ if ( $dispatchers_view ) {
 							}
 							
 							$message_type = $can_edit_on_hold ? 'info' : 'warning';
+							
 							echo $helper->message_top( $message_type, $hold_message, '', '' );
 						}
 						

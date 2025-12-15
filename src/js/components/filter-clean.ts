@@ -106,6 +106,7 @@ export const cleanUrlByFilterDriver = () => {
             const mySearch = form.elements.namedItem('my_search') as HTMLInputElement | null;
             const source = form.elements.namedItem('source') as HTMLInputElement | null;
             const additional = form.elements.namedItem('additional') as HTMLInputElement | null;
+            const additionalLogic = form.elements.namedItem('additional_logic') as HTMLInputElement | null;
             const driverStatus = form.elements.namedItem('driver_status') as HTMLInputElement | null;
 
             // Проверяем и добавляем параметры только если элементы существуют и не пусты
@@ -113,6 +114,7 @@ export const cleanUrlByFilterDriver = () => {
             if (fmonth?.value) params.append('fmonth', fmonth.value);
             if (fyear?.value) params.append('fyear', fyear.value);
             if (additional?.value) params.append('additional', additional.value);
+            if (additionalLogic?.value && additionalLogic.value !== 'has') params.append('additional_logic', additionalLogic.value);
             if (mySearch?.value) params.append('my_search', mySearch.value);
             if (source?.value) params.append('source', source.value);
             if (driverStatus?.value) params.append('driver_status', driverStatus.value);

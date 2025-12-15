@@ -1077,6 +1077,11 @@ Kindly confirm once you've received this message." ) . "\n";
 			$typeMessageClass = 'alert-success';
 			$typeMessageSvg   = '#check-circle-fill';
 			$button_class     .= ' btn-outline-success';
+		} else if ( $type === 'info' ) {
+			$typeMessage      = 'Info';
+			$typeMessageClass = 'alert-info';
+			$typeMessageSvg   = '#info-fill';
+			$button_class     .= ' btn-outline-info';
 		} else {
 			$typeMessage      = 'Danger';
 			$typeMessageClass = 'alert-danger';
@@ -2494,7 +2499,7 @@ Kindly confirm once you've received this message." ) . "\n";
 			error_log( 'Sending WARNING email - accounting fields were filled before rate change' );
 			
 			$warning_subject = 'Someone made changes after the Payment';
-			$warning_subtitle = '<span style="color: red; font-weight: bold;">Attention, ' . esc_html( $user_name[ 'full_name' ] ) . ' has made changes on the load ' . esc_html( $reference_number ) . '. Driver rate was changed from $' . esc_html( $old_rate ) . ' to $' . esc_html( $new_rate ) . '.</span>';
+			$warning_subtitle = '<span style="color: red; font-weight: bold;">Attention, ' . esc_html( $user_name[ 'full_name' ] ) . ' has made changes on the load ' . $link . '. Driver rate was changed from $' . esc_html( $old_rate ) . ' to $' . esc_html( $new_rate ) . '.</span>';
 			$warning_message = '<span style="color: red;">Please immediately contact the person who made these changes and head of Expedite department to clarify the situation.</span>';
 			
 			$this->email_helper->send_custom_email( $select_emails, array(
@@ -2625,7 +2630,7 @@ Kindly confirm once you've received this message." ) . "\n";
 			error_log( 'Sending WARNING email - billing fields were filled before booked rate change' );
 			
 			$warning_subject = 'Someone made changes after the Payment';
-			$warning_subtitle = '<span style="color: red; font-weight: bold;">Attention, ' . esc_html( $user_name[ 'full_name' ] ) . ' has made changes on the load ' . esc_html( $reference_number ) . '. Booked rate was changed from $' . esc_html( $old_rate ) . ' to $' . esc_html( $new_rate ) . '.</span>';
+			$warning_subtitle = '<span style="color: red; font-weight: bold;">Attention, ' . esc_html( $user_name[ 'full_name' ] ) . ' has made changes on the load ' . $link . '. Booked rate was changed from $' . esc_html( $old_rate ) . ' to $' . esc_html( $new_rate ) . '.</span>';
 			$warning_message = '<span style="color: red;">Please immediately contact the person who made these changes and head of Expedite department to clarify the situation.</span>';
 			
 			$this->email_helper->send_custom_email( $select_emails_billing, array(

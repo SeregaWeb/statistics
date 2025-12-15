@@ -11138,11 +11138,13 @@ var cleanUrlByFilterDriver = function cleanUrlByFilterDriver() {
       var mySearch = form.elements.namedItem('my_search');
       var source = form.elements.namedItem('source');
       var additional = form.elements.namedItem('additional');
+      var additionalLogic = form.elements.namedItem('additional_logic');
       var driverStatus = form.elements.namedItem('driver_status');
       if (recruiter === null || recruiter === void 0 ? void 0 : recruiter.value) params.append('recruiter', recruiter.value);
       if (fmonth === null || fmonth === void 0 ? void 0 : fmonth.value) params.append('fmonth', fmonth.value);
       if (fyear === null || fyear === void 0 ? void 0 : fyear.value) params.append('fyear', fyear.value);
       if (additional === null || additional === void 0 ? void 0 : additional.value) params.append('additional', additional.value);
+      if ((additionalLogic === null || additionalLogic === void 0 ? void 0 : additionalLogic.value) && additionalLogic.value !== 'has') params.append('additional_logic', additionalLogic.value);
       if (mySearch === null || mySearch === void 0 ? void 0 : mySearch.value) params.append('my_search', mySearch.value);
       if (source === null || source === void 0 ? void 0 : source.value) params.append('source', source.value);
       if (driverStatus === null || driverStatus === void 0 ? void 0 : driverStatus.value) params.append('driver_status', driverStatus.value);

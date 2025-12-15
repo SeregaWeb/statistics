@@ -13,6 +13,8 @@ $meta = get_field_value( $object_driver, 'meta' );
 
 $bank_payees = $driver->bank_payees;
 
+$access_paid_recruiter_bonus = $TMSUsers->check_user_role_access( array( 'administrator', 'recruiter', 'recruiter-tl', 'accounting', 'moderator' ), true );
+
 $account_type        = get_field_value( $meta, 'account_type' );
 $account_name        = get_field_value( $meta, 'account_name' );
 $payment_instruction = get_field_value( $meta, 'payment_instruction' );
@@ -24,6 +26,7 @@ $ssn_name            = get_field_value( $meta, 'ssn_name' );
 $entity_name         = get_field_value( $meta, 'entity_name' );
 $ein                 = get_field_value( $meta, 'ein' );
 $authorized_email    = get_field_value( $meta, 'authorized_email' );
+$recruiter_bonus_paid = get_field_value( $meta, 'recruiter_bonus_paid' );
 
 $bank_payees_raw = get_field_value( $meta, 'bank_payees' );
 $bank_payees_str = $bank_payees_raw ? str_replace( ' ', '', $bank_payees_raw ) : '';
@@ -485,6 +488,17 @@ $access_vehicle = $TMSUsers->check_user_role_access( [
                 <label class="form-label">Authorized Email</label>
                 <input type="email" class="form-control" name="authorized_email"
                        value="<?php echo $authorized_email; ?>">
+            </div>
+
+            <div class="col-6 mb-3 d-flex align-items-end">
+                <?php if ( $access_paid_recruiter_bonus ): ?>
+                <div class="form-check form-switch">
+                    <input class="form-check-input js-toggle" type="checkbox" name="recruiter_bonus_paid" id="recruiter_bonus_paid" <?php echo $recruiter_bonus_paid ? 'checked' : ''; ?>>
+                    <label class="form-check-label" for="recruiter_bonus_paid">Recruiter bonus paid</label>
+                </div>
+                <?php else: ?>
+                    <input type="hidden" name="recruiter_bonus_paid" value="<?php echo $recruiter_bonus_paid; ?>">
+                <?php endif; ?>
             </div>
         </div>
         <div class="row">

@@ -12,6 +12,7 @@ $is_draft      = get_field_value( $args, 'is_draft' );
 $is_archive    = get_field_value( $args, 'is_archive' );
 
 $access_copy_email = $TMSUsers->check_user_role_access( array( 'administrator', 'recruiter', 'recruiter-tl' ), true );
+$access_show_recruiter_bonus = $TMSUsers->check_user_role_access( array( 'administrator', 'recruiter', 'recruiter-tl', 'accounting', 'moderator' ), true );
 
 if ( ! empty( $results ) ) : ?>
 	
@@ -62,6 +63,7 @@ if ( ! empty( $results ) ) : ?>
             $available_date = get_field_value( $row, 'date_available' );
 			$driver_name = get_field_value( $meta, 'driver_name' );
 			$languages = get_field_value( $meta, 'languages' );
+			$recruiter_bonus_paid = get_field_value( $meta, 'recruiter_bonus_paid' );
 			$driver_email = get_field_value( $meta, 'driver_email' );
 			$home_location = get_field_value( $meta, 'home_location' );
 			$city = get_field_value( $meta, 'city' );
@@ -174,6 +176,11 @@ if ( ! empty( $results ) ) : ?>
                         <div>
 							<?php echo '(' . $row[ 'id' ] . ') ' . $driver_name; ?>
 							<?php echo $icons->get_flags( $languages ); ?>
+
+                            <?php
+                                if ( $recruiter_bonus_paid && $access_show_recruiter_bonus ):
+                                    echo $icons->get_icon_bonnus_paid();
+                            endif; ?>
                         </div>
                         <span class="text-small driver-phone"
                               data-phone="<?php echo esc_attr( $driver_phone ); ?>"><?php echo $driver_phone; ?></span>

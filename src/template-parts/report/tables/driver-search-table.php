@@ -6,6 +6,7 @@ $driverHelper = new TMSDriversHelper();
 $TMSUsers     = new TMSUsers();
 
 $access_hold = $TMSUsers->check_user_role_access( array( 'administrator', 'expedite_manager', 'dispatcher-tl', 'dispatcher' ), true );
+$access_show_recruiter_bonus = $TMSUsers->check_user_role_access( array( 'administrator', 'recruiter', 'recruiter-tl', 'accounting', 'moderator' ), true );
 global $global_options;
 
 $results       = get_field_value( $args, 'results' );
@@ -99,6 +100,7 @@ if ( ! empty( $results ) ) : ?>
 			$latitud          = get_field_value( $meta, 'latitude' );
 			$longitude        = get_field_value( $meta, 'longitude' );
 			$country          = get_field_value( $meta, 'country' );
+			$recruiter_bonus_paid = get_field_value( $meta, 'recruiter_bonus_paid' );
 			// Convert MySQL datetime format to flatpickr format (m/d/Y H:i) for modal
 			$status_date = TMSDriversHelper::convert_mysql_to_flatpickr_date( $available_date );
 			$notes            = get_field_value( $meta, 'notes' );
@@ -287,6 +289,11 @@ if ( ! empty( $results ) ) : ?>
                             <div>
 								<?php echo '(' . $row[ 'id' ] . ') ' . $driver_name; ?>
 								<?php echo $icons->get_flags( $languages ); ?>
+
+                                <?php
+                                if ( $recruiter_bonus_paid && $access_show_recruiter_bonus ):
+                                    echo $icons->get_icon_bonnus_paid();
+                                endif; ?>
                             </div>
                             <div class="text-small text-right">
 								<?php echo $city . ', ' . $home_location; ?>

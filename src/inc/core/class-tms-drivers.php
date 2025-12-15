@@ -851,6 +851,7 @@ class TMSDrivers extends TMSDriversHelper {
 		$month      = trim( get_field_value( $_GET, 'fmonth' ) ?? '' );
 		$source     = trim( get_field_value( $_GET, 'source' ) ?? '' );
 		$additional = trim( get_field_value( $_GET, 'additional' ) ?? '' );
+		$additional_logic = trim( get_field_value( $_GET, 'additional_logic' ) ?? 'has' );
 		$driver_status = trim( get_field_value( $_GET, 'driver_status' ) ?? '' );
 		
 		if ( $my_search ) {
@@ -862,6 +863,7 @@ class TMSDrivers extends TMSDriversHelper {
 		}
 		if ( $additional ) {
 			$args[ 'additional' ] = $additional;
+			$args[ 'additional_logic' ] = $additional_logic;
 		}
 		if ( $year ) {
 			$args[ 'year' ] = $year;
@@ -955,11 +957,18 @@ class TMSDrivers extends TMSDriversHelper {
 		
 		$where_conditions = array();
 		$where_values     = array();
+
+		// Exclude specific test driver IDs from all search results
+		$excluded_driver_ids = array( 3343 ); // Test driver(s) to exclude completely
+		if ( ! empty( $excluded_driver_ids ) ) {
+			$where_conditions[] = 'main.id NOT IN (' . implode( ',', array_map( 'absint', $excluded_driver_ids ) ) . ')';
+		}
 		
 		// Дополнительный LEFT JOIN по переданному полю
 		if ( ! empty( $args[ 'additional' ] ) ) {
 			$additional_key   = sanitize_key( $args[ 'additional' ] );
 			$additional_alias = 'add_' . $additional_key;
+			$additional_logic = isset( $args[ 'additional_logic' ] ) && $args[ 'additional_logic' ] === 'not_has' ? 'not_has' : 'has';
 			
 			// Добавляем JOIN прямо в $join_builder
 			$join_builder       .= "
@@ -967,7 +976,13 @@ class TMSDrivers extends TMSDriversHelper {
 			ON main.id = {$additional_alias}.post_id
 			AND {$additional_alias}.meta_key = %s
 			";
-			$where_conditions[] = "({$additional_alias}.meta_value IS NOT NULL AND {$additional_alias}.meta_value != '')";
+			
+			// Apply logic: 'has' = field exists and not empty, 'not_has' = field is NULL or empty
+			if ( $additional_logic === 'not_has' ) {
+				$where_conditions[] = "({$additional_alias}.meta_value IS NULL OR {$additional_alias}.meta_value = '')";
+			} else {
+				$where_conditions[] = "({$additional_alias}.meta_value IS NOT NULL AND {$additional_alias}.meta_value != '')";
+			}
 			$where_values[]     = $additional_key;
 		}
 		
@@ -1342,6 +1357,12 @@ class TMSDrivers extends TMSDriversHelper {
 		
 		$where_conditions = array();
 		$where_values     = array();
+
+		// Exclude specific test driver IDs from all search results (search page)
+		$excluded_driver_ids = array( 3343 ); // test driver
+		if ( ! empty( $excluded_driver_ids ) ) {
+			$where_conditions[] = 'main.id NOT IN (' . implode( ',', array_map( 'absint', $excluded_driver_ids ) ) . ')';
+		}
 		
 		// Add capabilities filtering conditions
         if ( ! empty( $args[ 'capabilities' ] ) && is_array( $args[ 'capabilities' ] ) ) {
@@ -1518,7 +1539,7 @@ class TMSDrivers extends TMSDriversHelper {
 		if ( ! empty( $visibility_data[ 'condition' ] ) ) {
 			$where_conditions[] = $visibility_data[ 'condition' ];
 		}
-		
+
 		// Основной запрос
 		$sql = "SELECT DISTINCT main.*" . $join_builder . " WHERE 1=1";
 		
@@ -2632,7 +2653,8 @@ class TMSDrivers extends TMSDriversHelper {
 				
 				'entity_name' => isset( $_POST[ 'entity_name' ] ) ? sanitize_text_field( $_POST[ 'entity_name' ] ) : '',
 				'ein'         => isset( $_POST[ 'ein' ] ) ? sanitize_text_field( $_POST[ 'ein' ] ) : '',
-				
+				'recruiter_bonus_paid' => isset( $_POST[ 'recruiter_bonus_paid' ] )
+					? sanitize_text_field( $_POST[ 'recruiter_bonus_paid' ] ) : '',
 				'authorized_email' => isset( $_POST[ 'authorized_email' ] )
 					? sanitize_email( $_POST[ 'authorized_email' ] ) : '',
 				'nec_file_martlet_on' => isset( $_POST[ 'nec_file_martlet_on' ] )

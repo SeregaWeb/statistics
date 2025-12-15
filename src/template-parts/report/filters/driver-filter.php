@@ -10,6 +10,7 @@ $month              = get_field_value( $_GET, 'fmonth' );
 $year_param         = get_field_value( $_GET, 'fyear' );
 $source             = trim( get_field_value( $_GET, 'source' ) ?? '' );
 $additional         = trim( get_field_value( $_GET, 'additional' ) ?? '' );
+$additional_logic   = trim( get_field_value( $_GET, 'additional_logic' ) ?? 'has' ); // 'has' or 'not_has'
 $driver_status      = trim( get_field_value( $_GET, 'driver_status' ) ?? '' );
 $current_year       = date( 'Y' );
 $driver_statuses    = $driver_helper->status;
@@ -105,6 +106,11 @@ $driver_capabilities = array(
                             </option>
 						<?php endforeach; ?>
 					<?php endif; ?>
+                </select>
+
+                <select class="form-select w-auto" name="additional_logic" aria-label="Additional logic">
+                    <option value="has" <?php echo $additional_logic === 'has' ? 'selected' : ''; ?>>Has</option>
+                    <option value="not_has" <?php echo $additional_logic === 'not_has' ? 'selected' : ''; ?>>Does not have</option>
                 </select>
 
                 <select class="form-select w-auto" name="additional" aria-label=".form-select-sm example">

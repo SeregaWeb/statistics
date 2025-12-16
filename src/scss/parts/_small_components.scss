@@ -712,22 +712,37 @@ ul.result-search-el {
 }
 
 .pinned-message {
-    border: 1px solid #ffedf0;
-    border-radius: 6px;
-    padding: 10px;
-    background: #ffedf0;
+    // more prominent alert-style card for critical pinned messages
+    position: relative;
+    margin-top: 6px;
+    margin-bottom: 6px;
+    padding: 12px 14px;
+    border-radius: 8px;
+    border: 1px solid rgba($--system-error-red, 0.35);
+    border-left-width: 4px;
+    border-left-color: $--system-error-red;
+    // solid soft red background (no transparency) so it stands out on any row
+    background: #ffe6ea;
     max-width: 100%;
     overflow-wrap: anywhere;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
 }
+
 .pinned-message__header {
-    font-size: 10px;
-    color: #888;
+    font-size: 11px;
+    font-weight: 600;
+    color: darken($--system-error-red, 10%);
     display: flex;
     justify-content: space-between;
-    margin-bottom: 5px;
+    align-items: center;
+    margin-bottom: 6px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
 }
+
 .pinned-message__content {
-    font-size: 12px;
+    font-size: 13px;
+    line-height: 1.5;
 }
 
 .icon_has_rating {

@@ -6223,6 +6223,8 @@ var editShipperStopInit = function editShipperStopInit() {
         var dateStart = form.querySelector('.js-shipper-time-start');
         var dateEnd = form.querySelector('.js-shipper-time-end');
         var strict = form.querySelector('.js-shipper-time-strict');
+        var etaDate = form.querySelector('.js-shipper-eta-date');
+        var etaTime = form.querySelector('.js-shipper-eta-time');
         var currentID = card.querySelector('.js-current-shipper_address_id');
         var currentAddress = card.querySelector('.js-current-shipper_address');
         var currentContact = card.querySelector('.js-current-shipper_contact');
@@ -6233,6 +6235,8 @@ var editShipperStopInit = function editShipperStopInit() {
         var currentEnd = card.querySelector('.js-current-shipper_end');
         var currentStrict = card.querySelector('.js-current-shipper_strict');
         var currentShortAddress = card.querySelector('.js-current-shipper_short_address');
+        var currentEtaDate = card.querySelector('.js-current-shipper_eta_date');
+        var currentEtaTime = card.querySelector('.js-current-shipper_eta_time');
         var timeEndContainer = document.querySelector('.js-hide-end-date');
         var templateInputEdit = "\n                        <input type=\"hidden\" class=\"js-full-address\" data-current-address=\"".concat(currentAddress.value, "\" data-short-address=\"").concat(currentShortAddress.value, "\" name=\"shipper_id\" value=\"").concat(currentID.value, "\">\n                        <input type=\"hidden\" class=\"js-original-stop-type\" name=\"original_stop_type\" value=\"").concat(originalStopType, "\">\n                        <input type=\"hidden\" class=\"js-original-position\" name=\"original_position\" value=\"").concat(originalPosition, "\">\n                    ");
         if (!resultSearch) return;
@@ -6245,6 +6249,12 @@ var editShipperStopInit = function editShipperStopInit() {
         dateStart.value = currentStart.value;
         dateEnd.value = currentEnd.value;
         strict.checked = currentStrict.value === 'true';
+        if (etaDate && currentEtaDate) {
+          etaDate.value = currentEtaDate.value;
+        }
+        if (etaTime && currentEtaTime) {
+          etaTime.value = currentEtaTime.value;
+        }
         if (timeEndContainer && strict.checked) {
           timeEndContainer.classList.add('d-none');
         } else if (timeEndContainer && !strict.checked) {
@@ -6315,6 +6325,8 @@ var addShipperPointInit = function addShipperPointInit() {
         var dateStart = form.querySelector('.js-shipper-time-start');
         var dateEnd = form.querySelector('.js-shipper-time-end');
         var dateStrict = form.querySelector('.js-shipper-time-strict');
+        var etaDate = form.querySelector('.js-shipper-eta-date');
+        var etaTime = form.querySelector('.js-shipper-eta-time');
         var timeEndContainer = document.querySelector('.js-hide-end-date');
         if (!address) {
           (0,_info_messages__WEBPACK_IMPORTED_MODULE_1__.printMessage)("The address must be selected from the drop-down list", 'danger', 5000);
@@ -6329,6 +6341,8 @@ var addShipperPointInit = function addShipperPointInit() {
         var start = dateStart.value;
         var end = dateEnd.value;
         var strict = dateStrict.checked;
+        var etaDateValue = etaDate ? etaDate.value : '';
+        var etaTimeValue = etaTime ? etaTime.value : '';
         var infoValue = info.value;
         var shipperContacts = form.querySelector('.js-table-shipper');
         if (!addressValueID || addressValueFullAddrres === '') {
@@ -6372,7 +6386,16 @@ var addShipperPointInit = function addShipperPointInit() {
         } else {
           time = "".concat(start, " - strict");
         }
-        var template = "\n                <div class=\"row js-current-shipper stopTypeValue card-shipper\" data-stop-type=\"".concat(stopTypeValue, "\">\n                    <div class=\"d-none\">\n                        <input type=\"hidden\" class=\"js-current-shipper_address_id\" name=\"").concat(stopTypeValue, "_address_id[]\" value=\"").concat(addressValueID, "\" >\n                        <input type=\"hidden\" class=\"js-current-shipper_address\" name=\"").concat(stopTypeValue, "_address[]\" value=\"").concat(addressValueFullAddrres, "\" >\n                        <input type=\"hidden\" class=\"js-current-shipper_short_address\" name=\"").concat(stopTypeValue, "_short_address[]\" value=\"").concat(addressValueShortAddrres, "\" >\n                        <input type=\"hidden\" class=\"js-current-shipper_contact\" name=\"").concat(stopTypeValue, "_contact[]\" value=\"").concat(contactValue, "\" >\n                        <input type=\"hidden\" class=\"js-current-shipper_date\" name=\"").concat(stopTypeValue, "_date[]\" value=\"").concat(dateValue, "\" >\n                        <input type=\"hidden\" class=\"js-current-shipper_info\" name=\"").concat(stopTypeValue, "_info[]\" value=\"").concat(infoValue, "\" >\n                        <input type=\"hidden\" class=\"js-current-shipper_type\" name=\"").concat(stopTypeValue, "_type[]\" value=\"").concat(stopTypeValue, "\" >\n                        <input type=\"hidden\" class=\"js-current-shipper_start\" name=\"").concat(stopTypeValue, "_start[]\" value=\"").concat(start, "\">\n                        <input type=\"hidden\" class=\"js-current-shipper_end\" name=\"").concat(stopTypeValue, "_end[]\" value=\"").concat(end, "\">\n                        <input type=\"hidden\" class=\"js-current-shipper_strict\" name=\"").concat(stopTypeValue, "_strict[]\" value=\"").concat(strict, "\">\n                    </div>\n                    <div class=\"col-12 col-md-1\">").concat(typeDelivery, "</div>\n                    <div class=\"col-12 col-md-2\">\n                         <div class=\"d-flex flex-column\">\n                                <p class=\"m-0\">").concat(dateValue, "</p>\n                                <span class=\"small-text\">\n                                    ").concat(time, "\n                                </span>\n                            </div>\n                    </div>\n                    <div class=\"col-12 col-md-3\">").concat(addressValueFullAddrres, "</div>\n                    <div class=\"col-12 col-md-2\">").concat(contactValue, "</div>\n                    <div class=\"col-12 col-md-3\">").concat(infoValue, "</div>\n                    <div class=\"col-12 col-md-1 p-0 card-shipper__btns\">\n                        <button class=\"additional-card__edit js-edit-ship\">\n                            <svg width=\"668\" height=\"668\" viewBox=\"0 0 668 668\" fill=\"none\" xmlns=\"http://www.w3.org/2000/svg\">\n                                <path d=\"M640.46 27.5413C676.29 63.3746 676.29 121.472 640.46 157.305L623.94 173.823C619.13 172.782 613.073 171.196 606.17 168.801C587.693 162.391 563.41 150.276 540.567 127.433C517.723 104.591 505.61 80.3076 499.2 61.8299C496.803 54.9269 495.22 48.8696 494.177 44.0596L510.697 27.5413C546.53 -8.29175 604.627 -8.29175 640.46 27.5413Z\" fill=\"#1C274C\"/>\n                                <path d=\"M420.003 377.76C406.537 391.227 399.803 397.96 392.377 403.753C383.62 410.583 374.143 416.44 364.117 421.22C355.617 425.27 346.583 428.28 328.513 434.303L233.236 466.063C224.345 469.027 214.542 466.713 207.915 460.087C201.287 453.457 198.973 443.657 201.937 434.763L233.696 339.487C239.719 321.417 242.73 312.383 246.781 303.883C251.56 293.857 257.416 284.38 264.248 275.623C270.04 268.197 276.773 261.465 290.24 247.998L454.11 84.1284C462.9 107.268 478.31 135.888 505.21 162.789C532.113 189.69 560.733 205.099 583.873 213.891L420.003 377.76Z\" fill=\"#1C274C\"/>\n                                <path d=\"M618.517 618.516C667.333 569.703 667.333 491.133 667.333 334C667.333 282.39 667.333 239.258 665.603 202.87L453.533 414.943C441.823 426.656 433.027 435.456 423.127 443.176C411.507 452.243 398.933 460.013 385.627 466.353C374.293 471.756 362.487 475.686 346.777 480.92L249.048 513.496C222.189 522.45 192.578 515.46 172.559 495.44C152.54 475.423 145.55 445.81 154.503 418.953L187.078 321.223C192.312 305.513 196.244 293.706 201.645 282.373C207.986 269.066 215.757 256.493 224.822 244.871C232.543 234.972 241.344 226.176 253.058 214.468L465.13 2.39583C428.743 0.6665 385.61 0.666504 334 0.666504C176.865 0.666504 98.2977 0.6665 49.4824 49.4822C0.666744 98.2975 0.666748 176.865 0.666748 334C0.666748 491.133 0.666744 569.703 49.4824 618.516C98.2977 667.333 176.865 667.333 334 667.333C491.133 667.333 569.703 667.333 618.517 618.516Z\" fill=\"#1C274C\"/>\n                            </svg>\n                        </button>\n                        <button class=\"additional-card__remove js-remove-ship\">\n                            <svg width=\"668\" height=\"668\" viewBox=\"0 0 668 668\" fill=\"none\" xmlns=\"http://www.w3.org/2000/svg\">\n                                <path fill-rule=\"evenodd\" clip-rule=\"evenodd\" d=\"M334 667.333C176.865 667.333 98.2976 667.333 49.4823 618.516C0.666622 569.703 0.666626 491.133 0.666626 334C0.666626 176.865 0.666622 98.2975 49.4823 49.4822C98.2976 0.6665 176.865 0.666504 334 0.666504C491.133 0.666504 569.703 0.6665 618.517 49.4822C667.333 98.2975 667.333 176.865 667.333 334C667.333 491.133 667.333 569.703 618.517 618.516C569.703 667.333 491.133 667.333 334 667.333ZM232.988 232.989C242.751 223.226 258.581 223.226 268.343 232.989L334 298.646L399.653 232.99C409.417 223.227 425.247 223.227 435.01 232.99C444.773 242.753 444.773 258.582 435.01 268.343L369.353 334L435.01 399.656C444.773 409.416 444.773 425.246 435.01 435.01C425.247 444.773 409.417 444.773 399.653 435.01L334 369.357L268.343 435.01C258.581 444.773 242.752 444.773 232.989 435.01C223.226 425.246 223.226 409.42 232.989 399.656L298.643 334L232.988 268.343C223.225 258.581 223.225 242.752 232.988 232.989Z\" fill=\"#1C274C\"></path>\n                            </svg>\n                        </button>\n                    </div>\n                </div>\n                ");
+        var etaDisplay = '';
+        if (etaDateValue) {
+          var etaDateObj = new Date(etaDateValue);
+          var formattedEtaDate = "".concat(String(etaDateObj.getMonth() + 1).padStart(2, '0'), "/").concat(String(etaDateObj.getDate()).padStart(2, '0'), "/").concat(etaDateObj.getFullYear());
+          etaDisplay = formattedEtaDate;
+          if (etaTimeValue) {
+            etaDisplay += " ".concat(etaTimeValue);
+          }
+        }
+        var template = "\n                <div class=\"row js-current-shipper stopTypeValue card-shipper\" data-stop-type=\"".concat(stopTypeValue, "\">\n                    <div class=\"d-none\">\n                        <input type=\"hidden\" class=\"js-current-shipper_address_id\" name=\"").concat(stopTypeValue, "_address_id[]\" value=\"").concat(addressValueID, "\" >\n                        <input type=\"hidden\" class=\"js-current-shipper_address\" name=\"").concat(stopTypeValue, "_address[]\" value=\"").concat(addressValueFullAddrres, "\" >\n                        <input type=\"hidden\" class=\"js-current-shipper_short_address\" name=\"").concat(stopTypeValue, "_short_address[]\" value=\"").concat(addressValueShortAddrres, "\" >\n                        <input type=\"hidden\" class=\"js-current-shipper_contact\" name=\"").concat(stopTypeValue, "_contact[]\" value=\"").concat(contactValue, "\" >\n                        <input type=\"hidden\" class=\"js-current-shipper_date\" name=\"").concat(stopTypeValue, "_date[]\" value=\"").concat(dateValue, "\" >\n                        <input type=\"hidden\" class=\"js-current-shipper_info\" name=\"").concat(stopTypeValue, "_info[]\" value=\"").concat(infoValue, "\" >\n                        <input type=\"hidden\" class=\"js-current-shipper_type\" name=\"").concat(stopTypeValue, "_type[]\" value=\"").concat(stopTypeValue, "\" >\n                        <input type=\"hidden\" class=\"js-current-shipper_start\" name=\"").concat(stopTypeValue, "_start[]\" value=\"").concat(start, "\">\n                        <input type=\"hidden\" class=\"js-current-shipper_end\" name=\"").concat(stopTypeValue, "_end[]\" value=\"").concat(end, "\">\n                        <input type=\"hidden\" class=\"js-current-shipper_strict\" name=\"").concat(stopTypeValue, "_strict[]\" value=\"").concat(strict, "\">\n                        <input type=\"hidden\" class=\"js-current-shipper_eta_date\" name=\"").concat(stopTypeValue, "_eta_date[]\" value=\"").concat(etaDateValue, "\">\n                        <input type=\"hidden\" class=\"js-current-shipper_eta_time\" name=\"").concat(stopTypeValue, "_eta_time[]\" value=\"").concat(etaTimeValue, "\">\n                    </div>\n                    <div class=\"col-12 col-md-1\">").concat(typeDelivery, "</div>\n                    <div class=\"col-12 col-md-1\">\n                         <div class=\"d-flex flex-column\">\n                                <p class=\"m-0\">").concat(dateValue, "</p>\n                                <span class=\"small-text\">\n                                    ").concat(time, "\n                                </span>\n                            </div>\n                    </div>\n                    <div class=\"col-12 col-md-2\">\n                        ").concat(etaDisplay ? "<span class=\"small-text\">".concat(etaDisplay, "</span>") : '<span class="text-muted small-text">—</span>', "\n                    </div>\n                    <div class=\"col-12 col-md-3\">").concat(addressValueFullAddrres, "</div>\n                    <div class=\"col-12 col-md-2\">").concat(contactValue, "</div>\n                    <div class=\"col-12 col-md-2\">").concat(infoValue, "</div>\n                    <div class=\"col-12 col-md-1 p-0 card-shipper__btns\">\n                        <button class=\"additional-card__edit js-edit-ship\">\n                            <svg width=\"668\" height=\"668\" viewBox=\"0 0 668 668\" fill=\"none\" xmlns=\"http://www.w3.org/2000/svg\">\n                                <path d=\"M640.46 27.5413C676.29 63.3746 676.29 121.472 640.46 157.305L623.94 173.823C619.13 172.782 613.073 171.196 606.17 168.801C587.693 162.391 563.41 150.276 540.567 127.433C517.723 104.591 505.61 80.3076 499.2 61.8299C496.803 54.9269 495.22 48.8696 494.177 44.0596L510.697 27.5413C546.53 -8.29175 604.627 -8.29175 640.46 27.5413Z\" fill=\"#1C274C\"/>\n                                <path d=\"M420.003 377.76C406.537 391.227 399.803 397.96 392.377 403.753C383.62 410.583 374.143 416.44 364.117 421.22C355.617 425.27 346.583 428.28 328.513 434.303L233.236 466.063C224.345 469.027 214.542 466.713 207.915 460.087C201.287 453.457 198.973 443.657 201.937 434.763L233.696 339.487C239.719 321.417 242.73 312.383 246.781 303.883C251.56 293.857 257.416 284.38 264.248 275.623C270.04 268.197 276.773 261.465 290.24 247.998L454.11 84.1284C462.9 107.268 478.31 135.888 505.21 162.789C532.113 189.69 560.733 205.099 583.873 213.891L420.003 377.76Z\" fill=\"#1C274C\"/>\n                                <path d=\"M618.517 618.516C667.333 569.703 667.333 491.133 667.333 334C667.333 282.39 667.333 239.258 665.603 202.87L453.533 414.943C441.823 426.656 433.027 435.456 423.127 443.176C411.507 452.243 398.933 460.013 385.627 466.353C374.293 471.756 362.487 475.686 346.777 480.92L249.048 513.496C222.189 522.45 192.578 515.46 172.559 495.44C152.54 475.423 145.55 445.81 154.503 418.953L187.078 321.223C192.312 305.513 196.244 293.706 201.645 282.373C207.986 269.066 215.757 256.493 224.822 244.871C232.543 234.972 241.344 226.176 253.058 214.468L465.13 2.39583C428.743 0.6665 385.61 0.666504 334 0.666504C176.865 0.666504 98.2977 0.6665 49.4824 49.4822C0.666744 98.2975 0.666748 176.865 0.666748 334C0.666748 491.133 0.666744 569.703 49.4824 618.516C98.2977 667.333 176.865 667.333 334 667.333C491.133 667.333 569.703 667.333 618.517 618.516Z\" fill=\"#1C274C\"/>\n                            </svg>\n                        </button>\n                        <button class=\"additional-card__remove js-remove-ship\">\n                            <svg width=\"668\" height=\"668\" viewBox=\"0 0 668 668\" fill=\"none\" xmlns=\"http://www.w3.org/2000/svg\">\n                                <path fill-rule=\"evenodd\" clip-rule=\"evenodd\" d=\"M334 667.333C176.865 667.333 98.2976 667.333 49.4823 618.516C0.666622 569.703 0.666626 491.133 0.666626 334C0.666626 176.865 0.666622 98.2975 49.4823 49.4822C98.2976 0.6665 176.865 0.666504 334 0.666504C491.133 0.666504 569.703 0.6665 618.517 49.4822C667.333 98.2975 667.333 176.865 667.333 334C667.333 491.133 667.333 569.703 618.517 618.516C569.703 667.333 491.133 667.333 334 667.333ZM232.988 232.989C242.751 223.226 258.581 223.226 268.343 232.989L334 298.646L399.653 232.99C409.417 223.227 425.247 223.227 435.01 232.99C444.773 242.753 444.773 258.582 435.01 268.343L369.353 334L435.01 399.656C444.773 409.416 444.773 425.246 435.01 435.01C425.247 444.773 409.417 444.773 399.653 435.01L334 369.357L268.343 435.01C258.581 444.773 242.752 444.773 232.989 435.01C223.226 425.246 223.226 409.42 232.989 399.656L298.643 334L232.988 268.343C223.225 258.581 223.225 242.752 232.988 232.989Z\" fill=\"#1C274C\"></path>\n                            </svg>\n                        </button>\n                    </div>\n                </div>\n                ");
         var originalStopType = (_a = form.querySelector('.js-original-stop-type')) === null || _a === void 0 ? void 0 : _a.value;
         var originalPosition = (_b = form.querySelector('.js-original-position')) === null || _b === void 0 ? void 0 : _b.value;
         if (originalStopType && originalPosition !== undefined) {
@@ -6442,6 +6465,12 @@ var addShipperPointInit = function addShipperPointInit() {
         dateStart.value = '';
         dateEnd.value = '';
         dateStrict.checked = false;
+        if (etaDate) {
+          etaDate.value = '';
+        }
+        if (etaTime) {
+          etaTime.value = '';
+        }
         timeEndContainer && timeEndContainer.classList.remove('d-none');
         var btnAdd = document.querySelector('.js-add-ship');
         var btnEdit = document.querySelector('.js-end-edit-ship');
@@ -6635,7 +6664,7 @@ var pinnedMessageInit = function pinnedMessageInit(ajaxUrl) {
           if (container) {
             var html = '';
             data.data.pinned.forEach(function (pinned, index) {
-              html += "\n                                    <div class=\"pinned-message\">\n                                        <div class=\"d-flex justify-content-between align-items-center pinned-message__header\">\n                                            <span class=\"d-flex align-items-center\">\n                                            <svg fill=\"#000000\" width=\"18px\" height=\"18px\" viewBox=\"0 0 32 32\" version=\"1.1\"\n                                                 xmlns=\"http://www.w3.org/2000/svg\">\n                                                <path d=\"M18.973 17.802l-7.794-4.5c-0.956-0.553-2.18-0.225-2.732 0.731-0.552 0.957-0.224 2.18 0.732 2.732l7.793 4.5c0.957 0.553 2.18 0.225 2.732-0.732 0.554-0.956 0.226-2.179-0.731-2.731zM12.545 12.936l6.062 3.5 2.062-5.738-4.186-2.416-3.938 4.654zM8.076 27.676l5.799-7.044-2.598-1.5-3.201 8.544zM23.174 7.525l-5.195-3c-0.718-0.414-1.635-0.169-2.049 0.549-0.415 0.718-0.168 1.635 0.549 2.049l5.196 3c0.718 0.414 1.635 0.169 2.049-0.549s0.168-1.635-0.55-2.049z\"></path>\n                                            </svg>".concat(escapeHtml(pinned.full_name || ''), "</span>\n                                            <span>").concat(escapeHtml(pinned.time_pinned || ''), "</span>\n                                        </div>\n                                        <div class=\"pinned-message__content\">\n                                            ").concat(escapeHtml(pinned.pinned_message || ''), "\n                                        </div>\n                                        <div class=\"pinned-message__footer d-flex justify-content-end\">\n                                            <button class=\"btn btn-danger btn-sm js-delete-pinned-message\" \n                                                    data-id=\"").concat(escapeHtml(pinned.id), "\" \n                                                    data-message-index=\"").concat(index, "\">Remove</button>\n                                        </div>\n                                    </div>\n                                ");
+              html += "\n                                <div class=\"pinned-message\">\n                                    <div class=\"d-flex justify-content-between align-items-center pinned-message__header\">\n                                        <span class=\"d-flex align-items-center\">\n                                        <svg fill=\"#000000\" width=\"18px\" height=\"18px\" viewBox=\"0 0 32 32\" version=\"1.1\"\n                                             xmlns=\"http://www.w3.org/2000/svg\">\n                                            <path d=\"M18.973 17.802l-7.794-4.5c-0.956-0.553-2.18-0.225-2.732 0.731-0.552 0.957-0.224 2.18 0.732 2.732l7.793 4.5c0.957 0.553 2.18 0.225 2.732-0.732 0.554-0.956 0.226-2.179-0.731-2.731zM12.545 12.936l6.062 3.5 2.062-5.738-4.186-2.416-3.938 4.654zM8.076 27.676l5.799-7.044-2.598-1.5-3.201 8.544zM23.174 7.525l-5.195-3c-0.718-0.414-1.635-0.169-2.049 0.549-0.415 0.718-0.168 1.635 0.549 2.049l5.196 3c0.718 0.414 1.635 0.169 2.049-0.549s0.168-1.635-0.55-2.049z\"></path>\n                                            </svg>".concat(escapeHtml(pinned.full_name || ''), "</span>\n                                            <span>").concat(escapeHtml(pinned.time_pinned || ''), "</span>\n                                    </div>\n                                    <div class=\"pinned-message__content\">\n                                            ").concat(escapeHtml(pinned.pinned_message || ''), "\n                                    </div>\n                                    <div class=\"pinned-message__footer d-flex justify-content-end\">\n                                            <button class=\"btn btn-danger btn-sm js-delete-pinned-message\" \n                                                    data-id=\"").concat(escapeHtml(pinned.id), "\" \n                                                    data-message-index=\"").concat(index, "\">Remove</button>\n                                    </div>\n                                </div>\n                            ");
             });
             btnSubmit && btnSubmit.removeAttribute('disabled');
             container.innerHTML = html;
@@ -10339,7 +10368,7 @@ function initDriversStatisticsTabs() {
     button.addEventListener('click', function (event) {
       event.preventDefault();
       event.stopPropagation();
-      var tabName = this.getAttribute('data-tab-name');
+      var tabName = button.getAttribute('data-tab-name');
       if (tabName) {
         var url = new URL(window.location.href);
         url.searchParams.set('tab', tabName);
@@ -10448,9 +10477,16 @@ var loadExistingEtaRecord = function loadExistingEtaRecord(loadId, etaType, isFl
     } else {
       updatePopupLocationInfo(popup, state, timezone);
     }
+    return data;
   }).catch(function (error) {
     console.error('Error loading ETA record:', error);
     updatePopupLocationInfo(popup, state, timezone);
+    return {
+      success: false,
+      data: {
+        exists: false
+      }
+    };
   });
 };
 var initEtaPopups = function initEtaPopups() {
@@ -10507,7 +10543,10 @@ var initEtaPopups = function initEtaPopups() {
       }
       var etaType = button.getAttribute('data-eta-type') || '';
       var isFlt = button.getAttribute('data-is-flt') || '0';
-      var hasExistingRecord = button.classList.contains('btn-success') || currentDate && currentTime && currentDate !== '' && currentTime !== '';
+      var shipperEtaDate = button.getAttribute('data-shipper-eta-date');
+      var shipperEtaTime = button.getAttribute('data-shipper-eta-time');
+      var hasShipperEta = shipperEtaDate && shipperEtaDate !== '' && shipperEtaTime && shipperEtaTime !== '';
+      var hasExistingRecord = button.classList.contains('btn-success');
       if (hasExistingRecord) {
         popup.classList.add('active');
         document.body.classList.add('popup-open');
@@ -10519,7 +10558,13 @@ var initEtaPopups = function initEtaPopups() {
             submitBtn.textContent = 'Loading...';
           }
         }
-        loadExistingEtaRecord(loadId || '', etaType, isFlt, popup, state, timezone).then(function () {
+        loadExistingEtaRecord(loadId || '', etaType, isFlt, popup, state, timezone).then(function (data) {
+          if (form && (!data || !data.success || !data.data.exists) && hasShipperEta) {
+            var dateInput = form.querySelector('input[name="date"]');
+            var timeInput = form.querySelector('input[name="time"]');
+            if (dateInput) dateInput.value = shipperEtaDate;
+            if (timeInput) timeInput.value = shipperEtaTime;
+          }
           if (form) {
             var _submitBtn = form.querySelector('button[type="submit"]');
             if (_submitBtn) {
@@ -10533,8 +10578,12 @@ var initEtaPopups = function initEtaPopups() {
         if (form) {
           var dateInput = form.querySelector('input[name="date"]');
           var timeInput = form.querySelector('input[name="time"]');
-          if (dateInput) dateInput.value = currentDate || '';
-          if (timeInput) timeInput.value = currentTime || '';
+          if (dateInput) {
+            dateInput.value = hasShipperEta ? shipperEtaDate : currentDate || '';
+          }
+          if (timeInput) {
+            timeInput.value = hasShipperEta ? shipperEtaTime : currentTime || '';
+          }
         }
         popup.classList.add('active');
         document.body.classList.add('popup-open');
@@ -14387,6 +14436,15 @@ var TimerControl = /*#__PURE__*/function () {
         if (timerBtn) {
           e.preventDefault();
           _this.openModal(timerBtn);
+          return;
+        }
+        var quickUpdateBtn = target.closest('.js-timer-quick-update');
+        if (quickUpdateBtn) {
+          e.preventDefault();
+          _this.currentLoadId = quickUpdateBtn.dataset.id || null;
+          _this.currentFlt = quickUpdateBtn.dataset.flt || null;
+          _this.currentProject = quickUpdateBtn.dataset.project || null;
+          _this.handleTimerAction('update');
         }
       });
       var startBtn = (_a = this.modal) === null || _a === void 0 ? void 0 : _a.querySelector('.js-timer-start');
@@ -14540,7 +14598,7 @@ var TimerControl = /*#__PURE__*/function () {
     key: "loadTimerStatus",
     value: function loadTimerStatus() {
       return __awaiter(this, void 0, void 0, /*#__PURE__*/_regeneratorRuntime().mark(function _callee2() {
-        var formData, response, result;
+        var formData, response, result, selector, statusCell, _selector, _statusCell;
         return _regeneratorRuntime().wrap(function _callee2$(_context2) {
           while (1) switch (_context2.prev = _context2.next) {
             case 0:
@@ -14566,7 +14624,7 @@ var TimerControl = /*#__PURE__*/function () {
             case 11:
               result = _context2.sent;
               if (!result.success) {
-                _context2.next = 20;
+                _context2.next = 21;
                 break;
               }
               this.currentTimer = result.data.timer;
@@ -14578,24 +14636,38 @@ var TimerControl = /*#__PURE__*/function () {
               _context2.next = 18;
               return this.loadTimerHistory();
             case 18:
-              _context2.next = 22;
+              if (typeof this.currentLoadId === 'string') {
+                selector = ".js-timer-status-cell[data-load-id=\"".concat(this.currentLoadId, "\"]");
+                statusCell = document.querySelector(selector);
+                if (statusCell && result.data && typeof result.data.status_html === 'string') {
+                  statusCell.innerHTML = result.data.status_html;
+                }
+              }
+              _context2.next = 24;
               break;
-            case 20:
+            case 21:
               this.currentTimer = null;
               this.updateUI();
-            case 22:
-              _context2.next = 28;
-              break;
+              if (typeof this.currentLoadId === 'string') {
+                _selector = ".js-timer-status-cell[data-load-id=\"".concat(this.currentLoadId, "\"]");
+                _statusCell = document.querySelector(_selector);
+                if (_statusCell) {
+                  _statusCell.innerHTML = '';
+                }
+              }
             case 24:
-              _context2.prev = 24;
+              _context2.next = 30;
+              break;
+            case 26:
+              _context2.prev = 26;
               _context2.t0 = _context2["catch"](2);
               (0,_info_messages__WEBPACK_IMPORTED_MODULE_0__.printMessage)("Error loading timer status: ".concat(_context2.t0), 'danger', 3000);
               console.error('Error loading timer status:', _context2.t0);
-            case 28:
+            case 30:
             case "end":
               return _context2.stop();
           }
-        }, _callee2, this, [[2, 24]]);
+        }, _callee2, this, [[2, 26]]);
       }));
     }
   }, {

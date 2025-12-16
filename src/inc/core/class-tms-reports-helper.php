@@ -1522,7 +1522,9 @@ Kindly confirm once you've received this message." ) . "\n";
 				'state' => '',
 				'timezone' => '',
 				'latitude' => null,
-				'longitude' => null
+				'longitude' => null,
+				'shipper_eta_date' => '',
+				'shipper_eta_time' => ''
 			];
 		}
 
@@ -1536,6 +1538,10 @@ Kindly confirm once you've received this message." ) . "\n";
 
 		// Get date from location data
 		$date = $location_data['date'] ?? '';
+		
+		// Get ETA date and time from shipper form if filled
+		$shipper_eta_date = $location_data['eta_date'] ?? '';
+		$shipper_eta_time = $location_data['eta_time'] ?? '';
 		
 		// Try to get timezone and coordinates from shipper/company tables using address_id
 		$latitude = null;
@@ -1599,7 +1605,9 @@ Kindly confirm once you've received this message." ) . "\n";
 			'state' => $state,
 			'timezone' => $timezone,
 			'latitude' => $latitude,
-			'longitude' => $longitude
+			'longitude' => $longitude,
+			'shipper_eta_date' => $shipper_eta_date,
+			'shipper_eta_time' => $shipper_eta_time
 		];
 	}
 

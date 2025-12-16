@@ -1002,6 +1002,8 @@ const editShipperStopInit = () => {
                     const dateStart = form.querySelector('.js-shipper-time-start');
                     const dateEnd = form.querySelector('.js-shipper-time-end');
                     const strict = form.querySelector('.js-shipper-time-strict');
+                    const etaDate = form.querySelector('.js-shipper-eta-date') as HTMLInputElement;
+                    const etaTime = form.querySelector('.js-shipper-eta-time') as HTMLInputElement;
 
                     const currentID = card.querySelector('.js-current-shipper_address_id');
                     const currentAddress = card.querySelector('.js-current-shipper_address');
@@ -1013,6 +1015,8 @@ const editShipperStopInit = () => {
                     const currentEnd = card.querySelector('.js-current-shipper_end');
                     const currentStrict = card.querySelector('.js-current-shipper_strict');
                     const currentShortAddress = card.querySelector('.js-current-shipper_short_address');
+                    const currentEtaDate = card.querySelector('.js-current-shipper_eta_date');
+                    const currentEtaTime = card.querySelector('.js-current-shipper_eta_time');
                     const timeEndContainer = document.querySelector<HTMLElement>('.js-hide-end-date');
 
                     const templateInputEdit = `
@@ -1032,6 +1036,12 @@ const editShipperStopInit = () => {
                     dateStart.value = currentStart.value;
                     dateEnd.value = currentEnd.value;
                     strict.checked = currentStrict.value === 'true';
+                    if (etaDate && currentEtaDate) {
+                        etaDate.value = currentEtaDate.value;
+                    }
+                    if (etaTime && currentEtaTime) {
+                        etaTime.value = currentEtaTime.value;
+                    }
 
                     if (timeEndContainer && strict.checked) {
                         timeEndContainer.classList.add('d-none');
@@ -1123,6 +1133,8 @@ export const addShipperPointInit = () => {
                     const dateStart = form.querySelector('.js-shipper-time-start');
                     const dateEnd = form.querySelector('.js-shipper-time-end');
                     const dateStrict = form.querySelector('.js-shipper-time-strict');
+                    const etaDate = form.querySelector('.js-shipper-eta-date') as HTMLInputElement;
+                    const etaTime = form.querySelector('.js-shipper-eta-time') as HTMLInputElement;
 
                     const timeEndContainer = document.querySelector<HTMLElement>('.js-hide-end-date');
 
@@ -1141,6 +1153,8 @@ export const addShipperPointInit = () => {
                     const start = dateStart.value;
                     const end = dateEnd.value;
                     const strict = dateStrict.checked;
+                    const etaDateValue = etaDate ? etaDate.value : '';
+                    const etaTimeValue = etaTime ? etaTime.value : '';
                     let infoValue = info.value;
 
                     const shipperContacts = form.querySelector('.js-table-shipper');
@@ -1213,6 +1227,17 @@ export const addShipperPointInit = () => {
                         time = `${start} - strict`;
                     }
 
+                    // Format ETA display
+                    let etaDisplay = '';
+                    if (etaDateValue) {
+                        const etaDateObj = new Date(etaDateValue);
+                        const formattedEtaDate = `${String(etaDateObj.getMonth() + 1).padStart(2, '0')}/${String(etaDateObj.getDate()).padStart(2, '0')}/${etaDateObj.getFullYear()}`;
+                        etaDisplay = formattedEtaDate;
+                        if (etaTimeValue) {
+                            etaDisplay += ` ${etaTimeValue}`;
+                        }
+                    }
+
                     const template = `
                 <div class="row js-current-shipper stopTypeValue card-shipper" data-stop-type="${stopTypeValue}">
                     <div class="d-none">
@@ -1226,9 +1251,11 @@ export const addShipperPointInit = () => {
                         <input type="hidden" class="js-current-shipper_start" name="${stopTypeValue}_start[]" value="${start}">
                         <input type="hidden" class="js-current-shipper_end" name="${stopTypeValue}_end[]" value="${end}">
                         <input type="hidden" class="js-current-shipper_strict" name="${stopTypeValue}_strict[]" value="${strict}">
+                        <input type="hidden" class="js-current-shipper_eta_date" name="${stopTypeValue}_eta_date[]" value="${etaDateValue}">
+                        <input type="hidden" class="js-current-shipper_eta_time" name="${stopTypeValue}_eta_time[]" value="${etaTimeValue}">
                     </div>
                     <div class="col-12 col-md-1">${typeDelivery}</div>
-                    <div class="col-12 col-md-2">
+                    <div class="col-12 col-md-1">
                          <div class="d-flex flex-column">
                                 <p class="m-0">${dateValue}</p>
                                 <span class="small-text">
@@ -1236,9 +1263,12 @@ export const addShipperPointInit = () => {
                                 </span>
                             </div>
                     </div>
+                    <div class="col-12 col-md-2">
+                        ${etaDisplay ? `<span class="small-text">${etaDisplay}</span>` : '<span class="text-muted small-text">—</span>'}
+                    </div>
                     <div class="col-12 col-md-3">${addressValueFullAddrres}</div>
                     <div class="col-12 col-md-2">${contactValue}</div>
-                    <div class="col-12 col-md-3">${infoValue}</div>
+                    <div class="col-12 col-md-2">${infoValue}</div>
                     <div class="col-12 col-md-1 p-0 card-shipper__btns">
                         <button class="additional-card__edit js-edit-ship">
                             <svg width="668" height="668" viewBox="0 0 668 668" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -1346,6 +1376,12 @@ export const addShipperPointInit = () => {
                     dateStart.value = '';
                     dateEnd.value = '';
                     dateStrict.checked = false;
+                    if (etaDate) {
+                        etaDate.value = '';
+                    }
+                    if (etaTime) {
+                        etaTime.value = '';
+                    }
                     timeEndContainer && timeEndContainer.classList.remove('d-none');
 
                     const btnAdd = document.querySelector('.js-add-ship');
@@ -1608,25 +1644,25 @@ export const pinnedMessageInit = (ajaxUrl) => {
                                 let html = '';
                                 data.data.pinned.forEach((pinned: any, index: number) => {
                                     html += `
-                                    <div class="pinned-message">
-                                        <div class="d-flex justify-content-between align-items-center pinned-message__header">
-                                            <span class="d-flex align-items-center">
-                                            <svg fill="#000000" width="18px" height="18px" viewBox="0 0 32 32" version="1.1"
-                                                 xmlns="http://www.w3.org/2000/svg">
-                                                <path d="M18.973 17.802l-7.794-4.5c-0.956-0.553-2.18-0.225-2.732 0.731-0.552 0.957-0.224 2.18 0.732 2.732l7.793 4.5c0.957 0.553 2.18 0.225 2.732-0.732 0.554-0.956 0.226-2.179-0.731-2.731zM12.545 12.936l6.062 3.5 2.062-5.738-4.186-2.416-3.938 4.654zM8.076 27.676l5.799-7.044-2.598-1.5-3.201 8.544zM23.174 7.525l-5.195-3c-0.718-0.414-1.635-0.169-2.049 0.549-0.415 0.718-0.168 1.635 0.549 2.049l5.196 3c0.718 0.414 1.635 0.169 2.049-0.549s0.168-1.635-0.55-2.049z"></path>
+                                <div class="pinned-message">
+                                    <div class="d-flex justify-content-between align-items-center pinned-message__header">
+                                        <span class="d-flex align-items-center">
+                                        <svg fill="#000000" width="18px" height="18px" viewBox="0 0 32 32" version="1.1"
+                                             xmlns="http://www.w3.org/2000/svg">
+                                            <path d="M18.973 17.802l-7.794-4.5c-0.956-0.553-2.18-0.225-2.732 0.731-0.552 0.957-0.224 2.18 0.732 2.732l7.793 4.5c0.957 0.553 2.18 0.225 2.732-0.732 0.554-0.956 0.226-2.179-0.731-2.731zM12.545 12.936l6.062 3.5 2.062-5.738-4.186-2.416-3.938 4.654zM8.076 27.676l5.799-7.044-2.598-1.5-3.201 8.544zM23.174 7.525l-5.195-3c-0.718-0.414-1.635-0.169-2.049 0.549-0.415 0.718-0.168 1.635 0.549 2.049l5.196 3c0.718 0.414 1.635 0.169 2.049-0.549s0.168-1.635-0.55-2.049z"></path>
                                             </svg>${escapeHtml(pinned.full_name || '')}</span>
                                             <span>${escapeHtml(pinned.time_pinned || '')}</span>
-                                        </div>
-                                        <div class="pinned-message__content">
+                                    </div>
+                                    <div class="pinned-message__content">
                                             ${escapeHtml(pinned.pinned_message || '')}
-                                        </div>
-                                        <div class="pinned-message__footer d-flex justify-content-end">
+                                    </div>
+                                    <div class="pinned-message__footer d-flex justify-content-end">
                                             <button class="btn btn-danger btn-sm js-delete-pinned-message" 
                                                     data-id="${escapeHtml(pinned.id)}" 
                                                     data-message-index="${index}">Remove</button>
-                                        </div>
                                     </div>
-                                `;
+                                </div>
+                            `;
                                 });
                                 btnSubmit && btnSubmit.removeAttribute('disabled');
                                 container.innerHTML = html;
@@ -1647,16 +1683,16 @@ export function addDeletePinnedHandler(ajaxUrl: string) {
     if (!btns || btns.length === 0) return;
     
     btns.forEach((btn) => {
-        btn.addEventListener('click', function (this: HTMLButtonElement, e) {
-            e.preventDefault();
-            const id = this.getAttribute('data-id');
+    btn.addEventListener('click', function (this: HTMLButtonElement, e) {
+        e.preventDefault();
+        const id = this.getAttribute('data-id');
             const messageIndex = this.getAttribute('data-message-index');
             if (!id || messageIndex === null) return;
-            // eslint-disable-next-line no-alert,no-restricted-globals
-            if (!confirm('Are you sure you want to remove this pinned message?')) return;
+        // eslint-disable-next-line no-alert,no-restricted-globals
+        if (!confirm('Are you sure you want to remove this pinned message?')) return;
 
-            const flt = document.querySelector('input[name="flt"]');
-            const action = flt ? 'delete_pinned_message_flt' : 'delete_pinned_message';
+        const flt = document.querySelector('input[name="flt"]');
+        const action = flt ? 'delete_pinned_message_flt' : 'delete_pinned_message';
 
             const params = new URLSearchParams({
                 action,
@@ -1667,24 +1703,24 @@ export function addDeletePinnedHandler(ajaxUrl: string) {
             fetch(ajaxUrl, {
                 method: 'POST',
                 body: params,
-            })
-                .then((r) => r.json())
-                .then((data) => {
-                    if (data.success) {
+        })
+            .then((r) => r.json())
+            .then((data) => {
+                if (data.success) {
                         // Reload the page or refresh pinned messages container
-                        const container = document.querySelector('.js-pin-container');
+                    const container = document.querySelector('.js-pin-container');
                         if (container) {
                             // Reload the page to show updated pinned messages
                             location.reload();
                         }
-                        if (typeof printMessage === 'function') {
-                            printMessage('Pinned message removed', 'success', 5000);
-                        }
-                    } else if (typeof printMessage === 'function') {
-                        printMessage(data.data?.message || 'Error removing pinned message', 'danger', 5000);
+                    if (typeof printMessage === 'function') {
+                        printMessage('Pinned message removed', 'success', 5000);
                     }
+                } else if (typeof printMessage === 'function') {
+                    printMessage(data.data?.message || 'Error removing pinned message', 'danger', 5000);
+                }
                 });
-        });
+            });
     });
 }
 

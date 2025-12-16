@@ -1298,8 +1298,10 @@ body.dark-mode .form-quick-tracking {
 }
 
 body.dark-mode .pinned-message {
-    background-color: rgba(224, 108, 117, 0.1);
+    // solid darker error background in dark mode for better text contrast
+    background-color: #492b2d;
     border-color: $dark-error;
+    border-left-width: 4px;
     color: $dark-text-primary;
   
     svg {
@@ -1308,7 +1310,7 @@ body.dark-mode .pinned-message {
 }
 
 body.dark-mode .pinned-message__header {
-    color: $dark-text-primary;
+    color: lighten($dark-error, 10%);
 }
 
 /* Dark mode for log components */

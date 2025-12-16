@@ -27,14 +27,29 @@ export class TimerControl {
     }
 
     private setupEventListeners(): void {
-        // Timer button click
+        // Timer buttons click handlers
         document.addEventListener('click', (e) => {
             const target = e.target as HTMLElement;
-            const timerBtn = target.closest('.js-timer-tracking') as HTMLButtonElement;
-            
+
+            // Main timer control button (opens modal)
+            const timerBtn = target.closest('.js-timer-tracking') as HTMLButtonElement | null;
             if (timerBtn) {
                 e.preventDefault();
                 this.openModal(timerBtn);
+                return;
+            }
+
+            // Quick update button (updates timer without opening modal)
+            const quickUpdateBtn = target.closest('.js-timer-quick-update') as HTMLButtonElement | null;
+            if (quickUpdateBtn) {
+                e.preventDefault();
+
+                this.currentLoadId = quickUpdateBtn.dataset.id || null;
+                this.currentFlt = quickUpdateBtn.dataset.flt || null;
+                this.currentProject = quickUpdateBtn.dataset.project || null;
+
+                // Perform update action directly
+                this.handleTimerAction('update');
             }
         });
 
@@ -204,11 +219,30 @@ export class TimerControl {
                     console.log('Current Timer:', this.currentTimer);
                 }
                 
+                // Update modal UI
                 this.updateUI();
                 await this.loadTimerHistory();
+
+                // Also update timer status badge in tracking table (if present)
+                if (typeof this.currentLoadId === 'string') {
+                    const selector = `.js-timer-status-cell[data-load-id="${this.currentLoadId}"]`;
+                    const statusCell = document.querySelector(selector) as HTMLElement | null;
+                    if (statusCell && result.data && typeof result.data.status_html === 'string') {
+                        statusCell.innerHTML = result.data.status_html;
+                    }
+                }
             } else {
                 this.currentTimer = null;
                 this.updateUI();
+                
+                // Clear status badge in table if no timer
+                if (typeof this.currentLoadId === 'string') {
+                    const selector = `.js-timer-status-cell[data-load-id="${this.currentLoadId}"]`;
+                    const statusCell = document.querySelector(selector) as HTMLElement | null;
+                    if (statusCell) {
+                        statusCell.innerHTML = '';
+                    }
+                }
             }
         } catch (error) {
             printMessage(`Error loading timer status: ${error}`, 'danger', 3000);

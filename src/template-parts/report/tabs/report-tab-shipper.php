@@ -177,6 +177,17 @@ if ( $report_object ) {
 
             <div class="col-12"></div>
 
+            <div class="mb-2 col-12 col-md-6 col-xl-4">
+                <label for="eta_date" class="form-label">ETA (Date)</label>
+                <input type="date" name="eta_date" class="form-control js-shipper-eta-date">
+            </div>
+            <div class="mb-2 col-12 col-md-6 col-xl-4">
+                <label for="eta_time" class="form-label">ETA (Time)</label>
+                <input type="time" name="eta_time" class="form-control js-shipper-eta-time">
+            </div>
+
+            <div class="col-12"></div>
+
             <div class="col-12 mt-3 mb-5 justify-content-start gap-2">
                 <button class="btn btn-outline-primary js-add-point js-add-ship">Add stop</button>
                 <button class="btn btn-primary d-none js-add-point js-end-edit-ship">End edit</button>
@@ -200,9 +211,10 @@ if ( $report_object ) {
             <div class="row">
                 <div class="col-12 col-md-1">Type</div>
                 <div class="col-12 col-md-2">Date</div>
+                <div class="col-12 col-md-1">ETA</div>
                 <div class="col-12 col-md-3">Address</div>
                 <div class="col-12 col-md-2">Contact</div>
-                <div class="col-12 col-md-3">Notes</div>
+                <div class="col-12 col-md-2">Notes</div>
 				<?php if ( ! $full_view_only ): ?>
                     <div class="col-12 col-md-1 p-0">Actions</div>
 				<?php else: ?>
@@ -225,6 +237,16 @@ if ( $report_object ) {
 					$time_start = get_field_value( $val, 'time_start' );
 					$time_end = get_field_value( $val, 'time_end' );
 					$strict_time = get_field_value( $val, 'strict_time' );
+					$eta_date = get_field_value( $val, 'eta_date' );
+					$eta_time = get_field_value( $val, 'eta_time' );
+					$eta_date_format = $eta_date ? esc_html( date( 'm/d/Y', strtotime( $eta_date ) ) ) : '';
+					$eta_display = '';
+					if ( $eta_date ) {
+						$eta_display = $eta_date_format;
+						if ( $eta_time ) {
+							$eta_display .= ' ' . esc_html( $eta_time );
+						}
+					}
 					
 					?>
                     <div class="row js-current-shipper card-shipper">
@@ -250,6 +272,10 @@ if ( $report_object ) {
                                    value="<?php echo $time_end ?>">
                             <input type="hidden" class="js-current-shipper_strict" name="pick_up_location_strict[]"
                                    value="<?php echo $strict_time ?>">
+                            <input type="hidden" class="js-current-shipper_eta_date" name="pick_up_location_eta_date[]"
+                                   value="<?php echo $eta_date ?>">
+                            <input type="hidden" class="js-current-shipper_eta_time" name="pick_up_location_eta_time[]"
+                                   value="<?php echo $eta_time ?>">
                         </div>
                         <div class="col-12 col-md-1">Pick Up</div>
                         <div class="col-12 col-md-2">
@@ -266,9 +292,16 @@ if ( $report_object ) {
 								<?php endif; ?>
                             </div>
                         </div>
+                        <div class="col-12 col-md-1">
+                            <?php if ( $eta_display ): ?>
+                                <span class="small-text"><?php echo $eta_display; ?></span>
+                            <?php else: ?>
+                                <span class="text-muted small-text">—</span>
+                            <?php endif; ?>
+                        </div>
                         <div class="col-12 col-md-3"><?php echo $address ?></div>
                         <div class="col-12 col-md-2"><?php echo $contact ?></div>
-                        <div class="col-12 col-md-3"><?php echo $info ?></div>
+                        <div class="col-12 col-md-2"><?php echo $info ?></div>
 						
 						<?php if ( ! $full_view_only ): ?>
 
@@ -299,6 +332,16 @@ if ( $report_object ) {
 					$time_start = get_field_value( $val, 'time_start' );
 					$time_end = get_field_value( $val, 'time_end' );
 					$strict_time = get_field_value( $val, 'strict_time' );
+					$eta_date = get_field_value( $val, 'eta_date' );
+					$eta_time = get_field_value( $val, 'eta_time' );
+					$eta_date_format = $eta_date ? esc_html( date( 'm/d/Y', strtotime( $eta_date ) ) ) : '';
+					$eta_display = '';
+					if ( $eta_date ) {
+						$eta_display = $eta_date_format;
+						if ( $eta_time ) {
+							$eta_display .= ' ' . esc_html( $eta_time );
+						}
+					}
 					?>
                     <div class="row js-current-shipper card-shipper">
                         <div class="d-none">
@@ -323,6 +366,10 @@ if ( $report_object ) {
                                    value="<?php echo $time_end ?>">
                             <input type="hidden" class="js-current-shipper_strict" name="delivery_location_strict[]"
                                    value="<?php echo $strict_time ?>">
+                            <input type="hidden" class="js-current-shipper_eta_date" name="delivery_location_eta_date[]"
+                                   value="<?php echo $eta_date ?>">
+                            <input type="hidden" class="js-current-shipper_eta_time" name="delivery_location_eta_time[]"
+                                   value="<?php echo $eta_time ?>">
                         </div>
                         <div class="col-12 col-md-1">Delivery</div>
                         <div class="col-12 col-md-2">
@@ -338,9 +385,16 @@ if ( $report_object ) {
                                 </span>
                             </div>
                         </div>
+                        <div class="col-12 col-md-1">
+                            <?php if ( $eta_display ): ?>
+                                <span class="small-text"><?php echo $eta_display; ?></span>
+                            <?php else: ?>
+                                <span class="text-muted small-text">—</span>
+                            <?php endif; ?>
+                        </div>
                         <div class="col-12 col-md-3"><?php echo $address ?></div>
                         <div class="col-12 col-md-2"><?php echo $contact ?></div>
-                        <div class="col-12 col-md-3"><?php echo $info ?></div>
+                        <div class="col-12 col-md-2"><?php echo $info ?></div>
 						
 						<?php if ( ! $full_view_only ): ?>
 

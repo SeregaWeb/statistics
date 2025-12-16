@@ -1739,6 +1739,9 @@ class TMSReportsTimer extends TMSReports {
 		
 		$timer = $active_timer ?: $paused_timer;
 		
+		// Render HTML status badge for table cell
+		$status_html = $this->get_timer_status( $load_id );
+		
 		// Add debug info
 		if ( $timer ) {
 			$timer['debug'] = array(
@@ -1748,7 +1751,10 @@ class TMSReportsTimer extends TMSReports {
 			);
 		}
 		
-		wp_send_json_success( array( 'timer' => $timer ) );
+		wp_send_json_success( array(
+			'timer'       => $timer,
+			'status_html' => $status_html,
+		) );
 	}
 	
 	/**

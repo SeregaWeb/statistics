@@ -404,6 +404,12 @@ class TMSReportsFlt extends TMSReportsHelper {
 			LEFT JOIN $table_meta AS unit_number
 				ON main.id = unit_number.post_id
 				AND unit_number.meta_key = 'unit_number_name'
+			LEFT JOIN $table_meta AS second_unit_number
+				ON main.id = second_unit_number.post_id
+				AND second_unit_number.meta_key = 'second_unit_number_name'
+			LEFT JOIN $table_meta AS third_unit_number
+				ON main.id = third_unit_number.post_id
+				AND third_unit_number.meta_key = 'third_unit_number_name'
 			LEFT JOIN $table_meta AS load_status
 				ON main.id = load_status.post_id
 				AND load_status.meta_key = 'load_status'
@@ -440,7 +446,9 @@ class TMSReportsFlt extends TMSReportsHelper {
 		$sql = "SELECT main.*,
 			dispatcher.meta_value AS dispatcher_initials_value,
 			reference.meta_value AS reference_number_value,
-			unit_number.meta_value AS unit_number_value
+			unit_number.meta_value AS unit_number_value,
+			second_unit_number.meta_value AS second_unit_number_value,
+			third_unit_number.meta_value AS third_unit_number_value
 	" . $join_builder;
 		
 		$where_conditions = array();
@@ -563,8 +571,10 @@ class TMSReportsFlt extends TMSReportsHelper {
 		
 		// Фильтрация по reference_number
 		if ( ! empty( $args[ 'my_search' ] ) ) {
-			$where_conditions[] = "(reference.meta_value LIKE %s OR unit_number.meta_value LIKE %s)";
+			$where_conditions[] = "(reference.meta_value LIKE %s OR unit_number.meta_value LIKE %s OR second_unit_number.meta_value LIKE %s OR third_unit_number.meta_value LIKE %s)";
 			$search_value       = '%' . $wpdb->esc_like( $args[ 'my_search' ] ) . '%';
+			$where_values[]     = $search_value;
+			$where_values[]     = $search_value;
 			$where_values[]     = $search_value;
 			$where_values[]     = $search_value;
 		}
@@ -859,7 +869,7 @@ class TMSReportsFlt extends TMSReportsHelper {
 			'current_pages' => $current_page,
 		);
 	}
-
+	
 	/**
 	 * Aggregate Charge back & Short pay totals by broker (no pagination)
 	 *
@@ -1018,7 +1028,7 @@ class TMSReportsFlt extends TMSReportsHelper {
 			dispatcher.meta_value AS dispatcher_initials_value,
 			reference.meta_value AS reference_number_value,
 			unit_number.meta_value AS unit_number_value
-		" . $join_builder;
+	" . $join_builder;
 		
 		$where_conditions = array();
 		$where_values     = array();
@@ -2986,7 +2996,9 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 					'type'          => $data[ 'pick_up_location_type' ][ $i ],
 					'time_start'    => $data[ 'pick_up_location_start' ][ $i ],
 					'time_end'      => $data[ 'pick_up_location_end' ][ $i ],
-					'strict_time'   => $data[ 'pick_up_location_strict' ][ $i ]
+					'strict_time'   => $data[ 'pick_up_location_strict' ][ $i ],
+					'eta_date'      => isset( $data[ 'pick_up_location_eta_date' ][ $i ] ) ? $data[ 'pick_up_location_eta_date' ][ $i ] : '',
+					'eta_time'      => isset( $data[ 'pick_up_location_eta_time' ][ $i ] ) ? $data[ 'pick_up_location_eta_time' ][ $i ] : ''
 				];
 				
 				// Сравнение даты
@@ -3008,7 +3020,9 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 					'type'          => $data[ 'delivery_location_type' ][ $i ],
 					'time_start'    => $data[ 'delivery_location_start' ][ $i ],
 					'time_end'      => $data[ 'delivery_location_end' ][ $i ],
-					'strict_time'   => $data[ 'delivery_location_strict' ][ $i ]
+					'strict_time'   => $data[ 'delivery_location_strict' ][ $i ],
+					'eta_date'      => isset( $data[ 'delivery_location_eta_date' ][ $i ] ) ? $data[ 'delivery_location_eta_date' ][ $i ] : '',
+					'eta_time'      => isset( $data[ 'delivery_location_eta_time' ][ $i ] ) ? $data[ 'delivery_location_eta_time' ][ $i ] : ''
 				];
 				
 				// Сравнение даты
@@ -5451,7 +5465,7 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 			// Save updated array (or empty if no messages left)
 			if ( empty( $pinned_messages ) ) {
 				$pinned_array = array(
-					'message_pinned' => '',
+				'message_pinned' => '',
 				);
 			} else {
 				// Save as serialized PHP array

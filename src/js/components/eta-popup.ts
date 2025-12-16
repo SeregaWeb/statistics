@@ -96,7 +96,7 @@ const updatePopupLocationInfo = (popup: HTMLElement, state: string | null, timez
  * Load existing ETA record from database
  * Uses get_eta_record_for_display to get ETA for any user (not just current user)
  */
-const loadExistingEtaRecord = (loadId: string, etaType: string, isFlt: string, popup: HTMLElement, state: string | null, timezone: string | null): Promise<void> => {
+const loadExistingEtaRecord = (loadId: string, etaType: string, isFlt: string, popup: HTMLElement, state: string | null, timezone: string | null): Promise<any> => {
     const formData = new FormData();
     formData.append('action', 'get_eta_record_for_display');
     formData.append('load_id', loadId);
@@ -128,11 +128,15 @@ const loadExistingEtaRecord = (loadId: string, etaType: string, isFlt: string, p
             // If no record exists, still update location info from button
             updatePopupLocationInfo(popup, state, timezone);
         }
+        
+        // Return data so it can be used in the calling function
+        return data;
     })
     .catch((error) => {
         console.error('Error loading ETA record:', error);
         // On error, still update location info from button
         updatePopupLocationInfo(popup, state, timezone);
+        return { success: false, data: { exists: false } };
     });
 };
 
@@ -222,11 +226,14 @@ export const initEtaPopups = (): void => {
             const etaType = button.getAttribute('data-eta-type') || '';
             const isFlt = button.getAttribute('data-is-flt') || '0';
             
-            // Check if ETA record exists:
-            // 1. Button has btn-success class (admin user sees it)
-            // 2. OR data-current-date and data-current-time are filled (ETA exists, shown to all users)
-            const hasExistingRecord = button.classList.contains('btn-success') || 
-                                     (currentDate && currentTime && currentDate !== '' && currentTime !== '');
+            // Get shipper ETA values first (if filled in shipper form)
+            const shipperEtaDate = button.getAttribute('data-shipper-eta-date');
+            const shipperEtaTime = button.getAttribute('data-shipper-eta-time');
+            const hasShipperEta = shipperEtaDate && shipperEtaDate !== '' && shipperEtaTime && shipperEtaTime !== '';
+            
+            // Check if ETA record exists in database:
+            // Button has btn-success class means there's a record in DB (admin user sees it)
+            const hasExistingRecord = button.classList.contains('btn-success');
             
             if (hasExistingRecord) {
                 // Show popup first
@@ -246,7 +253,17 @@ export const initEtaPopups = (): void => {
                 }
                 
                 // Load existing data from database (for all users, not just current user)
-                loadExistingEtaRecord(loadId || '', etaType, isFlt, popup, state, timezone).then(() => {
+                loadExistingEtaRecord(loadId || '', etaType, isFlt, popup, state, timezone).then((data) => {
+                    // After loading, check if record exists in DB
+                    // If no record exists in DB but shipper ETA is filled, use shipper ETA
+                    if (form && (!data || !data.success || !data.data.exists) && hasShipperEta) {
+                        const dateInput = form.querySelector('input[name="date"]') as HTMLInputElement;
+                        const timeInput = form.querySelector('input[name="time"]') as HTMLInputElement;
+                        
+                        if (dateInput) dateInput.value = shipperEtaDate;
+                        if (timeInput) timeInput.value = shipperEtaTime;
+                    }
+                    
                     // Re-enable submit button after data is loaded
                     if (form) {
                         const submitBtn = form.querySelector('button[type="submit"]') as HTMLButtonElement;
@@ -260,13 +277,19 @@ export const initEtaPopups = (): void => {
                 // Update location info in popup
                 updatePopupLocationInfo(popup, state, timezone);
                 
-                // Fill with current data from button (for new ETA records)
+                // Fill with data from button (for new ETA records)
+                // Priority: shipper ETA > current date/time
                 if (form) {
                     const dateInput = form.querySelector('input[name="date"]') as HTMLInputElement;
                     const timeInput = form.querySelector('input[name="time"]') as HTMLInputElement;
                     
-                    if (dateInput) dateInput.value = currentDate || '';
-                    if (timeInput) timeInput.value = currentTime || '';
+                    // Use shipper ETA if filled, otherwise use current date/time
+                    if (dateInput) {
+                        dateInput.value = hasShipperEta ? shipperEtaDate : (currentDate || '');
+                    }
+                    if (timeInput) {
+                        timeInput.value = hasShipperEta ? shipperEtaTime : (currentTime || '');
+                    }
                 }
                 
                 // Show the popup immediately for new records
@@ -283,7 +306,7 @@ export const initEtaPopups = (): void => {
         if (!form.classList.contains('js-eta-pickup-form') && !form.classList.contains('js-eta-delivery-form')) {
             return;
         }
-
+ 
         event.preventDefault();
         
         const loadId = form.querySelector('input[name="id_load"]')?.getAttribute('value') || '';

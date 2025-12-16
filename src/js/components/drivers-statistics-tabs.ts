@@ -13,7 +13,7 @@ export function initDriversStatisticsTabs(): void {
             event.preventDefault(); // Prevent Bootstrap default tab switching
             event.stopPropagation(); // Stop event bubbling
             
-            const tabName = this.getAttribute('data-tab-name');
+            const tabName = button.getAttribute('data-tab-name');
             if (tabName) {
                 const url = new URL(window.location.href);
                 url.searchParams.set('tab', tabName);

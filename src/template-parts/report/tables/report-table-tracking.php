@@ -149,10 +149,15 @@ if ( ! empty( $results ) ) :
 			
 			?>
 
+            <?php
+            // Determine if there is an active timer for this load (used to show quick update button)
+            $has_active_timer = $access_timer && ! $archive && $TMSReportsTimer->get_active_timer_for_load( $row['id'] );
+            ?>
+
             <tr class="<?php echo 'status-tracking-' . $status; ?> <?php echo $tbd ? 'tbd' : ''; ?>">
 
                 <?php if ( $access_timer && !$archive ): ?>
-                <td>
+                <td class="js-timer-status-cell" data-load-id="<?php echo (int) $row['id']; ?>">
                     <?php echo $TMSReportsTimer->get_timer_status( $row[ 'id' ] ); ?>
                 </td>
                 <?php endif; ?>
@@ -216,6 +221,8 @@ if ( ! empty( $results ) ) :
                                 data-timezone="<?php echo esc_attr($pickup_timezone); ?>"
                                 data-eta-type="pickup"
                                 data-is-flt="<?php echo $flt ? '1' : '0'; ?>"
+                                data-shipper-eta-date="<?php echo esc_attr($pickup_data['shipper_eta_date'] ?? ''); ?>"
+                                data-shipper-eta-time="<?php echo esc_attr($pickup_data['shipper_eta_time'] ?? ''); ?>"
                                 title="Pickup ETA - <?php echo esc_attr($pickup_timezone); ?>">
                             ETA
                         </button>
@@ -277,6 +284,8 @@ if ( ! empty( $results ) ) :
                                 data-timezone="<?php echo esc_attr($delivery_timezone); ?>"
                                 data-eta-type="delivery"
                                 data-is-flt="<?php echo $flt ? '1' : '0'; ?>"
+                                data-shipper-eta-date="<?php echo esc_attr($delivery_data['shipper_eta_date'] ?? ''); ?>"
+                                data-shipper-eta-time="<?php echo esc_attr($delivery_data['shipper_eta_time'] ?? ''); ?>"
                                 title="Delivery ETA - <?php echo esc_attr($delivery_timezone); ?>">
                             ETA
                         </button>
@@ -367,7 +376,7 @@ if ( ! empty( $results ) ) :
 				
 				<?php if ( $TMSUsers->check_user_role_access( array( 'recruiter' ) ) ): ?>
                     <td>
-                        <div class="d-flex">
+                        <div class="d-flex justify-content-end">
 
                             <?php if ( $access_timer && !$archive ): ?>
                                 <button class="btn btn-sm d-flex align-items-center justify-content-center js-timer-tracking"
@@ -378,6 +387,16 @@ if ( ! empty( $results ) ) :
                                         style="width: 28px; height: 28px; padding: 0;">
 									<?php echo $TMSReports->get_icon_hold(); ?>
                                 </button>
+								<?php if ( $has_active_timer ) : ?>
+									<button class="btn btn-sm d-flex align-items-center justify-content-center js-timer-quick-update"
+											data-id="<?php echo $row[ 'id' ]; ?>"
+											data-flt="<?php echo isset( $flt ) ? ( $flt ? '1' : '0' ) : '0'; ?>"
+											data-project="<?php echo esc_attr( $curent_project ); ?>"
+											title="<?php esc_attr_e( 'Update timer without opening modal', 'wp-rock' ); ?>"
+											style="width: 28px; height: 28px; padding: 0; margin-left: 4px;">
+										<?php echo $helper->get_icon_update_timer(); ?>
+									</button>
+								<?php endif; ?>
 							<?php endif; ?>
 
                             <button class="btn-bookmark js-btn-bookmark <?php echo $TMSUsers->is_bookmarked( $row[ 'id' ], isset( $flt )

@@ -243,30 +243,30 @@ function calculateQuickPayForDriver(
     const quickPayInput = document.querySelector(quickPayInputSelector);
     const afterCount = document.querySelector(afterCountSelector);
     
-    // @ts-ignore
+                // @ts-ignore
     const value = selectMethodElement.value;
-    
-    if (value) {
-        const selectPercent = document.querySelector(`${selectPercentPrefix}-${value}`);
-        if (!selectPercent) return;
-        // @ts-ignore
-        const selectPercentValue = selectPercent.value;
-        const driverReit = selectPercent.getAttribute('data-reit');
-        const commission = selectPercent.getAttribute('data-commission');
-        if (!driverReit || !commission) return;
-        const persent = +driverReit * (+selectPercentValue / 100);
-        const persentTotal = persent + parseFloat(commission);
-        if (!quickPayInput) return;
-        // @ts-ignore
-        quickPayInput.value = persentTotal.toFixed(2);
 
-        if (!afterCount) return;
-        // @ts-ignore
-        afterCount.innerHTML = `Sum to pay $${(parseFloat(driverReit) - persentTotal).toFixed(2)}`;
-    } else {
+                if (value) {
+        const selectPercent = document.querySelector(`${selectPercentPrefix}-${value}`);
+                    if (!selectPercent) return;
+                    // @ts-ignore
+                    const selectPercentValue = selectPercent.value;
+                    const driverReit = selectPercent.getAttribute('data-reit');
+                    const commission = selectPercent.getAttribute('data-commission');
+                    if (!driverReit || !commission) return;
+                    const persent = +driverReit * (+selectPercentValue / 100);
+                    const persentTotal = persent + parseFloat(commission);
+                    if (!quickPayInput) return;
+                    // @ts-ignore
+                    quickPayInput.value = persentTotal.toFixed(2);
+
+                    if (!afterCount) return;
+                    // @ts-ignore
+                    afterCount.innerHTML = `Sum to pay $${(parseFloat(driverReit) - persentTotal).toFixed(2)}`;
+                } else {
         if (!quickPayInput) return;
-        // @ts-ignore
-        quickPayInput.value = '';
+                    // @ts-ignore
+                    quickPayInput.value = '';
         if (afterCount) {
             // @ts-ignore
             afterCount.innerHTML = '';

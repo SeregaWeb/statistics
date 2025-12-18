@@ -198,18 +198,30 @@ if ( ! empty( $results ) ) :
                     $pickup_date = $pickup_eta_record['exists'] ? $pickup_eta_record['date'] : $pickup_data['date'];
                     $pickup_time = $pickup_eta_record['exists'] ? $pickup_eta_record['time'] : $pickup_data['time'];
             
-                    
-                    // Recalculate timezone based on ETA date and state (to fix incorrect timezones in DB)
-                    // This ensures timezone is correct for the ETA date, accounting for DST
-                    // Use state-based calculation only (no API calls) since timezone is already saved in DB
-                    if ($pickup_eta_record['exists'] && $pickup_data['state']) {
-                        // Recalculate timezone for ETA date to ensure DST is correct
-                        // Use state only to avoid unnecessary API calls - timezone is already in DB
-                        $recalculated_timezone = $helper->get_timezone_by_state($pickup_data['state'], $pickup_date);
-                        $pickup_timezone = $recalculated_timezone ?: $pickup_eta_record['timezone'];
-                    } else {
+                    // Use timezone from ETA record if exists (it's already correct, saved with coordinates)
+                    // Only fallback to location timezone or state-based calculation if ETA record doesn't have timezone
+                
+                    // if (current_user_can('administrator')) {
+                    //     var_dump($pickup_data);
+                    // }
+                
+                    if ($pickup_eta_record['exists'] && !empty($pickup_eta_record['timezone'])) {
+                        // Use timezone from DB - it's already correct (saved with coordinates)
+                        $pickup_timezone = $pickup_eta_record['timezone'];
+                    } elseif (!empty($pickup_data['timezone'])) {
+                        // Use timezone from location data
                         $pickup_timezone = $pickup_data['timezone'];
+                    } elseif (!empty($pickup_data['state'])) {
+                        // Fallback to state-based calculation only if no timezone available
+                        $pickup_timezone = $helper->get_timezone_by_state($pickup_data['state'], $pickup_date);
+                    } else {
+                        $pickup_timezone = '';
                     }
+
+                    // if (current_user_can('administrator')) {
+                    //     var_dump($pickup_timezone);
+                    // }
+
                     ?>
                     <div class="d-flex flex-column align-items-start gap-1" style="min-width: 52px;">
                         <button class="btn btn-sm <?php echo $pickup_button_class; ?> js-open-popup-activator" 
@@ -261,17 +273,19 @@ if ( ! empty( $results ) ) :
                     $delivery_date = $delivery_eta_record['exists'] ? $delivery_eta_record['date'] : $delivery_data['date'];
                     $delivery_time = $delivery_eta_record['exists'] ? $delivery_eta_record['time'] : $delivery_data['time'];
                     
-                    // Recalculate timezone based on ETA date and state (to fix incorrect timezones in DB)
-                    // This ensures timezone is correct for the ETA date, accounting for DST
-                    // Use state-based calculation only (no API calls) since timezone is already saved in DB
-                    if ($delivery_eta_record['exists'] && $delivery_data['state']) {
-                        // Recalculate timezone for ETA date to ensure DST is correct
-                        // Use state only to avoid unnecessary API calls - timezone is already in DB
-                        $recalculated_timezone = $helper->get_timezone_by_state($delivery_data['state'], $delivery_date);
-                        
-                        $delivery_timezone = $recalculated_timezone ?: $delivery_eta_record['timezone'];
-                    } else {
+                    // Use timezone from ETA record if exists (it's already correct, saved with coordinates)
+                    // Only fallback to location timezone or state-based calculation if ETA record doesn't have timezone
+                    if ($delivery_eta_record['exists'] && !empty($delivery_eta_record['timezone'])) {
+                        // Use timezone from DB - it's already correct (saved with coordinates)
+                        $delivery_timezone = $delivery_eta_record['timezone'];
+                    } elseif (!empty($delivery_data['timezone'])) {
+                        // Use timezone from location data
                         $delivery_timezone = $delivery_data['timezone'];
+                    } elseif (!empty($delivery_data['state'])) {
+                        // Fallback to state-based calculation only if no timezone available
+                        $delivery_timezone = $helper->get_timezone_by_state($delivery_data['state'], $delivery_date);
+                    } else {
+                        $delivery_timezone = '';
                     }
                     ?>
                     <div class="d-flex flex-column align-items-start gap-1" style="min-width: 52px;">

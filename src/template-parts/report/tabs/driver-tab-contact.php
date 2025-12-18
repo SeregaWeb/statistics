@@ -48,6 +48,8 @@ $owner_dob                  = get_field_value( $meta, 'owner_dob' );
 $owner_type                 = get_field_value( $meta, 'owner_type' );
 $owner_macro_point          = get_field_value( $meta, 'owner_macro_point' );
 $owner_trucker_tools        = get_field_value( $meta, 'owner_trucker_tools' );
+$owner_van_proprietor       = get_field_value( $meta, 'owner_van_proprietor' );
+$owner_operator             = get_field_value( $meta, 'owner_operator' );
 $emergency_contact_name     = get_field_value( $meta, 'emergency_contact_name' );
 $emergency_contact_phone    = get_field_value( $meta, 'emergency_contact_phone' );
 $emergency_contact_relation = get_field_value( $meta, 'emergency_contact_relation' );
@@ -326,6 +328,24 @@ $access_vehicle = $TMSUsers->check_user_role_access( [
 								<?php echo $owner_trucker_tools ? 'checked' : ''; ?>
                                    name="owner_trucker_tools">
                             <label class="form-check-label" for="ownerTruckerTools">Trucker Tools</label>
+                        </div>
+                    </div>
+
+                    <div class="col-md-6 mb-3">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" id="ownerVanProprietor"
+								<?php echo $owner_van_proprietor ? 'checked' : ''; ?>
+                                   name="owner_van_proprietor">
+                            <label class="form-check-label" for="ownerVanProprietor">Van Proprietor</label>
+                        </div>
+                    </div>
+
+                    <div class="col-md-6 mb-3">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" id="ownerOperator"
+								<?php echo $owner_operator ? 'checked' : ''; ?>
+                                   name="owner_operator">
+                            <label class="form-check-label" for="ownerOperator">Owner Operator</label>
                         </div>
                     </div>
                 </div>

@@ -199,14 +199,12 @@ class TMSEta extends TMSReportsHelper {
         $reports = $is_flt ? new TMSReportsFlt() : new TMSReports();
         $project = $reports->project ?: '';
         
-        // Recalculate timezone based on ETA date and state (to account for DST)
-        // This ensures timezone is correct for the ETA date, not just the location date
-        if ($state) {
+        // Use timezone from form if provided (it's already correct, calculated with coordinates)
+        // Only fallback to state-based calculation if timezone is not provided
+        if (empty($timezone) && $state) {
+            // Fallback to state-based calculation only if no timezone provided
             $helper = new TMSReportsHelper();
-            $recalculated_timezone = $helper->get_timezone_by_state($state, $date);
-            if ($recalculated_timezone) {
-                $timezone = $recalculated_timezone;
-            }
+            $timezone = $helper->get_timezone_by_state($state, $date);
         }
         
         // Combine date and time

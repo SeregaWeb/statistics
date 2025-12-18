@@ -13706,13 +13706,17 @@ var dateMaskInit = function dateMaskInit() {
     noCalendar: true,
     dateFormat: 'H:i',
     time_24hr: true,
-    allowInput: true
+    allowInput: true,
+    defaultHour: 8,
+    defaultMinute: 0
   });
   (0,flatpickr__WEBPACK_IMPORTED_MODULE_1__["default"])('.js-new-format-datetime', {
     enableTime: true,
     dateFormat: 'm/d/Y H:i',
     time_24hr: true,
-    allowInput: true
+    allowInput: true,
+    defaultHour: 8,
+    defaultMinute: 0
   });
 };
 var masksAllSite = function masksAllSite() {

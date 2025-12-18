@@ -1141,6 +1141,8 @@ Kindly confirm once you've received this message." ) . "\n";
 			return array(
 				'full_name' => $full_name,
 				'initials'  => $initials,
+				'user_id'   => $user_id,
+				'user_email' => $user->user_email,
 			);
 		}
 		
@@ -2391,7 +2393,7 @@ Kindly confirm once you've received this message." ) . "\n";
 	 */
 	public function handle_driver_rate_change( $old_rate, $new_rate, $driver_number, $user_name, $link, $post_id = null ) {
 		global $wpdb;
-		
+
 		// Temporary logging for debugging
 		error_log( '=== handle_driver_rate_change CALLED ===' );
 		error_log( 'Driver number: ' . $driver_number );
@@ -2492,14 +2494,9 @@ Kindly confirm once you've received this message." ) . "\n";
 			'accounting_email',
 		) );
 
-		$select_emails_billing = $this->email_helper->get_selected_emails( $this->user_emails, array(
-			'admin_email',
-			'billing_email',
-		) );
 
-
-		if (is_array($select_emails_billing) && count($select_emails_billing) > 0) {
-			array_push($select_emails_billing, 'billing@odysseia.one');
+		if (is_array($select_emails) && count($select_emails) > 0) {
+			array_push($select_emails, 'billing@odysseia.one', $user_name[ 'user_email' ]);
 		}
 		
 		// If accounting fields are filled, send special warning email
@@ -2620,7 +2617,8 @@ Kindly confirm once you've received this message." ) . "\n";
 		$required_billing_emails = array(
 			'billing@odysseia.one',
 			'operations@odysseia.one',
-			'daniel@odysseia.one'
+			'daniel@odysseia.one',
+			$user_name[ 'user_email' ],
 		);
 		
 		if ( is_array( $select_emails_billing ) ) {

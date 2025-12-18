@@ -159,6 +159,8 @@ class TMSDriversStatistics {
 			'change_9_all'         => 0,
 			'sleeper_all'           => 0,
 			'printer_all'           => 0,
+			'canada_all'           => 0,
+			'mexico_all'           => 0,
 		);
 		
 		if ( ! is_array( $statistics ) || empty( $statistics ) ) {
@@ -182,6 +184,8 @@ class TMSDriversStatistics {
 			$totals['change_9_all'] += (int) ( isset( $statistic['change_9'] ) ? $statistic['change_9'] : 0 );
 			$totals['sleeper_all'] += (int) ( isset( $statistic['sleeper'] ) ? $statistic['sleeper'] : 0 );
 			$totals['printer_all'] += (int) ( isset( $statistic['printer'] ) ? $statistic['printer'] : 0 );
+			$totals['canada_all'] += (int) ( isset( $statistic['canada_on'] ) ? $statistic['canada_on'] : 0 );
+			$totals['mexico_all'] += (int) ( isset( $statistic['mexico_on'] ) ? $statistic['mexico_on'] : 0 );
 		}
 		
 		return $totals;

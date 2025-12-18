@@ -37,6 +37,8 @@ $driver_capabilities = array(
 	'load_bars'               => 'Load_bars',
 	'mc'                      => 'MC',
 	'dot'                     => 'DOT',
+	'canada'                  => 'Canada',
+	'mexico'                  => 'Mexico',
 );
 
 ?>

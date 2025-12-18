@@ -45,6 +45,12 @@ $total_drivers_int = (int) $total_drivers;
 			if ( $printer_all > 0 ) {
 				$capabilities[] = array( 'name' => 'Printers', 'count' => $printer_all, 'color' => '#6610f2' );
 			}
+			if ( isset( $canada_all ) && $canada_all > 0 ) {
+				$capabilities[] = array( 'name' => 'Canada', 'count' => $canada_all, 'color' => '#0dcaf0' );
+			}
+			if ( isset( $mexico_all ) && $mexico_all > 0 ) {
+				$capabilities[] = array( 'name' => 'Mexico', 'count' => $mexico_all, 'color' => '#fdc14e' );
+			}
 			
 			foreach ( $capabilities as $capability ) :
 				$percentage = ( $capability['count'] / $total_drivers_int ) * 100;

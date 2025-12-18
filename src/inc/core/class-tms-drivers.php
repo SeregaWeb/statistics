@@ -112,7 +112,9 @@ class TMSDrivers extends TMSDriversHelper {
 			SUM(CASE WHEN tm10.meta_key = 'tsa_approved' AND tm10.meta_value = 'on' THEN 1 ELSE 0 END) AS tsa,
 			SUM(CASE WHEN tm11.meta_key = 'change_9_training' AND tm11.meta_value = 'on' THEN 1 ELSE 0 END) AS change_9,
 			SUM(CASE WHEN tm12.meta_key = 'sleeper' AND tm12.meta_value = 'on' THEN 1 ELSE 0 END) AS sleeper,
-			SUM(CASE WHEN tm13.meta_key = 'printer' AND tm13.meta_value = 'on' THEN 1 ELSE 0 END) AS printer
+			SUM(CASE WHEN tm13.meta_key = 'printer' AND tm13.meta_value = 'on' THEN 1 ELSE 0 END) AS printer,
+			SUM(CASE WHEN tm16.meta_key = 'cross_border' AND FIND_IN_SET('canada', REPLACE(tm16.meta_value, ' ', '')) > 0 THEN 1 ELSE 0 END) AS canada_on,
+			SUM(CASE WHEN tm16.meta_key = 'cross_border' AND FIND_IN_SET('mexico', REPLACE(tm16.meta_value, ' ', '')) > 0 THEN 1 ELSE 0 END) AS mexico_on
 		FROM $table_main AS m
 		LEFT JOIN $table_meta AS tm1 ON tm1.post_id = m.id AND tm1.meta_key = 'tanker_endorsement'
 		LEFT JOIN $table_meta AS tm2 ON tm2.post_id = m.id AND tm2.meta_key = 'twic'
@@ -129,6 +131,7 @@ class TMSDrivers extends TMSDriversHelper {
 		LEFT JOIN $table_meta AS tm11 ON tm11.post_id = m.id AND tm11.meta_key = 'change_9_training'
 		LEFT JOIN $table_meta AS tm12 ON tm12.post_id = m.id AND tm12.meta_key = 'sleeper'
 		LEFT JOIN $table_meta AS tm13 ON tm13.post_id = m.id AND tm13.meta_key = 'printer'
+		LEFT JOIN $table_meta AS tm16 ON tm16.post_id = m.id AND tm16.meta_key = 'cross_border'
 		WHERE m.status_post = 'publish'
 		GROUP BY m.user_id_added
 	";
@@ -969,6 +972,9 @@ class TMSDrivers extends TMSDriversHelper {
 			$additional_key   = sanitize_key( $args[ 'additional' ] );
 			$additional_alias = 'add_' . $additional_key;
 			$additional_logic = isset( $args[ 'additional_logic' ] ) && $args[ 'additional_logic' ] === 'not_has' ? 'not_has' : 'has';
+			$is_cross_border  = in_array( $additional_key, array( 'canada', 'mexico' ), true );
+			$target_meta_key  = $is_cross_border ? 'cross_border' : $additional_key;
+			$meta_value_clean = "REPLACE({$additional_alias}.meta_value, ' ', '')";
 			
 			// Добавляем JOIN прямо в $join_builder
 			$join_builder       .= "
@@ -976,14 +982,25 @@ class TMSDrivers extends TMSDriversHelper {
 			ON main.id = {$additional_alias}.post_id
 			AND {$additional_alias}.meta_key = %s
 			";
+			// Сначала подставляем meta_key для JOIN
+			$where_values[] = $target_meta_key;
 			
 			// Apply logic: 'has' = field exists and not empty, 'not_has' = field is NULL or empty
-			if ( $additional_logic === 'not_has' ) {
-				$where_conditions[] = "({$additional_alias}.meta_value IS NULL OR {$additional_alias}.meta_value = '')";
+			if ( $is_cross_border ) {
+				if ( $additional_logic === 'not_has' ) {
+					$where_conditions[] = "({$additional_alias}.meta_value IS NULL OR {$meta_value_clean} = '' OR FIND_IN_SET(%s, {$meta_value_clean}) = 0)";
+					$where_values[]     = $additional_key;
+				} else {
+					$where_conditions[] = "({$meta_value_clean} != '' AND FIND_IN_SET(%s, {$meta_value_clean}) > 0)";
+					$where_values[]     = $additional_key;
+				}
 			} else {
-				$where_conditions[] = "({$additional_alias}.meta_value IS NOT NULL AND {$additional_alias}.meta_value != '')";
+				if ( $additional_logic === 'not_has' ) {
+					$where_conditions[] = "({$additional_alias}.meta_value IS NULL OR {$additional_alias}.meta_value = '')";
+				} else {
+					$where_conditions[] = "({$additional_alias}.meta_value IS NOT NULL AND {$additional_alias}.meta_value != '')";
+				}
 			}
-			$where_values[]     = $additional_key;
 		}
 		
 		
@@ -2435,6 +2452,10 @@ class TMSDrivers extends TMSDriversHelper {
 					? sanitize_text_field( $_POST[ 'owner_macro_point' ] ) : '',
 				'owner_trucker_tools'        => isset( $_POST[ 'owner_trucker_tools' ] )
 					? sanitize_text_field( $_POST[ 'owner_trucker_tools' ] ) : '',
+				'owner_van_proprietor'       => isset( $_POST[ 'owner_van_proprietor' ] )
+					? sanitize_text_field( $_POST[ 'owner_van_proprietor' ] ) : '',
+				'owner_operator'             => isset( $_POST[ 'owner_operator' ] )
+					? sanitize_text_field( $_POST[ 'owner_operator' ] ) : '',
 				// Additional date validation might be required
 				'source'                     => isset( $_POST[ 'source' ] ) ? sanitize_text_field( $_POST[ 'source' ] )
 					: '',
@@ -2540,6 +2561,10 @@ class TMSDrivers extends TMSDriversHelper {
 					? sanitize_text_field( $_POST[ 'owner_macro_point' ] ) : '',
 				'owner_trucker_tools'        => isset( $_POST[ 'owner_trucker_tools' ] )
 					? sanitize_text_field( $_POST[ 'owner_trucker_tools' ] ) : '',
+				'owner_van_proprietor'       => isset( $_POST[ 'owner_van_proprietor' ] )
+					? sanitize_text_field( $_POST[ 'owner_van_proprietor' ] ) : '',
+				'owner_operator'             => isset( $_POST[ 'owner_operator' ] )
+					? sanitize_text_field( $_POST[ 'owner_operator' ] ) : '',
 				// Additional date validation might be required
 				'source'                     => isset( $_POST[ 'source' ] ) ? sanitize_text_field( $_POST[ 'source' ] )
 					: '',
@@ -6391,6 +6416,7 @@ class TMSDrivers extends TMSDriversHelper {
 					}
 				}
 			}
+
 			
 			// Get available loads for rating
 			$available_loads = $this->get_available_loads_for_rating( $driver_id );

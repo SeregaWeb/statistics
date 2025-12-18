@@ -188,6 +188,8 @@ class TMSDriversHelper {
 			return array(
 				'full_name' => $full_name,
 				'initials'  => $initials,
+				'user_id'   => $user_id,
+				'user_email' => $user->user_email,
 			);
 		}
 		

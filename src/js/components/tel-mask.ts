@@ -44,6 +44,8 @@ export const dateMaskInit = () => {
         dateFormat: 'H:i', // Формат времени HH:MM
         time_24hr: true, // 24-часовой формат
         allowInput: true,
+        defaultHour: 8, // Время по умолчанию: 8:00
+        defaultMinute: 0,
     });
     
     // Инициализация селектора даты и времени
@@ -52,6 +54,8 @@ export const dateMaskInit = () => {
         dateFormat: 'm/d/Y H:i', // Дата и время в американском формате
         time_24hr: true, // 24-часовой формат
         allowInput: true,
+        defaultHour: 8, // Время по умолчанию: 8:00
+        defaultMinute: 0,
     });
 };
 

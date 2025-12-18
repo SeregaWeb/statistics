@@ -59,6 +59,7 @@ require THEME_DIR . '/src/inc/core/class-tms-contacts.php';
 require THEME_DIR . '/src/inc/cron/driver-status-cron.php';
 require THEME_DIR . '/src/inc/cron/driver-rating-block-cron.php';
 require THEME_DIR . '/src/inc/cron/geocode-addresses-cron.php';
+require THEME_DIR . '/src/inc/cron/birthday-cron.php';
 require THEME_DIR . '/src/inc/core/class-tms-timer-logs.php';
 require THEME_DIR . '/src/inc/core/class-tms-reports-timer.php';
 require THEME_DIR . '/src/inc/core/class-tms-eta.php';

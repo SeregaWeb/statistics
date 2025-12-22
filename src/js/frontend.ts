@@ -54,7 +54,9 @@ import {
     cleanUrlByFilterDriver,
     cleanUrlByFilterPlatform,
     cleanUrlByFilterDriverSearch,
+    cleanUrlByFilterDriverDocuments,
 } from './components/filter-clean';
+import { initDriverNotesEdit } from './components/driver-notes-edit';
 import { disabledValuesInSelectInit, showHiddenValueInit, legalDocumentExpirationInit } from './components/chow-hidden-value';
 import { logsInit, modalLogsInit } from './components/logs';
 import { bookmarkInit } from './components/bookmark';
@@ -283,6 +285,8 @@ function ready() {
     trailersActions(urlAjax);
     cleanUrlByFilterDriver();
     cleanUrlByFilterDriverSearch();
+    cleanUrlByFilterDriverDocuments();
+    initDriverNotesEdit(urlAjax);
     driverHoldInit(urlAjax);
     driverCoreInit(urlAjax);
     initCapabilitiesFilter();

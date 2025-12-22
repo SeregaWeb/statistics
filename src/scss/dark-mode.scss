@@ -323,6 +323,23 @@ body.dark-mode .btn-outline-success {
     }
 }
 
+body.dark-mode .js-driver-notes-edit-btn {
+    svg {
+        path {
+            fill: $dark-success;
+        }
+    }
+
+    &:hover {
+        background-color: rgba($dark-success, 0.15);
+        border-color: rgba($dark-success, 0.6);
+    }
+
+    &:focus {
+        box-shadow: 0 0 0 3px rgba($dark-success, 0.3);
+    }
+}
+
 /* Dark mode for all buttons with SVG icons */
 body.dark-mode .btn {
     svg {

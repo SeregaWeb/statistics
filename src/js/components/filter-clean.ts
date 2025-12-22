@@ -156,3 +156,28 @@ export const cleanUrlByFilterDriverSearch = () => {
         });
     }
 };
+
+export const cleanUrlByFilterDriverDocuments = () => {
+    const form = document.getElementById('navbarNavDriverDocuments') as HTMLFormElement | null;
+
+    if (form) {
+        form.addEventListener('submit', function (event) {
+            event.preventDefault();
+
+            const params = new URLSearchParams();
+
+            // Получаем значения всех полей безопасно
+            const mySearch = form.elements.namedItem('my_search') as HTMLInputElement | null;
+            const documentType = form.elements.namedItem('document_type') as HTMLSelectElement | null;
+            const documentStatus = form.elements.namedItem('document_status') as HTMLSelectElement | null;
+
+            // Проверяем и добавляем параметры только если элементы существуют и не пусты
+            if (mySearch?.value) params.append('my_search', mySearch.value);
+            if (documentType?.value) params.append('document_type', documentType.value);
+            if (documentStatus?.value && documentType?.value) params.append('document_status', documentStatus.value);
+
+            // Перенаправляем на URL с параметрами
+            window.location.href = `?${params.toString()}`;
+        });
+    }
+};

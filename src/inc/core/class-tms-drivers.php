@@ -76,6 +76,7 @@ class TMSDrivers extends TMSDriversHelper {
 			'admin_get_driver_ratings'     => 'admin_get_driver_ratings',
 			'admin_delete_driver_ratings'  => 'admin_delete_driver_ratings',
 			'move_recruiter_drivers_to_or' => 'ajax_move_recruiter_drivers_to_or',
+			'update_driver_notes'          => 'ajax_update_driver_notes',
 		);
 		
 		foreach ( $actions as $ajax_action => $method ) {
@@ -856,6 +857,8 @@ class TMSDrivers extends TMSDriversHelper {
 		$additional = trim( get_field_value( $_GET, 'additional' ) ?? '' );
 		$additional_logic = trim( get_field_value( $_GET, 'additional_logic' ) ?? 'has' );
 		$driver_status = trim( get_field_value( $_GET, 'driver_status' ) ?? '' );
+		$document_type = trim( get_field_value( $_GET, 'document_type' ) ?? '' );
+		$document_status = trim( get_field_value( $_GET, 'document_status' ) ?? 'expired' );
 		
 		if ( $my_search ) {
 			$args[ 'my_search' ] = $my_search;
@@ -882,6 +885,14 @@ class TMSDrivers extends TMSDriversHelper {
 
 		if ( $driver_status ) {
 			$args[ 'driver_status' ] = $driver_status;
+		}
+		
+		if ( $document_type ) {
+			$args[ 'document_type' ] = $document_type;
+		}
+		
+		if ( $document_status ) {
+			$args[ 'document_status' ] = $document_status;
 		}
 		
 		return $args;
@@ -1160,6 +1171,19 @@ class TMSDrivers extends TMSDriversHelper {
 				$result[ 'meta_data' ] = isset( $meta_data[ $post_id ] ) ? $meta_data[ $post_id ] : array();
 			}
 			
+			// Фильтрация по типу документа
+			if ( ! empty( $args[ 'document_type' ] ) ) {
+				$main_results = $this->filter_drivers_by_document_type( $main_results, $args[ 'document_type' ] );
+				// Пересчитываем общее количество записей после фильтрации
+				$total_records = count( $main_results );
+				$total_pages = ceil( $total_records / $per_page );
+				if ( $total_records == 0 ) {
+					$total_pages = 0;
+				} elseif ( $total_pages < 1 ) {
+					$total_pages = 1;
+				}
+			}
+			
 			// Сортировка по статусу и времени обновления для обычного поиска
 			if ( ! isset( $args[ 'has_distance_data' ] ) || ! $args[ 'has_distance_data' ] || empty( $args[ 'filtered_drivers' ] ) ) {
 				$main_results = $this->sort_drivers_by_status_priority_for_regular_search( $main_results );
@@ -1173,6 +1197,314 @@ class TMSDrivers extends TMSDriversHelper {
 			'total_posts'   => $total_records,
 			'current_pages' => $current_page,
 		);
+	}
+	
+	/**
+	 * Get table items filtered by document issues (expired or missing documents)
+	 * Only returns drivers with at least one expired or missing document
+	 *
+	 * @param array $args Query arguments
+	 * @return array Results with pagination
+	 */
+	public function get_table_items_documents( $args = array() ) {
+		global $wpdb;
+		
+		$table_main   = $wpdb->prefix . $this->table_main;
+		$table_meta   = $wpdb->prefix . $this->table_meta;
+		$per_page     = isset( $args[ 'per_page_loads' ] ) ? $args[ 'per_page_loads' ] : $this->per_page_loads;
+		$current_page = isset( $_GET[ 'paged' ] ) ? absint( $_GET[ 'paged' ] ) : 1;
+		$sort_by      = ! empty( $args[ 'sort_by' ] ) ? $args[ 'sort_by' ] : 'id';
+		$sort_order   = ! empty( $args[ 'sort_order' ] ) && strtolower( $args[ 'sort_order' ] ) == 'asc' ? 'ASC'
+			: 'DESC';
+		
+		$join_builder = "
+			FROM $table_main AS main
+			LEFT JOIN $table_meta AS driver_name
+				ON main.id = driver_name.post_id AND driver_name.meta_key = 'driver_name'
+			LEFT JOIN $table_meta AS driver_phone
+				ON main.id = driver_phone.post_id AND driver_phone.meta_key = 'driver_phone'
+			LEFT JOIN $table_meta AS driver_email
+				ON main.id = driver_email.post_id AND driver_email.meta_key = 'driver_email'
+			LEFT JOIN $table_meta AS plates
+				ON main.id = plates.post_id AND plates.meta_key = 'plates'
+			LEFT JOIN $table_meta AS entity_name
+				ON main.id = entity_name.post_id AND entity_name.meta_key = 'entity_name'
+			LEFT JOIN $table_meta AS vin
+				ON main.id = vin.post_id AND vin.meta_key = 'vin'
+			LEFT JOIN $table_meta AS auto_liability_insurer
+				ON main.id = auto_liability_insurer.post_id AND auto_liability_insurer.meta_key = 'auto_liability_insurer'
+			LEFT JOIN $table_meta AS motor_cargo_insurer
+				ON main.id = motor_cargo_insurer.post_id AND motor_cargo_insurer.meta_key = 'motor_cargo_insurer'
+			LEFT JOIN $table_meta AS source
+				ON main.id = source.post_id AND source.meta_key = 'source'
+			LEFT JOIN $table_meta AS driver_status
+				ON main.id = driver_status.post_id AND driver_status.meta_key = 'driver_status'
+			LEFT JOIN $table_meta AS mc
+				ON main.id = mc.post_id AND mc.meta_key = 'mc_enabled'
+			LEFT JOIN $table_meta AS dot
+				ON main.id = dot.post_id AND dot.meta_key = 'dot_enabled'
+		";
+		
+		$where_conditions = array();
+		$where_values     = array();
+
+		// Exclude specific test driver IDs from all search results
+		$excluded_driver_ids = array( 3343 ); // Test driver(s) to exclude completely
+		if ( ! empty( $excluded_driver_ids ) ) {
+			$where_conditions[] = 'main.id NOT IN (' . implode( ',', array_map( 'absint', $excluded_driver_ids ) ) . ')';
+		}
+		
+		// Основной запрос
+		$sql = "SELECT main.*" . $join_builder . " WHERE 1=1";
+		
+		if ( ! empty( $args[ 'status_post' ] ) ) {
+			$where_conditions[] = "main.status_post = %s";
+			$where_values[]     = $args[ 'status_post' ];
+		}
+		
+		if ( ! empty( $args[ 'my_search' ] ) ) {
+			$search_term = $args[ 'my_search' ];
+			
+			// Check if search term is a phone number (formatted or unformatted)
+			$phone_detected = $this->is_phone_number( $search_term );
+			
+			if ( $phone_detected ) {
+				// Format phone number and search in driver_phone field
+				$formatted_phone    = $this->format_phone_number( $search_term );
+				$where_conditions[] = "driver_phone.meta_value = %s";
+				$where_values[]     = $formatted_phone;
+			} elseif ( is_numeric( $search_term ) ) {
+				// For numeric search that's not a phone, search by ID
+				$where_conditions[] = "main.id = %s";
+				$where_values[]     = $search_term;
+			} else {
+				// Search in text fields (name, email, insurance, entity, plates, vin)
+				$where_conditions[] = "(" . "driver_name.meta_value LIKE %s OR " . "driver_email.meta_value LIKE %s OR " . "motor_cargo_insurer.meta_value LIKE %s OR " . "auto_liability_insurer.meta_value LIKE %s OR " . "entity_name.meta_value LIKE %s OR " . "plates.meta_value LIKE %s OR " . "vin.meta_value LIKE %s " . ")";
+				
+				$search_value = '%' . $wpdb->esc_like( $search_term ) . '%';
+				for ( $i = 0; $i < 7; $i ++ ) {
+					$where_values[] = $search_value;
+				}
+			}
+		}
+		
+		// Add driver visibility condition based on user role
+		$driverHelper    = new TMSDriversHelper();
+		$visibility_data = $driverHelper->get_driver_visibility_condition();
+		if ( ! empty( $visibility_data[ 'condition' ] ) ) {
+			$where_conditions[] = $visibility_data[ 'condition' ];
+		}
+		
+		// Применяем фильтры к запросу
+		if ( ! empty( $where_conditions ) ) {
+			$sql .= ' AND ' . implode( ' AND ', $where_conditions );
+		}
+		
+		// Добавляем сортировку
+		$sql .= " ORDER BY main.$sort_by $sort_order";
+		
+		// Выполняем запрос без LIMIT для получения всех водителей
+		$all_results = $wpdb->get_results( $wpdb->prepare( $sql, ...$where_values ), ARRAY_A );
+		
+		// Собираем все ID записей для получения дополнительных метаданных
+		$post_ids = wp_list_pluck( $all_results, 'id' );
+		
+		// Если есть записи, получаем метаданные
+		$meta_data = array();
+		if ( ! empty( $post_ids ) ) {
+			$meta_sql     = "SELECT post_id, meta_key, meta_value
+					 FROM $table_meta
+					 WHERE post_id IN (" . implode( ',', array_map( 'absint', $post_ids ) ) . ")";
+			$meta_results = $wpdb->get_results( $meta_sql, ARRAY_A );
+			
+			// Преобразуем метаданные в ассоциативный массив по post_id
+			foreach ( $meta_results as $meta_row ) {
+				$post_id = $meta_row[ 'post_id' ];
+				if ( ! isset( $meta_data[ $post_id ] ) ) {
+					$meta_data[ $post_id ] = array();
+				}
+				$meta_data[ $post_id ][ $meta_row[ 'meta_key' ] ] = $meta_row[ 'meta_value' ];
+			}
+		}
+		
+		// Объединяем основную таблицу с метаданными
+		$all_results_with_meta = array();
+		if ( is_array( $all_results ) && ! empty( $all_results ) ) {
+			foreach ( $all_results as $result ) {
+				$post_id               = $result[ 'id' ];
+				$result[ 'meta_data' ] = isset( $meta_data[ $post_id ] ) ? $meta_data[ $post_id ] : array();
+				$all_results_with_meta[] = $result;
+			}
+		}
+		
+		// Если указан тип документа, фильтруем сразу по типу и статусу (не используем driver_has_document_issues)
+		if ( ! empty( $args[ 'document_type' ] ) ) {
+			$document_status = isset( $args[ 'document_status' ] ) ? $args[ 'document_status' ] : 'expired';
+			$filtered_results = $this->filter_drivers_by_document_type( $all_results_with_meta, $args[ 'document_type' ], $document_status );
+		} else {
+			// Если тип документа не указан, фильтруем по всем проблемам документов
+			$filtered_results = array();
+			foreach ( $all_results_with_meta as $result ) {
+				if ( $this->driver_has_document_issues( $result ) ) {
+					$filtered_results[] = $result;
+				}
+			}
+		}
+		
+		// Подсчитываем общее количество после фильтрации
+		$total_records = count( $filtered_results );
+		$total_pages = ceil( $total_records / $per_page );
+		if ( $total_records == 0 ) {
+			$total_pages = 0;
+		} elseif ( $total_pages < 1 ) {
+			$total_pages = 1;
+		}
+		
+		// Применяем пагинацию
+		$offset = ( $current_page - 1 ) * $per_page;
+		$main_results = array_slice( $filtered_results, $offset, $per_page );
+		
+		// Сортировка по статусу и времени обновления
+		if ( ! isset( $args[ 'has_distance_data' ] ) || ! $args[ 'has_distance_data' ] || empty( $args[ 'filtered_drivers' ] ) ) {
+			$main_results = $this->sort_drivers_by_status_priority_for_regular_search( $main_results );
+		}
+		
+		return array(
+			'results'       => $main_results,
+			'total_pages'   => $total_pages,
+			'total_posts'   => $total_records,
+			'current_pages' => $current_page,
+		);
+	}
+	
+	/**
+	 * Check if driver has document issues (expired or missing required documents)
+	 *
+	 * @param array $driver Driver data with meta_data
+	 * @return bool True if driver has document issues, false otherwise
+	 */
+	private function driver_has_document_issues( $driver ) {
+		$meta = isset( $driver[ 'meta_data' ] ) ? $driver[ 'meta_data' ] : array();
+		// Helper function to check document status
+		$check_document_status = function( $expiration_date, $immigration_letter = '' ) {
+			if ( empty( $expiration_date ) ) {
+				return array( 'status' => 'no_date', 'is_expired' => false );
+			}
+			
+			if ( ! empty( $immigration_letter ) ) {
+				return array( 'status' => 'extended', 'is_expired' => false );
+			}
+			
+			// Parse date - try different formats
+			$date_timestamp = false;
+			$date_formats = array( 'm/d/Y', 'Y-m-d', 'm-d-Y', 'Y/m/d' );
+			
+			foreach ( $date_formats as $format ) {
+				$date_obj = DateTime::createFromFormat( $format, $expiration_date );
+				if ( $date_obj !== false ) {
+					$date_timestamp = $date_obj->getTimestamp();
+					break;
+				}
+			}
+			
+			// Fallback to strtotime if DateTime::createFromFormat failed
+			if ( $date_timestamp === false ) {
+				$date_timestamp = strtotime( str_replace( '/', '-', $expiration_date ) );
+			}
+			
+			if ( ! $date_timestamp || $date_timestamp === false ) {
+				return array( 'status' => 'invalid', 'is_expired' => false );
+			}
+			
+			$today = strtotime( 'today' );
+			$days_diff = floor( ( $date_timestamp - $today ) / 86400 );
+			
+			if ( $days_diff < 0 ) {
+				return array( 'status' => 'expired', 'is_expired' => true );
+			} elseif ( $days_diff <= 30 ) {
+				return array( 'status' => 'expires_soon', 'is_expired' => false );
+			} else {
+				return array( 'status' => 'valid', 'is_expired' => false );
+			}
+		};
+		
+		$get_field_value = function( $meta, $key ) {
+			return isset( $meta[ $key ] ) ? $meta[ $key ] : '';
+		};
+		
+		// Check main documents
+		$documents_to_check = array(
+			// Vehicle Registration
+			array(
+				'type' => get_field_value( $meta, 'registration_type' ),
+				'exp' => get_field_value( $meta, 'registration_expiration' ),
+				'immigration' => ''
+			),
+			// Plates
+			array(
+				'type' => get_field_value( $meta, 'plates' ),
+				'exp' => get_field_value( $meta, 'plates_expiration' ),
+				'immigration' => ''
+			),
+			// Driver's License
+			array(
+				'type' => get_field_value( $meta, 'driver_licence_type' ),
+				'exp' => get_field_value( $meta, 'driver_licence_expiration' ),
+				'immigration' => ''
+			),
+			// Legal document
+			array(
+				'type' => get_field_value( $meta, 'legal_document_type' ),
+				'exp' => get_field_value( $meta, 'legal_document_expiration' ),
+				'immigration' => get_field_value( $meta, 'immigration_letter' )
+			),
+			// Additional documents
+			array( 'type' => '', 'exp' => get_field_value( $meta, 'hazmat_expiration' ), 'immigration' => '' ),
+			array( 'type' => '', 'exp' => get_field_value( $meta, 'global_entry_expiration' ), 'immigration' => '' ),
+			array( 'type' => '', 'exp' => get_field_value( $meta, 'twic_expiration' ), 'immigration' => '' ),
+			array( 'type' => '', 'exp' => get_field_value( $meta, 'tsa_expiration' ), 'immigration' => '' ),
+			// COI variants
+			array( 'type' => '', 'exp' => get_field_value( $meta, 'auto_liability_expiration' ), 'immigration' => '' ),
+			array( 'type' => '', 'exp' => get_field_value( $meta, 'martlet_coi_expired_date' ), 'immigration' => '' ),
+			array( 'type' => '', 'exp' => get_field_value( $meta, 'endurance_coi_expired_date' ), 'immigration' => '' ),
+			array( 'type' => '', 'exp' => get_field_value( $meta, 'motor_cargo_expiration' ), 'immigration' => '' ),
+			// Team driver documents
+			array(
+				'type' => get_field_value( $meta, 'driver_licence_type_team_driver' ),
+				'exp' => get_field_value( $meta, 'driver_licence_expiration_team_driver' ),
+				'immigration' => ''
+			),
+			array(
+				'type' => get_field_value( $meta, 'legal_document_type_team_driver' ),
+				'exp' => get_field_value( $meta, 'legal_document_expiration_team_driver' ),
+				'immigration' => get_field_value( $meta, 'immigration_letter_team_driver' )
+			),
+		);
+		
+		// Check Driver's License (required document)
+		$dl_type = get_field_value( $meta, 'driver_licence_type' );
+		$dl_exp = get_field_value( $meta, 'driver_licence_expiration' );
+		
+		// If required document (DL) is missing
+		if ( empty( $dl_type ) && empty( $dl_exp ) ) {
+			return true; // Driver has issues - missing required DL
+		}
+		
+		// Check each document for expiration
+		foreach ( $documents_to_check as $doc ) {
+			// If document has type or expiration date, check it
+			if ( ! empty( $doc[ 'type' ] ) || ! empty( $doc[ 'exp' ] ) ) {
+				$status = $check_document_status( $doc[ 'exp' ], $doc[ 'immigration' ] );
+				
+				// If expired - driver has issues
+				if ( $status[ 'status' ] === 'expired' ) {
+					return true;
+				}
+			}
+		}
+		
+		// If we get here, all checked documents are valid
+		return false;
 	}
 
 	public function get_table_items_search( $args = array() ) {
@@ -7822,6 +8154,537 @@ class TMSDrivers extends TMSDriversHelper {
 	}
 	
 	/**
+	 * Filter drivers by document type
+	 *
+	 * @param array $drivers Array of drivers with meta_data
+	 * @param string $document_type Document type code (VR, PL, DL, COI, EA, PR, PS, HZ, GE, TWIC, TSA, DL_TEAM, EA_TEAM, PR_TEAM, PS_TEAM)
+	 * @return array Filtered drivers
+	 */
+	public function filter_drivers_by_document_type( $drivers, $document_type, $document_status = 'expired' ) {
+		if ( ! is_array( $drivers ) || empty( $drivers ) || empty( $document_type ) ) {
+			return $drivers;
+		}
+		
+		// document_status: 'expired' - only expired documents, 'missing' - only missing documents
+		
+		// Helper function to check document status
+		$check_document_status = function( $expiration_date, $immigration_letter = '', $status_field = '' ) {
+			if ( empty( $expiration_date ) ) {
+				return array( 'status' => 'no_date', 'is_expired' => false );
+			}
+			
+			if ( ! empty( $immigration_letter ) ) {
+				return array( 'status' => 'extended', 'is_expired' => false );
+			}
+			
+			// Parse date - try different formats
+			$date_timestamp = false;
+			$date_formats = array( 'm/d/Y', 'Y-m-d', 'm-d-Y', 'Y/m/d' );
+			
+			foreach ( $date_formats as $format ) {
+				$date_obj = DateTime::createFromFormat( $format, $expiration_date );
+				if ( $date_obj !== false ) {
+					$date_timestamp = $date_obj->getTimestamp();
+					break;
+				}
+			}
+			
+			// Fallback to strtotime if DateTime::createFromFormat failed
+			if ( $date_timestamp === false ) {
+				$date_timestamp = strtotime( str_replace( '/', '-', $expiration_date ) );
+			}
+			
+			if ( ! $date_timestamp || $date_timestamp === false ) {
+				return array( 'status' => 'invalid', 'is_expired' => false );
+			}
+			
+			$today = strtotime( 'today' );
+			$days_diff = floor( ( $date_timestamp - $today ) / 86400 );
+			
+			// Check if status field indicates temporary
+			if ( ! empty( $status_field ) && strtolower( $status_field ) === 'temporary' ) {
+				if ( $days_diff < 0 ) {
+					return array( 'status' => 'expired', 'is_expired' => true );
+				} else {
+					return array( 'status' => 'temporary', 'is_expired' => false );
+				}
+			}
+			
+			if ( $days_diff < 0 ) {
+				return array( 'status' => 'expired', 'is_expired' => true );
+			} elseif ( $days_diff <= 30 ) {
+				return array( 'status' => 'expires_soon', 'is_expired' => false );
+			} else {
+				// If status field indicates permanent, return valid
+				if ( ! empty( $status_field ) && strtolower( $status_field ) === 'permanent' ) {
+					return array( 'status' => 'valid', 'is_expired' => false );
+				}
+				return array( 'status' => 'valid', 'is_expired' => false );
+			}
+		};
+		
+		$filtered = array();
+		
+		foreach ( $drivers as $driver ) {
+			$meta = isset( $driver[ 'meta_data' ] ) ? $driver[ 'meta_data' ] : array();
+			$has_issue = false;
+			
+			switch ( $document_type ) {
+				case 'VR':
+				case 'BS':
+				case 'CT':
+					// Vehicle Registration types: VR, BS, CT
+					$exp_date = get_field_value( $meta, 'registration_expiration' );
+					$reg_type = get_field_value( $meta, 'registration_type' );
+					$reg_status = get_field_value( $meta, 'registration_status' );
+					$has_file = ! empty( get_field_value( $meta, 'registration_file' ) );
+					
+					// Map document type to registration type
+					$type_map = array(
+						'VR' => 'vehicle-registration',
+						'BS' => 'bill-of-sale',
+						'CT' => 'certificate-of-title'
+					);
+					
+					$expected_type = isset( $type_map[ $document_type ] ) ? $type_map[ $document_type ] : '';
+					$has_correct_type = ! empty( $reg_type ) && $reg_type === $expected_type;
+					
+					if ( $document_status === 'expired' ) {
+						// Check if expired - only if it's the correct type
+						if ( $has_correct_type && ! empty( $exp_date ) ) {
+							$status = $check_document_status( $exp_date, '', $reg_status );
+							$has_issue = ( $status[ 'status' ] === 'expired' );
+						}
+					} elseif ( $document_status === 'missing' ) {
+						// Check if missing - document is missing if no expiration date, no correct type, and no file
+						$has_issue = ( empty( $exp_date ) && ! $has_correct_type && ! $has_file );
+					} elseif ( $document_status === 'valid' ) {
+						// Check if valid - must have correct type and valid status
+						if ( $has_correct_type && ! empty( $exp_date ) ) {
+							$status = $check_document_status( $exp_date, '', $reg_status );
+							$has_issue = ( $status[ 'status' ] === 'valid' || $status[ 'status' ] === 'extended' || ( strtolower( $reg_status ) === 'valid' || strtolower( $reg_status ) === 'permanent' ) );
+						} else {
+							$has_issue = false;
+						}
+					} elseif ( $document_status === 'temporary' ) {
+						// Check if temporary - must have correct type and temporary status
+						if ( $has_correct_type && ! empty( $exp_date ) ) {
+							$status = $check_document_status( $exp_date, '', $reg_status );
+							$has_issue = ( $status[ 'status' ] === 'temporary' || strtolower( $reg_status ) === 'temporary' );
+						} else {
+							$has_issue = false;
+						}
+					}
+					break;
+					
+				case 'PL':
+					// Plates
+					$exp_date = get_field_value( $meta, 'plates_expiration' );
+					$plates_status = get_field_value( $meta, 'plates_status' );
+					$has_plates = ! empty( get_field_value( $meta, 'plates' ) );
+					
+					if ( $document_status === 'expired' ) {
+						// Check if expired
+						if ( ! empty( $exp_date ) ) {
+							$status = $check_document_status( $exp_date, '', $plates_status );
+							$has_issue = ( $status[ 'status' ] === 'expired' );
+						}
+					} elseif ( $document_status === 'missing' ) {
+						// Check if missing
+						$has_issue = ( empty( $exp_date ) && ! $has_plates );
+					} elseif ( $document_status === 'valid' ) {
+						// Check if valid
+						if ( ! empty( $exp_date ) ) {
+							$status = $check_document_status( $exp_date, '', $plates_status );
+							$has_issue = ( $status[ 'status' ] === 'valid' || $status[ 'status' ] === 'extended' || ( strtolower( $plates_status ) === 'permanent' ) );
+						} else {
+							$has_issue = false;
+						}
+					} elseif ( $document_status === 'temporary' ) {
+						// Check if temporary
+						if ( ! empty( $exp_date ) ) {
+							$status = $check_document_status( $exp_date, '', $plates_status );
+							$has_issue = ( $status[ 'status' ] === 'temporary' || strtolower( $plates_status ) === 'temporary' );
+						} else {
+							$has_issue = false;
+						}
+					}
+					break;
+					
+				case 'DL':
+					// Driver's License - required document
+					$exp_date = get_field_value( $meta, 'driver_licence_expiration' );
+					$dl_type = get_field_value( $meta, 'driver_licence_type' );
+					$has_type = ! empty( $dl_type );
+					
+					if ( $document_status === 'expired' ) {
+						// Check if expired
+						if ( ! empty( $exp_date ) ) {
+							$status = $check_document_status( $exp_date );
+							$has_issue = ( $status[ 'status' ] === 'expired' );
+						}
+					} elseif ( $document_status === 'missing' ) {
+						// Check if missing
+						$has_issue = ( empty( $exp_date ) && ! $has_type );
+					} elseif ( $document_status === 'valid' ) {
+						// Check if valid
+						if ( ! empty( $exp_date ) ) {
+							$status = $check_document_status( $exp_date );
+							$has_issue = ( $status[ 'status' ] === 'valid' || $status[ 'status' ] === 'extended' );
+						} else {
+							$has_issue = false;
+						}
+					} elseif ( $document_status === 'temporary' ) {
+						// Check if temporary - DL type can be 'temporary'
+						if ( ! empty( $exp_date ) && strtolower( $dl_type ) === 'temporary' ) {
+							$status = $check_document_status( $exp_date );
+							$has_issue = ( $status[ 'status' ] !== 'expired' );
+						} else {
+							$has_issue = false;
+						}
+					}
+					break;
+					
+				case 'COI':
+					// Certificate of Insurance - check all variants
+					$coi_fields = array(
+						'auto_liability_expiration' => get_field_value( $meta, 'auto_liability_expiration' ),
+						'martlet_coi_expired_date' => get_field_value( $meta, 'martlet_coi_expired_date' ),
+						'endurance_coi_expired_date' => get_field_value( $meta, 'endurance_coi_expired_date' ),
+						'motor_cargo_expiration' => get_field_value( $meta, 'motor_cargo_expiration' ),
+					);
+					
+					// Also check if COI type exists
+					$has_coi_type = ! empty( get_field_value( $meta, 'auto_liability_coi' ) );
+					
+					// Check if any COI field has a date (not empty and not just whitespace)
+					$has_any_coi_date = false;
+					$has_expired_coi = false;
+					$has_valid_coi = false;
+					
+					foreach ( $coi_fields as $field_name => $exp_date ) {
+						// Trim and check if date exists (handle null, empty string, whitespace)
+						$exp_date_trimmed = trim( (string) $exp_date );
+						if ( ! empty( $exp_date_trimmed ) ) {
+							$has_any_coi_date = true;
+							$status = $check_document_status( $exp_date_trimmed );
+							if ( $status[ 'status' ] === 'expired' ) {
+								$has_expired_coi = true;
+								// Don't break - continue checking all fields to see if any are valid
+							} elseif ( $status[ 'status' ] === 'valid' || $status[ 'status' ] === 'expires_soon' ) {
+								$has_valid_coi = true;
+							}
+						}
+					}
+					
+					if ( $document_status === 'expired' ) {
+						// Only show if there's an expired COI AND no valid COI exists
+						// If there's at least one valid COI, don't show as expired
+						$has_issue = ( $has_expired_coi && ! $has_valid_coi );
+					} else {
+						// Only show if COI is completely missing (no dates at all, no type)
+						// If there's any date (even expired), it's not missing
+						$has_issue = ( ! $has_any_coi_date && ! $has_coi_type );
+					}
+					break;
+					
+				case 'EA':
+					// Employment Authorization
+					$legal_doc_type = get_field_value( $meta, 'legal_document_type' );
+					$exp_date = get_field_value( $meta, 'legal_document_expiration' );
+					$immigration_letter = get_field_value( $meta, 'immigration_letter' );
+					$has_type = ( $legal_doc_type === 'work-authorization' );
+					
+					if ( $document_status === 'expired' ) {
+						// Check if expired
+						if ( $has_type && ! empty( $exp_date ) ) {
+							$status = $check_document_status( $exp_date, $immigration_letter );
+							$has_issue = ( $status[ 'status' ] === 'expired' );
+						}
+					} else {
+						// Check if missing
+						$has_issue = ( ! $has_type || ( $has_type && empty( $exp_date ) ) );
+					}
+					break;
+					
+				case 'PR':
+					// Permanent Resident
+					$legal_doc_type = get_field_value( $meta, 'legal_document_type' );
+					$exp_date = get_field_value( $meta, 'legal_document_expiration' );
+					$immigration_letter = get_field_value( $meta, 'immigration_letter' );
+					$has_type = ( $legal_doc_type === 'permanent-resident-card' );
+					
+					if ( $document_status === 'expired' ) {
+						// Check if expired
+						if ( $has_type && ! empty( $exp_date ) ) {
+							$status = $check_document_status( $exp_date, $immigration_letter );
+							$has_issue = ( $status[ 'status' ] === 'expired' );
+						}
+					} else {
+						// Check if missing
+						$has_issue = ( ! $has_type || ( $has_type && empty( $exp_date ) ) );
+					}
+					break;
+					
+				case 'PS':
+					// Passport
+					$legal_doc_type = get_field_value( $meta, 'legal_document_type' );
+					$exp_date = get_field_value( $meta, 'legal_document_expiration' );
+					$immigration_letter = get_field_value( $meta, 'immigration_letter' );
+					$has_type = ( $legal_doc_type === 'passport' );
+					
+					if ( $document_status === 'expired' ) {
+						// Check if expired
+						if ( $has_type && ! empty( $exp_date ) ) {
+							$status = $check_document_status( $exp_date, $immigration_letter );
+							$has_issue = ( $status[ 'status' ] === 'expired' );
+						}
+					} else {
+						// Check if missing
+						$has_issue = ( ! $has_type || ( $has_type && empty( $exp_date ) ) );
+					}
+					break;
+					
+				case 'HZ':
+					// Hazmat Certificate
+					$exp_date = get_field_value( $meta, 'hazmat_expiration' );
+					$has_type = ! empty( get_field_value( $meta, 'hazmat_certificate' ) );
+					
+					if ( $document_status === 'expired' ) {
+						// Check if expired
+						if ( ! empty( $exp_date ) ) {
+							$status = $check_document_status( $exp_date );
+							$has_issue = ( $status[ 'status' ] === 'expired' );
+						}
+					} elseif ( $document_status === 'missing' ) {
+						// Check if missing
+						$has_issue = ( empty( $exp_date ) && ! $has_type );
+					} elseif ( $document_status === 'valid' ) {
+						// Check if valid
+						if ( ! empty( $exp_date ) ) {
+							$status = $check_document_status( $exp_date );
+							$has_issue = ( $status[ 'status' ] === 'valid' || $status[ 'status' ] === 'extended' );
+						} else {
+							$has_issue = false;
+						}
+					} elseif ( $document_status === 'temporary' ) {
+						$has_issue = false; // HZ doesn't have temporary status
+					}
+					break;
+				
+				case 'GE':
+					// Global Entry
+					$exp_date = get_field_value( $meta, 'global_entry_expiration' );
+					$has_type = ! empty( get_field_value( $meta, 'global_entry' ) );
+					
+					if ( $document_status === 'expired' ) {
+						// Check if expired
+						if ( ! empty( $exp_date ) ) {
+							$status = $check_document_status( $exp_date );
+							$has_issue = ( $status[ 'status' ] === 'expired' );
+						}
+					} elseif ( $document_status === 'missing' ) {
+						// Check if missing
+						$has_issue = ( empty( $exp_date ) && ! $has_type );
+					} elseif ( $document_status === 'valid' ) {
+						// Check if valid
+						if ( ! empty( $exp_date ) ) {
+							$status = $check_document_status( $exp_date );
+							$has_issue = ( $status[ 'status' ] === 'valid' || $status[ 'status' ] === 'extended' );
+						} else {
+							$has_issue = false;
+						}
+					} elseif ( $document_status === 'temporary' ) {
+						$has_issue = false; // GE doesn't have temporary status
+					}
+					break;
+				
+				case 'TWIC':
+					// TWIC
+					$exp_date = get_field_value( $meta, 'twic_expiration' );
+					$has_type = ! empty( get_field_value( $meta, 'twic' ) );
+					
+					if ( $document_status === 'expired' ) {
+						// Check if expired
+						if ( ! empty( $exp_date ) ) {
+							$status = $check_document_status( $exp_date );
+							$has_issue = ( $status[ 'status' ] === 'expired' );
+						}
+					} elseif ( $document_status === 'missing' ) {
+						// Check if missing
+						$has_issue = ( empty( $exp_date ) && ! $has_type );
+					} elseif ( $document_status === 'valid' ) {
+						// Check if valid
+						if ( ! empty( $exp_date ) ) {
+							$status = $check_document_status( $exp_date );
+							$has_issue = ( $status[ 'status' ] === 'valid' || $status[ 'status' ] === 'extended' );
+						} else {
+							$has_issue = false;
+						}
+					} elseif ( $document_status === 'temporary' ) {
+						$has_issue = false; // TWIC doesn't have temporary status
+					}
+					break;
+				
+				case 'TSA':
+					// TSA
+					$exp_date = get_field_value( $meta, 'tsa_expiration' );
+					$has_type = ! empty( get_field_value( $meta, 'tsa_approved' ) );
+					
+					if ( $document_status === 'expired' ) {
+						// Check if expired
+						if ( ! empty( $exp_date ) ) {
+							$status = $check_document_status( $exp_date );
+							$has_issue = ( $status[ 'status' ] === 'expired' );
+						}
+					} elseif ( $document_status === 'missing' ) {
+						// Check if missing
+						$has_issue = ( empty( $exp_date ) && ! $has_type );
+					} elseif ( $document_status === 'valid' ) {
+						// Check if valid
+						if ( ! empty( $exp_date ) ) {
+							$status = $check_document_status( $exp_date );
+							$has_issue = ( $status[ 'status' ] === 'valid' || $status[ 'status' ] === 'extended' );
+						} else {
+							$has_issue = false;
+						}
+					} elseif ( $document_status === 'temporary' ) {
+						$has_issue = false; // TSA doesn't have temporary status
+					}
+					break;
+					
+				case 'DL_TEAM':
+					// Driver's License (Team driver)
+					$exp_date = get_field_value( $meta, 'driver_licence_expiration_team_driver' );
+					$dl_type_team = get_field_value( $meta, 'driver_licence_type_team_driver' );
+					$has_type = ! empty( $dl_type_team );
+					
+					if ( $document_status === 'expired' ) {
+						// Check if expired
+						if ( ! empty( $exp_date ) ) {
+							$status = $check_document_status( $exp_date );
+							$has_issue = ( $status[ 'status' ] === 'expired' );
+						}
+					} elseif ( $document_status === 'missing' ) {
+						// Check if missing
+						$has_issue = ( empty( $exp_date ) && ! $has_type );
+					} elseif ( $document_status === 'valid' ) {
+						// Check if valid
+						if ( ! empty( $exp_date ) ) {
+							$status = $check_document_status( $exp_date );
+							$has_issue = ( $status[ 'status' ] === 'valid' || $status[ 'status' ] === 'extended' );
+						} else {
+							$has_issue = false;
+						}
+					} elseif ( $document_status === 'temporary' ) {
+						// Check if temporary - DL type can be 'temporary'
+						if ( ! empty( $exp_date ) && strtolower( $dl_type_team ) === 'temporary' ) {
+							$status = $check_document_status( $exp_date );
+							$has_issue = ( $status[ 'status' ] !== 'expired' );
+						} else {
+							$has_issue = false;
+						}
+					}
+					break;
+				
+				case 'EA_TEAM':
+					// Employment Authorization (Team driver)
+					$legal_doc_type = get_field_value( $meta, 'legal_document_type_team_driver' );
+					$exp_date = get_field_value( $meta, 'legal_document_expiration_team_driver' );
+					$immigration_letter = get_field_value( $meta, 'immigration_letter_team_driver' );
+					$has_type = ( $legal_doc_type === 'work-authorization' );
+					
+					if ( $document_status === 'expired' ) {
+						// Check if expired
+						if ( $has_type && ! empty( $exp_date ) ) {
+							$status = $check_document_status( $exp_date, $immigration_letter );
+							$has_issue = ( $status[ 'status' ] === 'expired' );
+						}
+					} elseif ( $document_status === 'missing' ) {
+						// Check if missing
+						$has_issue = ( ! $has_type || ( $has_type && empty( $exp_date ) ) );
+					} elseif ( $document_status === 'valid' ) {
+						// Check if valid
+						if ( $has_type && ! empty( $exp_date ) ) {
+							$status = $check_document_status( $exp_date, $immigration_letter );
+							$has_issue = ( $status[ 'status' ] === 'valid' || $status[ 'status' ] === 'extended' );
+						} else {
+							$has_issue = false;
+						}
+					} elseif ( $document_status === 'temporary' ) {
+						$has_issue = false; // EA doesn't have temporary status
+					}
+					break;
+				
+				case 'PR_TEAM':
+					// Permanent Resident (Team driver)
+					$legal_doc_type = get_field_value( $meta, 'legal_document_type_team_driver' );
+					$exp_date = get_field_value( $meta, 'legal_document_expiration_team_driver' );
+					$immigration_letter = get_field_value( $meta, 'immigration_letter_team_driver' );
+					$has_type = ( $legal_doc_type === 'permanent-resident-card' );
+					
+					if ( $document_status === 'expired' ) {
+						// Check if expired
+						if ( $has_type && ! empty( $exp_date ) ) {
+							$status = $check_document_status( $exp_date, $immigration_letter );
+							$has_issue = ( $status[ 'status' ] === 'expired' );
+						}
+					} elseif ( $document_status === 'missing' ) {
+						// Check if missing
+						$has_issue = ( ! $has_type || ( $has_type && empty( $exp_date ) ) );
+					} elseif ( $document_status === 'valid' ) {
+						// Check if valid
+						if ( $has_type && ! empty( $exp_date ) ) {
+							$status = $check_document_status( $exp_date, $immigration_letter );
+							$has_issue = ( $status[ 'status' ] === 'valid' || $status[ 'status' ] === 'extended' );
+						} else {
+							$has_issue = false;
+						}
+					} elseif ( $document_status === 'temporary' ) {
+						$has_issue = false; // PR doesn't have temporary status
+					}
+					break;
+				
+				case 'PS_TEAM':
+					// Passport (Team driver)
+					$legal_doc_type = get_field_value( $meta, 'legal_document_type_team_driver' );
+					$exp_date = get_field_value( $meta, 'legal_document_expiration_team_driver' );
+					$immigration_letter = get_field_value( $meta, 'immigration_letter_team_driver' );
+					$has_type = ( $legal_doc_type === 'passport' );
+					
+					if ( $document_status === 'expired' ) {
+						// Check if expired
+						if ( $has_type && ! empty( $exp_date ) ) {
+							$status = $check_document_status( $exp_date, $immigration_letter );
+							$has_issue = ( $status[ 'status' ] === 'expired' );
+						}
+					} elseif ( $document_status === 'missing' ) {
+						// Check if missing
+						$has_issue = ( ! $has_type || ( $has_type && empty( $exp_date ) ) );
+					} elseif ( $document_status === 'valid' ) {
+						// Check if valid
+						if ( $has_type && ! empty( $exp_date ) ) {
+							$status = $check_document_status( $exp_date, $immigration_letter );
+							$has_issue = ( $status[ 'status' ] === 'valid' || $status[ 'status' ] === 'extended' );
+						} else {
+							$has_issue = false;
+						}
+					} elseif ( $document_status === 'temporary' ) {
+						$has_issue = false; // PS doesn't have temporary status
+					}
+					break;
+			}
+			
+			// Only include driver if this specific document has issues
+			if ( $has_issue ) {
+				$filtered[] = $driver;
+			}
+		}
+		
+		return $filtered;
+	}
+	
+	/**
 	 * AJAX обработчик для удержания/освобождения водителя
 	 */
 	public function hold_driver_status() {
@@ -8423,6 +9286,38 @@ class TMSDrivers extends TMSDriversHelper {
 			wp_send_json_success( array(
 				'date'    => $current_date,
 				'message' => 'Background check date updated successfully'
+			) );
+		}
+	}
+	
+	public function ajax_update_driver_notes() {
+		if ( defined( 'DOING_AJAX' ) && DOING_AJAX ) {
+			$MY_INPUT = filter_var_array( $_POST, [
+				"driver_id" => FILTER_SANITIZE_NUMBER_INT,
+				"recruiter_notes" => FILTER_UNSAFE_RAW,
+			] );
+			
+			if ( ! isset( $MY_INPUT[ 'driver_id' ] ) || empty( $MY_INPUT[ 'driver_id' ] ) ) {
+				wp_send_json_error( [ 'message' => 'Driver ID is required' ] );
+				return;
+			}
+			
+			$driver_id = (int) $MY_INPUT[ 'driver_id' ];
+			$recruiter_notes = isset( $MY_INPUT[ 'recruiter_notes' ] ) ? sanitize_textarea_field( wp_unslash( $MY_INPUT[ 'recruiter_notes' ] ) ) : '';
+			
+			// Update recruiter_notes in meta table
+			$meta_data = array(
+				'recruiter_notes' => $recruiter_notes,
+			);
+			
+			$this->update_post_meta_data( $driver_id, $meta_data );
+			
+			// Clear drivers cache when driver data is updated
+			$this->clear_drivers_cache();
+			
+			wp_send_json_success( array(
+				'recruiter_notes' => $recruiter_notes,
+				'message' => 'Notes updated successfully'
 			) );
 		}
 	}

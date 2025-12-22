@@ -16,20 +16,13 @@ $args     = array(
 );
 
 $args  = $Drivers->set_filter_params( $args );
-$items = $Drivers->get_table_items( $args );
+$items = $Drivers->get_table_items_documents( $args );
 
 $access = $TMSUsers->check_user_role_access( [
 	'administrator',
 	'recruiter',
 	'recruiter-tl',
 	'hr_manager',
-	'accounting',
-	'billing',
-	'driver_updates',
-	'expedite_manager',
-	'tracking-tl',
-	'morning_tracking',
-	'nightshift_tracking',
 ], true );
 
 
@@ -43,9 +36,9 @@ $access = $TMSUsers->check_user_role_access( [
 							echo $helper->message_top( 'error', 'Access only Administrator, recruiters and recruiters team leader have access to this page.' );
 						else:
 							
-							echo esc_html( get_template_part( TEMPLATE_PATH . 'filters/driver', 'filter' ) );
+							echo esc_html( get_template_part( TEMPLATE_PATH . 'filters/driver-documents', 'filter' ) );
 							
-							echo esc_html( get_template_part( TEMPLATE_PATH . 'tables/driver', 'table', $items ) );
+							echo esc_html( get_template_part( TEMPLATE_PATH . 'tables/driver-documents', 'table', $items ) );
 						endif; ?>
                     </div>
                 </div>

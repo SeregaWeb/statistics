@@ -8939,6 +8939,129 @@ var driverHoldInit = function driverHoldInit(ajaxUrl) {
 
 /***/ }),
 
+/***/ "./src/js/components/driver-notes-edit.ts":
+/*!************************************************!*\
+  !*** ./src/js/components/driver-notes-edit.ts ***!
+  \************************************************/
+/***/ (function(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   initDriverNotesEdit: function() { return /* binding */ initDriverNotesEdit; }
+/* harmony export */ });
+var initDriverNotesEdit = function initDriverNotesEdit(urlAjax) {
+  document.addEventListener('click', function (e) {
+    var editBtn = e.target.closest('.js-edit-notes');
+    if (editBtn) {
+      e.preventDefault();
+      var cell = editBtn.closest('.js-driver-notes-cell');
+      if (!cell) return;
+      var displayDiv = cell.querySelector('.js-driver-notes-display');
+      var editDiv = cell.querySelector('.js-driver-notes-edit');
+      var textarea = cell.querySelector('.js-notes-textarea');
+      if (displayDiv && editDiv && textarea) {
+        displayDiv.classList.add('d-none');
+        editDiv.classList.remove('d-none');
+        textarea.focus();
+      }
+    }
+  });
+  document.addEventListener('click', function (e) {
+    var cancelBtn = e.target.closest('.js-cancel-notes');
+    if (cancelBtn) {
+      e.preventDefault();
+      var cell = cancelBtn.closest('.js-driver-notes-cell');
+      if (!cell) return;
+      var displayDiv = cell.querySelector('.js-driver-notes-display');
+      var editDiv = cell.querySelector('.js-driver-notes-edit');
+      var textarea = cell.querySelector('.js-notes-textarea');
+      if (displayDiv && editDiv && textarea) {
+        var originalNotes = cell.getAttribute('data-original-notes') || '';
+        textarea.value = originalNotes;
+        displayDiv.classList.remove('d-none');
+        editDiv.classList.add('d-none');
+      }
+    }
+  });
+  document.addEventListener('click', function (e) {
+    var _a;
+    var saveBtn = e.target.closest('.js-save-notes');
+    if (saveBtn) {
+      e.preventDefault();
+      var cell = saveBtn.closest('.js-driver-notes-cell');
+      if (!cell) return;
+      var driverId = cell.getAttribute('data-driver-id');
+      var textarea = cell.querySelector('.js-notes-textarea');
+      if (!driverId || !textarea) return;
+      var notes = textarea.value.trim();
+      saveBtn.disabled = true;
+      saveBtn.textContent = 'Saving...';
+      if (!cell.getAttribute('data-original-notes')) {
+        var displayText = ((_a = cell.querySelector('.js-driver-notes-display .text-small')) === null || _a === void 0 ? void 0 : _a.textContent) || '';
+        cell.setAttribute('data-original-notes', displayText);
+      }
+      var formData = new FormData();
+      formData.append('action', 'update_driver_notes');
+      formData.append('driver_id', driverId);
+      formData.append('recruiter_notes', notes);
+      fetch(urlAjax, {
+        method: 'POST',
+        body: formData
+      }).then(function (response) {
+        return response.json();
+      }).then(function (data) {
+        var _a;
+        if (data.success) {
+          var displayDiv = cell.querySelector('.js-driver-notes-display');
+          var editDiv = cell.querySelector('.js-driver-notes-edit');
+          var flexGrowDiv = displayDiv === null || displayDiv === void 0 ? void 0 : displayDiv.querySelector('.flex-grow-1');
+          var notesDisplay = cell.querySelector('.js-driver-notes-display .text-small');
+          if (displayDiv && editDiv && flexGrowDiv) {
+            if (data.data.recruiter_notes) {
+              if (notesDisplay) {
+                notesDisplay.className = 'text-small';
+                notesDisplay.innerHTML = data.data.recruiter_notes.replace(/\n/g, '<br>');
+              } else {
+                var newNotesDiv = document.createElement('div');
+                newNotesDiv.className = 'text-small';
+                newNotesDiv.innerHTML = data.data.recruiter_notes.replace(/\n/g, '<br>');
+                flexGrowDiv.appendChild(newNotesDiv);
+              }
+            } else {
+              if (notesDisplay) {
+                notesDisplay.remove();
+              }
+            }
+            displayDiv.classList.remove('d-none');
+            editDiv.classList.add('d-none');
+            cell.setAttribute('data-original-notes', data.data.recruiter_notes || '');
+          }
+        } else {
+          alert('Error saving notes: ' + (((_a = data.data) === null || _a === void 0 ? void 0 : _a.message) || 'Unknown error'));
+        }
+      }).catch(function (error) {
+        console.error('Error:', error);
+        alert('Error saving notes. Please try again.');
+      }).finally(function () {
+        saveBtn.disabled = false;
+        saveBtn.textContent = 'Save';
+      });
+    }
+  });
+  document.querySelectorAll('.js-driver-notes-cell').forEach(function (cell) {
+    var notesDisplay = cell.querySelector('.text-small');
+    if (notesDisplay && !cell.getAttribute('data-original-notes')) {
+      var originalText = notesDisplay.textContent || '';
+      cell.setAttribute('data-original-notes', originalText);
+    } else if (!notesDisplay && !cell.getAttribute('data-original-notes')) {
+      cell.setAttribute('data-original-notes', '');
+    }
+  });
+};
+
+/***/ }),
+
 /***/ "./src/js/components/driver-popup-forms.ts":
 /*!*************************************************!*\
   !*** ./src/js/components/driver-popup-forms.ts ***!
@@ -11106,6 +11229,7 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */   cleanUrlByFilter: function() { return /* binding */ cleanUrlByFilter; },
 /* harmony export */   cleanUrlByFilterAr: function() { return /* binding */ cleanUrlByFilterAr; },
 /* harmony export */   cleanUrlByFilterDriver: function() { return /* binding */ cleanUrlByFilterDriver; },
+/* harmony export */   cleanUrlByFilterDriverDocuments: function() { return /* binding */ cleanUrlByFilterDriverDocuments; },
 /* harmony export */   cleanUrlByFilterDriverSearch: function() { return /* binding */ cleanUrlByFilterDriverSearch; },
 /* harmony export */   cleanUrlByFilterPlatform: function() { return /* binding */ cleanUrlByFilterPlatform; }
 /* harmony export */ });
@@ -11219,6 +11343,22 @@ var cleanUrlByFilterDriverSearch = function cleanUrlByFilterDriverSearch() {
       capabilityCheckboxes.forEach(function (checkbox) {
         params.append('capabilities[]', checkbox.value);
       });
+      window.location.href = "?".concat(params.toString());
+    });
+  }
+};
+var cleanUrlByFilterDriverDocuments = function cleanUrlByFilterDriverDocuments() {
+  var form = document.getElementById('navbarNavDriverDocuments');
+  if (form) {
+    form.addEventListener('submit', function (event) {
+      event.preventDefault();
+      var params = new URLSearchParams();
+      var mySearch = form.elements.namedItem('my_search');
+      var documentType = form.elements.namedItem('document_type');
+      var documentStatus = form.elements.namedItem('document_status');
+      if (mySearch === null || mySearch === void 0 ? void 0 : mySearch.value) params.append('my_search', mySearch.value);
+      if (documentType === null || documentType === void 0 ? void 0 : documentType.value) params.append('document_type', documentType.value);
+      if ((documentStatus === null || documentStatus === void 0 ? void 0 : documentStatus.value) && (documentType === null || documentType === void 0 ? void 0 : documentType.value)) params.append('document_status', documentStatus.value);
       window.location.href = "?".concat(params.toString());
     });
   }
@@ -28210,46 +28350,48 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _components_auto_fill_address__WEBPACK_IMPORTED_MODULE_14__ = __webpack_require__(/*! ./components/auto-fill-address */ "./src/js/components/auto-fill-address.ts");
 /* harmony import */ var _components_auth_users__WEBPACK_IMPORTED_MODULE_15__ = __webpack_require__(/*! ./components/auth-users */ "./src/js/components/auth-users.ts");
 /* harmony import */ var _components_filter_clean__WEBPACK_IMPORTED_MODULE_16__ = __webpack_require__(/*! ./components/filter-clean */ "./src/js/components/filter-clean.ts");
-/* harmony import */ var _components_chow_hidden_value__WEBPACK_IMPORTED_MODULE_17__ = __webpack_require__(/*! ./components/chow-hidden-value */ "./src/js/components/chow-hidden-value.ts");
-/* harmony import */ var _components_logs__WEBPACK_IMPORTED_MODULE_18__ = __webpack_require__(/*! ./components/logs */ "./src/js/components/logs.ts");
-/* harmony import */ var _components_bookmark__WEBPACK_IMPORTED_MODULE_19__ = __webpack_require__(/*! ./components/bookmark */ "./src/js/components/bookmark.ts");
-/* harmony import */ var _components_performance__WEBPACK_IMPORTED_MODULE_20__ = __webpack_require__(/*! ./components/performance */ "./src/js/components/performance.ts");
-/* harmony import */ var _components_tel_mask__WEBPACK_IMPORTED_MODULE_21__ = __webpack_require__(/*! ./components/tel-mask */ "./src/js/components/tel-mask.ts");
-/* harmony import */ var _components_stop_type__WEBPACK_IMPORTED_MODULE_22__ = __webpack_require__(/*! ./components/stop-type */ "./src/js/components/stop-type.ts");
-/* harmony import */ var _components_set_status_paid__WEBPACK_IMPORTED_MODULE_23__ = __webpack_require__(/*! ./components/set-status-paid */ "./src/js/components/set-status-paid.ts");
-/* harmony import */ var _components_send_email_chain__WEBPACK_IMPORTED_MODULE_24__ = __webpack_require__(/*! ./components/send-email-chain */ "./src/js/components/send-email-chain.ts");
-/* harmony import */ var _components_save_all_tracking__WEBPACK_IMPORTED_MODULE_25__ = __webpack_require__(/*! ./components/save-all-tracking */ "./src/js/components/save-all-tracking.ts");
-/* harmony import */ var _components_auto_submit_form__WEBPACK_IMPORTED_MODULE_26__ = __webpack_require__(/*! ./components/auto-submit-form */ "./src/js/components/auto-submit-form.ts");
-/* harmony import */ var _components_document_create_money_check__WEBPACK_IMPORTED_MODULE_27__ = __webpack_require__(/*! ./components/document-create-money-check */ "./src/js/components/document-create-money-check.ts");
-/* harmony import */ var _components_driver_core__WEBPACK_IMPORTED_MODULE_28__ = __webpack_require__(/*! ./components/driver-core */ "./src/js/components/driver-core.ts");
-/* harmony import */ var _components_trailer_core__WEBPACK_IMPORTED_MODULE_29__ = __webpack_require__(/*! ./components/trailer-core */ "./src/js/components/trailer-core.ts");
-/* harmony import */ var _components_contacts_contacts_init__WEBPACK_IMPORTED_MODULE_30__ = __webpack_require__(/*! ./components/contacts/contacts-init */ "./src/js/components/contacts/contacts-init.ts");
-/* harmony import */ var _components_move_dispatcher__WEBPACK_IMPORTED_MODULE_31__ = __webpack_require__(/*! ./components/move-dispatcher */ "./src/js/components/move-dispatcher.ts");
-/* harmony import */ var _components_search_driver_search_driver_core__WEBPACK_IMPORTED_MODULE_32__ = __webpack_require__(/*! ./components/search-driver/search-driver-core */ "./src/js/components/search-driver/search-driver-core.ts");
-/* harmony import */ var _components_driver_hold__WEBPACK_IMPORTED_MODULE_33__ = __webpack_require__(/*! ./components/driver-hold */ "./src/js/components/driver-hold.ts");
-/* harmony import */ var _components_common_hold_section__WEBPACK_IMPORTED_MODULE_34__ = __webpack_require__(/*! ./components/common/hold-section */ "./src/js/components/common/hold-section.ts");
-/* harmony import */ var _components_capabilities_filter__WEBPACK_IMPORTED_MODULE_35__ = __webpack_require__(/*! ./components/capabilities-filter */ "./src/js/components/capabilities-filter.ts");
-/* harmony import */ var _components_quick_status_update__WEBPACK_IMPORTED_MODULE_36__ = __webpack_require__(/*! ./components/quick-status-update */ "./src/js/components/quick-status-update.ts");
-/* harmony import */ var _components_eta_popup__WEBPACK_IMPORTED_MODULE_37__ = __webpack_require__(/*! ./components/eta-popup */ "./src/js/components/eta-popup.ts");
-/* harmony import */ var _components_eta_timer__WEBPACK_IMPORTED_MODULE_38__ = __webpack_require__(/*! ./components/eta-timer */ "./src/js/components/eta-timer.ts");
-/* harmony import */ var _components_rating_reminder_modal__WEBPACK_IMPORTED_MODULE_39__ = __webpack_require__(/*! ./components/rating-reminder-modal */ "./src/js/components/rating-reminder-modal.ts");
-/* harmony import */ var _components_drivers_rate__WEBPACK_IMPORTED_MODULE_40__ = __webpack_require__(/*! ./components/drivers-rate */ "./src/js/components/drivers-rate.ts");
-/* harmony import */ var _components_admin_rating_manager__WEBPACK_IMPORTED_MODULE_41__ = __webpack_require__(/*! ./components/admin-rating-manager */ "./src/js/components/admin-rating-manager.ts");
-/* harmony import */ var _components_charts_drivers_statistics_charts__WEBPACK_IMPORTED_MODULE_42__ = __webpack_require__(/*! ./components/charts/drivers-statistics-charts */ "./src/js/components/charts/drivers-statistics-charts.ts");
-/* harmony import */ var _components_charts_finance_statistics_charts__WEBPACK_IMPORTED_MODULE_43__ = __webpack_require__(/*! ./components/charts/finance-statistics-charts */ "./src/js/components/charts/finance-statistics-charts.ts");
-/* harmony import */ var _components_charts_source_statistics_charts__WEBPACK_IMPORTED_MODULE_44__ = __webpack_require__(/*! ./components/charts/source-statistics-charts */ "./src/js/components/charts/source-statistics-charts.ts");
-/* harmony import */ var _components_drivers_statistics_tabs__WEBPACK_IMPORTED_MODULE_45__ = __webpack_require__(/*! ./components/drivers-statistics-tabs */ "./src/js/components/drivers-statistics-tabs.ts");
-/* harmony import */ var _components_quick_copy__WEBPACK_IMPORTED_MODULE_46__ = __webpack_require__(/*! ./components/quick-copy */ "./src/js/components/quick-copy.ts");
-/* harmony import */ var _components_driver_popups__WEBPACK_IMPORTED_MODULE_47__ = __webpack_require__(/*! ./components/driver-popups */ "./src/js/components/driver-popups.ts");
-/* harmony import */ var _components_driver_popup_forms__WEBPACK_IMPORTED_MODULE_48__ = __webpack_require__(/*! ./components/driver-popup-forms */ "./src/js/components/driver-popup-forms.ts");
-/* harmony import */ var _components_broker_popups__WEBPACK_IMPORTED_MODULE_49__ = __webpack_require__(/*! ./components/broker-popups */ "./src/js/components/broker-popups.ts");
-/* harmony import */ var _components_broker_popup_forms__WEBPACK_IMPORTED_MODULE_50__ = __webpack_require__(/*! ./components/broker-popup-forms */ "./src/js/components/broker-popup-forms.ts");
-/* harmony import */ var _components_driver_autocomplete__WEBPACK_IMPORTED_MODULE_51__ = __webpack_require__(/*! ./components/driver-autocomplete */ "./src/js/components/driver-autocomplete.ts");
-/* harmony import */ var _components_common_audio_helper__WEBPACK_IMPORTED_MODULE_52__ = __webpack_require__(/*! ./components/common/audio-helper */ "./src/js/components/common/audio-helper.ts");
-/* harmony import */ var _components_timer_control__WEBPACK_IMPORTED_MODULE_53__ = __webpack_require__(/*! ./components/timer-control */ "./src/js/components/timer-control.ts");
-/* harmony import */ var _components_timer_analytics__WEBPACK_IMPORTED_MODULE_54__ = __webpack_require__(/*! ./components/timer-analytics */ "./src/js/components/timer-analytics.ts");
-/* harmony import */ var _components_dark_mode_toggle__WEBPACK_IMPORTED_MODULE_55__ = __webpack_require__(/*! ./components/dark-mode-toggle */ "./src/js/components/dark-mode-toggle.ts");
-/* harmony import */ var _components_drivers_map__WEBPACK_IMPORTED_MODULE_56__ = __webpack_require__(/*! ./components/drivers-map */ "./src/js/components/drivers-map.ts");
+/* harmony import */ var _components_driver_notes_edit__WEBPACK_IMPORTED_MODULE_17__ = __webpack_require__(/*! ./components/driver-notes-edit */ "./src/js/components/driver-notes-edit.ts");
+/* harmony import */ var _components_chow_hidden_value__WEBPACK_IMPORTED_MODULE_18__ = __webpack_require__(/*! ./components/chow-hidden-value */ "./src/js/components/chow-hidden-value.ts");
+/* harmony import */ var _components_logs__WEBPACK_IMPORTED_MODULE_19__ = __webpack_require__(/*! ./components/logs */ "./src/js/components/logs.ts");
+/* harmony import */ var _components_bookmark__WEBPACK_IMPORTED_MODULE_20__ = __webpack_require__(/*! ./components/bookmark */ "./src/js/components/bookmark.ts");
+/* harmony import */ var _components_performance__WEBPACK_IMPORTED_MODULE_21__ = __webpack_require__(/*! ./components/performance */ "./src/js/components/performance.ts");
+/* harmony import */ var _components_tel_mask__WEBPACK_IMPORTED_MODULE_22__ = __webpack_require__(/*! ./components/tel-mask */ "./src/js/components/tel-mask.ts");
+/* harmony import */ var _components_stop_type__WEBPACK_IMPORTED_MODULE_23__ = __webpack_require__(/*! ./components/stop-type */ "./src/js/components/stop-type.ts");
+/* harmony import */ var _components_set_status_paid__WEBPACK_IMPORTED_MODULE_24__ = __webpack_require__(/*! ./components/set-status-paid */ "./src/js/components/set-status-paid.ts");
+/* harmony import */ var _components_send_email_chain__WEBPACK_IMPORTED_MODULE_25__ = __webpack_require__(/*! ./components/send-email-chain */ "./src/js/components/send-email-chain.ts");
+/* harmony import */ var _components_save_all_tracking__WEBPACK_IMPORTED_MODULE_26__ = __webpack_require__(/*! ./components/save-all-tracking */ "./src/js/components/save-all-tracking.ts");
+/* harmony import */ var _components_auto_submit_form__WEBPACK_IMPORTED_MODULE_27__ = __webpack_require__(/*! ./components/auto-submit-form */ "./src/js/components/auto-submit-form.ts");
+/* harmony import */ var _components_document_create_money_check__WEBPACK_IMPORTED_MODULE_28__ = __webpack_require__(/*! ./components/document-create-money-check */ "./src/js/components/document-create-money-check.ts");
+/* harmony import */ var _components_driver_core__WEBPACK_IMPORTED_MODULE_29__ = __webpack_require__(/*! ./components/driver-core */ "./src/js/components/driver-core.ts");
+/* harmony import */ var _components_trailer_core__WEBPACK_IMPORTED_MODULE_30__ = __webpack_require__(/*! ./components/trailer-core */ "./src/js/components/trailer-core.ts");
+/* harmony import */ var _components_contacts_contacts_init__WEBPACK_IMPORTED_MODULE_31__ = __webpack_require__(/*! ./components/contacts/contacts-init */ "./src/js/components/contacts/contacts-init.ts");
+/* harmony import */ var _components_move_dispatcher__WEBPACK_IMPORTED_MODULE_32__ = __webpack_require__(/*! ./components/move-dispatcher */ "./src/js/components/move-dispatcher.ts");
+/* harmony import */ var _components_search_driver_search_driver_core__WEBPACK_IMPORTED_MODULE_33__ = __webpack_require__(/*! ./components/search-driver/search-driver-core */ "./src/js/components/search-driver/search-driver-core.ts");
+/* harmony import */ var _components_driver_hold__WEBPACK_IMPORTED_MODULE_34__ = __webpack_require__(/*! ./components/driver-hold */ "./src/js/components/driver-hold.ts");
+/* harmony import */ var _components_common_hold_section__WEBPACK_IMPORTED_MODULE_35__ = __webpack_require__(/*! ./components/common/hold-section */ "./src/js/components/common/hold-section.ts");
+/* harmony import */ var _components_capabilities_filter__WEBPACK_IMPORTED_MODULE_36__ = __webpack_require__(/*! ./components/capabilities-filter */ "./src/js/components/capabilities-filter.ts");
+/* harmony import */ var _components_quick_status_update__WEBPACK_IMPORTED_MODULE_37__ = __webpack_require__(/*! ./components/quick-status-update */ "./src/js/components/quick-status-update.ts");
+/* harmony import */ var _components_eta_popup__WEBPACK_IMPORTED_MODULE_38__ = __webpack_require__(/*! ./components/eta-popup */ "./src/js/components/eta-popup.ts");
+/* harmony import */ var _components_eta_timer__WEBPACK_IMPORTED_MODULE_39__ = __webpack_require__(/*! ./components/eta-timer */ "./src/js/components/eta-timer.ts");
+/* harmony import */ var _components_rating_reminder_modal__WEBPACK_IMPORTED_MODULE_40__ = __webpack_require__(/*! ./components/rating-reminder-modal */ "./src/js/components/rating-reminder-modal.ts");
+/* harmony import */ var _components_drivers_rate__WEBPACK_IMPORTED_MODULE_41__ = __webpack_require__(/*! ./components/drivers-rate */ "./src/js/components/drivers-rate.ts");
+/* harmony import */ var _components_admin_rating_manager__WEBPACK_IMPORTED_MODULE_42__ = __webpack_require__(/*! ./components/admin-rating-manager */ "./src/js/components/admin-rating-manager.ts");
+/* harmony import */ var _components_charts_drivers_statistics_charts__WEBPACK_IMPORTED_MODULE_43__ = __webpack_require__(/*! ./components/charts/drivers-statistics-charts */ "./src/js/components/charts/drivers-statistics-charts.ts");
+/* harmony import */ var _components_charts_finance_statistics_charts__WEBPACK_IMPORTED_MODULE_44__ = __webpack_require__(/*! ./components/charts/finance-statistics-charts */ "./src/js/components/charts/finance-statistics-charts.ts");
+/* harmony import */ var _components_charts_source_statistics_charts__WEBPACK_IMPORTED_MODULE_45__ = __webpack_require__(/*! ./components/charts/source-statistics-charts */ "./src/js/components/charts/source-statistics-charts.ts");
+/* harmony import */ var _components_drivers_statistics_tabs__WEBPACK_IMPORTED_MODULE_46__ = __webpack_require__(/*! ./components/drivers-statistics-tabs */ "./src/js/components/drivers-statistics-tabs.ts");
+/* harmony import */ var _components_quick_copy__WEBPACK_IMPORTED_MODULE_47__ = __webpack_require__(/*! ./components/quick-copy */ "./src/js/components/quick-copy.ts");
+/* harmony import */ var _components_driver_popups__WEBPACK_IMPORTED_MODULE_48__ = __webpack_require__(/*! ./components/driver-popups */ "./src/js/components/driver-popups.ts");
+/* harmony import */ var _components_driver_popup_forms__WEBPACK_IMPORTED_MODULE_49__ = __webpack_require__(/*! ./components/driver-popup-forms */ "./src/js/components/driver-popup-forms.ts");
+/* harmony import */ var _components_broker_popups__WEBPACK_IMPORTED_MODULE_50__ = __webpack_require__(/*! ./components/broker-popups */ "./src/js/components/broker-popups.ts");
+/* harmony import */ var _components_broker_popup_forms__WEBPACK_IMPORTED_MODULE_51__ = __webpack_require__(/*! ./components/broker-popup-forms */ "./src/js/components/broker-popup-forms.ts");
+/* harmony import */ var _components_driver_autocomplete__WEBPACK_IMPORTED_MODULE_52__ = __webpack_require__(/*! ./components/driver-autocomplete */ "./src/js/components/driver-autocomplete.ts");
+/* harmony import */ var _components_common_audio_helper__WEBPACK_IMPORTED_MODULE_53__ = __webpack_require__(/*! ./components/common/audio-helper */ "./src/js/components/common/audio-helper.ts");
+/* harmony import */ var _components_timer_control__WEBPACK_IMPORTED_MODULE_54__ = __webpack_require__(/*! ./components/timer-control */ "./src/js/components/timer-control.ts");
+/* harmony import */ var _components_timer_analytics__WEBPACK_IMPORTED_MODULE_55__ = __webpack_require__(/*! ./components/timer-analytics */ "./src/js/components/timer-analytics.ts");
+/* harmony import */ var _components_dark_mode_toggle__WEBPACK_IMPORTED_MODULE_56__ = __webpack_require__(/*! ./components/dark-mode-toggle */ "./src/js/components/dark-mode-toggle.ts");
+/* harmony import */ var _components_drivers_map__WEBPACK_IMPORTED_MODULE_57__ = __webpack_require__(/*! ./components/drivers-map */ "./src/js/components/drivers-map.ts");
+
 
 
 
@@ -28314,7 +28456,7 @@ function ready() {
   var linkEndurance = var_from_php.link_web_service_endurance;
   var linkMartlet = var_from_php.link_web_service_martlet;
   var hereApi = var_from_php.here_api_key;
-  (0,_components_search_driver_search_driver_core__WEBPACK_IMPORTED_MODULE_32__.initialSearchDriver)(var_from_php);
+  (0,_components_search_driver_search_driver_core__WEBPACK_IMPORTED_MODULE_33__.initialSearchDriver)(var_from_php);
   var useServices = {
     Odysseia: linkOdysseia,
     Endurance: linkEndurance,
@@ -28322,12 +28464,12 @@ function ready() {
   };
   var popupInstance = new _parts_popup_window__WEBPACK_IMPORTED_MODULE_2__["default"]();
   popupInstance.init();
-  _components_common_audio_helper__WEBPACK_IMPORTED_MODULE_52__["default"].getInstance();
-  var driverPopupForms = new _components_driver_popup_forms__WEBPACK_IMPORTED_MODULE_48__["default"](urlAjax);
-  var brokerPopupForms = new _components_broker_popup_forms__WEBPACK_IMPORTED_MODULE_50__["default"](urlAjax);
+  _components_common_audio_helper__WEBPACK_IMPORTED_MODULE_53__["default"].getInstance();
+  var driverPopupForms = new _components_driver_popup_forms__WEBPACK_IMPORTED_MODULE_49__["default"](urlAjax);
+  var brokerPopupForms = new _components_broker_popup_forms__WEBPACK_IMPORTED_MODULE_51__["default"](urlAjax);
   var singlePageBrokerUrl = (var_from_php === null || var_from_php === void 0 ? void 0 : var_from_php.single_page_broker) || '';
-  var brokerPopups = new _components_broker_popups__WEBPACK_IMPORTED_MODULE_49__["default"](urlAjax, singlePageBrokerUrl);
-  new _components_driver_autocomplete__WEBPACK_IMPORTED_MODULE_51__["default"](urlAjax, {
+  var brokerPopups = new _components_broker_popups__WEBPACK_IMPORTED_MODULE_50__["default"](urlAjax, singlePageBrokerUrl);
+  new _components_driver_autocomplete__WEBPACK_IMPORTED_MODULE_52__["default"](urlAjax, {
     unitInput: '.js-unit-number-input',
     dropdown: '.js-driver-dropdown',
     attachedDriverInput: 'input[name="attached_driver"]',
@@ -28336,7 +28478,7 @@ function ready() {
     nonceInput: '#driver-search-nonce',
     driverValueInput: '.js-driver-value'
   });
-  new _components_driver_autocomplete__WEBPACK_IMPORTED_MODULE_51__["default"](urlAjax, {
+  new _components_driver_autocomplete__WEBPACK_IMPORTED_MODULE_52__["default"](urlAjax, {
     unitInput: '.js-second-unit-number-input',
     dropdown: '.js-second-driver-dropdown',
     attachedDriverInput: 'input[name="attached_second_driver"]',
@@ -28344,7 +28486,7 @@ function ready() {
     unitNumberNameInput: 'input[name="second_unit_number_name"]',
     nonceInput: '#second-driver-search-nonce'
   });
-  new _components_driver_autocomplete__WEBPACK_IMPORTED_MODULE_51__["default"](urlAjax, {
+  new _components_driver_autocomplete__WEBPACK_IMPORTED_MODULE_52__["default"](urlAjax, {
     unitInput: '.js-third-unit-number-input',
     dropdown: '.js-third-driver-dropdown',
     attachedDriverInput: 'input[name="attached_third_driver"]',
@@ -28360,7 +28502,7 @@ function ready() {
     if (!wasVisible) {
       refererBlock.style.display = 'block';
     }
-    refererAutocomplete = new _components_driver_autocomplete__WEBPACK_IMPORTED_MODULE_51__["default"](urlAjax, {
+    refererAutocomplete = new _components_driver_autocomplete__WEBPACK_IMPORTED_MODULE_52__["default"](urlAjax, {
       unitInput: '.js-referer-unit-number-input',
       dropdown: '.js-referer-driver-dropdown',
       attachedDriverInput: '#referer_by',
@@ -28401,9 +28543,9 @@ function ready() {
       driverPopupForms.loadDriverStatistics(parseInt(driverIdInput.value));
     }
   }
-  new _components_timer_control__WEBPACK_IMPORTED_MODULE_53__.TimerControl(urlAjax);
-  new _components_timer_analytics__WEBPACK_IMPORTED_MODULE_54__.TimerAnalytics(urlAjax);
-  new _components_dark_mode_toggle__WEBPACK_IMPORTED_MODULE_55__["default"](urlAjax);
+  new _components_timer_control__WEBPACK_IMPORTED_MODULE_54__.TimerControl(urlAjax);
+  new _components_timer_analytics__WEBPACK_IMPORTED_MODULE_55__.TimerAnalytics(urlAjax);
+  new _components_dark_mode_toggle__WEBPACK_IMPORTED_MODULE_56__["default"](urlAjax);
   (0,_components_create_report__WEBPACK_IMPORTED_MODULE_4__.actionCreateReportInit)(urlAjax);
   (0,_components_create_report__WEBPACK_IMPORTED_MODULE_4__.createDraftPosts)(urlAjax);
   (0,_components_create_report__WEBPACK_IMPORTED_MODULE_4__.updateFilesReportInit)(urlAjax);
@@ -28422,35 +28564,37 @@ function ready() {
   (0,_components_create_report__WEBPACK_IMPORTED_MODULE_4__.fullRemovePost)(urlAjax);
   (0,_components_create_report__WEBPACK_IMPORTED_MODULE_4__.quickEditInit)(urlAjax, '.js-quick-edit', 'quick_update_post');
   (0,_components_create_report__WEBPACK_IMPORTED_MODULE_4__.quickEditInit)(urlAjax, '.js-quick-edit-ar', 'quick_update_post_ar');
-  (0,_components_bookmark__WEBPACK_IMPORTED_MODULE_19__.bookmarkInit)(urlAjax);
-  (0,_components_logs__WEBPACK_IMPORTED_MODULE_18__.logsInit)(urlAjax);
-  (0,_components_logs__WEBPACK_IMPORTED_MODULE_18__.modalLogsInit)(urlAjax);
+  (0,_components_bookmark__WEBPACK_IMPORTED_MODULE_20__.bookmarkInit)(urlAjax);
+  (0,_components_logs__WEBPACK_IMPORTED_MODULE_19__.logsInit)(urlAjax);
+  (0,_components_logs__WEBPACK_IMPORTED_MODULE_19__.modalLogsInit)(urlAjax);
   (0,_components_create_report__WEBPACK_IMPORTED_MODULE_4__.quickEditTrackingStatus)(urlAjax);
-  (0,_components_performance__WEBPACK_IMPORTED_MODULE_20__.sendUpdatePerformance)(urlAjax);
-  (0,_components_send_email_chain__WEBPACK_IMPORTED_MODULE_24__.sendEmailChain)(urlAjax);
-  (0,_components_save_all_tracking__WEBPACK_IMPORTED_MODULE_25__.saveAllTracking)(urlAjax);
+  (0,_components_performance__WEBPACK_IMPORTED_MODULE_21__.sendUpdatePerformance)(urlAjax);
+  (0,_components_send_email_chain__WEBPACK_IMPORTED_MODULE_25__.sendEmailChain)(urlAjax);
+  (0,_components_save_all_tracking__WEBPACK_IMPORTED_MODULE_26__.saveAllTracking)(urlAjax);
   (0,_components_create_company__WEBPACK_IMPORTED_MODULE_5__.ActionDeleteCompanyInit)(urlAjax);
   (0,_components_create_shipper__WEBPACK_IMPORTED_MODULE_6__.ActionDeleteShipperInit)(urlAjax);
   (0,_components_driver_Info__WEBPACK_IMPORTED_MODULE_11__.initGetInfoDriver)(urlAjax, useServices);
-  (0,_components_driver_core__WEBPACK_IMPORTED_MODULE_28__.driversActions)(urlAjax);
-  (0,_components_trailer_core__WEBPACK_IMPORTED_MODULE_29__.trailersActions)(urlAjax);
+  (0,_components_driver_core__WEBPACK_IMPORTED_MODULE_29__.driversActions)(urlAjax);
+  (0,_components_trailer_core__WEBPACK_IMPORTED_MODULE_30__.trailersActions)(urlAjax);
   (0,_components_filter_clean__WEBPACK_IMPORTED_MODULE_16__.cleanUrlByFilterDriver)();
   (0,_components_filter_clean__WEBPACK_IMPORTED_MODULE_16__.cleanUrlByFilterDriverSearch)();
-  (0,_components_driver_hold__WEBPACK_IMPORTED_MODULE_33__.driverHoldInit)(urlAjax);
-  (0,_components_driver_core__WEBPACK_IMPORTED_MODULE_28__.driverCoreInit)(urlAjax);
-  (0,_components_capabilities_filter__WEBPACK_IMPORTED_MODULE_35__.initCapabilitiesFilter)();
-  (0,_components_quick_status_update__WEBPACK_IMPORTED_MODULE_36__.initQuickStatusUpdate)(urlAjax);
-  (0,_components_eta_popup__WEBPACK_IMPORTED_MODULE_37__.initEtaPopups)();
-  (0,_components_eta_timer__WEBPACK_IMPORTED_MODULE_38__.initEtaTimers)();
-  (0,_components_rating_reminder_modal__WEBPACK_IMPORTED_MODULE_39__.initRatingReminderModal)();
-  (0,_components_drivers_rate__WEBPACK_IMPORTED_MODULE_40__.initDriversRate)();
-  (0,_components_admin_rating_manager__WEBPACK_IMPORTED_MODULE_41__.initAdminRatingManager)();
-  (0,_components_charts_drivers_statistics_charts__WEBPACK_IMPORTED_MODULE_42__.initDriversStatisticsCharts)();
-  (0,_components_charts_finance_statistics_charts__WEBPACK_IMPORTED_MODULE_43__.initFinanceStatisticsCharts)();
-  (0,_components_charts_source_statistics_charts__WEBPACK_IMPORTED_MODULE_44__.initSourceStatisticsCharts)();
-  (0,_components_drivers_statistics_tabs__WEBPACK_IMPORTED_MODULE_45__.initDriversStatisticsTabs)();
+  (0,_components_filter_clean__WEBPACK_IMPORTED_MODULE_16__.cleanUrlByFilterDriverDocuments)();
+  (0,_components_driver_notes_edit__WEBPACK_IMPORTED_MODULE_17__.initDriverNotesEdit)(urlAjax);
+  (0,_components_driver_hold__WEBPACK_IMPORTED_MODULE_34__.driverHoldInit)(urlAjax);
+  (0,_components_driver_core__WEBPACK_IMPORTED_MODULE_29__.driverCoreInit)(urlAjax);
+  (0,_components_capabilities_filter__WEBPACK_IMPORTED_MODULE_36__.initCapabilitiesFilter)();
+  (0,_components_quick_status_update__WEBPACK_IMPORTED_MODULE_37__.initQuickStatusUpdate)(urlAjax);
+  (0,_components_eta_popup__WEBPACK_IMPORTED_MODULE_38__.initEtaPopups)();
+  (0,_components_eta_timer__WEBPACK_IMPORTED_MODULE_39__.initEtaTimers)();
+  (0,_components_rating_reminder_modal__WEBPACK_IMPORTED_MODULE_40__.initRatingReminderModal)();
+  (0,_components_drivers_rate__WEBPACK_IMPORTED_MODULE_41__.initDriversRate)();
+  (0,_components_admin_rating_manager__WEBPACK_IMPORTED_MODULE_42__.initAdminRatingManager)();
+  (0,_components_charts_drivers_statistics_charts__WEBPACK_IMPORTED_MODULE_43__.initDriversStatisticsCharts)();
+  (0,_components_charts_finance_statistics_charts__WEBPACK_IMPORTED_MODULE_44__.initFinanceStatisticsCharts)();
+  (0,_components_charts_source_statistics_charts__WEBPACK_IMPORTED_MODULE_45__.initSourceStatisticsCharts)();
+  (0,_components_drivers_statistics_tabs__WEBPACK_IMPORTED_MODULE_46__.initDriversStatisticsTabs)();
   if (hereApi) {
-    new _components_drivers_map__WEBPACK_IMPORTED_MODULE_56__["default"](urlAjax, hereApi);
+    new _components_drivers_map__WEBPACK_IMPORTED_MODULE_57__["default"](urlAjax, hereApi);
   }
   (0,_components_create_report__WEBPACK_IMPORTED_MODULE_4__.additionalContactsInit)();
   (0,_components_create_report__WEBPACK_IMPORTED_MODULE_4__.addShipperPointInit)();
@@ -28463,36 +28607,36 @@ function ready() {
   (0,_components_filter_clean__WEBPACK_IMPORTED_MODULE_16__.cleanUrlByFilter)();
   (0,_components_filter_clean__WEBPACK_IMPORTED_MODULE_16__.cleanUrlByFilterAr)();
   (0,_components_filter_clean__WEBPACK_IMPORTED_MODULE_16__.cleanUrlByFilterPlatform)();
-  (0,_components_chow_hidden_value__WEBPACK_IMPORTED_MODULE_17__.showHiddenValueInit)();
-  (0,_components_chow_hidden_value__WEBPACK_IMPORTED_MODULE_17__.legalDocumentExpirationInit)();
+  (0,_components_chow_hidden_value__WEBPACK_IMPORTED_MODULE_18__.showHiddenValueInit)();
+  (0,_components_chow_hidden_value__WEBPACK_IMPORTED_MODULE_18__.legalDocumentExpirationInit)();
   (0,_components_input_helpers__WEBPACK_IMPORTED_MODULE_3__.checboxesHelperInit)();
   (0,_components_toggle_blocks_init__WEBPACK_IMPORTED_MODULE_9__.toggleBlocksInit)();
   (0,_components_toggle_blocks_init__WEBPACK_IMPORTED_MODULE_9__.toggleCheckboxInit)();
-  (0,_components_chow_hidden_value__WEBPACK_IMPORTED_MODULE_17__.disabledValuesInSelectInit)();
+  (0,_components_chow_hidden_value__WEBPACK_IMPORTED_MODULE_18__.disabledValuesInSelectInit)();
   (0,_components_input_helpers__WEBPACK_IMPORTED_MODULE_3__.quickPayMethod)();
   (0,_components_input_helpers__WEBPACK_IMPORTED_MODULE_3__.triggerCurrentTime)();
   (0,_components_create_report__WEBPACK_IMPORTED_MODULE_4__.triggerDisableBtnInit)();
-  (0,_components_stop_type__WEBPACK_IMPORTED_MODULE_22__.changeStopType)();
-  (0,_components_set_status_paid__WEBPACK_IMPORTED_MODULE_23__.setStatusPaid)();
-  (0,_components_tel_mask__WEBPACK_IMPORTED_MODULE_21__.telMaskInit)();
-  (0,_components_tel_mask__WEBPACK_IMPORTED_MODULE_21__.masksAllSite)();
+  (0,_components_stop_type__WEBPACK_IMPORTED_MODULE_23__.changeStopType)();
+  (0,_components_set_status_paid__WEBPACK_IMPORTED_MODULE_24__.setStatusPaid)();
+  (0,_components_tel_mask__WEBPACK_IMPORTED_MODULE_22__.telMaskInit)();
+  (0,_components_tel_mask__WEBPACK_IMPORTED_MODULE_22__.masksAllSite)();
   (0,_components_tab_helper__WEBPACK_IMPORTED_MODULE_7__.tabUrlUpdeter)();
   (0,_components_create_report__WEBPACK_IMPORTED_MODULE_4__.timeStrictChange)();
   (0,_components_toggle_blocks_init__WEBPACK_IMPORTED_MODULE_9__.toggleBlocksRadio)();
-  (0,_components_tel_mask__WEBPACK_IMPORTED_MODULE_21__.dateMaskInit)();
+  (0,_components_tel_mask__WEBPACK_IMPORTED_MODULE_22__.dateMaskInit)();
   (0,_components_input_helpers__WEBPACK_IMPORTED_MODULE_3__.dragAnDropInit)();
   (0,_components_input_helpers__WEBPACK_IMPORTED_MODULE_3__.unrequiderInit)();
-  (0,_components_common_hold_section__WEBPACK_IMPORTED_MODULE_34__.holdSectionInit)();
-  (0,_components_document_create_money_check__WEBPACK_IMPORTED_MODULE_27__.createDocumentInvoice)();
-  (0,_components_document_create_money_check__WEBPACK_IMPORTED_MODULE_27__.createDocumentInvoiceActions)(urlAjax);
-  (0,_components_document_create_money_check__WEBPACK_IMPORTED_MODULE_27__.createDocumentBolActions)(urlAjax);
-  (0,_components_document_create_money_check__WEBPACK_IMPORTED_MODULE_27__.createDocumentSettlementSummaryActions)(urlAjax);
-  (0,_components_move_dispatcher__WEBPACK_IMPORTED_MODULE_31__.moveDispatcher)(urlAjax);
-  (0,_components_contacts_contacts_init__WEBPACK_IMPORTED_MODULE_30__.initContactsHandler)(urlAjax);
+  (0,_components_common_hold_section__WEBPACK_IMPORTED_MODULE_35__.holdSectionInit)();
+  (0,_components_document_create_money_check__WEBPACK_IMPORTED_MODULE_28__.createDocumentInvoice)();
+  (0,_components_document_create_money_check__WEBPACK_IMPORTED_MODULE_28__.createDocumentInvoiceActions)(urlAjax);
+  (0,_components_document_create_money_check__WEBPACK_IMPORTED_MODULE_28__.createDocumentBolActions)(urlAjax);
+  (0,_components_document_create_money_check__WEBPACK_IMPORTED_MODULE_28__.createDocumentSettlementSummaryActions)(urlAjax);
+  (0,_components_move_dispatcher__WEBPACK_IMPORTED_MODULE_32__.moveDispatcher)(urlAjax);
+  (0,_components_contacts_contacts_init__WEBPACK_IMPORTED_MODULE_31__.initContactsHandler)(urlAjax);
   (0,_components_create_report__WEBPACK_IMPORTED_MODULE_4__.pinnedMessageInit)(urlAjax);
   (0,_components_create_report__WEBPACK_IMPORTED_MODULE_4__.addDeletePinnedHandler)(urlAjax);
   (0,_components_input_helpers__WEBPACK_IMPORTED_MODULE_3__.applyZipCodeMask)('.js-zip-code-mask');
-  (0,_components_auto_submit_form__WEBPACK_IMPORTED_MODULE_26__.initAutoSubmitForm)('.js-auto-submit-form');
+  (0,_components_auto_submit_form__WEBPACK_IMPORTED_MODULE_27__.initAutoSubmitForm)('.js-auto-submit-form');
   var preloaders = document.querySelectorAll('.js-preloader');
   preloaders && preloaders.forEach(function (item) {
     item.remove();

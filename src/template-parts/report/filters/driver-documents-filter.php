@@ -21,6 +21,11 @@ $document_types = array(
 	'EA_TEAM' => 'Employment Authorization (Team driver)',
 	'PR_TEAM' => 'Permanent Resident (Team driver)',
 	'PS_TEAM' => 'Passport (Team driver)',
+	'USP_OWNER' => 'US Passport (Owner)',
+	'PR_OWNER' => 'Permanent Residency (Owner)',
+	'EA_OWNER' => 'Employment Authorization (Owner)',
+	'CN_OWNER' => 'Certificate of Naturalization (Owner)',
+	'EDL_OWNER' => 'Enhanced Driver License / Real ID (Owner)',
 );
 
 ?>

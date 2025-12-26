@@ -91,10 +91,21 @@ $background_date_team_driver           = get_field_value( $meta, 'background_dat
 $change_9_file_team_driver             = get_field_value( $meta, 'change_9_file_team_driver' );
 $change_9_date_team_driver             = get_field_value( $meta, 'change_9_date_team_driver' );
 $change_9_training_team_driver         = get_field_value( $meta, 'change_9_training_team_driver' );
+$owner_enabled                         = get_field_value( $meta, 'owner_enabled' );
+$legal_document_owner                  = get_field_value( $meta, 'legal_document_owner' );
+$legal_document_expiration_owner       = get_field_value( $meta, 'legal_document_expiration_owner' );
+$nationality_owner                     = get_field_value( $meta, 'nationality_owner' );
+$legal_document_type_owner             = get_field_value( $meta, 'legal_document_type_owner' );
 $martlet_coi_expired_date             = get_field_value( $meta, 'martlet_coi_expired_date' );
 $endurance_coi_expired_date            = get_field_value( $meta, 'endurance_coi_expired_date' );
 $interview_martlet                = get_field_value( $meta, 'interview_martlet' );
 $interview_endurance               = get_field_value( $meta, 'interview_endurance' );
+
+$insurance_agent_enabled = get_field_value( $meta, 'insurance_agent_enabled' );
+$insurance_agent_name    = get_field_value( $meta, 'insurance_agent_name' );
+$insurance_agent_phone   = get_field_value( $meta, 'insurance_agent_phone' );
+$insurance_agent_email   = get_field_value( $meta, 'insurance_agent_email' );
+
 // Initialize total images count
 $total_images = 0;
 
@@ -126,7 +137,7 @@ $background_file_team_driver_arr        = $driver->process_file_attachment( $bac
 $change_9_file_team_driver_arr          = $driver->process_file_attachment( $change_9_file_team_driver );
 $interview_martlet_arr                  = $driver->process_file_attachment( $interview_martlet );
 $interview_endurance_arr                = $driver->process_file_attachment( $interview_endurance );
-
+$legal_document_owner_arr               = $driver->process_file_attachment( $legal_document_owner );
 
 $files_check = array(
 	$hazmat_certificate_file_arr,
@@ -154,7 +165,7 @@ $files_check = array(
 	$canada_transition_file_team_driver_arr,
 	$background_file_team_driver_arr,
 	$change_9_file_team_driver_arr,
-
+	$legal_document_owner_arr,
 );
 
 // Calculate the total number of files
@@ -440,6 +451,15 @@ $files = array(
 		'field_label'    => 'Change 9 file (Team driver)',
 		'delete_action'  => 'js-remove-one-driver',
 		'active_tab'     => 'pills-driver-documents-tab',
+	),
+	array(
+		'file_arr'       => $legal_document_owner_arr,
+		'file'           => $legal_document_owner,
+		'full_only_view' => $full_only_view,
+		'post_id'        => $post_id,
+		'class_name'     => 'legal-document-owner',
+		'field_name'     => 'legal_document_owner',
+		'field_label'    => 'Legal document (Owner)',
 	),
 );
 
@@ -890,6 +910,23 @@ $access_vehicle = $TMSUsers->check_user_role_access( [
                         </select>
                     </div>
 				<?php endif; ?>
+				
+				<?php if ( $owner_enabled ): ?>
+                    <div class="col-12 col-md-6 mb-3">
+                        <label class="form-label">Legal document type (Owner)</label>
+                        <select name="legal_document_type_owner"
+                                data-value="us-passport|permanent-residency|work-authorization|certificate-of-naturalization|enhanced-driver-licence-real-id"
+                                data-selector=".js-legal-doc-section-owner"
+                                class="form-control form-select js-show-hidden-values js-legal-doc-owner">
+							<?php foreach ( $legalDocumentTypes as $value => $label ) : ?>
+                                <option value="<?php echo $value ?>" <?php echo $legal_document_type_owner === $value
+									? 'selected' : ''; ?>>
+									<?php echo $label ?>
+                                </option>
+							<?php endforeach; ?>
+                        </select>
+                    </div>
+				<?php endif; ?>
 
                 <div class="col-12 js-legal-doc-section  <?php echo $legal_document_type !== 'no-document' ? ''
 					: 'd-none'; ?>">
@@ -950,6 +987,41 @@ $access_vehicle = $TMSUsers->check_user_role_access( [
                                 <label class="form-label">Nationality (Team driver)</label>
                                 <input type="text" value="<?php echo $nationality_team_driver; ?>" class="form-control"
                                        name="nationality_team_driver">
+                            </div>
+                        </div>
+
+                    </div>
+				<?php endif; ?>
+				
+				<?php if ( $owner_enabled ): ?>
+                    <div class="col-12 js-legal-doc-section-owner  <?php echo $legal_document_type_owner !== 'no-document'
+						? '' : 'd-none'; ?>">
+                        <div class="row border-1 border-dark border bg-light pt-3 pb-3 mb-3 rounded ">
+							<?php
+							// Legal document
+							$simple_upload_args = [
+								'full_only_view' => $full_only_view,
+								'field_name'   => 'legal_document_owner',
+								'label'        => 'Legal document (Owner)',
+								'file_value'   => $legal_document_owner,
+								'popup_id'     => 'popup_upload_legal_document_owner',
+								'col_class'    => 'col-12 col-md-6',
+								'button_class' => 'btn btn-outline-dark'
+							];
+							echo esc_html( get_template_part( TEMPLATE_PATH . 'common/simple', 'file-upload', $simple_upload_args ) );
+							?>
+
+                            <div class="col-12 col-md-6 mb-2 js-expiration-date-field-owner" <?php echo $legal_document_type_owner === 'certificate-of-naturalization' ? 'style="display: none;"' : ''; ?>>
+                                <label class="form-label">Expiration date (Owner)</label>
+                                <input type="text" class="form-control js-new-format-date"
+                                       name="legal_document_expiration_owner"
+                                       value="<?php echo $legal_document_expiration_owner; ?>">
+                            </div>
+
+                            <div class="col-12 col-md-6">
+                                <label class="form-label">Nationality (Owner)</label>
+                                <input type="text" value="<?php echo $nationality_owner; ?>" class="form-control"
+                                       name="nationality_owner">
                             </div>
                         </div>
 
@@ -1459,12 +1531,45 @@ $access_vehicle = $TMSUsers->check_user_role_access( [
 							'label'      => 'Motor Cargo COI',
 							'file_value' => $motor_cargo_coi,
 							'popup_id'   => 'popup_upload_motor_cargo_coi',
-							'col_class'  => 'col-12 col-md-6 mb-2'
+							'col_class'  => 'col-12 col-md-6'
 						];
 						echo esc_html( get_template_part( TEMPLATE_PATH . 'common/simple', 'file-upload', $simple_upload_args ) );
 						?>
                     </div>
                 </div>
+
+
+			<h4 class="">Insurance agent (Optional)</h4>
+            <div class="row">
+                <div class="col-12 mb-3">
+                    <div class="form-check form-switch">
+                        <input class="form-check-input js-toggle"
+                               data-block-toggle="js-insurance-agent-driver" type="checkbox" id="insuranceAgentSwitch" name="insurance_agent_enabled"
+							<?php echo $insurance_agent_enabled ? 'checked' : ''; ?>>
+                        <label class="form-check-label" for="insuranceAgentSwitch">Enable Insurance Agent</label>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-12 js-insurance-agent-driver <?php echo $insurance_agent_enabled ? '' : 'd-none'; ?> ">
+                <div class="row border-1 border-primary border bg-light pt-3 pb-3 mb-3 rounded">
+                    <div class="col-md-4 mb-3">
+                        <label class="form-label">Insurance Agent Name</label>
+                        <input type="text" class="form-control" name="insurance_agent_name" value="<?php echo $insurance_agent_name; ?>">
+                    </div>
+            
+                    <div class="col-md-4 mb-3">
+                    <label class="form-label">Insurance Agent Phone</label>
+                    <input type="tel" class="form-control js-tel-mask" name="insurance_agent_phone" value="<?php echo $insurance_agent_phone; ?>">
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label class="form-label">Insurance Agent Email</label>
+                        <input type="email" class="form-control" name="insurance_agent_email" value="<?php echo $insurance_agent_email; ?>">
+                    </div>
+                </div>
+            </div>
+
+                <div class="col-12"></div>
 
                 <!-- Status & Cancellation -->
                 <div class="col-6 mb-3">
@@ -1674,6 +1779,13 @@ $access_vehicle = $TMSUsers->check_user_role_access( [
 				'multiply'  => false,
 				'driver_id' => $post_id,
 			),
+			array(
+				'title'     => 'Upload Legal document (Owner)',
+				'file_name' => 'legal_document_owner',
+				'multiply'  => false,
+				'driver_id' => $post_id,
+			),
+			
 		);
 		
 		foreach ( $popups_upload as $popup ):

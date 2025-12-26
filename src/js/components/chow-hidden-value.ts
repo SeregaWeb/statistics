@@ -169,4 +169,31 @@ export const legalDocumentExpirationInit = () => {
         // Set initial state
         toggleExpirationField((teamDriverSelect as HTMLSelectElement).value);
     }
+
+    // Handle owner legal document type
+    const ownerSelect = document.querySelector('.js-legal-doc-owner');
+    const ownerExpirationField = document.querySelector('.js-expiration-date-field-owner');
+    
+    if (ownerSelect && ownerExpirationField) {
+        const toggleExpirationField = (selectedValue: string) => {
+            if (selectedValue === 'certificate-of-naturalization') {
+                (ownerExpirationField as HTMLElement).style.display = 'none';
+                // Clear the input value when hiding
+                const input = ownerExpirationField.querySelector('input');
+                if (input) {
+                    input.value = '';
+                }
+            } else {
+                (ownerExpirationField as HTMLElement).style.display = '';
+            }
+        };
+
+        ownerSelect.addEventListener('change', (event) => {
+            const target = event.target as HTMLSelectElement;
+            toggleExpirationField(target.value);
+        });
+
+        // Set initial state
+        toggleExpirationField((ownerSelect as HTMLSelectElement).value);
+    }
 };

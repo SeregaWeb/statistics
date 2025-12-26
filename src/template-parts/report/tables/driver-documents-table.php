@@ -828,6 +828,12 @@ if ( ! empty( $results ) ) : ?>
             // Owner row
             if ( ! empty( $owner_enabled ) && $owner_enabled !== '0' && $owner_enabled !== 'false' 
                  && ( ! empty( $owner_name ) || ! empty( $owner_phone ) ) ) {
+                
+                // Get owner document data
+                $owner_legal_doc_type = get_field_value( $meta, 'legal_document_type_owner' );
+                $owner_legal_doc_exp = get_field_value( $meta, 'legal_document_expiration_owner' );
+                $owner_legal_doc = get_field_value( $meta, 'legal_document_owner' );
+                
                 $owner_types = array();
                 if ( ! empty( $owner_van_proprietor ) && $owner_van_proprietor !== '0' && $owner_van_proprietor !== 'false' ) {
                     $owner_types[] = 'Van Proprietor';
@@ -835,6 +841,66 @@ if ( ! empty( $results ) ) : ?>
                 if ( ! empty( $owner_operator ) && $owner_operator !== '0' && $owner_operator !== 'false' ) {
                     $owner_types[] = 'Owner Operator';
                 }
+                
+                // Collect owner documents
+                $owner_documents = array();
+                
+                // Process legal documents for owner
+                // Map document types to abbreviations
+                $owner_legal_doc_map = array(
+                    'us-passport' => 'USP',
+                    'permanent-residency' => 'PR',
+                    'work-authorization' => 'EA',
+                    'certificate-of-naturalization' => 'CN',
+                    'enhanced-driver-licence-real-id' => 'EDL',
+                );
+                
+                // Map abbreviations to display names
+                $owner_doc_names = array(
+                    'USP' => 'US Passport (Owner)',
+                    'PR' => 'Permanent Residency (Owner)',
+                    'EA' => 'Employment Authorization (Owner)',
+                    'CN' => 'Certificate of Naturalization (Owner)',
+                    'EDL' => 'Enhanced Driver License / Real ID (Owner)',
+                );
+                
+                // Check if owner has a legal document
+                if ( ! empty( $owner_legal_doc_type ) && $owner_legal_doc_type !== 'no-document' && isset( $owner_legal_doc_map[ $owner_legal_doc_type ] ) ) {
+                    $abbr = $owner_legal_doc_map[ $owner_legal_doc_type ];
+                    $doc_name = isset( $owner_doc_names[ $abbr ] ) ? $owner_doc_names[ $abbr ] : 'Legal Document (Owner)';
+                    
+                    // Legal document exists - check status
+                    $exp_date = $owner_legal_doc_exp ?? '';
+                    $check_result = $check_document_status( $exp_date, '' );
+                    
+                    $tooltip_text = '<strong>' . esc_html( $doc_name ) . '</strong>';
+                    if ( ! empty( $exp_date ) ) {
+                        $tooltip_text .= '<br>Expiration: ' . esc_html( $exp_date );
+                        if ( isset( $check_result['days'] ) ) {
+                            if ( $check_result['status'] === 'expired' ) {
+                                $tooltip_text .= '<br><span class="text-danger">Expired ' . $check_result['days'] . ' days ago</span>';
+                            } elseif ( $check_result['status'] === 'expires_soon' ) {
+                                $tooltip_text .= '<br><span class="text-warning">Expires in ' . $check_result['days'] . ' days</span>';
+                            } else {
+                                $tooltip_text .= '<br><span class="text-success">Valid (' . $check_result['days'] . ' days remaining)</span>';
+                            }
+                        }
+                    } else {
+                        $tooltip_text .= '<br><span class="text-white">No expiration date</span>';
+                    }
+                    
+                    $owner_documents[] = array(
+                        'abbr' => $abbr,
+                        'name' => $doc_name,
+                        'exp_date' => $exp_date,
+                        'badge_class' => $check_result['badge_class'],
+                        'status' => $check_result['status'],
+                        'days' => $check_result['days'] ?? null,
+                        'immigration_letter' => '',
+                        'tooltip' => $tooltip_text
+                    );
+                }
+                
                 ?>
                 <tr class="<?php echo $class_hide; ?> driver-owner-row" data-driver-id="<?php echo $row[ 'id' ]; ?>" style="background-color: rgba(25, 135, 84, 0.12) !important;">
                     <td>
@@ -854,10 +920,82 @@ if ( ! empty( $results ) ) : ?>
                     </td>
                     <td>
                         <?php
-                        // Owner doesn't have documents, so expiration date column is empty
+                        // Display expiration date for selected document type (owner)
+                        if ( ! empty( $selected_document_type ) ) {
+                            $expiration_date = '';
+                            $document_found = false;
+                            
+                            // Check if selected document type is for owner (EA_OWNER, PR_OWNER, USP_OWNER, CN_OWNER, EDL_OWNER)
+                            $is_owner_doc = in_array( $selected_document_type, array( 'EA_OWNER', 'PR_OWNER', 'USP_OWNER', 'CN_OWNER', 'EDL_OWNER' ) );
+                            
+                            if ( $is_owner_doc ) {
+                                // Map owner document types to abbreviations
+                                $owner_doc_map = array(
+                                    'EA_OWNER' => 'EA',
+                                    'PR_OWNER' => 'PR',
+                                    'USP_OWNER' => 'USP',
+                                    'CN_OWNER' => 'CN',
+                                    'EDL_OWNER' => 'EDL',
+                                );
+                                $abbr_to_find = $owner_doc_map[ $selected_document_type ];
+                                
+                                // Find the document in owner_documents
+                                foreach ( $owner_documents as $label_data ) {
+                                    if ( $label_data['abbr'] === $abbr_to_find ) {
+                                        $expiration_date = $label_data['exp_date'];
+                                        $document_found = true;
+                                        break;
+                                    }
+                                }
+                            }
+                            
+                            if ( $document_found && ! empty( $expiration_date ) ) {
+                                echo '<span class="text-nowrap">' . esc_html( $expiration_date ) . '</span>';
+                            } elseif ( $document_found ) {
+                                echo '<span class="text-muted">No date</span>';
+                            } else {
+                                echo '<span class="text-muted">—</span>';
+                            }
+                        }
                         ?>
                     </td>
-                    <td></td>
+                    <td>
+                        <?php
+                        // Display owner documents
+                        if ( ! empty( $owner_documents ) ) {
+                            echo '<div class="d-flex gap-1 flex-wrap align-items-center">';
+                            foreach ( $owner_documents as $label_data ) {
+                                // Special styling for missing documents
+                                $badge_style = '';
+                                if ( isset( $label_data['status'] ) && $label_data['status'] === 'missing' ) {
+                                    $badge_style = 'style="font-size: 12px; padding: 6px 10px; cursor: help; opacity: 0.6; border: 1px dashed #6c757d;"';
+                                } else {
+                                    $badge_style = 'style="font-size: 12px; padding: 6px 10px; cursor: help;"';
+                                }
+                                
+                                echo '<span class="badge ' . esc_attr( $label_data['badge_class'] ) . ' js-document-tooltip" 
+                                      ' . $badge_style . '
+                                      data-bs-toggle="tooltip" 
+                                      data-bs-html="true"
+                                      data-bs-placement="top"
+                                      data-bs-custom-class="driver-document-tooltip"
+                                      data-bs-title="' . esc_attr( $label_data['tooltip'] ) . '">';
+                                
+                                // Add visual indicator for missing documents
+                                if ( isset( $label_data['status'] ) && $label_data['status'] === 'missing' ) {
+                                    echo '<span style="text-decoration: line-through;">' . esc_html( $label_data['abbr'] ) . '</span>';
+                                } else {
+                                    echo esc_html( $label_data['abbr'] );
+                                }
+                                
+                                echo '</span>';
+                            }
+                            echo '</div>';
+                        } else {
+                            echo '<span class="text-white" style="font-size: 11px;">No documents</span>';
+                        }
+                        ?>
+                    </td>
                     <td></td>
                     <td></td>
                     

@@ -1097,8 +1097,64 @@ class TMSDrivers extends TMSDriversHelper {
 		}
 
 		if ( ! empty( $args[ 'driver_status' ] ) ) {
-			$where_conditions[] = "driver_status.meta_value = %s";
-			$where_values[]     = $args[ 'driver_status' ];
+			$ny_timezone = new DateTimeZone( 'America/New_York' );
+			$ny_time = new DateTime( 'now', $ny_timezone );
+			
+			if ( $args[ 'driver_status' ] === 'not_updates_driver' ) {
+				// Filter for drivers not updated (updated_zipcode is older than TIME_AVAILABLE_DRIVER threshold)
+				$time_threshold = defined( 'TIME_AVAILABLE_DRIVER' ) ? TIME_AVAILABLE_DRIVER : '-12 hours';
+				$ny_time->modify( $time_threshold );
+				$threshold_datetime = $ny_time->format( 'Y-m-d H:i:s' );
+				
+				// Drivers with updated_zipcode older than threshold or NULL
+				$where_conditions[] = "(main.updated_zipcode < %s OR main.updated_zipcode IS NULL)";
+				$where_values[]     = $threshold_datetime;
+			} elseif ( $args[ 'driver_status' ] === 'not_updated_1_day' ) {
+				// Filter for drivers not updated for 1 day (between 1 and 2 days ago, not NULL)
+				$ny_time_1_day = clone $ny_time;
+				$ny_time_1_day->modify( '-1 day' );
+				$threshold_datetime_1 = $ny_time_1_day->format( 'Y-m-d H:i:s' );
+				
+				$ny_time_2_days = clone $ny_time;
+				$ny_time_2_days->modify( '-2 days' );
+				$threshold_datetime_2 = $ny_time_2_days->format( 'Y-m-d H:i:s' );
+				
+				// Debug logging
+				if ( current_user_can( 'administrator' ) ) {
+					error_log( '=== FILTER SQL: not_updated_1_day ===' );
+					error_log( 'Current NY time: ' . ( new DateTime( 'now', new DateTimeZone( 'America/New_York' ) ) )->format( 'Y-m-d H:i:s' ) );
+					error_log( 'Threshold datetime (1 day ago): ' . $threshold_datetime_1 );
+					error_log( 'Threshold datetime (2 days ago): ' . $threshold_datetime_2 );
+					error_log( 'SQL condition: main.updated_zipcode < ' . $threshold_datetime_1 . ' AND main.updated_zipcode >= ' . $threshold_datetime_2 );
+				}
+				
+				$where_conditions[] = "main.updated_zipcode < %s AND main.updated_zipcode >= %s";
+				$where_values[]     = $threshold_datetime_1;
+				$where_values[]     = $threshold_datetime_2;
+			} elseif ( $args[ 'driver_status' ] === 'not_updated_week' ) {
+				// Filter for drivers not updated for 5-7 days (week)
+				$ny_time_5_days = clone $ny_time;
+				$ny_time_5_days->modify( '-5 days' );
+				$ny_time_7_days = clone $ny_time;
+				$ny_time_7_days->modify( '-7 days' );
+				
+				// Drivers with updated_zipcode between 5 and 7 days old (NOT NULL - only those with dates)
+				// updated_zipcode should be < 5 days ago (older than 5 days) AND >= 7 days ago (not older than 7 days)
+				$where_conditions[] = "(main.updated_zipcode < %s AND main.updated_zipcode >= %s)";
+				$where_values[]     = $ny_time_5_days->format( 'Y-m-d H:i:s' );
+				$where_values[]     = $ny_time_7_days->format( 'Y-m-d H:i:s' );
+			} elseif ( $args[ 'driver_status' ] === 'not_updated_month' ) {
+				// Filter for drivers not updated for 30+ days (month) (only those with dates, not NULL)
+				$ny_time->modify( '-30 days' );
+				$threshold_datetime = $ny_time->format( 'Y-m-d H:i:s' );
+				
+				$where_conditions[] = "main.updated_zipcode < %s";
+				$where_values[]     = $threshold_datetime;
+			} else {
+				// Regular driver_status filter
+				$where_conditions[] = "driver_status.meta_value = %s";
+				$where_values[]     = $args[ 'driver_status' ];
+			}
 		}
 		
 		// Add driver visibility condition based on user role
@@ -1141,6 +1197,13 @@ class TMSDrivers extends TMSDriversHelper {
 		$where_values[] = $offset;
 		$where_values[] = $per_page;
 		
+		// Debug logging for SQL query
+		if ( current_user_can( 'administrator' ) && ! empty( $args[ 'driver_status' ] ) && in_array( $args[ 'driver_status' ], array( 'not_updated_1_day', 'not_updated_week', 'not_updated_month' ) ) ) {
+			$prepared_sql = $wpdb->prepare( $sql, ...$where_values );
+			error_log( '=== SQL QUERY EXECUTED ===' );
+			error_log( 'SQL: ' . $prepared_sql );
+		}
+		
 		// Выполняем запрос
 		$main_results = $wpdb->get_results( $wpdb->prepare( $sql, ...$where_values ), ARRAY_A );
 		// Собираем все ID записей для получения дополнительных метаданных
@@ -1161,6 +1224,20 @@ class TMSDrivers extends TMSDriversHelper {
 					$meta_data[ $post_id ] = array();
 				}
 				$meta_data[ $post_id ][ $meta_row[ 'meta_key' ] ] = $meta_row[ 'meta_value' ];
+			}
+		}
+		
+		// Debug logging for SQL query results
+		if ( current_user_can( 'administrator' ) && ! empty( $args[ 'driver_status' ] ) && in_array( $args[ 'driver_status' ], array( 'not_updated_1_day', 'not_updated_week', 'not_updated_month' ) ) ) {
+			error_log( '=== SQL QUERY RESULTS: ' . $args[ 'driver_status' ] . ' ===' );
+			error_log( 'Total drivers from SQL: ' . count( $main_results ) );
+			$debug_sample_count = 0;
+			foreach ( $main_results as $result ) {
+				if ( $debug_sample_count < 5 ) {
+					$updated_zipcode = isset( $result[ 'updated_zipcode' ] ) ? $result[ 'updated_zipcode' ] : 'NULL';
+					error_log( 'Driver ID: ' . $result[ 'id' ] . ' - updated_zipcode: ' . $updated_zipcode );
+					$debug_sample_count++;
+				}
 			}
 		}
 		
@@ -1335,6 +1412,125 @@ class TMSDrivers extends TMSDriversHelper {
 				$result[ 'meta_data' ] = isset( $meta_data[ $post_id ] ) ? $meta_data[ $post_id ] : array();
 				$all_results_with_meta[] = $result;
 			}
+		}
+		
+		// Filter by driver_status if specified (including update time filters)
+		if ( ! empty( $args[ 'driver_status' ] ) && in_array( $args[ 'driver_status' ], array( 'not_updates_driver', 'not_updated_1_day', 'not_updated_week', 'not_updated_month' ) ) ) {
+			$ny_timezone = new DateTimeZone( 'America/New_York' );
+			$ny_time = new DateTime( 'now', $ny_timezone );
+			
+			// Determine time threshold based on filter type
+			if ( $args[ 'driver_status' ] === 'not_updates_driver' ) {
+				$time_threshold = defined( 'TIME_AVAILABLE_DRIVER' ) ? TIME_AVAILABLE_DRIVER : '-12 hours';
+				$ny_time->modify( $time_threshold );
+				$time_threshold_timestamp = $ny_time->getTimestamp();
+				$time_threshold_2_timestamp = null; // Not used for this filter
+			} elseif ( $args[ 'driver_status' ] === 'not_updated_1_day' ) {
+				// 1-2 days range
+				$ny_time_1_day = clone $ny_time;
+				$ny_time_1_day->modify( '-1 day' );
+				$ny_time_2_days = clone $ny_time;
+				$ny_time_2_days->modify( '-2 days' );
+				$time_threshold_timestamp = $ny_time_1_day->getTimestamp(); // Upper bound (1 day)
+				$time_threshold_2_timestamp = $ny_time_2_days->getTimestamp(); // Lower bound (2 days)
+				
+				// Debug logging
+				if ( current_user_can( 'administrator' ) ) {
+					error_log( '=== FILTER SEARCH: not_updated_1_day ===' );
+					error_log( 'Current NY time: ' . ( new DateTime( 'now', new DateTimeZone( 'America/New_York' ) ) )->format( 'Y-m-d H:i:s' ) );
+					error_log( 'Threshold timestamp (1 day ago): ' . $time_threshold_timestamp . ' (' . $ny_time_1_day->format( 'Y-m-d H:i:s' ) . ')' );
+					error_log( 'Threshold timestamp (2 days ago): ' . $time_threshold_2_timestamp . ' (' . $ny_time_2_days->format( 'Y-m-d H:i:s' ) . ')' );
+					error_log( 'Total drivers before filter: ' . count( $all_results_with_meta ) );
+				}
+			} elseif ( $args[ 'driver_status' ] === 'not_updated_week' ) {
+				// 5-7 days range
+				$ny_time_5_days = clone $ny_time;
+				$ny_time_5_days->modify( '-5 days' );
+				$ny_time_7_days = clone $ny_time;
+				$ny_time_7_days->modify( '-7 days' );
+				$time_threshold_timestamp = $ny_time_5_days->getTimestamp(); // Upper bound (5 days)
+				$time_threshold_2_timestamp = $ny_time_7_days->getTimestamp(); // Lower bound (7 days)
+			} elseif ( $args[ 'driver_status' ] === 'not_updated_month' ) {
+				$ny_time->modify( '-30 days' );
+				$time_threshold_timestamp = $ny_time->getTimestamp();
+				$time_threshold_2_timestamp = null;
+			}
+			
+			$filtered_by_update = array();
+			$debug_count = 0;
+			$debug_sample = array(); // Store first 5 samples for debugging
+			
+			foreach ( $all_results_with_meta as $result ) {
+				$updated_zip_code = isset( $result[ 'updated_zipcode' ] ) ? $result[ 'updated_zipcode' ] : '';
+				
+				// Skip NULL/empty values for specific time range filters (they should only match "not_updates_driver")
+				if ( empty( $updated_zip_code ) ) {
+					// Only include NULL for "not_updates_driver" filter (12 hours)
+					if ( $args[ 'driver_status' ] === 'not_updates_driver' ) {
+						$filtered_by_update[] = $result;
+					}
+					continue;
+				}
+				
+				// Convert updated_zip_code to NY timezone for proper comparison
+				$updated_zip_datetime = new DateTime( $updated_zip_code, new DateTimeZone( 'America/New_York' ) );
+				$updated_zip_datetime->setTimezone( $ny_timezone );
+				$updated_zip_code_time = $updated_zip_datetime->getTimestamp();
+				
+				$should_include = false;
+				
+				if ( $args[ 'driver_status' ] === 'not_updated_week' && $time_threshold_2_timestamp !== null ) {
+					// For week filter: updated_zip_code_time should be between 7 days and 5 days ago
+					// (older than 5 days but not older than 7 days)
+					// time_threshold_timestamp = 5 days ago (upper bound)
+					// time_threshold_2_timestamp = 7 days ago (lower bound)
+					if ( $updated_zip_code_time < $time_threshold_timestamp && $updated_zip_code_time >= $time_threshold_2_timestamp ) {
+						$should_include = true;
+					}
+				} elseif ( $args[ 'driver_status' ] === 'not_updated_1_day' && $time_threshold_2_timestamp !== null ) {
+					// For 1 day filter: updated_zip_code_time should be between 2 days and 1 day ago
+					// (older than 1 day but not older than 2 days)
+					// time_threshold_timestamp = 1 day ago (upper bound)
+					// time_threshold_2_timestamp = 2 days ago (lower bound)
+					if ( $updated_zip_code_time < $time_threshold_timestamp && $updated_zip_code_time >= $time_threshold_2_timestamp ) {
+						$should_include = true;
+					}
+				} else {
+					// For other filters: updated_zip_code_time should be older than threshold
+					if ( $time_threshold_timestamp >= $updated_zip_code_time ) {
+						$should_include = true;
+					}
+				}
+				
+				// Debug logging for first 5 matches
+				if ( $should_include && current_user_can( 'administrator' ) && $debug_count < 5 && in_array( $args[ 'driver_status' ], array( 'not_updated_1_day', 'not_updated_week', 'not_updated_month' ) ) ) {
+					$days_diff = floor( ( $time_threshold_timestamp - $updated_zip_code_time ) / 86400 );
+					$debug_sample[] = array(
+						'driver_id' => $result[ 'id' ],
+						'updated_zipcode' => $updated_zip_code,
+						'updated_timestamp' => $updated_zip_code_time,
+						'updated_formatted' => $updated_zip_datetime->format( 'Y-m-d H:i:s' ),
+						'threshold_timestamp' => $time_threshold_timestamp,
+						'threshold_formatted' => ( new DateTime( '@' . $time_threshold_timestamp, $ny_timezone ) )->format( 'Y-m-d H:i:s' ),
+						'days_old' => $days_diff,
+					);
+					$debug_count++;
+				}
+				
+				if ( $should_include ) {
+					$filtered_by_update[] = $result;
+				}
+			}
+			
+			// Debug logging summary
+			if ( current_user_can( 'administrator' ) && in_array( $args[ 'driver_status' ], array( 'not_updated_1_day', 'not_updated_week', 'not_updated_month' ) ) ) {
+				error_log( 'Filter: ' . $args[ 'driver_status' ] . ' - Drivers after filter: ' . count( $filtered_by_update ) );
+				if ( ! empty( $debug_sample ) ) {
+					error_log( 'Sample drivers (first 5): ' . print_r( $debug_sample, true ) );
+				}
+			}
+			
+			$all_results_with_meta = $filtered_by_update;
 		}
 		
 		// Если указан тип документа, фильтруем сразу по типу и статусу (не используем driver_has_document_issues)
@@ -2914,7 +3110,6 @@ class TMSDrivers extends TMSDriversHelper {
 					? sanitize_text_field( $_POST[ 'referer_by' ] ) : '',
 				'referer_name'               => isset( $_POST[ 'referer_name' ] )
 					? sanitize_text_field( $_POST[ 'referer_name' ] ) : '',
-			
 			);
 			
 			// Debug: log referer fields
@@ -3494,6 +3689,22 @@ class TMSDrivers extends TMSDriversHelper {
 
 			$endurance_coi_expired_date = isset( $_POST[ 'endurance_coi_expired_date' ] )
 				? sanitize_text_field( $_POST[ 'endurance_coi_expired_date' ] ) : '';
+
+			$insurance_agent_enabled = isset( $_POST[ 'insurance_agent_enabled' ] )
+				? sanitize_text_field( $_POST[ 'insurance_agent_enabled' ] ) : '';
+			$insurance_agent_name = isset( $_POST[ 'insurance_agent_name' ] )
+				? sanitize_text_field( $_POST[ 'insurance_agent_name' ] ) : '';
+			$insurance_agent_phone = isset( $_POST[ 'insurance_agent_phone' ] )
+				? sanitize_text_field( $_POST[ 'insurance_agent_phone' ] ) : '';
+			$insurance_agent_email = isset( $_POST[ 'insurance_agent_email' ] )
+				? sanitize_email( $_POST[ 'insurance_agent_email' ] ) : '';
+
+			$legal_document_type_owner = isset( $_POST[ 'legal_document_type_owner' ] )
+				? sanitize_text_field( $_POST[ 'legal_document_type_owner' ] ) : '';
+			$legal_document_expiration_owner = isset( $_POST[ 'legal_document_expiration_owner' ] )
+				? sanitize_text_field( $_POST[ 'legal_document_expiration_owner' ] ) : '';
+			$nationality_owner = isset( $_POST[ 'nationality_owner' ] )
+				? sanitize_text_field( $_POST[ 'nationality_owner' ] ) : '';
 			
 			$data = [
 				'driver_id'                             => $driver_id,
@@ -3556,6 +3767,14 @@ class TMSDrivers extends TMSDriversHelper {
 				'change_9_training_team_driver'         => $change_9_training_team_driver,
 				'martlet_coi_expired_date'              => $martlet_coi_expired_date,
 				'endurance_coi_expired_date'             => $endurance_coi_expired_date,
+				'insurance_agent_enabled'               => $insurance_agent_enabled,
+				'insurance_agent_name'                  => $insurance_agent_name,
+				'insurance_agent_phone'                 => $insurance_agent_phone,
+				'insurance_agent_email'                 => $insurance_agent_email,
+				'legal_document_type_owner'             => $legal_document_type_owner,
+				'legal_document_expiration_owner'       => $legal_document_expiration_owner,
+				'nationality_owner'                     => $nationality_owner,
+				
 			];
 			
 			
@@ -3728,6 +3947,7 @@ class TMSDrivers extends TMSDriversHelper {
 				'change_9_file_team_driver',
 				'interview_martlet',
 				'interview_endurance',
+				'legal_document_owner',
 			);
 			
 			
@@ -8157,7 +8377,7 @@ class TMSDrivers extends TMSDriversHelper {
 	 * Filter drivers by document type
 	 *
 	 * @param array $drivers Array of drivers with meta_data
-	 * @param string $document_type Document type code (VR, PL, DL, COI, EA, PR, PS, HZ, GE, TWIC, TSA, DL_TEAM, EA_TEAM, PR_TEAM, PS_TEAM)
+	 * @param string $document_type Document type code (VR, PL, DL, COI, EA, PR, PS, HZ, GE, TWIC, TSA, DL_TEAM, EA_TEAM, PR_TEAM, PS_TEAM, USP_OWNER, PR_OWNER, EA_OWNER, CN_OWNER, EDL_OWNER)
 	 * @return array Filtered drivers
 	 */
 	public function filter_drivers_by_document_type( $drivers, $document_type, $document_status = 'expired' ) {
@@ -8671,6 +8891,153 @@ class TMSDrivers extends TMSDriversHelper {
 						}
 					} elseif ( $document_status === 'temporary' ) {
 						$has_issue = false; // PS doesn't have temporary status
+					}
+					break;
+				
+				case 'USP_OWNER':
+					// US Passport (Owner)
+					$legal_doc_type = get_field_value( $meta, 'legal_document_type_owner' );
+					$exp_date = get_field_value( $meta, 'legal_document_expiration_owner' );
+					$legal_doc = get_field_value( $meta, 'legal_document_owner' );
+					$has_type = ( $legal_doc_type === 'us-passport' );
+					$has_file = ! empty( $legal_doc );
+					
+					if ( $document_status === 'expired' ) {
+						// Check if expired
+						if ( $has_type && ! empty( $exp_date ) ) {
+							$status = $check_document_status( $exp_date );
+							$has_issue = ( $status[ 'status' ] === 'expired' );
+						}
+					} elseif ( $document_status === 'missing' ) {
+						// Check if missing
+						$has_issue = ( ! $has_type || ( $has_type && ( empty( $exp_date ) || ! $has_file ) ) );
+					} elseif ( $document_status === 'valid' ) {
+						// Check if valid - includes expires_soon (not expired yet)
+						if ( $has_type && ! empty( $exp_date ) && $has_file ) {
+							$status = $check_document_status( $exp_date );
+							$has_issue = ( $status[ 'status' ] === 'valid' || $status[ 'status' ] === 'extended' || $status[ 'status' ] === 'expires_soon' );
+						} else {
+							$has_issue = false;
+						}
+					} elseif ( $document_status === 'temporary' ) {
+						$has_issue = false; // USP doesn't have temporary status
+					}
+					break;
+				
+				case 'PR_OWNER':
+					// Permanent Residency (Owner)
+					$legal_doc_type = get_field_value( $meta, 'legal_document_type_owner' );
+					$exp_date = get_field_value( $meta, 'legal_document_expiration_owner' );
+					$legal_doc = get_field_value( $meta, 'legal_document_owner' );
+					$has_type = ( $legal_doc_type === 'permanent-residency' );
+					$has_file = ! empty( $legal_doc );
+					
+					if ( $document_status === 'expired' ) {
+						// Check if expired
+						if ( $has_type && ! empty( $exp_date ) ) {
+							$status = $check_document_status( $exp_date );
+							$has_issue = ( $status[ 'status' ] === 'expired' );
+						}
+					} elseif ( $document_status === 'missing' ) {
+						// Check if missing
+						$has_issue = ( ! $has_type || ( $has_type && ( empty( $exp_date ) || ! $has_file ) ) );
+					} elseif ( $document_status === 'valid' ) {
+						// Check if valid - includes expires_soon (not expired yet)
+						if ( $has_type && ! empty( $exp_date ) && $has_file ) {
+							$status = $check_document_status( $exp_date );
+							$has_issue = ( $status[ 'status' ] === 'valid' || $status[ 'status' ] === 'extended' || $status[ 'status' ] === 'expires_soon' );
+						} else {
+							$has_issue = false;
+						}
+					} elseif ( $document_status === 'temporary' ) {
+						$has_issue = false; // PR doesn't have temporary status
+					}
+					break;
+				
+				case 'EA_OWNER':
+					// Employment Authorization (Owner)
+					$legal_doc_type = get_field_value( $meta, 'legal_document_type_owner' );
+					$exp_date = get_field_value( $meta, 'legal_document_expiration_owner' );
+					$legal_doc = get_field_value( $meta, 'legal_document_owner' );
+					$has_type = ( $legal_doc_type === 'work-authorization' );
+					$has_file = ! empty( $legal_doc );
+					
+					if ( $document_status === 'expired' ) {
+						// Check if expired
+						if ( $has_type && ! empty( $exp_date ) ) {
+							$status = $check_document_status( $exp_date );
+							$has_issue = ( $status[ 'status' ] === 'expired' );
+						}
+					} elseif ( $document_status === 'missing' ) {
+						// Check if missing
+						$has_issue = ( ! $has_type || ( $has_type && ( empty( $exp_date ) || ! $has_file ) ) );
+					} elseif ( $document_status === 'valid' ) {
+						// Check if valid - includes expires_soon (not expired yet)
+						if ( $has_type && ! empty( $exp_date ) && $has_file ) {
+							$status = $check_document_status( $exp_date );
+							$has_issue = ( $status[ 'status' ] === 'valid' || $status[ 'status' ] === 'extended' || $status[ 'status' ] === 'expires_soon' );
+						} else {
+							$has_issue = false;
+						}
+					} elseif ( $document_status === 'temporary' ) {
+						$has_issue = false; // EA doesn't have temporary status
+					}
+					break;
+				
+				case 'CN_OWNER':
+					// Certificate of Naturalization (Owner)
+					$legal_doc_type = get_field_value( $meta, 'legal_document_type_owner' );
+					$exp_date = get_field_value( $meta, 'legal_document_expiration_owner' );
+					$legal_doc = get_field_value( $meta, 'legal_document_owner' );
+					$has_type = ( $legal_doc_type === 'certificate-of-naturalization' );
+					$has_file = ! empty( $legal_doc );
+					
+					if ( $document_status === 'expired' ) {
+						// Certificate of Naturalization doesn't expire, but check if date is set and expired
+						if ( $has_type && ! empty( $exp_date ) ) {
+							$status = $check_document_status( $exp_date );
+							$has_issue = ( $status[ 'status' ] === 'expired' );
+						} else {
+							$has_issue = false; // CN doesn't expire if no date
+						}
+					} elseif ( $document_status === 'missing' ) {
+						// Check if missing
+						$has_issue = ( ! $has_type || ( $has_type && ! $has_file ) );
+					} elseif ( $document_status === 'valid' ) {
+						// Check if valid (file exists) - CN doesn't expire, so if file exists it's valid
+						$has_issue = ( $has_type && $has_file );
+					} elseif ( $document_status === 'temporary' ) {
+						$has_issue = false; // CN doesn't have temporary status
+					}
+					break;
+				
+				case 'EDL_OWNER':
+					// Enhanced Driver License / Real ID (Owner)
+					$legal_doc_type = get_field_value( $meta, 'legal_document_type_owner' );
+					$exp_date = get_field_value( $meta, 'legal_document_expiration_owner' );
+					$legal_doc = get_field_value( $meta, 'legal_document_owner' );
+					$has_type = ( $legal_doc_type === 'enhanced-driver-licence-real-id' );
+					$has_file = ! empty( $legal_doc );
+					
+					if ( $document_status === 'expired' ) {
+						// Check if expired
+						if ( $has_type && ! empty( $exp_date ) ) {
+							$status = $check_document_status( $exp_date );
+							$has_issue = ( $status[ 'status' ] === 'expired' );
+						}
+					} elseif ( $document_status === 'missing' ) {
+						// Check if missing
+						$has_issue = ( ! $has_type || ( $has_type && ( empty( $exp_date ) || ! $has_file ) ) );
+					} elseif ( $document_status === 'valid' ) {
+						// Check if valid - includes expires_soon (not expired yet)
+						if ( $has_type && ! empty( $exp_date ) && $has_file ) {
+							$status = $check_document_status( $exp_date );
+							$has_issue = ( $status[ 'status' ] === 'valid' || $status[ 'status' ] === 'extended' || $status[ 'status' ] === 'expires_soon' );
+						} else {
+							$has_issue = false;
+						}
+					} elseif ( $document_status === 'temporary' ) {
+						$has_issue = false; // EDL doesn't have temporary status
 					}
 					break;
 			}

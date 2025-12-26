@@ -135,6 +135,13 @@ $driver_capabilities = array(
 						</option>
 					<?php endforeach; ?>
 				<?php endif; ?>
+
+				<?php if ( $driver_helper->can_see_driver_with_status( 'not_updates_driver' ) ): ?>
+				<option value="not_updates_driver" <?php echo $driver_status === 'not_updates_driver' ? 'selected' : ''; ?>>Not updates driver</option>
+				<option value="not_updated_1_day" <?php echo $driver_status === 'not_updated_1_day' ? 'selected' : ''; ?>>Not updated (1 day)</option>
+				<option value="not_updated_week" <?php echo $driver_status === 'not_updated_week' ? 'selected' : ''; ?>>Not updated (week)</option>
+				<option value="not_updated_month" <?php echo $driver_status === 'not_updated_month' ? 'selected' : ''; ?>>Not updated (month)</option>
+				<?php endif; ?>
 			</select>
 				
 				<?php if ( ! empty( $_GET ) ): ?>

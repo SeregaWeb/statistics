@@ -36,6 +36,7 @@ $capability_names = array(
 	'regional.svg'           => 'Regional',
 	'canada.svg'             => 'Canada',
 	'mexico.svg'             => 'Mexico',
+	'military.svg'           => 'Military',
 );
 
 // Get capabilities icons

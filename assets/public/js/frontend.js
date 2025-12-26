@@ -4908,6 +4908,26 @@ var legalDocumentExpirationInit = function legalDocumentExpirationInit() {
     });
     _toggleExpirationField(teamDriverSelect.value);
   }
+  var ownerSelect = document.querySelector('.js-legal-doc-owner');
+  var ownerExpirationField = document.querySelector('.js-expiration-date-field-owner');
+  if (ownerSelect && ownerExpirationField) {
+    var _toggleExpirationField2 = function _toggleExpirationField2(selectedValue) {
+      if (selectedValue === 'certificate-of-naturalization') {
+        ownerExpirationField.style.display = 'none';
+        var input = ownerExpirationField.querySelector('input');
+        if (input) {
+          input.value = '';
+        }
+      } else {
+        ownerExpirationField.style.display = '';
+      }
+    };
+    ownerSelect.addEventListener('change', function (event) {
+      var target = event.target;
+      _toggleExpirationField2(target.value);
+    });
+    _toggleExpirationField2(ownerSelect.value);
+  }
 };
 
 /***/ }),

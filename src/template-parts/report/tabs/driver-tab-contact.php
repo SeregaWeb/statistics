@@ -351,7 +351,6 @@ $access_vehicle = $TMSUsers->check_user_role_access( [
                 </div>
             </div>
 
-
             <h4 class="mt-4">Preferred distance</h4>
 
             <div class="row">

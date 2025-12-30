@@ -107,6 +107,13 @@ if ( ! empty( $results ) ) : ?>
 			
 			$id_customer     = get_field_value( $meta, 'customer_id' );
 			$template_broker = $TMSBroker->get_broker_and_link_by_id( $id_customer );
+			
+			$current_company = $TMSBroker->get_company_by_id( $id_customer );
+			if ( $current_company ) {
+				$current_company_name = $current_company[0]->company_name;
+			} else {
+				$current_company_name = '';
+			}
 			?>
 
             <tr class="factoring-color-<?php echo $factoring_class; ?> <?php echo $tbd ? 'tbd' : ''; ?>">
@@ -127,7 +134,16 @@ if ( ! empty( $results ) ) : ?>
                                   <?php echo esc_html( $dispatcher[ 'initials' ] ); ?>
                               </span>
                         </p>
-                        <span class="text-small"><?php echo $reference_number; ?></span>
+                        <div>
+                            <div class="d-flex gap-1 flex-row align-items-center">
+                                <span class="text-small"><?php echo $reference_number; ?></span>
+                            </div>
+                            <?php if ( ! empty( $current_company_name ) ): ?>
+                                <div class="d-flex flex-column">
+                                    <span style="font-size: 10px;"><?php echo $current_company_name; ?></span>
+                                </div>
+                            <?php endif; ?>
+                        </div>
                     </div>
                 </td>
 

@@ -828,6 +828,25 @@ c4.751-4.751,4.751-12.456,0-17.209l-48.12-48.12c-0.01,0-0.016,0-0.025,0C420.361,
 </svg>
 ';
 	}
+
+	public function get_icon_high_priority() {
+
+		return '
+		<svg width="20" height="20" viewBox="0 0 800 800" fill="none" xmlns="http://www.w3.org/2000/svg">
+			<g clip-path="url(#clip0_136_2)">
+			<path d="M114.908 603.52L340.37 152.59C364.94 103.454 435.06 103.454 459.63 152.59L685.093 603.52C707.257 647.846 675.024 700 625.464 700H174.536C124.977 700 92.7439 647.846 114.908 603.52Z" fill="#D9D9D9" stroke="black" stroke-width="30" stroke-linecap="round" stroke-linejoin="round"/>
+			<path d="M379.301 174.727C387.68 157.431 412.32 157.431 420.699 174.727L636.879 620.972C644.279 636.247 633.153 654 616.18 654H183.82C166.847 654 155.721 636.247 163.121 620.973L379.301 174.727Z" fill="#FFCC32"/>
+			<path d="M400 600C418.41 600 433.334 585.076 433.334 566.667C433.334 548.257 418.41 533.333 400 533.333C381.591 533.333 366.667 548.257 366.667 566.667C366.667 585.076 381.591 600 400 600Z" fill="black"/>
+			<path d="M400 333.333V466.667" stroke="black" stroke-width="66.6667" stroke-linecap="round" stroke-linejoin="round"/>
+			</g>
+			<defs>
+			<clipPath id="clip0_136_2">
+			<rect width="800" height="800" fill="white"/>
+			</clipPath>
+			</defs>
+		</svg>
+		';
+	}
 	
 	public function get_file_icon() {
 		return '

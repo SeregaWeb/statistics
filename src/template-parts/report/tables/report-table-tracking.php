@@ -125,12 +125,21 @@ if ( ! empty( $results ) ) :
 			
 			$reference_number = esc_html( get_field_value( $meta, 'reference_number' ) );
 			
+			$high_priority = get_field_value( $meta, 'high_priority' );
+			
 			$driver_with_macropoint = $helper->get_driver_tempate( $meta );
 			
 			$show_control = $TMSUsers->show_control_loads( $my_team, $current_user_id, $dispatcher_initials, $is_draft );
 			
 			$id_customer     = get_field_value( $meta, 'customer_id' );
 			$template_broker = $TMSBroker->get_broker_and_link_by_id( $id_customer );
+			
+			$current_company = $TMSBroker->get_company_by_id( $id_customer );
+			if ( $current_company ) {
+				$current_company_name = $current_company[0]->company_name;
+			} else {
+				$current_company_name = '';
+			}
 			
 			$instructions_raw = get_field_value( $meta, 'instructions' );
 			$instructions     = $helper->get_label_by_key( $instructions_raw, 'instructions' );
@@ -173,9 +182,17 @@ if ( ! empty( $results ) ) :
                             <span><?php echo strtoupper( $office_dispatcher ); ?></span>
 						<?php endif; ?>
                     </div>
-                    <span class="mt-1" class="text-small">
-                        <?php echo $reference_number; ?>
-                    </span>
+                    <div class="d-flex gap-1 align-items-center mt-1">
+                        <?php echo $high_priority ? $helper->get_icon_high_priority() : ''; ?>
+                        <span class="text-small <?php echo $high_priority ? 'fw-bold text-decoration-underline' : ''; ?>">
+                            <?php echo $reference_number; ?>
+                        </span>
+                    </div>
+                    <?php if ( ! empty( $current_company_name ) ): ?>
+                        <div class="d-flex flex-column">
+                            <span style="font-size: 10px;"><?php echo $current_company_name; ?></span>
+                        </div>
+                    <?php endif; ?>
                 </td>
 
                 <td>

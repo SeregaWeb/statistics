@@ -5969,6 +5969,7 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 			'quick_update_status_all'       => 'quick_update_status_all',
 			'add_pinned_message'            => 'add_pinned_message',
 			'delete_pinned_message'         => 'delete_pinned_message',
+			'update_high_priority'          => 'update_high_priority',
 			'optimize_database_tables'      => 'optimize_database_tables',
 			'add_performance_indexes'       => 'add_performance_indexes',
 			'optimize_log_tables'           => 'optimize_log_tables',
@@ -6018,6 +6019,28 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 			'tms-database-optimization', // Menu slug
 			array( $this, 'render_database_optimization_page' ) // Callback function
 		);
+	}
+
+	public function update_high_priority() {
+		if ( defined( 'DOING_AJAX' ) && DOING_AJAX ) {
+			$high_priority = $_POST[ 'high_priority' ] ?? 'false';
+			$post_id = $_POST[ 'post_id' ] ?? 0;
+
+			if ( ! $post_id ) {
+				wp_send_json_error( array( 'message' => 'No post_id provided' ) );
+			}
+
+			// Convert string 'true'/'false' to boolean
+			$is_high_priority = ( $high_priority === 'true' || $high_priority === '1' || $high_priority === 1 || $high_priority === true );
+			$high_priority_value = $is_high_priority ? 1 : 0;
+
+			// Update meta data
+			$this->update_post_meta_data( $post_id, array( 'high_priority' => $high_priority_value ) );
+
+			// Return informative message
+			$message = $is_high_priority ? 'Set up high priority' : 'High priority removed';
+			wp_send_json_success( array( 'message' => $message ) );
+		}
 	}
 	
 	/**

@@ -1678,6 +1678,37 @@ export const pinnedMessageInit = (ajaxUrl) => {
         });
 };
 
+export const highPriorityContactInit = (ajaxUrl) => {
+    const checkbox = document.querySelector('.js-hight-priority-checkbox');
+    if (checkbox) {
+        checkbox.addEventListener('change', (e) => {
+            e.preventDefault();
+
+            const form = new FormData();
+            form.append('action', 'update_high_priority');
+            form.append('post_id', (checkbox as HTMLInputElement).dataset.postId as string);
+            form.append('high_priority', (checkbox as HTMLInputElement).checked ? 'true' : 'false');
+
+            fetch(ajaxUrl, {
+                method: 'POST',
+                body: form,
+            })
+            .then((res) => res.json())
+            .then((data) => {
+                if (data.success) {
+                    printMessage(data.data.message, 'success', 8000);
+                } else {
+                    printMessage(data.data.message, 'danger', 8000);
+                }
+            })
+            .catch((error) => {
+                printMessage(`Request failed: ${error}`, 'danger', 8000);
+                console.error('Request failed:', error);
+            });
+        });
+    }
+};
+
 export function addDeletePinnedHandler(ajaxUrl: string) {
     const btns = document.querySelectorAll('.js-delete-pinned-message');
     if (!btns || btns.length === 0) return;

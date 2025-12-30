@@ -24,6 +24,7 @@ import {
     addShipperPointInit,
     createDraftPosts,
     fullRemovePost,
+    highPriorityContactInit,
     pinnedMessageInit,
     previewFileUpload,
     quickEditInit,
@@ -260,6 +261,7 @@ function ready() {
     sendShipperFormInit(urlAjax);
     addSearchAction(urlAjax);
     updateStatusPost(urlAjax);
+    highPriorityContactInit(urlAjax);
     removeOneFileInitial(urlAjax);
     changeTableInit(urlAjax);
     AuthUsersInit(urlAjax);

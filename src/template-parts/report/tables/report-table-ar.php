@@ -86,6 +86,13 @@ if ( ! empty( $results ) ) : ?>
 			$booked_price_class = $helper->get_modify_class( $meta, 'modify_price' );
 			$id_customer        = get_field_value( $meta, 'customer_id' );
 			$template_broker    = $TMSBroker->get_broker_and_link_by_id( $id_customer );
+			
+			$current_company = $TMSBroker->get_company_by_id( $id_customer );
+			if ( $current_company ) {
+				$current_company_name = $current_company[0]->company_name;
+			} else {
+				$current_company_name = '';
+			}
 			?>
 
             <tr class="">
@@ -103,6 +110,11 @@ if ( ! empty( $results ) ) : ?>
                         </p>
                         <span class="text-small"><?php echo $reference_number; ?></span>
                     </div>
+                    <?php if ( ! empty( $current_company_name ) ): ?>
+                        <div class="d-flex flex-column">
+                            <span style="font-size: 10px;"><?php echo $current_company_name; ?></span>
+                        </div>
+                    <?php endif; ?>
                 </td>
 
                 <td>

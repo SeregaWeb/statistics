@@ -485,7 +485,9 @@ body.dark-mode .table {
 
 /* Dark mode for load status backgrounds */
 body.dark-mode .load-status-tonu,
-body.dark-mode .load-status-cancelled {
+body.dark-mode .load-status-cancelled,
+body.dark-mode .load-status-tonu.tbd,
+body.dark-mode .load-status-cancelled.tbd {
     background-color: rgba(224, 108, 117, 0.2) !important;
   
     td {

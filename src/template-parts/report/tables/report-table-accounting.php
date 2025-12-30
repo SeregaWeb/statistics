@@ -5,6 +5,7 @@ $flt = get_field_value( $args, 'flt' );
 
 $TMSUsers   = new TMSUsers();
 $TMSShipper = new TMSReportsShipper();
+$TMSBroker  = new TMSReportsCompany();
 
 $results       = get_field_value( $args, 'results' );
 $total_pages   = get_field_value( $args, 'total_pages' );
@@ -217,6 +218,14 @@ if ( ! empty( $results ) ) : ?>
 			}
 			
 			$now_show = ( $factoring_status_row === 'paid' );
+			
+			$id_customer = get_field_value( $meta, 'customer_id' );
+			$current_company = $TMSBroker->get_company_by_id( $id_customer );
+			if ( $current_company ) {
+				$current_company_name = $current_company[0]->company_name;
+			} else {
+				$current_company_name = '';
+			}
 			?>
 
             <tr class="load-status-accounting-<?php echo $driver_pay_status; ?>">
@@ -238,7 +247,16 @@ if ( ! empty( $results ) ) : ?>
                                   <?php echo esc_html( $dispatcher[ 'initials' ] ); ?>
                               </span>
                         </p>
-                        <span class="text-small"><?php echo $reference_number; ?></span>
+                        <div>
+                            <div class="d-flex gap-1 flex-row align-items-center">
+                                <span class="text-small"><?php echo $reference_number; ?></span>
+                            </div>
+                            <?php if ( ! empty( $current_company_name ) ): ?>
+                                <div class="d-flex flex-column">
+                                    <span style="font-size: 10px;"><?php echo $current_company_name; ?></span>
+                                </div>
+                            <?php endif; ?>
+                        </div>
                     </div>
                 </td>
 

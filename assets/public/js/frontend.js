@@ -5573,6 +5573,7 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */   additionalContactsInit: function() { return /* binding */ additionalContactsInit; },
 /* harmony export */   createDraftPosts: function() { return /* binding */ createDraftPosts; },
 /* harmony export */   fullRemovePost: function() { return /* binding */ fullRemovePost; },
+/* harmony export */   highPriorityContactInit: function() { return /* binding */ highPriorityContactInit; },
 /* harmony export */   pinnedMessageInit: function() { return /* binding */ pinnedMessageInit; },
 /* harmony export */   previewFileUpload: function() { return /* binding */ previewFileUpload; },
 /* harmony export */   quickEditInit: function() { return /* binding */ quickEditInit; },
@@ -6698,6 +6699,33 @@ var pinnedMessageInit = function pinnedMessageInit(ajaxUrl) {
       }
     });
   });
+};
+var highPriorityContactInit = function highPriorityContactInit(ajaxUrl) {
+  var checkbox = document.querySelector('.js-hight-priority-checkbox');
+  if (checkbox) {
+    checkbox.addEventListener('change', function (e) {
+      e.preventDefault();
+      var form = new FormData();
+      form.append('action', 'update_high_priority');
+      form.append('post_id', checkbox.dataset.postId);
+      form.append('high_priority', checkbox.checked ? 'true' : 'false');
+      fetch(ajaxUrl, {
+        method: 'POST',
+        body: form
+      }).then(function (res) {
+        return res.json();
+      }).then(function (data) {
+        if (data.success) {
+          (0,_info_messages__WEBPACK_IMPORTED_MODULE_1__.printMessage)(data.data.message, 'success', 8000);
+        } else {
+          (0,_info_messages__WEBPACK_IMPORTED_MODULE_1__.printMessage)(data.data.message, 'danger', 8000);
+        }
+      }).catch(function (error) {
+        (0,_info_messages__WEBPACK_IMPORTED_MODULE_1__.printMessage)("Request failed: ".concat(error), 'danger', 8000);
+        console.error('Request failed:', error);
+      });
+    });
+  }
 };
 function addDeletePinnedHandler(ajaxUrl) {
   var btns = document.querySelectorAll('.js-delete-pinned-message');
@@ -28576,6 +28604,7 @@ function ready() {
   (0,_components_create_report__WEBPACK_IMPORTED_MODULE_4__.sendShipperFormInit)(urlAjax);
   (0,_components_search_action__WEBPACK_IMPORTED_MODULE_8__.addSearchAction)(urlAjax);
   (0,_components_create_report__WEBPACK_IMPORTED_MODULE_4__.updateStatusPost)(urlAjax);
+  (0,_components_create_report__WEBPACK_IMPORTED_MODULE_4__.highPriorityContactInit)(urlAjax);
   (0,_components_create_report__WEBPACK_IMPORTED_MODULE_4__.removeOneFileInitial)(urlAjax);
   (0,_components_change_table__WEBPACK_IMPORTED_MODULE_10__.changeTableInit)(urlAjax);
   (0,_components_auth_users__WEBPACK_IMPORTED_MODULE_15__.AuthUsersInit)(urlAjax);

@@ -68,7 +68,9 @@ $color_direct_3: #ffdcdc;
 }
 
 .load-status-tonu,
-.load-status-cancelled {
+.load-status-cancelled,
+.load-status-tonu.tbd,
+.load-status-cancelled.tbd {
     background-color: #ffdcdc;
 
     td {

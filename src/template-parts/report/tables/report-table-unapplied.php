@@ -118,6 +118,13 @@ if ( ! empty( $results ) ) :?>
 			$broker_name     = $template_broker_data[ 'name' ] ?? 'N/A';
 			$broker_mc       = $template_broker_data[ 'mc' ] ?? 'N/A';
 			
+			$current_company = $TMSBroker->get_company_by_id( $id_customer );
+			if ( $current_company ) {
+				$current_company_name = $current_company[0]->company_name;
+			} else {
+				$current_company_name = '';
+			}
+			
 			$all_paid = 0;
 			if ( $invoice_status !== 'in-processing' && $invoice_status !== 'paid' ) {
 				$all_paid += $booked_rate_raw;
@@ -172,6 +179,11 @@ if ( ! empty( $results ) ) :?>
                         </p>
                         <span class="text-small"><?php echo $reference_number; ?></span>
                     </div>
+                    <?php if ( ! empty( $current_company_name ) ): ?>
+                        <div class="d-flex flex-column">
+                            <span style="font-size: 10px;"><?php echo $current_company_name; ?></span>
+                        </div>
+                    <?php endif; ?>
                 </td>
                 <td>
 					<?php echo $template_broker; ?>

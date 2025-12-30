@@ -115,6 +115,15 @@ if ( ! empty( $results ) ) :
 			$driver_with_macropoint = $TMSHelper->get_driver_tempate( $meta );
 			$pdlocations            = $helper->get_locations_template( $row );
 			$dispatcher_initials    = get_field_value( $meta, 'dispatcher_initials' );
+
+			$id_customer              = get_field_value( $meta, 'customer_id' );
+			$current_company          = $TMSBroker->get_company_by_id( $id_customer );
+
+			if ($current_company) {
+				$current_company_name = $current_company[0]->company_name;
+			} else {
+				$current_company_name = '';
+			}
 			
 			$dispatcher     = $helper->get_user_full_name_by_id( $dispatcher_initials );
 			$color_initials = $dispatcher ? get_field( 'initials_color', 'user_' . $dispatcher_initials ) : '#030303';
@@ -143,7 +152,7 @@ if ( ! empty( $results ) ) :
 			$third_driver_rate_raw = get_field_value( $meta, 'third_driver_rate' );
 			$third_driver_rate     = esc_html( '$' . $helper->format_currency( $third_driver_rate_raw ) );
 
-
+			$high_priority = get_field_value( $meta, 'high_priority' );
 
 			$clear_rate = $driver_rate_raw;
 
@@ -252,7 +261,7 @@ if ( ! empty( $results ) ) :
 			}
 			?>
 
-            <tr class="load-status-<?php echo $load_status; ?> <?php echo $tbd ? 'tbd' : ''; ?>">
+            <tr  class="load-status-<?php echo $load_status; ?> <?php echo $tbd ? 'tbd' : ''; ?>">
                 <td>
                     <label class="h-100 cursor-pointer" title="<?php echo $date_booked_raw; ?>"
                            for="load-<?php echo $row[ 'id' ]; ?>"><?php echo $date_booked; ?></label>
@@ -266,13 +275,24 @@ if ( ! empty( $results ) ) :
                             <?php echo esc_html( $dispatcher[ 'initials' ] ); ?>
                         </span>
                         </p>
-                        <span class="text-small platform-<?php echo isset( $broker[ 'platform' ] )
-							? $broker[ 'platform' ] : ""; ?> <?php echo $has_rating ? 'has-rating' : ''; ?>"
-                              title="<?php echo isset( $broker[ 'platform' ] ) ? strtoupper( $broker[ 'platform' ] )
-							      : ""; ?><?php echo $has_rating ? ' | Has rating' : ''; ?>">
-                              <?php echo $reference_number; ?>
-                        </span>
+				    <div>
+					<div class="d-flex gap-1 flex-row align-items-center">
+						<?php echo $high_priority ? $TMSHelper->get_icon_high_priority() : ''; ?>
+
+						<span class="text-small <?php echo $high_priority ? 'fw-bold text-decoration-underline' : ''; ?> platform-<?php echo isset( $broker[ 'platform' ] )
+									? $broker[ 'platform' ] : ""; ?> <?php echo $has_rating ? 'has-rating' : ''; ?>"
+								title="<?php echo isset( $broker[ 'platform' ] ) ? strtoupper( $broker[ 'platform' ] )
+										: ""; ?><?php echo $has_rating ? ' | Has rating' : ''; ?>">
+								<?php echo $reference_number; ?>
+						</span>
+					</div>
+						
+						<div class="d-flex flex-column">
+							<span style="font-size: 10px;"><?php echo $current_company_name; ?></span>
+						</div>
+					</div>
                     </div>
+				
                 </td>
                 <td><?php echo $pdlocations[ 'pick_up_template' ]; ?></td>
                 <td><?php echo $pdlocations[ 'delivery_template' ]; ?></td>

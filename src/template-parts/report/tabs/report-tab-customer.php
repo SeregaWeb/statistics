@@ -5,6 +5,12 @@ $reports  = new TMSReports();
 $helper   = new TMSReportsHelper();
 $TMSUsers = new TMSUsers();
 
+$access_high_priority = $TMSUsers->check_user_role_access( array(
+    'administrator',
+	'expedite_manager',
+	'dispatcher-tl',
+	'tracking-tl',
+), true );
 
 // tab 1
 $value_contact_name      = '';
@@ -15,7 +21,7 @@ $template_select_company = '';
 $set_up_platform_val     = '';
 $set_up_val              = '';
 $value_contact_phone_ext = '';
-
+$high_priority           = false;
 $report_object = ! empty( $args[ 'report_object' ] ) ? $args[ 'report_object' ] : null;
 $post_id       = ! empty( $args[ 'post_id' ] ) ? $args[ 'post_id' ] : null;
 $flt           = ! empty( $args[ 'flt' ] ) ? $args[ 'flt' ] : null;
@@ -43,7 +49,10 @@ if ( $report_object ) {
 		$value_contact_phone_ext  = get_field_value( $meta, 'contact_phone_ext' );
 		$value_contact_email      = get_field_value( $meta, 'contact_email' );
 		$additional_contacts_json = get_field_value( $meta, 'additional_contacts' );
+		$high_priority            = get_field_value( $meta, 'high_priority' );
 		$post_status              = get_field_value( $main, 'status_post' );
+
+
 		if ( $current_company ) {
 			if ( $additional_contacts_json ) {
 				$additional_contacts = json_decode( $additional_contacts_json, ARRAY_A );
@@ -193,6 +202,20 @@ if ( $report_object ) {
                         additional contacts
                     </button>
 				<?php endif; ?>
+
+                <?php if ( $access_high_priority ): ?>
+
+                <div class="d-flex mt-2">
+                    <div class="mb-2 form-check form-switch">
+                        <input class="form-check-input js-hight-priority-checkbox" type="checkbox" data-post-id="<?php echo $post_id; ?>" <?php echo $high_priority ? 'checked' : ''; ?> name="high_priority" id="high_priority">
+                        <label class="form-check-label" for="high_priority">High Priority Shipment</label>
+                    </div>
+                </div>
+                <?php else: ?>
+                    <div class="mt-2">
+                        <p class="d-flex gap-1 align-items-center text-danger"><?php echo $high_priority ? $helper->get_icon_high_priority() . 'High Priority Shipment'  : ''; ?></p>
+                    </div>
+                <?php endif; ?>
             </div>
             <div class="col-12 col-lg-8">
                 <div class="additional-contacts js-additional-contact row <?php echo ( $additional_contacts_isset ) ? ''

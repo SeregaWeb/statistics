@@ -4733,6 +4733,403 @@ function convertToChartDataArray(data, headers, valueExtractor) {
 
 /***/ }),
 
+/***/ "./src/js/components/charts/home-location-map.ts":
+/*!*******************************************************!*\
+  !*** ./src/js/components/charts/home-location-map.ts ***!
+  \*******************************************************/
+/***/ (function(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   initHomeLocationMap: function() { return /* binding */ initHomeLocationMap; }
+/* harmony export */ });
+function _typeof(o) { "@babel/helpers - typeof"; return _typeof = "function" == typeof Symbol && "symbol" == typeof Symbol.iterator ? function (o) { return typeof o; } : function (o) { return o && "function" == typeof Symbol && o.constructor === Symbol && o !== Symbol.prototype ? "symbol" : typeof o; }, _typeof(o); }
+function _slicedToArray(r, e) { return _arrayWithHoles(r) || _iterableToArrayLimit(r, e) || _unsupportedIterableToArray(r, e) || _nonIterableRest(); }
+function _nonIterableRest() { throw new TypeError("Invalid attempt to destructure non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method."); }
+function _unsupportedIterableToArray(r, a) { if (r) { if ("string" == typeof r) return _arrayLikeToArray(r, a); var t = {}.toString.call(r).slice(8, -1); return "Object" === t && r.constructor && (t = r.constructor.name), "Map" === t || "Set" === t ? Array.from(r) : "Arguments" === t || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(t) ? _arrayLikeToArray(r, a) : void 0; } }
+function _arrayLikeToArray(r, a) { (null == a || a > r.length) && (a = r.length); for (var e = 0, n = Array(a); e < a; e++) n[e] = r[e]; return n; }
+function _iterableToArrayLimit(r, l) { var t = null == r ? null : "undefined" != typeof Symbol && r[Symbol.iterator] || r["@@iterator"]; if (null != t) { var e, n, i, u, a = [], f = !0, o = !1; try { if (i = (t = t.call(r)).next, 0 === l) { if (Object(t) !== t) return; f = !1; } else for (; !(f = (e = i.call(t)).done) && (a.push(e.value), a.length !== l); f = !0); } catch (r) { o = !0, n = r; } finally { try { if (!f && null != t.return && (u = t.return(), Object(u) !== u)) return; } finally { if (o) throw n; } } return a; } }
+function _arrayWithHoles(r) { if (Array.isArray(r)) return r; }
+function _classCallCheck(a, n) { if (!(a instanceof n)) throw new TypeError("Cannot call a class as a function"); }
+function _defineProperties(e, r) { for (var t = 0; t < r.length; t++) { var o = r[t]; o.enumerable = o.enumerable || !1, o.configurable = !0, "value" in o && (o.writable = !0), Object.defineProperty(e, _toPropertyKey(o.key), o); } }
+function _createClass(e, r, t) { return r && _defineProperties(e.prototype, r), t && _defineProperties(e, t), Object.defineProperty(e, "prototype", { writable: !1 }), e; }
+function _toPropertyKey(t) { var i = _toPrimitive(t, "string"); return "symbol" == _typeof(i) ? i : i + ""; }
+function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e = t[Symbol.toPrimitive]; if (void 0 !== e) { var i = e.call(t, r || "default"); if ("object" != _typeof(i)) return i; throw new TypeError("@@toPrimitive must return a primitive value."); } return ("string" === r ? String : Number)(t); }
+var HomeLocationMap = /*#__PURE__*/function () {
+  function HomeLocationMap(stateMapData, maxCount, stateMarkersData, geojsonSource) {
+    _classCallCheck(this, HomeLocationMap);
+    this.map = null;
+    this.mapInitialized = false;
+    this.mapContainer = null;
+    this.stateNameToAbbr = {
+      'Alabama': 'AL',
+      'Alaska': 'AK',
+      'Arizona': 'AZ',
+      'Arkansas': 'AR',
+      'California': 'CA',
+      'Colorado': 'CO',
+      'Connecticut': 'CT',
+      'Delaware': 'DE',
+      'Florida': 'FL',
+      'Georgia': 'GA',
+      'Hawaii': 'HI',
+      'Idaho': 'ID',
+      'Illinois': 'IL',
+      'Indiana': 'IN',
+      'Iowa': 'IA',
+      'Kansas': 'KS',
+      'Kentucky': 'KY',
+      'Louisiana': 'LA',
+      'Maine': 'ME',
+      'Maryland': 'MD',
+      'Massachusetts': 'MA',
+      'Michigan': 'MI',
+      'Minnesota': 'MN',
+      'Mississippi': 'MS',
+      'Missouri': 'MO',
+      'Montana': 'MT',
+      'Nebraska': 'NE',
+      'Nevada': 'NV',
+      'New Hampshire': 'NH',
+      'New Jersey': 'NJ',
+      'New Mexico': 'NM',
+      'New York': 'NY',
+      'North Carolina': 'NC',
+      'North Dakota': 'ND',
+      'Ohio': 'OH',
+      'Oklahoma': 'OK',
+      'Oregon': 'OR',
+      'Pennsylvania': 'PA',
+      'Rhode Island': 'RI',
+      'South Carolina': 'SC',
+      'South Dakota': 'SD',
+      'Tennessee': 'TN',
+      'Texas': 'TX',
+      'Utah': 'UT',
+      'Vermont': 'VT',
+      'Virginia': 'VA',
+      'Washington': 'WA',
+      'West Virginia': 'WV',
+      'Wisconsin': 'WI',
+      'Wyoming': 'WY',
+      'District of Columbia': 'DC'
+    };
+    this.stateMapData = stateMapData;
+    this.maxCount = maxCount;
+    this.stateMarkersData = stateMarkersData;
+    this.geojsonSource = geojsonSource;
+    this.init();
+  }
+  return _createClass(HomeLocationMap, [{
+    key: "init",
+    value: function init() {
+      var _this = this;
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', function () {
+          return _this.initMap();
+        });
+      } else {
+        this.initMap();
+      }
+      var observer = new MutationObserver(function () {
+        if (!_this.mapInitialized && _this.isContainerVisible()) {
+          _this.initMap();
+        }
+      });
+      var chartContainer = document.querySelector('.chart-container[data-chart="home-location"]');
+      if (chartContainer) {
+        observer.observe(chartContainer, {
+          attributes: true,
+          attributeFilter: ['style']
+        });
+      }
+    }
+  }, {
+    key: "isContainerVisible",
+    value: function isContainerVisible() {
+      if (!this.mapContainer) {
+        this.mapContainer = document.getElementById('usaStatesMap');
+      }
+      if (!this.mapContainer) {
+        return false;
+      }
+      return this.mapContainer.offsetParent !== null || this.mapContainer.style.display !== 'none' || window.getComputedStyle(this.mapContainer).display !== 'none';
+    }
+  }, {
+    key: "initMap",
+    value: function initMap() {
+      var _this2 = this;
+      if (this.mapInitialized || this.map !== null) {
+        return;
+      }
+      this.mapContainer = document.getElementById('usaStatesMap');
+      if (!this.mapContainer) {
+        return;
+      }
+      if (!this.isContainerVisible()) {
+        setTimeout(function () {
+          return _this2.initMap();
+        }, 100);
+        return;
+      }
+      this.map = window.L.map('usaStatesMap').setView([39.8283, -98.5795], 8);
+      this.mapInitialized = true;
+      this.setupBaseLayers();
+      this.loadStatesGeoJSON();
+      this.addStateMarkers();
+      window.usaStatesMap = this.map;
+    }
+  }, {
+    key: "setupBaseLayers",
+    value: function setupBaseLayers() {
+      var L = window.L;
+      var cartoLayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+        subdomains: 'abcd',
+        maxZoom: 19
+      }).addTo(this.map);
+      var osmLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{s}/{z}/{x}/{y}.png', {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+        maxZoom: 19
+      });
+      var roadsLayer = L.tileLayer('https://{s}.tile.openstreetmap.fr/osmfr/{z}/{x}/{y}.png', {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+        maxZoom: 19
+      });
+      var baseMaps = {
+        "Light Style (Recommended)": cartoLayer,
+        "OpenStreetMap (Detailed)": osmLayer,
+        "Roads Emphasized": roadsLayer
+      };
+      L.control.layers(baseMaps).addTo(this.map);
+    }
+  }, {
+    key: "getColorForCount",
+    value: function getColorForCount(count) {
+      if (count === 0) return '#f0f0f0';
+      var intensity = count / this.maxCount;
+      if (intensity < 0.2) return '#c6e2ff';
+      if (intensity < 0.4) return '#7db8e8';
+      if (intensity < 0.6) return '#4a9cd6';
+      if (intensity < 0.8) return '#2e7bb8';
+      return '#1a5a9a';
+    }
+  }, {
+    key: "getStateAbbr",
+    value: function getStateAbbr(properties) {
+      var abbr = properties.STUSPS || properties.STATE_ABBR || properties.abbr || properties.state || properties.STATE || '';
+      if (abbr && abbr.length <= 2) {
+        return abbr.toUpperCase();
+      }
+      var fullName = properties.NAME || properties.name || properties.STATE_NAME || abbr;
+      if (fullName && this.stateNameToAbbr[fullName]) {
+        return this.stateNameToAbbr[fullName];
+      }
+      if (fullName) {
+        for (var _i = 0, _Object$entries = Object.entries(this.stateNameToAbbr); _i < _Object$entries.length; _i++) {
+          var _Object$entries$_i = _slicedToArray(_Object$entries[_i], 2),
+            name = _Object$entries$_i[0],
+            abbrValue = _Object$entries$_i[1];
+          if (name.toLowerCase() === fullName.toLowerCase()) {
+            return abbrValue;
+          }
+        }
+      }
+      return '';
+    }
+  }, {
+    key: "isUSState",
+    value: function isUSState(feature) {
+      var stateAbbr = this.getStateAbbr(feature.properties);
+      if (stateAbbr && this.stateMapData[stateAbbr]) {
+        return true;
+      }
+      var stateName = feature.properties.NAME || feature.properties.name || '';
+      if (stateName && this.stateNameToAbbr[stateName]) {
+        return true;
+      }
+      if (stateAbbr && Object.values(this.stateNameToAbbr).includes(stateAbbr)) {
+        return true;
+      }
+      return false;
+    }
+  }, {
+    key: "updateInfoPanel",
+    value: function updateInfoPanel(stateName, count) {
+      var infoPanel = document.getElementById('mapInfoPanel');
+      if (!infoPanel) {
+        if (!this.mapContainer) return;
+        infoPanel = document.createElement('div');
+        infoPanel.id = 'mapInfoPanel';
+        infoPanel.className = 'home-location-map-info-panel';
+        this.mapContainer.appendChild(infoPanel);
+      }
+      if (stateName && count > 0) {
+        infoPanel.innerHTML = '<strong>' + stateName + '</strong><br>Drivers: ' + count;
+        infoPanel.style.display = 'block';
+      } else {
+        infoPanel.style.display = 'none';
+      }
+    }
+  }, {
+    key: "loadStatesGeoJSON",
+    value: function loadStatesGeoJSON() {
+      var _this3 = this;
+      fetch(this.geojsonSource).then(function (response) {
+        if (!response.ok) {
+          throw new Error('Failed to load states GeoJSON');
+        }
+        return response.json();
+      }).then(function (geojson) {
+        _this3.renderStatesLayer(geojson);
+      }).catch(function (error) {
+        console.error('Error loading states GeoJSON:', error);
+        _this3.showErrorMessage('Map Ready - State boundaries loading...');
+      });
+    }
+  }, {
+    key: "renderStatesLayer",
+    value: function renderStatesLayer(geojson) {
+      var _this4 = this;
+      var L = window.L;
+      var styleState = function styleState(feature) {
+        var isUS = _this4.isUSState(feature);
+        if (!isUS) {
+          return {
+            fillColor: '#ffffff',
+            weight: 0,
+            opacity: 0,
+            color: 'transparent',
+            dashArray: '',
+            fillOpacity: 0
+          };
+        }
+        var stateAbbr = _this4.getStateAbbr(feature.properties);
+        var stateData = _this4.stateMapData[stateAbbr] || {
+          count: 0,
+          name: feature.properties.NAME || stateAbbr
+        };
+        return {
+          fillColor: _this4.getColorForCount(stateData.count),
+          weight: 1.5,
+          opacity: 0.8,
+          color: '#fff',
+          dashArray: '',
+          fillOpacity: 0.25
+        };
+      };
+      var highlightFeature = function highlightFeature(e) {
+        var layer = e.target;
+        layer.setStyle({
+          weight: 3,
+          color: '#333',
+          dashArray: '',
+          fillOpacity: 0.5
+        });
+        if (!L.Browser.ie && !L.Browser.opera && !L.Browser.edge) {
+          layer.bringToFront();
+        }
+        var stateAbbr = _this4.getStateAbbr(layer.feature.properties);
+        var stateData = _this4.stateMapData[stateAbbr] || {
+          count: 0,
+          name: layer.feature.properties.NAME || stateAbbr
+        };
+        _this4.updateInfoPanel(stateData.name, stateData.count);
+      };
+      var resetHighlight = function resetHighlight(e) {
+        geojsonLayer.resetStyle(e.target);
+        _this4.updateInfoPanel('', 0);
+      };
+      var zoomToFeature = function zoomToFeature(e) {
+        _this4.map.fitBounds(e.target.getBounds());
+        var stateAbbr = _this4.getStateAbbr(e.target.feature.properties);
+        var stateData = _this4.stateMapData[stateAbbr] || {
+          count: 0,
+          name: e.target.feature.properties.NAME || stateAbbr
+        };
+        _this4.updateInfoPanel(stateData.name, stateData.count);
+      };
+      var geojsonLayer = L.geoJSON(geojson, {
+        style: styleState,
+        onEachFeature: function onEachFeature(feature, layer) {
+          var isUS = _this4.isUSState(feature);
+          if (isUS) {
+            var stateAbbr = _this4.getStateAbbr(feature.properties);
+            var stateData = _this4.stateMapData[stateAbbr] || {
+              count: 0,
+              name: feature.properties.NAME || stateAbbr
+            };
+            layer.bindPopup('<strong>' + stateData.name + '</strong><br>' + 'Drivers: ' + stateData.count);
+            layer.on({
+              mouseover: highlightFeature,
+              mouseout: resetHighlight,
+              click: zoomToFeature
+            });
+          }
+        }
+      });
+      geojsonLayer.addTo(this.map);
+      this.map.getPane('overlayPane').style.zIndex = 400;
+      this.map.setView([39.8283, -98.5795], 5);
+    }
+  }, {
+    key: "addStateMarkers",
+    value: function addStateMarkers() {
+      var _this5 = this;
+      if (!this.stateMarkersData || this.stateMarkersData.length === 0) {
+        return;
+      }
+      var L = window.L;
+      this.stateMarkersData.forEach(function (stateMarker) {
+        if (stateMarker.lat && stateMarker.lng && stateMarker.count > 0) {
+          var baseSize = 40;
+          var maxSize = 80;
+          var size = Math.min(baseSize + stateMarker.count / _this5.maxCount * (maxSize - baseSize), maxSize);
+          var stateIcon = L.divIcon({
+            className: 'state-driver-marker',
+            html: '<div class="state-driver-marker-content" style="width: ' + size + 'px; height: ' + size + 'px; font-size: ' + size * 0.35 + 'px;">' + stateMarker.count + '</div>',
+            iconSize: [size, size],
+            iconAnchor: [size / 2, size / 2]
+          });
+          var marker = L.marker([stateMarker.lat, stateMarker.lng], {
+            icon: stateIcon
+          });
+          var popupContent = '<div class="state-marker-popup">' + '<strong>' + stateMarker.name + '</strong><br>' + '<span class="state-driver-count">' + stateMarker.count + '</span> ' + (stateMarker.count === 1 ? 'driver' : 'drivers') + '</div>';
+          marker.bindPopup(popupContent);
+          marker.addTo(_this5.map);
+        }
+      });
+    }
+  }, {
+    key: "showErrorMessage",
+    value: function showErrorMessage(message) {
+      if (!this.mapContainer) return;
+      var infoDiv = document.createElement('div');
+      infoDiv.className = 'home-location-map-error-message';
+      infoDiv.innerHTML = '<strong>Map Ready</strong><br>' + message + '<br><small>Markers can be added below.</small>';
+      this.mapContainer.appendChild(infoDiv);
+      setTimeout(function () {
+        if (infoDiv.parentNode) {
+          infoDiv.parentNode.removeChild(infoDiv);
+        }
+      }, 5000);
+    }
+  }]);
+}();
+function initHomeLocationMap(stateMapData, maxCount, stateMarkersData, geojsonSource) {
+  var _checkLeaflet = function checkLeaflet() {
+    if (typeof window.L !== 'undefined') {
+      new HomeLocationMap(stateMapData, maxCount, stateMarkersData, geojsonSource);
+    } else {
+      setTimeout(_checkLeaflet, 100);
+    }
+  };
+  _checkLeaflet();
+}
+
+/***/ }),
+
 /***/ "./src/js/components/charts/source-statistics-charts.ts":
 /*!**************************************************************!*\
   !*** ./src/js/components/charts/source-statistics-charts.ts ***!
@@ -28427,18 +28824,20 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _components_charts_drivers_statistics_charts__WEBPACK_IMPORTED_MODULE_43__ = __webpack_require__(/*! ./components/charts/drivers-statistics-charts */ "./src/js/components/charts/drivers-statistics-charts.ts");
 /* harmony import */ var _components_charts_finance_statistics_charts__WEBPACK_IMPORTED_MODULE_44__ = __webpack_require__(/*! ./components/charts/finance-statistics-charts */ "./src/js/components/charts/finance-statistics-charts.ts");
 /* harmony import */ var _components_charts_source_statistics_charts__WEBPACK_IMPORTED_MODULE_45__ = __webpack_require__(/*! ./components/charts/source-statistics-charts */ "./src/js/components/charts/source-statistics-charts.ts");
-/* harmony import */ var _components_drivers_statistics_tabs__WEBPACK_IMPORTED_MODULE_46__ = __webpack_require__(/*! ./components/drivers-statistics-tabs */ "./src/js/components/drivers-statistics-tabs.ts");
-/* harmony import */ var _components_quick_copy__WEBPACK_IMPORTED_MODULE_47__ = __webpack_require__(/*! ./components/quick-copy */ "./src/js/components/quick-copy.ts");
-/* harmony import */ var _components_driver_popups__WEBPACK_IMPORTED_MODULE_48__ = __webpack_require__(/*! ./components/driver-popups */ "./src/js/components/driver-popups.ts");
-/* harmony import */ var _components_driver_popup_forms__WEBPACK_IMPORTED_MODULE_49__ = __webpack_require__(/*! ./components/driver-popup-forms */ "./src/js/components/driver-popup-forms.ts");
-/* harmony import */ var _components_broker_popups__WEBPACK_IMPORTED_MODULE_50__ = __webpack_require__(/*! ./components/broker-popups */ "./src/js/components/broker-popups.ts");
-/* harmony import */ var _components_broker_popup_forms__WEBPACK_IMPORTED_MODULE_51__ = __webpack_require__(/*! ./components/broker-popup-forms */ "./src/js/components/broker-popup-forms.ts");
-/* harmony import */ var _components_driver_autocomplete__WEBPACK_IMPORTED_MODULE_52__ = __webpack_require__(/*! ./components/driver-autocomplete */ "./src/js/components/driver-autocomplete.ts");
-/* harmony import */ var _components_common_audio_helper__WEBPACK_IMPORTED_MODULE_53__ = __webpack_require__(/*! ./components/common/audio-helper */ "./src/js/components/common/audio-helper.ts");
-/* harmony import */ var _components_timer_control__WEBPACK_IMPORTED_MODULE_54__ = __webpack_require__(/*! ./components/timer-control */ "./src/js/components/timer-control.ts");
-/* harmony import */ var _components_timer_analytics__WEBPACK_IMPORTED_MODULE_55__ = __webpack_require__(/*! ./components/timer-analytics */ "./src/js/components/timer-analytics.ts");
-/* harmony import */ var _components_dark_mode_toggle__WEBPACK_IMPORTED_MODULE_56__ = __webpack_require__(/*! ./components/dark-mode-toggle */ "./src/js/components/dark-mode-toggle.ts");
-/* harmony import */ var _components_drivers_map__WEBPACK_IMPORTED_MODULE_57__ = __webpack_require__(/*! ./components/drivers-map */ "./src/js/components/drivers-map.ts");
+/* harmony import */ var _components_charts_home_location_map__WEBPACK_IMPORTED_MODULE_46__ = __webpack_require__(/*! ./components/charts/home-location-map */ "./src/js/components/charts/home-location-map.ts");
+/* harmony import */ var _components_drivers_statistics_tabs__WEBPACK_IMPORTED_MODULE_47__ = __webpack_require__(/*! ./components/drivers-statistics-tabs */ "./src/js/components/drivers-statistics-tabs.ts");
+/* harmony import */ var _components_quick_copy__WEBPACK_IMPORTED_MODULE_48__ = __webpack_require__(/*! ./components/quick-copy */ "./src/js/components/quick-copy.ts");
+/* harmony import */ var _components_driver_popups__WEBPACK_IMPORTED_MODULE_49__ = __webpack_require__(/*! ./components/driver-popups */ "./src/js/components/driver-popups.ts");
+/* harmony import */ var _components_driver_popup_forms__WEBPACK_IMPORTED_MODULE_50__ = __webpack_require__(/*! ./components/driver-popup-forms */ "./src/js/components/driver-popup-forms.ts");
+/* harmony import */ var _components_broker_popups__WEBPACK_IMPORTED_MODULE_51__ = __webpack_require__(/*! ./components/broker-popups */ "./src/js/components/broker-popups.ts");
+/* harmony import */ var _components_broker_popup_forms__WEBPACK_IMPORTED_MODULE_52__ = __webpack_require__(/*! ./components/broker-popup-forms */ "./src/js/components/broker-popup-forms.ts");
+/* harmony import */ var _components_driver_autocomplete__WEBPACK_IMPORTED_MODULE_53__ = __webpack_require__(/*! ./components/driver-autocomplete */ "./src/js/components/driver-autocomplete.ts");
+/* harmony import */ var _components_common_audio_helper__WEBPACK_IMPORTED_MODULE_54__ = __webpack_require__(/*! ./components/common/audio-helper */ "./src/js/components/common/audio-helper.ts");
+/* harmony import */ var _components_timer_control__WEBPACK_IMPORTED_MODULE_55__ = __webpack_require__(/*! ./components/timer-control */ "./src/js/components/timer-control.ts");
+/* harmony import */ var _components_timer_analytics__WEBPACK_IMPORTED_MODULE_56__ = __webpack_require__(/*! ./components/timer-analytics */ "./src/js/components/timer-analytics.ts");
+/* harmony import */ var _components_dark_mode_toggle__WEBPACK_IMPORTED_MODULE_57__ = __webpack_require__(/*! ./components/dark-mode-toggle */ "./src/js/components/dark-mode-toggle.ts");
+/* harmony import */ var _components_drivers_map__WEBPACK_IMPORTED_MODULE_58__ = __webpack_require__(/*! ./components/drivers-map */ "./src/js/components/drivers-map.ts");
+
 
 
 
@@ -28512,12 +28911,12 @@ function ready() {
   };
   var popupInstance = new _parts_popup_window__WEBPACK_IMPORTED_MODULE_2__["default"]();
   popupInstance.init();
-  _components_common_audio_helper__WEBPACK_IMPORTED_MODULE_53__["default"].getInstance();
-  var driverPopupForms = new _components_driver_popup_forms__WEBPACK_IMPORTED_MODULE_49__["default"](urlAjax);
-  var brokerPopupForms = new _components_broker_popup_forms__WEBPACK_IMPORTED_MODULE_51__["default"](urlAjax);
+  _components_common_audio_helper__WEBPACK_IMPORTED_MODULE_54__["default"].getInstance();
+  var driverPopupForms = new _components_driver_popup_forms__WEBPACK_IMPORTED_MODULE_50__["default"](urlAjax);
+  var brokerPopupForms = new _components_broker_popup_forms__WEBPACK_IMPORTED_MODULE_52__["default"](urlAjax);
   var singlePageBrokerUrl = (var_from_php === null || var_from_php === void 0 ? void 0 : var_from_php.single_page_broker) || '';
-  var brokerPopups = new _components_broker_popups__WEBPACK_IMPORTED_MODULE_50__["default"](urlAjax, singlePageBrokerUrl);
-  new _components_driver_autocomplete__WEBPACK_IMPORTED_MODULE_52__["default"](urlAjax, {
+  var brokerPopups = new _components_broker_popups__WEBPACK_IMPORTED_MODULE_51__["default"](urlAjax, singlePageBrokerUrl);
+  new _components_driver_autocomplete__WEBPACK_IMPORTED_MODULE_53__["default"](urlAjax, {
     unitInput: '.js-unit-number-input',
     dropdown: '.js-driver-dropdown',
     attachedDriverInput: 'input[name="attached_driver"]',
@@ -28526,7 +28925,7 @@ function ready() {
     nonceInput: '#driver-search-nonce',
     driverValueInput: '.js-driver-value'
   });
-  new _components_driver_autocomplete__WEBPACK_IMPORTED_MODULE_52__["default"](urlAjax, {
+  new _components_driver_autocomplete__WEBPACK_IMPORTED_MODULE_53__["default"](urlAjax, {
     unitInput: '.js-second-unit-number-input',
     dropdown: '.js-second-driver-dropdown',
     attachedDriverInput: 'input[name="attached_second_driver"]',
@@ -28534,7 +28933,7 @@ function ready() {
     unitNumberNameInput: 'input[name="second_unit_number_name"]',
     nonceInput: '#second-driver-search-nonce'
   });
-  new _components_driver_autocomplete__WEBPACK_IMPORTED_MODULE_52__["default"](urlAjax, {
+  new _components_driver_autocomplete__WEBPACK_IMPORTED_MODULE_53__["default"](urlAjax, {
     unitInput: '.js-third-unit-number-input',
     dropdown: '.js-third-driver-dropdown',
     attachedDriverInput: 'input[name="attached_third_driver"]',
@@ -28550,7 +28949,7 @@ function ready() {
     if (!wasVisible) {
       refererBlock.style.display = 'block';
     }
-    refererAutocomplete = new _components_driver_autocomplete__WEBPACK_IMPORTED_MODULE_52__["default"](urlAjax, {
+    refererAutocomplete = new _components_driver_autocomplete__WEBPACK_IMPORTED_MODULE_53__["default"](urlAjax, {
       unitInput: '.js-referer-unit-number-input',
       dropdown: '.js-referer-driver-dropdown',
       attachedDriverInput: '#referer_by',
@@ -28591,9 +28990,9 @@ function ready() {
       driverPopupForms.loadDriverStatistics(parseInt(driverIdInput.value));
     }
   }
-  new _components_timer_control__WEBPACK_IMPORTED_MODULE_54__.TimerControl(urlAjax);
-  new _components_timer_analytics__WEBPACK_IMPORTED_MODULE_55__.TimerAnalytics(urlAjax);
-  new _components_dark_mode_toggle__WEBPACK_IMPORTED_MODULE_56__["default"](urlAjax);
+  new _components_timer_control__WEBPACK_IMPORTED_MODULE_55__.TimerControl(urlAjax);
+  new _components_timer_analytics__WEBPACK_IMPORTED_MODULE_56__.TimerAnalytics(urlAjax);
+  new _components_dark_mode_toggle__WEBPACK_IMPORTED_MODULE_57__["default"](urlAjax);
   (0,_components_create_report__WEBPACK_IMPORTED_MODULE_4__.actionCreateReportInit)(urlAjax);
   (0,_components_create_report__WEBPACK_IMPORTED_MODULE_4__.createDraftPosts)(urlAjax);
   (0,_components_create_report__WEBPACK_IMPORTED_MODULE_4__.updateFilesReportInit)(urlAjax);
@@ -28641,9 +29040,23 @@ function ready() {
   (0,_components_charts_drivers_statistics_charts__WEBPACK_IMPORTED_MODULE_43__.initDriversStatisticsCharts)();
   (0,_components_charts_finance_statistics_charts__WEBPACK_IMPORTED_MODULE_44__.initFinanceStatisticsCharts)();
   (0,_components_charts_source_statistics_charts__WEBPACK_IMPORTED_MODULE_45__.initSourceStatisticsCharts)();
-  (0,_components_drivers_statistics_tabs__WEBPACK_IMPORTED_MODULE_46__.initDriversStatisticsTabs)();
+  (0,_components_drivers_statistics_tabs__WEBPACK_IMPORTED_MODULE_47__.initDriversStatisticsTabs)();
+  var homeLocationMapElement = document.getElementById('usaStatesMap');
+  if (homeLocationMapElement) {
+    var stateMapData = homeLocationMapElement.dataset.stateMapData;
+    var maxCount = homeLocationMapElement.dataset.maxCount;
+    var stateMarkersData = homeLocationMapElement.dataset.stateMarkersData;
+    var geojsonSource = homeLocationMapElement.dataset.geojsonSource;
+    if (stateMapData && maxCount && stateMarkersData && geojsonSource) {
+      try {
+        (0,_components_charts_home_location_map__WEBPACK_IMPORTED_MODULE_46__.initHomeLocationMap)(JSON.parse(stateMapData), parseInt(maxCount, 10), JSON.parse(stateMarkersData), geojsonSource);
+      } catch (e) {
+        console.error('Error initializing home location map:', e);
+      }
+    }
+  }
   if (hereApi) {
-    new _components_drivers_map__WEBPACK_IMPORTED_MODULE_57__["default"](urlAjax, hereApi);
+    new _components_drivers_map__WEBPACK_IMPORTED_MODULE_58__["default"](urlAjax, hereApi);
   }
   (0,_components_create_report__WEBPACK_IMPORTED_MODULE_4__.additionalContactsInit)();
   (0,_components_create_report__WEBPACK_IMPORTED_MODULE_4__.addShipperPointInit)();

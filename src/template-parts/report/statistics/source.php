@@ -13,7 +13,7 @@ $year_param          = get_field_value( $_GET, 'year_param' );
 $mount_param         = get_field_value( $_GET, 'mount_param' );
 $office              = get_field_value( $_GET, 'office' );
 $dispatcher_initials = get_field_value( $_GET, 'dispatcher' ) ?? 'all';
-$dispatchers         = $statistics->get_dispatchers();
+$dispatchers         = $statistics->get_dispatchers( null, false, true );
 
 if ( ! $year_param ) {
 	$year_param = $current_year;
@@ -137,6 +137,50 @@ $show_filter_by_office = $TMSUsers->check_user_role_access( array(
             <div id="sourceProfitChart"
                  data-chart-data="<?php echo esc_attr( $dispatcher_json ); ?>"
                  style="width:100%; max-width:50%; height:50vh;"></div>
+        </div>
+
+        <div>
+            <h3>Total</h3>
+			<?php
+			// Decode JSON data to calculate totals
+			$sources_data = json_decode( $dispatcher_json, true );
+			$total_loads = 0;
+			$total_profit_sum = 0;
+			
+			if ( is_array( $sources_data ) && ! empty( $sources_data ) ) {
+				foreach ( $sources_data as $source_key => $source_data ) {
+					if ( isset( $source_data['post_count'] ) ) {
+						$total_loads += (int) $source_data['post_count'];
+					}
+					if ( isset( $source_data['total_profit'] ) ) {
+						// Remove formatting (commas, dollar signs) and convert to float
+						$profit_value = str_replace( array( ',', '$' ), '', $source_data['total_profit'] );
+						$total_profit_sum += (float) $profit_value;
+					}
+				}
+			}
+			?>
+			
+			<?php if ( $total_loads > 0 || $total_profit_sum > 0 ): ?>
+				<table class="table-stat total" border="1" cellpadding="5" cellspacing="0">
+					<thead>
+						<tr class="text-left">
+							<th>Total Loads</th>
+							<th>Total Profit</th>
+						</tr>
+					</thead>
+					<tbody>
+						<tr class="text-left">
+							<td><?php echo esc_html( number_format( $total_loads, 0 ) ); ?></td>
+							<td>$<?php echo esc_html( number_format( $total_profit_sum, 2 ) ); ?></td>
+						</tr>
+					</tbody>
+				</table>
+			<?php else: ?>
+				<div class="alert alert-info">
+					<p>No data available for the selected period.</p>
+				</div>
+			<?php endif; ?>
         </div>
     </div>
 </div>

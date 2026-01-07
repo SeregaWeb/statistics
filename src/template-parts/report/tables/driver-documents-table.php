@@ -497,7 +497,7 @@ if ( ! empty( $results ) ) : ?>
                         $document_found = false;
                         
                         // Check if it's a team driver document type
-                        $is_team_driver_doc = in_array( $selected_document_type, array( 'DL_TEAM', 'EA_TEAM', 'PR_TEAM', 'PS_TEAM' ) );
+                        $is_team_driver_doc = in_array( $selected_document_type, array( 'DL_TEAM', 'EA_TEAM', 'PR_TEAM', 'PS_TEAM', 'HZ_TEAM', 'GE_TEAM', 'TWIC_TEAM', 'TSA_TEAM' ) );
                         
                         if ( ! $is_team_driver_doc ) {
                             // Find the selected document in document_labels
@@ -615,6 +615,14 @@ if ( ! empty( $results ) ) : ?>
                 $team_driver_legal_doc_type = get_field_value( $meta, 'legal_document_type_team_driver' );
                 $team_driver_legal_doc_exp = get_field_value( $meta, 'legal_document_expiration_team_driver' );
                 $team_driver_immigration_letter = get_field_value( $meta, 'immigration_letter_team_driver' );
+                $team_driver_hazmat_certificate = get_field_value( $meta, 'hazmat_certificate_team_driver' );
+                $team_driver_hazmat_exp = get_field_value( $meta, 'hazmat_expiration_team_driver' );
+                $team_driver_global_entry = get_field_value( $meta, 'global_entry_team_driver' );
+                $team_driver_global_entry_exp = get_field_value( $meta, 'global_entry_expiration_team_driver' );
+                $team_driver_twic = get_field_value( $meta, 'twic_team_driver' );
+                $team_driver_twic_exp = get_field_value( $meta, 'twic_expiration_team_driver' );
+                $team_driver_tsa_approved = get_field_value( $meta, 'tsa_approved_team_driver' );
+                $team_driver_tsa_exp = get_field_value( $meta, 'tsa_expiration_team_driver' );
                 
                 // Collect team driver documents - show ALL documents including missing ones
                 $team_driver_documents = array();
@@ -724,6 +732,64 @@ if ( ! empty( $results ) ) : ?>
                     }
                 }
                 
+                // Process additional team driver documents (HZ, GE, TWIC, TSA)
+                $additional_team_docs = array(
+                    'HZ' => array(
+                        'name' => 'Hazmat Certificate (Team driver)',
+                        'has_doc' => ! empty( $team_driver_hazmat_certificate ),
+                        'exp_date' => $team_driver_hazmat_exp
+                    ),
+                    'GE' => array(
+                        'name' => 'Global Entry (Team driver)',
+                        'has_doc' => ! empty( $team_driver_global_entry ),
+                        'exp_date' => $team_driver_global_entry_exp
+                    ),
+                    'TWIC' => array(
+                        'name' => 'TWIC (Team driver)',
+                        'has_doc' => ! empty( $team_driver_twic ),
+                        'exp_date' => $team_driver_twic_exp
+                    ),
+                    'TSA' => array(
+                        'name' => 'TSA (Team driver)',
+                        'has_doc' => ! empty( $team_driver_tsa_approved ),
+                        'exp_date' => $team_driver_tsa_exp
+                    )
+                );
+                
+                foreach ( $additional_team_docs as $abbr => $doc_info ) {
+                    if ( $doc_info['has_doc'] ) {
+                        $exp_date = $doc_info['exp_date'] ?? '';
+                        $check_result = $check_document_status( $exp_date, '' );
+                        
+                        $tooltip_text = '<strong>' . esc_html( $doc_info['name'] ) . '</strong>';
+                        if ( ! empty( $exp_date ) ) {
+                            $tooltip_text .= '<br>Expiration: ' . esc_html( $exp_date );
+                            if ( isset( $check_result['days'] ) ) {
+                                if ( $check_result['status'] === 'expired' ) {
+                                    $tooltip_text .= '<br><span class="text-danger">Expired ' . $check_result['days'] . ' days ago</span>';
+                                } elseif ( $check_result['status'] === 'expires_soon' ) {
+                                    $tooltip_text .= '<br><span class="text-warning">Expires in ' . $check_result['days'] . ' days</span>';
+                                } else {
+                                    $tooltip_text .= '<br><span class="text-success">Valid (' . $check_result['days'] . ' days remaining)</span>';
+                                }
+                            }
+                        } else {
+                            $tooltip_text .= '<br><span class="text-white">No expiration date</span>';
+                        }
+                        
+                        $team_driver_documents[] = array(
+                            'abbr' => $abbr,
+                            'name' => $doc_info['name'],
+                            'exp_date' => $exp_date,
+                            'badge_class' => $check_result['badge_class'],
+                            'status' => $check_result['status'],
+                            'days' => $check_result['days'] ?? null,
+                            'immigration_letter' => '',
+                            'tooltip' => $tooltip_text
+                        );
+                    }
+                }
+                
                 ?>
                 <tr class="<?php echo $class_hide; ?> driver-team-row" data-driver-id="<?php echo $row[ 'id' ]; ?>" style="background-color: rgba(220, 53, 69, 0.12) !important;">
                     <td>
@@ -748,8 +814,8 @@ if ( ! empty( $results ) ) : ?>
                             $expiration_date = '';
                             $document_found = false;
                             
-                            // Check if selected document type is for team driver (DL_TEAM, EA_TEAM, PR_TEAM, PS_TEAM)
-                            $is_team_driver_doc = in_array( $selected_document_type, array( 'DL_TEAM', 'EA_TEAM', 'PR_TEAM', 'PS_TEAM' ) );
+                            // Check if selected document type is for team driver
+                            $is_team_driver_doc = in_array( $selected_document_type, array( 'DL_TEAM', 'EA_TEAM', 'PR_TEAM', 'PS_TEAM', 'HZ_TEAM', 'GE_TEAM', 'TWIC_TEAM', 'TSA_TEAM' ) );
                             
                             if ( $is_team_driver_doc ) {
                                 // Map team driver document types to abbreviations
@@ -758,6 +824,10 @@ if ( ! empty( $results ) ) : ?>
                                     'EA_TEAM' => 'EA',
                                     'PR_TEAM' => 'PR',
                                     'PS_TEAM' => 'PS',
+                                    'HZ_TEAM' => 'HZ',
+                                    'GE_TEAM' => 'GE',
+                                    'TWIC_TEAM' => 'TWIC',
+                                    'TSA_TEAM' => 'TSA',
                                 );
                                 $abbr_to_find = $team_doc_map[ $selected_document_type ];
                                 

@@ -91,6 +91,7 @@ import { initAdminRatingManager } from './components/admin-rating-manager';
 import { initDriversStatisticsCharts } from './components/charts/drivers-statistics-charts';
 import { initFinanceStatisticsCharts } from './components/charts/finance-statistics-charts';
 import { initSourceStatisticsCharts } from './components/charts/source-statistics-charts';
+import { initHomeLocationMap } from './components/charts/home-location-map';
 import { initDriversStatisticsTabs } from './components/drivers-statistics-tabs';
 import './components/quick-copy';
 import './components/driver-popups';
@@ -302,6 +303,28 @@ function ready() {
     initFinanceStatisticsCharts();
     initSourceStatisticsCharts();
     initDriversStatisticsTabs();
+    
+    // Initialize Home Location Map if data is available
+    const homeLocationMapElement = document.getElementById('usaStatesMap');
+    if (homeLocationMapElement) {
+        const stateMapData = homeLocationMapElement.dataset.stateMapData;
+        const maxCount = homeLocationMapElement.dataset.maxCount;
+        const stateMarkersData = homeLocationMapElement.dataset.stateMarkersData;
+        const geojsonSource = homeLocationMapElement.dataset.geojsonSource;
+        
+        if (stateMapData && maxCount && stateMarkersData && geojsonSource) {
+            try {
+                initHomeLocationMap(
+                    JSON.parse(stateMapData),
+                    parseInt(maxCount, 10),
+                    JSON.parse(stateMarkersData),
+                    geojsonSource
+                );
+            } catch (e) {
+                console.error('Error initializing home location map:', e);
+            }
+        }
+    }
     
     // Initialize Drivers Map
     if (hereApi) {

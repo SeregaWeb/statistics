@@ -119,7 +119,15 @@ class TMSUserSyncAPI {
                 'driver_phone' => $user['driver_phone'],
                 'home_location' => $user['home_location'],
                 'vehicle_type' => $user['vehicle_type'],
-                'vin' => $user['vin']
+                'vin' => $user['vin'],
+                'driver_status' => $user['driver_status'],
+                'latitude' => $user['latitude'],
+                'longitude' => $user['longitude'],
+                'status_date' => $user['status_date'],
+                'current_location' => $user['current_location'],
+                'current_city' => $user['current_city'],
+                'current_zipcode' => $user['current_zipcode'],
+                'current_country' => $user['current_country']
             );
         }
         

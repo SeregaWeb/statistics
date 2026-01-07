@@ -91,6 +91,18 @@ $background_date_team_driver           = get_field_value( $meta, 'background_dat
 $change_9_file_team_driver             = get_field_value( $meta, 'change_9_file_team_driver' );
 $change_9_date_team_driver             = get_field_value( $meta, 'change_9_date_team_driver' );
 $change_9_training_team_driver         = get_field_value( $meta, 'change_9_training_team_driver' );
+$hazmat_certificate_team_driver        = get_field_value( $meta, 'hazmat_certificate_team_driver' );
+$hazmat_certificate_file_team_driver   = get_field_value( $meta, 'hazmat_certificate_file_team_driver' );
+$hazmat_expiration_team_driver         = get_field_value( $meta, 'hazmat_expiration_team_driver' );
+$global_entry_team_driver              = get_field_value( $meta, 'global_entry_team_driver' );
+$global_entry_file_team_driver         = get_field_value( $meta, 'global_entry_file_team_driver' );
+$global_entry_expiration_team_driver   = get_field_value( $meta, 'global_entry_expiration_team_driver' );
+$twic_team_driver                      = get_field_value( $meta, 'twic_team_driver' );
+$twic_file_team_driver                 = get_field_value( $meta, 'twic_file_team_driver' );
+$twic_expiration_team_driver           = get_field_value( $meta, 'twic_expiration_team_driver' );
+$tsa_approved_team_driver              = get_field_value( $meta, 'tsa_approved_team_driver' );
+$tsa_file_team_driver                  = get_field_value( $meta, 'tsa_file_team_driver' );
+$tsa_expiration_team_driver             = get_field_value( $meta, 'tsa_expiration_team_driver' );
 $owner_enabled                         = get_field_value( $meta, 'owner_enabled' );
 $legal_document_owner                  = get_field_value( $meta, 'legal_document_owner' );
 $legal_document_expiration_owner       = get_field_value( $meta, 'legal_document_expiration_owner' );
@@ -135,6 +147,10 @@ $legal_document_team_driver_arr         = $driver->process_file_attachment( $leg
 $canada_transition_file_team_driver_arr = $driver->process_file_attachment( $canada_transition_file_team_driver );
 $background_file_team_driver_arr        = $driver->process_file_attachment( $background_file_team_driver );
 $change_9_file_team_driver_arr          = $driver->process_file_attachment( $change_9_file_team_driver );
+$hazmat_certificate_file_team_driver_arr = $driver->process_file_attachment( $hazmat_certificate_file_team_driver );
+$global_entry_file_team_driver_arr      = $driver->process_file_attachment( $global_entry_file_team_driver );
+$twic_file_team_driver_arr              = $driver->process_file_attachment( $twic_file_team_driver );
+$tsa_file_team_driver_arr               = $driver->process_file_attachment( $tsa_file_team_driver );
 $interview_martlet_arr                  = $driver->process_file_attachment( $interview_martlet );
 $interview_endurance_arr                = $driver->process_file_attachment( $interview_endurance );
 $legal_document_owner_arr               = $driver->process_file_attachment( $legal_document_owner );
@@ -165,6 +181,10 @@ $files_check = array(
 	$canada_transition_file_team_driver_arr,
 	$background_file_team_driver_arr,
 	$change_9_file_team_driver_arr,
+	$hazmat_certificate_file_team_driver_arr,
+	$global_entry_file_team_driver_arr,
+	$twic_file_team_driver_arr,
+	$tsa_file_team_driver_arr,
 	$legal_document_owner_arr,
 );
 
@@ -449,6 +469,50 @@ $files = array(
 		'class_name'     => 'change-9-file-team-driver',
 		'field_name'     => 'change_9_file_team_driver',
 		'field_label'    => 'Change 9 file (Team driver)',
+		'delete_action'  => 'js-remove-one-driver',
+		'active_tab'     => 'pills-driver-documents-tab',
+	),
+	array(
+		'file_arr'       => $hazmat_certificate_file_team_driver_arr,
+		'file'           => $hazmat_certificate_file_team_driver,
+		'full_only_view' => $full_only_view,
+		'post_id'        => $post_id,
+		'class_name'     => 'hazmat-certificate-file-team-driver',
+		'field_name'     => 'hazmat_certificate_file_team_driver',
+		'field_label'    => 'Hazmat certificate (Team driver)',
+		'delete_action'  => 'js-remove-one-driver',
+		'active_tab'     => 'pills-driver-documents-tab',
+	),
+	array(
+		'file_arr'       => $global_entry_file_team_driver_arr,
+		'file'           => $global_entry_file_team_driver,
+		'full_only_view' => $full_only_view,
+		'post_id'        => $post_id,
+		'class_name'     => 'global-entry-file-team-driver',
+		'field_name'     => 'global_entry_file_team_driver',
+		'field_label'    => 'Global Entry (Team driver)',
+		'delete_action'  => 'js-remove-one-driver',
+		'active_tab'     => 'pills-driver-documents-tab',
+	),
+	array(
+		'file_arr'       => $twic_file_team_driver_arr,
+		'file'           => $twic_file_team_driver,
+		'full_only_view' => $full_only_view,
+		'post_id'        => $post_id,
+		'class_name'     => 'twic-file-team-driver',
+		'field_name'     => 'twic_file_team_driver',
+		'field_label'    => 'TWIC file (Team driver)',
+		'delete_action'  => 'js-remove-one-driver',
+		'active_tab'     => 'pills-driver-documents-tab',
+	),
+	array(
+		'file_arr'       => $tsa_file_team_driver_arr,
+		'file'           => $tsa_file_team_driver,
+		'full_only_view' => $full_only_view,
+		'post_id'        => $post_id,
+		'class_name'     => 'tsa-file-team-driver',
+		'field_name'     => 'tsa_file_team_driver',
+		'field_label'    => 'TSA file (Team driver)',
 		'delete_action'  => 'js-remove-one-driver',
 		'active_tab'     => 'pills-driver-documents-tab',
 	),
@@ -777,6 +841,45 @@ $access_vehicle = $TMSUsers->check_user_role_access( [
                         </div>
                     </div>
                 </div>
+				
+				<?php if ( $team_driver ): ?>
+                    <div class="col-12  mb-3 js-hazmat-certificate-team-driver">
+
+                        <div class="row">
+                            <div class="col-12">
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input js-toggle"
+                                           data-block-toggle="js-hazmat-certificate-files-team-driver" type="checkbox"
+                                           name="hazmat_certificate_team_driver"
+                                           id="hazmat_certificate_team_driver" <?php echo $hazmat_certificate_team_driver ? 'checked' : ''; ?>>
+                                    <label class="form-check-label" for="hazmat_certificate_team_driver">Hazmat certificate (Team driver)</label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row border-1 border-success border bg-light pt-3 pb-3 mb-3 mt-3 rounded js-hazmat-certificate-files-team-driver  <?php echo $hazmat_certificate_team_driver
+							? '' : 'd-none'; ?>">
+							<?php
+							// Hazmat Certificate (Team driver)
+							$simple_upload_args = [
+								'full_only_view' => $full_only_view,
+								'field_name' => 'hazmat_certificate_file_team_driver',
+								'label'      => 'Hazmat Certificate (Team driver)',
+								'file_value' => $hazmat_certificate_file_team_driver,
+								'popup_id'   => 'popup_upload_hazmat_certificate_file_team_driver',
+								'col_class'  => 'col-12 col-md-6',
+								'button_class' => 'btn btn-outline-success'
+							];
+							echo esc_html( get_template_part( TEMPLATE_PATH . 'common/simple', 'file-upload', $simple_upload_args ) );
+							?>
+                            <div class="col-12 col-md-6 ">
+                                <label class="form-label ">Expiration date (Team driver)</label>
+                                <input type="text" class="form-control js-new-format-date" name="hazmat_expiration_team_driver"
+                                       value="<?php echo $hazmat_expiration_team_driver; ?>">
+                            </div>
+                        </div>
+                    </div>
+				<?php endif; ?>
 
                 <div class="col-12  mb-3 js-global-entry">
 
@@ -813,6 +916,45 @@ $access_vehicle = $TMSUsers->check_user_role_access( [
                         </div>
                     </div>
                 </div>
+				
+				<?php if ( $team_driver ): ?>
+                    <div class="col-12  mb-3 js-global-entry-team-driver">
+
+                        <div class="row">
+                            <div class="col-12 ">
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input js-toggle"
+                                           data-block-toggle="js-global-entry-files-team-driver" type="checkbox"
+                                           name="global_entry_team_driver"
+                                           id="global_entry_team_driver" <?php echo $global_entry_team_driver ? 'checked' : ''; ?>>
+                                    <label class="form-check-label" for="global_entry_team_driver">Global Entry (Team driver)</label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row border-1 border-success border bg-light pt-3 pb-3 mb-3 mt-3 rounded js-global-entry-files-team-driver  <?php echo $global_entry_team_driver
+							? '' : 'd-none'; ?>">
+							<?php
+							// Global Entry (Team driver)
+							$simple_upload_args = [
+								'full_only_view' => $full_only_view,
+								'field_name' => 'global_entry_file_team_driver',
+								'label'      => 'Global Entry (Team driver)',
+								'file_value' => $global_entry_file_team_driver,
+								'popup_id'   => 'popup_upload_global_entry_file_team_driver',
+								'col_class'  => 'col-12 col-md-6',
+								'button_class' => 'btn btn-outline-success'
+							];
+							echo esc_html( get_template_part( TEMPLATE_PATH . 'common/simple', 'file-upload', $simple_upload_args ) );
+							?>
+                            <div class="col-12 col-md-6 ">
+                                <label class="form-label ">Expiration date (Team driver)</label>
+                                <input type="text" class="form-control js-new-format-date" name="global_entry_expiration_team_driver"
+                                       value="<?php echo $global_entry_expiration_team_driver; ?>">
+                            </div>
+                        </div>
+                    </div>
+				<?php endif; ?>
 
                 <div class="col-12 mb-3">
                     <div class="form-check form-switch">
@@ -845,6 +987,41 @@ $access_vehicle = $TMSUsers->check_user_role_access( [
                         </div>
                     </div>
                 </div>
+				
+				<?php if ( $team_driver ): ?>
+                    <div class="col-12 mb-3">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input js-toggle"
+                                   data-block-toggle="js-twic-section-team-driver" type="checkbox" name="twic_team_driver"
+                                   id="twic_team_driver" <?php echo $twic_team_driver ? 'checked' : ''; ?>>
+                            <label class="form-check-label" for="twic_team_driver">TWIC (Team driver)</label>
+                        </div>
+                    </div>
+
+                    <div class="col-12 js-twic-section-team-driver <?php echo $twic_team_driver ? '' : 'd-none'; ?>">
+                        <div class="row border-1 border-success border bg-light pt-3 pb-3 mb-3 rounded ">
+							
+							<?php
+							// TWIC File (Team driver)
+							$simple_upload_args = [
+								'full_only_view' => $full_only_view,
+								'field_name' => 'twic_file_team_driver',
+								'label'      => 'TWIC File (Team driver)',
+								'file_value' => $twic_file_team_driver,
+								'popup_id'   => 'popup_upload_twic_file_team_driver',
+								'col_class'  => 'col-12 col-md-6',
+								'button_class' => 'btn btn-outline-success'
+							];
+							echo esc_html( get_template_part( TEMPLATE_PATH . 'common/simple', 'file-upload', $simple_upload_args ) );
+							?>
+                            <div class="col-12 col-md-6 ">
+                                <label class="form-label">Expiration date (Team driver)</label>
+                                <input type="text" class="form-control js-new-format-date" name="twic_expiration_team_driver"
+                                       value="<?php echo $twic_expiration_team_driver; ?>">
+                            </div>
+                        </div>
+                    </div>
+				<?php endif; ?>
 
                 <div class="col-12 mb-3">
                     <div class="form-check form-switch">
@@ -877,6 +1054,41 @@ $access_vehicle = $TMSUsers->check_user_role_access( [
                         </div>
                     </div>
                 </div>
+				
+				<?php if ( $team_driver ): ?>
+                    <div class="col-12 mb-3">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input js-toggle"
+                                   data-block-toggle="js-tsa_approved-section-team-driver" type="checkbox" name="tsa_approved_team_driver"
+                                   id="tsa_approved_team_driver" <?php echo $tsa_approved_team_driver ? 'checked' : ''; ?>>
+                            <label class="form-check-label" for="tsa_approved_team_driver">TSA approved (Team driver)</label>
+                        </div>
+                    </div>
+
+                    <div class="col-12 js-tsa_approved-section-team-driver <?php echo $tsa_approved_team_driver ? '' : 'd-none'; ?>">
+                        <div class="row border-1 border-success border bg-light pt-3 pb-3 mb-3 rounded ">
+							
+							<?php
+							// TSA File (Team driver)
+							$simple_upload_args = [
+								'full_only_view' => $full_only_view,
+								'field_name' => 'tsa_file_team_driver',
+								'label'      => 'TSA File (Team driver)',
+								'file_value' => $tsa_file_team_driver,
+								'popup_id'   => 'popup_upload_tsa_file_team_driver',
+								'col_class'  => 'col-12 col-md-6',
+								'button_class' => 'btn btn-outline-success'
+							];
+							echo esc_html( get_template_part( TEMPLATE_PATH . 'common/simple', 'file-upload', $simple_upload_args ) );
+							?>
+                            <div class="col-12 col-md-6 ">
+                                <label class="form-label">Expiration date (Team driver)</label>
+                                <input type="text" class="form-control js-new-format-date" name="tsa_expiration_team_driver"
+                                       value="<?php echo $tsa_expiration_team_driver; ?>">
+                            </div>
+                        </div>
+                    </div>
+				<?php endif; ?>
 
                 <!-- Legal document type -->
                 <div class="col-12 col-md-6 mb-3">
@@ -1764,6 +1976,30 @@ $access_vehicle = $TMSUsers->check_user_role_access( [
 			array(
 				'title'     => 'Upload Change 9 file (Team driver)',
 				'file_name' => 'change_9_file_team_driver',
+				'multiply'  => false,
+				'driver_id' => $post_id,
+			),
+			array(
+				'title'     => 'Upload Hazmat Certificate File (Team driver)',
+				'file_name' => 'hazmat_certificate_file_team_driver',
+				'multiply'  => false,
+				'driver_id' => $post_id,
+			),
+			array(
+				'title'     => 'Upload Global Entry File (Team driver)',
+				'file_name' => 'global_entry_file_team_driver',
+				'multiply'  => false,
+				'driver_id' => $post_id,
+			),
+			array(
+				'title'     => 'Upload TWIC file (Team driver)',
+				'file_name' => 'twic_file_team_driver',
+				'multiply'  => false,
+				'driver_id' => $post_id,
+			),
+			array(
+				'title'     => 'Upload TSA file (Team driver)',
+				'file_name' => 'tsa_file_team_driver',
 				'multiply'  => false,
 				'driver_id' => $post_id,
 			),

@@ -498,6 +498,17 @@ get_header(); ?>
 				echo esc_html( get_template_part( TEMPLATE_PATH . 'common/simple', 'file-upload', $simple_upload_args ) );
 				?>
 			</div>
+
+			<div class="col-12"></div>
+
+			
+			<div class="col-md-6 mb-3">
+				<div class="form-check form-switch">
+					<input class="form-check-input" type="checkbox" id="air_ride" name="air_ride" value="1"
+						<?php checked( get_field_value( $meta, 'air_ride' ), 'on' ); ?> >
+					<label class="form-check-label" for="air_ride">Air ride</label>
+				</div>
+			</div>
 		</div>
 		
 		<?php if ( $trailer_id && ! $full_only_view ): ?>

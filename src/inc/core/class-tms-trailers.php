@@ -320,14 +320,15 @@ class TMSTrailers {
 			'height_upper_deck',
 			'trailer_registration',
 			'lease',
-			'lease_agreement'
+			'lease_agreement',
+			'air_ride'
 		);
 		
 		foreach ( $meta_fields as $field ) {
 			$value = isset( $data[ $field ] ) ? $data[ $field ] : '';
 			
 			// Handle checkbox (lease)
-			if ( $field === 'lease' ) {
+			if ( $field === 'lease' || $field === 'air_ride' ) {
 				$value = isset( $data[ $field ] ) && $data[ $field ] ? 'on' : '';
 			}
 			

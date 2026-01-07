@@ -600,90 +600,53 @@ curl -X GET \
                                                         </pre>
                                                         
                                                         <p><strong>Example Response:</strong></p>
-                                                        <pre class="bg-light p-3 rounded" style="word-wrap: break-word; overflow-x: auto; white-space: pre-wrap;">{
+                                                        <pre class="bg-light p-3 rounded" style="word-wrap: break-word; overflow-x: auto; white-space: pre-wrap;">
+{
   "success": true,
   "data": [
     {
       "id": 3343,
-      "date_created": "2025-01-01 10:00:00",
-      "date_updated": "2025-01-08 15:30:00",
-      "user_id_added": 1,
-      "updated_zipcode": "2025-01-08 15:30:00",
-      "status_post": "publish",
-      "organized_data": {
-        "current_location": {
-          "status": {
-            "value": "available",
-            "label": "Available"
-          },
-          "date_available": "2025-01-08 15:30:00",
-          "location": "New York, NY",
-          "zipcode": "10001",
-          "latitude": "40.7128",
-          "longitude": "-74.0060",
-          "country": "USA"
-        },
-        "contact": {
-          "driver_name": "John Doe",
-          "driver_email": "john@example.com",
-          "driver_phone": "+1234567890",
-          "emergency_contact": {
-            "name": "Jane Doe",
-            "phone": "+1234567891",
-            "relation": {
-              "value": "wife",
-              "label": "Wife"
-            }
-          }
-        },
-        "vehicle": {
-          "type": {
-            "value": "dry-van",
-            "label": "Dry Van"
-          },
-          "make": "Freightliner",
-          "model": "Cascadia",
-          "year": "2020",
-          "vin": "1FUJGBDV7CLBP1234",
-          "plates": "ABC123",
-          "overall_dimensions": "53x8.5x9.5"
-        },
-        "documents": {
-          "twic": {
-            "has_certificate": true,
-            "file_url": "https://example.com/files/twic.pdf"
-          },
-          "hazmat_certificate": {
-            "has_certificate": true,
-            "file_url": "https://example.com/files/hazmat.pdf"
-          }
-        },
-        "statistics": {
-          "rating": 4.5,
-          "total_loads": 150,
-          "recent_ratings": [...],
-          "notifications": [...]
-        }
-      },
-      "ratings": [...],
-      "notices": [...]
-    }
+      "role": "driver",
+      "driver_name": "Test Driver",
+      "driver_email": "tdev13103@gmail.com",
+      "driver_phone": "(003) 242-3423",
+      "home_location": "NY",
+      "type": "cargo-van",
+      "vin": "7777777777",
+      "driver_status": "available",
+      "latitude": "25.77481",
+      "longitude": "-80.19773"
+    },
+    {
+      "id": 3249,
+      "role": "driver",
+      "driver_name": "Omar Florimon",
+      "driver_email": "milchenko2k16@gmail.com",
+      "driver_phone": "(240) 264-7739",
+      "home_location": "AL",
+      "type": "cargo-van",
+      "vin": "1FTBR3X82MKA28937",
+      "driver_status": "available",
+      "latitude": "42.49919",
+      "longitude": "-90.66304"
+    },
   ],
   "pagination": {
     "current_page": 1,
     "per_page": 20,
-    "total_count": 150,
-    "total_pages": 8,
+    "total_count": 187,
+    "total_pages": 10,
     "has_next_page": true,
     "has_prev_page": false
   },
   "filters": {
-    "status": "available",
-    "search": "john"
+    "status": null,
+    "search": null
   },
-  "timestamp": "2025-01-08 15:30:00",
+  "timestamp": "2026-01-06 06:23:22",
   "api_version": "1.0"
-}</pre>
+}
+                                                        </pre>
                                                         
                                                         <p><strong>Test Drivers List API:</strong></p>
                                                         <div class="row">

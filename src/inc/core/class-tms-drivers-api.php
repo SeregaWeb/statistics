@@ -637,6 +637,8 @@ class TMSDriversAPI {
                 'country' => isset($json_params['country']) ? sanitize_text_field($json_params['country']) : '',
                 'current_country' => isset($json_params['current_country']) ? sanitize_text_field($json_params['current_country']) : '',
             );
+
+            error_log(print_r($update_data, true));
             
             // Add notes if provided
             if (isset($json_params['notes'])) {
@@ -1621,7 +1623,10 @@ class TMSDriversAPI {
                        driver_email.meta_value as driver_email,
                        home_location.meta_value as home_location,
                        vehicle_type.meta_value as vehicle_type,
-                       vin.meta_value as vin
+                       vin.meta_value as vin,
+                       driver_status.meta_value as driver_status,
+                       latitude.meta_value as latitude,
+                       longitude.meta_value as longitude
                 FROM {$wpdb->prefix}drivers AS main
                 LEFT JOIN {$wpdb->prefix}drivers_meta AS driver_name 
                     ON main.id = driver_name.post_id AND driver_name.meta_key = 'driver_name'
@@ -1637,6 +1642,10 @@ class TMSDriversAPI {
                     ON main.id = vehicle_type.post_id AND vehicle_type.meta_key = 'vehicle_type'
                 LEFT JOIN {$wpdb->prefix}drivers_meta AS vin 
                     ON main.id = vin.post_id AND vin.meta_key = 'vin'
+                LEFT JOIN {$wpdb->prefix}drivers_meta AS latitude 
+                    ON main.id = latitude.post_id AND latitude.meta_key = 'latitude'
+                LEFT JOIN {$wpdb->prefix}drivers_meta AS longitude 
+                    ON main.id = longitude.post_id AND longitude.meta_key = 'longitude'
                 WHERE $where_clause
                 ORDER BY main.id DESC
                 LIMIT %d OFFSET %d
@@ -1664,7 +1673,10 @@ class TMSDriversAPI {
                     'driver_phone' => $this->clean_empty_value($driver['driver_phone']),
                     'home_location' => $this->clean_empty_value($driver['home_location']),
                     'type' => $this->clean_empty_value($driver['vehicle_type']),
-                    'vin' => $this->clean_empty_value($driver['vin'])
+                    'vin' => $this->clean_empty_value($driver['vin']),
+                    'driver_status' => $this->clean_empty_value($driver['driver_status']),
+                    'latitude' => $this->clean_empty_value($driver['latitude']),
+                    'longitude' => $this->clean_empty_value($driver['longitude'])
                 );
             }
             

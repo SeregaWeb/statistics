@@ -24,7 +24,7 @@ $empty_recruiter = get_field_value( $global_options, 'empty_recruiter' );
 
 // Get active tab from GET parameter (default: recruiters-chart)
 $active_tab = isset( $_GET['tab'] ) ? sanitize_text_field( $_GET['tab'] ) : 'recruiters-chart';
-$valid_tabs = array( 'recruiters-chart', 'location-vehicle', 'capabilities' );
+$valid_tabs = array( 'recruiters-chart', 'location-vehicle', 'capabilities', 'expired-documents' );
 if ( ! in_array( $active_tab, $valid_tabs, true ) ) {
 	$active_tab = 'recruiters-chart';
 }
@@ -35,6 +35,8 @@ $state_results = array();
 $nationality_results = array();
 $language_counts = array();
 $total_drivers = 0;
+$expired_documents_stats = array();
+$usa_drivers_with_coords = array();
 
 // Load data only for active tab
 if ( $active_tab === 'recruiters-chart' ) {
@@ -46,12 +48,25 @@ if ( $active_tab === 'recruiters-chart' ) {
 	$state_results = $TMSDriversStatistics->get_state_statistics();
 	$nationality_results = $TMSDriversStatistics->get_nationality_statistics();
 	$language_counts = $TMSDriversStatistics->get_language_statistics();
+	$usa_drivers_with_coords = $TMSDriversStatistics->get_usa_drivers_with_coordinates();
 } elseif ( $active_tab === 'capabilities' ) {
 	// Load data for capabilities tab
 	$statistics = $TMSDrivers->get_statistics(); // Needed for totals calculation
 	$total_drivers = $TMSDriversStatistics->get_total_drivers_count();
+} elseif ( $active_tab === 'expired-documents' ) {
+	// Load data for expired documents tab
+	$statistics = $TMSDrivers->get_statistics(); // Needed for totals calculation
+	$total_drivers = $TMSDriversStatistics->get_total_drivers_count();
+	$expired_documents_stats = $TMSDriversStatistics->get_expired_documents_statistics();
 }
 
+
+$access_expired_documents = $TMSUsers->check_user_role_access( [
+	'administrator',
+	'recruiter',
+	'recruiter-tl',
+	'hr_manager',
+], true );
 // Auto-move drivers from non-existent recruiters to OR
 if ( is_array( $statistics ) && ! empty( $statistics ) ) {
 	foreach ( $statistics as $key => $statistic ) {
@@ -156,6 +171,20 @@ extract( $totals );
 					Capabilities & Endorsements
 				</button>
 			</li>
+
+			<?php if ( $access_expired_documents ) : ?>
+			<li class="nav-item" role="presentation">
+				<button class="nav-link <?php echo $active_tab === 'expired-documents' ? 'active' : ''; ?>" 
+						id="expired-documents-tab" 
+						data-tab-name="expired-documents"
+						type="button" 
+						role="tab" 
+						aria-controls="expired-documents" 
+						aria-selected="<?php echo $active_tab === 'expired-documents' ? 'true' : 'false'; ?>">
+						Expired Documents
+					</button>
+				</li>
+			<?php endif; ?>
 		</ul>
 
 		<!-- Tab Content -->
@@ -174,6 +203,13 @@ extract( $totals );
 			<div class="tab-pane fade <?php echo $active_tab === 'capabilities' ? 'show active' : ''; ?>" id="capabilities" role="tabpanel" aria-labelledby="capabilities-tab">
 				<?php include get_template_directory() . '/src/template-parts/report/statistics/capabilities.php'; ?>
 			</div> <!-- End Capabilities & Endorsements Tab -->
+
+			<?php if ( $access_expired_documents ) : ?>
+			<!-- Expired Documents Tab -->
+			<div class="tab-pane fade <?php echo $active_tab === 'expired-documents' ? 'show active' : ''; ?>" id="expired-documents" role="tabpanel" aria-labelledby="expired-documents-tab">
+				<?php include get_template_directory() . '/src/template-parts/report/statistics/expired-documents.php'; ?>
+			</div> <!-- End Expired Documents Tab -->
+			<?php endif; ?>
 		</div> <!-- End Tab Content -->
 	<?php endif; ?>
 </div>

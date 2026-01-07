@@ -297,6 +297,11 @@ class TMSDrivers extends TMSDriversHelper {
 				// Get updated driver data
 				$updated_driver_data = $this->get_driver_data_for_table_row( $driver_id );
 				
+				// Sync driver update for contact fields (driver_name, driver_email, driver_phone, home_location)
+				$driver_sync_data = $this->get_driver_sync_data( $driver_id );
+				if ( $driver_sync_data ) {
+					$this->user_sync_api->sync_user( 'update', $driver_sync_data, 'driver' );
+				}
 				// Debug: log what we got back
 				// error_log( 'TMSDrivers update_location_driver - Updated driver data: ' . print_r( $updated_driver_data, true ) );
 				//error_log( 'TMSDrivers update_location_driver - current_zipcode in response: ' . ( $updated_driver_data['current_zipcode'] ?? 'NOT SET' ) );
@@ -1675,6 +1680,11 @@ class TMSDrivers extends TMSDriversHelper {
 				'exp' => get_field_value( $meta, 'legal_document_expiration_team_driver' ),
 				'immigration' => get_field_value( $meta, 'immigration_letter_team_driver' )
 			),
+			// Additional team driver documents
+			array( 'type' => '', 'exp' => get_field_value( $meta, 'hazmat_expiration_team_driver' ), 'immigration' => '' ),
+			array( 'type' => '', 'exp' => get_field_value( $meta, 'global_entry_expiration_team_driver' ), 'immigration' => '' ),
+			array( 'type' => '', 'exp' => get_field_value( $meta, 'twic_expiration_team_driver' ), 'immigration' => '' ),
+			array( 'type' => '', 'exp' => get_field_value( $meta, 'tsa_expiration_team_driver' ), 'immigration' => '' ),
 		);
 		
 		// Check Driver's License (required document)
@@ -2531,6 +2541,10 @@ class TMSDrivers extends TMSDriversHelper {
 				'canada_transition_file_team_driver',
 				'background_file_team_driver',
 				'change_9_file_team_driver',
+				'hazmat_certificate_file_team_driver',
+				'global_entry_file_team_driver',
+				'twic_file_team_driver',
+				'tsa_file_team_driver',
 				'interview_martlet',
 				'interview_endurance',
 			], true ) ) {
@@ -2914,6 +2928,14 @@ class TMSDrivers extends TMSDriversHelper {
 		
 		return array(
 			'driver_id'     => $driver_id,
+			'driver_status' => isset( $meta[ 'driver_status' ] ) ? $meta[ 'driver_status' ] : '',
+			'status_date'   => isset( $meta[ 'status_date' ] ) ? $meta[ 'status_date' ] : '',
+			'current_location' => isset( $meta[ 'current_location' ] ) ? $meta[ 'current_location' ] : '',
+			'current_city' => isset( $meta[ 'current_city' ] ) ? $meta[ 'current_city' ] : '',
+			'current_zipcode' => isset( $meta[ 'current_zipcode' ] ) ? $meta[ 'current_zipcode' ] : '',
+			'current_country' => isset( $meta[ 'current_country' ] ) ? $meta[ 'current_country' ] : '',
+			'latitude'      => isset( $meta[ 'latitude' ] ) ? $meta[ 'latitude' ] : '',
+			'longitude'     => isset( $meta[ 'longitude' ] ) ? $meta[ 'longitude' ] : '',
 			'driver_name'   => isset( $meta[ 'driver_name' ] ) ? $meta[ 'driver_name' ] : '',
 			'driver_email'  => isset( $meta[ 'driver_email' ] ) ? $meta[ 'driver_email' ] : '',
 			'driver_phone'  => isset( $meta[ 'driver_phone' ] ) ? $meta[ 'driver_phone' ] : '',
@@ -3684,6 +3706,23 @@ class TMSDrivers extends TMSDriversHelper {
 			$change_9_training_team_driver = isset( $_POST[ 'change_9_training_team_driver' ] )
 				? sanitize_text_field( $_POST[ 'change_9_training_team_driver' ] ) : '';
 
+			$hazmat_certificate_team_driver = isset( $_POST[ 'hazmat_certificate_team_driver' ] )
+				? sanitize_text_field( $_POST[ 'hazmat_certificate_team_driver' ] ) : '';
+			$hazmat_expiration_team_driver = isset( $_POST[ 'hazmat_expiration_team_driver' ] )
+				? sanitize_text_field( $_POST[ 'hazmat_expiration_team_driver' ] ) : '';
+			$global_entry_team_driver = isset( $_POST[ 'global_entry_team_driver' ] )
+				? sanitize_text_field( $_POST[ 'global_entry_team_driver' ] ) : '';
+			$global_entry_expiration_team_driver = isset( $_POST[ 'global_entry_expiration_team_driver' ] )
+				? sanitize_text_field( $_POST[ 'global_entry_expiration_team_driver' ] ) : '';
+			$twic_team_driver = isset( $_POST[ 'twic_team_driver' ] )
+				? sanitize_text_field( $_POST[ 'twic_team_driver' ] ) : '';
+			$twic_expiration_team_driver = isset( $_POST[ 'twic_expiration_team_driver' ] )
+				? sanitize_text_field( $_POST[ 'twic_expiration_team_driver' ] ) : '';
+			$tsa_approved_team_driver = isset( $_POST[ 'tsa_approved_team_driver' ] )
+				? sanitize_text_field( $_POST[ 'tsa_approved_team_driver' ] ) : '';
+			$tsa_expiration_team_driver = isset( $_POST[ 'tsa_expiration_team_driver' ] )
+				? sanitize_text_field( $_POST[ 'tsa_expiration_team_driver' ] ) : '';
+
 			$martlet_coi_expired_date = isset( $_POST[ 'martlet_coi_expired_date' ] )
 				? sanitize_text_field( $_POST[ 'martlet_coi_expired_date' ] ) : '';
 
@@ -3765,6 +3804,14 @@ class TMSDrivers extends TMSDriversHelper {
 				'background_check_team_driver'          => $background_check_team_driver,
 				'change_9_date_team_driver'             => $change_9_date_team_driver,
 				'change_9_training_team_driver'         => $change_9_training_team_driver,
+				'hazmat_certificate_team_driver'        => $hazmat_certificate_team_driver,
+				'hazmat_expiration_team_driver'         => $hazmat_expiration_team_driver,
+				'global_entry_team_driver'              => $global_entry_team_driver,
+				'global_entry_expiration_team_driver'   => $global_entry_expiration_team_driver,
+				'twic_team_driver'                      => $twic_team_driver,
+				'twic_expiration_team_driver'           => $twic_expiration_team_driver,
+				'tsa_approved_team_driver'              => $tsa_approved_team_driver,
+				'tsa_expiration_team_driver'            => $tsa_expiration_team_driver,
 				'martlet_coi_expired_date'              => $martlet_coi_expired_date,
 				'endurance_coi_expired_date'             => $endurance_coi_expired_date,
 				'insurance_agent_enabled'               => $insurance_agent_enabled,
@@ -3840,6 +3887,14 @@ class TMSDrivers extends TMSDriversHelper {
 				'background_check_team_driver',
 				'change_9_date_team_driver',
 				'change_9_training_team_driver',
+				'hazmat_certificate_team_driver',
+				'hazmat_expiration_team_driver',
+				'global_entry_team_driver',
+				'global_entry_expiration_team_driver',
+				'twic_team_driver',
+				'twic_expiration_team_driver',
+				'tsa_approved_team_driver',
+				'tsa_expiration_team_driver',
 			);
 			
 			if ( $post_status === 'publish' ) {
@@ -3945,6 +4000,10 @@ class TMSDrivers extends TMSDriversHelper {
 				'canada_transition_file_team_driver',
 				'background_file_team_driver',
 				'change_9_file_team_driver',
+				'hazmat_certificate_file_team_driver',
+				'global_entry_file_team_driver',
+				'twic_file_team_driver',
+				'tsa_file_team_driver',
 				'interview_martlet',
 				'interview_endurance',
 				'legal_document_owner',
@@ -8891,6 +8950,114 @@ class TMSDrivers extends TMSDriversHelper {
 						}
 					} elseif ( $document_status === 'temporary' ) {
 						$has_issue = false; // PS doesn't have temporary status
+					}
+					break;
+				
+				case 'HZ_TEAM':
+					// Hazmat Certificate (Team driver)
+					$exp_date = get_field_value( $meta, 'hazmat_expiration_team_driver' );
+					$has_type = ! empty( get_field_value( $meta, 'hazmat_certificate_team_driver' ) );
+					
+					if ( $document_status === 'expired' ) {
+						// Check if expired
+						if ( ! empty( $exp_date ) ) {
+							$status = $check_document_status( $exp_date );
+							$has_issue = ( $status[ 'status' ] === 'expired' );
+						}
+					} elseif ( $document_status === 'missing' ) {
+						// Check if missing
+						$has_issue = ( empty( $exp_date ) && ! $has_type );
+					} elseif ( $document_status === 'valid' ) {
+						// Check if valid
+						if ( ! empty( $exp_date ) ) {
+							$status = $check_document_status( $exp_date );
+							$has_issue = ( $status[ 'status' ] === 'valid' || $status[ 'status' ] === 'extended' );
+						} else {
+							$has_issue = false;
+						}
+					} elseif ( $document_status === 'temporary' ) {
+						$has_issue = false; // HZ doesn't have temporary status
+					}
+					break;
+				
+				case 'GE_TEAM':
+					// Global Entry (Team driver)
+					$exp_date = get_field_value( $meta, 'global_entry_expiration_team_driver' );
+					$has_type = ! empty( get_field_value( $meta, 'global_entry_team_driver' ) );
+					
+					if ( $document_status === 'expired' ) {
+						// Check if expired
+						if ( ! empty( $exp_date ) ) {
+							$status = $check_document_status( $exp_date );
+							$has_issue = ( $status[ 'status' ] === 'expired' );
+						}
+					} elseif ( $document_status === 'missing' ) {
+						// Check if missing
+						$has_issue = ( empty( $exp_date ) && ! $has_type );
+					} elseif ( $document_status === 'valid' ) {
+						// Check if valid
+						if ( ! empty( $exp_date ) ) {
+							$status = $check_document_status( $exp_date );
+							$has_issue = ( $status[ 'status' ] === 'valid' || $status[ 'status' ] === 'extended' );
+						} else {
+							$has_issue = false;
+						}
+					} elseif ( $document_status === 'temporary' ) {
+						$has_issue = false; // GE doesn't have temporary status
+					}
+					break;
+				
+				case 'TWIC_TEAM':
+					// TWIC (Team driver)
+					$exp_date = get_field_value( $meta, 'twic_expiration_team_driver' );
+					$has_type = ! empty( get_field_value( $meta, 'twic_team_driver' ) );
+					
+					if ( $document_status === 'expired' ) {
+						// Check if expired
+						if ( ! empty( $exp_date ) ) {
+							$status = $check_document_status( $exp_date );
+							$has_issue = ( $status[ 'status' ] === 'expired' );
+						}
+					} elseif ( $document_status === 'missing' ) {
+						// Check if missing
+						$has_issue = ( empty( $exp_date ) && ! $has_type );
+					} elseif ( $document_status === 'valid' ) {
+						// Check if valid
+						if ( ! empty( $exp_date ) ) {
+							$status = $check_document_status( $exp_date );
+							$has_issue = ( $status[ 'status' ] === 'valid' || $status[ 'status' ] === 'extended' );
+						} else {
+							$has_issue = false;
+						}
+					} elseif ( $document_status === 'temporary' ) {
+						$has_issue = false; // TWIC doesn't have temporary status
+					}
+					break;
+				
+				case 'TSA_TEAM':
+					// TSA (Team driver)
+					$exp_date = get_field_value( $meta, 'tsa_expiration_team_driver' );
+					$has_type = ! empty( get_field_value( $meta, 'tsa_approved_team_driver' ) );
+					
+					if ( $document_status === 'expired' ) {
+						// Check if expired
+						if ( ! empty( $exp_date ) ) {
+							$status = $check_document_status( $exp_date );
+							$has_issue = ( $status[ 'status' ] === 'expired' );
+						}
+					} elseif ( $document_status === 'missing' ) {
+						// Check if missing
+						$has_issue = ( empty( $exp_date ) && ! $has_type );
+					} elseif ( $document_status === 'valid' ) {
+						// Check if valid
+						if ( ! empty( $exp_date ) ) {
+							$status = $check_document_status( $exp_date );
+							$has_issue = ( $status[ 'status' ] === 'valid' || $status[ 'status' ] === 'extended' );
+						} else {
+							$has_issue = false;
+						}
+					} elseif ( $document_status === 'temporary' ) {
+						$has_issue = false; // TSA doesn't have temporary status
 					}
 					break;
 				

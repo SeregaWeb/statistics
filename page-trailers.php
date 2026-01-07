@@ -106,6 +106,7 @@ get_header(); ?>
 										<th>VIN</th>
 										<th>Make</th>
 										<th>Year</th>
+										<th>Additional</th>
 										<th></th>
 									</tr>
 								</thead>
@@ -115,6 +116,7 @@ get_header(); ?>
 										$item_main = get_field_value( $trailer_item, 'main' );
 										$item_meta = get_field_value( $trailer_item, 'meta' );
 										$trailer_id = get_field_value( $item_main, 'id' );
+										$additional = get_field_value( $item_meta, 'air_ride' );
 										?>
 										<tr>
 											<td><?php echo esc_html( get_field_value( $item_meta, 'trailer_number' ) ); ?></td>
@@ -124,7 +126,13 @@ get_header(); ?>
 											<td><?php echo esc_html( get_field_value( $item_meta, 'vin' ) ); ?></td>
 											<td><?php echo esc_html( get_field_value( $item_meta, 'make' ) ); ?></td>
 											<td><?php echo esc_html( get_field_value( $item_meta, 'year' ) ); ?></td>
-											
+											<td>
+												<div class="d-flex gap-2">
+													<?php if ( $additional ): ?>
+														<img class="image-icon" src="<?php echo content_url( 'uploads/additional/air_right.jpeg' ); ?>" alt="Air ride" >
+													<?php endif; ?>
+												</div>
+											</td>
 											<td width="142px">
                                                             <div class="d-flex gap-2 justify-content-end">
 												<a href="<?php echo esc_url( add_query_arg( 'trailer', $trailer_id, $can_add_new_trailer ) ); ?>" 

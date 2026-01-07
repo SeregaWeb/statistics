@@ -233,6 +233,8 @@ $dispatchers_users = $TMSStatistics->get_dispatchers( $office_dispatcher, false,
 
                         <hr>
 
+                        <p class="text-muted text-small">7:30 AM - 4:30 PM EST</p>
+
                         <div class="tracking-statistics__wrapper align-items-start">
 							<?php
 							
@@ -264,6 +266,7 @@ $dispatchers_users = $TMSStatistics->get_dispatchers( $office_dispatcher, false,
 
 
                         <h3>Nightshift</h3>
+                        <p class="text-muted text-small">4:30 PM — 12 AM EST</p>
                         <div class="tracking-statistics__wrapper">
 							<?php if ( isset( $users[ 'nightshift' ] ) && is_array( $users[ 'nightshift' ] ) ) : ?>
 								<?php foreach ( $users[ 'nightshift' ] as $user ) : ?>
@@ -280,6 +283,7 @@ $dispatchers_users = $TMSStatistics->get_dispatchers( $office_dispatcher, false,
 
 
                         <h3>Morning shift</h3>
+                        <p class="text-muted text-small">12 AM - 7:30 AM EST</p>
                         <div class="tracking-statistics__wrapper">
 							<?php if ( isset( $users[ 'morning_tracking' ] ) && is_array( $users[ 'morning_tracking' ] ) ) : ?>
 								<?php foreach ( $users[ 'morning_tracking' ] as $user ) : ?>

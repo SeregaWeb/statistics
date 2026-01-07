@@ -49,6 +49,65 @@ class TMSDriversStatistics {
 	}
 	
 	/**
+	 * Get drivers with coordinates for USA only
+	 * 
+	 * @return array Array of drivers with id, latitude, longitude, home_location, driver_name
+	 */
+	public function get_usa_drivers_with_coordinates() {
+		global $wpdb;
+		$table_main = $wpdb->prefix . $this->TMSDrivers->table_main;
+		$table_meta = $wpdb->prefix . $this->TMSDrivers->table_meta;
+		
+		// Get all US state abbreviations
+		$us_states = array( 'AL', 'AK', 'AZ', 'AR', 'CA', 'CO', 'CT', 'DE', 'FL', 'GA', 
+			'HI', 'ID', 'IL', 'IN', 'IA', 'KS', 'KY', 'LA', 'ME', 'MD', 
+			'MA', 'MI', 'MN', 'MS', 'MO', 'MT', 'NE', 'NV', 'NH', 'NJ', 
+			'NM', 'NY', 'NC', 'ND', 'OH', 'OK', 'OR', 'PA', 'RI', 'SC', 
+			'SD', 'TN', 'TX', 'UT', 'VT', 'VA', 'WA', 'WV', 'WI', 'WY', 'DC' );
+		
+		$placeholders = implode( ',', array_fill( 0, count( $us_states ), '%s' ) );
+		
+		$drivers_query = "
+			SELECT DISTINCT
+				m.id as driver_id,
+				lat.meta_value as latitude,
+				lng.meta_value as longitude,
+				home_location.meta_value as home_location,
+				driver_name.meta_value as driver_name,
+				driver_status.meta_value as driver_status
+			FROM $table_main AS m
+			INNER JOIN $table_meta AS lat ON m.id = lat.post_id AND lat.meta_key = 'latitude'
+			INNER JOIN $table_meta AS lng ON m.id = lng.post_id AND lng.meta_key = 'longitude'
+			LEFT JOIN $table_meta AS home_location ON m.id = home_location.post_id AND home_location.meta_key = 'home_location'
+			LEFT JOIN $table_meta AS driver_name ON m.id = driver_name.post_id AND driver_name.meta_key = 'driver_name'
+			LEFT JOIN $table_meta AS driver_status ON m.id = driver_status.post_id AND driver_status.meta_key = 'driver_status'
+			WHERE m.status_post = 'publish'
+			AND lat.meta_value != ''
+			AND lng.meta_value != ''
+			AND lat.meta_value IS NOT NULL
+			AND lng.meta_value IS NOT NULL
+			AND (home_location.meta_value IN ($placeholders) OR home_location.meta_value IS NULL)
+			AND (driver_status.meta_value IS NULL OR driver_status.meta_value NOT IN ('banned', 'blocked', 'expired_documents'))
+		";
+		
+		$results = $wpdb->get_results( $wpdb->prepare( $drivers_query, $us_states ), ARRAY_A );
+		
+		// Filter results to ensure coordinates are within USA bounds
+		$filtered_results = array();
+		foreach ( $results as $driver ) {
+			$lat = floatval( $driver['latitude'] );
+			$lng = floatval( $driver['longitude'] );
+			
+			// USA bounds: approximately lat 24.5 to 49.4, lng -125 to -66.9
+			if ( $lat >= 24.5 && $lat <= 49.4 && $lng >= -125 && $lng <= -66.9 ) {
+				$filtered_results[] = $driver;
+			}
+		}
+		
+		return $filtered_results;
+	}
+	
+	/**
 	 * Get nationality statistics
 	 * 
 	 * @return array Array of nationality statistics with count
@@ -219,6 +278,92 @@ class TMSDriversStatistics {
 		}
 		
 		return ucfirst( str_replace( '-', ' ', $vehicle_key ) );
+	}
+	
+	/**
+	 * Get expired documents statistics
+	 * Counts drivers with expired documents for each document type
+	 * 
+	 * @return array Array of expired document counts
+	 */
+	public function get_expired_documents_statistics() {
+		global $wpdb;
+		$table_main = $wpdb->prefix . $this->TMSDrivers->table_main;
+		$table_meta = $wpdb->prefix . $this->TMSDrivers->table_meta;
+		
+		// Get all published drivers with their meta data
+		$drivers_query = "
+			SELECT m.id, m.status_post
+			FROM $table_main AS m
+			WHERE m.status_post = 'publish'
+		";
+		
+		$driver_ids = $wpdb->get_col( $drivers_query );
+		
+		if ( empty( $driver_ids ) ) {
+			return array();
+		}
+		
+		// Get all meta data for these drivers
+		$meta_query = "
+			SELECT post_id, meta_key, meta_value
+			FROM $table_meta
+			WHERE post_id IN (" . implode( ',', array_map( 'intval', $driver_ids ) ) . ")
+		";
+		
+		$meta_results = $wpdb->get_results( $meta_query, ARRAY_A );
+		
+		// Organize meta data by driver ID
+		$drivers_meta = array();
+		foreach ( $meta_results as $meta_row ) {
+			$post_id = $meta_row['post_id'];
+			if ( ! isset( $drivers_meta[ $post_id ] ) ) {
+				$drivers_meta[ $post_id ] = array();
+			}
+			$drivers_meta[ $post_id ][ $meta_row['meta_key'] ] = $meta_row['meta_value'];
+		}
+		
+		// Build drivers array with meta_data
+		$drivers = array();
+		foreach ( $driver_ids as $driver_id ) {
+			$drivers[] = array(
+				'id' => $driver_id,
+				'meta_data' => isset( $drivers_meta[ $driver_id ] ) ? $drivers_meta[ $driver_id ] : array()
+			);
+		}
+		
+		// Define document types to check
+		$document_types = array(
+			'DL' => 'Driver\'s License',
+			'COI' => 'Certificate of Insurance',
+			'EA' => 'Employment Authorization',
+			'PR' => 'Permanent Resident',
+			'PS' => 'Passport',
+			'HZ' => 'Hazmat Certificate',
+			'GE' => 'Global Entry',
+			'TWIC' => 'TWIC',
+			'TSA' => 'TSA',
+			'DL_TEAM' => 'Driver\'s License (Team driver)',
+			'EA_TEAM' => 'Employment Authorization (Team driver)',
+			'PR_TEAM' => 'Permanent Resident (Team driver)',
+			'PS_TEAM' => 'Passport (Team driver)',
+			'HZ_TEAM' => 'Hazmat Certificate (Team driver)',
+			'GE_TEAM' => 'Global Entry (Team driver)',
+			'TWIC_TEAM' => 'TWIC (Team driver)',
+			'TSA_TEAM' => 'TSA (Team driver)',
+		);
+		
+		// Count expired documents for each type
+		$expired_counts = array();
+		foreach ( $document_types as $doc_type => $doc_name ) {
+			$filtered = $this->TMSDrivers->filter_drivers_by_document_type( $drivers, $doc_type, 'expired' );
+			$expired_counts[ $doc_type ] = array(
+				'name' => $doc_name,
+				'count' => count( $filtered )
+			);
+		}
+		
+		return $expired_counts;
 	}
 }
 

@@ -864,6 +864,7 @@ class TMSDrivers extends TMSDriversHelper {
 		$driver_status = trim( get_field_value( $_GET, 'driver_status' ) ?? '' );
 		$document_type = trim( get_field_value( $_GET, 'document_type' ) ?? '' );
 		$document_status = trim( get_field_value( $_GET, 'document_status' ) ?? 'expired' );
+		$date_filter = trim( get_field_value( $_GET, 'date_filter' ) ?? '' );
 		
 		if ( $my_search ) {
 			$args[ 'my_search' ] = $my_search;
@@ -898,6 +899,10 @@ class TMSDrivers extends TMSDriversHelper {
 		
 		if ( $document_status ) {
 			$args[ 'document_status' ] = $document_status;
+		}
+		
+		if ( $date_filter ) {
+			$args[ 'date_filter' ] = $date_filter;
 		}
 		
 		return $args;
@@ -1272,6 +1277,301 @@ class TMSDrivers extends TMSDriversHelper {
 			}
 		}
 		
+		
+		return array(
+			'results'       => $main_results,
+			'total_pages'   => $total_pages,
+			'total_posts'   => $total_records,
+			'current_pages' => $current_page,
+		);
+	}
+	
+	/**
+	 * Get table items for Insurance page
+	 * Simplified version with date filtering and sorting by expiration date
+	 *
+	 * @param array $args Query arguments
+	 * @return array Results with pagination
+	 */
+	public function get_table_items_insurance( $args = array() ) {
+		global $wpdb;
+		
+		// Get current project from user
+		$user_id = get_current_user_id();
+		$current_project = get_field( 'current_select', 'user_' . $user_id );
+		
+		// Fallback to 'odysseia' if current_project is empty
+		if ( empty( $current_project ) ) {
+			$current_project = 'odysseia';
+		}
+		
+		// Determine which expiration date field to use based on project
+		$expiration_date_field = 'auto_liability_expiration'; // Default for odysseia
+		$coi_on_field = '';
+		$policy_field = ''; // For odysseia - check if policy exists
+		
+		if ( $current_project === 'martlet' ) {
+			$expiration_date_field = 'martlet_coi_expired_date';
+			$coi_on_field = 'martlet_coi_on';
+		} elseif ( $current_project === 'endurance' ) {
+			$expiration_date_field = 'endurance_coi_expired_date';
+			$coi_on_field = 'endurance_coi_on';
+		} else {
+			// For odysseia, check that auto_liability_policy is not empty
+			$policy_field = 'auto_liability_policy';
+		}
+		
+		$table_main   = $wpdb->prefix . $this->table_main;
+		$table_meta   = $wpdb->prefix . $this->table_meta;
+		$per_page     = isset( $args[ 'per_page_loads' ] ) ? $args[ 'per_page_loads' ] : $this->per_page_loads;
+		$current_page = isset( $_GET[ 'paged' ] ) ? absint( $_GET[ 'paged' ] ) : 1;
+		
+		$join_builder = "
+			FROM $table_main AS main
+			LEFT JOIN $table_meta AS driver_name
+				ON main.id = driver_name.post_id AND driver_name.meta_key = 'driver_name'
+			LEFT JOIN $table_meta AS driver_phone
+				ON main.id = driver_phone.post_id AND driver_phone.meta_key = 'driver_phone'
+			LEFT JOIN $table_meta AS driver_email
+				ON main.id = driver_email.post_id AND driver_email.meta_key = 'driver_email'
+			LEFT JOIN $table_meta AS driver_status
+				ON main.id = driver_status.post_id AND driver_status.meta_key = 'driver_status'
+			LEFT JOIN $table_meta AS expiration_date
+				ON main.id = expiration_date.post_id AND expiration_date.meta_key = %s
+		";
+		
+		$where_values = array( $expiration_date_field );
+		
+		// Add COI on field join if needed (for martlet and endurance)
+		if ( ! empty( $coi_on_field ) ) {
+			$join_builder .= "
+			LEFT JOIN $table_meta AS coi_on
+				ON main.id = coi_on.post_id AND coi_on.meta_key = %s
+			";
+			$where_values[] = $coi_on_field;
+		}
+		
+		// Add policy field join if needed (for odysseia)
+		if ( ! empty( $policy_field ) ) {
+			$join_builder .= "
+			LEFT JOIN $table_meta AS policy
+				ON main.id = policy.post_id AND policy.meta_key = %s
+			";
+			$where_values[] = $policy_field;
+		}
+		
+		$where_conditions = array();
+		
+		// Exclude specific test driver IDs
+		$excluded_driver_ids = array( 3343 );
+		if ( ! empty( $excluded_driver_ids ) ) {
+			$where_conditions[] = 'main.id NOT IN (' . implode( ',', array_map( 'absint', $excluded_driver_ids ) ) . ')';
+		}
+		
+		// Base query
+		$sql = "SELECT main.*, expiration_date.meta_value as expiration_date_value" . $join_builder . " WHERE 1=1";
+		
+		// Status filter
+		if ( ! empty( $args[ 'status_post' ] ) ) {
+			$where_conditions[] = "main.status_post = %s";
+			$where_values[]     = $args[ 'status_post' ];
+		}
+		
+		// Driver status filter
+		if ( ! empty( $args[ 'driver_status' ] ) ) {
+			$where_conditions[] = "driver_status.meta_value = %s";
+			$where_values[]     = $args[ 'driver_status' ];
+		}
+		
+		// Search filter
+		if ( ! empty( $args[ 'my_search' ] ) ) {
+			$search_term = $args[ 'my_search' ];
+			$phone_detected = $this->is_phone_number( $search_term );
+			
+			if ( $phone_detected ) {
+				$formatted_phone = $this->format_phone_number( $search_term );
+				$where_conditions[] = "driver_phone.meta_value = %s";
+				$where_values[]     = $formatted_phone;
+			} elseif ( is_numeric( $search_term ) ) {
+				$where_conditions[] = "main.id = %s";
+				$where_values[]     = $search_term;
+			} else {
+				$where_conditions[] = "(" . 
+					"driver_name.meta_value LIKE %s OR " . 
+					"driver_email.meta_value LIKE %s " . 
+					")";
+				$search_value = '%' . $wpdb->esc_like( $search_term ) . '%';
+				$where_values[] = $search_value;
+				$where_values[] = $search_value;
+			}
+		}
+		
+		// Don't filter by expiration date in SQL - we'll show all drivers
+		// and sort them by expiration date in PHP (those without dates go to the end)
+		
+		// Note: Date filter will be applied after fetching results in PHP
+		// to handle different date formats properly
+		
+		// Add driver visibility condition based on user role
+		$driverHelper    = new TMSDriversHelper();
+		$visibility_data = $driverHelper->get_driver_visibility_condition();
+		if ( ! empty( $visibility_data[ 'condition' ] ) ) {
+			$where_conditions[] = $visibility_data[ 'condition' ];
+		}
+		
+		// Apply WHERE conditions
+		if ( ! empty( $where_conditions ) ) {
+			$sql .= ' AND ' . implode( ' AND ', $where_conditions );
+		}
+		
+		// Count total records
+		$count_sql = "SELECT COUNT(DISTINCT main.id)" . $join_builder . " WHERE 1=1";
+		if ( ! empty( $where_conditions ) ) {
+			$count_sql .= ' AND ' . implode( ' AND ', $where_conditions );
+		}
+		
+		$total_records = $wpdb->get_var( $wpdb->prepare( $count_sql, ...$where_values ) );
+		$total_pages = ceil( $total_records / $per_page );
+		if ( $total_records == 0 ) {
+			$total_pages = 0;
+		} elseif ( $total_pages < 1 ) {
+			$total_pages = 1;
+		}
+		
+		// Get all results first (without pagination) to filter and sort by expiration date
+		$all_results = $wpdb->get_results( $wpdb->prepare( $sql, ...$where_values ), ARRAY_A );
+		
+		// Helper function to parse date from various formats
+		$parse_date = function( $date_str ) {
+			if ( empty( $date_str ) ) {
+				return false;
+			}
+			$date_formats = array( 'm/d/Y', 'Y-m-d', 'm-d-Y', 'Y/m/d', 'm/d/y', 'Y-m-d H:i:s' );
+			foreach ( $date_formats as $format ) {
+				$date_obj = DateTime::createFromFormat( $format, trim( $date_str ) );
+				if ( $date_obj !== false ) {
+					return $date_obj->getTimestamp();
+				}
+			}
+			// Fallback to strtotime
+			$timestamp = strtotime( str_replace( '/', '-', trim( $date_str ) ) );
+			return $timestamp !== false ? $timestamp : false;
+		};
+		
+		// Apply date filter if specified
+		if ( ! empty( $args[ 'date_filter' ] ) && ! empty( $all_results ) ) {
+			$ny_timezone = new DateTimeZone( 'America/New_York' );
+			$now = new DateTime( 'now', $ny_timezone );
+			
+			switch ( $args[ 'date_filter' ] ) {
+				case 'day':
+					$now->modify( '-1 day' );
+					break;
+				case 'week':
+					$now->modify( '-7 days' );
+					break;
+				case 'month':
+					$now->modify( '-30 days' );
+					break;
+				case '3months':
+					$now->modify( '-90 days' );
+					break;
+			}
+			
+			$threshold_timestamp = $now->getTimestamp();
+			
+			$all_results = array_filter( $all_results, function( $result ) use ( $parse_date, $threshold_timestamp ) {
+				$exp_date_str = isset( $result['expiration_date_value'] ) ? $result['expiration_date_value'] : '';
+				if ( empty( $exp_date_str ) ) {
+					return false; // Exclude drivers without expiration date
+				}
+				
+				$exp_timestamp = $parse_date( $exp_date_str );
+				if ( $exp_timestamp === false ) {
+					return false; // Exclude invalid dates
+				}
+				
+				// Include if expiration date is within the filter range (from threshold to now)
+				return $exp_timestamp >= $threshold_timestamp;
+			} );
+			
+			// Re-index array after filtering
+			$all_results = array_values( $all_results );
+		}
+		
+		// Sort by expiration date: expired first (oldest first), then valid (nearest first)
+		if ( ! empty( $all_results ) ) {
+			$ny_timezone = new DateTimeZone( 'America/New_York' );
+			$today = new DateTime( 'now', $ny_timezone );
+			$today->setTime( 0, 0, 0 ); // Set to start of day
+			$today_timestamp = $today->getTimestamp();
+			
+			usort( $all_results, function( $a, $b ) use ( $parse_date, $today_timestamp ) {
+				$date_a = isset( $a['expiration_date_value'] ) && ! empty( $a['expiration_date_value'] ) ? $parse_date( $a['expiration_date_value'] ) : false;
+				$date_b = isset( $b['expiration_date_value'] ) && ! empty( $b['expiration_date_value'] ) ? $parse_date( $b['expiration_date_value'] ) : false;
+				
+				// If both dates are invalid/missing, keep original order
+				if ( ! $date_a && ! $date_b ) {
+					return 0;
+				}
+				// Invalid/missing dates go to the end
+				if ( ! $date_a ) return 1;
+				if ( ! $date_b ) return -1;
+				
+				$expired_a = $date_a < $today_timestamp;
+				$expired_b = $date_b < $today_timestamp;
+				
+				// If both expired, sort by date ascending (oldest/most expired first)
+				if ( $expired_a && $expired_b ) {
+					return $date_a <=> $date_b;
+				}
+				// If both valid, sort by date ascending (nearest expiration first)
+				if ( ! $expired_a && ! $expired_b ) {
+					return $date_a <=> $date_b;
+				}
+				// Expired comes before valid
+				return $expired_a ? -1 : 1;
+			} );
+		}
+		
+		// Update total records count after filtering
+		$total_records = count( $all_results );
+		$total_pages = ceil( $total_records / $per_page );
+		if ( $total_records == 0 ) {
+			$total_pages = 0;
+		} elseif ( $total_pages < 1 ) {
+			$total_pages = 1;
+		}
+		
+		// Apply pagination
+		$offset = ( $current_page - 1 ) * $per_page;
+		$main_results = array_slice( $all_results, $offset, $per_page );
+		
+		// Get meta data for paginated results
+		$post_ids = wp_list_pluck( $main_results, 'id' );
+		$meta_data = array();
+		if ( ! empty( $post_ids ) ) {
+			$meta_sql     = "SELECT post_id, meta_key, meta_value
+					 FROM $table_meta
+					 WHERE post_id IN (" . implode( ',', array_map( 'absint', $post_ids ) ) . ")";
+			$meta_results = $wpdb->get_results( $meta_sql, ARRAY_A );
+			
+			foreach ( $meta_results as $meta_row ) {
+				$post_id = $meta_row[ 'post_id' ];
+				if ( ! isset( $meta_data[ $post_id ] ) ) {
+					$meta_data[ $post_id ] = array();
+				}
+				$meta_data[ $post_id ][ $meta_row[ 'meta_key' ] ] = $meta_row[ 'meta_value' ];
+			}
+		}
+		
+		// Merge meta data with main results
+		if ( is_array( $main_results ) && ! empty( $main_results ) ) {
+			foreach ( $main_results as &$result ) {
+				$post_id               = $result[ 'id' ];
+				$result[ 'meta_data' ] = isset( $meta_data[ $post_id ] ) ? $meta_data[ $post_id ] : array();
+			}
+		}
 		
 		return array(
 			'results'       => $main_results,

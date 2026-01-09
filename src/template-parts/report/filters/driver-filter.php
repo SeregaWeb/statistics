@@ -4,6 +4,10 @@ $driver_helper = new TMSDriversHelper();
 $recruiters    = $helper->get_recruiters();
 $sources       = $driver_helper->source;
 
+$search_only = isset( $args['search_only'] ) ? $args['search_only'] : false;
+
+$title = isset( $args['title'] ) ? $args['title'] : 'Drivers';
+
 $search             = get_field_value( $_GET, 'my_search' );
 $recruiter_initials = trim( get_field_value( $_GET, 'recruiter' ) ?? '' );
 $month              = get_field_value( $_GET, 'fmonth' );
@@ -45,7 +49,7 @@ $driver_capabilities = array(
 
 <nav class="navbar mb-5 mt-3 navbar-expand-lg navbar-light">
     <div class="container-fluid p-0">
-        <a class="navbar-brand" href="#">Drivers</a>
+        <a class="navbar-brand" href="#"><?php echo $title; ?></a>
         <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNavDarkDropdown"
                 aria-controls="navbarNavDarkDropdown" aria-expanded="false" aria-label="Toggle navigation">
             <span class="navbar-toggler-icon"></span>
@@ -57,6 +61,7 @@ $driver_capabilities = array(
                        value="<?php echo $search; ?>" aria-label="Search">
                 <button class="btn btn-outline-dark" type="submit">Search</button>
             </div>
+			<?php if ( ! $search_only ): ?>
             <div class="d-flex gap-1">
 				
 				<?php
@@ -148,6 +153,7 @@ $driver_capabilities = array(
                     <a class="btn btn-outline-danger" href="<?php echo get_the_permalink(); ?>">Reset</a>
 				<?php endif; ?>
             </div>
+		  <?php endif; ?>
         </form>
     </div>
 </nav>

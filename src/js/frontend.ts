@@ -56,6 +56,7 @@ import {
     cleanUrlByFilterPlatform,
     cleanUrlByFilterDriverSearch,
     cleanUrlByFilterDriverDocuments,
+    cleanUrlByFilterDriverInsurance,
 } from './components/filter-clean';
 import { initDriverNotesEdit } from './components/driver-notes-edit';
 import { disabledValuesInSelectInit, showHiddenValueInit, legalDocumentExpirationInit } from './components/chow-hidden-value';
@@ -289,6 +290,7 @@ function ready() {
     cleanUrlByFilterDriver();
     cleanUrlByFilterDriverSearch();
     cleanUrlByFilterDriverDocuments();
+    cleanUrlByFilterDriverInsurance();
     initDriverNotesEdit(urlAjax);
     driverHoldInit(urlAjax);
     driverCoreInit(urlAjax);

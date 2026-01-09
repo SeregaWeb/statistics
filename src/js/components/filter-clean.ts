@@ -181,3 +181,28 @@ export const cleanUrlByFilterDriverDocuments = () => {
         });
     }
 };
+
+export const cleanUrlByFilterDriverInsurance = () => {
+    const form = document.getElementById('navbarNavDriverInsurance') as HTMLFormElement | null;
+
+    if (form) {
+        form.addEventListener('submit', function (event) {
+            event.preventDefault();
+
+            const params = new URLSearchParams();
+
+            // Получаем значения всех полей безопасно
+            const mySearch = form.elements.namedItem('my_search') as HTMLInputElement | null;
+            const driverStatus = form.elements.namedItem('driver_status') as HTMLSelectElement | null;
+            const dateFilter = form.elements.namedItem('date_filter') as HTMLSelectElement | null;
+
+            // Проверяем и добавляем параметры только если элементы существуют и не пусты
+            if (mySearch?.value) params.append('my_search', mySearch.value);
+            if (driverStatus?.value) params.append('driver_status', driverStatus.value);
+            if (dateFilter?.value) params.append('date_filter', dateFilter.value);
+
+            // Перенаправляем на URL с параметрами
+            window.location.href = `?${params.toString()}`;
+        });
+    }
+};

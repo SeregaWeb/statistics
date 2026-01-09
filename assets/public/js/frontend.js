@@ -11675,6 +11675,7 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */   cleanUrlByFilterAr: function() { return /* binding */ cleanUrlByFilterAr; },
 /* harmony export */   cleanUrlByFilterDriver: function() { return /* binding */ cleanUrlByFilterDriver; },
 /* harmony export */   cleanUrlByFilterDriverDocuments: function() { return /* binding */ cleanUrlByFilterDriverDocuments; },
+/* harmony export */   cleanUrlByFilterDriverInsurance: function() { return /* binding */ cleanUrlByFilterDriverInsurance; },
 /* harmony export */   cleanUrlByFilterDriverSearch: function() { return /* binding */ cleanUrlByFilterDriverSearch; },
 /* harmony export */   cleanUrlByFilterPlatform: function() { return /* binding */ cleanUrlByFilterPlatform; }
 /* harmony export */ });
@@ -11804,6 +11805,22 @@ var cleanUrlByFilterDriverDocuments = function cleanUrlByFilterDriverDocuments()
       if (mySearch === null || mySearch === void 0 ? void 0 : mySearch.value) params.append('my_search', mySearch.value);
       if (documentType === null || documentType === void 0 ? void 0 : documentType.value) params.append('document_type', documentType.value);
       if ((documentStatus === null || documentStatus === void 0 ? void 0 : documentStatus.value) && (documentType === null || documentType === void 0 ? void 0 : documentType.value)) params.append('document_status', documentStatus.value);
+      window.location.href = "?".concat(params.toString());
+    });
+  }
+};
+var cleanUrlByFilterDriverInsurance = function cleanUrlByFilterDriverInsurance() {
+  var form = document.getElementById('navbarNavDriverInsurance');
+  if (form) {
+    form.addEventListener('submit', function (event) {
+      event.preventDefault();
+      var params = new URLSearchParams();
+      var mySearch = form.elements.namedItem('my_search');
+      var driverStatus = form.elements.namedItem('driver_status');
+      var dateFilter = form.elements.namedItem('date_filter');
+      if (mySearch === null || mySearch === void 0 ? void 0 : mySearch.value) params.append('my_search', mySearch.value);
+      if (driverStatus === null || driverStatus === void 0 ? void 0 : driverStatus.value) params.append('driver_status', driverStatus.value);
+      if (dateFilter === null || dateFilter === void 0 ? void 0 : dateFilter.value) params.append('date_filter', dateFilter.value);
       window.location.href = "?".concat(params.toString());
     });
   }
@@ -29027,6 +29044,7 @@ function ready() {
   (0,_components_filter_clean__WEBPACK_IMPORTED_MODULE_16__.cleanUrlByFilterDriver)();
   (0,_components_filter_clean__WEBPACK_IMPORTED_MODULE_16__.cleanUrlByFilterDriverSearch)();
   (0,_components_filter_clean__WEBPACK_IMPORTED_MODULE_16__.cleanUrlByFilterDriverDocuments)();
+  (0,_components_filter_clean__WEBPACK_IMPORTED_MODULE_16__.cleanUrlByFilterDriverInsurance)();
   (0,_components_driver_notes_edit__WEBPACK_IMPORTED_MODULE_17__.initDriverNotesEdit)(urlAjax);
   (0,_components_driver_hold__WEBPACK_IMPORTED_MODULE_34__.driverHoldInit)(urlAjax);
   (0,_components_driver_core__WEBPACK_IMPORTED_MODULE_29__.driverCoreInit)(urlAjax);

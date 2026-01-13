@@ -112,6 +112,8 @@ $martlet_coi_expired_date             = get_field_value( $meta, 'martlet_coi_exp
 $endurance_coi_expired_date            = get_field_value( $meta, 'endurance_coi_expired_date' );
 $interview_martlet                = get_field_value( $meta, 'interview_martlet' );
 $interview_endurance               = get_field_value( $meta, 'interview_endurance' );
+$tsa_number                          = get_field_value( $meta, 'tsa_number' );
+$tsa_number_team_driver              = get_field_value( $meta, 'tsa_number_team_driver' );
 
 $insurance_agent_enabled = get_field_value( $meta, 'insurance_agent_enabled' );
 $insurance_agent_name    = get_field_value( $meta, 'insurance_agent_name' );
@@ -1052,6 +1054,11 @@ $access_vehicle = $TMSUsers->check_user_role_access( [
                             <input type="text" class="form-control js-new-format-date" name="tsa_expiration"
                                    value="<?php echo $tsa_expiration; ?>">
                         </div>
+				    <div class="col-12 col-md-6 ">
+                            <label class="form-label">TSA Number</label>
+                            <input type="text" class="form-control" name="tsa_number"
+                                   value="<?php echo $tsa_number; ?>">
+                        </div>
                     </div>
                 </div>
 				
@@ -1068,24 +1075,29 @@ $access_vehicle = $TMSUsers->check_user_role_access( [
                     <div class="col-12 js-tsa_approved-section-team-driver <?php echo $tsa_approved_team_driver ? '' : 'd-none'; ?>">
                         <div class="row border-1 border-success border bg-light pt-3 pb-3 mb-3 rounded ">
 							
-							<?php
-							// TSA File (Team driver)
-							$simple_upload_args = [
-								'full_only_view' => $full_only_view,
-								'field_name' => 'tsa_file_team_driver',
-								'label'      => 'TSA File (Team driver)',
-								'file_value' => $tsa_file_team_driver,
-								'popup_id'   => 'popup_upload_tsa_file_team_driver',
-								'col_class'  => 'col-12 col-md-6',
-								'button_class' => 'btn btn-outline-success'
-							];
-							echo esc_html( get_template_part( TEMPLATE_PATH . 'common/simple', 'file-upload', $simple_upload_args ) );
-							?>
-                            <div class="col-12 col-md-6 ">
-                                <label class="form-label">Expiration date (Team driver)</label>
-                                <input type="text" class="form-control js-new-format-date" name="tsa_expiration_team_driver"
+						<?php
+						// TSA File (Team driver)
+						$simple_upload_args = [
+							'full_only_view' => $full_only_view,
+							'field_name' => 'tsa_file_team_driver',
+							'label'      => 'TSA File (Team driver)',
+							'file_value' => $tsa_file_team_driver,
+							'popup_id'   => 'popup_upload_tsa_file_team_driver',
+							'col_class'  => 'col-12 col-md-6',
+							'button_class' => 'btn btn-outline-success'
+						];
+						echo esc_html( get_template_part( TEMPLATE_PATH . 'common/simple', 'file-upload', $simple_upload_args ) );
+						?>
+                              <div class="col-12 col-md-6 ">
+                                   <label class="form-label">Expiration date (Team driver)</label>
+                                   <input type="text" class="form-control js-new-format-date" name="tsa_expiration_team_driver"
                                        value="<?php echo $tsa_expiration_team_driver; ?>">
-                            </div>
+                              </div>
+                              <div class="col-12 col-md-6 ">
+                                   <label class="form-label">TSA Number (Team driver)</label>
+                                   <input type="text" class="form-control" name="tsa_number_team_driver"
+                                        value="<?php echo $tsa_number_team_driver; ?>">
+                              </div>
                         </div>
                     </div>
 				<?php endif; ?>

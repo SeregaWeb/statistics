@@ -3267,6 +3267,8 @@ class TMSDrivers extends TMSDriversHelper {
 					? sanitize_text_field( $_POST[ 'trucker_tools' ] ) : '',
 				'languages'                  => isset( $_POST[ 'language' ] ) && is_array( $_POST[ 'language' ] )
 					? implode( ',', array_map( 'sanitize_text_field', $_POST[ 'language' ] ) ) : '',
+				'team_driver_languages'      => isset( $_POST[ 'team_driver_languages' ] ) && is_array( $_POST[ 'team_driver_languages' ] )
+					? implode( ',', array_map( 'sanitize_text_field', $_POST[ 'team_driver_languages' ] ) ) : '',
 				'team_driver_enabled'        => isset( $_POST[ 'team_driver_enabled' ] )
 					? sanitize_text_field( $_POST[ 'team_driver_enabled' ] ) : '',
 				'team_driver_name'           => isset( $_POST[ 'team_driver_name' ] )
@@ -3374,6 +3376,8 @@ class TMSDrivers extends TMSDriversHelper {
 					? sanitize_text_field( $_POST[ 'trucker_tools' ] ) : '',
 				'languages'                  => isset( $_POST[ 'language' ] ) && is_array( $_POST[ 'language' ] )
 					? implode( ',', array_map( 'sanitize_text_field', $_POST[ 'language' ] ) ) : '',
+				'team_driver_languages'      => isset( $_POST[ 'team_driver_languages' ] ) && is_array( $_POST[ 'team_driver_languages' ] )
+					? implode( ',', array_map( 'sanitize_text_field', $_POST[ 'team_driver_languages' ] ) ) : '',
 				'team_driver_enabled'        => isset( $_POST[ 'team_driver_enabled' ] )
 					? sanitize_text_field( $_POST[ 'team_driver_enabled' ] ) : '',
 				'team_driver_name'           => isset( $_POST[ 'team_driver_name' ] )
@@ -3885,6 +3889,8 @@ class TMSDrivers extends TMSDriversHelper {
 				? sanitize_text_field( $_POST[ 'tsa_approved' ] ) : '';
 			$tsa_expiration            = isset( $_POST[ 'tsa_expiration' ] )
 				? sanitize_text_field( $_POST[ 'tsa_expiration' ] ) : '';
+			$tsa_number                = isset( $_POST[ 'tsa_number' ] )
+				? sanitize_text_field( $_POST[ 'tsa_number' ] ) : '';
 			$legal_document_type       = isset( $_POST[ 'legal_document_type' ] )
 				? sanitize_text_field( $_POST[ 'legal_document_type' ] ) : '';
 			$legal_document_expiration = isset( $_POST[ 'legal_document_expiration' ] )
@@ -4022,6 +4028,8 @@ class TMSDrivers extends TMSDriversHelper {
 				? sanitize_text_field( $_POST[ 'tsa_approved_team_driver' ] ) : '';
 			$tsa_expiration_team_driver = isset( $_POST[ 'tsa_expiration_team_driver' ] )
 				? sanitize_text_field( $_POST[ 'tsa_expiration_team_driver' ] ) : '';
+			$tsa_number_team_driver = isset( $_POST[ 'tsa_number_team_driver' ] )
+				? sanitize_text_field( $_POST[ 'tsa_number_team_driver' ] ) : '';
 
 			$martlet_coi_expired_date = isset( $_POST[ 'martlet_coi_expired_date' ] )
 				? sanitize_text_field( $_POST[ 'martlet_coi_expired_date' ] ) : '';
@@ -4061,6 +4069,7 @@ class TMSDrivers extends TMSDriversHelper {
 				'twic_expiration'                       => $twic_expiration,
 				'tsa_approved'                          => $tsa_approved,
 				'tsa_expiration'                        => $tsa_expiration,
+				'tsa_number'                            => $tsa_number,
 				'legal_document_type'                   => $legal_document_type,
 				'legal_document_expiration'             => $legal_document_expiration,
 				'nationality'                           => $nationality,
@@ -4112,6 +4121,7 @@ class TMSDrivers extends TMSDriversHelper {
 				'twic_expiration_team_driver'           => $twic_expiration_team_driver,
 				'tsa_approved_team_driver'              => $tsa_approved_team_driver,
 				'tsa_expiration_team_driver'            => $tsa_expiration_team_driver,
+				'tsa_number_team_driver'                => $tsa_number_team_driver,
 				'martlet_coi_expired_date'              => $martlet_coi_expired_date,
 				'endurance_coi_expired_date'             => $endurance_coi_expired_date,
 				'insurance_agent_enabled'               => $insurance_agent_enabled,

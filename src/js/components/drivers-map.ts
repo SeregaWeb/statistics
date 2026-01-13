@@ -47,7 +47,6 @@ class DriversMap {
         'on_vocation': '#ffb4d3',
         'on_hold': '#b2b2b2',
         'need_update': '#f1cfcf',
-        'no_updates': '#ff3939',
         'unknown': '#808080'
     };
     private statusLabels: StatusLabels = {
@@ -57,7 +56,6 @@ class DriversMap {
         'loaded_enroute': 'Loaded & Enroute',
         'banned': 'Out of service',
         'on_vocation': 'On vacation',
-        'no_updates': 'No updates',
         'blocked': 'Blocked',
         'expired_documents': 'Expired documents',
         'no_interview': 'No Interview',

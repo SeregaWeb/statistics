@@ -211,7 +211,8 @@ class TMSReportsHelper extends TMSReportsIcons {
 		'blind-shipment'      => 'Blind shipment',
 		'partial'             => 'Partial',
 		'white-glove-service' => 'White glove service',
-		'high-value-freight'  => 'High value freight'
+		'high-value-freight'  => 'High value freight',
+		'fragile'             => 'Fragile',
 	);
 	
 	public $types = array(
@@ -1036,6 +1037,9 @@ Kindly confirm once you've received this message." ) . "\n";
 					break;
 				case 'high-value-freight':
 					$icons[] = $this->get_icon_diamond( $tooltip ); // new
+					break;
+				case 'fragile':
+					$icons[] = $this->get_icon_fragile( $tooltip ); // new
 					break;
 				default:
 					break;

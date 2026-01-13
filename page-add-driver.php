@@ -245,22 +245,27 @@ if ( $dispatchers_view ) {
 							echo $helper->message_top( 'warning', 'View only.', '', '' );
 						}
 						?>
-							
-							<?php if ( ! $is_on_hold || $can_edit_on_hold ): ?>
-                                <ul class="nav nav-pills gap-2 mb-3" id="pills-tab" role="tablist">
-									
-									<?php if ( $post_id ): ?>
-                                        <li class="nav-item js-change-url-tab flex-grow-1" role="presentation">
-                                            <button class="nav-link w-100 <?php echo $disabled_tabs;
-											echo $helper->change_active_tab( 'pills-driver-location-tab', 'show', $view_mode ); ?> "
-                                                    id="pills-driver-location-tab"
-                                                    data-bs-toggle="pill"
-                                                    data-bs-target="#pills-driver-location" type="button" role="tab"
-                                                    aria-controls="pills-driver-location" aria-selected="false">Current
-                                                location
-                                            </button>
-                                        </li>
-									<?php endif; ?>
+
+						<?php if ( ! $is_on_hold || $can_edit_on_hold ): ?>
+							<ul class="nav nav-pills gap-2 mb-3" id="pills-tab" role="tablist">
+								
+								<?php if ( $post_id ): ?>
+									<li class="nav-item js-change-url-tab flex-grow-1" role="presentation">
+										<button class="nav-link w-100 <?php 
+											echo esc_attr( $disabled_tabs );
+											echo esc_attr( $helper->change_active_tab( 'pills-driver-location-tab', 'show', $view_mode ) ); 
+										?>" 
+											id="pills-driver-location-tab"
+											data-bs-toggle="pill"
+											data-bs-target="#pills-driver-location" 
+											type="button" 
+											role="tab"
+											aria-controls="pills-driver-location" 
+											aria-selected="false">
+											Current location
+										</button>
+									</li>
+								<?php endif; ?>
 								<?php if ( $access_vehicle ): ?>
 									<li class="nav-item js-change-url-tab flex-grow-1" role="presentation">
 										<button class="nav-link w-100 <?php 
@@ -493,6 +498,7 @@ if ( $dispatchers_view ) {
 						) ) );
 						?>
 					</div>
+
 				<?php else: ?>
 					<div class="col-12 col-lg-9 mt-3">
 						<?php

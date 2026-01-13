@@ -129,7 +129,7 @@ get_header(); ?>
 											<td>
 												<div class="d-flex gap-2">
 													<?php if ( $additional ): ?>
-														<img class="image-icon" src="<?php echo content_url( 'uploads/additional/air_right.jpeg' ); ?>" alt="Air ride" >
+														<img class="image-icon" data-bs-toggle="tooltip" data-bs-placement="top" title="Air ride" src="<?php echo content_url( 'uploads/additional/air_right.jpeg' ); ?>" alt="Air ride" >
 													<?php endif; ?>
 												</div>
 											</td>

@@ -411,18 +411,17 @@ class TMSLogs extends TMSReports {
 		$name    = esc_html( $log_data[ 'name' ] );
 		$date    = $this->formatDate( $log_data[ 'date' ] );
 		$message = $this->clean_message_for_display( $log_data[ 'message' ] );
-		
 		return "
-	    <div class='log-card {$role}'>
-	        <span class='log-card__role'>{$role}</span>
-	        <div class='log-card__top'>
-	            <p class='log-card__name'>{$name}</p>
-	            <p class='log-card__time'>{$date}</p>
-	        </div>
-	        <div class='log-card__message'>
-	            {$message}
-	        </div>
-	    </div>";
+		<div class='log-card {$role}'>
+			<span class='log-card__role'>{$role}</span>
+			<div class='log-card__top'>
+				<p class='log-card__name'>{$name}</p>
+				<p class='log-card__time'>{$date}</p>
+			</div>
+			<div class='log-card__message'>
+				{$message}
+			</div>
+		</div>";
 	}
 	
 	/**

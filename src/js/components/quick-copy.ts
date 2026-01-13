@@ -102,7 +102,6 @@ class QuickCopy {
             'available_on': 'available_on',
             'loaded & enroute': 'available_on',
             'not available': 'not_available',
-            'no updates': 'not_available',
             'blocked': 'not_available',
             'banned': 'not_available',
             'expired documents': 'not_available',

@@ -703,8 +703,8 @@ class TMSDriversAPI {
                 // Create log entry if there were changes
                 $log_created = false;
                 if (!empty($changed_fields)) {
-                    $log_result = $this->create_driver_location_update_log($driver_id, $user_id, $changed_fields);
-                    $log_created = $log_result['success'];
+                    // $log_result = $this->create_driver_location_update_log($driver_id, $user_id, $changed_fields);
+                    // $log_created = $log_result['success'];
                 }
                 
                 // Get updated driver data using public method

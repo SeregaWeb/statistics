@@ -31,6 +31,9 @@ $dob           = get_field_value( $meta, 'dob' );
 $language_str    = get_field_value( $meta, 'languages' );
 $languages_array = $language_str ? explode( ',', $language_str ) : [];
 
+$team_driver_language_str    = get_field_value( $meta, 'team_driver_languages' );
+$team_driver_languages_array = $team_driver_language_str ? explode( ',', $team_driver_language_str ) : [];
+
 $macro_point                = get_field_value( $meta, 'macro_point' );
 $trucker_tools              = get_field_value( $meta, 'trucker_tools' );
 $team_driver_enabled        = get_field_value( $meta, 'team_driver_enabled' );
@@ -194,7 +197,7 @@ $access_vehicle = $TMSUsers->check_user_role_access( [
 
             <div class="row">
                 <div class="col-md-12 mb-3">
-                    <label class="form-label">Language<span class="required-star text-danger">*</span></label>
+                    <label class="form-label">Language</label>
 
                     <div class="d-flex flex-wrap ">
 						<?php foreach ( $languages as $key => $language ): ?>
@@ -225,6 +228,27 @@ $access_vehicle = $TMSUsers->check_user_role_access( [
             </div>
 
             <div class="col-12 js-team-driver <?php echo $team_driver_enabled ? '' : 'd-none'; ?>">
+
+
+                <div class="row">
+                    <div class="col-md-12 p-0 mb-3">
+                        <label class="form-label">Team Driver Language</label>
+
+                        <div class="d-flex flex-wrap ">
+                            <?php foreach ( $languages as $key => $language ): ?>
+                                <div class="form-check form-switch w-25">
+                                    <input class="form-check-input" type="checkbox"
+                                        id="team_driver_language_<?php echo strtolower( $key ); ?>" name="team_driver_languages[]"
+                                        value="<?php echo $key; ?>" <?php echo in_array( $key, $team_driver_languages_array )
+                                        ? 'checked' : ''; ?>>
+                                    <label class="form-check-label"
+                                        for="team_driver_language_<?php echo strtolower( $key ); ?>"><?php echo $language; ?></label>
+                                </div>
+                            <?php endforeach; ?>
+                        </div>
+                    </div>
+                </div>
+
                 <div class="row  border-1 border-primary border bg-light pt-3 pb-3 mb-3 rounded"
                      id="team-driver-fields">
                     <div class="col-md-4 mb-3">

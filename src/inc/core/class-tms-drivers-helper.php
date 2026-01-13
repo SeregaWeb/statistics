@@ -9,7 +9,6 @@ class TMSDriversHelper {
 		'loaded_enroute'    => 'Loaded & Enroute',
 		'banned'            => 'Out of service',
 		'on_vocation'       => 'On vacation',
-		'no_updates'        => 'No updates',
 		'blocked'           => 'Blocked',
 		'expired_documents' => 'Expired documents',
 		'no_Interview'      => 'No Interview',

@@ -10547,7 +10547,6 @@ var DriversMap = /*#__PURE__*/function () {
       'on_vocation': '#ffb4d3',
       'on_hold': '#b2b2b2',
       'need_update': '#f1cfcf',
-      'no_updates': '#ff3939',
       'unknown': '#808080'
     };
     this.statusLabels = {
@@ -10557,7 +10556,6 @@ var DriversMap = /*#__PURE__*/function () {
       'loaded_enroute': 'Loaded & Enroute',
       'banned': 'Out of service',
       'on_vocation': 'On vacation',
-      'no_updates': 'No updates',
       'blocked': 'Blocked',
       'expired_documents': 'Expired documents',
       'no_interview': 'No Interview',
@@ -12830,7 +12828,6 @@ var QuickCopy = /*#__PURE__*/function () {
         'available_on': 'available_on',
         'loaded & enroute': 'available_on',
         'not available': 'not_available',
-        'no updates': 'not_available',
         'blocked': 'not_available',
         'banned': 'not_available',
         'expired documents': 'not_available',

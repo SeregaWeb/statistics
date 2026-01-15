@@ -30,6 +30,7 @@ if (is_admin()) {
 
 use Mpdf\Mpdf;
 
+require THEME_DIR . '/src/inc/core/class-tms-logger.php';
 require THEME_DIR . '/src/inc/core/class-map-controller.php';
 require THEME_DIR . '/src/inc/core/class-tms-common-helper.php';
 require THEME_DIR . '/src/inc/core/class-tms-reports-icons.php';
@@ -57,10 +58,14 @@ require THEME_DIR . '/src/inc/core/class-tms-user-sync-api.php';
 require THEME_DIR . '/src/inc/hooks/user-sync-hooks.php';
 require THEME_DIR . '/src/inc/admin/user-sync-admin.php';
 require THEME_DIR . '/src/inc/core/class-tms-contacts.php';
+require THEME_DIR . '/src/inc/core/class-tms-dispatcher-transfer-manager.php';
+require THEME_DIR . '/src/inc/admin/dispatcher-transfer-status.php';
+require THEME_DIR . '/src/inc/admin/testing-center.php';
 require THEME_DIR . '/src/inc/cron/driver-status-cron.php';
 require THEME_DIR . '/src/inc/cron/driver-rating-block-cron.php';
 require THEME_DIR . '/src/inc/cron/geocode-addresses-cron.php';
 require THEME_DIR . '/src/inc/cron/birthday-cron.php';
+require THEME_DIR . '/src/inc/cron/dispatcher-transfer-cron.php';
 require THEME_DIR . '/src/inc/core/class-tms-timer-logs.php';
 require THEME_DIR . '/src/inc/core/class-tms-reports-timer.php';
 require THEME_DIR . '/src/inc/core/class-tms-eta.php';

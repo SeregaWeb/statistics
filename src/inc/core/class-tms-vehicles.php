@@ -316,6 +316,9 @@ class TMSVehicles {
 			'fuel_type',
 			'vehicle_registration',
 			'registration_expiration_date',
+			'fleet_registration_id_card',
+			'annual_vehicle_inspection',
+			'dot_inspection',
 		);
 		
 		foreach ( $meta_fields as $field ) {
@@ -331,8 +334,8 @@ class TMSVehicles {
 				}
 			}
 			
-			// Handle file uploads
-			if ( in_array( $field, array( 'vehicle_registration' ) ) ) {
+			// Handle single file uploads
+			if ( in_array( $field, array( 'vehicle_registration', 'fleet_registration_id_card', 'annual_vehicle_inspection' ) ) ) {
 				if ( isset( $_FILES[ $field ] ) && $_FILES[ $field ][ 'error' ] === UPLOAD_ERR_OK ) {
 					$file_id = $this->handle_file_upload( $_FILES[ $field ] );
 					if ( $file_id ) {
@@ -343,6 +346,57 @@ class TMSVehicles {
 					$value = intval( $value );
 				} else {
 					continue;
+				}
+			}
+			
+			// Handle multiple file uploads (dot_inspection) - only during form submission
+			// Note: Multiple files are usually uploaded via upload_vehicle_helper, not during form save
+			// So we just keep existing value if no new upload
+			if ( $field === 'dot_inspection' ) {
+				if ( ! empty( $_FILES[ $field ] ) && ! empty( $_FILES[ $field ][ 'name' ][ 0 ] ) ) {
+					$uploaded_files = $this->multy_upload_files( $field );
+					if ( ! empty( $uploaded_files ) ) {
+						// Get existing files
+						$existing_value = $wpdb->get_var( $wpdb->prepare( "
+							SELECT meta_value
+							FROM $table_meta
+							WHERE post_id = %d AND meta_key = %s
+						", $vehicle_id, $field ) );
+						
+						// Merge with existing files
+						$existing_files = ! empty( $existing_value ) ? explode( ', ', $existing_value ) : array();
+						$all_files = array_merge( $existing_files, $uploaded_files );
+						$value = implode( ', ', $all_files );
+					} else {
+						// Keep existing files if upload failed
+						$existing_value = $wpdb->get_var( $wpdb->prepare( "
+							SELECT meta_value
+							FROM $table_meta
+							WHERE post_id = %d AND meta_key = %s
+						", $vehicle_id, $field ) );
+						$value = $existing_value ? $existing_value : '';
+					}
+				} elseif ( ! empty( $value ) ) {
+					// Keep existing files if no new upload (value comes from form, but usually empty for multiple files)
+					// Get existing value from DB
+					$existing_value = $wpdb->get_var( $wpdb->prepare( "
+						SELECT meta_value
+						FROM $table_meta
+						WHERE post_id = %d AND meta_key = %s
+					", $vehicle_id, $field ) );
+					$value = $existing_value ? $existing_value : '';
+				} else {
+					// If no value and no upload, keep existing or skip
+					$existing_value = $wpdb->get_var( $wpdb->prepare( "
+						SELECT meta_value
+						FROM $table_meta
+						WHERE post_id = %d AND meta_key = %s
+					", $vehicle_id, $field ) );
+					if ( $existing_value ) {
+						$value = $existing_value;
+					} else {
+						continue;
+					}
 				}
 			}
 			
@@ -384,6 +438,79 @@ class TMSVehicles {
 				);
 			}
 		}
+	}
+	
+	/**
+	 * Handle multiple file uploads
+	 *
+	 * @param string $fields_name Field name
+	 * @return array Array of attachment IDs
+	 */
+	private function multy_upload_files( $fields_name ) {
+		if ( ! isset( $_FILES[ $fields_name ] ) || empty( $_FILES[ $fields_name ][ 'name' ][ 0 ] ) ) {
+			return []; // No files to upload
+		}
+		
+		$files          = $_FILES[ $fields_name ];
+		$uploaded_files = [];
+		$errors         = [];
+		$user_id        = get_current_user_id();
+		
+		foreach ( $files[ 'name' ] as $key => $original_name ) {
+			if ( empty( $original_name ) ) {
+				continue;
+			}
+			
+			// Check for upload errors
+			if ( $files[ 'error' ][ $key ] !== UPLOAD_ERR_OK ) {
+				$errors[] = "Upload error: " . $original_name;
+				continue;
+			}
+			
+			// Validate file type
+			$file_info     = pathinfo( $original_name );
+			$extension     = isset( $file_info[ 'extension' ] ) ? strtolower( $file_info[ 'extension' ] ) : '';
+			$allowed_types = $this->get_allowed_formats();
+			
+			if ( ! in_array( $extension, $allowed_types ) ) {
+				$errors[] = "Unsupported file format: " . $original_name;
+				continue;
+			}
+			
+			// Validate file size (max 50MB)
+			$max_size = 50 * 1024 * 1024; // 50MB
+			
+			if ( $files[ 'size' ][ $key ] > $max_size ) {
+				$errors[] = "File is too large (max 50MB): " . $original_name;
+				continue;
+			}
+			
+			// Generate unique file name: {user_id}_{timestamp}_{random}_{filename}.{extension}
+			$timestamp    = time();
+			$unique       = rand( 1000, 99999 );
+			$new_filename = "{$user_id}_{$timestamp}_{$unique}_" . sanitize_file_name( $file_info[ 'filename' ] );
+			if ( ! empty( $extension ) ) {
+				$new_filename .= '.' . $extension;
+			}
+			
+			// Prepare file array for upload
+			$file = [
+				'name'     => $new_filename,
+				'type'     => $files[ 'type' ][ $key ],
+				'tmp_name' => $files[ 'tmp_name' ][ $key ],
+				'error'    => $files[ 'error' ][ $key ],
+				'size'     => $files[ 'size' ][ $key ],
+			];
+			
+			// Upload file using handle_file_upload
+			$file_id = $this->handle_file_upload( $file );
+			
+			if ( $file_id ) {
+				$uploaded_files[] = $file_id;
+			}
+		}
+		
+		return $uploaded_files;
 	}
 	
 	/**
@@ -709,33 +836,76 @@ class TMSVehicles {
 		", $post_id, $image_field ) );
 		
 		if ( $current_value ) {
-			if ( $current_value == $image_id ) {
-				$new_value = '';
+			// Check if this is a multiple files field (contains comma)
+			if ( strpos( $current_value, ', ' ) !== false ) {
+				// Multiple files field (e.g., dot_inspection)
+				$files_array = explode( ', ', $current_value );
+				$files_array = array_map( 'trim', $files_array );
+				$files_array = array_map( 'intval', $files_array );
 				
-				$result = $wpdb->update(
-					$table_meta_name,
-					array( 'meta_value' => $new_value ),
-					array(
-						'post_id'  => $post_id,
-						'meta_key' => $image_field
-					),
-					array( '%s' ),
-					array( '%d', '%s' )
-				);
-				
-				$deleted = wp_delete_attachment( $image_id, true );
-				
-				if ( ! $deleted ) {
-					return new WP_Error( 'delete_failed', 'Failed to delete the attachment.' );
-				}
-				
-				if ( $result !== false ) {
-					return true;
+				// Remove the file ID from array
+				$key = array_search( $image_id, $files_array );
+				if ( $key !== false ) {
+					unset( $files_array[ $key ] );
+					$files_array = array_values( $files_array ); // Re-index array
+					
+					$new_value = ! empty( $files_array ) ? implode( ', ', $files_array ) : '';
+					
+					$result = $wpdb->update(
+						$table_meta_name,
+						array( 'meta_value' => $new_value ),
+						array(
+							'post_id'  => $post_id,
+							'meta_key' => $image_field
+						),
+						array( '%s' ),
+						array( '%d', '%s' )
+					);
+					
+					$deleted = wp_delete_attachment( $image_id, true );
+					
+					if ( ! $deleted ) {
+						return new WP_Error( 'delete_failed', 'Failed to delete the attachment.' );
+					}
+					
+					if ( $result !== false ) {
+						return true;
+					} else {
+						return new WP_Error( 'db_update_failed', 'Failed to update the database.' );
+					}
 				} else {
-					return new WP_Error( 'db_update_failed', 'Failed to update the database.' );
+					return new WP_Error( 'id_not_found', 'The specified ID was not found in the field.' );
 				}
 			} else {
-				return new WP_Error( 'id_not_found', 'The specified ID was not found in the field.' );
+				// Single file field
+				if ( $current_value == $image_id ) {
+					$new_value = '';
+					
+					$result = $wpdb->update(
+						$table_meta_name,
+						array( 'meta_value' => $new_value ),
+						array(
+							'post_id'  => $post_id,
+							'meta_key' => $image_field
+						),
+						array( '%s' ),
+						array( '%d', '%s' )
+					);
+					
+					$deleted = wp_delete_attachment( $image_id, true );
+					
+					if ( ! $deleted ) {
+						return new WP_Error( 'delete_failed', 'Failed to delete the attachment.' );
+					}
+					
+					if ( $result !== false ) {
+						return true;
+					} else {
+						return new WP_Error( 'db_update_failed', 'Failed to update the database.' );
+					}
+				} else {
+					return new WP_Error( 'id_not_found', 'The specified ID was not found in the field.' );
+				}
 			}
 		} else {
 			return new WP_Error( 'no_value_found', 'No value found for the specified field.' );
@@ -758,7 +928,61 @@ class TMSVehicles {
 		
 		$keys_names = array(
 			'vehicle_registration',
+			'fleet_registration_id_card',
+			'annual_vehicle_inspection',
 		);
+		
+		// Handle multiple file uploads for dot_inspection
+		if ( ! empty( $_FILES[ 'dot_inspection' ] ) && ! empty( $_FILES[ 'dot_inspection' ][ 'name' ][ 0 ] ) ) {
+			$uploaded_files = $this->multy_upload_files( 'dot_inspection' );
+			
+			if ( ! empty( $uploaded_files ) ) {
+				global $wpdb;
+				$table_meta = $wpdb->prefix . $this->table_meta;
+				
+				// Get existing files
+				$existing_value = $wpdb->get_var( $wpdb->prepare( "
+					SELECT meta_value
+					FROM $table_meta
+					WHERE post_id = %d AND meta_key = 'dot_inspection'
+				", $vehicle_id ) );
+				
+				// Merge with existing files
+				$existing_files = ! empty( $existing_value ) ? explode( ', ', $existing_value ) : array();
+				$all_files = array_merge( $existing_files, $uploaded_files );
+				$new_value = implode( ', ', $all_files );
+				
+				// Delete existing meta
+				$wpdb->delete(
+					$table_meta,
+					array(
+						'post_id' => $vehicle_id,
+						'meta_key' => 'dot_inspection'
+					),
+					array( '%d', '%s' )
+				);
+				
+				// Insert new meta
+				$wpdb->insert(
+					$table_meta,
+					array(
+						'post_id' => $vehicle_id,
+						'meta_key' => 'dot_inspection',
+						'meta_value' => $new_value
+					),
+					array( '%d', '%s', '%s' )
+				);
+				
+				// Calculate total file count
+				$total_file_count = count( $all_files );
+				
+				wp_send_json_success( array(
+					'message' => 'Files uploaded successfully',
+					'file_ids' => $uploaded_files,
+					'total_count' => $total_file_count
+				) );
+			}
+		}
 		
 		foreach ( $keys_names as $key_name ) {
 			if ( ! empty( $_FILES[ $key_name ] ) && $_FILES[ $key_name ][ 'size' ] > 0 ) {

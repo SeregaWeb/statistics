@@ -16244,6 +16244,7 @@ var uploadFileVehicle = function uploadFileVehicle(ajaxUrl) {
       fetch(ajaxUrl, options).then(function (res) {
         return res.json();
       }).then(function (requestStatus) {
+        var _a, _b, _c;
         if (requestStatus.success) {
           (0,_info_messages__WEBPACK_IMPORTED_MODULE_0__.printMessage)(requestStatus.data.message, 'success', 8000);
           var mainPopup = e.target.closest('.js-upload-popup');
@@ -16258,7 +16259,8 @@ var uploadFileVehicle = function uploadFileVehicle(ajaxUrl) {
             var fileInput = _form.querySelector('input[name="file_name"]');
             var fieldName = fileInput === null || fileInput === void 0 ? void 0 : fileInput.value;
             if (fieldName) {
-              updateFileUploadUI(fieldName, true);
+              var fileCount = fieldName === 'dot_inspection' ? ((_a = requestStatus.data) === null || _a === void 0 ? void 0 : _a.total_count) || ((_c = (_b = requestStatus.data) === null || _b === void 0 ? void 0 : _b.file_ids) === null || _c === void 0 ? void 0 : _c.length) || 0 : 1;
+              updateFileUploadUI(fieldName, true, fileCount);
             }
           }
         } else {
@@ -16308,9 +16310,16 @@ var removeOneVehicleFile = function removeOneVehicleFile(ajaxUrl) {
           var form = target;
           var fieldInput = form.querySelector('input[name="image-fields"]');
           var fieldName = fieldInput === null || fieldInput === void 0 ? void 0 : fieldInput.value;
-          setTimeout(function () {
-            window.location.reload();
-          }, 100);
+          if (fieldName === 'dot_inspection') {
+            setTimeout(function () {
+              window.location.reload();
+            }, 100);
+          } else {
+            updateFileUploadUI(fieldName, false);
+            setTimeout(function () {
+              window.location.reload();
+            }, 100);
+          }
         } else {
           (0,_disabled_btn_in_form__WEBPACK_IMPORTED_MODULE_1__.disabledBtnInForm)(target, true);
           var errorMessage = ((_b = requestStatus.data) === null || _b === void 0 ? void 0 : _b.message) || requestStatus.message || 'Error removing file';
@@ -16397,33 +16406,63 @@ var handleCreateButton = function handleCreateButton(urlAjax) {
   });
 };
 var updateFileUploadUI = function updateFileUploadUI(fieldName, isUploaded) {
+  var fileCount = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : 1;
   var fieldToPopupMap = {
-    'vehicle_registration': 'popup_upload_vehicle_registration'
+    'vehicle_registration': 'popup_upload_vehicle_registration',
+    'fleet_registration_id_card': 'popup_upload_fleet_registration_id_card',
+    'annual_vehicle_inspection': 'popup_upload_annual_vehicle_inspection',
+    'dot_inspection': 'popup_upload_dot_inspection'
   };
   var popupId = fieldToPopupMap[fieldName];
   if (!popupId) return;
   var uploadBtn = document.querySelector("button[data-href=\"#".concat(popupId, "\"]"));
   if (isUploaded) {
-    if (uploadBtn) {
-      uploadBtn.style.display = 'none';
-      var container = uploadBtn.closest('.js-add-new-report') || null;
-      var label = container ? container.querySelector('.form-label') : null;
-      if (label && !label.querySelector('.uploaded-icon')) {
-        var icon = document.createElement('span');
-        icon.className = 'uploaded-icon d-flex';
-        icon.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" fill="green" width="18px" height="18px" viewBox="0 0 14 14"><path d="M0 7a7 7 0 1 1 14 0A7 7 0 0 1 0 7z M6.278 7.697L5.045 6.464a.296.296 0 0 0-.42-.002l-.613.614a.298.298 0 0 0 .002.42l1.91 1.909a.5.5 0 0 0 .703.005l.265-.265L9.997 6.04a.291.291 0 0 0-.009-.408l-.614-.614a.29.29 0 0 0-.408-.009L6.278 7.697z" fill-rule="evenodd"></path></svg>';
-        label.appendChild(icon);
+    if (fieldName === 'dot_inspection') {
+      if (uploadBtn) {
+        var container = uploadBtn.closest('.js-add-new-report') || null;
+        var label = container ? container.querySelector('.form-label') : null;
+        if (label) {
+          var baseText = 'DOT Inspection';
+          var countText = fileCount > 0 ? " (".concat(fileCount, ")") : '';
+          var existingIcon = label.querySelector('.uploaded-icon');
+          if (existingIcon) {
+            existingIcon.remove();
+          }
+          var textNode = Array.from(label.childNodes).find(function (node) {
+            return node.nodeType === Node.TEXT_NODE || node.nodeType === Node.ELEMENT_NODE && !node.classList.contains('uploaded-icon');
+          });
+          label.innerHTML = baseText + countText;
+          var icon = document.createElement('span');
+          icon.className = 'uploaded-icon d-flex ms-1';
+          icon.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" fill="green" width="18px" height="18px" viewBox="0 0 14 14"><path d="M0 7a7 7 0 1 1 14 0A7 7 0 0 1 0 7z M6.278 7.697L5.045 6.464a.296.296 0 0 0-.42-.002l-.613.614a.298.298 0 0 0 .002.42l1.91 1.909a.5.5 0 0 0 .703.005l.265-.265L9.997 6.04a.291.291 0 0 0-.009-.408l-.614-.614a.29.29 0 0 0-.408-.009L6.278 7.697z" fill-rule="evenodd"></path></svg>';
+          label.appendChild(icon);
+        }
+      }
+    } else {
+      if (uploadBtn) {
+        uploadBtn.style.display = 'none';
+        var _container = uploadBtn.closest('.js-add-new-report') || null;
+        var _label = _container ? _container.querySelector('.form-label') : null;
+        if (_label && !_label.querySelector('.uploaded-icon')) {
+          var _icon = document.createElement('span');
+          _icon.className = 'uploaded-icon d-flex ms-1';
+          _icon.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" fill="green" width="18px" height="18px" viewBox="0 0 14 14"><path d="M0 7a7 7 0 1 1 14 0A7 7 0 0 1 0 7z M6.278 7.697L5.045 6.464a.296.296 0 0 0-.42-.002l-.613.614a.298.298 0 0 0 .002.42l1.91 1.909a.5.5 0 0 0 .703.005l.265-.265L9.997 6.04a.291.291 0 0 0-.009-.408l-.614-.614a.29.29 0 0 0-.408-.009L6.278 7.697z" fill-rule="evenodd"></path></svg>';
+          _label.appendChild(_icon);
+        }
       }
     }
   } else {
     if (uploadBtn) {
       uploadBtn.style.display = '';
-      var _container = uploadBtn.closest('.js-add-new-report') || null;
-      var _label = _container ? _container.querySelector('.form-label') : null;
-      if (_label) {
-        var _icon = _label.querySelector('.uploaded-icon');
-        if (_icon) {
-          _icon.remove();
+      var _container2 = uploadBtn.closest('.js-add-new-report') || null;
+      var _label2 = _container2 ? _container2.querySelector('.form-label') : null;
+      if (_label2) {
+        var _icon2 = _label2.querySelector('.uploaded-icon');
+        if (_icon2) {
+          _icon2.remove();
+        }
+        if (fieldName === 'dot_inspection') {
+          _label2.textContent = 'DOT Inspection';
         }
       }
     }

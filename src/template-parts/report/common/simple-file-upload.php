@@ -13,6 +13,7 @@
  *     @type string $button_class     CSS class for upload button (default: "btn btn-success")
  *     @type bool   $show_icon        Whether to show uploaded file icon (default: true)
  *     @type string $wrapper_class    Additional CSS class for wrapper div
+ *     @type bool   $allow_multiple   Whether to allow multiple uploads (button always visible) (default: false)
  * }
  */
 
@@ -28,7 +29,8 @@ $defaults = [
     'col_class'      => 'col-12',
     'button_class'   => 'btn btn-success',
     'show_icon'      => true,
-    'wrapper_class'  => ''
+    'wrapper_class'  => '',
+    'allow_multiple' => false,
 ];
 
 $args = wp_parse_args( $args, $defaults );
@@ -54,7 +56,7 @@ $helper = new TMSReportsHelper();
                 ?>
             </label>
             
-            <?php if ( ! $args['file_value'] ): ?>
+            <?php if ( ! $args['file_value'] || $args['allow_multiple'] ): ?>
                 <button <?php echo $args['full_only_view'] ? 'disabled' : ''; ?> data-href="#<?php echo esc_attr( $args['popup_id'] ); ?>"
                         class="<?php echo esc_attr( $args['button_class'] ); ?> js-open-popup-activator mt-1">
                     <?php echo esc_html( $args['button_text'] ); ?>

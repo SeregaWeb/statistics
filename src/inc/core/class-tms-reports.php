@@ -6769,19 +6769,18 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 	function handle_dispatcher_deletion( $user_id ) {
 		// Проверяем, является ли удаляемый пользователь диспетчером
 		$user = get_user_by( 'ID', $user_id );
-		if ( $user && in_array( 'dispatcher', $user->roles ) 
-			|| $user && in_array( 'dispatcher-tl', $user->roles ) 
-			|| $user && in_array( 'expedite_manager', $user->roles ) ) {
+		if ( $user && ( in_array( 'dispatcher', $user->roles ) 
+			|| in_array( 'dispatcher-tl', $user->roles ) 
+			|| in_array( 'expedite_manager', $user->roles ) ) ) {
 			
-			// Выполняем перенос лодов на нового диспетчера
-			$result = $this->move_loads_for_new_dispatcher( $user_id );
-			$this->move_contacts_for_new_dispatcher( $user_id );
+			// Add to queue for gradual transfer instead of immediate transfer
+			$transfer_manager = new TMSDispatcherTransferManager();
+			$result = $transfer_manager->add_dispatcher_to_queue( $user_id, 'odysseia' );
 			
-			// Логируем результат для отладки
 			if ( is_wp_error( $result ) ) {
-				error_log( 'Error transferring loads: ' . $result->get_error_message() );
+				error_log( 'Error adding dispatcher to transfer queue: ' . $result->get_error_message() );
 			} else {
-				error_log( 'Successful load transfer: ' . $result );
+				error_log( 'Dispatcher ID ' . $user_id . ' added to gradual transfer queue (odysseia)' );
 			}
 		}
 	}

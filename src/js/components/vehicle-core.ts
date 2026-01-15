@@ -151,7 +151,12 @@ export const uploadFileVehicle = (ajaxUrl) => {
                             const fieldName = fileInput?.value;
                             
                             if (fieldName) {
-                                updateFileUploadUI(fieldName, true);
+                                // For multiple files (dot_inspection), get total file count from response
+                                // For single files, use 1
+                                const fileCount = fieldName === 'dot_inspection' 
+                                    ? (requestStatus.data?.total_count || requestStatus.data?.file_ids?.length || 0)
+                                    : 1;
+                                updateFileUploadUI(fieldName, true, fileCount);
                             }
                         }
                     } else {
@@ -221,10 +226,20 @@ export const removeOneVehicleFile = (ajaxUrl) => {
                             const fieldInput = form.querySelector('input[name="image-fields"]') as HTMLInputElement;
                             const fieldName = fieldInput?.value;
                             
-                            // Reload page to update file list
-                            setTimeout(() => {
-                                window.location.reload();
-                            }, 100);
+                            // For dot_inspection (multiple files), update UI without reload
+                            if (fieldName === 'dot_inspection') {
+                                // Get remaining file count from response or reload to get accurate count
+                                // For now, reload to ensure accurate count
+                                setTimeout(() => {
+                                    window.location.reload();
+                                }, 100);
+                            } else {
+                                // For single file fields, update UI and reload
+                                updateFileUploadUI(fieldName, false);
+                                setTimeout(() => {
+                                    window.location.reload();
+                                }, 100);
+                            }
                         } else {
                             // @ts-ignore
                             disabledBtnInForm(target, true);
@@ -349,11 +364,15 @@ const handleCreateButton = (urlAjax) => {
  * Update file upload UI after upload/delete
  * @param fieldName - Name of the field (e.g., 'vehicle_registration')
  * @param isUploaded - Whether file is uploaded (true) or deleted (false)
+ * @param fileCount - Number of files (for multiple file fields like dot_inspection)
  */
-const updateFileUploadUI = (fieldName: string, isUploaded: boolean) => {
+const updateFileUploadUI = (fieldName: string, isUploaded: boolean, fileCount: number = 1) => {
     // Map field names to popup IDs
     const fieldToPopupMap: Record<string, string> = {
         'vehicle_registration': 'popup_upload_vehicle_registration',
+        'fleet_registration_id_card': 'popup_upload_fleet_registration_id_card',
+        'annual_vehicle_inspection': 'popup_upload_annual_vehicle_inspection',
+        'dot_inspection': 'popup_upload_dot_inspection',
     };
     
     const popupId = fieldToPopupMap[fieldName];
@@ -363,19 +382,55 @@ const updateFileUploadUI = (fieldName: string, isUploaded: boolean) => {
     const uploadBtn = document.querySelector<HTMLButtonElement>(`button[data-href="#${popupId}"]`);
     
     if (isUploaded) {
-        // After upload: hide button, show icon
-        if (uploadBtn) {
-            uploadBtn.style.display = 'none';
-            
-            // Find the label and add icon
-            const container = uploadBtn.closest('.js-add-new-report') || null;
-            const label = container ? container.querySelector('.form-label') : null;
-            
-            if (label && !label.querySelector('.uploaded-icon')) {
-                const icon = document.createElement('span');
-                icon.className = 'uploaded-icon d-flex';
-                icon.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" fill="green" width="18px" height="18px" viewBox="0 0 14 14"><path d="M0 7a7 7 0 1 1 14 0A7 7 0 0 1 0 7z M6.278 7.697L5.045 6.464a.296.296 0 0 0-.42-.002l-.613.614a.298.298 0 0 0 .002.42l1.91 1.909a.5.5 0 0 0 .703.005l.265-.265L9.997 6.04a.291.291 0 0 0-.009-.408l-.614-.614a.29.29 0 0 0-.408-.009L6.278 7.697z" fill-rule="evenodd"></path></svg>';
-                label.appendChild(icon);
+        // Special handling for multiple file field (dot_inspection)
+        if (fieldName === 'dot_inspection') {
+            // For multiple files: update label text with count, keep button visible
+            if (uploadBtn) {
+                const container = uploadBtn.closest('.js-add-new-report') || null;
+                const label = container ? container.querySelector('.form-label') : null;
+                
+                if (label) {
+                    // Update label text with file count
+                    const baseText = 'DOT Inspection';
+                    const countText = fileCount > 0 ? ` (${fileCount})` : '';
+                    
+                    // Remove existing icon to avoid duplicates
+                    const existingIcon = label.querySelector('.uploaded-icon');
+                    if (existingIcon) {
+                        existingIcon.remove();
+                    }
+                    
+                    // Update text content (preserve any existing HTML structure)
+                    const textNode = Array.from(label.childNodes).find(node => 
+                        node.nodeType === Node.TEXT_NODE || 
+                        (node.nodeType === Node.ELEMENT_NODE && !(node as Element).classList.contains('uploaded-icon'))
+                    );
+                    
+                    // Clear and rebuild label content
+                    label.innerHTML = baseText + countText;
+                    
+                    // Add icon
+                    const icon = document.createElement('span');
+                    icon.className = 'uploaded-icon d-flex ms-1';
+                    icon.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" fill="green" width="18px" height="18px" viewBox="0 0 14 14"><path d="M0 7a7 7 0 1 1 14 0A7 7 0 0 1 0 7z M6.278 7.697L5.045 6.464a.296.296 0 0 0-.42-.002l-.613.614a.298.298 0 0 0 .002.42l1.91 1.909a.5.5 0 0 0 .703.005l.265-.265L9.997 6.04a.291.291 0 0 0-.009-.408l-.614-.614a.29.29 0 0 0-.408-.009L6.278 7.697z" fill-rule="evenodd"></path></svg>';
+                    label.appendChild(icon);
+                }
+            }
+        } else {
+            // For single file fields: hide button, show icon
+            if (uploadBtn) {
+                uploadBtn.style.display = 'none';
+                
+                // Find the label and add icon
+                const container = uploadBtn.closest('.js-add-new-report') || null;
+                const label = container ? container.querySelector('.form-label') : null;
+                
+                if (label && !label.querySelector('.uploaded-icon')) {
+                    const icon = document.createElement('span');
+                    icon.className = 'uploaded-icon d-flex ms-1';
+                    icon.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" fill="green" width="18px" height="18px" viewBox="0 0 14 14"><path d="M0 7a7 7 0 1 1 14 0A7 7 0 0 1 0 7z M6.278 7.697L5.045 6.464a.296.296 0 0 0-.42-.002l-.613.614a.298.298 0 0 0 .002.42l1.91 1.909a.5.5 0 0 0 .703.005l.265-.265L9.997 6.04a.291.291 0 0 0-.009-.408l-.614-.614a.29.29 0 0 0-.408-.009L6.278 7.697z" fill-rule="evenodd"></path></svg>';
+                    label.appendChild(icon);
+                }
             }
         }
     } else {
@@ -391,6 +446,11 @@ const updateFileUploadUI = (fieldName: string, isUploaded: boolean) => {
                 const icon = label.querySelector('.uploaded-icon');
                 if (icon) {
                     icon.remove();
+                }
+                
+                // For dot_inspection, reset label text
+                if (fieldName === 'dot_inspection') {
+                    label.textContent = 'DOT Inspection';
                 }
             }
         }

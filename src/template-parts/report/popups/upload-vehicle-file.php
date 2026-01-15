@@ -26,7 +26,7 @@ $need_check = $args[ 'need_check' ] ?? false;
                 <input type="hidden" name="vehicle_id" value="<?php echo $vehicle_id; ?>">
                 <input type="hidden" name="file_name" value="<?php echo esc_attr( $file_name ); ?>">
                 <h2 class="custom-upload__title"><?php echo $title; ?></h2>
-                <p class="custom-upload__description">file upload limit 16MB (one file)</p>
+                <p class="custom-upload__description">file upload limit 16MB <?php echo $multiply ? '(multiple files)' : '(one file)'; ?></p>
 
                 <label class="upload-area">
                     <p>Drag & drop your file here or <strong>click to upload</strong></p>

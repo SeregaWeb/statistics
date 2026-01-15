@@ -64,16 +64,47 @@ $meta = $vehicle_data ? get_field_value( $vehicle_data, 'meta' ) : array();
 
 // Process file attachments
 $vehicle_registration = get_field_value( $meta, 'vehicle_registration' );
+$fleet_registration_id_card = get_field_value( $meta, 'fleet_registration_id_card' );
+$annual_vehicle_inspection = get_field_value( $meta, 'annual_vehicle_inspection' );
+$dot_inspection = get_field_value( $meta, 'dot_inspection' );
+
 $vehicle_registration_arr = $driverHelper->process_file_attachment( $vehicle_registration );
+$fleet_registration_id_card_arr = $driverHelper->process_file_attachment( $fleet_registration_id_card );
+$annual_vehicle_inspection_arr = $driverHelper->process_file_attachment( $annual_vehicle_inspection );
+
+// Process multiple files for dot_inspection
+$dot_inspection_arr = array();
+if ( ! empty( $dot_inspection ) ) {
+	$dot_files_ids = explode( ', ', $dot_inspection );
+	foreach ( $dot_files_ids as $file_id ) {
+		$file_id = trim( $file_id );
+		if ( ! empty( $file_id ) ) {
+			$file_arr = $driverHelper->process_file_attachment( $file_id );
+			if ( $file_arr ) {
+				$dot_inspection_arr[] = $file_arr;
+			}
+		}
+	}
+}
 
 // Count total images
 $total_images = 0;
 if ( ! empty( $vehicle_registration ) ) {
 	$total_images++;
 }
+if ( ! empty( $fleet_registration_id_card ) ) {
+	$total_images++;
+}
+if ( ! empty( $annual_vehicle_inspection ) ) {
+	$total_images++;
+}
+if ( ! empty( $dot_inspection_arr ) ) {
+	$total_images += count( $dot_inspection_arr );
+}
 
 // Prepare files array for display
 $files = array();
+
 if ( $vehicle_registration_arr ) {
 	$files[] = array(
 		'file_arr'       => $vehicle_registration_arr,
@@ -86,6 +117,48 @@ if ( $vehicle_registration_arr ) {
 		'delete_action'  => 'js-remove-one-vehicle',
 		'active_tab'     => 'vehicle-form',
 	);
+}
+if ( $fleet_registration_id_card_arr ) {
+	$files[] = array(
+		'file_arr'       => $fleet_registration_id_card_arr,
+		'file'           => $fleet_registration_id_card,
+		'full_only_view' => $full_only_view,
+		'post_id'        => $vehicle_id,
+		'class_name'     => 'fleet-registration-id-card',
+		'field_name'     => 'fleet_registration_id_card',
+		'field_label'    => 'Fleet Registration ID card',
+		'delete_action'  => 'js-remove-one-vehicle',
+		'active_tab'     => 'vehicle-form',
+	);
+}
+if ( $annual_vehicle_inspection_arr ) {
+	$files[] = array(
+		'file_arr'       => $annual_vehicle_inspection_arr,
+		'file'           => $annual_vehicle_inspection,
+		'full_only_view' => $full_only_view,
+		'post_id'        => $vehicle_id,
+		'class_name'     => 'annual-vehicle-inspection',
+		'field_name'     => 'annual_vehicle_inspection',
+		'field_label'    => 'Annual Vehicle Inspection',
+		'delete_action'  => 'js-remove-one-vehicle',
+		'active_tab'     => 'vehicle-form',
+	);
+}
+// Add multiple files for dot_inspection
+if ( ! empty( $dot_inspection_arr ) ) {
+	foreach ( $dot_inspection_arr as $dot_file_arr ) {
+		$files[] = array(
+			'file_arr'       => $dot_file_arr,
+			'file'           => $dot_file_arr[ 'id' ],
+			'full_only_view' => $full_only_view,
+			'post_id'        => $vehicle_id,
+			'class_name'     => 'dot-inspection',
+			'field_name'     => 'dot_inspection',
+			'field_label'    => 'DOT Inspection',
+			'delete_action'  => 'js-remove-one-vehicle',
+			'active_tab'     => 'vehicle-form',
+		);
+	}
 }
 
 get_header(); ?>
@@ -104,6 +177,15 @@ get_header(); ?>
 				<?php endif; ?>
 			<?php elseif ( ! $vehicle_id && ! $full_only_view ): ?>
 				<button type="button" class='btn btn-outline-success js-submit-create-vehicle'>Create</button>
+			<?php endif; ?>
+			<?php if ( $total_images > 2 ): ?>
+				<div class="<?php echo ( $total_images === 3 ) ? 'show-more-hide-desktop' : 'd-flex '; ?>">
+					<button class="js-toggle btn btn-primary change-text"
+							data-block-toggle="js-hide-upload-doc-container">
+						<span class="unactive-text">Show more images (<?php echo $total_images; ?>)</span>
+						<span class="active-text">Show less images (<?php echo $total_images; ?>)</span>
+					</button>
+				</div>
 			<?php endif; ?>
 		</div>
 	</div>
@@ -302,7 +384,42 @@ get_header(); ?>
 				'label'      => 'Vehicle Registration',
 				'file_value' => $vehicle_registration,
 				'popup_id'   => 'popup_upload_vehicle_registration',
-				'col_class'  => 'col-12 col-md-6'
+				'col_class'  => 'col-12 col-md-4'
+			];
+			echo esc_html( get_template_part( TEMPLATE_PATH . 'common/simple', 'file-upload', $simple_upload_args ) );
+			
+			// Fleet Registration ID card file upload
+			$simple_upload_args = [
+				'full_only_view' => $full_only_view || ! $vehicle_id,
+				'field_name' => 'fleet_registration_id_card',
+				'label'      => 'Fleet Registration ID card',
+				'file_value' => $fleet_registration_id_card,
+				'popup_id'   => 'popup_upload_fleet_registration_id_card',
+				'col_class'  => 'col-12 col-md-4'
+			];
+			echo esc_html( get_template_part( TEMPLATE_PATH . 'common/simple', 'file-upload', $simple_upload_args ) );
+			
+			// Annual Vehicle Inspection file upload
+			$simple_upload_args = [
+				'full_only_view' => $full_only_view || ! $vehicle_id,
+				'field_name' => 'annual_vehicle_inspection',
+				'label'      => 'Annual Vehicle Inspection',
+				'file_value' => $annual_vehicle_inspection,
+				'popup_id'   => 'popup_upload_annual_vehicle_inspection',
+				'col_class'  => 'col-12 col-md-4'
+			];
+			echo esc_html( get_template_part( TEMPLATE_PATH . 'common/simple', 'file-upload', $simple_upload_args ) );
+			
+			// DOT Inspection - multiple files upload
+			$dot_inspection_count = ! empty( $dot_inspection_arr ) ? count( $dot_inspection_arr ) : 0;
+			$simple_upload_args = [
+				'full_only_view' => $full_only_view || ! $vehicle_id,
+				'field_name' => 'dot_inspection',
+				'label'      => 'DOT Inspection' . ( $dot_inspection_count > 0 ? ' (' . $dot_inspection_count . ')' : '' ),
+				'file_value' => $dot_inspection_count > 0 ? 'multiple' : null,
+				'popup_id'   => 'popup_upload_dot_inspection',
+				'col_class'  => 'col-12 col-md-4',
+				'allow_multiple' => true, // Always show button for multiple file uploads
 			];
 			echo esc_html( get_template_part( TEMPLATE_PATH . 'common/simple', 'file-upload', $simple_upload_args ) );
 			?>
@@ -329,10 +446,38 @@ get_header(); ?>
 <?php
 // Popups for file uploads (only show after vehicle is created)
 if ( ! $full_only_view && $vehicle_id ):
+	// Vehicle Registration
 	$popup_args = [
 		'file_name' => 'vehicle_registration',
 		'title'     => 'Upload Vehicle Registration',
 		'multiply'  => false,
+		'vehicle_id' => $vehicle_id,
+	];
+	echo esc_html( get_template_part( TEMPLATE_PATH . 'popups/upload-vehicle', 'file', $popup_args ) );
+	
+	// Fleet Registration ID card
+	$popup_args = [
+		'file_name' => 'fleet_registration_id_card',
+		'title'     => 'Upload Fleet Registration ID card',
+		'multiply'  => false,
+		'vehicle_id' => $vehicle_id,
+	];
+	echo esc_html( get_template_part( TEMPLATE_PATH . 'popups/upload-vehicle', 'file', $popup_args ) );
+	
+	// Annual Vehicle Inspection
+	$popup_args = [
+		'file_name' => 'annual_vehicle_inspection',
+		'title'     => 'Upload Annual Vehicle Inspection',
+		'multiply'  => false,
+		'vehicle_id' => $vehicle_id,
+	];
+	echo esc_html( get_template_part( TEMPLATE_PATH . 'popups/upload-vehicle', 'file', $popup_args ) );
+	
+	// DOT Inspection (multiple files)
+	$popup_args = [
+		'file_name' => 'dot_inspection',
+		'title'     => 'Upload DOT Inspection',
+		'multiply'  => true,
 		'vehicle_id' => $vehicle_id,
 	];
 	echo esc_html( get_template_part( TEMPLATE_PATH . 'popups/upload-vehicle', 'file', $popup_args ) );

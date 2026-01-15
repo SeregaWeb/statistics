@@ -369,7 +369,7 @@ $dispatchers_users = $TMSStatistics->get_dispatchers( $office_dispatcher, false,
                                                                 <select class="form-select" id="analyticsFlt" name="flt">
                                                                     <option value="">All Types</option>
                                                                     <option value="0">Regular</option>
-                                                                    <option value="1">FLT</option>
+                                                                    <option value="1">FTL</option>
                                                                 </select>
                                                             </div>
                                                             <?php endif; ?>

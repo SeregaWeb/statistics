@@ -8982,7 +8982,8 @@ var remoteSendForm = function remoteSendForm(urlAjax) {
     'js-update-driver-information': 'update_driver_information',
     'js-driver-finance-form': 'update_driver_finance',
     'js-driver-document-form': 'update_driver_document',
-    'js-trailer-form': 'update_trailer'
+    'js-trailer-form': 'update_trailer',
+    'js-vehicle-form': 'update_vehicle'
   };
   buttons.forEach(function (button) {
     button.addEventListener('click', function (e) {
@@ -9040,6 +9041,40 @@ var remoteSendForm = function remoteSendForm(urlAjax) {
               var existingValue = formData.get(htmlInput.name);
               if (isVisible || value !== '' || !existingValue || existingValue === '') {
                 formData.set(htmlInput.name, value);
+              }
+            }
+          }
+        });
+      }
+      if (formSelector === 'js-vehicle-form') {
+        var _existingData = new Map();
+        var _iterator2 = _createForOfIteratorHelper(formData.entries()),
+          _step2;
+        try {
+          for (_iterator2.s(); !(_step2 = _iterator2.n()).done;) {
+            var _step2$value = _slicedToArray(_step2.value, 2),
+              _key = _step2$value[0],
+              _value2 = _step2$value[1];
+            _existingData.set(_key, _value2);
+          }
+        } catch (err) {
+          _iterator2.e(err);
+        } finally {
+          _iterator2.f();
+        }
+        var _allInputs = form.querySelectorAll('input[type="number"], input[type="text"], input[type="checkbox"], input[type="date"], select');
+        _allInputs.forEach(function (input) {
+          var htmlInput = input;
+          if (htmlInput.name && !htmlInput.disabled) {
+            var parentBlock = htmlInput.closest('.js-fields-semi-box, .js-dock-high-section, .js-eld-section');
+            var isVisible = !parentBlock || parentBlock.style.display !== 'none';
+            if (htmlInput.type === 'checkbox') {
+              formData.set(htmlInput.name, htmlInput.checked ? '1' : '');
+            } else {
+              var _value = htmlInput.value || '';
+              var existingValue = formData.get(htmlInput.name);
+              if (isVisible || _value !== '' || !existingValue || existingValue === '') {
+                formData.set(htmlInput.name, _value);
               }
             }
           }
@@ -16041,6 +16076,492 @@ var trailersActions = function trailersActions(urlAjax) {
   uploadFileTrailer(urlAjax);
   removeOneTrailerFile(urlAjax);
   deleteTrailer(urlAjax);
+};
+
+/***/ }),
+
+/***/ "./src/js/components/trailer-form-init.ts":
+/*!************************************************!*\
+  !*** ./src/js/components/trailer-form-init.ts ***!
+  \************************************************/
+/***/ (function(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   initTrailerFormFields: function() { return /* binding */ initTrailerFormFields; }
+/* harmony export */ });
+var initTrailerFormFields = function initTrailerFormFields() {
+  var trailerTypeSelect = document.getElementById('trailer_type');
+  var dimensionsDefault = document.querySelector('.js-dimensions-default');
+  var dimensionsRGN = document.querySelector('.js-dimensions-rgn');
+  var dimensionsStepDeck = document.querySelector('.js-dimensions-step-deck');
+  var dimensionsFlatbedHotshot = document.querySelector('.js-dimensions-flatbed-hotshot');
+  var leaseSwitch = document.getElementById('lease');
+  var leaseAgreement = document.querySelector('.js-lease-agreement');
+  if (!trailerTypeSelect) return;
+  function toggleDimensions() {
+    var type = trailerTypeSelect.value;
+    if (dimensionsDefault) dimensionsDefault.style.display = 'none';
+    if (dimensionsRGN) dimensionsRGN.style.display = 'none';
+    if (dimensionsStepDeck) dimensionsStepDeck.style.display = 'none';
+    if (dimensionsFlatbedHotshot) dimensionsFlatbedHotshot.style.display = 'none';
+    if (type === 'rgn' && dimensionsRGN) {
+      dimensionsRGN.style.display = 'block';
+    } else if (type === 'step-deck' && dimensionsStepDeck) {
+      dimensionsStepDeck.style.display = 'block';
+    } else if ((type === 'flatbed' || type === 'hot-shot') && dimensionsFlatbedHotshot) {
+      dimensionsFlatbedHotshot.style.display = 'block';
+    } else if (type && dimensionsDefault) {
+      dimensionsDefault.style.display = 'block';
+    }
+  }
+  function toggleLeaseAgreement() {
+    if (leaseSwitch && leaseAgreement) {
+      if (leaseSwitch.checked) {
+        leaseAgreement.style.display = 'block';
+      } else {
+        leaseAgreement.style.display = 'none';
+      }
+    }
+  }
+  trailerTypeSelect.addEventListener('change', toggleDimensions);
+  toggleDimensions();
+  if (leaseSwitch) {
+    leaseSwitch.addEventListener('change', toggleLeaseAgreement);
+    toggleLeaseAgreement();
+  }
+};
+
+/***/ }),
+
+/***/ "./src/js/components/vehicle-core.ts":
+/*!*******************************************!*\
+  !*** ./src/js/components/vehicle-core.ts ***!
+  \*******************************************/
+/***/ (function(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   createVehicle: function() { return /* binding */ createVehicle; },
+/* harmony export */   removeOneVehicleFile: function() { return /* binding */ removeOneVehicleFile; },
+/* harmony export */   uploadFileVehicle: function() { return /* binding */ uploadFileVehicle; },
+/* harmony export */   vehiclesActions: function() { return /* binding */ vehiclesActions; }
+/* harmony export */ });
+/* harmony import */ var _info_messages__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./info-messages */ "./src/js/components/info-messages.ts");
+/* harmony import */ var _disabled_btn_in_form__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./disabled-btn-in-form */ "./src/js/components/disabled-btn-in-form.ts");
+/* harmony import */ var _parts_popup_window__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ../parts/popup-window */ "./src/js/parts/popup-window.js");
+
+
+
+var createVehicle = function createVehicle(urlAjax) {
+  var form = document.querySelector('.js-create-vehicle');
+  if (!form) return;
+  form.addEventListener('submit', function (e) {
+    var _a;
+    e.preventDefault();
+    var target = e.target;
+    if (target.dataset.submitting === 'true') {
+      return false;
+    }
+    if (!target.checkValidity()) {
+      target.reportValidity();
+      return false;
+    }
+    target.dataset.submitting = 'true';
+    (0,_disabled_btn_in_form__WEBPACK_IMPORTED_MODULE_1__.disabledBtnInForm)(target);
+    var formData = new FormData(target);
+    var allInputs = target.querySelectorAll('input[type="number"], input[type="text"], input[type="checkbox"], input[type="date"], select');
+    allInputs.forEach(function (input) {
+      var htmlInput = input;
+      if (htmlInput.name && !htmlInput.disabled) {
+        var parentBlock = htmlInput.closest('.js-fields-semi-box, .js-dock-high-section, .js-eld-section');
+        var isVisible = !parentBlock || parentBlock.style.display !== 'none';
+        if (htmlInput.type === 'checkbox') {
+          formData.set(htmlInput.name, htmlInput.checked ? '1' : '');
+        } else {
+          var value = htmlInput.value || '';
+          var existingValue = formData.get(htmlInput.name);
+          if (isVisible || value !== '' || !existingValue || existingValue === '') {
+            formData.set(htmlInput.name, value);
+          }
+        }
+      }
+    });
+    formData.append('action', 'add_vehicle');
+    formData.append('nonce', ((_a = form.querySelector('input[name="nonce"]')) === null || _a === void 0 ? void 0 : _a.value) || '');
+    var options = {
+      method: 'POST',
+      body: formData
+    };
+    fetch(urlAjax, options).then(function (res) {
+      return res.json();
+    }).then(function (requestStatus) {
+      if (requestStatus.success) {
+        var newUrl = new URL(window.location.href);
+        newUrl.searchParams.set('vehicle', requestStatus.data.vehicle_id);
+        window.location.href = newUrl.toString();
+        return true;
+      }
+      (0,_info_messages__WEBPACK_IMPORTED_MODULE_0__.printMessage)("".concat(requestStatus.data.message), 'danger', 8000);
+      target.dataset.submitting = 'false';
+      (0,_disabled_btn_in_form__WEBPACK_IMPORTED_MODULE_1__.disabledBtnInForm)(target, true);
+      return false;
+    }).catch(function (error) {
+      (0,_info_messages__WEBPACK_IMPORTED_MODULE_0__.printMessage)("'Request failed' ".concat(error), 'danger', 8000);
+      target.dataset.submitting = 'false';
+      (0,_disabled_btn_in_form__WEBPACK_IMPORTED_MODULE_1__.disabledBtnInForm)(target, true);
+      return false;
+    });
+  });
+};
+var uploadFileVehicle = function uploadFileVehicle(ajaxUrl) {
+  var forms = document.querySelectorAll('.js-upload-vehicle-helper');
+  forms.forEach(function (form) {
+    form.addEventListener('submit', function (e) {
+      e.preventDefault();
+      e.stopPropagation();
+      e.stopImmediatePropagation();
+      var target = e.target;
+      var submitBtn = target.querySelector('button[type="submit"], button.btn-success');
+      var originalText = null;
+      if (submitBtn) {
+        submitBtn.disabled = true;
+        originalText = submitBtn.textContent;
+        if (originalText) {
+          submitBtn.textContent = 'Uploading...';
+        }
+      }
+      var action = 'upload_vehicle_helper';
+      var popupInstance = new _parts_popup_window__WEBPACK_IMPORTED_MODULE_2__["default"]();
+      var formData = new FormData(target);
+      formData.append('action', action);
+      var options = {
+        method: 'POST',
+        body: formData
+      };
+      fetch(ajaxUrl, options).then(function (res) {
+        return res.json();
+      }).then(function (requestStatus) {
+        if (requestStatus.success) {
+          (0,_info_messages__WEBPACK_IMPORTED_MODULE_0__.printMessage)(requestStatus.data.message, 'success', 8000);
+          var mainPopup = e.target.closest('.js-upload-popup');
+          var searchBtn = null;
+          if (mainPopup) {
+            var id = mainPopup.id;
+            searchBtn = document.querySelector("button[data-href=\"#".concat(id, "\"]"));
+          }
+          popupInstance.forceCloseAllPopup();
+          if (searchBtn) {
+            var _form = e.target;
+            var fileInput = _form.querySelector('input[name="file_name"]');
+            var fieldName = fileInput === null || fileInput === void 0 ? void 0 : fileInput.value;
+            if (fieldName) {
+              updateFileUploadUI(fieldName, true);
+            }
+          }
+        } else {
+          (0,_info_messages__WEBPACK_IMPORTED_MODULE_0__.printMessage)("Error upload file: ".concat(requestStatus.data.message), 'danger', 8000);
+          if (submitBtn) {
+            submitBtn.disabled = false;
+            if (originalText) {
+              submitBtn.textContent = originalText;
+            }
+          }
+        }
+      }).catch(function (error) {
+        (0,_info_messages__WEBPACK_IMPORTED_MODULE_0__.printMessage)("Request failed: ".concat(error), 'danger', 8000);
+        console.error('Request failed:', error);
+        if (submitBtn) {
+          submitBtn.disabled = false;
+          if (originalText) {
+            submitBtn.textContent = originalText;
+          }
+        }
+      });
+    }, true);
+  });
+};
+var removeOneVehicleFile = function removeOneVehicleFile(ajaxUrl) {
+  var deleteForms = document.querySelectorAll('.js-remove-one-vehicle');
+  var deleteFormsNoFormBtn = document.querySelectorAll('.js-remove-one-no-form-btn');
+  deleteForms && deleteForms.forEach(function (item) {
+    item.addEventListener('submit', function (event) {
+      event.preventDefault();
+      var target = event.target;
+      (0,_disabled_btn_in_form__WEBPACK_IMPORTED_MODULE_1__.disabledBtnInForm)(target);
+      var formData = new FormData(target);
+      var action = 'remove_one_vehicle';
+      formData.append('action', action);
+      var options = {
+        method: 'POST',
+        body: formData
+      };
+      fetch(ajaxUrl, options).then(function (res) {
+        return res.json();
+      }).then(function (requestStatus) {
+        var _a, _b;
+        if (requestStatus.success) {
+          var message = ((_a = requestStatus.data) === null || _a === void 0 ? void 0 : _a.message) || 'File removed successfully';
+          (0,_info_messages__WEBPACK_IMPORTED_MODULE_0__.printMessage)(message, 'success', 8000);
+          var form = target;
+          var fieldInput = form.querySelector('input[name="image-fields"]');
+          var fieldName = fieldInput === null || fieldInput === void 0 ? void 0 : fieldInput.value;
+          setTimeout(function () {
+            window.location.reload();
+          }, 100);
+        } else {
+          (0,_disabled_btn_in_form__WEBPACK_IMPORTED_MODULE_1__.disabledBtnInForm)(target, true);
+          var errorMessage = ((_b = requestStatus.data) === null || _b === void 0 ? void 0 : _b.message) || requestStatus.message || 'Error removing file';
+          (0,_info_messages__WEBPACK_IMPORTED_MODULE_0__.printMessage)("Error: ".concat(errorMessage), 'danger', 8000);
+        }
+      }).catch(function (error) {
+        (0,_info_messages__WEBPACK_IMPORTED_MODULE_0__.printMessage)("Request failed: ".concat(error), 'danger', 8000);
+        (0,_disabled_btn_in_form__WEBPACK_IMPORTED_MODULE_1__.disabledBtnInForm)(target, true);
+        console.error('Request failed:', error);
+      });
+    });
+  });
+  deleteFormsNoFormBtn && deleteFormsNoFormBtn.forEach(function (button) {
+    button.addEventListener('click', function (event) {
+      event.preventDefault();
+      var parentDiv = button.closest('.js-remove-one-no-form');
+      if (!parentDiv) return;
+      var isVehicle = parentDiv.classList.contains('js-remove-one-vehicle') || parentDiv.querySelector('.js-remove-one-vehicle') !== null;
+      if (!isVehicle) return;
+      var btn = button;
+      if (btn.disabled) return;
+      btn.disabled = true;
+      var originalText = btn.textContent;
+      if (originalText) {
+        btn.textContent = 'Deleting...';
+      }
+      var formData = new FormData();
+      var hiddenInputs = parentDiv.querySelectorAll('input[type="hidden"]');
+      hiddenInputs.forEach(function (input) {
+        formData.append(input.name, input.value);
+      });
+      formData.append('action', 'remove_one_vehicle');
+      var options = {
+        method: 'POST',
+        body: formData
+      };
+      fetch(ajaxUrl, options).then(function (res) {
+        return res.json();
+      }).then(function (requestStatus) {
+        var _a, _b;
+        if (requestStatus.success) {
+          var message = ((_a = requestStatus.data) === null || _a === void 0 ? void 0 : _a.message) || 'File removed successfully';
+          (0,_info_messages__WEBPACK_IMPORTED_MODULE_0__.printMessage)(message, 'success', 8000);
+          setTimeout(function () {
+            window.location.reload();
+          }, 1000);
+        } else {
+          btn.disabled = false;
+          if (originalText) {
+            btn.textContent = originalText;
+          }
+          var errorMessage = ((_b = requestStatus.data) === null || _b === void 0 ? void 0 : _b.message) || requestStatus.message || 'Error removing file';
+          (0,_info_messages__WEBPACK_IMPORTED_MODULE_0__.printMessage)(errorMessage, 'danger', 8000);
+        }
+      }).catch(function (error) {
+        (0,_info_messages__WEBPACK_IMPORTED_MODULE_0__.printMessage)("Request failed: ".concat(error), 'danger', 8000);
+        btn.disabled = false;
+        if (originalText) {
+          btn.textContent = originalText;
+        }
+        console.error('Request failed:', error);
+      });
+    });
+  });
+};
+var handleCreateButton = function handleCreateButton(urlAjax) {
+  var createBtn = document.querySelector('.js-submit-create-vehicle');
+  if (!createBtn) return;
+  createBtn.addEventListener('click', function (e) {
+    e.preventDefault();
+    var btn = createBtn;
+    if (btn.disabled) {
+      return;
+    }
+    var form = document.querySelector('.js-create-vehicle');
+    if (!form) return;
+    if (form.dataset.submitting === 'true') {
+      return;
+    }
+    form.dispatchEvent(new Event('submit', {
+      bubbles: true,
+      cancelable: true
+    }));
+  });
+};
+var updateFileUploadUI = function updateFileUploadUI(fieldName, isUploaded) {
+  var fieldToPopupMap = {
+    'vehicle_registration': 'popup_upload_vehicle_registration'
+  };
+  var popupId = fieldToPopupMap[fieldName];
+  if (!popupId) return;
+  var uploadBtn = document.querySelector("button[data-href=\"#".concat(popupId, "\"]"));
+  if (isUploaded) {
+    if (uploadBtn) {
+      uploadBtn.style.display = 'none';
+      var container = uploadBtn.closest('.js-add-new-report') || null;
+      var label = container ? container.querySelector('.form-label') : null;
+      if (label && !label.querySelector('.uploaded-icon')) {
+        var icon = document.createElement('span');
+        icon.className = 'uploaded-icon d-flex';
+        icon.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" fill="green" width="18px" height="18px" viewBox="0 0 14 14"><path d="M0 7a7 7 0 1 1 14 0A7 7 0 0 1 0 7z M6.278 7.697L5.045 6.464a.296.296 0 0 0-.42-.002l-.613.614a.298.298 0 0 0 .002.42l1.91 1.909a.5.5 0 0 0 .703.005l.265-.265L9.997 6.04a.291.291 0 0 0-.009-.408l-.614-.614a.29.29 0 0 0-.408-.009L6.278 7.697z" fill-rule="evenodd"></path></svg>';
+        label.appendChild(icon);
+      }
+    }
+  } else {
+    if (uploadBtn) {
+      uploadBtn.style.display = '';
+      var _container = uploadBtn.closest('.js-add-new-report') || null;
+      var _label = _container ? _container.querySelector('.form-label') : null;
+      if (_label) {
+        var _icon = _label.querySelector('.uploaded-icon');
+        if (_icon) {
+          _icon.remove();
+        }
+      }
+    }
+  }
+};
+var deleteVehicle = function deleteVehicle(ajaxUrl) {
+  var deleteButtons = document.querySelectorAll('.js-delete-vehicle, .js-delete-vehicle-single');
+  deleteButtons.forEach(function (button) {
+    button.addEventListener('click', function (e) {
+      var _a;
+      e.preventDefault();
+      var btn = button;
+      var vehicleId = btn.getAttribute('data-vehicle-id');
+      if (!vehicleId) {
+        (0,_info_messages__WEBPACK_IMPORTED_MODULE_0__.printMessage)('Vehicle ID not found', 'danger', 5000);
+        return;
+      }
+      var confirmed = confirm('Are you sure you want to delete this vehicle?\n\n' + 'This action cannot be undone. All vehicle data and files will be permanently deleted.\n\n' + 'Click OK to confirm deletion.');
+      if (!confirmed) {
+        return;
+      }
+      btn.disabled = true;
+      var originalText = btn.textContent;
+      btn.textContent = 'Deleting...';
+      var formData = new FormData();
+      formData.append('action', 'delete_vehicle');
+      formData.append('vehicle_id', vehicleId);
+      formData.append('nonce', ((_a = document.querySelector('input[name="nonce"]')) === null || _a === void 0 ? void 0 : _a.value) || '');
+      var options = {
+        method: 'POST',
+        body: formData
+      };
+      fetch(ajaxUrl, options).then(function (res) {
+        return res.json();
+      }).then(function (requestStatus) {
+        var _a;
+        if (requestStatus.success) {
+          (0,_info_messages__WEBPACK_IMPORTED_MODULE_0__.printMessage)(requestStatus.data.message || 'Vehicle deleted successfully', 'success', 5000);
+          var isListPage = btn.classList.contains('js-delete-vehicle');
+          var isSinglePage = btn.classList.contains('js-delete-vehicle-single');
+          if (isListPage) {
+            var row = btn.closest('tr');
+            if (row) {
+              row.remove();
+            }
+            setTimeout(function () {
+              window.location.reload();
+            }, 1500);
+          } else if (isSinglePage) {
+            var vehiclesUrlInput = document.querySelector('#vehicles-list-url');
+            var vehiclesListUrl = vehiclesUrlInput === null || vehiclesUrlInput === void 0 ? void 0 : vehiclesUrlInput.value;
+            if (vehiclesListUrl) {
+              setTimeout(function () {
+                window.location.href = vehiclesListUrl;
+              }, 1500);
+            } else {
+              var vehiclesLink = document.querySelector('a[href*="vehicles"]:not([href*="vehicle-add"])');
+              if (vehiclesLink) {
+                setTimeout(function () {
+                  window.location.href = vehiclesLink.href;
+                }, 1500);
+              } else {
+                setTimeout(function () {
+                  window.location.reload();
+                }, 1500);
+              }
+            }
+          }
+        } else {
+          btn.disabled = false;
+          if (originalText) {
+            btn.textContent = originalText;
+          }
+          var errorMessage = ((_a = requestStatus.data) === null || _a === void 0 ? void 0 : _a.message) || 'Error deleting vehicle';
+          (0,_info_messages__WEBPACK_IMPORTED_MODULE_0__.printMessage)(errorMessage, 'danger', 8000);
+        }
+      }).catch(function (error) {
+        btn.disabled = false;
+        if (originalText) {
+          btn.textContent = originalText;
+        }
+        (0,_info_messages__WEBPACK_IMPORTED_MODULE_0__.printMessage)("Request failed: ".concat(error), 'danger', 8000);
+        console.error('Request failed:', error);
+      });
+    });
+  });
+};
+var vehiclesActions = function vehiclesActions(urlAjax) {
+  createVehicle(urlAjax);
+  handleCreateButton(urlAjax);
+  uploadFileVehicle(urlAjax);
+  removeOneVehicleFile(urlAjax);
+  deleteVehicle(urlAjax);
+};
+
+/***/ }),
+
+/***/ "./src/js/components/vehicle-form-init.ts":
+/*!************************************************!*\
+  !*** ./src/js/components/vehicle-form-init.ts ***!
+  \************************************************/
+/***/ (function(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   initVehicleFormFields: function() { return /* binding */ initVehicleFormFields; }
+/* harmony export */ });
+var initVehicleFormFields = function initVehicleFormFields() {
+  var vehicleTypeSelect = document.getElementById('vehicle_type');
+  var fieldsSemiBox = document.querySelector('.js-fields-semi-box');
+  var dockHighSection = document.querySelector('.js-dock-high-section');
+  var eldSection = document.querySelector('.js-eld-section');
+  var dockHighCheckbox = document.getElementById('dock_high');
+  if (!vehicleTypeSelect) return;
+  function toggleVehicleFields() {
+    var type = vehicleTypeSelect.value;
+    if (fieldsSemiBox) fieldsSemiBox.style.display = 'none';
+    if (dockHighSection) dockHighSection.style.display = 'none';
+    if (eldSection) eldSection.style.display = 'none';
+    if (type === 'semi-truck' || type === 'box-truck') {
+      if (fieldsSemiBox) fieldsSemiBox.style.display = 'block';
+      if (dockHighSection) dockHighSection.style.display = 'block';
+      if (eldSection) eldSection.style.display = 'block';
+      if (type === 'semi-truck' && dockHighCheckbox) {
+        dockHighCheckbox.checked = true;
+        dockHighCheckbox.disabled = true;
+      } else if (type === 'box-truck' && dockHighCheckbox) {
+        dockHighCheckbox.disabled = false;
+      }
+    } else {
+      if (dockHighCheckbox && dockHighCheckbox.checked) {
+        dockHighCheckbox.checked = false;
+      }
+    }
+  }
+  vehicleTypeSelect.addEventListener('change', toggleVehicleFields);
+  toggleVehicleFields();
 };
 
 /***/ }),
@@ -28823,34 +29344,40 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _components_document_create_money_check__WEBPACK_IMPORTED_MODULE_28__ = __webpack_require__(/*! ./components/document-create-money-check */ "./src/js/components/document-create-money-check.ts");
 /* harmony import */ var _components_driver_core__WEBPACK_IMPORTED_MODULE_29__ = __webpack_require__(/*! ./components/driver-core */ "./src/js/components/driver-core.ts");
 /* harmony import */ var _components_trailer_core__WEBPACK_IMPORTED_MODULE_30__ = __webpack_require__(/*! ./components/trailer-core */ "./src/js/components/trailer-core.ts");
-/* harmony import */ var _components_contacts_contacts_init__WEBPACK_IMPORTED_MODULE_31__ = __webpack_require__(/*! ./components/contacts/contacts-init */ "./src/js/components/contacts/contacts-init.ts");
-/* harmony import */ var _components_move_dispatcher__WEBPACK_IMPORTED_MODULE_32__ = __webpack_require__(/*! ./components/move-dispatcher */ "./src/js/components/move-dispatcher.ts");
-/* harmony import */ var _components_search_driver_search_driver_core__WEBPACK_IMPORTED_MODULE_33__ = __webpack_require__(/*! ./components/search-driver/search-driver-core */ "./src/js/components/search-driver/search-driver-core.ts");
-/* harmony import */ var _components_driver_hold__WEBPACK_IMPORTED_MODULE_34__ = __webpack_require__(/*! ./components/driver-hold */ "./src/js/components/driver-hold.ts");
-/* harmony import */ var _components_common_hold_section__WEBPACK_IMPORTED_MODULE_35__ = __webpack_require__(/*! ./components/common/hold-section */ "./src/js/components/common/hold-section.ts");
-/* harmony import */ var _components_capabilities_filter__WEBPACK_IMPORTED_MODULE_36__ = __webpack_require__(/*! ./components/capabilities-filter */ "./src/js/components/capabilities-filter.ts");
-/* harmony import */ var _components_quick_status_update__WEBPACK_IMPORTED_MODULE_37__ = __webpack_require__(/*! ./components/quick-status-update */ "./src/js/components/quick-status-update.ts");
-/* harmony import */ var _components_eta_popup__WEBPACK_IMPORTED_MODULE_38__ = __webpack_require__(/*! ./components/eta-popup */ "./src/js/components/eta-popup.ts");
-/* harmony import */ var _components_eta_timer__WEBPACK_IMPORTED_MODULE_39__ = __webpack_require__(/*! ./components/eta-timer */ "./src/js/components/eta-timer.ts");
-/* harmony import */ var _components_rating_reminder_modal__WEBPACK_IMPORTED_MODULE_40__ = __webpack_require__(/*! ./components/rating-reminder-modal */ "./src/js/components/rating-reminder-modal.ts");
-/* harmony import */ var _components_drivers_rate__WEBPACK_IMPORTED_MODULE_41__ = __webpack_require__(/*! ./components/drivers-rate */ "./src/js/components/drivers-rate.ts");
-/* harmony import */ var _components_admin_rating_manager__WEBPACK_IMPORTED_MODULE_42__ = __webpack_require__(/*! ./components/admin-rating-manager */ "./src/js/components/admin-rating-manager.ts");
-/* harmony import */ var _components_charts_drivers_statistics_charts__WEBPACK_IMPORTED_MODULE_43__ = __webpack_require__(/*! ./components/charts/drivers-statistics-charts */ "./src/js/components/charts/drivers-statistics-charts.ts");
-/* harmony import */ var _components_charts_finance_statistics_charts__WEBPACK_IMPORTED_MODULE_44__ = __webpack_require__(/*! ./components/charts/finance-statistics-charts */ "./src/js/components/charts/finance-statistics-charts.ts");
-/* harmony import */ var _components_charts_source_statistics_charts__WEBPACK_IMPORTED_MODULE_45__ = __webpack_require__(/*! ./components/charts/source-statistics-charts */ "./src/js/components/charts/source-statistics-charts.ts");
-/* harmony import */ var _components_charts_home_location_map__WEBPACK_IMPORTED_MODULE_46__ = __webpack_require__(/*! ./components/charts/home-location-map */ "./src/js/components/charts/home-location-map.ts");
-/* harmony import */ var _components_drivers_statistics_tabs__WEBPACK_IMPORTED_MODULE_47__ = __webpack_require__(/*! ./components/drivers-statistics-tabs */ "./src/js/components/drivers-statistics-tabs.ts");
-/* harmony import */ var _components_quick_copy__WEBPACK_IMPORTED_MODULE_48__ = __webpack_require__(/*! ./components/quick-copy */ "./src/js/components/quick-copy.ts");
-/* harmony import */ var _components_driver_popups__WEBPACK_IMPORTED_MODULE_49__ = __webpack_require__(/*! ./components/driver-popups */ "./src/js/components/driver-popups.ts");
-/* harmony import */ var _components_driver_popup_forms__WEBPACK_IMPORTED_MODULE_50__ = __webpack_require__(/*! ./components/driver-popup-forms */ "./src/js/components/driver-popup-forms.ts");
-/* harmony import */ var _components_broker_popups__WEBPACK_IMPORTED_MODULE_51__ = __webpack_require__(/*! ./components/broker-popups */ "./src/js/components/broker-popups.ts");
-/* harmony import */ var _components_broker_popup_forms__WEBPACK_IMPORTED_MODULE_52__ = __webpack_require__(/*! ./components/broker-popup-forms */ "./src/js/components/broker-popup-forms.ts");
-/* harmony import */ var _components_driver_autocomplete__WEBPACK_IMPORTED_MODULE_53__ = __webpack_require__(/*! ./components/driver-autocomplete */ "./src/js/components/driver-autocomplete.ts");
-/* harmony import */ var _components_common_audio_helper__WEBPACK_IMPORTED_MODULE_54__ = __webpack_require__(/*! ./components/common/audio-helper */ "./src/js/components/common/audio-helper.ts");
-/* harmony import */ var _components_timer_control__WEBPACK_IMPORTED_MODULE_55__ = __webpack_require__(/*! ./components/timer-control */ "./src/js/components/timer-control.ts");
-/* harmony import */ var _components_timer_analytics__WEBPACK_IMPORTED_MODULE_56__ = __webpack_require__(/*! ./components/timer-analytics */ "./src/js/components/timer-analytics.ts");
-/* harmony import */ var _components_dark_mode_toggle__WEBPACK_IMPORTED_MODULE_57__ = __webpack_require__(/*! ./components/dark-mode-toggle */ "./src/js/components/dark-mode-toggle.ts");
-/* harmony import */ var _components_drivers_map__WEBPACK_IMPORTED_MODULE_58__ = __webpack_require__(/*! ./components/drivers-map */ "./src/js/components/drivers-map.ts");
+/* harmony import */ var _components_vehicle_core__WEBPACK_IMPORTED_MODULE_31__ = __webpack_require__(/*! ./components/vehicle-core */ "./src/js/components/vehicle-core.ts");
+/* harmony import */ var _components_trailer_form_init__WEBPACK_IMPORTED_MODULE_32__ = __webpack_require__(/*! ./components/trailer-form-init */ "./src/js/components/trailer-form-init.ts");
+/* harmony import */ var _components_vehicle_form_init__WEBPACK_IMPORTED_MODULE_33__ = __webpack_require__(/*! ./components/vehicle-form-init */ "./src/js/components/vehicle-form-init.ts");
+/* harmony import */ var _components_contacts_contacts_init__WEBPACK_IMPORTED_MODULE_34__ = __webpack_require__(/*! ./components/contacts/contacts-init */ "./src/js/components/contacts/contacts-init.ts");
+/* harmony import */ var _components_move_dispatcher__WEBPACK_IMPORTED_MODULE_35__ = __webpack_require__(/*! ./components/move-dispatcher */ "./src/js/components/move-dispatcher.ts");
+/* harmony import */ var _components_search_driver_search_driver_core__WEBPACK_IMPORTED_MODULE_36__ = __webpack_require__(/*! ./components/search-driver/search-driver-core */ "./src/js/components/search-driver/search-driver-core.ts");
+/* harmony import */ var _components_driver_hold__WEBPACK_IMPORTED_MODULE_37__ = __webpack_require__(/*! ./components/driver-hold */ "./src/js/components/driver-hold.ts");
+/* harmony import */ var _components_common_hold_section__WEBPACK_IMPORTED_MODULE_38__ = __webpack_require__(/*! ./components/common/hold-section */ "./src/js/components/common/hold-section.ts");
+/* harmony import */ var _components_capabilities_filter__WEBPACK_IMPORTED_MODULE_39__ = __webpack_require__(/*! ./components/capabilities-filter */ "./src/js/components/capabilities-filter.ts");
+/* harmony import */ var _components_quick_status_update__WEBPACK_IMPORTED_MODULE_40__ = __webpack_require__(/*! ./components/quick-status-update */ "./src/js/components/quick-status-update.ts");
+/* harmony import */ var _components_eta_popup__WEBPACK_IMPORTED_MODULE_41__ = __webpack_require__(/*! ./components/eta-popup */ "./src/js/components/eta-popup.ts");
+/* harmony import */ var _components_eta_timer__WEBPACK_IMPORTED_MODULE_42__ = __webpack_require__(/*! ./components/eta-timer */ "./src/js/components/eta-timer.ts");
+/* harmony import */ var _components_rating_reminder_modal__WEBPACK_IMPORTED_MODULE_43__ = __webpack_require__(/*! ./components/rating-reminder-modal */ "./src/js/components/rating-reminder-modal.ts");
+/* harmony import */ var _components_drivers_rate__WEBPACK_IMPORTED_MODULE_44__ = __webpack_require__(/*! ./components/drivers-rate */ "./src/js/components/drivers-rate.ts");
+/* harmony import */ var _components_admin_rating_manager__WEBPACK_IMPORTED_MODULE_45__ = __webpack_require__(/*! ./components/admin-rating-manager */ "./src/js/components/admin-rating-manager.ts");
+/* harmony import */ var _components_charts_drivers_statistics_charts__WEBPACK_IMPORTED_MODULE_46__ = __webpack_require__(/*! ./components/charts/drivers-statistics-charts */ "./src/js/components/charts/drivers-statistics-charts.ts");
+/* harmony import */ var _components_charts_finance_statistics_charts__WEBPACK_IMPORTED_MODULE_47__ = __webpack_require__(/*! ./components/charts/finance-statistics-charts */ "./src/js/components/charts/finance-statistics-charts.ts");
+/* harmony import */ var _components_charts_source_statistics_charts__WEBPACK_IMPORTED_MODULE_48__ = __webpack_require__(/*! ./components/charts/source-statistics-charts */ "./src/js/components/charts/source-statistics-charts.ts");
+/* harmony import */ var _components_charts_home_location_map__WEBPACK_IMPORTED_MODULE_49__ = __webpack_require__(/*! ./components/charts/home-location-map */ "./src/js/components/charts/home-location-map.ts");
+/* harmony import */ var _components_drivers_statistics_tabs__WEBPACK_IMPORTED_MODULE_50__ = __webpack_require__(/*! ./components/drivers-statistics-tabs */ "./src/js/components/drivers-statistics-tabs.ts");
+/* harmony import */ var _components_quick_copy__WEBPACK_IMPORTED_MODULE_51__ = __webpack_require__(/*! ./components/quick-copy */ "./src/js/components/quick-copy.ts");
+/* harmony import */ var _components_driver_popups__WEBPACK_IMPORTED_MODULE_52__ = __webpack_require__(/*! ./components/driver-popups */ "./src/js/components/driver-popups.ts");
+/* harmony import */ var _components_driver_popup_forms__WEBPACK_IMPORTED_MODULE_53__ = __webpack_require__(/*! ./components/driver-popup-forms */ "./src/js/components/driver-popup-forms.ts");
+/* harmony import */ var _components_broker_popups__WEBPACK_IMPORTED_MODULE_54__ = __webpack_require__(/*! ./components/broker-popups */ "./src/js/components/broker-popups.ts");
+/* harmony import */ var _components_broker_popup_forms__WEBPACK_IMPORTED_MODULE_55__ = __webpack_require__(/*! ./components/broker-popup-forms */ "./src/js/components/broker-popup-forms.ts");
+/* harmony import */ var _components_driver_autocomplete__WEBPACK_IMPORTED_MODULE_56__ = __webpack_require__(/*! ./components/driver-autocomplete */ "./src/js/components/driver-autocomplete.ts");
+/* harmony import */ var _components_common_audio_helper__WEBPACK_IMPORTED_MODULE_57__ = __webpack_require__(/*! ./components/common/audio-helper */ "./src/js/components/common/audio-helper.ts");
+/* harmony import */ var _components_timer_control__WEBPACK_IMPORTED_MODULE_58__ = __webpack_require__(/*! ./components/timer-control */ "./src/js/components/timer-control.ts");
+/* harmony import */ var _components_timer_analytics__WEBPACK_IMPORTED_MODULE_59__ = __webpack_require__(/*! ./components/timer-analytics */ "./src/js/components/timer-analytics.ts");
+/* harmony import */ var _components_dark_mode_toggle__WEBPACK_IMPORTED_MODULE_60__ = __webpack_require__(/*! ./components/dark-mode-toggle */ "./src/js/components/dark-mode-toggle.ts");
+/* harmony import */ var _components_drivers_map__WEBPACK_IMPORTED_MODULE_61__ = __webpack_require__(/*! ./components/drivers-map */ "./src/js/components/drivers-map.ts");
+
+
+
 
 
 
@@ -28917,7 +29444,7 @@ function ready() {
   var linkEndurance = var_from_php.link_web_service_endurance;
   var linkMartlet = var_from_php.link_web_service_martlet;
   var hereApi = var_from_php.here_api_key;
-  (0,_components_search_driver_search_driver_core__WEBPACK_IMPORTED_MODULE_33__.initialSearchDriver)(var_from_php);
+  (0,_components_search_driver_search_driver_core__WEBPACK_IMPORTED_MODULE_36__.initialSearchDriver)(var_from_php);
   var useServices = {
     Odysseia: linkOdysseia,
     Endurance: linkEndurance,
@@ -28925,12 +29452,12 @@ function ready() {
   };
   var popupInstance = new _parts_popup_window__WEBPACK_IMPORTED_MODULE_2__["default"]();
   popupInstance.init();
-  _components_common_audio_helper__WEBPACK_IMPORTED_MODULE_54__["default"].getInstance();
-  var driverPopupForms = new _components_driver_popup_forms__WEBPACK_IMPORTED_MODULE_50__["default"](urlAjax);
-  var brokerPopupForms = new _components_broker_popup_forms__WEBPACK_IMPORTED_MODULE_52__["default"](urlAjax);
+  _components_common_audio_helper__WEBPACK_IMPORTED_MODULE_57__["default"].getInstance();
+  var driverPopupForms = new _components_driver_popup_forms__WEBPACK_IMPORTED_MODULE_53__["default"](urlAjax);
+  var brokerPopupForms = new _components_broker_popup_forms__WEBPACK_IMPORTED_MODULE_55__["default"](urlAjax);
   var singlePageBrokerUrl = (var_from_php === null || var_from_php === void 0 ? void 0 : var_from_php.single_page_broker) || '';
-  var brokerPopups = new _components_broker_popups__WEBPACK_IMPORTED_MODULE_51__["default"](urlAjax, singlePageBrokerUrl);
-  new _components_driver_autocomplete__WEBPACK_IMPORTED_MODULE_53__["default"](urlAjax, {
+  var brokerPopups = new _components_broker_popups__WEBPACK_IMPORTED_MODULE_54__["default"](urlAjax, singlePageBrokerUrl);
+  new _components_driver_autocomplete__WEBPACK_IMPORTED_MODULE_56__["default"](urlAjax, {
     unitInput: '.js-unit-number-input',
     dropdown: '.js-driver-dropdown',
     attachedDriverInput: 'input[name="attached_driver"]',
@@ -28939,7 +29466,7 @@ function ready() {
     nonceInput: '#driver-search-nonce',
     driverValueInput: '.js-driver-value'
   });
-  new _components_driver_autocomplete__WEBPACK_IMPORTED_MODULE_53__["default"](urlAjax, {
+  new _components_driver_autocomplete__WEBPACK_IMPORTED_MODULE_56__["default"](urlAjax, {
     unitInput: '.js-second-unit-number-input',
     dropdown: '.js-second-driver-dropdown',
     attachedDriverInput: 'input[name="attached_second_driver"]',
@@ -28947,7 +29474,7 @@ function ready() {
     unitNumberNameInput: 'input[name="second_unit_number_name"]',
     nonceInput: '#second-driver-search-nonce'
   });
-  new _components_driver_autocomplete__WEBPACK_IMPORTED_MODULE_53__["default"](urlAjax, {
+  new _components_driver_autocomplete__WEBPACK_IMPORTED_MODULE_56__["default"](urlAjax, {
     unitInput: '.js-third-unit-number-input',
     dropdown: '.js-third-driver-dropdown',
     attachedDriverInput: 'input[name="attached_third_driver"]',
@@ -28963,7 +29490,7 @@ function ready() {
     if (!wasVisible) {
       refererBlock.style.display = 'block';
     }
-    refererAutocomplete = new _components_driver_autocomplete__WEBPACK_IMPORTED_MODULE_53__["default"](urlAjax, {
+    refererAutocomplete = new _components_driver_autocomplete__WEBPACK_IMPORTED_MODULE_56__["default"](urlAjax, {
       unitInput: '.js-referer-unit-number-input',
       dropdown: '.js-referer-driver-dropdown',
       attachedDriverInput: '#referer_by',
@@ -29004,9 +29531,9 @@ function ready() {
       driverPopupForms.loadDriverStatistics(parseInt(driverIdInput.value));
     }
   }
-  new _components_timer_control__WEBPACK_IMPORTED_MODULE_55__.TimerControl(urlAjax);
-  new _components_timer_analytics__WEBPACK_IMPORTED_MODULE_56__.TimerAnalytics(urlAjax);
-  new _components_dark_mode_toggle__WEBPACK_IMPORTED_MODULE_57__["default"](urlAjax);
+  new _components_timer_control__WEBPACK_IMPORTED_MODULE_58__.TimerControl(urlAjax);
+  new _components_timer_analytics__WEBPACK_IMPORTED_MODULE_59__.TimerAnalytics(urlAjax);
+  new _components_dark_mode_toggle__WEBPACK_IMPORTED_MODULE_60__["default"](urlAjax);
   (0,_components_create_report__WEBPACK_IMPORTED_MODULE_4__.actionCreateReportInit)(urlAjax);
   (0,_components_create_report__WEBPACK_IMPORTED_MODULE_4__.createDraftPosts)(urlAjax);
   (0,_components_create_report__WEBPACK_IMPORTED_MODULE_4__.updateFilesReportInit)(urlAjax);
@@ -29038,24 +29565,27 @@ function ready() {
   (0,_components_driver_Info__WEBPACK_IMPORTED_MODULE_11__.initGetInfoDriver)(urlAjax, useServices);
   (0,_components_driver_core__WEBPACK_IMPORTED_MODULE_29__.driversActions)(urlAjax);
   (0,_components_trailer_core__WEBPACK_IMPORTED_MODULE_30__.trailersActions)(urlAjax);
+  (0,_components_trailer_form_init__WEBPACK_IMPORTED_MODULE_32__.initTrailerFormFields)();
+  (0,_components_vehicle_core__WEBPACK_IMPORTED_MODULE_31__.vehiclesActions)(urlAjax);
+  (0,_components_vehicle_form_init__WEBPACK_IMPORTED_MODULE_33__.initVehicleFormFields)();
   (0,_components_filter_clean__WEBPACK_IMPORTED_MODULE_16__.cleanUrlByFilterDriver)();
   (0,_components_filter_clean__WEBPACK_IMPORTED_MODULE_16__.cleanUrlByFilterDriverSearch)();
   (0,_components_filter_clean__WEBPACK_IMPORTED_MODULE_16__.cleanUrlByFilterDriverDocuments)();
   (0,_components_filter_clean__WEBPACK_IMPORTED_MODULE_16__.cleanUrlByFilterDriverInsurance)();
   (0,_components_driver_notes_edit__WEBPACK_IMPORTED_MODULE_17__.initDriverNotesEdit)(urlAjax);
-  (0,_components_driver_hold__WEBPACK_IMPORTED_MODULE_34__.driverHoldInit)(urlAjax);
+  (0,_components_driver_hold__WEBPACK_IMPORTED_MODULE_37__.driverHoldInit)(urlAjax);
   (0,_components_driver_core__WEBPACK_IMPORTED_MODULE_29__.driverCoreInit)(urlAjax);
-  (0,_components_capabilities_filter__WEBPACK_IMPORTED_MODULE_36__.initCapabilitiesFilter)();
-  (0,_components_quick_status_update__WEBPACK_IMPORTED_MODULE_37__.initQuickStatusUpdate)(urlAjax);
-  (0,_components_eta_popup__WEBPACK_IMPORTED_MODULE_38__.initEtaPopups)();
-  (0,_components_eta_timer__WEBPACK_IMPORTED_MODULE_39__.initEtaTimers)();
-  (0,_components_rating_reminder_modal__WEBPACK_IMPORTED_MODULE_40__.initRatingReminderModal)();
-  (0,_components_drivers_rate__WEBPACK_IMPORTED_MODULE_41__.initDriversRate)();
-  (0,_components_admin_rating_manager__WEBPACK_IMPORTED_MODULE_42__.initAdminRatingManager)();
-  (0,_components_charts_drivers_statistics_charts__WEBPACK_IMPORTED_MODULE_43__.initDriversStatisticsCharts)();
-  (0,_components_charts_finance_statistics_charts__WEBPACK_IMPORTED_MODULE_44__.initFinanceStatisticsCharts)();
-  (0,_components_charts_source_statistics_charts__WEBPACK_IMPORTED_MODULE_45__.initSourceStatisticsCharts)();
-  (0,_components_drivers_statistics_tabs__WEBPACK_IMPORTED_MODULE_47__.initDriversStatisticsTabs)();
+  (0,_components_capabilities_filter__WEBPACK_IMPORTED_MODULE_39__.initCapabilitiesFilter)();
+  (0,_components_quick_status_update__WEBPACK_IMPORTED_MODULE_40__.initQuickStatusUpdate)(urlAjax);
+  (0,_components_eta_popup__WEBPACK_IMPORTED_MODULE_41__.initEtaPopups)();
+  (0,_components_eta_timer__WEBPACK_IMPORTED_MODULE_42__.initEtaTimers)();
+  (0,_components_rating_reminder_modal__WEBPACK_IMPORTED_MODULE_43__.initRatingReminderModal)();
+  (0,_components_drivers_rate__WEBPACK_IMPORTED_MODULE_44__.initDriversRate)();
+  (0,_components_admin_rating_manager__WEBPACK_IMPORTED_MODULE_45__.initAdminRatingManager)();
+  (0,_components_charts_drivers_statistics_charts__WEBPACK_IMPORTED_MODULE_46__.initDriversStatisticsCharts)();
+  (0,_components_charts_finance_statistics_charts__WEBPACK_IMPORTED_MODULE_47__.initFinanceStatisticsCharts)();
+  (0,_components_charts_source_statistics_charts__WEBPACK_IMPORTED_MODULE_48__.initSourceStatisticsCharts)();
+  (0,_components_drivers_statistics_tabs__WEBPACK_IMPORTED_MODULE_50__.initDriversStatisticsTabs)();
   var homeLocationMapElement = document.getElementById('usaStatesMap');
   if (homeLocationMapElement) {
     var stateMapData = homeLocationMapElement.dataset.stateMapData;
@@ -29064,14 +29594,14 @@ function ready() {
     var geojsonSource = homeLocationMapElement.dataset.geojsonSource;
     if (stateMapData && maxCount && stateMarkersData && geojsonSource) {
       try {
-        (0,_components_charts_home_location_map__WEBPACK_IMPORTED_MODULE_46__.initHomeLocationMap)(JSON.parse(stateMapData), parseInt(maxCount, 10), JSON.parse(stateMarkersData), geojsonSource);
+        (0,_components_charts_home_location_map__WEBPACK_IMPORTED_MODULE_49__.initHomeLocationMap)(JSON.parse(stateMapData), parseInt(maxCount, 10), JSON.parse(stateMarkersData), geojsonSource);
       } catch (e) {
         console.error('Error initializing home location map:', e);
       }
     }
   }
   if (hereApi) {
-    new _components_drivers_map__WEBPACK_IMPORTED_MODULE_58__["default"](urlAjax, hereApi);
+    new _components_drivers_map__WEBPACK_IMPORTED_MODULE_61__["default"](urlAjax, hereApi);
   }
   (0,_components_create_report__WEBPACK_IMPORTED_MODULE_4__.additionalContactsInit)();
   (0,_components_create_report__WEBPACK_IMPORTED_MODULE_4__.addShipperPointInit)();
@@ -29103,13 +29633,13 @@ function ready() {
   (0,_components_tel_mask__WEBPACK_IMPORTED_MODULE_22__.dateMaskInit)();
   (0,_components_input_helpers__WEBPACK_IMPORTED_MODULE_3__.dragAnDropInit)();
   (0,_components_input_helpers__WEBPACK_IMPORTED_MODULE_3__.unrequiderInit)();
-  (0,_components_common_hold_section__WEBPACK_IMPORTED_MODULE_35__.holdSectionInit)();
+  (0,_components_common_hold_section__WEBPACK_IMPORTED_MODULE_38__.holdSectionInit)();
   (0,_components_document_create_money_check__WEBPACK_IMPORTED_MODULE_28__.createDocumentInvoice)();
   (0,_components_document_create_money_check__WEBPACK_IMPORTED_MODULE_28__.createDocumentInvoiceActions)(urlAjax);
   (0,_components_document_create_money_check__WEBPACK_IMPORTED_MODULE_28__.createDocumentBolActions)(urlAjax);
   (0,_components_document_create_money_check__WEBPACK_IMPORTED_MODULE_28__.createDocumentSettlementSummaryActions)(urlAjax);
-  (0,_components_move_dispatcher__WEBPACK_IMPORTED_MODULE_32__.moveDispatcher)(urlAjax);
-  (0,_components_contacts_contacts_init__WEBPACK_IMPORTED_MODULE_31__.initContactsHandler)(urlAjax);
+  (0,_components_move_dispatcher__WEBPACK_IMPORTED_MODULE_35__.moveDispatcher)(urlAjax);
+  (0,_components_contacts_contacts_init__WEBPACK_IMPORTED_MODULE_34__.initContactsHandler)(urlAjax);
   (0,_components_create_report__WEBPACK_IMPORTED_MODULE_4__.pinnedMessageInit)(urlAjax);
   (0,_components_create_report__WEBPACK_IMPORTED_MODULE_4__.addDeletePinnedHandler)(urlAjax);
   (0,_components_input_helpers__WEBPACK_IMPORTED_MODULE_3__.applyZipCodeMask)('.js-zip-code-mask');

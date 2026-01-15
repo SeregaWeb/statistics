@@ -44,7 +44,10 @@ module.exports = (projectOptions) => {
             // Compiles Sass to CSS
             loader: 'sass-loader',
             options: {
-                sassOptions: { importer: magicImporter() }, // add magic import functionalities to sass
+                sassOptions: {
+                    importer: magicImporter(), // add magic import functionalities to sass
+                    silenceDeprecations: ['mixed-decls'], // suppress deprecation warnings from Bootstrap
+                },
             },
         });
     }

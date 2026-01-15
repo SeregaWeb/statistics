@@ -10,6 +10,9 @@
 
 module.exports = {
     plugins: ['stylelint-scss'],
+    ignoreFiles: [
+        '**/css/libs/**/*.css',
+    ],
     rules: {
         //"max-line-length":         180,
         'no-empty-source': null,

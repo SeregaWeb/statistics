@@ -1,6 +1,9 @@
 <?php
 global $global_options, $report_data;
 
+$flt = get_field_value( $args, 'flt' );
+
+
 $add_new_load = get_field_value( $global_options, 'add_new_load' ) ?? '';
 $link_broker  = get_field_value( $global_options, 'single_page_broker' ) ?? '';
 
@@ -224,6 +227,7 @@ if ( ! empty( $results ) ) :?>
 						echo esc_html( get_template_part( TEMPLATE_PATH . 'tables/control', 'dropdown', array(
 							'id'       => $row[ 'id' ],
 							'is_draft' => $is_draft,
+							'flt'      => $flt,
 						) ) );
 					
 					

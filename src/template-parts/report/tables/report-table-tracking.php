@@ -29,6 +29,7 @@ $current_pages = get_field_value( $args, 'current_pages' );
 $is_draft      = get_field_value( $args, 'is_draft' );
 $page_type     = get_field_value( $args, 'page_type' );
 $archive       = get_field_value( $args, 'archive' );
+$high_priority_count = get_field_value( $args, 'high_priority_count' );
 
 $current_user_id = get_current_user_id();
 
@@ -97,7 +98,10 @@ if ( ! empty( $results ) ) :
         </tr>
         </thead>
         <tbody>
-		<?php foreach ( $results as $row ) :
+		<?php 
+		$row_index = 0;
+		foreach ( $results as $row ) :
+			$row_index++;
 			$meta = get_field_value( $row, 'meta_data' );
 			$main = get_field_value( $row, 'main' );
 			

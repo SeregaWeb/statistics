@@ -77,6 +77,9 @@ import {
 } from './components/document-create-money-check';
 import { driversActions, driverCoreInit } from './components/driver-core';
 import { trailersActions } from './components/trailer-core';
+import { vehiclesActions } from './components/vehicle-core';
+import { initTrailerFormFields } from './components/trailer-form-init';
+import { initVehicleFormFields } from './components/vehicle-form-init';
 import { initContactsHandler } from './components/contacts/contacts-init';
 import { moveDispatcher } from './components/move-dispatcher';
 import { initialSearchDriver } from './components/search-driver/search-driver-core';
@@ -286,11 +289,23 @@ function ready() {
 
     // DRIVER START
     driversActions(urlAjax);
+
+    // TRAILER START
     trailersActions(urlAjax);
+    initTrailerFormFields();
+
+    // VEHICLE START
+    vehiclesActions(urlAjax);
+    initVehicleFormFields();
+
+    // CLEAN URL START
     cleanUrlByFilterDriver();
     cleanUrlByFilterDriverSearch();
     cleanUrlByFilterDriverDocuments();
     cleanUrlByFilterDriverInsurance();
+    // CLEAN URL END
+
+    // DRIVER NOTES START
     initDriverNotesEdit(urlAjax);
     driverHoldInit(urlAjax);
     driverCoreInit(urlAjax);

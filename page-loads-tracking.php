@@ -58,12 +58,48 @@ if ( ! $office_dispatcher || $sellect_all_offices ) {
 }
 
 $args                 = $reports->set_filter_params( $args, $office_dispatcher );
+
+// Get current page number
+$current_page = isset( $_GET[ 'paged' ] ) ? absint( $_GET[ 'paged' ] ) : 1;
+
+// Always get all high priority loads to exclude them from main query
+// Use the same args but without exclude_ids to get all high priority loads
+$high_priority_args = $args;
+unset( $high_priority_args[ 'exclude_ids' ] );
+$all_high_priority = $reports->get_high_priority_loads( $high_priority_args );
+$high_priority_ids = wp_list_pluck( $all_high_priority, 'id' );
+
+// Exclude high priority loads from main query (always, to avoid duplicates)
+if ( ! empty( $high_priority_ids ) ) {
+	$args[ 'exclude_ids' ] = $high_priority_ids;
+}
+
+// Get high priority loads for display (only on first page)
+$high_priority_loads = array();
+if ( $current_page === 1 && ! empty( $all_high_priority ) ) {
+	$high_priority_loads = $all_high_priority;
+}
+
 $items                = $reports->get_table_items_tracking( $args );
 $post_tp              = 'tracking';
 $items[ 'page_type' ] = $post_tp;
 $items['hide_time_controls'] = true;
 if ( $is_flt ) {
 	$items[ 'flt' ] = true;
+}
+
+// Merge high priority loads at the beginning (only on first page)
+if ( $current_page === 1 && ! empty( $high_priority_loads ) ) {
+	$items[ 'results' ] = array_merge( $high_priority_loads, $items[ 'results' ] );
+	// Store count of high priority loads for template to add separator
+	$items[ 'high_priority_count' ] = count( $high_priority_loads );
+	// Update total count to include high priority loads
+	$items[ 'total_posts' ] = $items[ 'total_posts' ] + count( $high_priority_loads );
+	// Recalculate total pages
+	$per_page = $reports->per_page_loads;
+	$items[ 'total_pages' ] = ceil( $items[ 'total_posts' ] / $per_page );
+} else {
+	$items[ 'high_priority_count' ] = 0;
 }
 
 // Initialize smart analytics for current user

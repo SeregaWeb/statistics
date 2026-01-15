@@ -497,6 +497,22 @@
             "return_format": "url"
         },
         {
+            "key": "field_696636b1dd642",
+            "label": "Add new vehicle",
+            "name": "add_new_vehicle",
+            "aria-label": "",
+            "type": "link",
+            "instructions": "this link need for vehicle edit",
+            "required": 1,
+            "conditional_logic": 0,
+            "wrapper": {
+                "width": "",
+                "class": "",
+                "id": ""
+            },
+            "return_format": "url"
+        },
+        {
             "key": "field_66f016f0ad535",
             "label": "Link web service Odysseia",
             "name": "link_web_service_odysseia",
@@ -1621,5 +1637,5 @@
     "active": true,
     "description": "",
     "show_in_rest": 0,
-    "modified": 1764687589
+    "modified": 1768306406
 }

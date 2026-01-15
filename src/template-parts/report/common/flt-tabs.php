@@ -21,7 +21,7 @@ if ( $show_flt_tabs ) : ?>
             Expedite
         </a>
         <a class="nav-link <?php echo $is_flt ? 'active' : ''; ?>" href="<?php echo add_query_arg( 'type', 'flt' ); ?>">
-            FLT
+            FTL
         </a>
     </div>
 <?php endif; ?> 

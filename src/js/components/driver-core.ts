@@ -839,6 +839,7 @@ export const remoteSendForm = (urlAjax) => {
         'js-driver-finance-form': 'update_driver_finance',
         'js-driver-document-form': 'update_driver_document',
         'js-trailer-form': 'update_trailer',
+        'js-vehicle-form': 'update_vehicle',
     };
     
     
@@ -900,6 +901,40 @@ export const remoteSendForm = (urlAjax) => {
                     if (htmlInput.name && !htmlInput.disabled) {
                         // Check if input is in a visible block
                         const parentBlock = htmlInput.closest('.js-dimensions-default, .js-dimensions-rgn, .js-dimensions-step-deck, .js-dimensions-flatbed-hotshot');
+                        const isVisible = !parentBlock || (parentBlock as HTMLElement).style.display !== 'none';
+                        
+                        if (htmlInput.type === 'checkbox') {
+                            formData.set(htmlInput.name, (htmlInput as HTMLInputElement).checked ? '1' : '');
+                        } else {
+                            const value = htmlInput.value || '';
+                            // If field already exists with a non-empty value, don't overwrite with empty
+                            // But always overwrite if current input is visible or has a non-empty value
+                            const existingValue = formData.get(htmlInput.name);
+                            if (isVisible || value !== '' || !existingValue || existingValue === '') {
+                                formData.set(htmlInput.name, value);
+                            }
+                        }
+                    }
+                });
+            }
+            
+            // For vehicle form, manually include all fields (including hidden conditional fields)
+            if (formSelector === 'js-vehicle-form') {
+                // First, get all values from FormData
+                const existingData = new Map<string, string>();
+                for (const [key, value] of formData.entries()) {
+                    existingData.set(key, value as string);
+                }
+                
+                // Then, overwrite/add all input fields, including hidden ones
+                // This ensures fields in display:none blocks are included
+                // But prioritize visible fields over hidden ones
+                const allInputs = form.querySelectorAll('input[type="number"], input[type="text"], input[type="checkbox"], input[type="date"], select');
+                allInputs.forEach((input) => {
+                    const htmlInput = input as HTMLInputElement | HTMLSelectElement;
+                    if (htmlInput.name && !htmlInput.disabled) {
+                        // Check if input is in a visible block
+                        const parentBlock = htmlInput.closest('.js-fields-semi-box, .js-dock-high-section, .js-eld-section');
                         const isVisible = !parentBlock || (parentBlock as HTMLElement).style.display !== 'none';
                         
                         if (htmlInput.type === 'checkbox') {

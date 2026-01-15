@@ -20,6 +20,7 @@ class TMSReportsCompany extends TMSReportsHelper {
 	
 	public function init() {
 		add_action( 'after_setup_theme', array( $this, 'create_table_company' ) );
+		add_action( 'after_setup_theme', array( $this, 'remove_mc_number_unique_constraint' ) );
 		
 		//TODO update after create / set index db up speed
 //		add_action( 'after_setup_theme', array( $this, 'update_table_company_with_indexes' ) );
@@ -423,6 +424,12 @@ class TMSReportsCompany extends TMSReportsHelper {
 		$user_id    = get_current_user_id();
 		$record_id  = $data[ 'broker_id' ];
 		
+		// Check if duplicate MC is allowed
+		$mc_check = $this->is_duplicate_mc_allowed( $data[ 'MotorCarrNo' ], $data[ 'company_name' ], $record_id );
+		if ( is_wp_error( $mc_check ) ) {
+			return $mc_check;
+		}
+		
 		// Build full address for geocoding
 		$st      = ! empty( $data[ 'Addr1' ] ) ? $data[ 'Addr1' ] . ', ' : '';
 		$city    = ! empty( $data[ 'City' ] ) ? $data[ 'City' ] . ', ' : '';
@@ -569,6 +576,18 @@ class TMSReportsCompany extends TMSReportsHelper {
 		$table_name = $wpdb->prefix . $this->table_main;
 		$user_id    = get_current_user_id();
 		
+		// Normalize MC number (trim whitespace)
+		$mc_number = ! empty( $data[ 'MotorCarrNo' ] ) ? trim( $data[ 'MotorCarrNo' ] ) : '';
+		
+		// Check if duplicate MC is allowed
+		$mc_check = $this->is_duplicate_mc_allowed( $mc_number, $data[ 'company_name' ] );
+		if ( is_wp_error( $mc_check ) ) {
+			return $mc_check;
+		}
+		
+		// Update data with normalized MC number
+		$data[ 'MotorCarrNo' ] = $mc_number;
+		
 		// Build full address for geocoding
 		$st      = ! empty( $data[ 'Addr1' ] ) ? $data[ 'Addr1' ] . ', ' : '';
 		$city    = ! empty( $data[ 'City' ] ) ? $data[ 'City' ] . ', ' : '';
@@ -656,6 +675,45 @@ class TMSReportsCompany extends TMSReportsHelper {
 				if ( strpos( $error, 'company_name' ) !== false ) {
 					return new WP_Error( 'db_error', 'A company with this name already exists.' );
 				} elseif ( strpos( $error, 'mc_number' ) !== false ) {
+					// Normalize MC number
+					$mc_number = ! empty( $data[ 'MotorCarrNo' ] ) ? trim( $data[ 'MotorCarrNo' ] ) : '';
+					// Double-check if duplicate MC is allowed (in case UNIQUE constraint still exists in DB)
+					$mc_check = $this->is_duplicate_mc_allowed( $mc_number, $data[ 'company_name' ] );
+					if ( ! is_wp_error( $mc_check ) ) {
+						// MC duplicate is allowed, but DB constraint prevents it
+						// Try to remove the constraint and retry
+						$this->remove_mc_number_unique_constraint();
+						// Retry the insert
+						$result = $wpdb->insert( $table_name, $insert_params, array(
+							'%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s',
+							'%f', '%f', '%s', '%d', '%s', '%d', '%s', '%s', '%s', '%s',
+						) );
+						if ( $result ) {
+							return $wpdb->insert_id;
+						}
+						// If retry failed, check error again
+						$retry_error = $wpdb->last_error;
+						if ( strpos( $retry_error, 'Duplicate entry' ) === false ) {
+							// Different error, return it
+							return new WP_Error( 'db_error', 'Error adding the company report to the database: ' . $retry_error );
+						}
+						// Still duplicate error, but we already checked permissions, so allow it
+						// This means the constraint removal didn't work, try one more time with direct SQL
+						// Try to find and drop the unique index on mc_number
+						$unique_indexes = $wpdb->get_results( "SHOW INDEX FROM $table_name WHERE Column_name = 'mc_number' AND Non_unique = 0" );
+						if ( ! empty( $unique_indexes ) ) {
+							$index_name = $unique_indexes[0]->Key_name;
+							$escaped_index_name = '`' . str_replace( '`', '``', $index_name ) . '`';
+							$wpdb->query( "ALTER TABLE $table_name DROP INDEX $escaped_index_name" );
+						}
+						$result = $wpdb->insert( $table_name, $insert_params, array(
+							'%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s',
+							'%f', '%f', '%s', '%d', '%s', '%d', '%s', '%s', '%s', '%s',
+						) );
+						if ( $result ) {
+							return $wpdb->insert_id;
+						}
+					}
 					return new WP_Error( 'db_error', 'A company with this MC number already exists.' );
 				} elseif ( strpos( $error, 'dot_number' ) !== false ) {
 					return new WP_Error( 'db_error', 'A company with this DOT number already exists.' );
@@ -795,7 +853,6 @@ class TMSReportsCompany extends TMSReportsHelper {
 		$total_records  = $wpdb->get_var( $prepared_query );
 		
 		if ( is_null( $total_records ) ) {
-			error_log( 'COUNT query returned NULL. Query: ' . $count_query );
 		}
 		
 		// Подсчет количества страниц
@@ -981,7 +1038,6 @@ class TMSReportsCompany extends TMSReportsHelper {
 	    date_set_up_compleat TEXT,
         PRIMARY KEY (id),
         UNIQUE KEY company_name (company_name),
-        UNIQUE KEY mc_number (mc_number),
         INDEX idx_company_name (company_name),
         INDEX idx_mc_number (mc_number),
         INDEX idx_dot_number (dot_number),
@@ -1020,6 +1076,110 @@ class TMSReportsCompany extends TMSReportsHelper {
 		
 		dbDelta( $sql_notice );
 		
+	}
+	
+	/**
+	 * Remove UNIQUE constraint from mc_number column if it exists
+	 * This allows multiple companies with the same MC number for special cases
+	 */
+	public function remove_mc_number_unique_constraint() {
+		global $wpdb;
+		
+		$table_name = $wpdb->prefix . $this->table_main;
+		
+		// Check if table exists
+		$table_exists = $wpdb->get_var( $wpdb->prepare( "SHOW TABLES LIKE %s", $table_name ) );
+		
+		if ( $table_exists ) {
+			// Check if UNIQUE constraint exists on mc_number column
+			// Look for all indexes on mc_number column that are unique
+			$constraints = $wpdb->get_results( "SHOW INDEX FROM $table_name WHERE Column_name = 'mc_number' AND Non_unique = 0" );
+			
+			if ( ! empty( $constraints ) ) {
+				// Get unique key names (may have duplicates, so use array_unique)
+				$unique_key_names = array();
+				foreach ( $constraints as $constraint ) {
+					if ( ! in_array( $constraint->Key_name, $unique_key_names ) ) {
+						$unique_key_names[] = $constraint->Key_name;
+					}
+				}
+				
+				// Remove each UNIQUE constraint
+				// Use backticks for index name to handle special characters, but don't use prepare() as it adds quotes
+				foreach ( $unique_key_names as $key_name ) {
+					// Escape the index name manually
+					$escaped_key_name = '`' . str_replace( '`', '``', $key_name ) . '`';
+					$wpdb->query( "ALTER TABLE $table_name DROP INDEX $escaped_key_name" );
+				}
+				
+				// Re-add as regular index if it doesn't exist
+				$index_exists = $wpdb->get_var( "SHOW INDEX FROM $table_name WHERE Key_name = 'idx_mc_number'" );
+				if ( ! $index_exists ) {
+					$wpdb->query( "ALTER TABLE $table_name ADD INDEX idx_mc_number (mc_number)" );
+				}
+			}
+		}
+	}
+	
+	/**
+	 * Check if duplicate MC number is allowed for the given company and user
+	 * 
+	 * @param string $mc_number MC number to check
+	 * @param string $company_name Company name
+	 * @param int|null $exclude_id Company ID to exclude from check (for updates)
+	 * @return bool|WP_Error True if allowed, WP_Error if not allowed
+	 */
+	private function is_duplicate_mc_allowed( $mc_number, $company_name, $exclude_id = null ) {
+		global $wpdb;
+		
+		// If MC number is empty, no need to check
+		if ( empty( $mc_number ) ) {
+			return true;
+		}
+		
+		// Normalize MC number (trim whitespace)
+		$mc_number_trimmed = trim( $mc_number );
+		
+		// Special case: MC 178439 - allow duplicates for specific roles regardless of company name
+		$allowed_mc = '178439';
+		$allowed_roles = array( 'expedite_manager', 'dispatcher-tl', 'administrator', 'moderator' );
+		
+		// Check if this is the special MC number first
+		if ( $mc_number_trimmed === $allowed_mc ) {
+			// Check user role
+			$TMSUsers = new TMSUsers();
+			if ( $TMSUsers->check_user_role_access( $allowed_roles, true ) ) {
+				return true; // Allow duplicate for MC 178439 for authorized roles
+			}
+		}
+		
+		$table_name = $wpdb->prefix . $this->table_main;
+		
+		// Check if MC number already exists
+		$query = $wpdb->prepare( 
+			"SELECT id, company_name FROM $table_name WHERE mc_number = %s",
+			$mc_number_trimmed
+		);
+		
+		if ( $exclude_id ) {
+			$query .= $wpdb->prepare( " AND id != %d", $exclude_id );
+		}
+		
+		$existing_companies = $wpdb->get_results( $query );
+		
+		// If no duplicates found, allow
+		if ( empty( $existing_companies ) ) {
+			return true;
+		}
+		
+		// If we got here and MC is 178439, but role check failed, return error
+		if ( $mc_number_trimmed === $allowed_mc ) {
+			return new WP_Error( 'duplicate_mc', 'A company with MC number 178439 already exists. Only users with specific roles (Expedite Manager, Dispatcher Team Leader, Administrator, Moderator) can create duplicate MC numbers.' );
+		}
+		
+		// Default: don't allow duplicates
+		$existing_company_name = ! empty( $existing_companies[0]->company_name ) ? $existing_companies[0]->company_name : 'another company';
+		return new WP_Error( 'duplicate_mc', sprintf( 'A company with MC number %s already exists (%s). Duplicate MC numbers are not allowed except for special cases.', $mc_number_trimmed, $existing_company_name ) );
 	}
 	
 	public function get_all_meta_by_post_id( $post_id ) {
@@ -1457,7 +1617,6 @@ class TMSReportsCompany extends TMSReportsHelper {
 				'message'      => $email_message
 			) );
 			
-			error_log( 'Broker note added successfully. Emails: ' . $email_list . ' User: ' . $user_name[ 'full_name' ] . ' Broker: ' . $link . ' Message: ' . $message );
 			
 			// Get the newly added notice data to return to frontend
 			global $wpdb;

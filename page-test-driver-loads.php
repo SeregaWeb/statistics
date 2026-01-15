@@ -286,7 +286,7 @@ foreach ($existing_ratings as $rating) {
                             
                             $flt_table = $wpdb->prefix . 'reports_flt_' . strtolower($current_project ?: 'odysseia');
                             $flt_exists = $wpdb->get_var("SHOW TABLES LIKE '$flt_table'");
-                            echo '<li>FLT Reports Table: ' . ($flt_exists ? $flt_table . ' (exists)' : $flt_table . ' (NOT exists)') . '</li>';
+                            echo '<li>FTL Reports Table: ' . ($flt_exists ? $flt_table . ' (exists)' : $flt_table . ' (NOT exists)') . '</li>';
                             
                             $is_dispatcher = in_array('dispatcher', $user->roles) || in_array('dispatcher-tl', $user->roles);
                             echo '<li>Is Dispatcher: ' . ($is_dispatcher ? 'Yes' : 'No') . '</li>';
@@ -294,7 +294,7 @@ foreach ($existing_ratings as $rating) {
                             $is_admin = current_user_can('administrator');
                             $access_flt = get_field('flt', 'user_' . get_current_user_id());
                             $has_flt_access = $is_admin || $access_flt;
-                            echo '<li>Has FLT Access: ' . ($has_flt_access ? 'Yes' : 'No') . '</li>';
+                            echo '<li>Has FTL Access: ' . ($has_flt_access ? 'Yes' : 'No') . '</li>';
                             echo '</ul>';
                             
                             // Show load counts by type
@@ -311,7 +311,7 @@ foreach ($existing_ratings as $rating) {
                             echo '<h6>Load Breakdown:</h6>';
                             echo '<ul>';
                             echo '<li>Regular Loads: ' . $regular_count . '</li>';
-                            echo '<li>FLT Loads: ' . $flt_count . '</li>';
+                            echo '<li>FTL Loads: ' . $flt_count . '</li>';
                             echo '</ul>';
                             ?>
                         </div>

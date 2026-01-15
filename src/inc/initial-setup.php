@@ -84,6 +84,9 @@ $TMSDrivers->init();
 $TMSTrailers = new TMSTrailers();
 $TMSTrailers->init();
 
+$TMSVehicles = new TMSVehicles();
+$TMSVehicles->init();
+
 $TMSContact = new TMSContacts();
 $TMSContact->init();
 

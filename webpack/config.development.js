@@ -84,7 +84,10 @@ module.exports = (projectOptions) => {
     }
     // Add stylelint to plugins if enabled
     if (projectOptions.projectJs.eslint === true) {
-        plugins.push(new StylelintPlugin());
+        plugins.push(new StylelintPlugin({
+            files: ['**/*.{scss,css}'],
+            ignoreFiles: ['**/css/libs/**/*.css', '**/node_modules/**', '**/vendor/**'],
+        }));
     }
 
     /** *

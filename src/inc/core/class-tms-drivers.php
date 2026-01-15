@@ -10253,7 +10253,7 @@ class TMSDrivers extends TMSDriversHelper {
 			'legal_document_type'        => 'Legal Document Type',
 			'nationality'                => 'Nationality',
 			// Add more required fields here as needed
-			// 'driver_license'      => 'Driver License',
+			'driver_licence'      => 'Driver License',
 			// 'ssn'                 => 'SSN',
 			// 'address'             => 'Address',
 		];

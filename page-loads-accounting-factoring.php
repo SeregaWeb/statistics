@@ -65,7 +65,7 @@ if ( ! $show_filter_by_office ) {
                                     Expedite
                                 </a>
                                 <a class="nav-link <?php echo $is_flt ? 'active' : ''; ?>" href="<?php echo add_query_arg( 'type', 'flt' ); ?>">
-                                    FLT
+                                    FTL
                                 </a>
                             </div>
                         <?php endif; ?>
@@ -74,8 +74,8 @@ if ( ! $show_filter_by_office ) {
 
                         <?php if ( $is_flt && ! $show_flt_tabs ): ?>
                             <div class="alert alert-danger">
-                                <h4>❌ Доступ запрещен</h4>
-                                <p>У вас нет доступа к FLT данным.</p>
+                                <h4>❌ access denied</h4>
+                                <p>You do not have access to FTL data.</p>
                             </div>
                         <?php else: ?>
 

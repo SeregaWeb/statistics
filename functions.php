@@ -51,6 +51,7 @@ require THEME_DIR . '/src/inc/core/class-tms-drivers-statistics.php';
 require THEME_DIR . '/src/inc/core/class-tms-drivers-recruiter.php';
 require THEME_DIR . '/src/inc/core/class-tms-drivers-api.php';
 require THEME_DIR . '/src/inc/core/class-tms-trailers.php';
+require THEME_DIR . '/src/inc/core/class-tms-vehicles.php';
 require THEME_DIR . '/src/inc/core/class-dark-mode.php';
 require THEME_DIR . '/src/inc/core/class-tms-user-sync-api.php';
 require THEME_DIR . '/src/inc/hooks/user-sync-hooks.php';

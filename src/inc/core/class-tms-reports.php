@@ -1371,6 +1371,14 @@ class TMSReports extends TMSReportsHelper {
 			$where_values[]     = $search_value;
 		}
 		
+		// Exclude specific IDs (e.g., high priority loads that are shown separately)
+		if ( ! empty( $args[ 'exclude_ids' ] ) && is_array( $args[ 'exclude_ids' ] ) ) {
+			$exclude_ids = array_map( 'absint', $args[ 'exclude_ids' ] );
+			if ( ! empty( $exclude_ids ) ) {
+				$where_conditions[] = "main.id NOT IN (" . implode( ',', $exclude_ids ) . ")";
+			}
+		}
+		
 		if ( $where_conditions ) {
 			$sql .= ' AND ' . implode( ' AND ', $where_conditions );
 		}
@@ -1427,6 +1435,166 @@ class TMSReports extends TMSReportsHelper {
 			'total_posts'   => $total_records,
 			'current_pages' => $current_page,
 		];
+	}
+	
+	/**
+	 * Get high priority loads for tracking pages
+	 * Returns loads with high_priority = 1, excluding 'delivered' status
+	 * 
+	 * @param array $args Same arguments as get_table_items_tracking
+	 * @return array Array of load IDs and full data
+	 */
+	public function get_high_priority_loads( $args = array() ) {
+		global $wpdb;
+		
+		$table_main = $wpdb->prefix . $this->table_main;
+		$table_meta = $wpdb->prefix . $this->table_meta;
+		
+		$join_builder = "
+	    FROM $table_main AS main
+	    LEFT JOIN $table_meta AS dispatcher ON main.id = dispatcher.post_id AND dispatcher.meta_key = 'dispatcher_initials'
+	    LEFT JOIN $table_meta AS reference ON main.id = reference.post_id AND reference.meta_key = 'reference_number'
+	    LEFT JOIN $table_meta AS unit_number ON main.id = unit_number.post_id AND unit_number.meta_key = 'unit_number_name'
+	    LEFT JOIN $table_meta AS unit_phone ON main.id = unit_phone.post_id AND unit_phone.meta_key = 'driver_phone'
+	    LEFT JOIN $table_meta AS load_status ON main.id = load_status.post_id AND load_status.meta_key = 'load_status'
+	    LEFT JOIN $table_meta AS office_dispatcher
+					ON main.id = office_dispatcher.post_id
+					AND office_dispatcher.meta_key = 'office_dispatcher'
+	    INNER JOIN $table_meta AS `high_priority`
+					ON main.id = `high_priority`.post_id
+					AND `high_priority`.meta_key = 'high_priority'
+	    WHERE 1=1
+	    ";
+		
+		$sql = "SELECT main.*,
+    dispatcher.meta_value AS dispatcher_initials_value,
+    reference.meta_value AS reference_number_value,
+    unit_number.meta_value AS unit_number_value,
+    load_status.meta_value AS load_status_value
+    " . $join_builder;
+		
+		// Условия WHERE
+		$where_conditions = [];
+		$where_values     = [];
+		
+		// Вспомогательная функция для формирования условий
+		$add_condition = function( $condition, $value ) use ( &$where_conditions, &$where_values ) {
+			$where_conditions[] = $condition;
+			$where_values[]     = $value;
+		};
+		
+		// High priority condition - check for '1' as string (stored as 1 or '1')
+		$where_conditions[] = "`high_priority`.meta_value = '1'";
+		
+		// Exclude delivered status (allow NULL for load_status in case it's not set)
+		// Note: This will be overridden by exclude_status if provided, but we need it for basic filtering
+		$where_conditions[] = "(load_status.meta_value IS NULL OR load_status.meta_value != 'delivered')";
+		
+		if ( ! empty( $args[ 'status_post' ] ) ) {
+			$add_condition( "main.status_post = %s", $args[ 'status_post' ] );
+		}
+		
+		if ( ! empty( $args[ 'load_status' ] ) ) {
+			$add_condition( "load_status.meta_value = %s", $args[ 'load_status' ] );
+		}
+		
+		if ( ! empty( $args[ 'office' ] ) && $args[ 'office' ] !== 'all' ) {
+			$where_conditions[] = "office_dispatcher.meta_value = %s";
+			$where_values[]     = $args[ 'office' ];
+		}
+		
+		if ( ! empty( $args[ 'my_team' ] ) && is_array( $args[ 'my_team' ] ) ) {
+			$team_values        = esc_sql( $args[ 'my_team' ] );
+			$where_conditions[] = "dispatcher.meta_value IN ('" . implode( "','", $team_values ) . "')";
+		}
+		
+		if ( ! empty( $args[ 'dispatcher' ] ) ) {
+			$add_condition( "dispatcher.meta_value = %s", $args[ 'dispatcher' ] );
+		}
+		
+		// Exclude statuses - but ensure 'delivered' is always excluded for high priority loads
+		if ( ! empty( $args[ 'exclude_status' ] ) ) {
+			$exclude_status     = esc_sql( (array) $args[ 'exclude_status' ] );
+			// Ensure 'delivered' is in the exclude list
+			if ( ! in_array( 'delivered', $exclude_status ) ) {
+				$exclude_status[] = 'delivered';
+			}
+			$where_conditions[] = "(load_status.meta_value IS NULL OR load_status.meta_value NOT IN ('" . implode( "','", $exclude_status ) . "'))";
+		}
+		
+		if ( ! empty( $args[ 'include_status' ] ) ) {
+			$include_status     = esc_sql( (array) $args[ 'include_status' ] );
+			$where_conditions[] = "load_status.meta_value IN ('" . implode( "','", $include_status ) . "')";
+		}
+		
+		if ( ! empty( $args[ 'my_search' ] ) ) {
+			$search_value       = '%' . $wpdb->esc_like( $args[ 'my_search' ] ) . '%';
+			$where_conditions[] = "(reference.meta_value LIKE %s OR unit_number.meta_value LIKE %s OR unit_phone.meta_value LIKE %s)";
+			$where_values[]     = $search_value;
+			$where_values[]     = $search_value;
+			$where_values[]     = $search_value;
+		}
+		
+		if ( $where_conditions ) {
+			$sql .= ' AND ' . implode( ' AND ', $where_conditions );
+		}
+		
+		// Order by same as main query
+		$sort_order = strtolower( $args[ 'sort_order' ] ?? 'desc' ) === 'asc' ? 'ASC' : 'DESC';
+		$sql .= " ORDER BY
+    CASE
+        WHEN LOWER(load_status.meta_value) = 'at-pu' THEN 1
+        WHEN LOWER(load_status.meta_value) = 'at-del' THEN 2
+        WHEN LOWER(load_status.meta_value) = 'waiting-on-pu-date' THEN 3
+        WHEN LOWER(load_status.meta_value) = 'loaded-enroute' THEN 4
+        WHEN LOWER(load_status.meta_value) = 'waiting-on-rc' THEN 5
+        ELSE 6
+    END,
+    CASE
+        WHEN LOWER(load_status.meta_value) IN ('at-pu', 'at-del', 'waiting-on-pu-date', 'waiting-on-rc', 'loaded-enroute') THEN COALESCE(main.pick_up_date, '9999-12-31 23:59:59')
+        ELSE COALESCE(main.delivery_date, '9999-12-31 23:59:59')
+    END $sort_order";
+		
+		// Debug: log the SQL query
+		error_log( '=== get_high_priority_loads DEBUG ===' );
+		error_log( 'Table meta: ' . $table_meta );
+		error_log( 'SQL: ' . $sql );
+		error_log( 'Where conditions: ' . print_r( $where_conditions, true ) );
+		error_log( 'Where values: ' . print_r( $where_values, true ) );
+		
+		// Test simple query first
+		$test_simple = $wpdb->get_results( "SELECT main.id, `high_priority`.meta_value as hp FROM $table_main AS main INNER JOIN $table_meta AS `high_priority` ON main.id = `high_priority`.post_id AND `high_priority`.meta_key = 'high_priority' WHERE `high_priority`.meta_value = '1' LIMIT 5" );
+		error_log( 'Simple test query results: ' . print_r( $test_simple, true ) );
+		
+		$main_results = $wpdb->get_results( $wpdb->prepare( $sql, ...$where_values ), ARRAY_A );
+		
+		error_log( 'Results count: ' . count( $main_results ) );
+		if ( $wpdb->last_error ) {
+			error_log( 'DB Error: ' . $wpdb->last_error );
+		}
+		error_log( 'Last query: ' . $wpdb->last_query );
+		error_log( '=== END get_high_priority_loads DEBUG ===' );
+		
+		// Обработка метаданных
+		$post_ids  = wp_list_pluck( $main_results, 'id' );
+		$meta_data = [];
+		
+		if ( $post_ids ) {
+			$meta_sql     = "SELECT post_id, meta_key, meta_value FROM $table_meta WHERE post_id IN (" . implode( ',', array_map( 'absint', $post_ids ) ) . ")";
+			$meta_results = $wpdb->get_results( $meta_sql, ARRAY_A );
+			
+			$meta_data = array_reduce( $meta_results, function( $carry, $meta_row ) {
+				$carry[ $meta_row[ 'post_id' ] ][ $meta_row[ 'meta_key' ] ] = $meta_row[ 'meta_value' ];
+				
+				return $carry;
+			}, [] );
+		}
+		
+		foreach ( $main_results as &$result ) {
+			$result[ 'meta_data' ] = $meta_data[ $result[ 'id' ] ] ?? [];
+		}
+		
+		return $main_results;
 	}
 	
 	public function get_table_items_tracking_statistics( $office_dispatcher = 'all' ) {

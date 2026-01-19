@@ -8,32 +8,25 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-// Check if user has permission
-if ( ! current_user_can( 'administrator' ) && ! current_user_can( 'manage_options' ) ) {
-	wp_die( 'Access denied. Administrator only.' );
-}
+
 
 // Check GET parameter
 if ( ! isset( $_GET['dispatcher-transfer-manager'] ) || $_GET['dispatcher-transfer-manager'] != '1' ) {
 	return;
 }
 
+// Check if user has permission
+if ( ! current_user_can( 'administrator' ) && ! current_user_can( 'manage_options' ) ) {
+	wp_die( 'Access denied. Administrator only.' );
+}
+
 $transfer_manager = new TMSDispatcherTransferManager();
 
-// Debug: Check transient directly
+// Debug: Check transient directly (no logging)
 $queue_debug = get_transient( 'remove_dispatchers' );
-if ( class_exists( 'TMSLogger' ) ) {
-	TMSLogger::log_to_file( '[DEBUG] Transient check: ' . ( is_array( $queue_debug ) ? count( $queue_debug ) . ' items' : 'not an array or empty' ), 'dispatcher-transfer' );
-	if ( is_array( $queue_debug ) && ! empty( $queue_debug ) ) {
-		TMSLogger::log_to_file( '[DEBUG] Transient keys: ' . implode( ', ', array_keys( $queue_debug ) ), 'dispatcher-transfer' );
-	}
-}
 
 // Auto-process queue if there are pending transfers (but not if action is already being processed)
 if ( ! isset( $_GET['action'] ) && is_array( $queue_debug ) && ! empty( $queue_debug ) ) {
-	if ( class_exists( 'TMSLogger' ) ) {
-		TMSLogger::log_to_file( 'Auto-processing queue on status page visit', 'dispatcher-transfer' );
-	}
 	$transfer_manager->process_pending_transfers();
 	$transfer_manager->update_summary();
 }

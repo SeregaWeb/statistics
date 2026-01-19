@@ -184,16 +184,9 @@ class TMSDispatcherTransferManager {
 	 * @return void
 	 */
 	public function process_pending_transfers() {
-		$this->log_to_file( 'process_pending_transfers() called' );
-		
 		$queue = get_transient( self::TRANSIENT_KEY );
 		
-		$this->log_to_file( 'Queue from transient: ' . ( is_array( $queue ) ? count( $queue ) . ' items' : 'not an array or empty' ) );
-		
 		if ( ! is_array( $queue ) || empty( $queue ) ) {
-			$log_msg = '[INFO] No dispatchers in queue to process';
-			$this->log_message( $log_msg, 'info' );
-			$this->log_to_file( $log_msg );
 			return; // No dispatchers to process
 		}
 		
@@ -633,8 +626,6 @@ class TMSDispatcherTransferManager {
 	 */
 	public function get_queue_status() {
 		$queue = get_transient( self::TRANSIENT_KEY );
-		
-		$this->log_to_file( 'get_queue_status() - Queue from transient: ' . ( is_array( $queue ) ? count( $queue ) . ' items' : 'not an array or empty' ) );
 		
 		if ( ! is_array( $queue ) || empty( $queue ) ) {
 			return array();

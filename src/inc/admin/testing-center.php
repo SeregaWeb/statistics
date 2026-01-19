@@ -8,14 +8,16 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-// Check if user has permission
-if ( ! current_user_can( 'administrator' ) && ! current_user_can( 'manage_options' ) ) {
-	wp_die( 'Access denied. Administrator only.' );
-}
+
 
 // Check GET parameter
 if ( ! isset( $_GET['testing'] ) || $_GET['testing'] != '1' ) {
 	return;
+}
+
+// Check if user has permission
+if ( ! current_user_can( 'administrator' ) && ! current_user_can( 'manage_options' ) ) {
+	wp_die( 'Access denied. Administrator only.' );
 }
 
 $site_url = site_url();
@@ -27,6 +29,13 @@ $test_pages = array(
 	'Dispatcher Transfer Manager' => array(
 		'url' => add_query_arg( array( 'dispatcher-transfer-manager' => '1' ), home_url() ),
 		'description' => 'Track gradual transfer of dispatcher data. Shows queue status, progress by project (odysseia/flt) and tables (Odysseia/Martlet/Endurance), and recent logs.',
+		'category' => 'System Management',
+		'type' => 'WordPress Page',
+	),
+	
+	'Recruiter Transfer Manager' => array(
+		'url' => add_query_arg( array( 'recruiter-transfer-manager' => '1' ), home_url() ),
+		'description' => 'Track gradual transfer of driver data from deleted recruiters. Shows queue status, progress, and logs. Drivers are transferred from old recruiter to new recruiter in batches.',
 		'category' => 'System Management',
 		'type' => 'WordPress Page',
 	),
@@ -438,6 +447,7 @@ foreach ( $all_test_pages as $name => $page ) {
 			<h3>Quick Access Links</h3>
 			<ul>
 				<li><a href="<?php echo esc_url( add_query_arg( array( 'dispatcher-transfer-manager' => '1' ), home_url() ) ); ?>" target="_blank">Dispatcher Transfer Manager</a></li>
+				<li><a href="<?php echo esc_url( add_query_arg( array( 'recruiter-transfer-manager' => '1' ), home_url() ) ); ?>" target="_blank">Recruiter Transfer Manager</a></li>
 				<li><a href="<?php echo esc_url( add_query_arg( array( 'tms_test_rating_block' => '1' ), home_url() ) ); ?>" target="_blank">Driver Rating Block Test</a></li>
 				<li><a href="<?php echo esc_url( $root_url . '/test-driver-loads.html' ); ?>" target="_blank">Test Driver Loads</a></li>
 				<li><a href="<?php echo esc_url( $theme_url . '/eta-test.html' ); ?>" target="_blank">ETA Test</a></li>

@@ -143,19 +143,25 @@ class TMSDrivers extends TMSDriversHelper {
 	}
 	
 	function handle_recruiter_deletion( $user_id ) {
-		// Проверяем, является ли удаляемый пользователь диспетчером
+		// Проверяем, является ли удаляемый пользователь рекрутером
 		$user = get_user_by( 'ID', $user_id );
 		
-		if ( $user && in_array( 'recruiter', $user->roles ) || $user && in_array( 'recruiter-tl', $user->roles ) || $user && in_array( 'hr_manager', $user->roles ) ) {
+		if ( $user && ( in_array( 'recruiter', $user->roles ) || in_array( 'recruiter-tl', $user->roles ) || in_array( 'hr_manager', $user->roles ) ) ) {
 			
-			// Выполняем перенос лодов на нового диспетчера
-			$result = $this->move_driver_for_new_recruiter( $user_id );
+			// Add to queue for gradual transfer instead of immediate transfer
+			$transfer_manager = new TMSRecruiterTransferManager();
+			$result = $transfer_manager->add_recruiter_to_queue( $user_id );
 			
-			// Логируем результат для отладки
 			if ( is_wp_error( $result ) ) {
-				error_log( 'Error transferring loads: ' . $result->get_error_message() );
+				if ( class_exists( 'TMSLogger' ) ) {
+					TMSLogger::log_to_file( 'Error adding recruiter to transfer queue: ' . $result->get_error_message(), 'recruiter-transfer' );
+				}
+				error_log( 'Error adding recruiter to transfer queue: ' . $result->get_error_message() );
 			} else {
-				error_log( 'Successful load transfer: ' . $result );
+				if ( class_exists( 'TMSLogger' ) ) {
+					TMSLogger::log_to_file( 'Recruiter ID ' . $user_id . ' added to gradual transfer queue', 'recruiter-transfer' );
+				}
+				error_log( 'Recruiter ID ' . $user_id . ' added to gradual transfer queue' );
 			}
 		}
 	}

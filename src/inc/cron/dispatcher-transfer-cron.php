@@ -35,16 +35,8 @@ function tms_schedule_dispatcher_transfer_cron() {
 				TMSLogger::log_to_file( '[Cron] ERROR: Failed to schedule cron event', 'dispatcher-transfer' );
 			}
 		}
-	} else {
-		// Log only once per hour to avoid spam
-		static $last_log = 0;
-		if ( time() - $last_log > 3600 ) {
-			if ( class_exists( 'TMSLogger' ) ) {
-				TMSLogger::log_to_file( '[Cron] Cron already scheduled. Next run: ' . date( 'Y-m-d H:i:s', $next_scheduled ), 'dispatcher-transfer' );
-			}
-			$last_log = time();
-		}
 	}
+	// Cron already scheduled - no need to log
 }
 
 // The actual cron function
@@ -91,9 +83,6 @@ function tms_auto_process_dispatcher_transfer() {
 	set_transient( 'tms_dispatcher_transfer_last_run', time(), 300 ); // 5 minutes expiration
 	
 	// Process transfers
-	if ( class_exists( 'TMSLogger' ) ) {
-		TMSLogger::log_to_file( 'Auto-processing queue on page load', 'dispatcher-transfer' );
-	}
 	$transfer_manager = new TMSDispatcherTransferManager();
 	$transfer_manager->process_pending_transfers();
 	$transfer_manager->update_summary();

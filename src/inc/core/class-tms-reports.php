@@ -1311,6 +1311,9 @@ class TMSReports extends TMSReportsHelper {
 	    LEFT JOIN $table_meta AS office_dispatcher
 					ON main.id = office_dispatcher.post_id
 					AND office_dispatcher.meta_key = 'office_dispatcher'
+	    LEFT JOIN $table_meta AS tbd
+					ON main.id = tbd.post_id
+					AND tbd.meta_key = 'tbd'
 	    WHERE 1=1
 	    ";
 		
@@ -1377,6 +1380,11 @@ class TMSReports extends TMSReportsHelper {
 			if ( ! empty( $exclude_ids ) ) {
 				$where_conditions[] = "main.id NOT IN (" . implode( ',', $exclude_ids ) . ")";
 			}
+		}
+		
+		// Exclude TBD loads
+		if ( isset( $args[ 'exclude_tbd' ] ) && ! empty( $args[ 'exclude_tbd' ] ) ) {
+			$where_conditions[] = "(tbd.meta_value IS NULL OR tbd.meta_value != '1')";
 		}
 		
 		if ( $where_conditions ) {
@@ -1460,6 +1468,9 @@ class TMSReports extends TMSReportsHelper {
 	    LEFT JOIN $table_meta AS office_dispatcher
 					ON main.id = office_dispatcher.post_id
 					AND office_dispatcher.meta_key = 'office_dispatcher'
+	    LEFT JOIN $table_meta AS tbd
+					ON main.id = tbd.post_id
+					AND tbd.meta_key = 'tbd'
 	    INNER JOIN $table_meta AS `high_priority`
 					ON main.id = `high_priority`.post_id
 					AND `high_priority`.meta_key = 'high_priority'
@@ -1535,6 +1546,11 @@ class TMSReports extends TMSReportsHelper {
 			$where_values[]     = $search_value;
 		}
 		
+		// Exclude TBD loads
+		if ( isset( $args[ 'exclude_tbd' ] ) && ! empty( $args[ 'exclude_tbd' ] ) ) {
+			$where_conditions[] = "(tbd.meta_value IS NULL OR tbd.meta_value != '1')";
+		}
+		
 		if ( $where_conditions ) {
 			$sql .= ' AND ' . implode( ' AND ', $where_conditions );
 		}
@@ -1608,6 +1624,7 @@ class TMSReports extends TMSReportsHelper {
 		    LEFT JOIN $table_meta AS dispatcher ON main.id = dispatcher.post_id AND dispatcher.meta_key = 'dispatcher_initials'
 		    LEFT JOIN $table_meta AS load_status ON main.id = load_status.post_id AND load_status.meta_key = 'load_status'
 	        LEFT JOIN $table_meta AS office_dispatcher ON main.id = office_dispatcher.post_id AND office_dispatcher.meta_key = 'office_dispatcher'
+	        LEFT JOIN $table_meta AS tbd ON main.id = tbd.post_id AND tbd.meta_key = 'tbd'
 	    WHERE 1=1
 		";
 		
@@ -1634,6 +1651,9 @@ class TMSReports extends TMSReportsHelper {
 			$include_status     = esc_sql( $include_status );
 			$where_conditions[] = "load_status.meta_value IN ('" . implode( "','", $include_status ) . "')";
 		}
+		
+		// Exclude TBD loads
+		$where_conditions[] = "(tbd.meta_value IS NULL OR tbd.meta_value != '1')";
 		
 		$sql = "SELECT
     dispatcher.meta_value AS dispatcher_initials,

@@ -35,7 +35,9 @@ $args = array(
 	'status_post'    => 'publish',
 	'user_id'        => get_current_user_id(),
 	'sort_by'        => 'pick_up_date',
-	'include_status' => array( 'delivered', 'tonu', 'cancelled' )
+	'include_status' => array( 'delivered', 'tonu', 'cancelled' ),
+	'exclude_tbd'    => true,
+
 );
 
 $args  = $reports->set_filter_params( $args );

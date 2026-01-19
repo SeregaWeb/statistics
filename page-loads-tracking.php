@@ -39,11 +39,15 @@ $args = array(
 	'user_id'        => get_current_user_id(),
 	'sort_by'        => 'pick_up_date',
 	'exclude_status' => array( 'delivered', 'tonu', 'cancelled' ),
+	'exclude_tbd'    => true,
 );
 
 $office_dispatcher   = get_field( 'work_location', 'user_' . get_current_user_id() );
 $sellect_all_offices = $TMSUsers->check_user_role_access( array(
+	'tracking',
 	'tracking-tl',
+	'morning_tracking',
+	'nightshift_tracking',
 	'dispatcher-tl',
 	'expedite_manager',
 	'administrator',
@@ -57,7 +61,7 @@ if ( ! $office_dispatcher || $sellect_all_offices ) {
 	$office_dispatcher = 'all';
 }
 
-$args                 = $reports->set_filter_params( $args, $office_dispatcher );
+$args = $reports->set_filter_params( $args, $office_dispatcher );
 
 // Get current page number
 $current_page = isset( $_GET[ 'paged' ] ) ? absint( $_GET[ 'paged' ] ) : 1;

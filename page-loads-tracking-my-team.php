@@ -38,6 +38,7 @@ $args = array(
 	'user_id'        => get_current_user_id(),
 	'exclude_status' => array( 'delivered', 'tonu', 'cancelled', 'waiting-on-rc' ),
 	'my_team'        => $my_team,
+	'exclude_tbd'    => true,
 );
 
 $args  = $reports->set_filter_params( $args );

@@ -13,7 +13,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 // Get selected chart from GET parameter (default: vehicle-type)
 $selected_chart = isset( $_GET['chart'] ) ? sanitize_text_field( $_GET['chart'] ) : 'vehicle-type';
-$valid_charts = array( 'home-location', 'vehicle-type', 'nationality', 'languages' );
+$valid_charts = array( 'home-location', 'vehicle-type', 'nationality', 'languages', 'loads-by-state', 'loads-by-route' );
 if ( ! in_array( $selected_chart, $valid_charts, true ) ) {
 	$selected_chart = 'vehicle-type';
 }
@@ -30,6 +30,8 @@ if ( ! in_array( $selected_chart, $valid_charts, true ) ) {
 				<option value="home-location" <?php selected( $selected_chart, 'home-location' ); ?>>Home Location</option>
 				<option value="nationality" <?php selected( $selected_chart, 'nationality' ); ?>>Nationality</option>
 				<option value="languages" <?php selected( $selected_chart, 'languages' ); ?>>Languages</option>
+				<option value="loads-by-state" <?php selected( $selected_chart, 'loads-by-state' ); ?>>Loads by State (Pickup / Delivery)</option>
+				<option value="loads-by-route" <?php selected( $selected_chart, 'loads-by-route' ); ?>>Loads by Route (Pickup → Delivery)</option>
 			</select>
 		</div>
 	</div>
@@ -38,10 +40,12 @@ if ( ! in_array( $selected_chart, $valid_charts, true ) ) {
 		<?php
 		// Include individual chart components with visibility control
 		$charts = array(
-			'home-location' => get_template_directory() . '/src/template-parts/report/statistics/location-vehicle-charts/home-location.php',
-			'vehicle-type' => get_template_directory() . '/src/template-parts/report/statistics/location-vehicle-charts/vehicle-type.php',
-			'nationality' => get_template_directory() . '/src/template-parts/report/statistics/location-vehicle-charts/nationality.php',
-			'languages' => get_template_directory() . '/src/template-parts/report/statistics/location-vehicle-charts/languages.php',
+			'home-location'   => get_template_directory() . '/src/template-parts/report/statistics/location-vehicle-charts/home-location.php',
+			'vehicle-type'    => get_template_directory() . '/src/template-parts/report/statistics/location-vehicle-charts/vehicle-type.php',
+			'nationality'     => get_template_directory() . '/src/template-parts/report/statistics/location-vehicle-charts/nationality.php',
+			'languages'       => get_template_directory() . '/src/template-parts/report/statistics/location-vehicle-charts/languages.php',
+			'loads-by-state'  => get_template_directory() . '/src/template-parts/report/statistics/location-vehicle-charts/loads-by-state.php',
+			'loads-by-route'  => get_template_directory() . '/src/template-parts/report/statistics/location-vehicle-charts/loads-by-route.php',
 		);
 		
 		foreach ( $charts as $chart_key => $chart_path ) {
@@ -53,65 +57,4 @@ if ( ! in_array( $selected_chart, $valid_charts, true ) ) {
 		?>
 	</div>
 </div>
-
-<script>
-(function() {
-	// Handle chart filter dropdown
-	const chartFilter = document.getElementById('chartFilter');
-	
-	if (chartFilter) {
-		chartFilter.addEventListener('change', function() {
-			const selectedChart = this.value;
-			const chartContainers = document.querySelectorAll('.chart-container');
-			
-			// Hide all charts
-			chartContainers.forEach(function(container) {
-				container.style.display = 'none';
-			});
-			
-			// Show selected chart
-			const selectedContainer = document.querySelector('.chart-container[data-chart="' + selectedChart + '"]');
-			if (selectedContainer) {
-				selectedContainer.style.display = 'block';
-				
-				// Re-initialize the selected chart
-				setTimeout(function() {
-					// Map chart names to chart IDs and chart types
-					const chartMap = {
-						'home-location': { id: 'stateChart', useBar: true },
-						'vehicle-type': { id: 'vehicleTypeChart', useBar: false },
-						'nationality': { id: 'nationalityChart', useBar: true },
-						'languages': { id: 'languageChart', useBar: false }
-					};
-					
-					const chartConfig = chartMap[selectedChart];
-					if (chartConfig) {
-						const chartElement = document.getElementById(chartConfig.id);
-						if (chartElement) {
-							// Reset initialization flag
-							chartElement.dataset.initialized = 'false';
-							
-							// Directly initialize the chart using global function
-							if (typeof window.initDriversChart === 'function') {
-								window.initDriversChart(chartConfig.id, chartConfig.useBar);
-							} else {
-								// Fallback: trigger window resize and call initDriversStatisticsCharts
-								window.dispatchEvent(new Event('resize'));
-								if (typeof window.initDriversStatisticsCharts === 'function') {
-									window.initDriversStatisticsCharts();
-								}
-							}
-						}
-					}
-				}, 300);
-			}
-			
-			// Update URL without reload
-			const url = new URL(window.location.href);
-			url.searchParams.set('chart', selectedChart);
-			window.history.replaceState(null, '', url);
-		});
-	}
-})();
-</script>
 

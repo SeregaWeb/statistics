@@ -179,6 +179,439 @@ class TMSDriversStatistics {
 	}
 	
 	/**
+	 * Get loads statistics by US state based on new locations tables and shipper table.
+	 *
+	 * @param string $location_type 'pickup' or 'delivery'.
+	 * @param string $country Filter by country: 'USA', 'Canada', 'Mexico' or 'all'.
+	 * @param int|null $year Filter by year (null = all years, minimum 2024).
+	 * @param int|null $month Filter by month 1-12 (null = all months).
+	 *
+	 * @return array Array of rows: [ 'state' => 'TX', 'country' => 'USA', 'label' => 'Texas (TX)', 'count' => 123 ].
+	 */
+	public function get_loads_state_statistics( $location_type = 'pickup', $country = 'USA', $year = null, $month = null ) {
+		global $wpdb;
+		
+		// Normalize and validate location type
+		$location_type = strtolower( $location_type ) === 'delivery' ? 'delivery' : 'pickup';
+		
+		// Normalize and validate country
+		$country = strtoupper( trim( $country ) );
+		$valid_countries = array( 'USA', 'CANADA', 'MEXICO', 'ALL' );
+		if ( ! in_array( $country, $valid_countries, true ) ) {
+			$country = 'USA';
+		}
+		
+		// Projects that use the regular reports_* tables
+		$projects = array( 'Odysseia', 'Martlet', 'Endurance' );
+		
+		$table_shipper = $wpdb->prefix . 'reports_shipper';
+		
+		$aggregated = array();
+		
+		foreach ( $projects as $project ) {
+			$project_lower = strtolower( $project );
+			$table_locations = $wpdb->prefix . 'reports_' . $project_lower . '_locations';
+			
+			// Skip if locations table does not exist
+			$check_table = $wpdb->get_var( $wpdb->prepare(
+				"SHOW TABLES LIKE %s",
+				$table_locations
+			) );
+			
+			if ( $check_table !== $table_locations ) {
+				continue;
+			}
+			
+			// Build WHERE conditions
+			$where_conditions = array();
+			$params = array( $location_type );
+			
+			// Country filter
+			if ( $country !== 'ALL' ) {
+				$where_conditions[] = 's.country = %s';
+				$params[] = $country;
+			}
+			
+			// Year filter (minimum 2024)
+			if ( $year !== null && is_numeric( $year ) ) {
+				$year = (int) $year;
+				if ( $year >= 2024 ) {
+					if ( $month !== null && is_numeric( $month ) ) {
+						// Filter by specific year and month
+						$month = (int) $month;
+						if ( $month >= 1 && $month <= 12 ) {
+							$where_conditions[] = 'YEAR(l.date) = %d AND MONTH(l.date) = %d';
+							$params[] = $year;
+							$params[] = $month;
+						}
+					} else {
+						// Filter by year only
+						$where_conditions[] = 'YEAR(l.date) = %d';
+						$params[] = $year;
+					}
+				}
+			} elseif ( $month !== null && is_numeric( $month ) ) {
+				// Month only (without year) - use current year or minimum 2024
+				$month = (int) $month;
+				if ( $month >= 1 && $month <= 12 ) {
+					$current_year = (int) date( 'Y' );
+					$min_year = max( 2024, $current_year );
+					$where_conditions[] = 'YEAR(l.date) >= %d AND MONTH(l.date) = %d';
+					$params[] = $min_year;
+					$params[] = $month;
+				}
+			}
+			
+			$where_sql = '';
+			if ( ! empty( $where_conditions ) ) {
+				$where_sql = ' AND ' . implode( ' AND ', $where_conditions );
+			}
+			
+			/**
+			 * address_id in locations is stored as VARCHAR, while shipper.id is numeric.
+			 * We cast shipper.id to CHAR for a reliable join.
+			 * Also ensure address_id is not empty and date is not null.
+			 */
+			$sql = "
+				SELECT 
+					s.state AS state,
+					s.country AS country,
+					COUNT(DISTINCT l.load_id) AS count
+				FROM $table_locations AS l
+				INNER JOIN $table_shipper AS s 
+					ON l.address_id = CAST(s.id AS CHAR)
+				WHERE l.location_type = %s
+					AND l.address_id IS NOT NULL
+					AND l.address_id != ''
+					AND l.date IS NOT NULL
+				$where_sql
+				GROUP BY s.state, s.country
+			";
+			
+			$rows = $wpdb->get_results( $wpdb->prepare( $sql, $params ), ARRAY_A );
+			
+			if ( empty( $rows ) ) {
+				continue;
+			}
+			
+			foreach ( $rows as $row ) {
+				$state_abbr = strtoupper( trim( (string) $row['state'] ) );
+				$country_code = strtoupper( trim( (string) $row['country'] ) );
+				
+				if ( $state_abbr === '' ) {
+					continue;
+				}
+				
+				$key = $country_code . '|' . $state_abbr;
+				
+				if ( ! isset( $aggregated[ $key ] ) ) {
+					$aggregated[ $key ] = array(
+						'state'   => $state_abbr,
+						'country' => $country_code,
+						'count'   => 0,
+					);
+				}
+				
+				$aggregated[ $key ]['count'] += (int) $row['count'];
+			}
+		}
+		
+		if ( empty( $aggregated ) ) {
+			return array();
+		}
+		
+		// Convert to flat array with human-readable labels and sort by count DESC
+		$result = array();
+		foreach ( $aggregated as $item ) {
+			$label = $this->get_state_label( $item['state'] );
+			
+			// Append country for non-USA if needed
+			if ( $item['country'] !== 'USA' && $item['country'] !== '' ) {
+				$label .= ' (' . $item['country'] . ')';
+			}
+			
+			$result[] = array(
+				'state'   => $item['state'],
+				'country' => $item['country'],
+				'label'   => $label,
+				'count'   => (int) $item['count'],
+			);
+		}
+		
+		usort(
+			$result,
+			static function ( $a, $b ) {
+				return $b['count'] <=> $a['count'];
+			}
+		);
+		
+		return $result;
+	}
+	
+	/**
+	 * Get loads statistics by route (Pickup State → Delivery State).
+	 *
+	 * @param string $country Filter by country: 'USA', 'Canada', 'Mexico' or 'all'.
+	 * @param int|null $year Filter by year (null = all years, minimum 2024).
+	 * @param int|null $month Filter by month 1-12 (null = all months).
+	 *
+	 * @return array Array of rows: [ 'pickup_state' => 'TX', 'delivery_state' => 'NY', 'pickup_country' => 'USA', 'delivery_country' => 'USA', 'label' => 'Texas (TX) → New York (NY)', 'count' => 123 ].
+	 */
+	public function get_loads_route_statistics( $country = 'USA', $year = null, $month = null ) {
+		global $wpdb;
+		
+		// Normalize and validate country
+		$country = strtoupper( trim( $country ) );
+		$valid_countries = array( 'USA', 'CANADA', 'MEXICO', 'ALL' );
+		if ( ! in_array( $country, $valid_countries, true ) ) {
+			$country = 'USA';
+		}
+		
+		// Ensure indexes exist (run once, safe to call multiple times)
+		static $indexes_checked = false;
+		if ( ! $indexes_checked ) {
+			$this->add_route_statistics_indexes();
+			$indexes_checked = true;
+		}
+		
+		// Projects that use the regular reports_* tables
+		$projects = array( 'Odysseia', 'Martlet', 'Endurance' );
+		
+		$table_shipper = $wpdb->prefix . 'reports_shipper';
+		
+		$aggregated = array();
+		
+		foreach ( $projects as $project ) {
+			$project_lower = strtolower( $project );
+			$table_locations = $wpdb->prefix . 'reports_' . $project_lower . '_locations';
+			
+			// Skip if locations table does not exist
+			$check_table = $wpdb->get_var( $wpdb->prepare(
+				"SHOW TABLES LIKE %s",
+				$table_locations
+			) );
+			
+			if ( $check_table !== $table_locations ) {
+				continue;
+			}
+			
+			// Build WHERE conditions
+			$where_conditions = array();
+			$params = array();
+			
+			// Country filter (apply to both pickup and delivery)
+			if ( $country !== 'ALL' ) {
+				$where_conditions[] = 'sp.country = %s AND sd.country = %s';
+				$params[] = $country;
+				$params[] = $country;
+			}
+			
+			// Build date filter for efficient index usage (using date range instead of YEAR/MONTH functions)
+			$date_filter = '';
+			$date_params = array();
+			
+			if ( $year !== null && is_numeric( $year ) ) {
+				$year = (int) $year;
+				if ( $year >= 2024 ) {
+					if ( $month !== null && is_numeric( $month ) ) {
+						// Filter by specific year and month - use date range for index
+						$month = (int) $month;
+						if ( $month >= 1 && $month <= 12 ) {
+							$date_start = sprintf( '%04d-%02d-01 00:00:00', $year, $month );
+							$days_in_month = (int) date( 't', mktime( 0, 0, 0, $month, 1, $year ) );
+							$date_end = sprintf( '%04d-%02d-%02d 23:59:59', $year, $month, $days_in_month );
+							$date_filter = 'date >= %s AND date <= %s';
+							$date_params[] = $date_start;
+							$date_params[] = $date_end;
+						}
+					} else {
+						// Filter by year only - use date range for index
+						$date_start = sprintf( '%04d-01-01 00:00:00', $year );
+						$date_end = sprintf( '%04d-12-31 23:59:59', $year );
+						$date_filter = 'date >= %s AND date <= %s';
+						$date_params[] = $date_start;
+						$date_params[] = $date_end;
+					}
+				}
+			} elseif ( $month !== null && is_numeric( $month ) ) {
+				// Month only (without year) - use current year or minimum 2024
+				$month = (int) $month;
+				if ( $month >= 1 && $month <= 12 ) {
+					$current_year = (int) date( 'Y' );
+					$min_year = max( 2024, $current_year );
+					$date_start = sprintf( '%04d-%02d-01 00:00:00', $min_year, $month );
+					$days_in_month = (int) date( 't', mktime( 0, 0, 0, $month, 1, $min_year ) );
+					$date_end = sprintf( '%04d-%02d-%02d 23:59:59', $min_year, $month, $days_in_month );
+					$date_filter = 'date >= %s AND date <= %s';
+					$date_params[] = $date_start;
+					$date_params[] = $date_end;
+				}
+			}
+			
+			// Build WHERE conditions for pickup subquery
+			$pickup_where_conditions = array();
+			$pickup_params = array();
+			
+			// Add date filter if exists (only for pickup subquery)
+			if ( ! empty( $date_filter ) ) {
+				$pickup_where_conditions[] = $date_filter;
+				$pickup_params = array_merge( $pickup_params, $date_params );
+			}
+			
+			$pickup_where_sql = '';
+			if ( ! empty( $pickup_where_conditions ) ) {
+				$pickup_where_sql = ' AND ' . implode( ' AND ', $pickup_where_conditions );
+			}
+			
+			// Build WHERE conditions for main query (country filter)
+			$main_where_conditions = array();
+			$main_params = array();
+			
+			// Country filter (apply to both pickup and delivery)
+			if ( $country !== 'ALL' ) {
+				$main_where_conditions[] = 'sp.country = %s AND sd.country = %s';
+				$main_params[] = $country;
+				$main_params[] = $country;
+			}
+			
+			$main_where_sql = '';
+			if ( ! empty( $main_where_conditions ) ) {
+				$main_where_sql = ' WHERE ' . implode( ' AND ', $main_where_conditions );
+			}
+			
+			// Combine all params (pickup params first, then main params)
+			$params = array_merge( $pickup_params, $main_params );
+			
+			/**
+			 * Highly optimized query using indexed subqueries.
+			 * Strategy:
+			 * 1. Use composite index (location_type, date, load_id) for fast filtering
+			 * 2. Get only first location per load_id to avoid cartesian product
+			 * 3. Join with shipper table using indexed lookups
+			 * 4. Filter by country after joins to reduce data early
+			 */
+			$sql = "
+				SELECT 
+					sp.state AS pickup_state,
+					sp.country AS pickup_country,
+					sd.state AS delivery_state,
+					sd.country AS delivery_country,
+					COUNT(DISTINCT pickup_routes.load_id) AS count
+				FROM (
+					SELECT 
+						load_id,
+						MIN(id) AS location_id
+					FROM $table_locations
+					WHERE location_type = 'pickup'
+						AND address_id IS NOT NULL
+						AND address_id != ''
+						AND date IS NOT NULL
+						$pickup_where_sql
+					GROUP BY load_id
+				) AS pickup_routes
+				INNER JOIN $table_locations AS lp
+					ON pickup_routes.location_id = lp.id
+				INNER JOIN $table_shipper AS sp 
+					ON lp.address_id = CAST(sp.id AS CHAR)
+					AND sp.state IS NOT NULL
+					AND sp.state != ''
+				INNER JOIN (
+					SELECT 
+						load_id,
+						MIN(id) AS location_id
+					FROM $table_locations
+					WHERE location_type = 'delivery'
+						AND address_id IS NOT NULL
+						AND address_id != ''
+						AND date IS NOT NULL
+					GROUP BY load_id
+				) AS delivery_routes
+					ON pickup_routes.load_id = delivery_routes.load_id
+				INNER JOIN $table_locations AS ld
+					ON delivery_routes.location_id = ld.id
+				INNER JOIN $table_shipper AS sd
+					ON ld.address_id = CAST(sd.id AS CHAR)
+					AND sd.state IS NOT NULL
+					AND sd.state != ''
+				$main_where_sql
+				GROUP BY sp.state, sp.country, sd.state, sd.country
+			";
+			
+			$rows = empty( $params ) 
+				? $wpdb->get_results( $sql, ARRAY_A )
+				: $wpdb->get_results( $wpdb->prepare( $sql, $params ), ARRAY_A );
+			
+			if ( empty( $rows ) ) {
+				continue;
+			}
+			
+			foreach ( $rows as $row ) {
+				$pickup_state = strtoupper( trim( (string) $row['pickup_state'] ) );
+				$delivery_state = strtoupper( trim( (string) $row['delivery_state'] ) );
+				$pickup_country = strtoupper( trim( (string) $row['pickup_country'] ) );
+				$delivery_country = strtoupper( trim( (string) $row['delivery_country'] ) );
+				
+				if ( $pickup_state === '' || $delivery_state === '' ) {
+					continue;
+				}
+				
+				$key = $pickup_country . '|' . $pickup_state . '|' . $delivery_country . '|' . $delivery_state;
+				
+				if ( ! isset( $aggregated[ $key ] ) ) {
+					$aggregated[ $key ] = array(
+						'pickup_state'   => $pickup_state,
+						'pickup_country' => $pickup_country,
+						'delivery_state'   => $delivery_state,
+						'delivery_country' => $delivery_country,
+						'count'   => 0,
+					);
+				}
+				
+				$aggregated[ $key ]['count'] += (int) $row['count'];
+			}
+		}
+		
+		if ( empty( $aggregated ) ) {
+			return array();
+		}
+		
+		// Convert to flat array with human-readable labels and sort by count DESC
+		$result = array();
+		foreach ( $aggregated as $item ) {
+			$pickup_label = $this->get_state_label( $item['pickup_state'] );
+			$delivery_label = $this->get_state_label( $item['delivery_state'] );
+			
+			// Append country for non-USA if needed
+			if ( $item['pickup_country'] !== 'USA' && $item['pickup_country'] !== '' ) {
+				$pickup_label .= ' (' . $item['pickup_country'] . ')';
+			}
+			if ( $item['delivery_country'] !== 'USA' && $item['delivery_country'] !== '' ) {
+				$delivery_label .= ' (' . $item['delivery_country'] . ')';
+			}
+			
+			$route_label = $pickup_label . ' → ' . $delivery_label;
+			
+			$result[] = array(
+				'pickup_state'   => $item['pickup_state'],
+				'pickup_country' => $item['pickup_country'],
+				'delivery_state'   => $item['delivery_state'],
+				'delivery_country' => $item['delivery_country'],
+				'label'   => $route_label,
+				'count'   => (int) $item['count'],
+			);
+		}
+		
+		usort(
+			$result,
+			static function ( $a, $b ) {
+				return $b['count'] <=> $a['count'];
+			}
+		);
+		
+		return $result;
+	}
+	
+	/**
 	 * Get total drivers count
 	 * 
 	 * @return int Total number of published drivers
@@ -364,6 +797,88 @@ class TMSDriversStatistics {
 		}
 		
 		return $expired_counts;
+	}
+	
+	/**
+	 * Add performance indexes to location tables for route statistics optimization
+	 * Safe to run multiple times - checks if indexes exist before adding
+	 * 
+	 * @return array Results of index creation
+	 */
+	public function add_route_statistics_indexes() {
+		global $wpdb;
+		
+		$results = array();
+		$projects = array( 'Odysseia', 'Martlet', 'Endurance' );
+		$table_shipper = $wpdb->prefix . 'reports_shipper';
+		
+		foreach ( $projects as $project ) {
+			$project_lower = strtolower( $project );
+			$table_locations = $wpdb->prefix . 'reports_' . $project_lower . '_locations';
+			
+			// Check if table exists
+			$table_exists = $wpdb->get_var( $wpdb->prepare(
+				"SHOW TABLES LIKE %s",
+				$table_locations
+			) );
+			
+			if ( $table_exists !== $table_locations ) {
+				continue;
+			}
+			
+			$table_results = array(
+				'table' => $table_locations,
+				'indexes_added' => array(),
+			);
+			
+			// Critical composite index for route statistics: (location_type, date, load_id)
+			// This index will be used for filtering by location_type and date range
+			$indexes_to_add = array(
+				'idx_route_stats' => '(location_type, date, load_id)',
+				'idx_date_type' => '(date, location_type)',
+				'idx_load_date_type' => '(load_id, date, location_type)',
+			);
+			
+			foreach ( $indexes_to_add as $index_name => $index_columns ) {
+				// Check if index exists using SHOW INDEX
+				$index_exists = $wpdb->get_var( $wpdb->prepare(
+					"SHOW INDEX FROM $table_locations WHERE Key_name = %s",
+					$index_name
+				) );
+				
+				if ( ! $index_exists ) {
+					$result = $wpdb->query( "
+						ALTER TABLE $table_locations ADD INDEX $index_name $index_columns
+					" );
+					if ( $result !== false ) {
+						$table_results['indexes_added'][] = $index_name;
+					}
+				}
+			}
+			
+			$results[] = $table_results;
+		}
+		
+		// Add index to shipper table for address_id lookups
+		$shipper_index_name = 'idx_address_id_lookup';
+		$shipper_index_exists = $wpdb->get_var( $wpdb->prepare(
+			"SHOW INDEX FROM $table_shipper WHERE Key_name = %s",
+			$shipper_index_name
+		) );
+		
+		if ( ! $shipper_index_exists ) {
+			$result = $wpdb->query( "
+				ALTER TABLE $table_shipper ADD INDEX $shipper_index_name (id, state, country)
+			" );
+			if ( $result !== false ) {
+				$results[] = array(
+					'table' => $table_shipper,
+					'indexes_added' => array( $shipper_index_name ),
+				);
+			}
+		}
+		
+		return $results;
 	}
 }
 

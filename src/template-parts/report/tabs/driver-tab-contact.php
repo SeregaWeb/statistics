@@ -25,6 +25,8 @@ $driver_name   = get_field_value( $meta, 'driver_name' );
 $driver_phone  = get_field_value( $meta, 'driver_phone' );
 $driver_email  = get_field_value( $meta, 'driver_email' );
 $home_location = get_field_value( $meta, 'home_location' );
+$second_main_driver_phone = get_field_value( $meta, 'second_main_driver_phone' );
+$second_main_driver_email = get_field_value( $meta, 'second_main_driver_email' );
 $city          = get_field_value( $meta, 'city' );
 $dob           = get_field_value( $meta, 'dob' );
 
@@ -147,6 +149,17 @@ $access_vehicle = $TMSUsers->check_user_role_access( [
                         <option value="owner_phone" <?php echo $show_phone === 'owner_phone' ? 'selected' : ''; ?>>Owner phone</option>
                     </select>
             </div>
+
+            <div class="col-md-4 mb-3">
+                    <label class="form-label">Second Driver Phone</label>
+                    <input type="tel" class="form-control js-tel-mask" name="second_main_driver_phone"
+                           value="<?php echo $second_main_driver_phone; ?>">
+                </div>
+                <div class="col-md-4 mb-3">
+                    <label class="form-label">Second Driver Email</label>
+                    <input type="email" class="form-control" name="second_main_driver_email"
+                           value="<?php echo $second_main_driver_email; ?>">
+                </div>
             </div>
 
 

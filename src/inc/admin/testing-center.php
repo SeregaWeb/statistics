@@ -40,6 +40,13 @@ $test_pages = array(
 		'type' => 'WordPress Page',
 	),
 	
+	'Location Data Import' => array(
+		'url' => add_query_arg( array( 'location-import' => '1' ), home_url() ),
+		'description' => 'Import location data from JSON (stored in meta tables) to new location tables. Process data in batches for all projects (Odysseia, Martlet, Endurance) and both types (odysseia and FLT).',
+		'category' => 'Data Migration',
+		'type' => 'WordPress Page',
+	),
+	
 	'Driver Rating Block Cron Test' => array(
 		'url' => add_query_arg( array( 'tms_test_rating_block' => '1' ), home_url() ),
 		'description' => 'Manually trigger driver rating block cron. Blocks drivers with low ratings. Check debug.log for details.',

@@ -147,6 +147,7 @@ export function initDriversStatisticsCharts(): void {
         { id: 'vehicleTypeChart', useBar: false, container: 'vehicle-type' },
         { id: 'nationalityChart', useBar: true, container: 'nationality' },
         { id: 'languageChart', useBar: false, container: 'languages' },
+        { id: 'loadsByStateChart', useBar: true, container: 'loads-by-state' },
     ];
     
     chartConfigs.forEach((config) => {
@@ -186,6 +187,10 @@ export function initDriversStatisticsCharts(): void {
                         { id: 'vehicleTypeChart', useBar: false },
                         { id: 'nationalityChart', useBar: true },
                         { id: 'languageChart', useBar: false },
+                        { id: 'loadsByStateChart', useBar: true },
+                        { id: 'loadsByRouteChart', useBar: true },
+                        { id: 'loadsByRouteChart1', useBar: true },
+                        { id: 'loadsByRouteChart2', useBar: true },
                     ];
                     chartConfigs.forEach((config) => {
                         const chartElement = document.getElementById(config.id);

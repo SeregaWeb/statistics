@@ -4455,6 +4455,10 @@ function initDriversStatisticsCharts() {
     id: 'languageChart',
     useBar: false,
     container: 'languages'
+  }, {
+    id: 'loadsByStateChart',
+    useBar: true,
+    container: 'loads-by-state'
   }];
   chartConfigs.forEach(function (config) {
     var chartElement = document.getElementById(config.id);
@@ -4491,6 +4495,18 @@ function initDriversStatisticsCharts() {
           }, {
             id: 'languageChart',
             useBar: false
+          }, {
+            id: 'loadsByStateChart',
+            useBar: true
+          }, {
+            id: 'loadsByRouteChart',
+            useBar: true
+          }, {
+            id: 'loadsByRouteChart1',
+            useBar: true
+          }, {
+            id: 'loadsByRouteChart2',
+            useBar: true
           }];
           _chartConfigs.forEach(function (config) {
             var chartElement = document.getElementById(config.id);
@@ -5126,6 +5142,337 @@ function initHomeLocationMap(stateMapData, maxCount, stateMarkersData, geojsonSo
     }
   };
   _checkLeaflet();
+}
+
+/***/ }),
+
+/***/ "./src/js/components/charts/loads-by-route-chart.ts":
+/*!**********************************************************!*\
+  !*** ./src/js/components/charts/loads-by-route-chart.ts ***!
+  \**********************************************************/
+/***/ (function(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   initLoadsByRouteChartComponent: function() { return /* binding */ initLoadsByRouteChartComponent; }
+/* harmony export */ });
+function updateLoadsByRouteFilters() {
+  var compareToggle = document.getElementById('routeCompareToggle');
+  var countrySelect = document.getElementById('routeCountry');
+  var url = new URL(window.location.href);
+  if (compareToggle) {
+    if (compareToggle.checked) {
+      url.searchParams.set('route_compare', '1');
+      var year1Select = document.getElementById('routeYear1');
+      var month1Select = document.getElementById('routeMonth1');
+      var year2Select = document.getElementById('routeYear2');
+      var month2Select = document.getElementById('routeMonth2');
+      if (year1Select) {
+        url.searchParams.set('route_year1', year1Select.value);
+      }
+      if (month1Select) {
+        if (month1Select.value === '') {
+          url.searchParams.delete('route_month1');
+        } else {
+          url.searchParams.set('route_month1', month1Select.value);
+        }
+      }
+      if (year2Select) {
+        url.searchParams.set('route_year2', year2Select.value);
+      }
+      if (month2Select) {
+        if (month2Select.value === '') {
+          url.searchParams.delete('route_month2');
+        } else {
+          url.searchParams.set('route_month2', month2Select.value);
+        }
+      }
+      url.searchParams.delete('route_year');
+      url.searchParams.delete('route_month');
+    } else {
+      url.searchParams.delete('route_compare');
+      var yearSelect = document.getElementById('routeYear');
+      var monthSelect = document.getElementById('routeMonth');
+      if (yearSelect) {
+        url.searchParams.set('route_year', yearSelect.value);
+      }
+      if (monthSelect) {
+        if (monthSelect.value === '') {
+          url.searchParams.delete('route_month');
+        } else {
+          url.searchParams.set('route_month', monthSelect.value);
+        }
+      }
+      url.searchParams.delete('route_year1');
+      url.searchParams.delete('route_month1');
+      url.searchParams.delete('route_year2');
+      url.searchParams.delete('route_month2');
+    }
+  }
+  if (countrySelect) {
+    url.searchParams.set('route_country', countrySelect.value);
+  }
+  url.searchParams.set('chart', 'loads-by-route');
+  window.location.href = url.toString();
+}
+function initLoadsByRouteChart() {
+  var chartId = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : 'loadsByRouteChart';
+  var chartElement = document.getElementById(chartId);
+  if (!chartElement) {
+    return;
+  }
+  var chartData = chartElement.getAttribute('data-chart-data');
+  if (!chartData || chartData === '[]' || chartData === 'null') {
+    return;
+  }
+  var container = chartElement.closest('.chart-container');
+  if (container && container.style.display === 'none') {
+    setTimeout(function () {
+      return initLoadsByRouteChart(chartId);
+    }, 200);
+    return;
+  }
+  chartElement.dataset.initialized = 'false';
+  if (typeof window.initDriversChart === 'function') {
+    window.initDriversChart(chartId, true);
+  } else if (typeof window.initDriversStatisticsCharts === 'function') {
+    window.initDriversStatisticsCharts();
+  }
+}
+function initLoadsByRouteChartComponent() {
+  var compareToggle = document.getElementById('routeCompareToggle');
+  var countrySelect = document.getElementById('routeCountry');
+  var yearSelect = document.getElementById('routeYear');
+  var monthSelect = document.getElementById('routeMonth');
+  var year1Select = document.getElementById('routeYear1');
+  var month1Select = document.getElementById('routeMonth1');
+  var year2Select = document.getElementById('routeYear2');
+  var month2Select = document.getElementById('routeMonth2');
+  if (compareToggle) {
+    compareToggle.addEventListener('change', updateLoadsByRouteFilters);
+  }
+  if (countrySelect) {
+    countrySelect.addEventListener('change', updateLoadsByRouteFilters);
+  }
+  if (yearSelect) {
+    yearSelect.addEventListener('change', updateLoadsByRouteFilters);
+  }
+  if (monthSelect) {
+    monthSelect.addEventListener('change', updateLoadsByRouteFilters);
+  }
+  if (year1Select) {
+    year1Select.addEventListener('change', updateLoadsByRouteFilters);
+  }
+  if (month1Select) {
+    month1Select.addEventListener('change', updateLoadsByRouteFilters);
+  }
+  if (year2Select) {
+    year2Select.addEventListener('change', updateLoadsByRouteFilters);
+  }
+  if (month2Select) {
+    month2Select.addEventListener('change', updateLoadsByRouteFilters);
+  }
+  var compareMode = compareToggle && compareToggle.checked;
+  if (compareMode) {
+    initLoadsByRouteChart('loadsByRouteChart1');
+    initLoadsByRouteChart('loadsByRouteChart2');
+  } else {
+    initLoadsByRouteChart('loadsByRouteChart');
+  }
+  var chartContainer = document.querySelector('.chart-container[data-chart="loads-by-route"]');
+  if (chartContainer) {
+    var observer = new MutationObserver(function (mutations) {
+      mutations.forEach(function (mutation) {
+        if (mutation.type === 'attributes' && mutation.attributeName === 'style') {
+          var isVisible = chartContainer.style.display !== 'none' && window.getComputedStyle(chartContainer).display !== 'none';
+          if (isVisible) {
+            setTimeout(function () {
+              if (compareMode) {
+                initLoadsByRouteChart('loadsByRouteChart1');
+                initLoadsByRouteChart('loadsByRouteChart2');
+              } else {
+                initLoadsByRouteChart('loadsByRouteChart');
+              }
+            }, 300);
+          }
+        }
+      });
+    });
+    observer.observe(chartContainer, {
+      attributes: true,
+      attributeFilter: ['style']
+    });
+  }
+}
+
+/***/ }),
+
+/***/ "./src/js/components/charts/loads-by-state-chart.ts":
+/*!**********************************************************!*\
+  !*** ./src/js/components/charts/loads-by-state-chart.ts ***!
+  \**********************************************************/
+/***/ (function(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   initLoadsByStateChartComponent: function() { return /* binding */ initLoadsByStateChartComponent; }
+/* harmony export */ });
+function updateLoadsByStateFilters() {
+  var typeSelect = document.getElementById('loadsLocationType');
+  var countrySelect = document.getElementById('loadsCountry');
+  var yearSelect = document.getElementById('loadsYear');
+  var monthSelect = document.getElementById('loadsMonth');
+  var url = new URL(window.location.href);
+  if (typeSelect) {
+    url.searchParams.set('loads_location_type', typeSelect.value);
+  }
+  if (countrySelect) {
+    url.searchParams.set('loads_country', countrySelect.value);
+  }
+  if (yearSelect) {
+    url.searchParams.set('loads_year', yearSelect.value);
+  }
+  if (monthSelect) {
+    if (monthSelect.value === '') {
+      url.searchParams.delete('loads_month');
+    } else {
+      url.searchParams.set('loads_month', monthSelect.value);
+    }
+  }
+  url.searchParams.set('chart', 'loads-by-state');
+  window.location.href = url.toString();
+}
+function initLoadsByStateChart() {
+  var chartElement = document.getElementById('loadsByStateChart');
+  if (!chartElement) {
+    return;
+  }
+  var chartData = chartElement.getAttribute('data-chart-data');
+  if (!chartData || chartData === '[]' || chartData === 'null') {
+    return;
+  }
+  var container = chartElement.closest('.chart-container');
+  if (container && container.style.display === 'none') {
+    setTimeout(initLoadsByStateChart, 200);
+    return;
+  }
+  chartElement.dataset.initialized = 'false';
+  if (typeof window.initDriversChart === 'function') {
+    window.initDriversChart('loadsByStateChart', true);
+  } else if (typeof window.initDriversStatisticsCharts === 'function') {
+    window.initDriversStatisticsCharts();
+  }
+}
+function initLoadsByStateChartComponent() {
+  var typeSelect = document.getElementById('loadsLocationType');
+  var countrySelect = document.getElementById('loadsCountry');
+  var yearSelect = document.getElementById('loadsYear');
+  var monthSelect = document.getElementById('loadsMonth');
+  if (typeSelect) {
+    typeSelect.addEventListener('change', updateLoadsByStateFilters);
+  }
+  if (countrySelect) {
+    countrySelect.addEventListener('change', updateLoadsByStateFilters);
+  }
+  if (yearSelect) {
+    yearSelect.addEventListener('change', updateLoadsByStateFilters);
+  }
+  if (monthSelect) {
+    monthSelect.addEventListener('change', updateLoadsByStateFilters);
+  }
+  initLoadsByStateChart();
+  var chartContainer = document.querySelector('.chart-container[data-chart="loads-by-state"]');
+  if (chartContainer) {
+    var observer = new MutationObserver(function (mutations) {
+      mutations.forEach(function (mutation) {
+        if (mutation.type === 'attributes' && mutation.attributeName === 'style') {
+          var isVisible = chartContainer.style.display !== 'none' && window.getComputedStyle(chartContainer).display !== 'none';
+          if (isVisible) {
+            setTimeout(initLoadsByStateChart, 300);
+          }
+        }
+      });
+    });
+    observer.observe(chartContainer, {
+      attributes: true,
+      attributeFilter: ['style']
+    });
+  }
+}
+
+/***/ }),
+
+/***/ "./src/js/components/charts/location-vehicle-charts.ts":
+/*!*************************************************************!*\
+  !*** ./src/js/components/charts/location-vehicle-charts.ts ***!
+  \*************************************************************/
+/***/ (function(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   initLocationVehicleCharts: function() { return /* binding */ initLocationVehicleCharts; }
+/* harmony export */ });
+var chartMap = {
+  'home-location': {
+    id: 'stateChart',
+    useBar: true
+  },
+  'vehicle-type': {
+    id: 'vehicleTypeChart',
+    useBar: false
+  },
+  'nationality': {
+    id: 'nationalityChart',
+    useBar: true
+  },
+  'languages': {
+    id: 'languageChart',
+    useBar: false
+  },
+  'loads-by-state': {
+    id: 'loadsByStateChart',
+    useBar: true
+  }
+};
+function initLocationVehicleCharts() {
+  var chartFilter = document.getElementById('chartFilter');
+  if (!chartFilter) {
+    return;
+  }
+  chartFilter.addEventListener('change', function () {
+    var selectedChart = this.value;
+    var chartContainers = document.querySelectorAll('.chart-container');
+    chartContainers.forEach(function (container) {
+      container.style.display = 'none';
+    });
+    var selectedContainer = document.querySelector(".chart-container[data-chart=\"".concat(selectedChart, "\"]"));
+    if (selectedContainer) {
+      selectedContainer.style.display = 'block';
+      setTimeout(function () {
+        var chartConfig = chartMap[selectedChart];
+        if (chartConfig) {
+          var chartElement = document.getElementById(chartConfig.id);
+          if (chartElement) {
+            chartElement.dataset.initialized = 'false';
+            if (typeof window.initDriversChart === 'function') {
+              window.initDriversChart(chartConfig.id, chartConfig.useBar);
+            } else {
+              window.dispatchEvent(new Event('resize'));
+              if (typeof window.initDriversStatisticsCharts === 'function') {
+                window.initDriversStatisticsCharts();
+              }
+            }
+          }
+        }
+      }, 300);
+    }
+    var url = new URL(window.location.href);
+    url.searchParams.set('chart', selectedChart);
+    window.history.replaceState(null, '', url);
+  });
 }
 
 /***/ }),
@@ -6813,7 +7160,7 @@ var addShipperPointInit = function addShipperPointInit() {
             etaDisplay += " ".concat(etaTimeValue);
           }
         }
-        var template = "\n                <div class=\"row js-current-shipper stopTypeValue card-shipper\" data-stop-type=\"".concat(stopTypeValue, "\">\n                    <div class=\"d-none\">\n                        <input type=\"hidden\" class=\"js-current-shipper_address_id\" name=\"").concat(stopTypeValue, "_address_id[]\" value=\"").concat(addressValueID, "\" >\n                        <input type=\"hidden\" class=\"js-current-shipper_address\" name=\"").concat(stopTypeValue, "_address[]\" value=\"").concat(addressValueFullAddrres, "\" >\n                        <input type=\"hidden\" class=\"js-current-shipper_short_address\" name=\"").concat(stopTypeValue, "_short_address[]\" value=\"").concat(addressValueShortAddrres, "\" >\n                        <input type=\"hidden\" class=\"js-current-shipper_contact\" name=\"").concat(stopTypeValue, "_contact[]\" value=\"").concat(contactValue, "\" >\n                        <input type=\"hidden\" class=\"js-current-shipper_date\" name=\"").concat(stopTypeValue, "_date[]\" value=\"").concat(dateValue, "\" >\n                        <input type=\"hidden\" class=\"js-current-shipper_info\" name=\"").concat(stopTypeValue, "_info[]\" value=\"").concat(infoValue, "\" >\n                        <input type=\"hidden\" class=\"js-current-shipper_type\" name=\"").concat(stopTypeValue, "_type[]\" value=\"").concat(stopTypeValue, "\" >\n                        <input type=\"hidden\" class=\"js-current-shipper_start\" name=\"").concat(stopTypeValue, "_start[]\" value=\"").concat(start, "\">\n                        <input type=\"hidden\" class=\"js-current-shipper_end\" name=\"").concat(stopTypeValue, "_end[]\" value=\"").concat(end, "\">\n                        <input type=\"hidden\" class=\"js-current-shipper_strict\" name=\"").concat(stopTypeValue, "_strict[]\" value=\"").concat(strict, "\">\n                        <input type=\"hidden\" class=\"js-current-shipper_eta_date\" name=\"").concat(stopTypeValue, "_eta_date[]\" value=\"").concat(etaDateValue, "\">\n                        <input type=\"hidden\" class=\"js-current-shipper_eta_time\" name=\"").concat(stopTypeValue, "_eta_time[]\" value=\"").concat(etaTimeValue, "\">\n                    </div>\n                    <div class=\"col-12 col-md-1\">").concat(typeDelivery, "</div>\n                    <div class=\"col-12 col-md-1\">\n                         <div class=\"d-flex flex-column\">\n                                <p class=\"m-0\">").concat(dateValue, "</p>\n                                <span class=\"small-text\">\n                                    ").concat(time, "\n                                </span>\n                            </div>\n                    </div>\n                    <div class=\"col-12 col-md-2\">\n                        ").concat(etaDisplay ? "<span class=\"small-text\">".concat(etaDisplay, "</span>") : '<span class="text-muted small-text">—</span>', "\n                    </div>\n                    <div class=\"col-12 col-md-3\">").concat(addressValueFullAddrres, "</div>\n                    <div class=\"col-12 col-md-2\">").concat(contactValue, "</div>\n                    <div class=\"col-12 col-md-2\">").concat(infoValue, "</div>\n                    <div class=\"col-12 col-md-1 p-0 card-shipper__btns\">\n                        <button class=\"additional-card__edit js-edit-ship\">\n                            <svg width=\"668\" height=\"668\" viewBox=\"0 0 668 668\" fill=\"none\" xmlns=\"http://www.w3.org/2000/svg\">\n                                <path d=\"M640.46 27.5413C676.29 63.3746 676.29 121.472 640.46 157.305L623.94 173.823C619.13 172.782 613.073 171.196 606.17 168.801C587.693 162.391 563.41 150.276 540.567 127.433C517.723 104.591 505.61 80.3076 499.2 61.8299C496.803 54.9269 495.22 48.8696 494.177 44.0596L510.697 27.5413C546.53 -8.29175 604.627 -8.29175 640.46 27.5413Z\" fill=\"#1C274C\"/>\n                                <path d=\"M420.003 377.76C406.537 391.227 399.803 397.96 392.377 403.753C383.62 410.583 374.143 416.44 364.117 421.22C355.617 425.27 346.583 428.28 328.513 434.303L233.236 466.063C224.345 469.027 214.542 466.713 207.915 460.087C201.287 453.457 198.973 443.657 201.937 434.763L233.696 339.487C239.719 321.417 242.73 312.383 246.781 303.883C251.56 293.857 257.416 284.38 264.248 275.623C270.04 268.197 276.773 261.465 290.24 247.998L454.11 84.1284C462.9 107.268 478.31 135.888 505.21 162.789C532.113 189.69 560.733 205.099 583.873 213.891L420.003 377.76Z\" fill=\"#1C274C\"/>\n                                <path d=\"M618.517 618.516C667.333 569.703 667.333 491.133 667.333 334C667.333 282.39 667.333 239.258 665.603 202.87L453.533 414.943C441.823 426.656 433.027 435.456 423.127 443.176C411.507 452.243 398.933 460.013 385.627 466.353C374.293 471.756 362.487 475.686 346.777 480.92L249.048 513.496C222.189 522.45 192.578 515.46 172.559 495.44C152.54 475.423 145.55 445.81 154.503 418.953L187.078 321.223C192.312 305.513 196.244 293.706 201.645 282.373C207.986 269.066 215.757 256.493 224.822 244.871C232.543 234.972 241.344 226.176 253.058 214.468L465.13 2.39583C428.743 0.6665 385.61 0.666504 334 0.666504C176.865 0.666504 98.2977 0.6665 49.4824 49.4822C0.666744 98.2975 0.666748 176.865 0.666748 334C0.666748 491.133 0.666744 569.703 49.4824 618.516C98.2977 667.333 176.865 667.333 334 667.333C491.133 667.333 569.703 667.333 618.517 618.516Z\" fill=\"#1C274C\"/>\n                            </svg>\n                        </button>\n                        <button class=\"additional-card__remove js-remove-ship\">\n                            <svg width=\"668\" height=\"668\" viewBox=\"0 0 668 668\" fill=\"none\" xmlns=\"http://www.w3.org/2000/svg\">\n                                <path fill-rule=\"evenodd\" clip-rule=\"evenodd\" d=\"M334 667.333C176.865 667.333 98.2976 667.333 49.4823 618.516C0.666622 569.703 0.666626 491.133 0.666626 334C0.666626 176.865 0.666622 98.2975 49.4823 49.4822C98.2976 0.6665 176.865 0.666504 334 0.666504C491.133 0.666504 569.703 0.6665 618.517 49.4822C667.333 98.2975 667.333 176.865 667.333 334C667.333 491.133 667.333 569.703 618.517 618.516C569.703 667.333 491.133 667.333 334 667.333ZM232.988 232.989C242.751 223.226 258.581 223.226 268.343 232.989L334 298.646L399.653 232.99C409.417 223.227 425.247 223.227 435.01 232.99C444.773 242.753 444.773 258.582 435.01 268.343L369.353 334L435.01 399.656C444.773 409.416 444.773 425.246 435.01 435.01C425.247 444.773 409.417 444.773 399.653 435.01L334 369.357L268.343 435.01C258.581 444.773 242.752 444.773 232.989 435.01C223.226 425.246 223.226 409.42 232.989 399.656L298.643 334L232.988 268.343C223.225 258.581 223.225 242.752 232.988 232.989Z\" fill=\"#1C274C\"></path>\n                            </svg>\n                        </button>\n                    </div>\n                </div>\n                ");
+        var template = "\n                <div class=\"row js-current-shipper stopTypeValue card-shipper\" data-stop-type=\"".concat(stopTypeValue, "\">\n                    <div class=\"d-none\">\n                        <input type=\"hidden\" class=\"js-current-shipper_db_id\" name=\"").concat(stopTypeValue, "_db_id[]\" value=\"0\">\n                        <input type=\"hidden\" class=\"js-current-shipper_address_id\" name=\"").concat(stopTypeValue, "_address_id[]\" value=\"").concat(addressValueID, "\" >\n                        <input type=\"hidden\" class=\"js-current-shipper_address\" name=\"").concat(stopTypeValue, "_address[]\" value=\"").concat(addressValueFullAddrres, "\" >\n                        <input type=\"hidden\" class=\"js-current-shipper_short_address\" name=\"").concat(stopTypeValue, "_short_address[]\" value=\"").concat(addressValueShortAddrres, "\" >\n                        <input type=\"hidden\" class=\"js-current-shipper_contact\" name=\"").concat(stopTypeValue, "_contact[]\" value=\"").concat(contactValue, "\" >\n                        <input type=\"hidden\" class=\"js-current-shipper_date\" name=\"").concat(stopTypeValue, "_date[]\" value=\"").concat(dateValue, "\" >\n                        <input type=\"hidden\" class=\"js-current-shipper_info\" name=\"").concat(stopTypeValue, "_info[]\" value=\"").concat(infoValue, "\" >\n                        <input type=\"hidden\" class=\"js-current-shipper_type\" name=\"").concat(stopTypeValue, "_type[]\" value=\"").concat(stopTypeValue, "\" >\n                        <input type=\"hidden\" class=\"js-current-shipper_start\" name=\"").concat(stopTypeValue, "_start[]\" value=\"").concat(start, "\">\n                        <input type=\"hidden\" class=\"js-current-shipper_end\" name=\"").concat(stopTypeValue, "_end[]\" value=\"").concat(end, "\">\n                        <input type=\"hidden\" class=\"js-current-shipper_strict\" name=\"").concat(stopTypeValue, "_strict[]\" value=\"").concat(strict, "\">\n                        <input type=\"hidden\" class=\"js-current-shipper_eta_date\" name=\"").concat(stopTypeValue, "_eta_date[]\" value=\"").concat(etaDateValue, "\">\n                        <input type=\"hidden\" class=\"js-current-shipper_eta_time\" name=\"").concat(stopTypeValue, "_eta_time[]\" value=\"").concat(etaTimeValue, "\">\n                    </div>\n                    <div class=\"col-12 col-md-1\">").concat(typeDelivery, "</div>\n                    <div class=\"col-12 col-md-1\">\n                         <div class=\"d-flex flex-column\">\n                                <p class=\"m-0\">").concat(dateValue, "</p>\n                                <span class=\"small-text\">\n                                    ").concat(time, "\n                                </span>\n                            </div>\n                    </div>\n                    <div class=\"col-12 col-md-2\">\n                        ").concat(etaDisplay ? "<span class=\"small-text\">".concat(etaDisplay, "</span>") : '<span class="text-muted small-text">—</span>', "\n                    </div>\n                    <div class=\"col-12 col-md-3\">").concat(addressValueFullAddrres, "</div>\n                    <div class=\"col-12 col-md-2\">").concat(contactValue, "</div>\n                    <div class=\"col-12 col-md-2\">").concat(infoValue, "</div>\n                    <div class=\"col-12 col-md-1 p-0 card-shipper__btns\">\n                        <button class=\"additional-card__edit js-edit-ship\">\n                            <svg width=\"668\" height=\"668\" viewBox=\"0 0 668 668\" fill=\"none\" xmlns=\"http://www.w3.org/2000/svg\">\n                                <path d=\"M640.46 27.5413C676.29 63.3746 676.29 121.472 640.46 157.305L623.94 173.823C619.13 172.782 613.073 171.196 606.17 168.801C587.693 162.391 563.41 150.276 540.567 127.433C517.723 104.591 505.61 80.3076 499.2 61.8299C496.803 54.9269 495.22 48.8696 494.177 44.0596L510.697 27.5413C546.53 -8.29175 604.627 -8.29175 640.46 27.5413Z\" fill=\"#1C274C\"/>\n                                <path d=\"M420.003 377.76C406.537 391.227 399.803 397.96 392.377 403.753C383.62 410.583 374.143 416.44 364.117 421.22C355.617 425.27 346.583 428.28 328.513 434.303L233.236 466.063C224.345 469.027 214.542 466.713 207.915 460.087C201.287 453.457 198.973 443.657 201.937 434.763L233.696 339.487C239.719 321.417 242.73 312.383 246.781 303.883C251.56 293.857 257.416 284.38 264.248 275.623C270.04 268.197 276.773 261.465 290.24 247.998L454.11 84.1284C462.9 107.268 478.31 135.888 505.21 162.789C532.113 189.69 560.733 205.099 583.873 213.891L420.003 377.76Z\" fill=\"#1C274C\"/>\n                                <path d=\"M618.517 618.516C667.333 569.703 667.333 491.133 667.333 334C667.333 282.39 667.333 239.258 665.603 202.87L453.533 414.943C441.823 426.656 433.027 435.456 423.127 443.176C411.507 452.243 398.933 460.013 385.627 466.353C374.293 471.756 362.487 475.686 346.777 480.92L249.048 513.496C222.189 522.45 192.578 515.46 172.559 495.44C152.54 475.423 145.55 445.81 154.503 418.953L187.078 321.223C192.312 305.513 196.244 293.706 201.645 282.373C207.986 269.066 215.757 256.493 224.822 244.871C232.543 234.972 241.344 226.176 253.058 214.468L465.13 2.39583C428.743 0.6665 385.61 0.666504 334 0.666504C176.865 0.666504 98.2977 0.6665 49.4824 49.4822C0.666744 98.2975 0.666748 176.865 0.666748 334C0.666748 491.133 0.666744 569.703 49.4824 618.516C98.2977 667.333 176.865 667.333 334 667.333C491.133 667.333 569.703 667.333 618.517 618.516Z\" fill=\"#1C274C\"/>\n                            </svg>\n                        </button>\n                        <button class=\"additional-card__remove js-remove-ship\">\n                            <svg width=\"668\" height=\"668\" viewBox=\"0 0 668 668\" fill=\"none\" xmlns=\"http://www.w3.org/2000/svg\">\n                                <path fill-rule=\"evenodd\" clip-rule=\"evenodd\" d=\"M334 667.333C176.865 667.333 98.2976 667.333 49.4823 618.516C0.666622 569.703 0.666626 491.133 0.666626 334C0.666626 176.865 0.666622 98.2975 49.4823 49.4822C98.2976 0.6665 176.865 0.666504 334 0.666504C491.133 0.666504 569.703 0.6665 618.517 49.4822C667.333 98.2975 667.333 176.865 667.333 334C667.333 491.133 667.333 569.703 618.517 618.516C569.703 667.333 491.133 667.333 334 667.333ZM232.988 232.989C242.751 223.226 258.581 223.226 268.343 232.989L334 298.646L399.653 232.99C409.417 223.227 425.247 223.227 435.01 232.99C444.773 242.753 444.773 258.582 435.01 268.343L369.353 334L435.01 399.656C444.773 409.416 444.773 425.246 435.01 435.01C425.247 444.773 409.417 444.773 399.653 435.01L334 369.357L268.343 435.01C258.581 444.773 242.752 444.773 232.989 435.01C223.226 425.246 223.226 409.42 232.989 399.656L298.643 334L232.988 268.343C223.225 258.581 223.225 242.752 232.988 232.989Z\" fill=\"#1C274C\"></path>\n                            </svg>\n                        </button>\n                    </div>\n                </div>\n                ");
         var originalStopType = (_a = form.querySelector('.js-original-stop-type')) === null || _a === void 0 ? void 0 : _a.value;
         var originalPosition = (_b = form.querySelector('.js-original-position')) === null || _b === void 0 ? void 0 : _b.value;
         if (originalStopType && originalPosition !== undefined) {
@@ -29402,18 +29749,24 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _components_charts_finance_statistics_charts__WEBPACK_IMPORTED_MODULE_47__ = __webpack_require__(/*! ./components/charts/finance-statistics-charts */ "./src/js/components/charts/finance-statistics-charts.ts");
 /* harmony import */ var _components_charts_source_statistics_charts__WEBPACK_IMPORTED_MODULE_48__ = __webpack_require__(/*! ./components/charts/source-statistics-charts */ "./src/js/components/charts/source-statistics-charts.ts");
 /* harmony import */ var _components_charts_home_location_map__WEBPACK_IMPORTED_MODULE_49__ = __webpack_require__(/*! ./components/charts/home-location-map */ "./src/js/components/charts/home-location-map.ts");
-/* harmony import */ var _components_drivers_statistics_tabs__WEBPACK_IMPORTED_MODULE_50__ = __webpack_require__(/*! ./components/drivers-statistics-tabs */ "./src/js/components/drivers-statistics-tabs.ts");
-/* harmony import */ var _components_quick_copy__WEBPACK_IMPORTED_MODULE_51__ = __webpack_require__(/*! ./components/quick-copy */ "./src/js/components/quick-copy.ts");
-/* harmony import */ var _components_driver_popups__WEBPACK_IMPORTED_MODULE_52__ = __webpack_require__(/*! ./components/driver-popups */ "./src/js/components/driver-popups.ts");
-/* harmony import */ var _components_driver_popup_forms__WEBPACK_IMPORTED_MODULE_53__ = __webpack_require__(/*! ./components/driver-popup-forms */ "./src/js/components/driver-popup-forms.ts");
-/* harmony import */ var _components_broker_popups__WEBPACK_IMPORTED_MODULE_54__ = __webpack_require__(/*! ./components/broker-popups */ "./src/js/components/broker-popups.ts");
-/* harmony import */ var _components_broker_popup_forms__WEBPACK_IMPORTED_MODULE_55__ = __webpack_require__(/*! ./components/broker-popup-forms */ "./src/js/components/broker-popup-forms.ts");
-/* harmony import */ var _components_driver_autocomplete__WEBPACK_IMPORTED_MODULE_56__ = __webpack_require__(/*! ./components/driver-autocomplete */ "./src/js/components/driver-autocomplete.ts");
-/* harmony import */ var _components_common_audio_helper__WEBPACK_IMPORTED_MODULE_57__ = __webpack_require__(/*! ./components/common/audio-helper */ "./src/js/components/common/audio-helper.ts");
-/* harmony import */ var _components_timer_control__WEBPACK_IMPORTED_MODULE_58__ = __webpack_require__(/*! ./components/timer-control */ "./src/js/components/timer-control.ts");
-/* harmony import */ var _components_timer_analytics__WEBPACK_IMPORTED_MODULE_59__ = __webpack_require__(/*! ./components/timer-analytics */ "./src/js/components/timer-analytics.ts");
-/* harmony import */ var _components_dark_mode_toggle__WEBPACK_IMPORTED_MODULE_60__ = __webpack_require__(/*! ./components/dark-mode-toggle */ "./src/js/components/dark-mode-toggle.ts");
-/* harmony import */ var _components_drivers_map__WEBPACK_IMPORTED_MODULE_61__ = __webpack_require__(/*! ./components/drivers-map */ "./src/js/components/drivers-map.ts");
+/* harmony import */ var _components_charts_location_vehicle_charts__WEBPACK_IMPORTED_MODULE_50__ = __webpack_require__(/*! ./components/charts/location-vehicle-charts */ "./src/js/components/charts/location-vehicle-charts.ts");
+/* harmony import */ var _components_charts_loads_by_state_chart__WEBPACK_IMPORTED_MODULE_51__ = __webpack_require__(/*! ./components/charts/loads-by-state-chart */ "./src/js/components/charts/loads-by-state-chart.ts");
+/* harmony import */ var _components_charts_loads_by_route_chart__WEBPACK_IMPORTED_MODULE_52__ = __webpack_require__(/*! ./components/charts/loads-by-route-chart */ "./src/js/components/charts/loads-by-route-chart.ts");
+/* harmony import */ var _components_drivers_statistics_tabs__WEBPACK_IMPORTED_MODULE_53__ = __webpack_require__(/*! ./components/drivers-statistics-tabs */ "./src/js/components/drivers-statistics-tabs.ts");
+/* harmony import */ var _components_quick_copy__WEBPACK_IMPORTED_MODULE_54__ = __webpack_require__(/*! ./components/quick-copy */ "./src/js/components/quick-copy.ts");
+/* harmony import */ var _components_driver_popups__WEBPACK_IMPORTED_MODULE_55__ = __webpack_require__(/*! ./components/driver-popups */ "./src/js/components/driver-popups.ts");
+/* harmony import */ var _components_driver_popup_forms__WEBPACK_IMPORTED_MODULE_56__ = __webpack_require__(/*! ./components/driver-popup-forms */ "./src/js/components/driver-popup-forms.ts");
+/* harmony import */ var _components_broker_popups__WEBPACK_IMPORTED_MODULE_57__ = __webpack_require__(/*! ./components/broker-popups */ "./src/js/components/broker-popups.ts");
+/* harmony import */ var _components_broker_popup_forms__WEBPACK_IMPORTED_MODULE_58__ = __webpack_require__(/*! ./components/broker-popup-forms */ "./src/js/components/broker-popup-forms.ts");
+/* harmony import */ var _components_driver_autocomplete__WEBPACK_IMPORTED_MODULE_59__ = __webpack_require__(/*! ./components/driver-autocomplete */ "./src/js/components/driver-autocomplete.ts");
+/* harmony import */ var _components_common_audio_helper__WEBPACK_IMPORTED_MODULE_60__ = __webpack_require__(/*! ./components/common/audio-helper */ "./src/js/components/common/audio-helper.ts");
+/* harmony import */ var _components_timer_control__WEBPACK_IMPORTED_MODULE_61__ = __webpack_require__(/*! ./components/timer-control */ "./src/js/components/timer-control.ts");
+/* harmony import */ var _components_timer_analytics__WEBPACK_IMPORTED_MODULE_62__ = __webpack_require__(/*! ./components/timer-analytics */ "./src/js/components/timer-analytics.ts");
+/* harmony import */ var _components_dark_mode_toggle__WEBPACK_IMPORTED_MODULE_63__ = __webpack_require__(/*! ./components/dark-mode-toggle */ "./src/js/components/dark-mode-toggle.ts");
+/* harmony import */ var _components_drivers_map__WEBPACK_IMPORTED_MODULE_64__ = __webpack_require__(/*! ./components/drivers-map */ "./src/js/components/drivers-map.ts");
+
+
+
 
 
 
@@ -29491,12 +29844,12 @@ function ready() {
   };
   var popupInstance = new _parts_popup_window__WEBPACK_IMPORTED_MODULE_2__["default"]();
   popupInstance.init();
-  _components_common_audio_helper__WEBPACK_IMPORTED_MODULE_57__["default"].getInstance();
-  var driverPopupForms = new _components_driver_popup_forms__WEBPACK_IMPORTED_MODULE_53__["default"](urlAjax);
-  var brokerPopupForms = new _components_broker_popup_forms__WEBPACK_IMPORTED_MODULE_55__["default"](urlAjax);
+  _components_common_audio_helper__WEBPACK_IMPORTED_MODULE_60__["default"].getInstance();
+  var driverPopupForms = new _components_driver_popup_forms__WEBPACK_IMPORTED_MODULE_56__["default"](urlAjax);
+  var brokerPopupForms = new _components_broker_popup_forms__WEBPACK_IMPORTED_MODULE_58__["default"](urlAjax);
   var singlePageBrokerUrl = (var_from_php === null || var_from_php === void 0 ? void 0 : var_from_php.single_page_broker) || '';
-  var brokerPopups = new _components_broker_popups__WEBPACK_IMPORTED_MODULE_54__["default"](urlAjax, singlePageBrokerUrl);
-  new _components_driver_autocomplete__WEBPACK_IMPORTED_MODULE_56__["default"](urlAjax, {
+  var brokerPopups = new _components_broker_popups__WEBPACK_IMPORTED_MODULE_57__["default"](urlAjax, singlePageBrokerUrl);
+  new _components_driver_autocomplete__WEBPACK_IMPORTED_MODULE_59__["default"](urlAjax, {
     unitInput: '.js-unit-number-input',
     dropdown: '.js-driver-dropdown',
     attachedDriverInput: 'input[name="attached_driver"]',
@@ -29505,7 +29858,7 @@ function ready() {
     nonceInput: '#driver-search-nonce',
     driverValueInput: '.js-driver-value'
   });
-  new _components_driver_autocomplete__WEBPACK_IMPORTED_MODULE_56__["default"](urlAjax, {
+  new _components_driver_autocomplete__WEBPACK_IMPORTED_MODULE_59__["default"](urlAjax, {
     unitInput: '.js-second-unit-number-input',
     dropdown: '.js-second-driver-dropdown',
     attachedDriverInput: 'input[name="attached_second_driver"]',
@@ -29513,7 +29866,7 @@ function ready() {
     unitNumberNameInput: 'input[name="second_unit_number_name"]',
     nonceInput: '#second-driver-search-nonce'
   });
-  new _components_driver_autocomplete__WEBPACK_IMPORTED_MODULE_56__["default"](urlAjax, {
+  new _components_driver_autocomplete__WEBPACK_IMPORTED_MODULE_59__["default"](urlAjax, {
     unitInput: '.js-third-unit-number-input',
     dropdown: '.js-third-driver-dropdown',
     attachedDriverInput: 'input[name="attached_third_driver"]',
@@ -29529,7 +29882,7 @@ function ready() {
     if (!wasVisible) {
       refererBlock.style.display = 'block';
     }
-    refererAutocomplete = new _components_driver_autocomplete__WEBPACK_IMPORTED_MODULE_56__["default"](urlAjax, {
+    refererAutocomplete = new _components_driver_autocomplete__WEBPACK_IMPORTED_MODULE_59__["default"](urlAjax, {
       unitInput: '.js-referer-unit-number-input',
       dropdown: '.js-referer-driver-dropdown',
       attachedDriverInput: '#referer_by',
@@ -29570,9 +29923,9 @@ function ready() {
       driverPopupForms.loadDriverStatistics(parseInt(driverIdInput.value));
     }
   }
-  new _components_timer_control__WEBPACK_IMPORTED_MODULE_58__.TimerControl(urlAjax);
-  new _components_timer_analytics__WEBPACK_IMPORTED_MODULE_59__.TimerAnalytics(urlAjax);
-  new _components_dark_mode_toggle__WEBPACK_IMPORTED_MODULE_60__["default"](urlAjax);
+  new _components_timer_control__WEBPACK_IMPORTED_MODULE_61__.TimerControl(urlAjax);
+  new _components_timer_analytics__WEBPACK_IMPORTED_MODULE_62__.TimerAnalytics(urlAjax);
+  new _components_dark_mode_toggle__WEBPACK_IMPORTED_MODULE_63__["default"](urlAjax);
   (0,_components_create_report__WEBPACK_IMPORTED_MODULE_4__.actionCreateReportInit)(urlAjax);
   (0,_components_create_report__WEBPACK_IMPORTED_MODULE_4__.createDraftPosts)(urlAjax);
   (0,_components_create_report__WEBPACK_IMPORTED_MODULE_4__.updateFilesReportInit)(urlAjax);
@@ -29624,7 +29977,10 @@ function ready() {
   (0,_components_charts_drivers_statistics_charts__WEBPACK_IMPORTED_MODULE_46__.initDriversStatisticsCharts)();
   (0,_components_charts_finance_statistics_charts__WEBPACK_IMPORTED_MODULE_47__.initFinanceStatisticsCharts)();
   (0,_components_charts_source_statistics_charts__WEBPACK_IMPORTED_MODULE_48__.initSourceStatisticsCharts)();
-  (0,_components_drivers_statistics_tabs__WEBPACK_IMPORTED_MODULE_50__.initDriversStatisticsTabs)();
+  (0,_components_drivers_statistics_tabs__WEBPACK_IMPORTED_MODULE_53__.initDriversStatisticsTabs)();
+  (0,_components_charts_location_vehicle_charts__WEBPACK_IMPORTED_MODULE_50__.initLocationVehicleCharts)();
+  (0,_components_charts_loads_by_state_chart__WEBPACK_IMPORTED_MODULE_51__.initLoadsByStateChartComponent)();
+  (0,_components_charts_loads_by_route_chart__WEBPACK_IMPORTED_MODULE_52__.initLoadsByRouteChartComponent)();
   var homeLocationMapElement = document.getElementById('usaStatesMap');
   if (homeLocationMapElement) {
     var stateMapData = homeLocationMapElement.dataset.stateMapData;
@@ -29640,7 +29996,7 @@ function ready() {
     }
   }
   if (hereApi) {
-    new _components_drivers_map__WEBPACK_IMPORTED_MODULE_61__["default"](urlAjax, hereApi);
+    new _components_drivers_map__WEBPACK_IMPORTED_MODULE_64__["default"](urlAjax, hereApi);
   }
   (0,_components_create_report__WEBPACK_IMPORTED_MODULE_4__.additionalContactsInit)();
   (0,_components_create_report__WEBPACK_IMPORTED_MODULE_4__.addShipperPointInit)();

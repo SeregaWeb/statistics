@@ -96,6 +96,9 @@ import { initDriversStatisticsCharts } from './components/charts/drivers-statist
 import { initFinanceStatisticsCharts } from './components/charts/finance-statistics-charts';
 import { initSourceStatisticsCharts } from './components/charts/source-statistics-charts';
 import { initHomeLocationMap } from './components/charts/home-location-map';
+import { initLocationVehicleCharts } from './components/charts/location-vehicle-charts';
+import { initLoadsByStateChartComponent } from './components/charts/loads-by-state-chart';
+import { initLoadsByRouteChartComponent } from './components/charts/loads-by-route-chart';
 import { initDriversStatisticsTabs } from './components/drivers-statistics-tabs';
 import './components/quick-copy';
 import './components/driver-popups';
@@ -320,6 +323,9 @@ function ready() {
     initFinanceStatisticsCharts();
     initSourceStatisticsCharts();
     initDriversStatisticsTabs();
+    initLocationVehicleCharts();
+    initLoadsByStateChartComponent();
+    initLoadsByRouteChartComponent();
     
     // Initialize Home Location Map if data is available
     const homeLocationMapElement = document.getElementById('usaStatesMap');

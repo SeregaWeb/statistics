@@ -3280,6 +3280,7 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 				$current_date = $data[ 'pick_up_location_date' ][ $i ];
 				
 				$pick_up_location[] = [
+					'db_id'         => isset( $data[ 'pick_up_location_db_id' ][ $i ] ) ? intval( $data[ 'pick_up_location_db_id' ][ $i ] ) : 0,
 					'address_id'    => $data[ 'pick_up_location_address_id' ][ $i ],
 					'address'       => $data[ 'pick_up_location_address' ][ $i ],
 					'short_address' => $data[ 'pick_up_location_short_address' ][ $i ],
@@ -3304,6 +3305,7 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 				$current_date = $data[ 'delivery_location_date' ][ $i ];
 				
 				$delivery_location[] = [
+					'db_id'         => isset( $data[ 'delivery_location_db_id' ][ $i ] ) ? intval( $data[ 'delivery_location_db_id' ][ $i ] ) : 0,
 					'address_id'    => $data[ 'delivery_location_address_id' ][ $i ],
 					'address'       => $data[ 'delivery_location_address' ][ $i ],
 					'short_address' => $data[ 'delivery_location_short_address' ][ $i ],
@@ -3331,7 +3333,14 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 			$data[ 'delivery_location_json' ] = $delivery_location_json;
 			$data[ 'pick_up_date' ]           = $earliest_date;
 			$data[ 'delivery_date' ]          = $latest_date;
-			$result                           = $this->add_new_shipper_info( $data );
+			
+			// Save to database (new location tables) AND JSON (for backward compatibility)
+			$db_result = $this->save_locations_to_db( $data[ 'post_id' ], $pick_up_location, $delivery_location );
+			if ( is_wp_error( $db_result ) && class_exists( 'TMSLogger' ) ) {
+				TMSLogger::log_to_file( sprintf( '[Location Save] Error saving to DB for load ID %d: %s', $data[ 'post_id' ], $db_result->get_error_message() ), 'location-import' );
+			}
+			
+			$result = $this->add_new_shipper_info( $data );
 			
 			if ( $result ) {
 				wp_send_json_success( [ 'message' => 'Shipper info successfully update', 'data' => $data ] );
@@ -5614,6 +5623,560 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 	}
 	
 	/**
+	 * Create location tables for all projects (pickup and delivery combined)
+	 * @return void
+	 */
+	public function create_location_tables() {
+		global $wpdb;
+		
+		$tables = $this->tms_tables;
+		$charset_collate = $wpdb->get_charset_collate();
+		
+		foreach ( $tables as $val ) {
+			$table_name = $wpdb->prefix . 'reports_' . strtolower( $val ) . '_locations';
+			
+			$sql = "CREATE TABLE $table_name (
+			    id mediumint(9) NOT NULL AUTO_INCREMENT,
+			    load_id mediumint(9) NOT NULL,
+			    location_type varchar(20) NOT NULL DEFAULT 'pickup',
+			    address_id varchar(255) NOT NULL,
+			    address text NOT NULL,
+			    short_address varchar(255) DEFAULT NULL,
+			    contact varchar(255) DEFAULT NULL,
+			    date datetime DEFAULT NULL,
+			    info text DEFAULT NULL,
+			    type varchar(50) DEFAULT NULL,
+			    time_start time DEFAULT NULL,
+			    time_end time DEFAULT NULL,
+			    strict_time tinyint(1) DEFAULT 0,
+			    eta_date date DEFAULT NULL,
+			    eta_time time DEFAULT NULL,
+			    order_index smallint(3) NOT NULL DEFAULT 0,
+			    created_at datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+			    updated_at datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+			    PRIMARY KEY (id),
+			    INDEX idx_load_id (load_id),
+			    INDEX idx_location_type (location_type),
+			    INDEX idx_load_type (load_id, location_type),
+			    INDEX idx_address_id (address_id),
+			    INDEX idx_date (date),
+			    INDEX idx_order_index (order_index),
+			    INDEX idx_load_order (load_id, location_type, order_index),
+			    INDEX idx_created_at (created_at),
+			    INDEX idx_updated_at (updated_at)
+			) $charset_collate;";
+			
+			dbDelta( $sql );
+		}
+	}
+	
+	/**
+	 * Import locations from JSON to new location tables
+	 * 
+	 * @param string $project Project name (Odysseia, Martlet, Endurance)
+	 * @param int $batch_size Number of loads to process per batch
+	 * @return array Import statistics
+	 */
+	public function import_locations_from_json( $project, $batch_size = 50 ) {
+		global $wpdb;
+		
+		if ( class_exists( 'TMSLogger' ) ) {
+			TMSLogger::log_to_file( sprintf( '[Location Import] Starting import for project: %s, batch size: %d', $project, $batch_size ), 'location-import' );
+		}
+		
+		$project_lower = strtolower( $project );
+		$table_main = $wpdb->prefix . 'reports_' . $project_lower;
+		$table_meta = $wpdb->prefix . 'reportsmeta_' . $project_lower;
+		$table_locations = $wpdb->prefix . 'reports_' . $project_lower . '_locations';
+		
+		// Get loads that haven't been imported yet (check if locations table has any records for this load)
+		$processed_loads = $wpdb->get_col( $wpdb->prepare(
+			"SELECT DISTINCT load_id FROM $table_locations"
+		) );
+		
+		$exclude_condition = '';
+		if ( ! empty( $processed_loads ) ) {
+			$exclude_ids = implode( ',', array_map( 'absint', $processed_loads ) );
+			$exclude_condition = "AND main.id NOT IN ($exclude_ids)";
+		}
+		
+		// Get batch of loads with location JSON data
+		$loads = $wpdb->get_results( $wpdb->prepare(
+			"SELECT main.id, 
+				(SELECT meta_value FROM $table_meta WHERE post_id = main.id AND meta_key = 'pick_up_location' LIMIT 1) as pick_up_location_json,
+				(SELECT meta_value FROM $table_meta WHERE post_id = main.id AND meta_key = 'delivery_location' LIMIT 1) as delivery_location_json
+			FROM $table_main AS main
+			WHERE main.status_post = 'publish'
+			$exclude_condition
+			AND (
+				EXISTS (SELECT 1 FROM $table_meta WHERE post_id = main.id AND meta_key = 'pick_up_location' AND meta_value IS NOT NULL AND meta_value != '')
+				OR EXISTS (SELECT 1 FROM $table_meta WHERE post_id = main.id AND meta_key = 'delivery_location' AND meta_value IS NOT NULL AND meta_value != '')
+			)
+			ORDER BY main.id ASC
+			LIMIT %d",
+			$batch_size
+		), ARRAY_A );
+		
+		if ( empty( $loads ) ) {
+			return array(
+				'success' => true,
+				'processed' => 0,
+				'imported' => 0,
+				'skipped' => 0,
+				'message' => 'No loads to import'
+			);
+		}
+		
+		$imported_count = 0;
+		$skipped_count = 0;
+		
+		foreach ( $loads as $load ) {
+			$load_id = (int) $load['id'];
+			$imported = $this->import_load_locations( $load_id, $project_lower, $load['pick_up_location_json'], $load['delivery_location_json'] );
+			
+			if ( $imported['success'] ) {
+				$imported_count += $imported['count'];
+			} else {
+				$skipped_count++;
+				if ( class_exists( 'TMSLogger' ) ) {
+					TMSLogger::log_to_file( sprintf( '[Location Import] Skipped load ID %d: %s', $load_id, $imported['message'] ), 'location-import' );
+				}
+			}
+		}
+		
+		if ( class_exists( 'TMSLogger' ) ) {
+			TMSLogger::log_to_file( sprintf( '[Location Import] Batch completed. Processed: %d, Imported: %d, Skipped: %d', count( $loads ), $imported_count, $skipped_count ), 'location-import' );
+		}
+		
+		return array(
+			'success' => true,
+			'processed' => count( $loads ),
+			'imported' => $imported_count,
+			'skipped' => $skipped_count
+		);
+	}
+	
+	/**
+	 * Import locations for a single load
+	 * 
+	 * @param int $load_id Load ID
+	 * @param string $project_lower Project name in lowercase
+	 * @param string $pick_up_json Pick up location JSON
+	 * @param string $delivery_json Delivery location JSON
+	 * @return array Result
+	 */
+	private function import_load_locations( $load_id, $project_lower, $pick_up_json, $delivery_json ) {
+		global $wpdb;
+		
+		$table_locations = $wpdb->prefix . 'reports_' . $project_lower . '_locations';
+		$imported_count = 0;
+		
+		// Process pick up locations
+		if ( ! empty( $pick_up_json ) ) {
+			$pick_up_data = json_decode( str_replace( "\'", "'", stripslashes( $pick_up_json ) ), true );
+			if ( is_array( $pick_up_data ) && ! empty( $pick_up_data ) ) {
+				// Reverse array to maintain correct order when displaying
+				$pick_up_data = array_reverse( $pick_up_data );
+				$total_count = count( $pick_up_data );
+				foreach ( $pick_up_data as $index => $location ) {
+					// Use reverse index so ORDER BY order_index ASC shows correct order
+					$order_index = $total_count - 1 - $index;
+					$result = $this->insert_location( $table_locations, $load_id, 'pickup', $location, $order_index );
+					if ( $result ) {
+						$imported_count++;
+					}
+				}
+			}
+		}
+		
+		// Process delivery locations
+		if ( ! empty( $delivery_json ) ) {
+			$delivery_data = json_decode( str_replace( "\'", "'", stripslashes( $delivery_json ) ), true );
+			if ( is_array( $delivery_data ) && ! empty( $delivery_data ) ) {
+				// Reverse array to maintain correct order when displaying
+				$delivery_data = array_reverse( $delivery_data );
+				$total_count = count( $delivery_data );
+				foreach ( $delivery_data as $index => $location ) {
+					// Use reverse index so ORDER BY order_index ASC shows correct order
+					$order_index = $total_count - 1 - $index;
+					$result = $this->insert_location( $table_locations, $load_id, 'delivery', $location, $order_index );
+					if ( $result ) {
+						$imported_count++;
+					}
+				}
+			}
+		}
+		
+		return array(
+			'success' => true,
+			'count' => $imported_count,
+			'message' => 'Imported successfully'
+		);
+	}
+	
+	/**
+	 * Insert location into database
+	 * 
+	 * @param string $table_name Table name
+	 * @param int $load_id Load ID
+	 * @param string $location_type 'pickup' or 'delivery'
+	 * @param array $location Location data
+	 * @param int $order_index Order index
+	 * @return bool Success
+	 */
+	private function insert_location( $table_name, $load_id, $location_type, $location, $order_index ) {
+		global $wpdb;
+		
+		// Normalize strict_time from different possible formats ('true', 'false', 1, 0, '')
+		$strict_raw = isset( $location['strict_time'] ) ? $location['strict_time'] : 0;
+		$strict_normalized = 0;
+		if ( $strict_raw === 'true' || $strict_raw === true || $strict_raw === 1 || $strict_raw === '1' ) {
+			$strict_normalized = 1;
+		}
+		
+		$data = array(
+			'load_id' => $load_id,
+			'location_type' => $location_type,
+			'address_id' => isset( $location['address_id'] ) ? $location['address_id'] : '',
+			'address' => isset( $location['address'] ) ? $location['address'] : '',
+			'short_address' => isset( $location['short_address'] ) ? $location['short_address'] : null,
+			'contact' => isset( $location['contact'] ) ? $location['contact'] : null,
+			'date' => isset( $location['date'] ) && ! empty( $location['date'] ) ? $location['date'] : null,
+			'info' => isset( $location['info'] ) ? $location['info'] : null,
+			'type' => isset( $location['type'] ) ? $location['type'] : null,
+			'time_start' => isset( $location['time_start'] ) && ! empty( $location['time_start'] ) ? $location['time_start'] : null,
+			'time_end' => isset( $location['time_end'] ) && ! empty( $location['time_end'] ) ? $location['time_end'] : null,
+			'strict_time' => $strict_normalized,
+			'eta_date' => isset( $location['eta_date'] ) && ! empty( $location['eta_date'] ) ? $location['eta_date'] : null,
+			'eta_time' => isset( $location['eta_time'] ) && ! empty( $location['eta_time'] ) ? $location['eta_time'] : null,
+			'order_index' => $order_index
+		);
+		
+		$format = array( '%d', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%d', '%s', '%s', '%d' );
+		
+		return $wpdb->insert( $table_name, $data, $format ) !== false;
+	}
+	
+	/**
+	 * Get locations from database for a load
+	 * 
+	 * @param int $load_id Load ID
+	 * @param string $location_type 'pickup', 'delivery', or 'all'
+	 * @return array Array of locations
+	 */
+	public function get_locations_from_db( $load_id, $location_type = 'all' ) {
+		global $wpdb;
+		
+		if ( empty( $this->project ) ) {
+			return array();
+		}
+		
+		$project_lower = strtolower( $this->project );
+		$table_locations = $wpdb->prefix . 'reports_' . $project_lower . '_locations';
+		
+		$where_type = '';
+		if ( $location_type !== 'all' ) {
+			$where_type = $wpdb->prepare( " AND location_type = %s", $location_type );
+		}
+		
+		$locations = $wpdb->get_results( $wpdb->prepare(
+			"SELECT * FROM $table_locations 
+			WHERE load_id = %d $where_type
+			ORDER BY location_type, order_index ASC",
+			$load_id
+		), ARRAY_A );
+		
+		// Convert to format similar to JSON structure
+		$result = array(
+			'pickup' => array(),
+			'delivery' => array()
+		);
+		
+		foreach ( $locations as $location ) {
+			$loc_data = array(
+				'db_id' => $location['id'], // Include DB ID for updates
+				'address_id' => $location['address_id'],
+				'address' => $location['address'],
+				'short_address' => $location['short_address'],
+				'contact' => $location['contact'],
+				'date' => $location['date'],
+				'info' => $location['info'],
+				'type' => $location['type'],
+				'time_start' => $location['time_start'],
+				'time_end' => $location['time_end'],
+				'strict_time' => $location['strict_time'],
+				'eta_date' => $location['eta_date'],
+				'eta_time' => $location['eta_time'],
+			);
+			
+			if ( $location['location_type'] === 'pickup' ) {
+				$result['pickup'][] = $loc_data;
+			} else {
+				$result['delivery'][] = $loc_data;
+			}
+		}
+		
+		// Reverse to maintain correct display order (locations stored in reverse order)
+		$result['pickup'] = array_reverse( $result['pickup'] );
+		$result['delivery'] = array_reverse( $result['delivery'] );
+		
+		return $result;
+	}
+	
+	/**
+	 * Save locations to database (updates existing, adds new, removes deleted)
+	 * 
+	 * @param int $load_id Load ID
+	 * @param array $pick_up_locations Array of pickup locations (may contain 'db_id' for updates)
+	 * @param array $delivery_locations Array of delivery locations (may contain 'db_id' for updates)
+	 * @return bool|WP_Error
+	 */
+	public function save_locations_to_db( $load_id, $pick_up_locations = array(), $delivery_locations = array() ) {
+		global $wpdb;
+		
+		if ( empty( $this->project ) ) {
+			return new WP_Error( 'no_project', 'Project not set' );
+		}
+		
+		$project_lower = strtolower( $this->project );
+		$table_locations = $wpdb->prefix . 'reports_' . $project_lower . '_locations';
+		
+		// Get existing locations from DB
+		$existing_locations = $wpdb->get_results( $wpdb->prepare(
+			"SELECT * FROM $table_locations WHERE load_id = %d",
+			$load_id
+		), ARRAY_A );
+		
+		// Create map of existing locations by ID
+		$existing_by_id = array();
+		foreach ( $existing_locations as $loc ) {
+			$existing_by_id[ $loc['id'] ] = $loc;
+		}
+		
+		// Track which IDs are being used (to delete unused ones)
+		$used_ids = array();
+		
+		// Process pickup locations (in reverse order for correct display)
+		$pick_up_locations = array_reverse( $pick_up_locations );
+		foreach ( $pick_up_locations as $index => $location ) {
+			$order_index = count( $pick_up_locations ) - 1 - $index;
+			$db_id = isset( $location['db_id'] ) ? intval( $location['db_id'] ) : 0;
+			
+			// Remove db_id from location data before saving
+			$location_data = $location;
+			unset( $location_data['db_id'] );
+			
+			if ( $db_id > 0 && isset( $existing_by_id[ $db_id ] ) ) {
+				// Update existing location
+				$location_data['order_index'] = $order_index;
+				$result = $this->update_location_in_db( $db_id, $location_data );
+				if ( ! $result ) {
+					return new WP_Error( 'update_failed', 'Failed to update pickup location ID: ' . $db_id );
+				}
+				$used_ids[] = $db_id;
+			} else {
+				// Insert new location
+				$result = $this->insert_location( $table_locations, $load_id, 'pickup', $location_data, $order_index );
+				if ( ! $result ) {
+					return new WP_Error( 'insert_failed', 'Failed to insert pickup location' );
+				}
+			}
+		}
+		
+		// Process delivery locations (in reverse order for correct display)
+		$delivery_locations = array_reverse( $delivery_locations );
+		foreach ( $delivery_locations as $index => $location ) {
+			$order_index = count( $delivery_locations ) - 1 - $index;
+			$db_id = isset( $location['db_id'] ) ? intval( $location['db_id'] ) : 0;
+			
+			// Remove db_id from location data before saving
+			$location_data = $location;
+			unset( $location_data['db_id'] );
+			
+			if ( $db_id > 0 && isset( $existing_by_id[ $db_id ] ) ) {
+				// Update existing location
+				$location_data['order_index'] = $order_index;
+				$result = $this->update_location_in_db( $db_id, $location_data );
+				if ( ! $result ) {
+					return new WP_Error( 'update_failed', 'Failed to update delivery location ID: ' . $db_id );
+				}
+				$used_ids[] = $db_id;
+			} else {
+				// Insert new location
+				$result = $this->insert_location( $table_locations, $load_id, 'delivery', $location_data, $order_index );
+				if ( ! $result ) {
+					return new WP_Error( 'insert_failed', 'Failed to insert delivery location' );
+				}
+			}
+		}
+		
+		// Delete locations that are no longer in the new data
+		if ( ! empty( $existing_locations ) ) {
+			foreach ( $existing_locations as $existing ) {
+				if ( ! in_array( $existing['id'], $used_ids ) ) {
+					$wpdb->delete( $table_locations, array( 'id' => $existing['id'] ), array( '%d' ) );
+				}
+			}
+		}
+		
+		return true;
+	}
+	
+	/**
+	 * Delete location from database
+	 * 
+	 * @param int $location_id Location ID
+	 * @return bool Success
+	 */
+	public function delete_location_from_db( $location_id ) {
+		global $wpdb;
+		
+		if ( empty( $this->project ) ) {
+			return false;
+		}
+		
+		$project_lower = strtolower( $this->project );
+		$table_locations = $wpdb->prefix . 'reports_' . $project_lower . '_locations';
+		
+		$result = $wpdb->delete( $table_locations, array( 'id' => $location_id ), array( '%d' ) );
+		
+		return $result !== false;
+	}
+	
+	/**
+	 * Update location in database
+	 * 
+	 * @param int $location_id Location ID
+	 * @param array $location_data Location data to update
+	 * @return bool Success
+	 */
+	public function update_location_in_db( $location_id, $location_data ) {
+		global $wpdb;
+		
+		if ( empty( $this->project ) ) {
+			return false;
+		}
+		
+		$project_lower = strtolower( $this->project );
+		$table_locations = $wpdb->prefix . 'reports_' . $project_lower . '_locations';
+		
+		$data = array();
+		$format = array();
+		
+		if ( isset( $location_data['address_id'] ) ) {
+			$data['address_id'] = $location_data['address_id'];
+			$format[] = '%s';
+		}
+		if ( isset( $location_data['address'] ) ) {
+			$data['address'] = $location_data['address'];
+			$format[] = '%s';
+		}
+		if ( isset( $location_data['short_address'] ) ) {
+			$data['short_address'] = $location_data['short_address'];
+			$format[] = '%s';
+		}
+		if ( isset( $location_data['contact'] ) ) {
+			$data['contact'] = $location_data['contact'];
+			$format[] = '%s';
+		}
+		if ( isset( $location_data['date'] ) ) {
+			$data['date'] = $location_data['date'];
+			$format[] = '%s';
+		}
+		if ( isset( $location_data['info'] ) ) {
+			$data['info'] = $location_data['info'];
+			$format[] = '%s';
+		}
+		if ( isset( $location_data['type'] ) ) {
+			$data['type'] = $location_data['type'];
+			$format[] = '%s';
+		}
+		if ( isset( $location_data['time_start'] ) ) {
+			$data['time_start'] = $location_data['time_start'];
+			$format[] = '%s';
+		}
+		if ( isset( $location_data['time_end'] ) ) {
+			$data['time_end'] = $location_data['time_end'];
+			$format[] = '%s';
+		}
+		if ( isset( $location_data['strict_time'] ) ) {
+			// Normalize strict_time from different possible formats ('true', 'false', 1, 0, '')
+			$strict_raw = $location_data['strict_time'];
+			$strict_normalized = 0;
+			if ( $strict_raw === 'true' || $strict_raw === true || $strict_raw === 1 || $strict_raw === '1' ) {
+				$strict_normalized = 1;
+			}
+			$data['strict_time'] = $strict_normalized;
+			$format[] = '%d';
+		}
+		if ( isset( $location_data['eta_date'] ) ) {
+			$data['eta_date'] = $location_data['eta_date'];
+			$format[] = '%s';
+		}
+		if ( isset( $location_data['eta_time'] ) ) {
+			$data['eta_time'] = $location_data['eta_time'];
+			$format[] = '%s';
+		}
+		if ( isset( $location_data['order_index'] ) ) {
+			$data['order_index'] = (int) $location_data['order_index'];
+			$format[] = '%d';
+		}
+		
+		if ( empty( $data ) ) {
+			return false;
+		}
+		
+		$result = $wpdb->update( $table_locations, $data, array( 'id' => $location_id ), $format, array( '%d' ) );
+		
+		return $result !== false;
+	}
+	
+	/**
+	 * Get import statistics for a project
+	 * 
+	 * @param string $project Project name
+	 * @return array Statistics
+	 */
+	public function get_location_import_stats( $project ) {
+		global $wpdb;
+		
+		$project_lower = strtolower( $project );
+		$table_main = $wpdb->prefix . 'reports_' . $project_lower;
+		$table_meta = $wpdb->prefix . 'reportsmeta_' . $project_lower;
+		$table_locations = $wpdb->prefix . 'reports_' . $project_lower . '_locations';
+		
+		// Total loads with location data
+		$total_loads = $wpdb->get_var( "
+			SELECT COUNT(DISTINCT main.id)
+			FROM $table_main AS main
+			WHERE main.status_post = 'publish'
+			AND (
+				EXISTS (SELECT 1 FROM $table_meta WHERE post_id = main.id AND meta_key = 'pick_up_location' AND meta_value IS NOT NULL AND meta_value != '')
+				OR EXISTS (SELECT 1 FROM $table_meta WHERE post_id = main.id AND meta_key = 'delivery_location' AND meta_value IS NOT NULL AND meta_value != '')
+			)
+		" );
+		
+		// Processed loads (have records in locations table)
+		$processed = $wpdb->get_var( "
+			SELECT COUNT(DISTINCT load_id) FROM $table_locations
+		" );
+		
+		// Total imported locations
+		$imported_locations = $wpdb->get_var( "
+			SELECT COUNT(*) FROM $table_locations
+		" );
+		
+		$progress_percent = $total_loads > 0 ? ( $processed / $total_loads ) * 100 : 100;
+		
+		return array(
+			'total_loads' => (int) $total_loads,
+			'processed' => (int) $processed,
+			'imported_locations' => (int) $imported_locations,
+			'progress_percent' => $progress_percent
+		);
+	}
+	
+	/**
 	 * update table add new fields and indexes isset fields
 	 * @return void
 	 */
@@ -6185,6 +6748,7 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 	 */
 	public function init() {
 		add_action( 'after_setup_theme', array( $this, 'create_table' ) );
+		add_action( 'after_setup_theme', array( $this, 'create_location_tables' ) );
 		
 		//TODO UPDATE DATABASE AFTER CREATE , up speed search in database (NOT delete)
 		//add_action( 'after_setup_theme', array( $this, 'update_tables_with_delivery_and_indexes' ) );

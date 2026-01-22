@@ -3264,6 +3264,10 @@ class TMSDrivers extends TMSDriversHelper {
 					? sanitize_email( $_POST[ 'driver_email' ] ) : '',
 				'home_location'              => isset( $_POST[ 'home_location' ] )
 					? sanitize_text_field( $_POST[ 'home_location' ] ) : '',
+				'second_main_driver_phone'   => isset( $_POST[ 'second_main_driver_phone' ] )
+					? sanitize_text_field( $_POST[ 'second_main_driver_phone' ] ) : '',
+				'second_main_driver_email'   => isset( $_POST[ 'second_main_driver_email' ] )
+					? sanitize_email( $_POST[ 'second_main_driver_email' ] ) : '',
 				'city'                       => isset( $_POST[ 'city' ] ) ? sanitize_text_field( $_POST[ 'city' ] )
 					: '',
 				'dob'                        => isset( $_POST[ 'dob' ] ) ? sanitize_text_field( $_POST[ 'dob' ] ) : '',
@@ -3367,6 +3371,10 @@ class TMSDrivers extends TMSDriversHelper {
 					? sanitize_text_field( $_POST[ 'driver_phone' ] ) : '',
 				'driver_email'               => isset( $_POST[ 'driver_email' ] )
 					? sanitize_email( $_POST[ 'driver_email' ] ) : '',
+				'second_main_driver_phone'   => isset( $_POST[ 'second_main_driver_phone' ] )
+					? sanitize_text_field( $_POST[ 'second_main_driver_phone' ] ) : '',
+				'second_main_driver_email'   => isset( $_POST[ 'second_main_driver_email' ] )
+					? sanitize_email( $_POST[ 'second_main_driver_email' ] ) : '',
 				'preferred_distance'         => isset( $_POST[ 'preferred_distance' ] ) && is_array( $_POST[ 'preferred_distance' ] )
 					? implode( ',', array_map( 'sanitize_text_field', $_POST[ 'preferred_distance' ] ) ) : '',
 				'cross_border'               => isset( $_POST[ 'cross_border' ] ) && is_array( $_POST[ 'cross_border' ] )

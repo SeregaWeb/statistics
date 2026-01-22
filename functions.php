@@ -73,6 +73,9 @@ require THEME_DIR . '/src/inc/core/class-tms-timer-logs.php';
 require THEME_DIR . '/src/inc/core/class-tms-reports-timer.php';
 require THEME_DIR . '/src/inc/core/class-tms-eta.php';
 require THEME_DIR . '/src/inc/initial-setup.php';
+
+// Admin pages (must be loaded after initial-setup.php for get_field_value function)
+require THEME_DIR . '/src/inc/admin/location-import.php';
 require THEME_DIR . '/src/inc/enqueue-scripts.php';
 require THEME_DIR . '/src/inc/acf-setting.php';
 require THEME_DIR . '/src/inc/custom-posts-type.php';

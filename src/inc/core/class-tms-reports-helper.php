@@ -1984,7 +1984,7 @@ Kindly confirm once you've received this message." ) . "\n";
 		return $date;
 	}
 	
-	function get_locations_template( $row, $template = 'default' ) {
+	function get_locations_template( $row, $template = 'default', $use_db = false, $reports_object = null ) {
 		$meta = get_field_value( $row, 'meta_data' );
 		
 		// Даты с проверкой, чтобы избежать ошибок
@@ -1996,13 +1996,22 @@ Kindly confirm once you've received this message." ) . "\n";
 		$pick_up_date  = ! empty( $pick_up_date_raw )
 			? esc_html( DateTime::createFromFormat( 'Y-m-d H:i:s', $pick_up_date_raw )->format( 'm/d/Y' ) ) : '';
 		
-		// Декодируем JSON, если он не пуст
-		$delivery = ! empty( get_field_value( $meta, 'delivery_location' ) )
-			? json_decode( str_replace( "\'", "'", stripslashes( get_field_value( $meta, 'delivery_location' ) ) ), ARRAY_A )
-			: [];
-		$pick_up  = ! empty( get_field_value( $meta, 'pick_up_location' ) )
-			? json_decode( str_replace( "\'", "'", stripslashes( get_field_value( $meta, 'pick_up_location' ) ) ), ARRAY_A )
-			: [];
+		$load_id = get_field_value( $row, 'id' );
+		
+		// Get locations from database or JSON
+		if ( $use_db && $reports_object && method_exists( $reports_object, 'get_locations_from_db' ) && ! empty( $load_id ) ) {
+			$db_locations = $reports_object->get_locations_from_db( $load_id );
+			$pick_up = isset( $db_locations['pickup'] ) ? $db_locations['pickup'] : array();
+			$delivery = isset( $db_locations['delivery'] ) ? $db_locations['delivery'] : array();
+		} else {
+			// Декодируем JSON, если он не пуст
+			$delivery = ! empty( get_field_value( $meta, 'delivery_location' ) )
+				? json_decode( str_replace( "\'", "'", stripslashes( get_field_value( $meta, 'delivery_location' ) ) ), ARRAY_A )
+				: [];
+			$pick_up  = ! empty( get_field_value( $meta, 'pick_up_location' ) )
+				? json_decode( str_replace( "\'", "'", stripslashes( get_field_value( $meta, 'pick_up_location' ) ) ), ARRAY_A )
+				: [];
+		}
 		
 		// Обработка времени подтверждения доставки
 		$proof_of_delivery_time = get_field_value( $meta, 'proof_of_delivery_time' );

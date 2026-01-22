@@ -1241,6 +1241,7 @@ export const addShipperPointInit = () => {
                     const template = `
                 <div class="row js-current-shipper stopTypeValue card-shipper" data-stop-type="${stopTypeValue}">
                     <div class="d-none">
+                        <input type="hidden" class="js-current-shipper_db_id" name="${stopTypeValue}_db_id[]" value="0">
                         <input type="hidden" class="js-current-shipper_address_id" name="${stopTypeValue}_address_id[]" value="${addressValueID}" >
                         <input type="hidden" class="js-current-shipper_address" name="${stopTypeValue}_address[]" value="${addressValueFullAddrres}" >
                         <input type="hidden" class="js-current-shipper_short_address" name="${stopTypeValue}_short_address[]" value="${addressValueShortAddrres}" >

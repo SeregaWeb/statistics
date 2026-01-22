@@ -24,6 +24,14 @@ $delivery_date           = '';
 $pick_up_date_formatted  = '';
 $delivery_date_formatted = '';
 
+// Get reports object for DB operations
+$reports = null;
+if ( $flt ) {
+	$reports = new TMSReportsFlt();
+} else {
+	$reports = new TMSReports();
+}
+
 if ( $report_object ) {
 	$values = $report_object;
 	$meta   = get_field_value( $values, 'meta' );
@@ -45,16 +53,35 @@ if ( $report_object ) {
 		
 		$post_status = get_field_value( $main, 'status_post' );
 		
-		if ( ! empty( $pick_up_location ) && ! empty( $delivery_location ) ) {
-			
-			$clean_json             = stripslashes( $pick_up_location );
-			$clean_json             = str_replace( "\'", "'", $pick_up_location );
-			$pick_up_location_isset = json_decode( $clean_json, ARRAY_A );
-			
-			$clean_delivery_json     = stripslashes( $delivery_location );
-			$clean_delivery_json     = str_replace( "\'", "'", $delivery_location );
-			$delivery_location_isset = json_decode( $clean_delivery_json, ARRAY_A );
-			
+		// Try to get locations from database first (if data exists)
+		if ( $post_id && $reports && method_exists( $reports, 'get_locations_from_db' ) ) {
+			$db_locations = $reports->get_locations_from_db( $post_id );
+			if ( ! empty( $db_locations['pickup'] ) || ! empty( $db_locations['delivery'] ) ) {
+				$pick_up_location_isset = $db_locations['pickup'];
+				$delivery_location_isset = $db_locations['delivery'];
+			} else {
+				// Fallback to JSON if DB is empty
+				if ( ! empty( $pick_up_location ) && ! empty( $delivery_location ) ) {
+					$clean_json             = stripslashes( $pick_up_location );
+					$clean_json             = str_replace( "\'", "'", $pick_up_location );
+					$pick_up_location_isset = json_decode( $clean_json, ARRAY_A );
+					
+					$clean_delivery_json     = stripslashes( $delivery_location );
+					$clean_delivery_json     = str_replace( "\'", "'", $delivery_location );
+					$delivery_location_isset = json_decode( $clean_delivery_json, ARRAY_A );
+				}
+			}
+		} else {
+			// Use JSON as before
+			if ( ! empty( $pick_up_location ) && ! empty( $delivery_location ) ) {
+				$clean_json             = stripslashes( $pick_up_location );
+				$clean_json             = str_replace( "\'", "'", $pick_up_location );
+				$pick_up_location_isset = json_decode( $clean_json, ARRAY_A );
+				
+				$clean_delivery_json     = stripslashes( $delivery_location );
+				$clean_delivery_json     = str_replace( "\'", "'", $delivery_location );
+				$delivery_location_isset = json_decode( $clean_delivery_json, ARRAY_A );
+			}
 		}
 	}
 }
@@ -251,6 +278,15 @@ if ( $report_object ) {
 					?>
                     <div class="row js-current-shipper card-shipper">
                         <div class="d-none">
+                            <?php 
+                            $location_db_id = get_field_value( $val, 'db_id' );
+                            if ( $location_db_id ): ?>
+                                <input type="hidden" class="js-current-shipper_db_id"
+                                       name="pick_up_location_db_id[]" value="<?php echo $location_db_id ?>">
+                            <?php else: ?>
+                                <input type="hidden" class="js-current-shipper_db_id"
+                                       name="pick_up_location_db_id[]" value="0">
+                            <?php endif; ?>
                             <input type="hidden" class="js-current-shipper_address_id"
                                    name="pick_up_location_address_id[]" value="<?php echo $address_id ?>">
                             <input type="hidden" class="js-current-shipper_address" name="pick_up_location_address[]"
@@ -345,6 +381,15 @@ if ( $report_object ) {
 					?>
                     <div class="row js-current-shipper card-shipper">
                         <div class="d-none">
+                            <?php 
+                            $location_db_id = get_field_value( $val, 'db_id' );
+                            if ( $location_db_id ): ?>
+                                <input type="hidden" class="js-current-shipper_db_id"
+                                       name="delivery_location_db_id[]" value="<?php echo $location_db_id ?>">
+                            <?php else: ?>
+                                <input type="hidden" class="js-current-shipper_db_id"
+                                       name="delivery_location_db_id[]" value="0">
+                            <?php endif; ?>
                             <input type="hidden" class="js-current-shipper_address_id"
                                    name="delivery_location_address_id[]" value="<?php echo $address_id ?>">
                             <input type="hidden" class="js-current-shipper_address" name="delivery_location_address[]"

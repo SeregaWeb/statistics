@@ -61,6 +61,11 @@ function parse_period_filter( $year_key, $month_key, $current_year, $min_year ) 
 $current_year = (int) date( 'Y' );
 $min_year = 2024;
 
+// Ensure TMSDriversStatistics is available (should be defined in drivers.php)
+if ( ! isset( $TMSDriversStatistics ) || ! is_object( $TMSDriversStatistics ) ) {
+	$TMSDriversStatistics = new TMSDriversStatistics();
+}
+
 if ( $compare_mode ) {
 	// Comparison mode: parse two periods
 	$period1 = parse_period_filter( 'route_year1', 'route_month1', $current_year, $min_year );
@@ -261,7 +266,7 @@ $month_options = array(
 
 ?>
 
-<div class="col-12 mb-3 p-0">
+<div class="col-12 mb-3 ">
 	<!-- Comparison Toggle -->
 	<div class="row mb-3">
 		<div class="col-12">

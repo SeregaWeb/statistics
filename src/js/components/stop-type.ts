@@ -23,7 +23,13 @@ const validateDeliveryDate = (deliveryDate: string): boolean => {
         return true; // Allow if no pick up dates exist or delivery date is empty
     }
 
-    return new Date(deliveryDate) >= new Date(maxPickUpDate);
+    // Compare dates only (without time) to allow same day
+    const deliveryDateOnly = new Date(deliveryDate);
+    deliveryDateOnly.setHours(0, 0, 0, 0);
+    const maxPickUpDateOnly = new Date(maxPickUpDate);
+    maxPickUpDateOnly.setHours(0, 0, 0, 0);
+
+    return deliveryDateOnly >= maxPickUpDateOnly;
 };
 
 // Function to show validation error
@@ -59,7 +65,9 @@ const updateDateInputMin = (shipperDate: HTMLInputElement, stopType: HTMLSelectE
     if (selectedValue === 'delivery_location') {
         const maxPickUpDate = getMaxPickUpDate();
         if (maxPickUpDate) {
-            shipperDate.min = maxPickUpDate;
+            // Extract date only (YYYY-MM-DD) from datetime string (YYYY-MM-DD HH:MM:SS)
+            const maxPickUpDateOnly = maxPickUpDate.split(' ')[0];
+            shipperDate.min = maxPickUpDateOnly;
         } else {
             shipperDate.removeAttribute('min');
         }

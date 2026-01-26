@@ -13,7 +13,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 // Get selected chart from GET parameter (default: vehicle-type)
 $selected_chart = isset( $_GET['chart'] ) ? sanitize_text_field( $_GET['chart'] ) : 'vehicle-type';
-$valid_charts = array( 'home-location', 'vehicle-type', 'nationality', 'languages', 'loads-by-state', 'loads-by-route' );
+$valid_charts = array( 'home-location', 'vehicle-type', 'nationality', 'languages' );
 if ( ! in_array( $selected_chart, $valid_charts, true ) ) {
 	$selected_chart = 'vehicle-type';
 }
@@ -30,8 +30,6 @@ if ( ! in_array( $selected_chart, $valid_charts, true ) ) {
 				<option value="home-location" <?php selected( $selected_chart, 'home-location' ); ?>>Home Location</option>
 				<option value="nationality" <?php selected( $selected_chart, 'nationality' ); ?>>Nationality</option>
 				<option value="languages" <?php selected( $selected_chart, 'languages' ); ?>>Languages</option>
-				<option value="loads-by-state" <?php selected( $selected_chart, 'loads-by-state' ); ?>>Loads by State (Pickup / Delivery)</option>
-				<option value="loads-by-route" <?php selected( $selected_chart, 'loads-by-route' ); ?>>Loads by Route (Pickup → Delivery)</option>
 			</select>
 		</div>
 	</div>
@@ -44,8 +42,6 @@ if ( ! in_array( $selected_chart, $valid_charts, true ) ) {
 			'vehicle-type'    => get_template_directory() . '/src/template-parts/report/statistics/location-vehicle-charts/vehicle-type.php',
 			'nationality'     => get_template_directory() . '/src/template-parts/report/statistics/location-vehicle-charts/nationality.php',
 			'languages'       => get_template_directory() . '/src/template-parts/report/statistics/location-vehicle-charts/languages.php',
-			'loads-by-state'  => get_template_directory() . '/src/template-parts/report/statistics/location-vehicle-charts/loads-by-state.php',
-			'loads-by-route'  => get_template_directory() . '/src/template-parts/report/statistics/location-vehicle-charts/loads-by-route.php',
 		);
 		
 		foreach ( $charts as $chart_key => $chart_path ) {

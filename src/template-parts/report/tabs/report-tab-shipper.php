@@ -257,7 +257,14 @@ if ( $report_object ) {
 					$address = get_field_value( $val, 'address' );
 					$contact = get_field_value( $val, 'contact' );
 					$date = get_field_value( $val, 'date' );
-					$date_format = esc_html( date( 'm/d/Y', strtotime( $date ) ) );
+					// Format date only if it's not empty and valid (not 1970-01-01)
+					$date_format = '';
+					if ( ! empty( $date ) && $date !== '1970-01-01 00:00:00' && $date !== '1970-01-01' ) {
+						$timestamp = strtotime( $date );
+						if ( $timestamp !== false && $timestamp > 0 && date( 'Y-m-d', $timestamp ) !== '1970-01-01' ) {
+							$date_format = esc_html( date( 'm/d/Y', $timestamp ) );
+						}
+					}
 					$info = get_field_value( $val, 'info' );
 					$type = get_field_value( $val, 'type' );
 					$short_address = get_field_value( $val, 'short_address' );
@@ -266,7 +273,14 @@ if ( $report_object ) {
 					$strict_time = get_field_value( $val, 'strict_time' );
 					$eta_date = get_field_value( $val, 'eta_date' );
 					$eta_time = get_field_value( $val, 'eta_time' );
-					$eta_date_format = $eta_date ? esc_html( date( 'm/d/Y', strtotime( $eta_date ) ) ) : '';
+					// Format ETA date only if it's not empty and valid
+					$eta_date_format = '';
+					if ( ! empty( $eta_date ) && $eta_date !== '1970-01-01' ) {
+						$eta_timestamp = strtotime( $eta_date );
+						if ( $eta_timestamp !== false && $eta_timestamp > 0 && date( 'Y-m-d', $eta_timestamp ) !== '1970-01-01' ) {
+							$eta_date_format = esc_html( date( 'm/d/Y', $eta_timestamp ) );
+						}
+					}
 					$eta_display = '';
 					if ( $eta_date ) {
 						$eta_display = $eta_date_format;
@@ -276,7 +290,7 @@ if ( $report_object ) {
 					}
 					
 					?>
-                    <div class="row js-current-shipper card-shipper">
+                    <div class="row js-current-shipper stopTypeValue card-shipper" data-stop-type="pick_up_location">
                         <div class="d-none">
                             <?php 
                             $location_db_id = get_field_value( $val, 'db_id' );
@@ -297,7 +311,7 @@ if ( $report_object ) {
                                    name="pick_up_location_short_address[]"
                                    value="<?php echo $short_address ?>">
                             <input type="hidden" class="js-current-shipper_date" name="pick_up_location_date[]"
-                                   value="<?php echo $date ?>">
+                                   value="<?php echo ! empty( $date ) && $date !== '1970-01-01 00:00:00' && $date !== '1970-01-01' ? esc_attr( $date ) : ''; ?>">
                             <input type="hidden" class="js-current-shipper_info" name="pick_up_location_info[]"
                                    value="<?php echo $info ?>">
                             <input type="hidden" class="js-current-shipper_type" name="pick_up_location_type[]"
@@ -316,13 +330,16 @@ if ( $report_object ) {
                         <div class="col-12 col-md-1">Pick Up</div>
                         <div class="col-12 col-md-2">
                             <div class="d-flex flex-column">
-                                <p class="m-0"><?php echo $date_format ?></p>
+                                <p class="m-0"><?php echo ! empty( $date_format ) ? $date_format : '<span class="text-muted">No date</span>'; ?></p>
 								<?php if ( $time_start ): ?>
                                     <span class="small-text">
-                                    <?php if ( ! $strict_time === "" || $strict_time === "false" ) :
-	                                    echo $time_start . ' - ' . $time_end;
-                                    else:
+                                    <?php 
+                                    // Check if strict_time is true (can be "true", "1", 1, or true)
+                                    $is_strict = ( $strict_time === "true" || $strict_time === "1" || $strict_time === 1 || $strict_time === true );
+                                    if ( $is_strict ) :
 	                                    echo $time_start . ' - strict';
+                                    else:
+	                                    echo $time_start . ' - ' . $time_end;
                                     endif; ?>
                                 </span>
 								<?php endif; ?>
@@ -378,8 +395,8 @@ if ( $report_object ) {
 							$eta_display .= ' ' . esc_html( $eta_time );
 						}
 					}
-					?>
-                    <div class="row js-current-shipper card-shipper">
+                    ?>
+                    <div class="row js-current-shipper stopTypeValue card-shipper" data-stop-type="delivery_location">
                         <div class="d-none">
                             <?php 
                             $location_db_id = get_field_value( $val, 'db_id' );
@@ -400,7 +417,7 @@ if ( $report_object ) {
                             <input type="hidden" class="js-current-shipper_contact" name="delivery_location_contact[]"
                                    value="<?php echo $contact ?>">
                             <input type="hidden" class="js-current-shipper_date" name="delivery_location_date[]"
-                                   value="<?php echo $date ?>">
+                                   value="<?php echo ! empty( $date ) && $date !== '1970-01-01 00:00:00' && $date !== '1970-01-01' ? esc_attr( $date ) : ''; ?>">
                             <input type="hidden" class="js-current-shipper_info" name="delivery_location_info[]"
                                    value="<?php echo $info ?>">
                             <input type="hidden" class="js-current-shipper_type" name="delivery_location_type[]"
@@ -419,15 +436,19 @@ if ( $report_object ) {
                         <div class="col-12 col-md-1">Delivery</div>
                         <div class="col-12 col-md-2">
                             <div class="d-flex flex-column">
-                                <p class="m-0"><?php echo $date_format ?></p>
-                                <span class="small-text">
-                                    <?php
-                                    if ( ! $strict_time === "" || $strict_time === "false" ) :
-	                                    echo $time_start . ' - ' . $time_end;
-                                    else:
+                                <p class="m-0"><?php echo ! empty( $date_format ) ? $date_format : '<span class="text-muted">No date</span>'; ?></p>
+								<?php if ( $time_start ): ?>
+                                    <span class="small-text">
+                                    <?php 
+                                    // Check if strict_time is true (can be "true", "1", 1, or true)
+                                    $is_strict = ( $strict_time === "true" || $strict_time === "1" || $strict_time === 1 || $strict_time === true );
+                                    if ( $is_strict ) :
 	                                    echo $time_start . ' - strict';
+                                    else:
+	                                    echo $time_start . ' - ' . $time_end;
                                     endif; ?>
                                 </span>
+								<?php endif; ?>
                             </div>
                         </div>
                         <div class="col-12 col-md-1">

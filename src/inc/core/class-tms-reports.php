@@ -3277,7 +3277,60 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 			$latest_date       = null;
 			
 			for ( $i = 0; $i < count( $data[ 'pick_up_location_address_id' ] ); $i ++ ) {
-				$current_date = $data[ 'pick_up_location_date' ][ $i ];
+				$current_date = isset( $data[ 'pick_up_location_date' ][ $i ] ) ? trim( $data[ 'pick_up_location_date' ][ $i ] ) : '';
+				
+				// Debug logging for pickup date processing
+				if ( class_exists( 'TMSLogger' ) ) {
+					TMSLogger::log_to_file( sprintf( '[Date Processing] Pickup location %d: raw date = %s', $i + 1, var_export( $current_date, true ) ), 'location-import' );
+				}
+				
+				// Validate and normalize date - set to null if empty, invalid, or equals epoch (1970-01-01)
+				$normalized_date = null;
+				if ( ! empty( $current_date ) ) {
+					$timestamp = strtotime( $current_date );
+					// Check if date is valid and not epoch (1970-01-01 00:00:00)
+					if ( $timestamp !== false && $timestamp > 0 ) {
+						$date_obj = DateTime::createFromFormat( 'Y-m-d H:i:s', date( 'Y-m-d H:i:s', $timestamp ) );
+						// Check if not epoch date (1970-01-01)
+						if ( $date_obj && $date_obj->format( 'Y-m-d' ) !== '1970-01-01' ) {
+							$normalized_date = date( 'Y-m-d H:i:s', $timestamp );
+							if ( class_exists( 'TMSLogger' ) ) {
+								TMSLogger::log_to_file( sprintf( '[Date Processing] Pickup location %d: normalized date = %s', $i + 1, $normalized_date ), 'location-import' );
+							}
+						} else {
+							if ( class_exists( 'TMSLogger' ) ) {
+								TMSLogger::log_to_file( sprintf( '[Date Processing] Pickup location %d: rejected (1970 date detected)', $i + 1 ), 'location-import' );
+							}
+						}
+					} else {
+						if ( class_exists( 'TMSLogger' ) ) {
+							TMSLogger::log_to_file( sprintf( '[Date Processing] Pickup location %d: strtotime failed or returned 0 (timestamp = %s)', $i + 1, var_export( $timestamp, true ) ), 'location-import' );
+						}
+					}
+				} else {
+					if ( class_exists( 'TMSLogger' ) ) {
+						TMSLogger::log_to_file( sprintf( '[Date Processing] Pickup location %d: date is empty', $i + 1 ), 'location-import' );
+					}
+				}
+				
+				// Normalize ETA date as well
+				$eta_date = isset( $data[ 'pick_up_location_eta_date' ][ $i ] ) ? trim( $data[ 'pick_up_location_eta_date' ][ $i ] ) : '';
+				$normalized_eta_date = null;
+				if ( ! empty( $eta_date ) && trim( $eta_date ) !== '' ) {
+					$eta_timestamp = strtotime( $eta_date );
+					if ( $eta_timestamp !== false && $eta_timestamp > 0 ) {
+						// Additional check: ensure timestamp is reasonable and not 1970
+						if ( $eta_timestamp >= 86400 && strpos( $eta_date, '1970' ) === false ) {
+							$eta_date_obj = DateTime::createFromFormat( 'Y-m-d', date( 'Y-m-d', $eta_timestamp ) );
+							if ( $eta_date_obj ) {
+								$eta_date_only = $eta_date_obj->format( 'Y-m-d' );
+								if ( $eta_date_only !== '1970-01-01' && $eta_date_only !== '1970-01-02' ) {
+									$normalized_eta_date = date( 'Y-m-d', $eta_timestamp );
+								}
+							}
+						}
+					}
+				}
 				
 				$pick_up_location[] = [
 					'db_id'         => isset( $data[ 'pick_up_location_db_id' ][ $i ] ) ? intval( $data[ 'pick_up_location_db_id' ][ $i ] ) : 0,
@@ -3285,24 +3338,92 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 					'address'       => $data[ 'pick_up_location_address' ][ $i ],
 					'short_address' => $data[ 'pick_up_location_short_address' ][ $i ],
 					'contact'       => $data[ 'pick_up_location_contact' ][ $i ],
-					'date'          => $current_date,
+					'date'          => $normalized_date,
 					'info'          => $data[ 'pick_up_location_info' ][ $i ],
 					'type'          => $data[ 'pick_up_location_type' ][ $i ],
 					'time_start'    => $data[ 'pick_up_location_start' ][ $i ],
 					'time_end'      => $data[ 'pick_up_location_end' ][ $i ],
 					'strict_time'   => $data[ 'pick_up_location_strict' ][ $i ],
-					'eta_date'      => isset( $data[ 'pick_up_location_eta_date' ][ $i ] ) ? $data[ 'pick_up_location_eta_date' ][ $i ] : '',
-					'eta_time'      => isset( $data[ 'pick_up_location_eta_time' ][ $i ] ) ? $data[ 'pick_up_location_eta_time' ][ $i ] : ''
+					'eta_date'      => $normalized_eta_date,
+					'eta_time'      => isset( $data[ 'pick_up_location_eta_time' ][ $i ] ) && ! empty( trim( $data[ 'pick_up_location_eta_time' ][ $i ] ) ) ? trim( $data[ 'pick_up_location_eta_time' ][ $i ] ) : null
 				];
 				
-				// Сравнение даты
-				if ( $current_date && ( $earliest_date === null || strtotime( $current_date ) < strtotime( $earliest_date ) ) ) {
-					$earliest_date = $current_date;
+				// Сравнение даты (only if valid date)
+				if ( $normalized_date && ( $earliest_date === null || strtotime( $normalized_date ) < strtotime( $earliest_date ) ) ) {
+					$earliest_date = $normalized_date;
 				}
 			}
 			
 			for ( $i = 0; $i < count( $data[ 'delivery_location_address_id' ] ); $i ++ ) {
-				$current_date = $data[ 'delivery_location_date' ][ $i ];
+				$current_date = isset( $data[ 'delivery_location_date' ][ $i ] ) ? trim( $data[ 'delivery_location_date' ][ $i ] ) : '';
+				
+				// Debug logging for delivery date processing
+				if ( class_exists( 'TMSLogger' ) ) {
+					TMSLogger::log_to_file( sprintf( '[Date Processing] Delivery location %d: raw date = %s', $i + 1, var_export( $current_date, true ) ), 'location-import' );
+				}
+				
+				// Validate and normalize date - set to null if empty, invalid, or equals epoch (1970-01-01)
+				$normalized_date = null;
+				if ( ! empty( $current_date ) && trim( $current_date ) !== '' ) {
+					$timestamp = strtotime( $current_date );
+					// Check if date is valid, not epoch (timestamp > 0), and not 1970-01-01 in any timezone
+					if ( $timestamp !== false && $timestamp > 0 ) {
+						// Additional check: ensure timestamp is reasonable (after 1970-01-02 to avoid timezone issues)
+						// Also check the actual date string doesn't contain 1970
+						if ( $timestamp >= 86400 && strpos( $current_date, '1970' ) === false ) {
+							$date_obj = DateTime::createFromFormat( 'Y-m-d H:i:s', date( 'Y-m-d H:i:s', $timestamp ) );
+							if ( $date_obj ) {
+								$date_only = $date_obj->format( 'Y-m-d' );
+								// Double check: not 1970-01-01 in any form
+								if ( $date_only !== '1970-01-01' && $date_only !== '1970-01-02' ) {
+									$normalized_date = date( 'Y-m-d H:i:s', $timestamp );
+									if ( class_exists( 'TMSLogger' ) ) {
+										TMSLogger::log_to_file( sprintf( '[Date Processing] Delivery location %d: normalized date = %s', $i + 1, $normalized_date ), 'location-import' );
+									}
+								} else {
+									if ( class_exists( 'TMSLogger' ) ) {
+										TMSLogger::log_to_file( sprintf( '[Date Processing] Delivery location %d: rejected (1970 date detected: %s)', $i + 1, $date_only ), 'location-import' );
+									}
+								}
+							} else {
+								if ( class_exists( 'TMSLogger' ) ) {
+									TMSLogger::log_to_file( sprintf( '[Date Processing] Delivery location %d: DateTime::createFromFormat failed', $i + 1 ), 'location-import' );
+								}
+							}
+						} else {
+							if ( class_exists( 'TMSLogger' ) ) {
+								TMSLogger::log_to_file( sprintf( '[Date Processing] Delivery location %d: rejected (timestamp = %d, contains 1970: %s)', $i + 1, $timestamp, strpos( $current_date, '1970' ) !== false ? 'yes' : 'no' ), 'location-import' );
+							}
+						}
+					} else {
+						if ( class_exists( 'TMSLogger' ) ) {
+							TMSLogger::log_to_file( sprintf( '[Date Processing] Delivery location %d: strtotime failed or returned 0 (timestamp = %s)', $i + 1, var_export( $timestamp, true ) ), 'location-import' );
+						}
+					}
+				} else {
+					if ( class_exists( 'TMSLogger' ) ) {
+						TMSLogger::log_to_file( sprintf( '[Date Processing] Delivery location %d: date is empty', $i + 1 ), 'location-import' );
+					}
+				}
+				
+				// Normalize ETA date as well
+				$eta_date = isset( $data[ 'delivery_location_eta_date' ][ $i ] ) ? trim( $data[ 'delivery_location_eta_date' ][ $i ] ) : '';
+				$normalized_eta_date = null;
+				if ( ! empty( $eta_date ) && trim( $eta_date ) !== '' ) {
+					$eta_timestamp = strtotime( $eta_date );
+					if ( $eta_timestamp !== false && $eta_timestamp > 0 ) {
+						// Additional check: ensure timestamp is reasonable and not 1970
+						if ( $eta_timestamp >= 86400 && strpos( $eta_date, '1970' ) === false ) {
+							$eta_date_obj = DateTime::createFromFormat( 'Y-m-d', date( 'Y-m-d', $eta_timestamp ) );
+							if ( $eta_date_obj ) {
+								$eta_date_only = $eta_date_obj->format( 'Y-m-d' );
+								if ( $eta_date_only !== '1970-01-01' && $eta_date_only !== '1970-01-02' ) {
+									$normalized_eta_date = date( 'Y-m-d', $eta_timestamp );
+								}
+							}
+						}
+					}
+				}
 				
 				$delivery_location[] = [
 					'db_id'         => isset( $data[ 'delivery_location_db_id' ][ $i ] ) ? intval( $data[ 'delivery_location_db_id' ][ $i ] ) : 0,
@@ -3310,20 +3431,66 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 					'address'       => $data[ 'delivery_location_address' ][ $i ],
 					'short_address' => $data[ 'delivery_location_short_address' ][ $i ],
 					'contact'       => $data[ 'delivery_location_contact' ][ $i ],
-					'date'          => $current_date,
+					'date'          => $normalized_date,
 					'info'          => $data[ 'delivery_location_info' ][ $i ],
 					'type'          => $data[ 'delivery_location_type' ][ $i ],
 					'time_start'    => $data[ 'delivery_location_start' ][ $i ],
 					'time_end'      => $data[ 'delivery_location_end' ][ $i ],
 					'strict_time'   => $data[ 'delivery_location_strict' ][ $i ],
-					'eta_date'      => isset( $data[ 'delivery_location_eta_date' ][ $i ] ) ? $data[ 'delivery_location_eta_date' ][ $i ] : '',
-					'eta_time'      => isset( $data[ 'delivery_location_eta_time' ][ $i ] ) ? $data[ 'delivery_location_eta_time' ][ $i ] : ''
+					'eta_date'      => $normalized_eta_date,
+					'eta_time'      => isset( $data[ 'delivery_location_eta_time' ][ $i ] ) && ! empty( trim( $data[ 'delivery_location_eta_time' ][ $i ] ) ) ? trim( $data[ 'delivery_location_eta_time' ][ $i ] ) : null
 				];
 				
-				// Сравнение даты
-				if ( $current_date && ( $latest_date === null || strtotime( $current_date ) > strtotime( $latest_date ) ) ) {
-					$latest_date = $current_date;
+				// Сравнение даты (only if valid date)
+				if ( $normalized_date && ( $latest_date === null || strtotime( $normalized_date ) > strtotime( $latest_date ) ) ) {
+					$latest_date = $normalized_date;
 				}
+			}
+			
+			// Validate that all locations have valid dates
+			$missing_pickup_dates = [];
+			$missing_delivery_dates = [];
+			
+			// Debug logging
+			if ( class_exists( 'TMSLogger' ) ) {
+				TMSLogger::log_to_file( sprintf( '[Date Validation] Pickup locations count: %d', count( $pick_up_location ) ), 'location-import' );
+				TMSLogger::log_to_file( sprintf( '[Date Validation] Delivery locations count: %d', count( $delivery_location ) ), 'location-import' );
+				TMSLogger::log_to_file( sprintf( '[Date Validation] Raw pickup dates: %s', json_encode( isset( $data['pick_up_location_date'] ) ? $data['pick_up_location_date'] : [] ) ), 'location-import' );
+				TMSLogger::log_to_file( sprintf( '[Date Validation] Raw delivery dates: %s', json_encode( isset( $data['delivery_location_date'] ) ? $data['delivery_location_date'] : [] ) ), 'location-import' );
+			}
+			
+			foreach ( $pick_up_location as $index => $location ) {
+				$date_value = $location['date'];
+				if ( class_exists( 'TMSLogger' ) ) {
+					TMSLogger::log_to_file( sprintf( '[Date Validation] Pickup location %d: date = %s (empty: %s, null: %s)', $index + 1, var_export( $date_value, true ), empty( $date_value ) ? 'yes' : 'no', $date_value === null ? 'yes' : 'no' ), 'location-import' );
+				}
+				if ( empty( $date_value ) || $date_value === null ) {
+					$missing_pickup_dates[] = $index + 1;
+				}
+			}
+			
+			foreach ( $delivery_location as $index => $location ) {
+				$date_value = $location['date'];
+				if ( class_exists( 'TMSLogger' ) ) {
+					TMSLogger::log_to_file( sprintf( '[Date Validation] Delivery location %d: date = %s (empty: %s, null: %s)', $index + 1, var_export( $date_value, true ), empty( $date_value ) ? 'yes' : 'no', $date_value === null ? 'yes' : 'no' ), 'location-import' );
+				}
+				if ( empty( $date_value ) || $date_value === null ) {
+					$missing_delivery_dates[] = $index + 1;
+				}
+			}
+			
+			if ( ! empty( $missing_pickup_dates ) || ! empty( $missing_delivery_dates ) ) {
+				$error_messages = [];
+				if ( ! empty( $missing_pickup_dates ) ) {
+					$error_messages[] = 'Pickup location(s) ' . implode( ', ', $missing_pickup_dates ) . ' missing required date';
+				}
+				if ( ! empty( $missing_delivery_dates ) ) {
+					$error_messages[] = 'Delivery location(s) ' . implode( ', ', $missing_delivery_dates ) . ' missing required date';
+				}
+				if ( class_exists( 'TMSLogger' ) ) {
+					TMSLogger::log_to_file( sprintf( '[Date Validation] Validation failed: %s', implode( '. ', $error_messages ) ), 'location-import' );
+				}
+				wp_send_json_error( [ 'message' => implode( '. ', $error_messages ) . '.' ] );
 			}
 			
 			$pick_up_location_json  = json_encode( $pick_up_location, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES );
@@ -5775,12 +5942,9 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 		if ( ! empty( $pick_up_json ) ) {
 			$pick_up_data = json_decode( str_replace( "\'", "'", stripslashes( $pick_up_json ) ), true );
 			if ( is_array( $pick_up_data ) && ! empty( $pick_up_data ) ) {
-				// Reverse array to maintain correct order when displaying
-				$pick_up_data = array_reverse( $pick_up_data );
-				$total_count = count( $pick_up_data );
+				// Preserve order: old first, new last
 				foreach ( $pick_up_data as $index => $location ) {
-					// Use reverse index so ORDER BY order_index ASC shows correct order
-					$order_index = $total_count - 1 - $index;
+					$order_index = $index;
 					$result = $this->insert_location( $table_locations, $load_id, 'pickup', $location, $order_index );
 					if ( $result ) {
 						$imported_count++;
@@ -5793,12 +5957,9 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 		if ( ! empty( $delivery_json ) ) {
 			$delivery_data = json_decode( str_replace( "\'", "'", stripslashes( $delivery_json ) ), true );
 			if ( is_array( $delivery_data ) && ! empty( $delivery_data ) ) {
-				// Reverse array to maintain correct order when displaying
-				$delivery_data = array_reverse( $delivery_data );
-				$total_count = count( $delivery_data );
+				// Preserve order: old first, new last
 				foreach ( $delivery_data as $index => $location ) {
-					// Use reverse index so ORDER BY order_index ASC shows correct order
-					$order_index = $total_count - 1 - $index;
+					$order_index = $index;
 					$result = $this->insert_location( $table_locations, $load_id, 'delivery', $location, $order_index );
 					if ( $result ) {
 						$imported_count++;
@@ -5916,9 +6077,8 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 			}
 		}
 		
-		// Reverse to maintain correct display order (locations stored in reverse order)
-		$result['pickup'] = array_reverse( $result['pickup'] );
-		$result['delivery'] = array_reverse( $result['delivery'] );
+		// Data is already in correct order (old first, new last) from ORDER BY order_index ASC
+		// No need to reverse anymore
 		
 		return $result;
 	}
@@ -5956,10 +6116,9 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 		// Track which IDs are being used (to delete unused ones)
 		$used_ids = array();
 		
-		// Process pickup locations (in reverse order for correct display)
-		$pick_up_locations = array_reverse( $pick_up_locations );
+		// Process pickup locations (preserve order: old first, new last)
 		foreach ( $pick_up_locations as $index => $location ) {
-			$order_index = count( $pick_up_locations ) - 1 - $index;
+			$order_index = $index;
 			$db_id = isset( $location['db_id'] ) ? intval( $location['db_id'] ) : 0;
 			
 			// Remove db_id from location data before saving
@@ -5983,10 +6142,9 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 			}
 		}
 		
-		// Process delivery locations (in reverse order for correct display)
-		$delivery_locations = array_reverse( $delivery_locations );
+		// Process delivery locations (preserve order: old first, new last)
 		foreach ( $delivery_locations as $index => $location ) {
-			$order_index = count( $delivery_locations ) - 1 - $index;
+			$order_index = $index;
 			$db_id = isset( $location['db_id'] ) ? intval( $location['db_id'] ) : 0;
 			
 			// Remove db_id from location data before saving
@@ -6080,8 +6238,35 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 			$format[] = '%s';
 		}
 		if ( isset( $location_data['date'] ) ) {
-			$data['date'] = $location_data['date'];
-			$format[] = '%s';
+			// Validate and normalize date - set to null if empty, invalid, or equals epoch (1970-01-01)
+			$date_value = trim( $location_data['date'] );
+			if ( empty( $date_value ) || $date_value === '' ) {
+				$data['date'] = null;
+				$format[] = '%s';
+			} else {
+				$timestamp = strtotime( $date_value );
+				// Check if date is valid, not epoch (timestamp >= 86400 = 1970-01-02), and doesn't contain 1970 in string
+				if ( $timestamp !== false && $timestamp >= 86400 && strpos( $date_value, '1970' ) === false ) {
+					$date_obj = DateTime::createFromFormat( 'Y-m-d H:i:s', date( 'Y-m-d H:i:s', $timestamp ) );
+					if ( $date_obj ) {
+						$date_only = $date_obj->format( 'Y-m-d' );
+						// Double check: not 1970-01-01 or 1970-01-02
+						if ( $date_only !== '1970-01-01' && $date_only !== '1970-01-02' ) {
+							$data['date'] = date( 'Y-m-d H:i:s', $timestamp );
+							$format[] = '%s';
+						} else {
+							$data['date'] = null;
+							$format[] = '%s';
+						}
+					} else {
+						$data['date'] = null;
+						$format[] = '%s';
+					}
+				} else {
+					$data['date'] = null;
+					$format[] = '%s';
+				}
+			}
 		}
 		if ( isset( $location_data['info'] ) ) {
 			$data['info'] = $location_data['info'];
@@ -6110,11 +6295,38 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 			$format[] = '%d';
 		}
 		if ( isset( $location_data['eta_date'] ) ) {
-			$data['eta_date'] = $location_data['eta_date'];
-			$format[] = '%s';
+			// Validate and normalize ETA date - set to null if empty, invalid, or equals epoch (1970-01-01)
+			$eta_date_value = trim( $location_data['eta_date'] );
+			if ( empty( $eta_date_value ) || $eta_date_value === '' ) {
+				$data['eta_date'] = null;
+				$format[] = '%s';
+			} else {
+				$eta_timestamp = strtotime( $eta_date_value );
+				// Check if date is valid, not epoch (timestamp >= 86400 = 1970-01-02), and doesn't contain 1970 in string
+				if ( $eta_timestamp !== false && $eta_timestamp >= 86400 && strpos( $eta_date_value, '1970' ) === false ) {
+					$eta_date_obj = DateTime::createFromFormat( 'Y-m-d', date( 'Y-m-d', $eta_timestamp ) );
+					if ( $eta_date_obj ) {
+						$eta_date_only = $eta_date_obj->format( 'Y-m-d' );
+						if ( $eta_date_only !== '1970-01-01' && $eta_date_only !== '1970-01-02' ) {
+							$data['eta_date'] = date( 'Y-m-d', $eta_timestamp );
+							$format[] = '%s';
+						} else {
+							$data['eta_date'] = null;
+							$format[] = '%s';
+						}
+					} else {
+						$data['eta_date'] = null;
+						$format[] = '%s';
+					}
+				} else {
+					$data['eta_date'] = null;
+					$format[] = '%s';
+				}
+			}
 		}
 		if ( isset( $location_data['eta_time'] ) ) {
-			$data['eta_time'] = $location_data['eta_time'];
+			$eta_time_value = trim( $location_data['eta_time'] );
+			$data['eta_time'] = ! empty( $eta_time_value ) ? $eta_time_value : null;
 			$format[] = '%s';
 		}
 		if ( isset( $location_data['order_index'] ) ) {

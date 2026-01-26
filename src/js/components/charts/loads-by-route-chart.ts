@@ -78,7 +78,9 @@ function updateLoadsByRouteFilters(): void {
     }
     
     // Ensure correct chart tab is selected on reload
-    url.searchParams.set('chart', 'loads-by-route');
+    // Ensure correct tab is selected on reload
+    url.searchParams.set('tab', 'loads-by-route');
+    url.searchParams.delete('chart'); // Remove chart parameter as it's no longer needed
     window.location.href = url.toString();
 }
 
@@ -86,7 +88,7 @@ function initLoadsByRouteChart(chartId: string = 'loadsByRouteChart'): void {
     const chartElement = document.getElementById(chartId);
     if (!chartElement) {
         return;
-    }
+    } 
     
     // Check if chart data exists
     const chartData = chartElement.getAttribute('data-chart-data');
@@ -94,12 +96,23 @@ function initLoadsByRouteChart(chartId: string = 'loadsByRouteChart'): void {
         return;
     }
     
-    // Check if container is visible
+    // Check if container is visible (check both old container and new tab)
     const container = chartElement.closest('.chart-container') as HTMLElement;
-    if (container && container.style.display === 'none') {
-        // Wait for container to become visible
-        setTimeout(() => initLoadsByRouteChart(chartId), 200);
-        return;
+    const tabPane = document.getElementById('loads-by-route') as HTMLElement;
+    const containerToCheck = container || tabPane;
+    
+    if (containerToCheck) {
+        const computedStyle = window.getComputedStyle(containerToCheck);
+        const isVisible = computedStyle.display !== 'none' && 
+            (containerToCheck.classList.contains('show') || 
+             containerToCheck.classList.contains('active') ||
+             !containerToCheck.classList.contains('fade'));
+        
+        if (!isVisible) {
+            // Wait for container to become visible
+            setTimeout(() => initLoadsByRouteChart(chartId), 200);
+            return;
+        }
     }
     
     // Reset initialization flag
@@ -157,26 +170,44 @@ export function initLoadsByRouteChartComponent(): void {
         month2Select.addEventListener('change', updateLoadsByRouteFilters);
     }
     
-    // Try to initialize charts immediately
+    // Check if this tab is active
+    const tabPane = document.getElementById('loads-by-route') as HTMLElement;
+    const isActive = tabPane && (tabPane.classList.contains('show') || tabPane.classList.contains('active'));
+    
+    // Try to initialize charts immediately if tab is active
     const compareMode = compareToggle && compareToggle.checked;
     
-    if (compareMode) {
-        // Initialize both comparison charts
-        initLoadsByRouteChart('loadsByRouteChart1');
-        initLoadsByRouteChart('loadsByRouteChart2');
+    if (isActive) {
+        setTimeout(() => {
+            if (compareMode) {
+                // Initialize both comparison charts
+                initLoadsByRouteChart('loadsByRouteChart1');
+                initLoadsByRouteChart('loadsByRouteChart2');
+            } else {
+                // Initialize single chart
+                initLoadsByRouteChart('loadsByRouteChart');
+            }
+        }, 100);
     } else {
-        // Initialize single chart
-        initLoadsByRouteChart('loadsByRouteChart');
+        // Try to initialize anyway (for backward compatibility with old container)
+        if (compareMode) {
+            initLoadsByRouteChart('loadsByRouteChart1');
+            initLoadsByRouteChart('loadsByRouteChart2');
+        } else {
+            initLoadsByRouteChart('loadsByRouteChart');
+        }
     }
     
-    // Also try when chart container becomes visible
+    // Also try when chart container becomes visible (check both old container and new tab)
     const chartContainer = document.querySelector('.chart-container[data-chart="loads-by-route"]') as HTMLElement;
-    if (chartContainer) {
+    const containerToObserve = chartContainer || tabPane;
+    
+    if (containerToObserve) {
         const observer = new MutationObserver((mutations) => {
             mutations.forEach((mutation) => {
                 if (mutation.type === 'attributes' && mutation.attributeName === 'style') {
-                    const isVisible = chartContainer.style.display !== 'none' && 
-                        window.getComputedStyle(chartContainer).display !== 'none';
+                    const isVisible = containerToObserve.style.display !== 'none' && 
+                        window.getComputedStyle(containerToObserve).display !== 'none';
                     if (isVisible) {
                         setTimeout(() => {
                             if (compareMode) {
@@ -190,6 +221,6 @@ export function initLoadsByRouteChartComponent(): void {
                 }
             });
         });
-        observer.observe(chartContainer, { attributes: true, attributeFilter: ['style'] });
+        observer.observe(containerToObserve, { attributes: true, attributeFilter: ['style', 'class'] });
     }
 }

@@ -341,10 +341,43 @@ function ready() {
                     JSON.parse(stateMapData),
                     parseInt(maxCount, 10),
                     JSON.parse(stateMarkersData),
-                    geojsonSource
+                    geojsonSource,
+                    'usaStatesMap',
+                    'mapInfoPanel'
                 );
             } catch (e) {
                 console.error('Error initializing home location map:', e);
+            }
+        }
+    }
+    
+    // Make initHomeLocationMap available globally for inline scripts
+    (window as any).initHomeLocationMap = initHomeLocationMap;
+    
+    // Initialize Loads by State Map if data is available and tab is active
+    const loadsByStateMapElement = document.getElementById('loadsByStateMap');
+    if (loadsByStateMapElement) {
+        const loadsMapView = document.getElementById('loads-map-view');
+        // Only initialize if Map tab is active
+        if (loadsMapView && loadsMapView.classList.contains('active')) {
+            const stateMapData = loadsByStateMapElement.dataset.stateMapData;
+            const maxCount = loadsByStateMapElement.dataset.maxCount;
+            const stateMarkersData = loadsByStateMapElement.dataset.stateMarkersData;
+            const geojsonSource = loadsByStateMapElement.dataset.geojsonSource;
+            
+            if (stateMapData && maxCount && stateMarkersData && geojsonSource) {
+                try {
+                    initHomeLocationMap(
+                        JSON.parse(stateMapData),
+                        parseInt(maxCount, 10),
+                        JSON.parse(stateMarkersData),
+                        geojsonSource,
+                        'loadsByStateMap',
+                        'loadsByStateMapInfoPanel'
+                    );
+                } catch (e) {
+                    console.error('Error initializing loads by state map:', e);
+                }
             }
         }
     }

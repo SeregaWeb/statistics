@@ -26,8 +26,9 @@ function updateLoadsByStateFilters(): void {
             url.searchParams.set('loads_month', monthSelect.value);
         }
     }
-    // Ensure correct chart tab is selected on reload
-    url.searchParams.set('chart', 'loads-by-state');
+    // Ensure correct tab is selected on reload
+    url.searchParams.set('tab', 'loads-by-state');
+    url.searchParams.delete('chart'); // Remove chart parameter as it's no longer needed
     window.location.href = url.toString();
 }
 
@@ -43,12 +44,23 @@ function initLoadsByStateChart(): void {
         return;
     }
     
-    // Check if container is visible
+    // Check if container is visible (check both old container and new tab)
     const container = chartElement.closest('.chart-container') as HTMLElement;
-    if (container && container.style.display === 'none') {
-        // Wait for container to become visible
-        setTimeout(initLoadsByStateChart, 200);
-        return;
+    const tabPane = document.getElementById('loads-by-state') as HTMLElement;
+    const containerToCheck = container || tabPane;
+    
+    if (containerToCheck) {
+        const computedStyle = window.getComputedStyle(containerToCheck);
+        const isVisible = computedStyle.display !== 'none' && 
+            (containerToCheck.classList.contains('show') || 
+             containerToCheck.classList.contains('active') ||
+             !containerToCheck.classList.contains('fade'));
+        
+        if (!isVisible) {
+            // Wait for container to become visible
+            setTimeout(initLoadsByStateChart, 200);
+            return;
+        }
     }
     
     // Reset initialization flag
@@ -81,23 +93,34 @@ export function initLoadsByStateChartComponent(): void {
         monthSelect.addEventListener('change', updateLoadsByStateFilters);
     }
     
-    // Try to initialize immediately
-    initLoadsByStateChart();
+    // Check if this tab is active
+    const tabPane = document.getElementById('loads-by-state') as HTMLElement;
+    const isActive = tabPane && (tabPane.classList.contains('show') || tabPane.classList.contains('active'));
     
-    // Also try when chart container becomes visible
+    // Try to initialize immediately if tab is active
+    if (isActive) {
+        setTimeout(initLoadsByStateChart, 100);
+    } else {
+        // Try to initialize anyway (for backward compatibility with old container)
+        initLoadsByStateChart();
+    }
+    
+    // Also try when chart container becomes visible (check both old container and new tab)
     const chartContainer = document.querySelector('.chart-container[data-chart="loads-by-state"]') as HTMLElement;
-    if (chartContainer) {
+    const containerToObserve = chartContainer || tabPane;
+    
+    if (containerToObserve) {
         const observer = new MutationObserver((mutations) => {
             mutations.forEach((mutation) => {
                 if (mutation.type === 'attributes' && mutation.attributeName === 'style') {
-                    const isVisible = chartContainer.style.display !== 'none' && 
-                        window.getComputedStyle(chartContainer).display !== 'none';
+                    const isVisible = containerToObserve.style.display !== 'none' && 
+                        window.getComputedStyle(containerToObserve).display !== 'none';
                     if (isVisible) {
                         setTimeout(initLoadsByStateChart, 300);
                     }
                 }
             });
         });
-        observer.observe(chartContainer, { attributes: true, attributeFilter: ['style'] });
+        observer.observe(containerToObserve, { attributes: true, attributeFilter: ['style', 'class'] });
     }
 }

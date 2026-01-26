@@ -10,6 +10,7 @@ import { populateLoadSelect } from '../utils/load-select';
 class DriverPopupForms {
     private ajaxUrl: string;
     private currentDriverId: string | null = null;
+    private ratingButtonHandler: ((e: Event) => void) | null = null;
 
     constructor(ajaxUrl: string) {
         this.ajaxUrl = ajaxUrl;
@@ -63,32 +64,128 @@ class DriverPopupForms {
     }
 
     /**
+     * Confirm highest rating (5) selection
+     * Returns true if confirmed, false if cancelled
+     */
+    private confirmHighestRating(rating: number, button: HTMLButtonElement, selectedRating: HTMLInputElement | null): boolean {
+        if (rating === 5) {
+            const confirmed = confirm("You're choosing the highest rating for this driver. Would you like to continue?");
+            return confirmed;
+        }
+        return true;
+    }
+
+    /**
+     * Revert rating selection changes when user cancels
+     */
+    private revertRatingSelection(button: HTMLButtonElement, selectedRating: HTMLInputElement | null): void {
+        // Remove active class from all buttons (for popup forms)
+        document.querySelectorAll('.rating-btn').forEach(b => {
+            b.classList.remove('active');
+        });
+        
+        // Reset button classes to outline versions (for driver-core.ts style)
+        document.querySelectorAll('.rating-btn').forEach(b => {
+            const bRating = parseInt(b.getAttribute('data-rating') || '0', 10);
+            if (bRating <= 1) {
+                b.className = 'btn btn-outline-danger rating-btn';
+            } else if (bRating <= 4) {
+                b.className = 'btn btn-outline-warning rating-btn';
+            } else if (bRating > 4) {
+                b.className = 'btn btn-outline-success rating-btn';
+            } else {
+                b.className = 'btn btn-outline-secondary rating-btn';
+            }
+        });
+        
+        // Clear selected rating input
+        if (selectedRating) {
+            selectedRating.value = '';
+        }
+        
+        // Remove processing flag
+        button.removeAttribute('data-processing');
+    }
+
+    /**
      * Handle rating button clicks
      */
     private handleRatingButtons(): void {
-        document.querySelectorAll('.rating-btn').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                const target = e.target as HTMLButtonElement;
-                const rating = parseInt(target.dataset.rating || '0', 10);
-                // Prevent selecting 3-5 when Canceled selected
-                if (this.isCanceledSelected() && rating > 2) {
-                    printMessage('For Canceled loads you can set rating 1-2 only.', 'warning', 2500);
-                    return;
-                }
-                
-                // Remove active class from all buttons
-                document.querySelectorAll('.rating-btn').forEach(b => b.classList.remove('active'));
-                
-                // Add active class to clicked button
-                target.classList.add('active');
-                
-                // Set the rating value
-                const selectedRating = document.getElementById('selectedRating') as HTMLInputElement;
-                if (selectedRating) {
-                    selectedRating.value = target.dataset.rating || '';
-                }
+        // Remove existing handler if any
+        if (this.ratingButtonHandler) {
+            document.removeEventListener('click', this.ratingButtonHandler);
+        }
+        
+        // Create new handler
+        this.ratingButtonHandler = (e: Event) => {
+            const target = e.target as HTMLElement;
+            if (!target.classList.contains('rating-btn')) {
+                return;
+            }
+            
+            const button = target as HTMLButtonElement;
+            
+            // Prevent duplicate processing
+            if (button.hasAttribute('data-processing')) {
+                e.preventDefault();
+                e.stopPropagation();
+                return;
+            }
+            
+            const rating = parseInt(button.dataset.rating || '0', 10);
+            
+            // Check if this button is already active
+            if (button.classList.contains('active')) {
+                e.preventDefault();
+                e.stopPropagation();
+                return;
+            }
+            
+            // Prevent selecting 3-5 when Canceled selected
+            if (this.isCanceledSelected() && rating > 2) {
+                printMessage('For Canceled loads you can set rating 1-2 only.', 'warning', 2500);
+                e.preventDefault();
+                e.stopPropagation();
+                return;
+            }
+            
+            button.setAttribute('data-processing', 'true');
+            
+            // Remove active class from all buttons
+            document.querySelectorAll('.rating-btn').forEach(b => {
+                b.classList.remove('active');
+                b.removeAttribute('data-processing');
             });
-        });
+            
+            // Add active class to clicked button
+            button.classList.add('active');
+            
+            // Set the rating value
+            const selectedRating = document.getElementById('selectedRating') as HTMLInputElement;
+            if (selectedRating) {
+                selectedRating.value = button.dataset.rating || '';
+            }
+            
+            // Confirm if selecting highest rating (5) - at the end after all changes
+            if (!this.confirmHighestRating(rating, button, selectedRating)) {
+                // User cancelled - revert all changes
+                this.revertRatingSelection(button, selectedRating);
+                e.preventDefault();
+                e.stopPropagation();
+                return;
+            }
+            
+            // Remove processing flag after event completes
+            setTimeout(() => {
+                button.removeAttribute('data-processing');
+            }, 50);
+            
+            e.preventDefault();
+            e.stopPropagation();
+        };
+        
+        // Add new handler
+        document.addEventListener('click', this.ratingButtonHandler);
     }
 
     /**

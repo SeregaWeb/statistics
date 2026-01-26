@@ -990,7 +990,29 @@ const editShipperStopInit = () => {
                 if (form && card) {
                     // Store the original position for reinsertion
                     const originalStopType = card.getAttribute('data-stop-type');
-                    const originalPosition = Array.from(card.parentNode.children).indexOf(card);
+                    
+                    // Calculate position only among elements of the same type
+                    const shipperContacts = form.querySelector('.js-table-shipper');
+                    let originalPosition = 0;
+                    let nextSiblingOfSameType: HTMLElement | null = null;
+                    
+                    if (shipperContacts) {
+                        const allSameTypeElements = Array.from(shipperContacts.querySelectorAll(`.stopTypeValue[data-stop-type="${originalStopType}"]`)) as HTMLElement[];
+                        originalPosition = allSameTypeElements.indexOf(card);
+                        if (originalPosition === -1) {
+                            originalPosition = allSameTypeElements.length;
+                        }
+                        
+                        // Find the next sibling of the same type for insertion reference
+                        const currentIndex = allSameTypeElements.indexOf(card);
+                        if (currentIndex >= 0 && currentIndex < allSameTypeElements.length - 1) {
+                            nextSiblingOfSameType = allSameTypeElements[currentIndex + 1];
+                        }
+                    } else {
+                        // Fallback to old method if container not found
+                        originalPosition = Array.from(card.parentNode.children).indexOf(card);
+                    }
+                    
                     card.classList.add('active');
                     const resultSearch = form.querySelector('.js-result-search');
                     const stopType = form.querySelector('.js-shipper-stop-type');
@@ -1006,6 +1028,7 @@ const editShipperStopInit = () => {
                     const etaTime = form.querySelector('.js-shipper-eta-time') as HTMLInputElement;
 
                     const currentID = card.querySelector('.js-current-shipper_address_id');
+                    const currentDbId = card.querySelector('.js-current-shipper_db_id');
                     const currentAddress = card.querySelector('.js-current-shipper_address');
                     const currentContact = card.querySelector('.js-current-shipper_contact');
                     const currentDate = card.querySelector('.js-current-shipper_date');
@@ -1019,10 +1042,20 @@ const editShipperStopInit = () => {
                     const currentEtaTime = card.querySelector('.js-current-shipper_eta_time');
                     const timeEndContainer = document.querySelector<HTMLElement>('.js-hide-end-date');
 
+                    const dbIdValue = currentDbId ? currentDbId.value : '0';
+                    
+                    // Store temp ID on card for reference if not already set
+                    if (!card.getAttribute('data-temp-id')) {
+                        const cardTempId = `temp-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+                        card.setAttribute('data-temp-id', cardTempId);
+                    }
+                    
                     const templateInputEdit = `
                         <input type="hidden" class="js-full-address" data-current-address="${currentAddress.value}" data-short-address="${currentShortAddress.value}" name="shipper_id" value="${currentID.value}">
+                        <input type="hidden" class="js-original-db-id" name="original_db_id" value="${dbIdValue}">
                         <input type="hidden" class="js-original-stop-type" name="original_stop_type" value="${originalStopType}">
                         <input type="hidden" class="js-original-position" name="original_position" value="${originalPosition}">
+                        ${nextSiblingOfSameType && nextSiblingOfSameType.getAttribute('data-temp-id') ? `<input type="hidden" class="js-next-sibling-id" name="next_sibling_id" value="${nextSiblingOfSameType.getAttribute('data-temp-id')}">` : ''}
                     `;
 
                     if (!resultSearch) return;
@@ -1031,16 +1064,66 @@ const editShipperStopInit = () => {
                     stopType.value = currentType.value;
                     addressSearch.value = currentAddress.value;
                     contact.value = currentContact.value;
-                    date.value = currentDate.value;
+                    
+                    // Convert date from datetime format (Y-m-d H:i:s) to date input format (Y-m-d)
+                    // Also handle empty/null dates
+                    if (date && currentDate) {
+                        const dateValue = currentDate.value;
+                        if (dateValue && dateValue.trim() !== '' && dateValue !== '1970-01-01 00:00:00' && dateValue !== '1970-01-01') {
+                            // Extract date part (YYYY-MM-DD) from datetime string
+                            const dateMatch = dateValue.match(/^(\d{4}-\d{2}-\d{2})/);
+                            if (dateMatch) {
+                                date.value = dateMatch[1];
+                            } else {
+                                // Try to parse as date
+                                const parsedDate = new Date(dateValue);
+                                if (!isNaN(parsedDate.getTime()) && parsedDate.getFullYear() !== 1970) {
+                                    const year = parsedDate.getFullYear();
+                                    const month = String(parsedDate.getMonth() + 1).padStart(2, '0');
+                                    const day = String(parsedDate.getDate()).padStart(2, '0');
+                                    date.value = `${year}-${month}-${day}`;
+                                } else {
+                                    date.value = '';
+                                }
+                            }
+                        } else {
+                            date.value = '';
+                        }
+                    }
+                    
                     info.value = currentInfo.value;
                     dateStart.value = currentStart.value;
                     dateEnd.value = currentEnd.value;
-                    strict.checked = currentStrict.value === 'true';
+                    // Check if strict_time is true (can be "true", "1", 1, or true)
+                    if (strict && currentStrict) {
+                        const strictValue = currentStrict.value;
+                        const isStrict = strictValue === 'true' || strictValue === '1' || strictValue === 1 || strictValue === true || strictValue === 'True';
+                        strict.checked = isStrict;
+                    }
                     if (etaDate && currentEtaDate) {
-                        etaDate.value = currentEtaDate.value;
+                        const etaDateValue = currentEtaDate.value;
+                        if (etaDateValue && etaDateValue.trim() !== '' && etaDateValue !== '1970-01-01') {
+                            // Extract date part for ETA date
+                            const etaDateMatch = etaDateValue.match(/^(\d{4}-\d{2}-\d{2})/);
+                            if (etaDateMatch) {
+                                etaDate.value = etaDateMatch[1];
+                            } else {
+                                const parsedEtaDate = new Date(etaDateValue);
+                                if (!isNaN(parsedEtaDate.getTime()) && parsedEtaDate.getFullYear() !== 1970) {
+                                    const year = parsedEtaDate.getFullYear();
+                                    const month = String(parsedEtaDate.getMonth() + 1).padStart(2, '0');
+                                    const day = String(parsedEtaDate.getDate()).padStart(2, '0');
+                                    etaDate.value = `${year}-${month}-${day}`;
+                                } else {
+                                    etaDate.value = '';
+                                }
+                            }
+                        } else {
+                            etaDate.value = '';
+                        }
                     }
                     if (etaTime && currentEtaTime) {
-                        etaTime.value = currentEtaTime.value;
+                        etaTime.value = currentEtaTime.value || '';
                     }
 
                     if (timeEndContainer && strict.checked) {
@@ -1149,10 +1232,39 @@ export const addShipperPointInit = () => {
                     const addressValueShortAddrres = address.getAttribute('data-short-address');
                     const stopTypeValue = stopType.value;
                     const contactValue = contact.value;
-                    const dateValue = date.value;
                     const start = dateStart.value;
-                    const end = dateEnd.value;
-                    const strict = dateStrict.checked;
+                    let end = dateEnd.value;
+                    // Convert checkbox checked state to string "true" or "false"
+                    const strict = dateStrict.checked ? 'true' : 'false';
+                    
+                    // Ensure end time is not empty - if empty, use start time
+                    if (!end || end.trim() === '') {
+                        end = start || '00:00:00';
+                    }
+                    // Convert date from YYYY-MM-DD to YYYY-MM-DD HH:MM:SS format for storage
+                    let dateValue = date.value;
+                    if (dateValue && dateValue.trim() !== '') {
+                        // If date is in YYYY-MM-DD format, convert to YYYY-MM-DD HH:MM:SS
+                        const dateMatch = dateValue.match(/^(\d{4}-\d{2}-\d{2})$/);
+                        if (dateMatch) {
+                            // Use start time if available
+                            // start is already in HH:MM:SS format (e.g., "19:30:00"), so use it directly
+                            // If start is in HH:MM format, convert to HH:MM:SS
+                            let timePart = '00:00:00';
+                            if (start && start.trim() !== '') {
+                                // Check if start is in HH:MM or HH:MM:SS format
+                                if (start.match(/^\d{2}:\d{2}:\d{2}$/)) {
+                                    // Already in HH:MM:SS format
+                                    timePart = start;
+                                } else if (start.match(/^\d{2}:\d{2}$/)) {
+                                    // HH:MM format, add seconds
+                                    timePart = `${start}:00`;
+                                }
+                            }
+                            dateValue = `${dateMatch[1]} ${timePart}`;
+                        }
+                        // If date is already in YYYY-MM-DD HH:MM:SS format, keep it as is
+                    }
                     const etaDateValue = etaDate ? etaDate.value : '';
                     const etaTimeValue = etaTime ? etaTime.value : '';
                     let infoValue = info.value;
@@ -1191,10 +1303,18 @@ export const addShipperPointInit = () => {
                             }
                         });
 
-                        if (maxPickUpDate && new Date(dateValue) < new Date(maxPickUpDate)) {
-                            printMessage(`Delivery date cannot be earlier than the latest pick up date (${maxPickUpDate})`, 'danger', 5000);
-                            // eslint-disable-next-line consistent-return
-                            return false;
+                        if (maxPickUpDate) {
+                            // Compare dates only (without time) to allow same day
+                            const deliveryDateOnly = new Date(dateValue);
+                            deliveryDateOnly.setHours(0, 0, 0, 0);
+                            const maxPickUpDateOnly = new Date(maxPickUpDate);
+                            maxPickUpDateOnly.setHours(0, 0, 0, 0);
+                            
+                            if (deliveryDateOnly < maxPickUpDateOnly) {
+                                printMessage(`Delivery date cannot be earlier than the latest pick up date (${maxPickUpDate})`, 'danger', 5000);
+                                // eslint-disable-next-line consistent-return
+                                return false;
+                            }
                         }
                     }
 
@@ -1221,12 +1341,33 @@ export const addShipperPointInit = () => {
                     }
 
                     let time = '';
-                    if (strict === 'false' || !strict) {
-                        time = `${start} - ${end}`;
-                    } else {
+                    // Check if strict is true (value is "true")
+                    const isStrict = strict === 'true';
+                    if (isStrict) {
                         time = `${start} - strict`;
+                    } else {
+                        time = `${start} - ${end}`;
                     }
 
+                    // Format date for display (MM/DD/YYYY)
+                    let dateDisplay = '';
+                    if (dateValue && dateValue.trim() !== '') {
+                        // Extract date part from YYYY-MM-DD or YYYY-MM-DD HH:MM:SS
+                        const dateMatch = dateValue.match(/^(\d{4})-(\d{2})-(\d{2})/);
+                        if (dateMatch) {
+                            const [, year, month, day] = dateMatch;
+                            dateDisplay = `${month}/${day}/${year}`;
+                        } else {
+                            // Try to parse as Date object
+                            const dateObj = new Date(dateValue);
+                            if (!isNaN(dateObj.getTime())) {
+                                dateDisplay = `${String(dateObj.getMonth() + 1).padStart(2, '0')}/${String(dateObj.getDate()).padStart(2, '0')}/${dateObj.getFullYear()}`;
+                            } else {
+                                dateDisplay = dateValue;
+                            }
+                        }
+                    }
+                    
                     // Format ETA display
                     let etaDisplay = '';
                     if (etaDateValue) {
@@ -1238,10 +1379,16 @@ export const addShipperPointInit = () => {
                         }
                     }
 
+                    // Get db_id from edit operation if exists
+                    const originalDbId = form.querySelector('.js-original-db-id')?.value || '0';
+                    
+                    // Generate unique temp ID for the new card
+                    const tempId = `temp-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+                    
                     const template = `
-                <div class="row js-current-shipper stopTypeValue card-shipper" data-stop-type="${stopTypeValue}">
+                <div class="row js-current-shipper stopTypeValue card-shipper" data-stop-type="${stopTypeValue}" data-temp-id="${tempId}">
                     <div class="d-none">
-                        <input type="hidden" class="js-current-shipper_db_id" name="${stopTypeValue}_db_id[]" value="0">
+                        <input type="hidden" class="js-current-shipper_db_id" name="${stopTypeValue}_db_id[]" value="${originalDbId}">
                         <input type="hidden" class="js-current-shipper_address_id" name="${stopTypeValue}_address_id[]" value="${addressValueID}" >
                         <input type="hidden" class="js-current-shipper_address" name="${stopTypeValue}_address[]" value="${addressValueFullAddrres}" >
                         <input type="hidden" class="js-current-shipper_short_address" name="${stopTypeValue}_short_address[]" value="${addressValueShortAddrres}" >
@@ -1256,15 +1403,13 @@ export const addShipperPointInit = () => {
                         <input type="hidden" class="js-current-shipper_eta_time" name="${stopTypeValue}_eta_time[]" value="${etaTimeValue}">
                     </div>
                     <div class="col-12 col-md-1">${typeDelivery}</div>
-                    <div class="col-12 col-md-1">
+                    <div class="col-12 col-md-2">
                          <div class="d-flex flex-column">
-                                <p class="m-0">${dateValue}</p>
-                                <span class="small-text">
-                                    ${time}
-                                </span>
+                                <p class="m-0">${dateDisplay || '<span class="text-muted">No date</span>'}</p>
+                                ${time ? `<span class="small-text">${time}</span>` : ''}
                             </div>
                     </div>
-                    <div class="col-12 col-md-2">
+                    <div class="col-12 col-md-1">
                         ${etaDisplay ? `<span class="small-text">${etaDisplay}</span>` : '<span class="text-muted small-text">—</span>'}
                     </div>
                     <div class="col-12 col-md-3">${addressValueFullAddrres}</div>
@@ -1289,14 +1434,26 @@ export const addShipperPointInit = () => {
                     // Check if this is an edit operation
                     const originalStopType = form.querySelector('.js-original-stop-type')?.value;
                     const originalPosition = form.querySelector('.js-original-position')?.value;
+                    const nextSiblingId = form.querySelector('.js-next-sibling-id')?.value;
                     
                     if (originalStopType && originalPosition !== undefined) {
                         // This is an edit - insert at the original position within the same type group
                         const stopTypeElements = Array.from(shipperContacts.querySelectorAll(`.stopTypeValue[data-stop-type="${originalStopType}"]`)) as HTMLElement[];
-                        const targetPosition = Math.min(parseInt(originalPosition), stopTypeElements.length);
                         
-                        if (stopTypeElements.length > 0) {
-                            // Insert at the correct position within the same type group
+                        // Try to find next sibling by temp ID first (more reliable)
+                        let insertBeforeElement: HTMLElement | null = null;
+                        if (nextSiblingId) {
+                            insertBeforeElement = stopTypeElements.find(el => el.getAttribute('data-temp-id') === nextSiblingId) || null;
+                        }
+                        
+                        if (insertBeforeElement) {
+                            // Insert before the next sibling (maintains exact position)
+                            insertBeforeElement.insertAdjacentHTML('beforebegin', template);
+                        } else if (stopTypeElements.length > 0) {
+                            // Fallback to position-based insertion
+                            // Since card was removed, we need to account for that
+                            const targetPosition = Math.min(parseInt(originalPosition), stopTypeElements.length);
+                            
                             if (targetPosition === 0) {
                                 // Insert at the beginning of the type group
                                 stopTypeElements[0].insertAdjacentHTML('beforebegin', template);
@@ -1304,7 +1461,7 @@ export const addShipperPointInit = () => {
                                 // Insert at the end of the type group
                                 stopTypeElements[stopTypeElements.length - 1].insertAdjacentHTML('afterend', template);
                             } else {
-                                // Insert at the specific position
+                                // Insert at the specific position (card was removed, so position is still correct)
                                 stopTypeElements[targetPosition].insertAdjacentHTML('beforebegin', template);
                             }
                         } else {
@@ -1314,10 +1471,10 @@ export const addShipperPointInit = () => {
                                 if (firstDeliveryElement) {
                                     firstDeliveryElement.insertAdjacentHTML('beforebegin', template);
                                 } else {
-                                    shipperContacts.innerHTML += template;
+                                    shipperContacts.insertAdjacentHTML('beforeend', template);
                                 }
                             } else {
-                                shipperContacts.innerHTML += template;
+                                shipperContacts.insertAdjacentHTML('beforeend', template);
                             }
                         }
                     } else {
@@ -1404,6 +1561,15 @@ export const addShipperPointInit = () => {
 
     addActionsDeleteUniversalCard('.js-remove-ship', '.js-current-shipper', updateDeliveryDateMin);
     editShipperStopInit();
+    
+    // Initialize data-temp-id for existing cards on page load
+    const existingCards = document.querySelectorAll('.js-current-shipper');
+    existingCards.forEach((card) => {
+        if (!card.getAttribute('data-temp-id')) {
+            const tempId = `temp-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+            card.setAttribute('data-temp-id', tempId);
+        }
+    });
 };
 
 export const sendShipperFormInit = (ajaxUrl) => {
@@ -1412,14 +1578,49 @@ export const sendShipperFormInit = (ajaxUrl) => {
     shipperForm &&
         shipperForm.addEventListener('submit', (event) => {
             event.preventDefault();
-            const { target } = event;
+            const target = event.target as HTMLFormElement;
 
-            // @ts-ignore
-            const btnSubmit = target.querySelector('.js-submit-and-next-tab');
+            if (!target) { 
+                return;
+            }
+
+            // Validate dates before submission - check all location dates (hidden fields)
+            const pickupDates = target.querySelectorAll('input[name="pick_up_location_date[]"]') as NodeListOf<HTMLInputElement>;
+            const deliveryDates = target.querySelectorAll('input[name="delivery_location_date[]"]') as NodeListOf<HTMLInputElement>;
+            
+            const missingPickupDates: number[] = [];
+            const missingDeliveryDates: number[] = [];
+            
+            pickupDates.forEach((dateInput, index) => {
+                const dateValue = dateInput.value ? dateInput.value.trim() : '';
+                if (!dateValue || dateValue === '' || dateValue === '1970-01-01' || dateValue === '1970-01-01 00:00:00') {
+                    missingPickupDates.push(index + 1);
+                }
+            });
+            
+            deliveryDates.forEach((dateInput, index) => {
+                const dateValue = dateInput.value ? dateInput.value.trim() : '';
+                if (!dateValue || dateValue === '' || dateValue === '1970-01-01' || dateValue === '1970-01-01 00:00:00') {
+                    missingDeliveryDates.push(index + 1);
+                }
+            });
+            
+            if (missingPickupDates.length > 0 || missingDeliveryDates.length > 0) {
+                const errorMessages: string[] = [];
+                if (missingPickupDates.length > 0) {
+                    errorMessages.push(`Pickup location(s) ${missingPickupDates.join(', ')} missing required date`);
+                }
+                if (missingDeliveryDates.length > 0) {
+                    errorMessages.push(`Delivery location(s) ${missingDeliveryDates.join(', ')} missing required date`);
+                }
+                printMessage(errorMessages.join('. ') + '.', 'danger', 5000);
+                return;
+            }
+
+            const btnSubmit = target.querySelector('.js-submit-and-next-tab') as HTMLButtonElement;
             btnSubmit && btnSubmit.setAttribute('disabled', 'disabled');
 
             const nextTargetTab = 'pills-documents-tab';
-            // @ts-ignore
             const formData = new FormData(target);
 
             const flt = document.querySelector('input[name="flt"]');

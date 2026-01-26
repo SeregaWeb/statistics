@@ -4476,14 +4476,74 @@ function initDriversStatisticsCharts() {
       }
     }
   });
-  var tabElements = document.querySelectorAll('#driversStatisticsTabs button[data-bs-toggle="tab"]');
+  var tabElements = document.querySelectorAll('#driversStatisticsTabs button[data-tab-name]');
   tabElements.forEach(function (tabElement) {
+    tabElement.addEventListener('click', function (event) {
+      var tabName = event.target.getAttribute('data-tab-name');
+      setTimeout(function () {
+        if (tabName === 'loads-by-state') {
+          var loadsByStateChart = document.getElementById('loadsByStateChart');
+          if (loadsByStateChart) {
+            loadsByStateChart.dataset.initialized = 'false';
+            if (typeof window.initLoadsByStateChart === 'function') {
+              window.initLoadsByStateChart();
+            }
+          }
+        } else if (tabName === 'loads-by-route') {
+          var loadsByRouteChart = document.getElementById('loadsByRouteChart');
+          var loadsByRouteChart1 = document.getElementById('loadsByRouteChart1');
+          var loadsByRouteChart2 = document.getElementById('loadsByRouteChart2');
+          if (loadsByRouteChart) {
+            loadsByRouteChart.dataset.initialized = 'false';
+            if (typeof window.initLoadsByRouteChart === 'function') {
+              window.initLoadsByRouteChart('loadsByRouteChart');
+            }
+          }
+          if (loadsByRouteChart1) {
+            loadsByRouteChart1.dataset.initialized = 'false';
+            if (typeof window.initLoadsByRouteChart === 'function') {
+              window.initLoadsByRouteChart('loadsByRouteChart1');
+            }
+          }
+          if (loadsByRouteChart2) {
+            loadsByRouteChart2.dataset.initialized = 'false';
+            if (typeof window.initLoadsByRouteChart === 'function') {
+              window.initLoadsByRouteChart('loadsByRouteChart2');
+            }
+          }
+        } else {
+          var _chartConfigs = [{
+            id: 'stateChart',
+            useBar: true
+          }, {
+            id: 'vehicleTypeChart',
+            useBar: false
+          }, {
+            id: 'nationalityChart',
+            useBar: true
+          }, {
+            id: 'languageChart',
+            useBar: false
+          }];
+          _chartConfigs.forEach(function (config) {
+            var chartElement = document.getElementById(config.id);
+            if (chartElement) {
+              chartElement.dataset.initialized = 'false';
+              initChart(config.id, config.useBar);
+            }
+          });
+        }
+      }, 100);
+    });
+  });
+  var bootstrapTabElements = document.querySelectorAll('#driversStatisticsTabs button[data-bs-toggle="tab"]');
+  bootstrapTabElements.forEach(function (tabElement) {
     tabElement.addEventListener('shown.bs.tab', function (event) {
       var targetId = event.target.getAttribute('data-bs-target');
       if (targetId) {
         var tabPane = document.querySelector(targetId);
         if (tabPane) {
-          var _chartConfigs = [{
+          var _chartConfigs2 = [{
             id: 'stateChart',
             useBar: true
           }, {
@@ -4508,14 +4568,14 @@ function initDriversStatisticsCharts() {
             id: 'loadsByRouteChart2',
             useBar: true
           }];
-          _chartConfigs.forEach(function (config) {
+          _chartConfigs2.forEach(function (config) {
             var chartElement = document.getElementById(config.id);
             if (chartElement) {
               chartElement.dataset.initialized = 'false';
             }
           });
           setTimeout(function () {
-            _chartConfigs.forEach(function (config) {
+            _chartConfigs2.forEach(function (config) {
               initChart(config.id, config.useBar);
             });
           }, 200);
@@ -4774,6 +4834,8 @@ function _toPropertyKey(t) { var i = _toPrimitive(t, "string"); return "symbol" 
 function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e = t[Symbol.toPrimitive]; if (void 0 !== e) { var i = e.call(t, r || "default"); if ("object" != _typeof(i)) return i; throw new TypeError("@@toPrimitive must return a primitive value."); } return ("string" === r ? String : Number)(t); }
 var HomeLocationMap = /*#__PURE__*/function () {
   function HomeLocationMap(stateMapData, maxCount, stateMarkersData, geojsonSource) {
+    var mapContainerId = arguments.length > 4 && arguments[4] !== undefined ? arguments[4] : 'usaStatesMap';
+    var infoPanelId = arguments.length > 5 && arguments[5] !== undefined ? arguments[5] : 'mapInfoPanel';
     _classCallCheck(this, HomeLocationMap);
     this.map = null;
     this.mapInitialized = false;
@@ -4835,12 +4897,15 @@ var HomeLocationMap = /*#__PURE__*/function () {
     this.maxCount = maxCount;
     this.stateMarkersData = stateMarkersData;
     this.geojsonSource = geojsonSource;
+    this.mapContainerId = mapContainerId;
+    this.infoPanelId = infoPanelId;
     this.init();
   }
   return _createClass(HomeLocationMap, [{
     key: "init",
     value: function init() {
       var _this = this;
+      this.mapContainer = document.getElementById(this.mapContainerId);
       if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', function () {
           return _this.initMap();
@@ -4853,6 +4918,15 @@ var HomeLocationMap = /*#__PURE__*/function () {
           _this.initMap();
         }
       });
+      if (this.mapContainer) {
+        var tabPane = this.mapContainer.closest('.tab-pane');
+        if (tabPane) {
+          observer.observe(tabPane, {
+            attributes: true,
+            attributeFilter: ['class']
+          });
+        }
+      }
       var chartContainer = document.querySelector('.chart-container[data-chart="home-location"]');
       if (chartContainer) {
         observer.observe(chartContainer, {
@@ -4865,7 +4939,7 @@ var HomeLocationMap = /*#__PURE__*/function () {
     key: "isContainerVisible",
     value: function isContainerVisible() {
       if (!this.mapContainer) {
-        this.mapContainer = document.getElementById('usaStatesMap');
+        this.mapContainer = document.getElementById(this.mapContainerId);
       }
       if (!this.mapContainer) {
         return false;
@@ -4879,7 +4953,7 @@ var HomeLocationMap = /*#__PURE__*/function () {
       if (this.mapInitialized || this.map !== null) {
         return;
       }
-      this.mapContainer = document.getElementById('usaStatesMap');
+      this.mapContainer = document.getElementById(this.mapContainerId);
       if (!this.mapContainer) {
         return;
       }
@@ -4889,7 +4963,7 @@ var HomeLocationMap = /*#__PURE__*/function () {
         }, 100);
         return;
       }
-      this.map = window.L.map('usaStatesMap').setView([39.8283, -98.5795], 8);
+      this.map = window.L.map(this.mapContainerId).setView([39.8283, -98.5795], 8);
       this.mapInitialized = true;
       this.setupBaseLayers();
       this.loadStatesGeoJSON();
@@ -4973,16 +5047,17 @@ var HomeLocationMap = /*#__PURE__*/function () {
   }, {
     key: "updateInfoPanel",
     value: function updateInfoPanel(stateName, count) {
-      var infoPanel = document.getElementById('mapInfoPanel');
+      var infoPanel = document.getElementById(this.infoPanelId);
       if (!infoPanel) {
         if (!this.mapContainer) return;
         infoPanel = document.createElement('div');
-        infoPanel.id = 'mapInfoPanel';
+        infoPanel.id = this.infoPanelId;
         infoPanel.className = 'home-location-map-info-panel';
         this.mapContainer.appendChild(infoPanel);
       }
       if (stateName && count > 0) {
-        infoPanel.innerHTML = '<strong>' + stateName + '</strong><br>Drivers: ' + count;
+        var label = this.mapContainerId === 'loadsByStateMap' ? 'Loads' : 'Drivers';
+        infoPanel.innerHTML = '<strong>' + stateName + '</strong><br>' + label + ': ' + count;
         infoPanel.style.display = 'block';
       } else {
         infoPanel.style.display = 'none';
@@ -5076,7 +5151,8 @@ var HomeLocationMap = /*#__PURE__*/function () {
               count: 0,
               name: feature.properties.NAME || stateAbbr
             };
-            layer.bindPopup('<strong>' + stateData.name + '</strong><br>' + 'Drivers: ' + stateData.count);
+            var label = _this4.mapContainerId === 'loadsByStateMap' ? 'Loads' : 'Drivers';
+            layer.bindPopup('<strong>' + stateData.name + '</strong><br>' + label + ': ' + stateData.count);
             layer.on({
               mouseover: highlightFeature,
               mouseout: resetHighlight,
@@ -5111,7 +5187,9 @@ var HomeLocationMap = /*#__PURE__*/function () {
           var marker = L.marker([stateMarker.lat, stateMarker.lng], {
             icon: stateIcon
           });
-          var popupContent = '<div class="state-marker-popup">' + '<strong>' + stateMarker.name + '</strong><br>' + '<span class="state-driver-count">' + stateMarker.count + '</span> ' + (stateMarker.count === 1 ? 'driver' : 'drivers') + '</div>';
+          var label = _this5.mapContainerId === 'loadsByStateMap' ? 'loads' : 'drivers';
+          var labelSingular = _this5.mapContainerId === 'loadsByStateMap' ? 'load' : 'driver';
+          var popupContent = '<div class="state-marker-popup">' + '<strong>' + stateMarker.name + '</strong><br>' + '<span class="state-driver-count">' + stateMarker.count + '</span> ' + (stateMarker.count === 1 ? labelSingular : label) + '</div>';
           marker.bindPopup(popupContent);
           marker.addTo(_this5.map);
         }
@@ -5134,9 +5212,11 @@ var HomeLocationMap = /*#__PURE__*/function () {
   }]);
 }();
 function initHomeLocationMap(stateMapData, maxCount, stateMarkersData, geojsonSource) {
+  var mapContainerId = arguments.length > 4 && arguments[4] !== undefined ? arguments[4] : 'usaStatesMap';
+  var infoPanelId = arguments.length > 5 && arguments[5] !== undefined ? arguments[5] : 'mapInfoPanel';
   var _checkLeaflet = function checkLeaflet() {
     if (typeof window.L !== 'undefined') {
-      new HomeLocationMap(stateMapData, maxCount, stateMarkersData, geojsonSource);
+      new HomeLocationMap(stateMapData, maxCount, stateMarkersData, geojsonSource, mapContainerId, infoPanelId);
     } else {
       setTimeout(_checkLeaflet, 100);
     }
@@ -5213,7 +5293,8 @@ function updateLoadsByRouteFilters() {
   if (countrySelect) {
     url.searchParams.set('route_country', countrySelect.value);
   }
-  url.searchParams.set('chart', 'loads-by-route');
+  url.searchParams.set('tab', 'loads-by-route');
+  url.searchParams.delete('chart');
   window.location.href = url.toString();
 }
 function initLoadsByRouteChart() {
@@ -5227,11 +5308,17 @@ function initLoadsByRouteChart() {
     return;
   }
   var container = chartElement.closest('.chart-container');
-  if (container && container.style.display === 'none') {
-    setTimeout(function () {
-      return initLoadsByRouteChart(chartId);
-    }, 200);
-    return;
+  var tabPane = document.getElementById('loads-by-route');
+  var containerToCheck = container || tabPane;
+  if (containerToCheck) {
+    var computedStyle = window.getComputedStyle(containerToCheck);
+    var isVisible = computedStyle.display !== 'none' && (containerToCheck.classList.contains('show') || containerToCheck.classList.contains('active') || !containerToCheck.classList.contains('fade'));
+    if (!isVisible) {
+      setTimeout(function () {
+        return initLoadsByRouteChart(chartId);
+      }, 200);
+      return;
+    }
   }
   chartElement.dataset.initialized = 'false';
   if (typeof window.initDriversChart === 'function') {
@@ -5273,19 +5360,33 @@ function initLoadsByRouteChartComponent() {
   if (month2Select) {
     month2Select.addEventListener('change', updateLoadsByRouteFilters);
   }
+  var tabPane = document.getElementById('loads-by-route');
+  var isActive = tabPane && (tabPane.classList.contains('show') || tabPane.classList.contains('active'));
   var compareMode = compareToggle && compareToggle.checked;
-  if (compareMode) {
-    initLoadsByRouteChart('loadsByRouteChart1');
-    initLoadsByRouteChart('loadsByRouteChart2');
+  if (isActive) {
+    setTimeout(function () {
+      if (compareMode) {
+        initLoadsByRouteChart('loadsByRouteChart1');
+        initLoadsByRouteChart('loadsByRouteChart2');
+      } else {
+        initLoadsByRouteChart('loadsByRouteChart');
+      }
+    }, 100);
   } else {
-    initLoadsByRouteChart('loadsByRouteChart');
+    if (compareMode) {
+      initLoadsByRouteChart('loadsByRouteChart1');
+      initLoadsByRouteChart('loadsByRouteChart2');
+    } else {
+      initLoadsByRouteChart('loadsByRouteChart');
+    }
   }
   var chartContainer = document.querySelector('.chart-container[data-chart="loads-by-route"]');
-  if (chartContainer) {
+  var containerToObserve = chartContainer || tabPane;
+  if (containerToObserve) {
     var observer = new MutationObserver(function (mutations) {
       mutations.forEach(function (mutation) {
         if (mutation.type === 'attributes' && mutation.attributeName === 'style') {
-          var isVisible = chartContainer.style.display !== 'none' && window.getComputedStyle(chartContainer).display !== 'none';
+          var isVisible = containerToObserve.style.display !== 'none' && window.getComputedStyle(containerToObserve).display !== 'none';
           if (isVisible) {
             setTimeout(function () {
               if (compareMode) {
@@ -5299,9 +5400,9 @@ function initLoadsByRouteChartComponent() {
         }
       });
     });
-    observer.observe(chartContainer, {
+    observer.observe(containerToObserve, {
       attributes: true,
-      attributeFilter: ['style']
+      attributeFilter: ['style', 'class']
     });
   }
 }
@@ -5341,7 +5442,8 @@ function updateLoadsByStateFilters() {
       url.searchParams.set('loads_month', monthSelect.value);
     }
   }
-  url.searchParams.set('chart', 'loads-by-state');
+  url.searchParams.set('tab', 'loads-by-state');
+  url.searchParams.delete('chart');
   window.location.href = url.toString();
 }
 function initLoadsByStateChart() {
@@ -5354,9 +5456,15 @@ function initLoadsByStateChart() {
     return;
   }
   var container = chartElement.closest('.chart-container');
-  if (container && container.style.display === 'none') {
-    setTimeout(initLoadsByStateChart, 200);
-    return;
+  var tabPane = document.getElementById('loads-by-state');
+  var containerToCheck = container || tabPane;
+  if (containerToCheck) {
+    var computedStyle = window.getComputedStyle(containerToCheck);
+    var isVisible = computedStyle.display !== 'none' && (containerToCheck.classList.contains('show') || containerToCheck.classList.contains('active') || !containerToCheck.classList.contains('fade'));
+    if (!isVisible) {
+      setTimeout(initLoadsByStateChart, 200);
+      return;
+    }
   }
   chartElement.dataset.initialized = 'false';
   if (typeof window.initDriversChart === 'function') {
@@ -5382,22 +5490,29 @@ function initLoadsByStateChartComponent() {
   if (monthSelect) {
     monthSelect.addEventListener('change', updateLoadsByStateFilters);
   }
-  initLoadsByStateChart();
+  var tabPane = document.getElementById('loads-by-state');
+  var isActive = tabPane && (tabPane.classList.contains('show') || tabPane.classList.contains('active'));
+  if (isActive) {
+    setTimeout(initLoadsByStateChart, 100);
+  } else {
+    initLoadsByStateChart();
+  }
   var chartContainer = document.querySelector('.chart-container[data-chart="loads-by-state"]');
-  if (chartContainer) {
+  var containerToObserve = chartContainer || tabPane;
+  if (containerToObserve) {
     var observer = new MutationObserver(function (mutations) {
       mutations.forEach(function (mutation) {
         if (mutation.type === 'attributes' && mutation.attributeName === 'style') {
-          var isVisible = chartContainer.style.display !== 'none' && window.getComputedStyle(chartContainer).display !== 'none';
+          var isVisible = containerToObserve.style.display !== 'none' && window.getComputedStyle(containerToObserve).display !== 'none';
           if (isVisible) {
             setTimeout(initLoadsByStateChart, 300);
           }
         }
       });
     });
-    observer.observe(chartContainer, {
+    observer.observe(containerToObserve, {
       attributes: true,
-      attributeFilter: ['style']
+      attributeFilter: ['style', 'class']
     });
   }
 }
@@ -6335,6 +6450,12 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */ });
 /* harmony import */ var _parts_popup_window__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ../parts/popup-window */ "./src/js/parts/popup-window.js");
 /* harmony import */ var _info_messages__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./info-messages */ "./src/js/components/info-messages.ts");
+function _slicedToArray(r, e) { return _arrayWithHoles(r) || _iterableToArrayLimit(r, e) || _unsupportedIterableToArray(r, e) || _nonIterableRest(); }
+function _nonIterableRest() { throw new TypeError("Invalid attempt to destructure non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method."); }
+function _unsupportedIterableToArray(r, a) { if (r) { if ("string" == typeof r) return _arrayLikeToArray(r, a); var t = {}.toString.call(r).slice(8, -1); return "Object" === t && r.constructor && (t = r.constructor.name), "Map" === t || "Set" === t ? Array.from(r) : "Arguments" === t || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(t) ? _arrayLikeToArray(r, a) : void 0; } }
+function _arrayLikeToArray(r, a) { (null == a || a > r.length) && (a = r.length); for (var e = 0, n = Array(a); e < a; e++) n[e] = r[e]; return n; }
+function _iterableToArrayLimit(r, l) { var t = null == r ? null : "undefined" != typeof Symbol && r[Symbol.iterator] || r["@@iterator"]; if (null != t) { var e, n, i, u, a = [], f = !0, o = !1; try { if (i = (t = t.call(r)).next, 0 === l) { if (Object(t) !== t) return; f = !1; } else for (; !(f = (e = i.call(t)).done) && (a.push(e.value), a.length !== l); f = !0); } catch (r) { o = !0, n = r; } finally { try { if (!f && null != t.return && (u = t.return(), Object(u) !== u)) return; } finally { if (o) throw n; } } return a; } }
+function _arrayWithHoles(r) { if (Array.isArray(r)) return r; }
 
 
 function setUpTabInUrl(tab) {
@@ -6977,7 +7098,22 @@ var editShipperStopInit = function editShipperStopInit() {
       var form = target.closest('.js-shipper');
       if (form && card) {
         var originalStopType = card.getAttribute('data-stop-type');
-        var originalPosition = Array.from(card.parentNode.children).indexOf(card);
+        var shipperContacts = form.querySelector('.js-table-shipper');
+        var originalPosition = 0;
+        var nextSiblingOfSameType = null;
+        if (shipperContacts) {
+          var allSameTypeElements = Array.from(shipperContacts.querySelectorAll(".stopTypeValue[data-stop-type=\"".concat(originalStopType, "\"]")));
+          originalPosition = allSameTypeElements.indexOf(card);
+          if (originalPosition === -1) {
+            originalPosition = allSameTypeElements.length;
+          }
+          var currentIndex = allSameTypeElements.indexOf(card);
+          if (currentIndex >= 0 && currentIndex < allSameTypeElements.length - 1) {
+            nextSiblingOfSameType = allSameTypeElements[currentIndex + 1];
+          }
+        } else {
+          originalPosition = Array.from(card.parentNode.children).indexOf(card);
+        }
         card.classList.add('active');
         var resultSearch = form.querySelector('.js-result-search');
         var stopType = form.querySelector('.js-shipper-stop-type');
@@ -6991,6 +7127,7 @@ var editShipperStopInit = function editShipperStopInit() {
         var etaDate = form.querySelector('.js-shipper-eta-date');
         var etaTime = form.querySelector('.js-shipper-eta-time');
         var currentID = card.querySelector('.js-current-shipper_address_id');
+        var currentDbId = card.querySelector('.js-current-shipper_db_id');
         var currentAddress = card.querySelector('.js-current-shipper_address');
         var currentContact = card.querySelector('.js-current-shipper_contact');
         var currentDate = card.querySelector('.js-current-shipper_date');
@@ -7003,22 +7140,69 @@ var editShipperStopInit = function editShipperStopInit() {
         var currentEtaDate = card.querySelector('.js-current-shipper_eta_date');
         var currentEtaTime = card.querySelector('.js-current-shipper_eta_time');
         var timeEndContainer = document.querySelector('.js-hide-end-date');
-        var templateInputEdit = "\n                        <input type=\"hidden\" class=\"js-full-address\" data-current-address=\"".concat(currentAddress.value, "\" data-short-address=\"").concat(currentShortAddress.value, "\" name=\"shipper_id\" value=\"").concat(currentID.value, "\">\n                        <input type=\"hidden\" class=\"js-original-stop-type\" name=\"original_stop_type\" value=\"").concat(originalStopType, "\">\n                        <input type=\"hidden\" class=\"js-original-position\" name=\"original_position\" value=\"").concat(originalPosition, "\">\n                    ");
+        var dbIdValue = currentDbId ? currentDbId.value : '0';
+        if (!card.getAttribute('data-temp-id')) {
+          var cardTempId = "temp-".concat(Date.now(), "-").concat(Math.random().toString(36).substr(2, 9));
+          card.setAttribute('data-temp-id', cardTempId);
+        }
+        var templateInputEdit = "\n                        <input type=\"hidden\" class=\"js-full-address\" data-current-address=\"".concat(currentAddress.value, "\" data-short-address=\"").concat(currentShortAddress.value, "\" name=\"shipper_id\" value=\"").concat(currentID.value, "\">\n                        <input type=\"hidden\" class=\"js-original-db-id\" name=\"original_db_id\" value=\"").concat(dbIdValue, "\">\n                        <input type=\"hidden\" class=\"js-original-stop-type\" name=\"original_stop_type\" value=\"").concat(originalStopType, "\">\n                        <input type=\"hidden\" class=\"js-original-position\" name=\"original_position\" value=\"").concat(originalPosition, "\">\n                        ").concat(nextSiblingOfSameType && nextSiblingOfSameType.getAttribute('data-temp-id') ? "<input type=\"hidden\" class=\"js-next-sibling-id\" name=\"next_sibling_id\" value=\"".concat(nextSiblingOfSameType.getAttribute('data-temp-id'), "\">") : '', "\n                    ");
         if (!resultSearch) return;
         resultSearch.innerHTML = templateInputEdit;
         stopType.value = currentType.value;
         addressSearch.value = currentAddress.value;
         contact.value = currentContact.value;
-        date.value = currentDate.value;
+        if (date && currentDate) {
+          var dateValue = currentDate.value;
+          if (dateValue && dateValue.trim() !== '' && dateValue !== '1970-01-01 00:00:00' && dateValue !== '1970-01-01') {
+            var dateMatch = dateValue.match(/^(\d{4}-\d{2}-\d{2})/);
+            if (dateMatch) {
+              date.value = dateMatch[1];
+            } else {
+              var parsedDate = new Date(dateValue);
+              if (!isNaN(parsedDate.getTime()) && parsedDate.getFullYear() !== 1970) {
+                var year = parsedDate.getFullYear();
+                var month = String(parsedDate.getMonth() + 1).padStart(2, '0');
+                var day = String(parsedDate.getDate()).padStart(2, '0');
+                date.value = "".concat(year, "-").concat(month, "-").concat(day);
+              } else {
+                date.value = '';
+              }
+            }
+          } else {
+            date.value = '';
+          }
+        }
         info.value = currentInfo.value;
         dateStart.value = currentStart.value;
         dateEnd.value = currentEnd.value;
-        strict.checked = currentStrict.value === 'true';
+        if (strict && currentStrict) {
+          var strictValue = currentStrict.value;
+          var isStrict = strictValue === 'true' || strictValue === '1' || strictValue === 1 || strictValue === true || strictValue === 'True';
+          strict.checked = isStrict;
+        }
         if (etaDate && currentEtaDate) {
-          etaDate.value = currentEtaDate.value;
+          var etaDateValue = currentEtaDate.value;
+          if (etaDateValue && etaDateValue.trim() !== '' && etaDateValue !== '1970-01-01') {
+            var etaDateMatch = etaDateValue.match(/^(\d{4}-\d{2}-\d{2})/);
+            if (etaDateMatch) {
+              etaDate.value = etaDateMatch[1];
+            } else {
+              var parsedEtaDate = new Date(etaDateValue);
+              if (!isNaN(parsedEtaDate.getTime()) && parsedEtaDate.getFullYear() !== 1970) {
+                var _year = parsedEtaDate.getFullYear();
+                var _month = String(parsedEtaDate.getMonth() + 1).padStart(2, '0');
+                var _day = String(parsedEtaDate.getDate()).padStart(2, '0');
+                etaDate.value = "".concat(_year, "-").concat(_month, "-").concat(_day);
+              } else {
+                etaDate.value = '';
+              }
+            }
+          } else {
+            etaDate.value = '';
+          }
         }
         if (etaTime && currentEtaTime) {
-          etaTime.value = currentEtaTime.value;
+          etaTime.value = currentEtaTime.value || '';
         }
         if (timeEndContainer && strict.checked) {
           timeEndContainer.classList.add('d-none');
@@ -7074,7 +7258,7 @@ var addShipperPointInit = function addShipperPointInit() {
   var btnAddPoint = document.querySelectorAll('.js-add-point');
   btnAddPoint && btnAddPoint.forEach(function (item) {
     item.addEventListener('click', function (event) {
-      var _a, _b;
+      var _a, _b, _c, _d;
       event.preventDefault();
       var target = event.target;
       if (!target) return;
@@ -7102,10 +7286,27 @@ var addShipperPointInit = function addShipperPointInit() {
         var addressValueShortAddrres = address.getAttribute('data-short-address');
         var stopTypeValue = stopType.value;
         var contactValue = contact.value;
-        var dateValue = date.value;
         var start = dateStart.value;
         var end = dateEnd.value;
-        var strict = dateStrict.checked;
+        var strict = dateStrict.checked ? 'true' : 'false';
+        if (!end || end.trim() === '') {
+          end = start || '00:00:00';
+        }
+        var dateValue = date.value;
+        if (dateValue && dateValue.trim() !== '') {
+          var dateMatch = dateValue.match(/^(\d{4}-\d{2}-\d{2})$/);
+          if (dateMatch) {
+            var timePart = '00:00:00';
+            if (start && start.trim() !== '') {
+              if (start.match(/^\d{2}:\d{2}:\d{2}$/)) {
+                timePart = start;
+              } else if (start.match(/^\d{2}:\d{2}$/)) {
+                timePart = "".concat(start, ":00");
+              }
+            }
+            dateValue = "".concat(dateMatch[1], " ").concat(timePart);
+          }
+        }
         var etaDateValue = etaDate ? etaDate.value : '';
         var etaTimeValue = etaTime ? etaTime.value : '';
         var infoValue = info.value;
@@ -7133,9 +7334,15 @@ var addShipperPointInit = function addShipperPointInit() {
               }
             }
           });
-          if (maxPickUpDate && new Date(dateValue) < new Date(maxPickUpDate)) {
-            (0,_info_messages__WEBPACK_IMPORTED_MODULE_1__.printMessage)("Delivery date cannot be earlier than the latest pick up date (".concat(maxPickUpDate, ")"), 'danger', 5000);
-            return false;
+          if (maxPickUpDate) {
+            var deliveryDateOnly = new Date(dateValue);
+            deliveryDateOnly.setHours(0, 0, 0, 0);
+            var maxPickUpDateOnly = new Date(maxPickUpDate);
+            maxPickUpDateOnly.setHours(0, 0, 0, 0);
+            if (deliveryDateOnly < maxPickUpDateOnly) {
+              (0,_info_messages__WEBPACK_IMPORTED_MODULE_1__.printMessage)("Delivery date cannot be earlier than the latest pick up date (".concat(maxPickUpDate, ")"), 'danger', 5000);
+              return false;
+            }
           }
         }
         if (infoValue === '') {
@@ -7146,10 +7353,29 @@ var addShipperPointInit = function addShipperPointInit() {
           typeDelivery = 'Pick Up';
         }
         var time = '';
-        if (strict === 'false' || !strict) {
-          time = "".concat(start, " - ").concat(end);
-        } else {
+        var isStrict = strict === 'true';
+        if (isStrict) {
           time = "".concat(start, " - strict");
+        } else {
+          time = "".concat(start, " - ").concat(end);
+        }
+        var dateDisplay = '';
+        if (dateValue && dateValue.trim() !== '') {
+          var _dateMatch = dateValue.match(/^(\d{4})-(\d{2})-(\d{2})/);
+          if (_dateMatch) {
+            var _dateMatch2 = _slicedToArray(_dateMatch, 4),
+              year = _dateMatch2[1],
+              month = _dateMatch2[2],
+              day = _dateMatch2[3];
+            dateDisplay = "".concat(month, "/").concat(day, "/").concat(year);
+          } else {
+            var dateObj = new Date(dateValue);
+            if (!isNaN(dateObj.getTime())) {
+              dateDisplay = "".concat(String(dateObj.getMonth() + 1).padStart(2, '0'), "/").concat(String(dateObj.getDate()).padStart(2, '0'), "/").concat(dateObj.getFullYear());
+            } else {
+              dateDisplay = dateValue;
+            }
+          }
         }
         var etaDisplay = '';
         if (etaDateValue) {
@@ -7160,13 +7386,24 @@ var addShipperPointInit = function addShipperPointInit() {
             etaDisplay += " ".concat(etaTimeValue);
           }
         }
-        var template = "\n                <div class=\"row js-current-shipper stopTypeValue card-shipper\" data-stop-type=\"".concat(stopTypeValue, "\">\n                    <div class=\"d-none\">\n                        <input type=\"hidden\" class=\"js-current-shipper_db_id\" name=\"").concat(stopTypeValue, "_db_id[]\" value=\"0\">\n                        <input type=\"hidden\" class=\"js-current-shipper_address_id\" name=\"").concat(stopTypeValue, "_address_id[]\" value=\"").concat(addressValueID, "\" >\n                        <input type=\"hidden\" class=\"js-current-shipper_address\" name=\"").concat(stopTypeValue, "_address[]\" value=\"").concat(addressValueFullAddrres, "\" >\n                        <input type=\"hidden\" class=\"js-current-shipper_short_address\" name=\"").concat(stopTypeValue, "_short_address[]\" value=\"").concat(addressValueShortAddrres, "\" >\n                        <input type=\"hidden\" class=\"js-current-shipper_contact\" name=\"").concat(stopTypeValue, "_contact[]\" value=\"").concat(contactValue, "\" >\n                        <input type=\"hidden\" class=\"js-current-shipper_date\" name=\"").concat(stopTypeValue, "_date[]\" value=\"").concat(dateValue, "\" >\n                        <input type=\"hidden\" class=\"js-current-shipper_info\" name=\"").concat(stopTypeValue, "_info[]\" value=\"").concat(infoValue, "\" >\n                        <input type=\"hidden\" class=\"js-current-shipper_type\" name=\"").concat(stopTypeValue, "_type[]\" value=\"").concat(stopTypeValue, "\" >\n                        <input type=\"hidden\" class=\"js-current-shipper_start\" name=\"").concat(stopTypeValue, "_start[]\" value=\"").concat(start, "\">\n                        <input type=\"hidden\" class=\"js-current-shipper_end\" name=\"").concat(stopTypeValue, "_end[]\" value=\"").concat(end, "\">\n                        <input type=\"hidden\" class=\"js-current-shipper_strict\" name=\"").concat(stopTypeValue, "_strict[]\" value=\"").concat(strict, "\">\n                        <input type=\"hidden\" class=\"js-current-shipper_eta_date\" name=\"").concat(stopTypeValue, "_eta_date[]\" value=\"").concat(etaDateValue, "\">\n                        <input type=\"hidden\" class=\"js-current-shipper_eta_time\" name=\"").concat(stopTypeValue, "_eta_time[]\" value=\"").concat(etaTimeValue, "\">\n                    </div>\n                    <div class=\"col-12 col-md-1\">").concat(typeDelivery, "</div>\n                    <div class=\"col-12 col-md-1\">\n                         <div class=\"d-flex flex-column\">\n                                <p class=\"m-0\">").concat(dateValue, "</p>\n                                <span class=\"small-text\">\n                                    ").concat(time, "\n                                </span>\n                            </div>\n                    </div>\n                    <div class=\"col-12 col-md-2\">\n                        ").concat(etaDisplay ? "<span class=\"small-text\">".concat(etaDisplay, "</span>") : '<span class="text-muted small-text">—</span>', "\n                    </div>\n                    <div class=\"col-12 col-md-3\">").concat(addressValueFullAddrres, "</div>\n                    <div class=\"col-12 col-md-2\">").concat(contactValue, "</div>\n                    <div class=\"col-12 col-md-2\">").concat(infoValue, "</div>\n                    <div class=\"col-12 col-md-1 p-0 card-shipper__btns\">\n                        <button class=\"additional-card__edit js-edit-ship\">\n                            <svg width=\"668\" height=\"668\" viewBox=\"0 0 668 668\" fill=\"none\" xmlns=\"http://www.w3.org/2000/svg\">\n                                <path d=\"M640.46 27.5413C676.29 63.3746 676.29 121.472 640.46 157.305L623.94 173.823C619.13 172.782 613.073 171.196 606.17 168.801C587.693 162.391 563.41 150.276 540.567 127.433C517.723 104.591 505.61 80.3076 499.2 61.8299C496.803 54.9269 495.22 48.8696 494.177 44.0596L510.697 27.5413C546.53 -8.29175 604.627 -8.29175 640.46 27.5413Z\" fill=\"#1C274C\"/>\n                                <path d=\"M420.003 377.76C406.537 391.227 399.803 397.96 392.377 403.753C383.62 410.583 374.143 416.44 364.117 421.22C355.617 425.27 346.583 428.28 328.513 434.303L233.236 466.063C224.345 469.027 214.542 466.713 207.915 460.087C201.287 453.457 198.973 443.657 201.937 434.763L233.696 339.487C239.719 321.417 242.73 312.383 246.781 303.883C251.56 293.857 257.416 284.38 264.248 275.623C270.04 268.197 276.773 261.465 290.24 247.998L454.11 84.1284C462.9 107.268 478.31 135.888 505.21 162.789C532.113 189.69 560.733 205.099 583.873 213.891L420.003 377.76Z\" fill=\"#1C274C\"/>\n                                <path d=\"M618.517 618.516C667.333 569.703 667.333 491.133 667.333 334C667.333 282.39 667.333 239.258 665.603 202.87L453.533 414.943C441.823 426.656 433.027 435.456 423.127 443.176C411.507 452.243 398.933 460.013 385.627 466.353C374.293 471.756 362.487 475.686 346.777 480.92L249.048 513.496C222.189 522.45 192.578 515.46 172.559 495.44C152.54 475.423 145.55 445.81 154.503 418.953L187.078 321.223C192.312 305.513 196.244 293.706 201.645 282.373C207.986 269.066 215.757 256.493 224.822 244.871C232.543 234.972 241.344 226.176 253.058 214.468L465.13 2.39583C428.743 0.6665 385.61 0.666504 334 0.666504C176.865 0.666504 98.2977 0.6665 49.4824 49.4822C0.666744 98.2975 0.666748 176.865 0.666748 334C0.666748 491.133 0.666744 569.703 49.4824 618.516C98.2977 667.333 176.865 667.333 334 667.333C491.133 667.333 569.703 667.333 618.517 618.516Z\" fill=\"#1C274C\"/>\n                            </svg>\n                        </button>\n                        <button class=\"additional-card__remove js-remove-ship\">\n                            <svg width=\"668\" height=\"668\" viewBox=\"0 0 668 668\" fill=\"none\" xmlns=\"http://www.w3.org/2000/svg\">\n                                <path fill-rule=\"evenodd\" clip-rule=\"evenodd\" d=\"M334 667.333C176.865 667.333 98.2976 667.333 49.4823 618.516C0.666622 569.703 0.666626 491.133 0.666626 334C0.666626 176.865 0.666622 98.2975 49.4823 49.4822C98.2976 0.6665 176.865 0.666504 334 0.666504C491.133 0.666504 569.703 0.6665 618.517 49.4822C667.333 98.2975 667.333 176.865 667.333 334C667.333 491.133 667.333 569.703 618.517 618.516C569.703 667.333 491.133 667.333 334 667.333ZM232.988 232.989C242.751 223.226 258.581 223.226 268.343 232.989L334 298.646L399.653 232.99C409.417 223.227 425.247 223.227 435.01 232.99C444.773 242.753 444.773 258.582 435.01 268.343L369.353 334L435.01 399.656C444.773 409.416 444.773 425.246 435.01 435.01C425.247 444.773 409.417 444.773 399.653 435.01L334 369.357L268.343 435.01C258.581 444.773 242.752 444.773 232.989 435.01C223.226 425.246 223.226 409.42 232.989 399.656L298.643 334L232.988 268.343C223.225 258.581 223.225 242.752 232.988 232.989Z\" fill=\"#1C274C\"></path>\n                            </svg>\n                        </button>\n                    </div>\n                </div>\n                ");
-        var originalStopType = (_a = form.querySelector('.js-original-stop-type')) === null || _a === void 0 ? void 0 : _a.value;
-        var originalPosition = (_b = form.querySelector('.js-original-position')) === null || _b === void 0 ? void 0 : _b.value;
+        var originalDbId = ((_a = form.querySelector('.js-original-db-id')) === null || _a === void 0 ? void 0 : _a.value) || '0';
+        var tempId = "temp-".concat(Date.now(), "-").concat(Math.random().toString(36).substr(2, 9));
+        var template = "\n                <div class=\"row js-current-shipper stopTypeValue card-shipper\" data-stop-type=\"".concat(stopTypeValue, "\" data-temp-id=\"").concat(tempId, "\">\n                    <div class=\"d-none\">\n                        <input type=\"hidden\" class=\"js-current-shipper_db_id\" name=\"").concat(stopTypeValue, "_db_id[]\" value=\"").concat(originalDbId, "\">\n                        <input type=\"hidden\" class=\"js-current-shipper_address_id\" name=\"").concat(stopTypeValue, "_address_id[]\" value=\"").concat(addressValueID, "\" >\n                        <input type=\"hidden\" class=\"js-current-shipper_address\" name=\"").concat(stopTypeValue, "_address[]\" value=\"").concat(addressValueFullAddrres, "\" >\n                        <input type=\"hidden\" class=\"js-current-shipper_short_address\" name=\"").concat(stopTypeValue, "_short_address[]\" value=\"").concat(addressValueShortAddrres, "\" >\n                        <input type=\"hidden\" class=\"js-current-shipper_contact\" name=\"").concat(stopTypeValue, "_contact[]\" value=\"").concat(contactValue, "\" >\n                        <input type=\"hidden\" class=\"js-current-shipper_date\" name=\"").concat(stopTypeValue, "_date[]\" value=\"").concat(dateValue, "\" >\n                        <input type=\"hidden\" class=\"js-current-shipper_info\" name=\"").concat(stopTypeValue, "_info[]\" value=\"").concat(infoValue, "\" >\n                        <input type=\"hidden\" class=\"js-current-shipper_type\" name=\"").concat(stopTypeValue, "_type[]\" value=\"").concat(stopTypeValue, "\" >\n                        <input type=\"hidden\" class=\"js-current-shipper_start\" name=\"").concat(stopTypeValue, "_start[]\" value=\"").concat(start, "\">\n                        <input type=\"hidden\" class=\"js-current-shipper_end\" name=\"").concat(stopTypeValue, "_end[]\" value=\"").concat(end, "\">\n                        <input type=\"hidden\" class=\"js-current-shipper_strict\" name=\"").concat(stopTypeValue, "_strict[]\" value=\"").concat(strict, "\">\n                        <input type=\"hidden\" class=\"js-current-shipper_eta_date\" name=\"").concat(stopTypeValue, "_eta_date[]\" value=\"").concat(etaDateValue, "\">\n                        <input type=\"hidden\" class=\"js-current-shipper_eta_time\" name=\"").concat(stopTypeValue, "_eta_time[]\" value=\"").concat(etaTimeValue, "\">\n                    </div>\n                    <div class=\"col-12 col-md-1\">").concat(typeDelivery, "</div>\n                    <div class=\"col-12 col-md-2\">\n                         <div class=\"d-flex flex-column\">\n                                <p class=\"m-0\">").concat(dateDisplay || '<span class="text-muted">No date</span>', "</p>\n                                ").concat(time ? "<span class=\"small-text\">".concat(time, "</span>") : '', "\n                            </div>\n                    </div>\n                    <div class=\"col-12 col-md-1\">\n                        ").concat(etaDisplay ? "<span class=\"small-text\">".concat(etaDisplay, "</span>") : '<span class="text-muted small-text">—</span>', "\n                    </div>\n                    <div class=\"col-12 col-md-3\">").concat(addressValueFullAddrres, "</div>\n                    <div class=\"col-12 col-md-2\">").concat(contactValue, "</div>\n                    <div class=\"col-12 col-md-2\">").concat(infoValue, "</div>\n                    <div class=\"col-12 col-md-1 p-0 card-shipper__btns\">\n                        <button class=\"additional-card__edit js-edit-ship\">\n                            <svg width=\"668\" height=\"668\" viewBox=\"0 0 668 668\" fill=\"none\" xmlns=\"http://www.w3.org/2000/svg\">\n                                <path d=\"M640.46 27.5413C676.29 63.3746 676.29 121.472 640.46 157.305L623.94 173.823C619.13 172.782 613.073 171.196 606.17 168.801C587.693 162.391 563.41 150.276 540.567 127.433C517.723 104.591 505.61 80.3076 499.2 61.8299C496.803 54.9269 495.22 48.8696 494.177 44.0596L510.697 27.5413C546.53 -8.29175 604.627 -8.29175 640.46 27.5413Z\" fill=\"#1C274C\"/>\n                                <path d=\"M420.003 377.76C406.537 391.227 399.803 397.96 392.377 403.753C383.62 410.583 374.143 416.44 364.117 421.22C355.617 425.27 346.583 428.28 328.513 434.303L233.236 466.063C224.345 469.027 214.542 466.713 207.915 460.087C201.287 453.457 198.973 443.657 201.937 434.763L233.696 339.487C239.719 321.417 242.73 312.383 246.781 303.883C251.56 293.857 257.416 284.38 264.248 275.623C270.04 268.197 276.773 261.465 290.24 247.998L454.11 84.1284C462.9 107.268 478.31 135.888 505.21 162.789C532.113 189.69 560.733 205.099 583.873 213.891L420.003 377.76Z\" fill=\"#1C274C\"/>\n                                <path d=\"M618.517 618.516C667.333 569.703 667.333 491.133 667.333 334C667.333 282.39 667.333 239.258 665.603 202.87L453.533 414.943C441.823 426.656 433.027 435.456 423.127 443.176C411.507 452.243 398.933 460.013 385.627 466.353C374.293 471.756 362.487 475.686 346.777 480.92L249.048 513.496C222.189 522.45 192.578 515.46 172.559 495.44C152.54 475.423 145.55 445.81 154.503 418.953L187.078 321.223C192.312 305.513 196.244 293.706 201.645 282.373C207.986 269.066 215.757 256.493 224.822 244.871C232.543 234.972 241.344 226.176 253.058 214.468L465.13 2.39583C428.743 0.6665 385.61 0.666504 334 0.666504C176.865 0.666504 98.2977 0.6665 49.4824 49.4822C0.666744 98.2975 0.666748 176.865 0.666748 334C0.666748 491.133 0.666744 569.703 49.4824 618.516C98.2977 667.333 176.865 667.333 334 667.333C491.133 667.333 569.703 667.333 618.517 618.516Z\" fill=\"#1C274C\"/>\n                            </svg>\n                        </button>\n                        <button class=\"additional-card__remove js-remove-ship\">\n                            <svg width=\"668\" height=\"668\" viewBox=\"0 0 668 668\" fill=\"none\" xmlns=\"http://www.w3.org/2000/svg\">\n                                <path fill-rule=\"evenodd\" clip-rule=\"evenodd\" d=\"M334 667.333C176.865 667.333 98.2976 667.333 49.4823 618.516C0.666622 569.703 0.666626 491.133 0.666626 334C0.666626 176.865 0.666622 98.2975 49.4823 49.4822C98.2976 0.6665 176.865 0.666504 334 0.666504C491.133 0.666504 569.703 0.6665 618.517 49.4822C667.333 98.2975 667.333 176.865 667.333 334C667.333 491.133 667.333 569.703 618.517 618.516C569.703 667.333 491.133 667.333 334 667.333ZM232.988 232.989C242.751 223.226 258.581 223.226 268.343 232.989L334 298.646L399.653 232.99C409.417 223.227 425.247 223.227 435.01 232.99C444.773 242.753 444.773 258.582 435.01 268.343L369.353 334L435.01 399.656C444.773 409.416 444.773 425.246 435.01 435.01C425.247 444.773 409.417 444.773 399.653 435.01L334 369.357L268.343 435.01C258.581 444.773 242.752 444.773 232.989 435.01C223.226 425.246 223.226 409.42 232.989 399.656L298.643 334L232.988 268.343C223.225 258.581 223.225 242.752 232.988 232.989Z\" fill=\"#1C274C\"></path>\n                            </svg>\n                        </button>\n                    </div>\n                </div>\n                ");
+        var originalStopType = (_b = form.querySelector('.js-original-stop-type')) === null || _b === void 0 ? void 0 : _b.value;
+        var originalPosition = (_c = form.querySelector('.js-original-position')) === null || _c === void 0 ? void 0 : _c.value;
+        var nextSiblingId = (_d = form.querySelector('.js-next-sibling-id')) === null || _d === void 0 ? void 0 : _d.value;
         if (originalStopType && originalPosition !== undefined) {
           var stopTypeElements = Array.from(shipperContacts.querySelectorAll(".stopTypeValue[data-stop-type=\"".concat(originalStopType, "\"]")));
-          var targetPosition = Math.min(parseInt(originalPosition), stopTypeElements.length);
-          if (stopTypeElements.length > 0) {
+          var insertBeforeElement = null;
+          if (nextSiblingId) {
+            insertBeforeElement = stopTypeElements.find(function (el) {
+              return el.getAttribute('data-temp-id') === nextSiblingId;
+            }) || null;
+          }
+          if (insertBeforeElement) {
+            insertBeforeElement.insertAdjacentHTML('beforebegin', template);
+          } else if (stopTypeElements.length > 0) {
+            var targetPosition = Math.min(parseInt(originalPosition), stopTypeElements.length);
             if (targetPosition === 0) {
               stopTypeElements[0].insertAdjacentHTML('beforebegin', template);
             } else if (targetPosition >= stopTypeElements.length) {
@@ -7180,10 +7417,10 @@ var addShipperPointInit = function addShipperPointInit() {
               if (firstDeliveryElement) {
                 firstDeliveryElement.insertAdjacentHTML('beforebegin', template);
               } else {
-                shipperContacts.innerHTML += template;
+                shipperContacts.insertAdjacentHTML('beforeend', template);
               }
             } else {
-              shipperContacts.innerHTML += template;
+              shipperContacts.insertAdjacentHTML('beforeend', template);
             }
           }
         } else {
@@ -7252,12 +7489,49 @@ var addShipperPointInit = function addShipperPointInit() {
   });
   addActionsDeleteUniversalCard('.js-remove-ship', '.js-current-shipper', updateDeliveryDateMin);
   editShipperStopInit();
+  var existingCards = document.querySelectorAll('.js-current-shipper');
+  existingCards.forEach(function (card) {
+    if (!card.getAttribute('data-temp-id')) {
+      var tempId = "temp-".concat(Date.now(), "-").concat(Math.random().toString(36).substr(2, 9));
+      card.setAttribute('data-temp-id', tempId);
+    }
+  });
 };
 var sendShipperFormInit = function sendShipperFormInit(ajaxUrl) {
   var shipperForm = document.querySelector('.js-shipper');
   shipperForm && shipperForm.addEventListener('submit', function (event) {
     event.preventDefault();
     var target = event.target;
+    if (!target) {
+      return;
+    }
+    var pickupDates = target.querySelectorAll('input[name="pick_up_location_date[]"]');
+    var deliveryDates = target.querySelectorAll('input[name="delivery_location_date[]"]');
+    var missingPickupDates = [];
+    var missingDeliveryDates = [];
+    pickupDates.forEach(function (dateInput, index) {
+      var dateValue = dateInput.value ? dateInput.value.trim() : '';
+      if (!dateValue || dateValue === '' || dateValue === '1970-01-01' || dateValue === '1970-01-01 00:00:00') {
+        missingPickupDates.push(index + 1);
+      }
+    });
+    deliveryDates.forEach(function (dateInput, index) {
+      var dateValue = dateInput.value ? dateInput.value.trim() : '';
+      if (!dateValue || dateValue === '' || dateValue === '1970-01-01' || dateValue === '1970-01-01 00:00:00') {
+        missingDeliveryDates.push(index + 1);
+      }
+    });
+    if (missingPickupDates.length > 0 || missingDeliveryDates.length > 0) {
+      var errorMessages = [];
+      if (missingPickupDates.length > 0) {
+        errorMessages.push("Pickup location(s) ".concat(missingPickupDates.join(', '), " missing required date"));
+      }
+      if (missingDeliveryDates.length > 0) {
+        errorMessages.push("Delivery location(s) ".concat(missingDeliveryDates.join(', '), " missing required date"));
+      }
+      (0,_info_messages__WEBPACK_IMPORTED_MODULE_1__.printMessage)(errorMessages.join('. ') + '.', 'danger', 5000);
+      return;
+    }
     var btnSubmit = target.querySelector('.js-submit-and-next-tab');
     btnSubmit && btnSubmit.setAttribute('disabled', 'disabled');
     var nextTargetTab = 'pills-documents-tab';
@@ -9479,7 +9753,16 @@ var driverCoreInit = function driverCoreInit(urlAjax) {
   if (ratingBtns.length > 0 && selectedRatingInput) {
     ratingBtns.forEach(function (btn) {
       btn.addEventListener('click', function () {
+        var _this = this;
+        if (this.hasAttribute('data-processing')) {
+          return;
+        }
         var rating = parseInt(this.dataset.rating || '0');
+        var isAlreadyActive = this.classList.contains('btn-success') || this.classList.contains('btn-warning') || this.classList.contains('btn-danger');
+        if (isAlreadyActive) {
+          return;
+        }
+        this.setAttribute('data-processing', 'true');
         var getRatingBtnColor = function getRatingBtnColor(value) {
           if (value <= 1) {
             return 'btn-outline-danger';
@@ -9507,16 +9790,20 @@ var driverCoreInit = function driverCoreInit(urlAjax) {
         ratingBtns.forEach(function (b) {
           var bRating = parseInt(b.dataset.rating || '0');
           b.className = "btn ".concat(getRatingBtnColor(bRating), " rating-btn");
+          b.removeAttribute('data-processing');
         });
         this.className = "btn ".concat(getActiveBtnColor(rating), " rating-btn");
         selectedRatingInput.value = rating.toString();
+        setTimeout(function () {
+          _this.removeAttribute('data-processing');
+        }, 50);
       });
     });
   }
   var noticeCheckboxes = document.querySelectorAll('.notice-status-checkbox');
   noticeCheckboxes.forEach(function (checkbox) {
     checkbox.addEventListener('change', function () {
-      var _this = this;
+      var _this2 = this;
       var noticeId = this.dataset.noticeId;
       if (!noticeId) return;
       var formData = new FormData();
@@ -9533,21 +9820,21 @@ var driverCoreInit = function driverCoreInit(urlAjax) {
         return response.json();
       }).then(function (data) {
         if (data.success) {
-          var row = _this.closest('tr');
+          var row = _this2.closest('tr');
           if (row) {
-            if (_this.checked) {
+            if (_this2.checked) {
               row.classList.add('table-success');
             } else {
               row.classList.remove('table-success');
             }
           }
         } else {
-          _this.checked = !_this.checked;
+          _this2.checked = !_this2.checked;
           (0,_info_messages__WEBPACK_IMPORTED_MODULE_0__.printMessage)('Error: ' + data.data, 'danger', 3000);
         }
       }).catch(function (error) {
         console.error('Error:', error);
-        _this.checked = !_this.checked;
+        _this2.checked = !_this2.checked;
         (0,_info_messages__WEBPACK_IMPORTED_MODULE_0__.printMessage)('An error occurred while updating the notice status.', 'danger', 3000);
       });
     });
@@ -9913,6 +10200,7 @@ var DriverPopupForms = /*#__PURE__*/function () {
   function DriverPopupForms(ajaxUrl) {
     _classCallCheck(this, DriverPopupForms);
     this.currentDriverId = null;
+    this.ratingButtonHandler = null;
     this.ajaxUrl = ajaxUrl;
     this.init();
   }
@@ -9956,27 +10244,90 @@ var DriverPopupForms = /*#__PURE__*/function () {
       });
     }
   }, {
+    key: "confirmHighestRating",
+    value: function confirmHighestRating(rating, button, selectedRating) {
+      if (rating === 5) {
+        var confirmed = confirm("You're choosing the highest rating for this driver. Would you like to continue?");
+        return confirmed;
+      }
+      return true;
+    }
+  }, {
+    key: "revertRatingSelection",
+    value: function revertRatingSelection(button, selectedRating) {
+      document.querySelectorAll('.rating-btn').forEach(function (b) {
+        b.classList.remove('active');
+      });
+      document.querySelectorAll('.rating-btn').forEach(function (b) {
+        var bRating = parseInt(b.getAttribute('data-rating') || '0', 10);
+        if (bRating <= 1) {
+          b.className = 'btn btn-outline-danger rating-btn';
+        } else if (bRating <= 4) {
+          b.className = 'btn btn-outline-warning rating-btn';
+        } else if (bRating > 4) {
+          b.className = 'btn btn-outline-success rating-btn';
+        } else {
+          b.className = 'btn btn-outline-secondary rating-btn';
+        }
+      });
+      if (selectedRating) {
+        selectedRating.value = '';
+      }
+      button.removeAttribute('data-processing');
+    }
+  }, {
     key: "handleRatingButtons",
     value: function handleRatingButtons() {
       var _this3 = this;
-      document.querySelectorAll('.rating-btn').forEach(function (btn) {
-        btn.addEventListener('click', function (e) {
-          var target = e.target;
-          var rating = parseInt(target.dataset.rating || '0', 10);
-          if (_this3.isCanceledSelected() && rating > 2) {
-            (0,_info_messages__WEBPACK_IMPORTED_MODULE_0__.printMessage)('For Canceled loads you can set rating 1-2 only.', 'warning', 2500);
-            return;
-          }
-          document.querySelectorAll('.rating-btn').forEach(function (b) {
-            return b.classList.remove('active');
-          });
-          target.classList.add('active');
-          var selectedRating = document.getElementById('selectedRating');
-          if (selectedRating) {
-            selectedRating.value = target.dataset.rating || '';
-          }
+      if (this.ratingButtonHandler) {
+        document.removeEventListener('click', this.ratingButtonHandler);
+      }
+      this.ratingButtonHandler = function (e) {
+        var target = e.target;
+        if (!target.classList.contains('rating-btn')) {
+          return;
+        }
+        var button = target;
+        if (button.hasAttribute('data-processing')) {
+          e.preventDefault();
+          e.stopPropagation();
+          return;
+        }
+        var rating = parseInt(button.dataset.rating || '0', 10);
+        if (button.classList.contains('active')) {
+          e.preventDefault();
+          e.stopPropagation();
+          return;
+        }
+        if (_this3.isCanceledSelected() && rating > 2) {
+          (0,_info_messages__WEBPACK_IMPORTED_MODULE_0__.printMessage)('For Canceled loads you can set rating 1-2 only.', 'warning', 2500);
+          e.preventDefault();
+          e.stopPropagation();
+          return;
+        }
+        button.setAttribute('data-processing', 'true');
+        document.querySelectorAll('.rating-btn').forEach(function (b) {
+          b.classList.remove('active');
+          b.removeAttribute('data-processing');
         });
-      });
+        button.classList.add('active');
+        var selectedRating = document.getElementById('selectedRating');
+        if (selectedRating) {
+          selectedRating.value = button.dataset.rating || '';
+        }
+        if (!_this3.confirmHighestRating(rating, button, selectedRating)) {
+          _this3.revertRatingSelection(button, selectedRating);
+          e.preventDefault();
+          e.stopPropagation();
+          return;
+        }
+        setTimeout(function () {
+          button.removeAttribute('data-processing');
+        }, 50);
+        e.preventDefault();
+        e.stopPropagation();
+      };
+      document.addEventListener('click', this.ratingButtonHandler);
     }
   }, {
     key: "handleRatingForm",
@@ -14518,7 +14869,11 @@ var validateDeliveryDate = function validateDeliveryDate(deliveryDate) {
   if (!maxPickUpDate || !deliveryDate) {
     return true;
   }
-  return new Date(deliveryDate) >= new Date(maxPickUpDate);
+  var deliveryDateOnly = new Date(deliveryDate);
+  deliveryDateOnly.setHours(0, 0, 0, 0);
+  var maxPickUpDateOnly = new Date(maxPickUpDate);
+  maxPickUpDateOnly.setHours(0, 0, 0, 0);
+  return deliveryDateOnly >= maxPickUpDateOnly;
 };
 var showDateValidationError = function showDateValidationError(shipperDate) {
   var _a, _b;
@@ -14545,7 +14900,8 @@ var updateDateInputMin = function updateDateInputMin(shipperDate, stopType) {
   if (selectedValue === 'delivery_location') {
     var maxPickUpDate = getMaxPickUpDate();
     if (maxPickUpDate) {
-      shipperDate.min = maxPickUpDate;
+      var maxPickUpDateOnly = maxPickUpDate.split(' ')[0];
+      shipperDate.min = maxPickUpDateOnly;
     } else {
       shipperDate.removeAttribute('min');
     }
@@ -29989,9 +30345,27 @@ function ready() {
     var geojsonSource = homeLocationMapElement.dataset.geojsonSource;
     if (stateMapData && maxCount && stateMarkersData && geojsonSource) {
       try {
-        (0,_components_charts_home_location_map__WEBPACK_IMPORTED_MODULE_49__.initHomeLocationMap)(JSON.parse(stateMapData), parseInt(maxCount, 10), JSON.parse(stateMarkersData), geojsonSource);
+        (0,_components_charts_home_location_map__WEBPACK_IMPORTED_MODULE_49__.initHomeLocationMap)(JSON.parse(stateMapData), parseInt(maxCount, 10), JSON.parse(stateMarkersData), geojsonSource, 'usaStatesMap', 'mapInfoPanel');
       } catch (e) {
         console.error('Error initializing home location map:', e);
+      }
+    }
+  }
+  window.initHomeLocationMap = _components_charts_home_location_map__WEBPACK_IMPORTED_MODULE_49__.initHomeLocationMap;
+  var loadsByStateMapElement = document.getElementById('loadsByStateMap');
+  if (loadsByStateMapElement) {
+    var loadsMapView = document.getElementById('loads-map-view');
+    if (loadsMapView && loadsMapView.classList.contains('active')) {
+      var _stateMapData = loadsByStateMapElement.dataset.stateMapData;
+      var _maxCount = loadsByStateMapElement.dataset.maxCount;
+      var _stateMarkersData = loadsByStateMapElement.dataset.stateMarkersData;
+      var _geojsonSource = loadsByStateMapElement.dataset.geojsonSource;
+      if (_stateMapData && _maxCount && _stateMarkersData && _geojsonSource) {
+        try {
+          (0,_components_charts_home_location_map__WEBPACK_IMPORTED_MODULE_49__.initHomeLocationMap)(JSON.parse(_stateMapData), parseInt(_maxCount, 10), JSON.parse(_stateMarkersData), _geojsonSource, 'loadsByStateMap', 'loadsByStateMapInfoPanel');
+        } catch (e) {
+          console.error('Error initializing loads by state map:', e);
+        }
       }
     }
   }

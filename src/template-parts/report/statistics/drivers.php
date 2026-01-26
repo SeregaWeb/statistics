@@ -24,7 +24,7 @@ $empty_recruiter = get_field_value( $global_options, 'empty_recruiter' );
 
 // Get active tab from GET parameter (default: recruiters-chart)
 $active_tab = isset( $_GET['tab'] ) ? sanitize_text_field( $_GET['tab'] ) : 'recruiters-chart';
-$valid_tabs = array( 'recruiters-chart', 'location-vehicle', 'capabilities', 'expired-documents' );
+$valid_tabs = array( 'recruiters-chart', 'location-vehicle', 'loads-by-state', 'loads-by-route', 'capabilities', 'expired-documents' );
 if ( ! in_array( $active_tab, $valid_tabs, true ) ) {
 	$active_tab = 'recruiters-chart';
 }
@@ -49,6 +49,9 @@ if ( $active_tab === 'recruiters-chart' ) {
 	$nationality_results = $TMSDriversStatistics->get_nationality_statistics();
 	$language_counts = $TMSDriversStatistics->get_language_statistics();
 	$usa_drivers_with_coords = $TMSDriversStatistics->get_usa_drivers_with_coordinates();
+} elseif ( $active_tab === 'loads-by-state' || $active_tab === 'loads-by-route' ) {
+	// Loads by State and Loads by Route tabs load their own data in their included files
+	// No additional data loading needed here - files handle it themselves
 } elseif ( $active_tab === 'capabilities' ) {
 	// Load data for capabilities tab
 	$statistics = $TMSDrivers->get_statistics(); // Needed for totals calculation
@@ -107,9 +110,8 @@ extract( $totals );
 		<h2 class="mb-3">HR</h2>
 	</div>
 	
-	<?php if ( is_array( $statistics ) && ! empty( $statistics ) ) : ?>
-		
-		<?php
+	<?php 
+	if ( is_array( $statistics ) && ! empty( $statistics ) ) {
 		// Sort statistics by total (descending), but put empty_recruiter at the end
 		usort( $statistics, function( $a, $b ) use ( $empty_recruiter ) {
 			$a_id = isset( $a['user_id_added'] ) ? (int) $a['user_id_added'] : 0;
@@ -134,10 +136,11 @@ extract( $totals );
 			$total_b = isset( $b['total'] ) ? (int) $b['total'] : 0;
 			return $total_b - $total_a;
 		} );
-		?>
-		
-		<!-- Subsection Navigation -->
-		<ul class="nav nav-tabs mt-4" id="driversStatisticsTabs" role="tablist">
+	}
+	?>
+	
+	<!-- Subsection Navigation - Always show for all tabs -->
+	<ul class="nav nav-tabs mt-4" id="driversStatisticsTabs" role="tablist">
 			<li class="nav-item" role="presentation">
 				<button class="nav-link <?php echo $active_tab === 'recruiters-chart' ? 'active' : ''; ?>" 
 						id="recruiters-chart-tab" 
@@ -158,6 +161,28 @@ extract( $totals );
 						aria-controls="location-vehicle" 
 						aria-selected="<?php echo $active_tab === 'location-vehicle' ? 'true' : 'false'; ?>">
 					Home location & vehicle type
+				</button>
+			</li>
+			<li class="nav-item" role="presentation">
+				<button class="nav-link <?php echo $active_tab === 'loads-by-state' ? 'active' : ''; ?>" 
+						id="loads-by-state-tab" 
+						data-tab-name="loads-by-state"
+						type="button" 
+						role="tab" 
+						aria-controls="loads-by-state" 
+						aria-selected="<?php echo $active_tab === 'loads-by-state' ? 'true' : 'false'; ?>">
+					Loads by State
+				</button>
+			</li>
+			<li class="nav-item" role="presentation">
+				<button class="nav-link <?php echo $active_tab === 'loads-by-route' ? 'active' : ''; ?>" 
+						id="loads-by-route-tab" 
+						data-tab-name="loads-by-route"
+						type="button" 
+						role="tab" 
+						aria-controls="loads-by-route" 
+						aria-selected="<?php echo $active_tab === 'loads-by-route' ? 'true' : 'false'; ?>">
+					Loads by Route
 				</button>
 			</li>
 			<li class="nav-item" role="presentation">
@@ -199,6 +224,56 @@ extract( $totals );
 				<?php include get_template_directory() . '/src/template-parts/report/statistics/location-vehicle.php'; ?>
 			</div> <!-- End Home location & Vehicle type Tab -->
 
+			<!-- Loads by State Tab -->
+			<div class="tab-pane fade <?php echo $active_tab === 'loads-by-state' ? 'show active' : ''; ?>" id="loads-by-state" role="tabpanel" aria-labelledby="loads-by-state-tab">
+				<div class="row">
+					<?php 
+					try {
+						$loads_by_state_file = get_template_directory() . '/src/template-parts/report/statistics/location-vehicle-charts/loads-by-state.php';
+						if ( file_exists( $loads_by_state_file ) ) {
+							// Ensure TMSDriversStatistics is available for included file
+							if ( ! isset( $TMSDriversStatistics ) || ! is_object( $TMSDriversStatistics ) ) {
+								$TMSDriversStatistics = new TMSDriversStatistics();
+							}
+							include $loads_by_state_file;
+						} else {
+							echo '<div class="col-12"><div class="alert alert-danger">Loads by State chart file not found: ' . esc_html( $loads_by_state_file ) . '</div></div>';
+						}
+					} catch ( Exception $e ) {
+						echo '<div class="col-12"><div class="alert alert-danger">Error loading Loads by State chart: ' . esc_html( $e->getMessage() ) . '</div></div>';
+						if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+							error_log( 'Loads by State chart error: ' . $e->getMessage() . ' | Trace: ' . $e->getTraceAsString() );
+						}
+					}
+					?>
+				</div>
+			</div> <!-- End Loads by State Tab -->
+
+			<!-- Loads by Route Tab -->
+			<div class="tab-pane fade <?php echo $active_tab === 'loads-by-route' ? 'show active' : ''; ?>" id="loads-by-route" role="tabpanel" aria-labelledby="loads-by-route-tab">
+				<div class="row">
+					<?php 
+					try {
+						$loads_by_route_file = get_template_directory() . '/src/template-parts/report/statistics/location-vehicle-charts/loads-by-route.php';
+						if ( file_exists( $loads_by_route_file ) ) {
+							// Ensure TMSDriversStatistics is available for included file
+							if ( ! isset( $TMSDriversStatistics ) || ! is_object( $TMSDriversStatistics ) ) {
+								$TMSDriversStatistics = new TMSDriversStatistics();
+							}
+							include $loads_by_route_file;
+						} else {
+							echo '<div class="col-12"><div class="alert alert-danger">Loads by Route chart file not found: ' . esc_html( $loads_by_route_file ) . '</div></div>';
+						}
+					} catch ( Exception $e ) {
+						echo '<div class="col-12"><div class="alert alert-danger">Error loading Loads by Route chart: ' . esc_html( $e->getMessage() ) . '</div></div>';
+						if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+							error_log( 'Loads by Route chart error: ' . $e->getMessage() . ' | Trace: ' . $e->getTraceAsString() );
+						}
+					}
+					?>
+				</div>
+			</div> <!-- End Loads by Route Tab -->
+
 			<!-- Capabilities & Endorsements Tab -->
 			<div class="tab-pane fade <?php echo $active_tab === 'capabilities' ? 'show active' : ''; ?>" id="capabilities" role="tabpanel" aria-labelledby="capabilities-tab">
 				<?php include get_template_directory() . '/src/template-parts/report/statistics/capabilities.php'; ?>
@@ -211,5 +286,4 @@ extract( $totals );
 			</div> <!-- End Expired Documents Tab -->
 			<?php endif; ?>
 		</div> <!-- End Tab Content -->
-	<?php endif; ?>
 </div>

@@ -4,7 +4,7 @@
  * Runs every 5 minutes via Action Scheduler to check and block drivers with average rating < 2.5
  */
 
-error_log( 'TMS Driver Rating Block Cron: File loaded successfully' );
+// File loaded - no logging needed here
 
 // Add custom cron interval for 5 minutes (for WP Cron fallback)
 add_filter( 'cron_schedules', 'tms_add_five_minutes_interval_rating_block' );
@@ -21,10 +21,12 @@ add_action( 'plugins_loaded', 'tms_schedule_driver_rating_block_cron', 20 );
 add_action( 'init', 'tms_schedule_driver_rating_block_cron', 20 );
 function tms_schedule_driver_rating_block_cron() {
 	// Hook the action first (only once)
-	if ( ! has_action( 'tms_auto_block_low_rated_drivers', 'tms_auto_block_low_rated_drivers_function' ) ) {
-		add_action( 'tms_auto_block_low_rated_drivers', 'tms_auto_block_low_rated_drivers_function' );
-		error_log( 'TMS Driver Rating Block Cron: Action hook registered' );
-	}
+		if ( ! has_action( 'tms_auto_block_low_rated_drivers', 'tms_auto_block_low_rated_drivers_function' ) ) {
+			add_action( 'tms_auto_block_low_rated_drivers', 'tms_auto_block_low_rated_drivers_function' );
+			if ( class_exists( 'TMSLogger' ) ) {
+				TMSLogger::log_to_file( '[Cron] Action hook registered', 'driver-rating-block' );
+			}
+		}
 	
 	// Try Action Scheduler first (more reliable)
 	if ( function_exists( 'as_schedule_recurring_action' ) ) {
@@ -39,24 +41,36 @@ function tms_schedule_driver_rating_block_cron() {
 			);
 			
 			if ( $result ) {
-				error_log( 'TMS Driver Rating Block Cron: Scheduled via Action Scheduler. Action ID: ' . $result );
+				if ( class_exists( 'TMSLogger' ) ) {
+					TMSLogger::log_to_file( '[Cron] Scheduled via Action Scheduler. Action ID: ' . $result, 'driver-rating-block' );
+				}
 			} else {
-				error_log( 'TMS Driver Rating Block Cron: Failed to schedule via Action Scheduler, falling back to WP Cron' );
+				if ( class_exists( 'TMSLogger' ) ) {
+					TMSLogger::log_to_file( '[Cron] Failed to schedule via Action Scheduler, falling back to WP Cron', 'driver-rating-block' );
+				}
 				// Fallback to WP Cron
 				if ( ! wp_next_scheduled( 'tms_auto_block_low_rated_drivers_wp_cron' ) ) {
 					wp_schedule_event( time(), 'five_minutes_rating_block', 'tms_auto_block_low_rated_drivers_wp_cron' );
-					error_log( 'TMS Driver Rating Block Cron: Scheduled via WP Cron' );
+					if ( class_exists( 'TMSLogger' ) ) {
+						TMSLogger::log_to_file( '[Cron] Scheduled via WP Cron', 'driver-rating-block' );
+					}
 				}
 			}
 		} else {
-			error_log( 'TMS Driver Rating Block Cron: Already scheduled via Action Scheduler. Next run: ' . date( 'Y-m-d H:i:s', $next_scheduled ) );
+			if ( class_exists( 'TMSLogger' ) ) {
+				TMSLogger::log_to_file( '[Cron] Already scheduled via Action Scheduler. Next run: ' . date( 'Y-m-d H:i:s', $next_scheduled ), 'driver-rating-block' );
+			}
 		}
 	} else {
 		// Fallback to WP Cron if Action Scheduler is not available
-		error_log( 'TMS Driver Rating Block Cron: Action Scheduler not available, using WP Cron' );
+		if ( class_exists( 'TMSLogger' ) ) {
+			TMSLogger::log_to_file( '[Cron] Action Scheduler not available, using WP Cron', 'driver-rating-block' );
+		}
 		if ( ! wp_next_scheduled( 'tms_auto_block_low_rated_drivers_wp_cron' ) ) {
 			wp_schedule_event( time(), 'five_minutes_rating_block', 'tms_auto_block_low_rated_drivers_wp_cron' );
-			error_log( 'TMS Driver Rating Block Cron: Scheduled via WP Cron' );
+			if ( class_exists( 'TMSLogger' ) ) {
+				TMSLogger::log_to_file( '[Cron] Scheduled via WP Cron', 'driver-rating-block' );
+			}
 		}
 	}
 	
@@ -94,7 +108,9 @@ function tms_auto_block_low_rated_drivers_function() {
 	// Update last run time
 	set_transient( 'tms_rating_block_last_run', time(), 3600 );
 	
-	error_log( 'TMS Driver Rating Block Cron: Function started at ' . date( 'Y-m-d H:i:s' ) );
+	if ( class_exists( 'TMSLogger' ) ) {
+		TMSLogger::log_to_file( '[START] Function started', 'driver-rating-block' );
+	}
 	
 	$table_main = $wpdb->prefix . 'drivers';
 	$table_meta = $wpdb->prefix . 'drivers_meta';
@@ -125,7 +141,7 @@ function tms_auto_block_low_rated_drivers_function() {
 			AND (exclude_auto_block.meta_value IS NULL OR exclude_auto_block.meta_value != '1')
 		GROUP BY main.id
 		HAVING AVG(rating.reit) < %f
-			AND COUNT(rating.id) > 0
+			AND COUNT(rating.id) >= 2
 		ORDER BY avg_rating ASC
 	";
 	
@@ -135,11 +151,17 @@ function tms_auto_block_low_rated_drivers_function() {
 	);
 	
 	if ( empty( $results ) ) {
-		error_log( 'TMS Driver Rating Block Cron: No drivers found with rating below ' . $min_rating );
+		if ( class_exists( 'TMSLogger' ) ) {
+			TMSLogger::log_to_file( '[INFO] No drivers found with rating below ' . $min_rating . ' (minimum 2 ratings required)', 'driver-rating-block' );
+		}
+		// Release lock
+		delete_transient( $lock_key );
 		return;
 	}
 	
-	error_log( 'TMS Driver Rating Block Cron: Found ' . count( $results ) . ' driver(s) with rating below ' . $min_rating );
+	if ( class_exists( 'TMSLogger' ) ) {
+		TMSLogger::log_to_file( '[INFO] Found ' . count( $results ) . ' driver(s) with rating below ' . $min_rating . ' (minimum 2 ratings required)', 'driver-rating-block' );
+	}
 	
 	$blocked_count = 0;
 	$helper = new TMSReportsHelper();
@@ -210,30 +232,30 @@ function tms_auto_block_low_rated_drivers_function() {
 			delete_transient( 'tms_all_available_drivers' );
 			
 			// Log the blocking action
-			$log_message = sprintf(
-				'TMS Auto-Block Driver: Driver ID %d (%s) has been automatically blocked. ' .
-				'Average rating: %.2f (from %d ratings). Previous status: %s. ' .
-				'Blocked at: %s',
-				$driver_id,
-				$driver_name,
-				$avg_rating,
-				$rating_count,
-				$current_status,
-				date( 'Y-m-d H:i:s' )
-			);
-			
-			error_log( $log_message );
+			if ( class_exists( 'TMSLogger' ) ) {
+				$log_message = sprintf(
+					'[BLOCKED] Driver ID %d (%s) - Average rating: %.2f (from %d ratings). Previous status: %s',
+					$driver_id,
+					$driver_name,
+					$avg_rating,
+					$rating_count,
+					$current_status
+				);
+				TMSLogger::log_to_file( $log_message, 'driver-rating-block' );
+			}
 		}
 	}
 	
-	if ( $blocked_count > 0 ) {
-		error_log( sprintf( 
-			'TMS Driver Rating Block Cron: Successfully blocked %d driver(s) with rating below %.2f',
-			$blocked_count,
-			$min_rating
-		) );
-	} else {
-		error_log( 'TMS Driver Rating Block Cron: Function completed. No drivers were blocked.' );
+	if ( class_exists( 'TMSLogger' ) ) {
+		if ( $blocked_count > 0 ) {
+			TMSLogger::log_to_file( sprintf( 
+				'[COMPLETED] Successfully blocked %d driver(s) with rating below %.2f',
+				$blocked_count,
+				$min_rating
+			), 'driver-rating-block' );
+		} else {
+			TMSLogger::log_to_file( '[COMPLETED] No drivers were blocked', 'driver-rating-block' );
+		}
 	}
 	
 	// Release lock
@@ -249,9 +271,16 @@ function tms_manual_test_rating_block() {
 	}
 	
 	if ( isset( $_GET['tms_test_rating_block'] ) && $_GET['tms_test_rating_block'] === '1' ) {
-		error_log( 'TMS Driver Rating Block Cron: Manual test triggered by admin' );
+		if ( class_exists( 'TMSLogger' ) ) {
+			TMSLogger::log_to_file( '[TEST] Manual test triggered by admin', 'driver-rating-block' );
+		}
 		tms_auto_block_low_rated_drivers_function();
-		wp_die( 'Rating block cron executed. Check debug.log for details.', 'Test Complete', array( 'response' => 200 ) );
+		$log_file_url = content_url( 'tms-logs/driver-rating-block.log' );
+		wp_die( 
+			sprintf( 'Rating block cron executed. Check <a href="%s" target="_blank">driver-rating-block.log</a> for details.', $log_file_url ), 
+			'Test Complete', 
+			array( 'response' => 200 ) 
+		);
 	}
 }
 

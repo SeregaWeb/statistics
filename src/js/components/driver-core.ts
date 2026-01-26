@@ -1023,7 +1023,24 @@ export const driverCoreInit = (urlAjax) => {
     if (ratingBtns.length > 0 && selectedRatingInput) {
         ratingBtns.forEach(btn => {
             btn.addEventListener('click', function() {
+                // Prevent duplicate processing
+                if (this.hasAttribute('data-processing')) {
+                    return;
+                }
+                
                 const rating = parseInt(this.dataset.rating || '0');
+                
+                // Check if this button is already active (has active color class, not outline)
+                const isAlreadyActive = this.classList.contains('btn-success') || 
+                                       this.classList.contains('btn-warning') || 
+                                       this.classList.contains('btn-danger');
+                
+                // If clicking on already selected rating, do nothing
+                if (isAlreadyActive) {
+                    return;
+                }
+                
+                this.setAttribute('data-processing', 'true');
                 
                 // Function to get button color based on rating
                 const getRatingBtnColor = (value: number): string => {
@@ -1056,6 +1073,7 @@ export const driverCoreInit = (urlAjax) => {
                 ratingBtns.forEach(b => {
                     const bRating = parseInt(b.dataset.rating || '0');
                     b.className = `btn ${getRatingBtnColor(bRating)} rating-btn`;
+                    b.removeAttribute('data-processing');
                 });
                 
                 // Set clicked button to active state
@@ -1063,6 +1081,11 @@ export const driverCoreInit = (urlAjax) => {
                 
                 // Set selected rating
                 selectedRatingInput.value = rating.toString();
+                
+                // Remove processing flag after event completes
+                setTimeout(() => {
+                    this.removeAttribute('data-processing');
+                }, 50);
             });
         });
     }

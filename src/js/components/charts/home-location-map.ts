@@ -33,6 +33,8 @@ class HomeLocationMap {
 	private stateMarkersData: StateMarker[];
 	private geojsonSource: string;
 	private mapContainer: HTMLElement | null = null;
+	private mapContainerId: string;
+	private infoPanelId: string;
 
 	// State name to abbreviation mapping
 	private stateNameToAbbr: { [key: string]: string } = {
@@ -53,16 +55,23 @@ class HomeLocationMap {
 		stateMapData: StateMapData,
 		maxCount: number,
 		stateMarkersData: StateMarker[],
-		geojsonSource: string
+		geojsonSource: string,
+		mapContainerId: string = 'usaStatesMap',
+		infoPanelId: string = 'mapInfoPanel'
 	) {
 		this.stateMapData = stateMapData;
 		this.maxCount = maxCount;
 		this.stateMarkersData = stateMarkersData;
 		this.geojsonSource = geojsonSource;
+		this.mapContainerId = mapContainerId;
+		this.infoPanelId = infoPanelId;
 		this.init();
 	}
 
 	private init(): void {
+		// Get map container reference early
+		this.mapContainer = document.getElementById(this.mapContainerId);
+		
 		if (document.readyState === 'loading') {
 			document.addEventListener('DOMContentLoaded', () => this.initMap());
 		} else {
@@ -76,6 +85,18 @@ class HomeLocationMap {
 			}
 		});
 
+		// Observe the map container or its parent tab pane for visibility changes
+		if (this.mapContainer) {
+			const tabPane = this.mapContainer.closest('.tab-pane');
+			if (tabPane) {
+				observer.observe(tabPane, {
+					attributes: true,
+					attributeFilter: ['class']
+				});
+			}
+		}
+		
+		// Also observe the chart container if it exists (for home-location)
 		const chartContainer = document.querySelector('.chart-container[data-chart="home-location"]');
 		if (chartContainer) {
 			observer.observe(chartContainer, {
@@ -87,7 +108,7 @@ class HomeLocationMap {
 
 	private isContainerVisible(): boolean {
 		if (!this.mapContainer) {
-			this.mapContainer = document.getElementById('usaStatesMap');
+			this.mapContainer = document.getElementById(this.mapContainerId);
 		}
 		if (!this.mapContainer) {
 			return false;
@@ -102,7 +123,7 @@ class HomeLocationMap {
 			return;
 		}
 
-		this.mapContainer = document.getElementById('usaStatesMap');
+		this.mapContainer = document.getElementById(this.mapContainerId);
 		if (!this.mapContainer) {
 			return;
 		}
@@ -113,7 +134,7 @@ class HomeLocationMap {
 		}
 
 		// Initialize map centered on USA
-		this.map = window.L.map('usaStatesMap').setView([39.8283, -98.5795], 8);
+		this.map = window.L.map(this.mapContainerId).setView([39.8283, -98.5795], 8);
 		this.mapInitialized = true;
 
 		// Add base map layers
@@ -212,17 +233,19 @@ class HomeLocationMap {
 	}
 
 	private updateInfoPanel(stateName: string, count: number): void {
-		let infoPanel = document.getElementById('mapInfoPanel');
+		let infoPanel = document.getElementById(this.infoPanelId);
 		if (!infoPanel) {
 			if (!this.mapContainer) return;
 			infoPanel = document.createElement('div');
-			infoPanel.id = 'mapInfoPanel';
+			infoPanel.id = this.infoPanelId;
 			infoPanel.className = 'home-location-map-info-panel';
 			this.mapContainer.appendChild(infoPanel);
 		}
 
 		if (stateName && count > 0) {
-			infoPanel.innerHTML = '<strong>' + stateName + '</strong><br>Drivers: ' + count;
+			// Use "Loads" for loads-by-state, "Drivers" for home-location
+			const label = this.mapContainerId === 'loadsByStateMap' ? 'Loads' : 'Drivers';
+			infoPanel.innerHTML = '<strong>' + stateName + '</strong><br>' + label + ': ' + count;
 			infoPanel.style.display = 'block';
 		} else {
 			infoPanel.style.display = 'none';
@@ -314,9 +337,11 @@ class HomeLocationMap {
 					const stateAbbr = this.getStateAbbr(feature.properties);
 					const stateData = this.stateMapData[stateAbbr] || { count: 0, name: feature.properties.NAME || stateAbbr };
 
+					// Use "Loads" for loads-by-state, "Drivers" for home-location
+					const label = this.mapContainerId === 'loadsByStateMap' ? 'Loads' : 'Drivers';
 					layer.bindPopup(
 						'<strong>' + stateData.name + '</strong><br>' +
-						'Drivers: ' + stateData.count
+						label + ': ' + stateData.count
 					);
 
 					layer.on({
@@ -357,10 +382,13 @@ class HomeLocationMap {
 
 				const marker = L.marker([stateMarker.lat, stateMarker.lng], { icon: stateIcon });
 
+				// Use "Loads" for loads-by-state, "Drivers" for home-location
+				const label = this.mapContainerId === 'loadsByStateMap' ? 'loads' : 'drivers';
+				const labelSingular = this.mapContainerId === 'loadsByStateMap' ? 'load' : 'driver';
 				const popupContent = '<div class="state-marker-popup">' +
 					'<strong>' + stateMarker.name + '</strong><br>' +
 					'<span class="state-driver-count">' + stateMarker.count + '</span> ' +
-					(stateMarker.count === 1 ? 'driver' : 'drivers') +
+					(stateMarker.count === 1 ? labelSingular : label) +
 					'</div>';
 
 				marker.bindPopup(popupContent);
@@ -390,12 +418,14 @@ export function initHomeLocationMap(
 	stateMapData: StateMapData,
 	maxCount: number,
 	stateMarkersData: StateMarker[],
-	geojsonSource: string
+	geojsonSource: string,
+	mapContainerId: string = 'usaStatesMap',
+	infoPanelId: string = 'mapInfoPanel'
 ): void {
 	// Wait for Leaflet to be available
 	const checkLeaflet = () => {
 		if (typeof (window as any).L !== 'undefined') {
-			new HomeLocationMap(stateMapData, maxCount, stateMarkersData, geojsonSource);
+			new HomeLocationMap(stateMapData, maxCount, stateMarkersData, geojsonSource, mapContainerId, infoPanelId);
 		} else {
 			// Retry after a short delay if Leaflet is not yet loaded
 			setTimeout(checkLeaflet, 100);

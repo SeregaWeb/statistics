@@ -173,8 +173,71 @@ export function initDriversStatisticsCharts(): void {
     });
     
     // Initialize charts when tabs are shown (for hidden tabs)
-    const tabElements = document.querySelectorAll('#driversStatisticsTabs button[data-bs-toggle="tab"]');
+    const tabElements = document.querySelectorAll('#driversStatisticsTabs button[data-tab-name]');
     tabElements.forEach((tabElement) => {
+        tabElement.addEventListener('click', (event) => {
+            // Get tab name from data attribute
+            const tabName = (event.target as HTMLElement).getAttribute('data-tab-name');
+            
+            // After page reload (which happens via initDriversStatisticsTabs), initialize charts
+            setTimeout(() => {
+                // Initialize charts based on active tab
+                if (tabName === 'loads-by-state') {
+                    // Initialize loads by state chart
+                    const loadsByStateChart = document.getElementById('loadsByStateChart');
+                    if (loadsByStateChart) {
+                        loadsByStateChart.dataset.initialized = 'false';
+                        // Use window function if available
+                        if (typeof (window as any).initLoadsByStateChart === 'function') {
+                            (window as any).initLoadsByStateChart();
+                        }
+                    }
+                } else if (tabName === 'loads-by-route') {
+                    // Initialize loads by route charts
+                    const loadsByRouteChart = document.getElementById('loadsByRouteChart');
+                    const loadsByRouteChart1 = document.getElementById('loadsByRouteChart1');
+                    const loadsByRouteChart2 = document.getElementById('loadsByRouteChart2');
+                    if (loadsByRouteChart) {
+                        loadsByRouteChart.dataset.initialized = 'false';
+                        if (typeof (window as any).initLoadsByRouteChart === 'function') {
+                            (window as any).initLoadsByRouteChart('loadsByRouteChart');
+                        }
+                    }
+                    if (loadsByRouteChart1) {
+                        loadsByRouteChart1.dataset.initialized = 'false';
+                        if (typeof (window as any).initLoadsByRouteChart === 'function') {
+                            (window as any).initLoadsByRouteChart('loadsByRouteChart1');
+                        }
+                    }
+                    if (loadsByRouteChart2) {
+                        loadsByRouteChart2.dataset.initialized = 'false';
+                        if (typeof (window as any).initLoadsByRouteChart === 'function') {
+                            (window as any).initLoadsByRouteChart('loadsByRouteChart2');
+                        }
+                    }
+                } else {
+                    // Initialize other charts
+                    const chartConfigs = [
+                        { id: 'stateChart', useBar: true },
+                        { id: 'vehicleTypeChart', useBar: false },
+                        { id: 'nationalityChart', useBar: true },
+                        { id: 'languageChart', useBar: false },
+                    ];
+                    chartConfigs.forEach((config) => {
+                        const chartElement = document.getElementById(config.id);
+                        if (chartElement) {
+                            chartElement.dataset.initialized = 'false';
+                            initChart(config.id, config.useBar);
+                        }
+                    });
+                }
+            }, 100);
+        });
+    });
+    
+    // Also handle Bootstrap tab events for backward compatibility
+    const bootstrapTabElements = document.querySelectorAll('#driversStatisticsTabs button[data-bs-toggle="tab"]');
+    bootstrapTabElements.forEach((tabElement) => {
         tabElement.addEventListener('shown.bs.tab', (event) => {
             // Initialize charts in the newly shown tab
             const targetId = (event.target as HTMLElement).getAttribute('data-bs-target');

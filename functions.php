@@ -57,6 +57,7 @@ require THEME_DIR . '/src/inc/core/class-dark-mode.php';
 require THEME_DIR . '/src/inc/core/class-tms-user-sync-api.php';
 require THEME_DIR . '/src/inc/hooks/user-sync-hooks.php';
 require THEME_DIR . '/src/inc/admin/user-sync-admin.php';
+require THEME_DIR . '/src/inc/admin/chat-sync-admin.php';
 require THEME_DIR . '/src/inc/core/class-tms-contacts.php';
 require THEME_DIR . '/src/inc/core/class-tms-dispatcher-transfer-manager.php';
 require THEME_DIR . '/src/inc/admin/dispatcher-transfer-status.php';

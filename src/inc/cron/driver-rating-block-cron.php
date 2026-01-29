@@ -56,11 +56,7 @@ function tms_schedule_driver_rating_block_cron() {
 					}
 				}
 			}
-		} else {
-			if ( class_exists( 'TMSLogger' ) ) {
-				TMSLogger::log_to_file( '[Cron] Already scheduled via Action Scheduler. Next run: ' . date( 'Y-m-d H:i:s', $next_scheduled ), 'driver-rating-block' );
-			}
-		}
+		} 
 	} else {
 		// Fallback to WP Cron if Action Scheduler is not available
 		if ( class_exists( 'TMSLogger' ) ) {

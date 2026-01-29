@@ -26,6 +26,7 @@ if ( $post_id && is_numeric( $post_id ) ) {
 	$report_object = $reports->get_report_by_id( $_GET[ 'post_id' ] );
 	$main          = get_field_value( $report_object, 'main' );
 	$meta          = get_field_value( $report_object, 'meta' );
+	$reference_number    = get_field_value( $meta, 'reference_number' );
 	
 	if ( is_array( $report_object ) && sizeof( $report_object ) > 0 ) {
 		$disabled_tabs  = '';
@@ -209,7 +210,63 @@ $logshowcontent = isset( $_COOKIE[ 'logshow' ] ) && + $_COOKIE[ 'logshow' ] !== 
 
                         </div>
 
-                        <div class="col-12">
+                        <div class="col-12 d-flex justify-content-start align-items-center gap-1">
+
+				          <?php if ( $TMSUsers->check_user_role_access( array( 'administrator' ), true ) ): ?>
+							<?php
+							// Get dispatcher_initials from meta if not already set
+							if ( isset( $meta ) && ( ! isset( $dispatcher_initials ) || ! $dispatcher_initials ) ) {
+								$dispatcher_initials = get_field_value( $meta, 'dispatcher_initials' );
+							}
+							
+							// Build full chat context via helper (participants, display info, missing required roles)
+							$chat_context = $helper->get_load_chat_context( $meta, $project );
+							$chat_participants = $chat_context['participants'];
+							$participants_info = $chat_context['participants_info']; // For tooltip display
+							$missing_roles     = $chat_context['missing_roles'];
+							
+							$participants_json    = json_encode( $chat_participants, JSON_UNESCAPED_UNICODE );
+							// For Bootstrap tooltip we use <br> as separator
+							$participants_tooltip = ! empty( $participants_info ) ? implode( '<br>', $participants_info ) : '';
+							$is_button_disabled   = ! empty( $missing_roles );
+							$button_title         = '';
+							$chat_created         = isset( $meta ) ? get_field_value( $meta, 'chat_created' ) : false;
+							
+							if ( $chat_created ) {
+								$button_title = ! empty( $participants_tooltip ) ? 'Chat created<br>' . $participants_tooltip : 'Chat created';
+								// If chat already created, we don't care about missing roles any more
+								$missing_roles = array();
+								$is_button_disabled = true;
+							} elseif ( $is_button_disabled ) {
+								$missing_roles_text = implode( ', ', $missing_roles );
+								$button_title       = 'Missing required roles: ' . $missing_roles_text;
+							} else {
+								$button_title = ! empty( $participants_tooltip ) ? 'Participants:<br>' . $participants_tooltip : 'No participants found';
+							}
+
+							?>
+							<form class="js-create-chat-form">
+								<input type="hidden" name="load_id" value="<?php echo $post_id; ?>">
+								<input type="hidden" name="title" value="Load (<?php echo $reference_number; ?>)">
+								<input type="hidden" name="company" value="<?php echo $project; ?>">
+								<input type="hidden" name="participants" value='<?php echo esc_attr( $participants_json ); ?>'>
+								<span
+									data-bs-toggle="tooltip"
+									data-bs-placement="top"
+									data-bs-title="<?php echo esc_attr( $button_title ); ?>"
+								>
+									<button 
+										type="submit" 
+										class="btn <?php echo $chat_created ? 'btn-success' : 'btn-primary'; ?> js-create-chat <?php echo $is_button_disabled ? 'disabled' : ''; ?>"
+										<?php echo $is_button_disabled ? 'disabled' : ''; ?>
+										data-participants='<?php echo esc_attr( json_encode( $participants_info, JSON_UNESCAPED_UNICODE ) ); ?>'
+										data-missing-roles='<?php echo esc_attr( json_encode( $missing_roles, JSON_UNESCAPED_UNICODE ) ); ?>'
+									>
+										<?php echo $chat_created ? 'Chat created' : 'Create chat'; ?>
+									</button>
+								</span>
+							</form>
+						<?php endif; ?>
                             <h5 class="text-primary">
 								<?php echo $head_message; ?>
                             </h5>

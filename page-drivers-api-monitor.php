@@ -107,6 +107,8 @@ $access = true;
                                                         <h5 class="mb-0">Driver API - Get Driver by Email or ID</h5>
                                                     </div>
                                                     <div class="card-body">
+                                                        <p class="text-muted">Returns full driver data including project permissions based on required documents.</p>
+                                                        
                                                         <p><strong>Get Driver by Email:</strong></p>
                                                         <pre class="bg-light p-3 rounded" style="word-wrap: break-word; overflow-x: auto; white-space: pre-wrap;">
 curl -X GET \
@@ -129,10 +131,16 @@ curl -X GET \
   "success": true,
   "data": {
     "id": 123,
+    "role": "driver",
     "date_created": "2024-01-01 12:00:00",
     "date_updated": "2024-01-15 14:30:00",
     "user_id_added": 1,
     "status_post": "publish",
+    "permission_view": [
+      "Odysseia",
+      "Martlet",
+      "Endurance"
+    ],
     "organized_data": {
       "current_location": {
         "zipcode": "12345",
@@ -170,12 +178,25 @@ curl -X GET \
           "all_notifications": [...]
         }
       }
-    }
+    },
+    "ratings": [...],
+    "notices": [...]
   },
   "timestamp": "2024-01-15 15:00:00",
   "api_version": "1.0"
 }
                                                         </pre>
+                                                        
+                                                        <p><strong>Response Fields:</strong></p>
+                                                        <ul>
+                                                            <li><strong>permission_view</strong> - Array of projects the driver has access to. A driver has access to a project if they have both required documents:
+                                                                <ul>
+                                                                    <li><strong>Odysseia</strong>: requires <code>ic_agreement</code> and <code>auto_liability_coi</code></li>
+                                                                    <li><strong>Martlet</strong>: requires <code>martlet_ic_agreement</code> and <code>martlet_coi</code></li>
+                                                                    <li><strong>Endurance</strong>: requires <code>endurance_ic_agreement</code> and <code>endurance_coi</code></li>
+                                                                </ul>
+                                                            </li>
+                                                        </ul>
                                                         
                                                         <p><strong>Test Driver API:</strong></p>
                                                         <div class="form-group mb-3">
@@ -583,6 +604,8 @@ curl -X GET \
                                                         <h5 class="mb-0">Drivers List API - Get Drivers with Pagination</h5>
                                                     </div>
                                                     <div class="card-body">
+                                                        <p class="text-muted">Returns paginated list of drivers with basic information and project permissions.</p>
+                                                        
                                                         <p><strong>Get Drivers List:</strong></p>
                                                         <pre class="bg-light p-3 rounded" style="word-wrap: break-word; overflow-x: auto; white-space: pre-wrap;">
 curl -X GET \
@@ -615,7 +638,11 @@ curl -X GET \
       "vin": "7777777777",
       "driver_status": "available",
       "latitude": "25.77481",
-      "longitude": "-80.19773"
+      "longitude": "-80.19773",
+      "permission_view": [
+        "Odysseia",
+        "Martlet"
+      ]
     },
     {
       "id": 3249,
@@ -628,8 +655,13 @@ curl -X GET \
       "vin": "1FTBR3X82MKA28937",
       "driver_status": "available",
       "latitude": "42.49919",
-      "longitude": "-90.66304"
-    },
+      "longitude": "-90.66304",
+      "permission_view": [
+        "Odysseia",
+        "Martlet",
+        "Endurance"
+      ]
+    }
   ],
   "pagination": {
     "current_page": 1,
@@ -647,6 +679,18 @@ curl -X GET \
   "api_version": "1.0"
 }
                                                         </pre>
+                                                        
+                                                        <p><strong>Response Fields:</strong></p>
+                                                        <ul>
+                                                            <li><strong>permission_view</strong> - Array of projects the driver has access to. A driver has access to a project if they have both required documents:
+                                                                <ul>
+                                                                    <li><strong>Odysseia</strong>: requires <code>ic_agreement</code> and <code>auto_liability_coi</code></li>
+                                                                    <li><strong>Martlet</strong>: requires <code>martlet_ic_agreement</code> and <code>martlet_coi</code></li>
+                                                                    <li><strong>Endurance</strong>: requires <code>endurance_ic_agreement</code> and <code>endurance_coi</code></li>
+                                                                </ul>
+                                                                Example: <code>["Odysseia", "Martlet"]</code> or <code>[]</code> if no projects
+                                                            </li>
+                                                        </ul>
                                                         
                                                         <p><strong>Test Drivers List API:</strong></p>
                                                         <div class="row">

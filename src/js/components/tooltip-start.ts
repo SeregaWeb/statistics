@@ -5,7 +5,10 @@ export const updateTooltip = () => {
 
     if (tooltipTriggerList.length) {
         tooltipTriggerList.forEach((tooltipTriggerEl) => {
-            new Tooltip(tooltipTriggerEl);
+            // Enable HTML so we can use <br> for newlines
+            new Tooltip(tooltipTriggerEl as HTMLElement, {
+                html: true,
+            });
         });
     }
 };

@@ -715,10 +715,11 @@ class TMSReportsHelper extends TMSReportsIcons {
 			$address_line   = trim( $address_parts[ 0 ] ?? '' );
 			$city_state_zip = trim( implode( ',', array_slice( $address_parts, 1 ) ) );
 			
+
 			if ( ! empty( $location[ 'date' ] ) ) {
 				// Пробуем с форматом Y-m-d\TH:i
-				$datetime = DateTime::createFromFormat( 'Y-m-d\TH:i', $location[ 'date' ] );
-				
+				$datetime = DateTime::createFromFormat( 'Y-m-d H:i:s', $location[ 'date' ] );
+
 				if ( ! $datetime ) {
 					// Если не получилось, пробуем с форматом Y-m-d
 					$datetime = DateTime::createFromFormat( 'Y-m-d', $location[ 'date' ] );
@@ -728,6 +729,8 @@ class TMSReportsHelper extends TMSReportsIcons {
 					$date = esc_html( $datetime->format( 'm/d/Y' ) );
 				}
 			}
+
+
 			
 			if ( isset( $location[ 'time_start' ] ) && isset( $location[ 'time_end' ] ) ) {
 				$time = trim( $location[ 'time_start' ] . ( $location[ 'time_end' ] ? ' - ' . $location[ 'time_end' ]
@@ -770,6 +773,338 @@ class TMSReportsHelper extends TMSReportsIcons {
 		}
 		
 		return null;
+	}
+	
+	/**
+	 * Get chat participants for load chat creation
+	 * 
+	 * @param int $dispatcher_id Dispatcher user ID
+	 * @param string $project Project name (Odysseia, Martlet, Endurance)
+	 * @return array Array of participants with id and role
+	 */
+	function get_chat_participants( $dispatcher_id, $project ) {
+		$participants = array();
+		
+		// 1. Add dispatcher
+		if ( $dispatcher_id ) {
+			$dispatcher_user = get_user_by( 'id', $dispatcher_id );
+			if ( $dispatcher_user ) {
+				$participants[] = array(
+					'id' => (string) $dispatcher_id,
+					'role' => 'dispatcher'
+				);
+			}
+		}
+		
+		// Get dispatcher's work_location
+		$dispatcher_work_location = get_field( 'work_location', 'user_' . $dispatcher_id );
+		
+		// 2. Get tracking/nightshift/morning users by dispatcher group
+		$emails = new TMSEmails();
+		$user_fields = get_fields( 'user_' . $dispatcher_id );
+		$current_select = $project ?? get_field_value( $user_fields, 'current_select' );
+		
+		// Define role groups
+		$role_groups = array(
+			'tracking' => array('tracking', 'tracking-tl'),
+			'nightshift' => array('nightshift_tracking'),
+			'morning' => array('morning_tracking')
+		);
+		
+		// Query each role group separately
+		foreach ( $role_groups as $group_name => $roles ) {
+			$meta_query_args = array(
+				'relation' => 'AND',
+				array(
+					'key'     => 'my_team',
+					'value'   => '"' . $dispatcher_id . '"',
+					'compare' => 'LIKE'
+				),
+				array(
+					'key'     => 'permission_view',
+					'value'   => '"' . $current_select . '"',
+					'compare' => 'LIKE'
+				)
+			);
+			
+			// Add work_location filter if dispatcher has one (but not for nightshift/morning - office doesn't matter for them)
+			if ( $dispatcher_work_location && $group_name !== 'nightshift' && $group_name !== 'morning' ) {
+				$meta_query_args[] = array(
+					'key'     => 'work_location',
+					'value'   => $dispatcher_work_location,
+					'compare' => '='
+				);
+			}
+			
+			$args = array(
+				'role__in'   => $roles,
+				'meta_query' => $meta_query_args
+			);
+			
+			$query = new WP_User_Query( $args );
+			$users = $query->get_results();
+			
+			if ( ! empty( $users ) ) {
+				foreach ( $users as $user ) {
+					// Get user's primary role (first role in array)
+					$user_roles = $user->roles;
+					$user_role = ! empty( $user_roles ) ? $user_roles[0] : 'subscriber';
+					
+					$participants[] = array(
+						'id' => (string) $user->ID,
+						'role' => $user_role
+					);
+				}
+			}
+		}
+		
+		// 3. Get tracking-tl in dispatcher's group with same work_location (if not already added)
+		if ( $dispatcher_work_location ) {
+			$args = array(
+				'role' => 'tracking-tl',
+				'meta_query' => array(
+					'relation' => 'AND',
+					array(
+						'key'     => 'my_team',
+						'value'   => '"' . $dispatcher_id . '"',
+						'compare' => 'LIKE'
+					),
+					array(
+						'key'     => 'permission_view',
+						'value'   => '"' . $current_select . '"',
+						'compare' => 'LIKE'
+					),
+					array(
+						'key'     => 'work_location',
+						'value'   => $dispatcher_work_location,
+						'compare' => '='
+					)
+				)
+			);
+			
+			$query = new WP_User_Query( $args );
+			$tracking_tls = $query->get_results();
+			
+			if ( ! empty( $tracking_tls ) ) {
+				foreach ( $tracking_tls as $user ) {
+					// Check if already added
+					$already_added = false;
+					foreach ( $participants as $participant ) {
+						if ( $participant['id'] == (string) $user->ID ) {
+							$already_added = true;
+							break;
+						}
+					}
+					
+					if ( ! $already_added ) {
+						// Get user's primary role
+						$user_roles = $user->roles;
+						$user_role = ! empty( $user_roles ) ? $user_roles[0] : 'subscriber';
+						
+						$participants[] = array(
+							'id' => (string) $user->ID,
+							'role' => $user_role
+						);
+					}
+				}
+			}
+		}
+		
+		// 4. Get billing users by project and work_location
+		if ( $dispatcher_work_location ) {
+			$args = array(
+				'role' => 'billing',
+				'meta_query' => array(
+					'relation' => 'AND',
+					array(
+						'key'     => 'permission_view',
+						'value'   => '"' . $current_select . '"',
+						'compare' => 'LIKE'
+					),
+					array(
+						'key'     => 'work_location',
+						'value'   => $dispatcher_work_location,
+						'compare' => '='
+					)
+				)
+			);
+			
+			$billing_users = get_users( $args );
+			if ( ! empty( $billing_users ) ) {
+				foreach ( $billing_users as $user ) {
+					// Get user's primary role
+					$user_roles = $user->roles;
+					$user_role = ! empty( $user_roles ) ? $user_roles[0] : 'subscriber';
+					
+					$participants[] = array(
+						'id' => (string) $user->ID,
+						'role' => $user_role
+					);
+				}
+			}
+		}
+		
+		// 5. Get all tracking-tl by project and work_location (not only in dispatcher's group)
+		if ( $dispatcher_work_location ) {
+			$args = array(
+				'role' => 'tracking-tl',
+				'meta_query' => array(
+					'relation' => 'AND',
+					array(
+						'key'     => 'permission_view',
+						'value'   => '"' . $current_select . '"',
+						'compare' => 'LIKE'
+					),
+					array(
+						'key'     => 'work_location',
+						'value'   => $dispatcher_work_location,
+						'compare' => '='
+					)
+				)
+			);
+			
+			$all_tracking_tls = get_users( $args );
+			if ( ! empty( $all_tracking_tls ) ) {
+				foreach ( $all_tracking_tls as $user ) {
+					// Check if already added
+					$already_added = false;
+					foreach ( $participants as $participant ) {
+						if ( $participant['id'] == (string) $user->ID ) {
+							$already_added = true;
+							break;
+						}
+					}
+					
+					if ( ! $already_added ) {
+						// Get user's primary role
+						$user_roles = $user->roles;
+						$user_role = ! empty( $user_roles ) ? $user_roles[0] : 'subscriber';
+						
+						$participants[] = array(
+							'id' => (string) $user->ID,
+							'role' => $user_role
+						);
+					}
+				}
+			}
+		}
+		
+		// Remove duplicates by ID
+		$unique_participants = array();
+		$seen_ids = array();
+		foreach ( $participants as $participant ) {
+			if ( ! in_array( $participant['id'], $seen_ids ) ) {
+				$unique_participants[] = $participant;
+				$seen_ids[] = $participant['id'];
+			}
+		}
+		
+		return $unique_participants;
+	}
+
+	/**
+	 * Build full chat context (participants, display info, missing required roles) for a given load meta.
+	 *
+	 * Used both for create and future update chat actions.
+	 *
+	 * @param array  $meta    Load meta array.
+	 * @param string $project Project name (Odysseia, Martlet, Endurance).
+	 *
+	 * @return array{
+	 *     participants: array<array{id:string,role:string}>,
+	 *     participants_info: string[],
+	 *     missing_roles: string[]
+	 * }
+	 */
+	public function get_load_chat_context( $meta, $project ) {
+		// Dispatcher is the entry point for team context
+		$dispatcher_initials = get_field_value( $meta, 'dispatcher_initials' );
+		$dispatcher_id       = $dispatcher_initials ? (int) $dispatcher_initials : 0;
+
+		$chat_participants  = array();
+		$participants_info  = array();
+		$required_roles     = array( 'dispatcher', 'tracking', 'nightshift_tracking', 'morning_tracking' );
+		$found_roles        = array();
+		$missing_roles      = array();
+
+		if ( $dispatcher_id ) {
+			// Base participants (dispatcher + tracking/night/morning/billing/tl)
+			$chat_participants = $this->get_chat_participants( $dispatcher_id, $project );
+
+			// Select attached driver for chat
+			// Priority: 3 > 2 > 1 (if 1 and 2 exist, use 2)
+			$driver_id        = get_field_value( $meta, 'attached_driver' );
+			$second_driver_id = get_field_value( $meta, 'attached_second_driver' );
+			$third_driver_id  = get_field_value( $meta, 'attached_third_driver' );
+
+			$selected_driver_id = null;
+			if ( ! empty( $third_driver_id ) ) {
+				$selected_driver_id = (int) $third_driver_id;
+			} elseif ( ! empty( $second_driver_id ) ) {
+				$selected_driver_id = (int) $second_driver_id;
+			} elseif ( ! empty( $driver_id ) ) {
+				$selected_driver_id = (int) $driver_id;
+			}
+
+			// Add selected driver if exists
+			if ( $selected_driver_id ) {
+				$chat_participants[] = array(
+					'id'   => (string) $selected_driver_id,
+					'role' => 'driver',
+				);
+			}
+
+			// Build participants info for tooltip / debug and collect roles present
+			foreach ( $chat_participants as $participant ) {
+				$user_id   = isset( $participant['id'] ) ? (int) $participant['id'] : 0;
+				$user_role = isset( $participant['role'] ) ? $participant['role'] : '';
+
+				if ( $user_role === 'driver' ) {
+					// Drivers are stored in custom tables; use TMSDrivers to get full info
+					$TMSDrivers    = new TMSDrivers();
+					$driver_object = $TMSDrivers->get_driver_by_id( $user_id );
+
+					if ( $driver_object ) {
+						$driver_meta = get_field_value( $driver_object, 'meta' );
+						$driver_name = get_field_value( $driver_meta, 'driver_name' );
+
+						if ( ! empty( $driver_name ) ) {
+							$participants_info[] = $driver_name . ' (driver)';
+							$found_roles[]       = $user_role;
+						}
+					}
+				} else {
+					$user = get_user_by( 'id', $user_id );
+					if ( $user ) {
+						$first_name   = get_user_meta( $user_id, 'first_name', true );
+						$last_name    = get_user_meta( $user_id, 'last_name', true );
+						$display_name = trim( ( $first_name ? $first_name . ' ' : '' ) . ( $last_name ? $last_name : '' ) );
+						if ( empty( $display_name ) ) {
+							$display_name = $user->display_name;
+						}
+
+						$participants_info[] = $display_name . ' (' . $user_role . ')';
+						$found_roles[]       = $user_role;
+					}
+				}
+			}
+
+			// Determine which required roles are missing
+			foreach ( $required_roles as $required_role ) {
+				if ( ! in_array( $required_role, $found_roles, true ) ) {
+					$missing_roles[] = $required_role;
+				}
+			}
+		} else {
+			// If no dispatcher, all required roles are missing
+			$missing_roles = $required_roles;
+		}
+
+		return array(
+			'participants'      => $chat_participants,
+			'participants_info' => $participants_info,
+			'missing_roles'     => $missing_roles,
+		);
 	}
 	
 	function get_tracking_message( $tracking_email, $nightshift_email, $morning_email ) {

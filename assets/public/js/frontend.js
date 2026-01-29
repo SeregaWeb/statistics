@@ -6293,6 +6293,79 @@ function initContactsHandler(ajaxUrl) {
 
 /***/ }),
 
+/***/ "./src/js/components/create-chat.ts":
+/*!******************************************!*\
+  !*** ./src/js/components/create-chat.ts ***!
+  \******************************************/
+/***/ (function(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   initCreateChatForm: function() { return /* binding */ initCreateChatForm; }
+/* harmony export */ });
+/* harmony import */ var _info_messages__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./info-messages */ "./src/js/components/info-messages.ts");
+
+var initCreateChatForm = function initCreateChatForm(urlAjax) {
+  var form = document.querySelector('.js-create-chat-form');
+  if (!form) return;
+  var button = form.querySelector('.js-create-chat');
+  if (!button) return;
+  form.addEventListener('submit', function (e) {
+    var _a;
+    e.preventDefault();
+    var target = e.target;
+    if (target.dataset.submitting === 'true') {
+      return false;
+    }
+    var missingRoles = button.dataset.missingRoles ? JSON.parse(button.dataset.missingRoles) : [];
+    if (Array.isArray(missingRoles) && missingRoles.length > 0) {
+      (0,_info_messages__WEBPACK_IMPORTED_MODULE_0__.printMessage)('Missing required roles: ' + missingRoles.join(', '), 'danger', 5000);
+      return false;
+    }
+    if (button.disabled) {
+      return false;
+    }
+    target.dataset.submitting = 'true';
+    button.disabled = true;
+    button.textContent = 'Creating...';
+    var formData = new FormData(target);
+    formData.append('action', 'create_load_chat');
+    formData.append('nonce', ((_a = window.var_from_php) === null || _a === void 0 ? void 0 : _a.nonce) || '');
+    fetch(urlAjax, {
+      method: 'POST',
+      body: formData
+    }).then(function (res) {
+      return res.json();
+    }).then(function (data) {
+      var _a, _b;
+      if (data.success) {
+        var message = ((_a = data.data) === null || _a === void 0 ? void 0 : _a.message) || 'Chat created';
+        (0,_info_messages__WEBPACK_IMPORTED_MODULE_0__.printMessage)(message, 'success', 5000);
+        button.classList.remove('btn-primary');
+        button.classList.add('btn-success');
+        button.textContent = 'Chat created';
+        button.disabled = true;
+        button.dataset.missingRoles = JSON.stringify([]);
+      } else {
+        var errorMessage = ((_b = data.data) === null || _b === void 0 ? void 0 : _b.message) || 'Failed to create chat';
+        (0,_info_messages__WEBPACK_IMPORTED_MODULE_0__.printMessage)(errorMessage, 'danger', 5000);
+        button.disabled = false;
+        button.textContent = 'Create chat';
+      }
+    }).catch(function (error) {
+      console.error('Error creating chat:', error);
+      (0,_info_messages__WEBPACK_IMPORTED_MODULE_0__.printMessage)('An error occurred while creating the chat', 'danger', 5000);
+      button.disabled = false;
+      button.textContent = 'Create chat';
+    }).finally(function () {
+      target.dataset.submitting = 'false';
+    });
+  });
+};
+
+/***/ }),
+
 /***/ "./src/js/components/create-company.ts":
 /*!*********************************************!*\
   !*** ./src/js/components/create-company.ts ***!
@@ -16391,7 +16464,9 @@ var updateTooltip = function updateTooltip() {
   var tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]');
   if (tooltipTriggerList.length) {
     tooltipTriggerList.forEach(function (tooltipTriggerEl) {
-      new bootstrap__WEBPACK_IMPORTED_MODULE_0__.Tooltip(tooltipTriggerEl);
+      new bootstrap__WEBPACK_IMPORTED_MODULE_0__.Tooltip(tooltipTriggerEl, {
+        html: true
+      });
     });
   }
 };
@@ -30108,18 +30183,20 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _components_charts_location_vehicle_charts__WEBPACK_IMPORTED_MODULE_50__ = __webpack_require__(/*! ./components/charts/location-vehicle-charts */ "./src/js/components/charts/location-vehicle-charts.ts");
 /* harmony import */ var _components_charts_loads_by_state_chart__WEBPACK_IMPORTED_MODULE_51__ = __webpack_require__(/*! ./components/charts/loads-by-state-chart */ "./src/js/components/charts/loads-by-state-chart.ts");
 /* harmony import */ var _components_charts_loads_by_route_chart__WEBPACK_IMPORTED_MODULE_52__ = __webpack_require__(/*! ./components/charts/loads-by-route-chart */ "./src/js/components/charts/loads-by-route-chart.ts");
-/* harmony import */ var _components_drivers_statistics_tabs__WEBPACK_IMPORTED_MODULE_53__ = __webpack_require__(/*! ./components/drivers-statistics-tabs */ "./src/js/components/drivers-statistics-tabs.ts");
-/* harmony import */ var _components_quick_copy__WEBPACK_IMPORTED_MODULE_54__ = __webpack_require__(/*! ./components/quick-copy */ "./src/js/components/quick-copy.ts");
-/* harmony import */ var _components_driver_popups__WEBPACK_IMPORTED_MODULE_55__ = __webpack_require__(/*! ./components/driver-popups */ "./src/js/components/driver-popups.ts");
-/* harmony import */ var _components_driver_popup_forms__WEBPACK_IMPORTED_MODULE_56__ = __webpack_require__(/*! ./components/driver-popup-forms */ "./src/js/components/driver-popup-forms.ts");
-/* harmony import */ var _components_broker_popups__WEBPACK_IMPORTED_MODULE_57__ = __webpack_require__(/*! ./components/broker-popups */ "./src/js/components/broker-popups.ts");
-/* harmony import */ var _components_broker_popup_forms__WEBPACK_IMPORTED_MODULE_58__ = __webpack_require__(/*! ./components/broker-popup-forms */ "./src/js/components/broker-popup-forms.ts");
-/* harmony import */ var _components_driver_autocomplete__WEBPACK_IMPORTED_MODULE_59__ = __webpack_require__(/*! ./components/driver-autocomplete */ "./src/js/components/driver-autocomplete.ts");
-/* harmony import */ var _components_common_audio_helper__WEBPACK_IMPORTED_MODULE_60__ = __webpack_require__(/*! ./components/common/audio-helper */ "./src/js/components/common/audio-helper.ts");
-/* harmony import */ var _components_timer_control__WEBPACK_IMPORTED_MODULE_61__ = __webpack_require__(/*! ./components/timer-control */ "./src/js/components/timer-control.ts");
-/* harmony import */ var _components_timer_analytics__WEBPACK_IMPORTED_MODULE_62__ = __webpack_require__(/*! ./components/timer-analytics */ "./src/js/components/timer-analytics.ts");
-/* harmony import */ var _components_dark_mode_toggle__WEBPACK_IMPORTED_MODULE_63__ = __webpack_require__(/*! ./components/dark-mode-toggle */ "./src/js/components/dark-mode-toggle.ts");
-/* harmony import */ var _components_drivers_map__WEBPACK_IMPORTED_MODULE_64__ = __webpack_require__(/*! ./components/drivers-map */ "./src/js/components/drivers-map.ts");
+/* harmony import */ var _components_create_chat__WEBPACK_IMPORTED_MODULE_53__ = __webpack_require__(/*! ./components/create-chat */ "./src/js/components/create-chat.ts");
+/* harmony import */ var _components_drivers_statistics_tabs__WEBPACK_IMPORTED_MODULE_54__ = __webpack_require__(/*! ./components/drivers-statistics-tabs */ "./src/js/components/drivers-statistics-tabs.ts");
+/* harmony import */ var _components_quick_copy__WEBPACK_IMPORTED_MODULE_55__ = __webpack_require__(/*! ./components/quick-copy */ "./src/js/components/quick-copy.ts");
+/* harmony import */ var _components_driver_popups__WEBPACK_IMPORTED_MODULE_56__ = __webpack_require__(/*! ./components/driver-popups */ "./src/js/components/driver-popups.ts");
+/* harmony import */ var _components_driver_popup_forms__WEBPACK_IMPORTED_MODULE_57__ = __webpack_require__(/*! ./components/driver-popup-forms */ "./src/js/components/driver-popup-forms.ts");
+/* harmony import */ var _components_broker_popups__WEBPACK_IMPORTED_MODULE_58__ = __webpack_require__(/*! ./components/broker-popups */ "./src/js/components/broker-popups.ts");
+/* harmony import */ var _components_broker_popup_forms__WEBPACK_IMPORTED_MODULE_59__ = __webpack_require__(/*! ./components/broker-popup-forms */ "./src/js/components/broker-popup-forms.ts");
+/* harmony import */ var _components_driver_autocomplete__WEBPACK_IMPORTED_MODULE_60__ = __webpack_require__(/*! ./components/driver-autocomplete */ "./src/js/components/driver-autocomplete.ts");
+/* harmony import */ var _components_common_audio_helper__WEBPACK_IMPORTED_MODULE_61__ = __webpack_require__(/*! ./components/common/audio-helper */ "./src/js/components/common/audio-helper.ts");
+/* harmony import */ var _components_timer_control__WEBPACK_IMPORTED_MODULE_62__ = __webpack_require__(/*! ./components/timer-control */ "./src/js/components/timer-control.ts");
+/* harmony import */ var _components_timer_analytics__WEBPACK_IMPORTED_MODULE_63__ = __webpack_require__(/*! ./components/timer-analytics */ "./src/js/components/timer-analytics.ts");
+/* harmony import */ var _components_dark_mode_toggle__WEBPACK_IMPORTED_MODULE_64__ = __webpack_require__(/*! ./components/dark-mode-toggle */ "./src/js/components/dark-mode-toggle.ts");
+/* harmony import */ var _components_drivers_map__WEBPACK_IMPORTED_MODULE_65__ = __webpack_require__(/*! ./components/drivers-map */ "./src/js/components/drivers-map.ts");
+
 
 
 
@@ -30200,12 +30277,12 @@ function ready() {
   };
   var popupInstance = new _parts_popup_window__WEBPACK_IMPORTED_MODULE_2__["default"]();
   popupInstance.init();
-  _components_common_audio_helper__WEBPACK_IMPORTED_MODULE_60__["default"].getInstance();
-  var driverPopupForms = new _components_driver_popup_forms__WEBPACK_IMPORTED_MODULE_56__["default"](urlAjax);
-  var brokerPopupForms = new _components_broker_popup_forms__WEBPACK_IMPORTED_MODULE_58__["default"](urlAjax);
+  _components_common_audio_helper__WEBPACK_IMPORTED_MODULE_61__["default"].getInstance();
+  var driverPopupForms = new _components_driver_popup_forms__WEBPACK_IMPORTED_MODULE_57__["default"](urlAjax);
+  var brokerPopupForms = new _components_broker_popup_forms__WEBPACK_IMPORTED_MODULE_59__["default"](urlAjax);
   var singlePageBrokerUrl = (var_from_php === null || var_from_php === void 0 ? void 0 : var_from_php.single_page_broker) || '';
-  var brokerPopups = new _components_broker_popups__WEBPACK_IMPORTED_MODULE_57__["default"](urlAjax, singlePageBrokerUrl);
-  new _components_driver_autocomplete__WEBPACK_IMPORTED_MODULE_59__["default"](urlAjax, {
+  var brokerPopups = new _components_broker_popups__WEBPACK_IMPORTED_MODULE_58__["default"](urlAjax, singlePageBrokerUrl);
+  new _components_driver_autocomplete__WEBPACK_IMPORTED_MODULE_60__["default"](urlAjax, {
     unitInput: '.js-unit-number-input',
     dropdown: '.js-driver-dropdown',
     attachedDriverInput: 'input[name="attached_driver"]',
@@ -30214,7 +30291,7 @@ function ready() {
     nonceInput: '#driver-search-nonce',
     driverValueInput: '.js-driver-value'
   });
-  new _components_driver_autocomplete__WEBPACK_IMPORTED_MODULE_59__["default"](urlAjax, {
+  new _components_driver_autocomplete__WEBPACK_IMPORTED_MODULE_60__["default"](urlAjax, {
     unitInput: '.js-second-unit-number-input',
     dropdown: '.js-second-driver-dropdown',
     attachedDriverInput: 'input[name="attached_second_driver"]',
@@ -30222,7 +30299,7 @@ function ready() {
     unitNumberNameInput: 'input[name="second_unit_number_name"]',
     nonceInput: '#second-driver-search-nonce'
   });
-  new _components_driver_autocomplete__WEBPACK_IMPORTED_MODULE_59__["default"](urlAjax, {
+  new _components_driver_autocomplete__WEBPACK_IMPORTED_MODULE_60__["default"](urlAjax, {
     unitInput: '.js-third-unit-number-input',
     dropdown: '.js-third-driver-dropdown',
     attachedDriverInput: 'input[name="attached_third_driver"]',
@@ -30238,7 +30315,7 @@ function ready() {
     if (!wasVisible) {
       refererBlock.style.display = 'block';
     }
-    refererAutocomplete = new _components_driver_autocomplete__WEBPACK_IMPORTED_MODULE_59__["default"](urlAjax, {
+    refererAutocomplete = new _components_driver_autocomplete__WEBPACK_IMPORTED_MODULE_60__["default"](urlAjax, {
       unitInput: '.js-referer-unit-number-input',
       dropdown: '.js-referer-driver-dropdown',
       attachedDriverInput: '#referer_by',
@@ -30279,9 +30356,9 @@ function ready() {
       driverPopupForms.loadDriverStatistics(parseInt(driverIdInput.value));
     }
   }
-  new _components_timer_control__WEBPACK_IMPORTED_MODULE_61__.TimerControl(urlAjax);
-  new _components_timer_analytics__WEBPACK_IMPORTED_MODULE_62__.TimerAnalytics(urlAjax);
-  new _components_dark_mode_toggle__WEBPACK_IMPORTED_MODULE_63__["default"](urlAjax);
+  new _components_timer_control__WEBPACK_IMPORTED_MODULE_62__.TimerControl(urlAjax);
+  new _components_timer_analytics__WEBPACK_IMPORTED_MODULE_63__.TimerAnalytics(urlAjax);
+  new _components_dark_mode_toggle__WEBPACK_IMPORTED_MODULE_64__["default"](urlAjax);
   (0,_components_create_report__WEBPACK_IMPORTED_MODULE_4__.actionCreateReportInit)(urlAjax);
   (0,_components_create_report__WEBPACK_IMPORTED_MODULE_4__.createDraftPosts)(urlAjax);
   (0,_components_create_report__WEBPACK_IMPORTED_MODULE_4__.updateFilesReportInit)(urlAjax);
@@ -30333,10 +30410,11 @@ function ready() {
   (0,_components_charts_drivers_statistics_charts__WEBPACK_IMPORTED_MODULE_46__.initDriversStatisticsCharts)();
   (0,_components_charts_finance_statistics_charts__WEBPACK_IMPORTED_MODULE_47__.initFinanceStatisticsCharts)();
   (0,_components_charts_source_statistics_charts__WEBPACK_IMPORTED_MODULE_48__.initSourceStatisticsCharts)();
-  (0,_components_drivers_statistics_tabs__WEBPACK_IMPORTED_MODULE_53__.initDriversStatisticsTabs)();
+  (0,_components_drivers_statistics_tabs__WEBPACK_IMPORTED_MODULE_54__.initDriversStatisticsTabs)();
   (0,_components_charts_location_vehicle_charts__WEBPACK_IMPORTED_MODULE_50__.initLocationVehicleCharts)();
   (0,_components_charts_loads_by_state_chart__WEBPACK_IMPORTED_MODULE_51__.initLoadsByStateChartComponent)();
   (0,_components_charts_loads_by_route_chart__WEBPACK_IMPORTED_MODULE_52__.initLoadsByRouteChartComponent)();
+  (0,_components_create_chat__WEBPACK_IMPORTED_MODULE_53__.initCreateChatForm)(urlAjax);
   var homeLocationMapElement = document.getElementById('usaStatesMap');
   if (homeLocationMapElement) {
     var stateMapData = homeLocationMapElement.dataset.stateMapData;
@@ -30370,7 +30448,7 @@ function ready() {
     }
   }
   if (hereApi) {
-    new _components_drivers_map__WEBPACK_IMPORTED_MODULE_64__["default"](urlAjax, hereApi);
+    new _components_drivers_map__WEBPACK_IMPORTED_MODULE_65__["default"](urlAjax, hereApi);
   }
   (0,_components_create_report__WEBPACK_IMPORTED_MODULE_4__.additionalContactsInit)();
   (0,_components_create_report__WEBPACK_IMPORTED_MODULE_4__.addShipperPointInit)();

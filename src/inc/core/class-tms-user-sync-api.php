@@ -127,7 +127,8 @@ class TMSUserSyncAPI {
                 'current_location' => $user['current_location'],
                 'current_city' => $user['current_city'],
                 'current_zipcode' => $user['current_zipcode'],
-                'current_country' => $user['current_country']
+                'current_country' => $user['current_country'],
+                'permission_view' => $user['permission_view']
             );
         }
         

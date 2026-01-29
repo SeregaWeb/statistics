@@ -432,9 +432,13 @@ class TMSDriversAPI {
             // Organize data by tabs
             $organized_data = $this->organize_driver_data_by_tabs($main_result, $meta_data);
             
+            // Get project permissions
+            $permission_view = TMSCommonHelper::get_driver_project_permissions($meta_data);
+            
             // Combine all data
             $final_data = array(
                 'id' => $main_result['id'],
+                'role' => 'driver',
                 'date_created' => $main_result['date_created'],
                 'date_updated' => $main_result['date_updated'],
                 'user_id_added' => $main_result['user_id_added'],
@@ -442,7 +446,8 @@ class TMSDriversAPI {
                 'status_post' => $main_result['status_post'],
                 'organized_data' => $organized_data,
                 'ratings' => $ratings,
-                'notices' => $notices
+                'notices' => $notices,
+                'permission_view' => $permission_view
             );
             
             return new WP_REST_Response($final_data, 200);
@@ -936,6 +941,7 @@ class TMSDriversAPI {
         return new WP_REST_Response($response_data, 200);
     }
     
+    
     /**
      * Fetch driver data by email
      * 
@@ -992,6 +998,9 @@ class TMSDriversAPI {
         // Organize data by tabs
         $organized_data = $this->organize_driver_data_by_tabs($main_result, $meta_data);
         
+        // Get project permissions
+        $permission_view = TMSCommonHelper::get_driver_project_permissions($meta_data);
+        
         // Combine all data
         $driver_data = array(
             'id' => $main_result['id'],
@@ -1004,7 +1013,7 @@ class TMSDriversAPI {
             'organized_data' => $organized_data,
             'ratings' => $ratings,
             'notices' => $notices,
-
+            'permission_view' => $permission_view
         );
         
         return $driver_data;
@@ -1662,11 +1671,45 @@ class TMSDriversAPI {
                 return false;
             }
             
+            // Get all driver IDs
+            $driver_ids = array();
+            foreach ($results as $driver) {
+                $driver_ids[] = intval($driver['id']);
+            }
+            
+            // Get project permissions for all drivers in one query
+            $meta_data_by_driver = array();
+            if (!empty($driver_ids)) {
+                $placeholders = implode(',', array_fill(0, count($driver_ids), '%d'));
+                $meta_query = "
+                    SELECT post_id, meta_key, meta_value
+                    FROM {$wpdb->prefix}drivers_meta
+                    WHERE post_id IN ($placeholders)
+                    AND meta_key IN ('ic_agreement', 'auto_liability_coi', 'martlet_ic_agreement', 'martlet_coi', 'endurance_ic_agreement', 'endurance_coi')
+                ";
+                $meta_results = $wpdb->get_results($wpdb->prepare($meta_query, $driver_ids), ARRAY_A);
+                
+                // Organize meta data by driver ID
+                foreach ($meta_results as $meta_row) {
+                    $driver_id = intval($meta_row['post_id']);
+                    if (!isset($meta_data_by_driver[$driver_id])) {
+                        $meta_data_by_driver[$driver_id] = array();
+                    }
+                    $meta_data_by_driver[$driver_id][$meta_row['meta_key']] = $meta_row['meta_value'];
+                }
+            }
+            
             // Format results with simple fields only
             $formatted_results = array();
             foreach ($results as $driver) {
+                $driver_id = intval($driver['id']);
+                
+                // Get project permissions for this driver
+                $meta_data = isset($meta_data_by_driver[$driver_id]) ? $meta_data_by_driver[$driver_id] : array();
+                $permission_view = TMSCommonHelper::get_driver_project_permissions($meta_data);
+                
                 $formatted_results[] = array(
-                    'id' => intval($driver['id']),
+                    'id' => $driver_id,
                     'role' => 'driver', // Fixed role as requested
                     'driver_name' => $this->clean_empty_value($driver['driver_name']),
                     'driver_email' => $this->clean_empty_value($driver['driver_email']),
@@ -1676,7 +1719,8 @@ class TMSDriversAPI {
                     'vin' => $this->clean_empty_value($driver['vin']),
                     'driver_status' => $this->clean_empty_value($driver['driver_status']),
                     'latitude' => $this->clean_empty_value($driver['latitude']),
-                    'longitude' => $this->clean_empty_value($driver['longitude'])
+                    'longitude' => $this->clean_empty_value($driver['longitude']),
+                    'permission_view' => $permission_view
                 );
             }
             

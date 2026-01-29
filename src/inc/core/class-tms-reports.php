@@ -3627,6 +3627,10 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 			$result = $this->add_load( $MY_INPUT );
 			
 			if ( $result ) {
+				
+				// If chat already exists for this load, sync chat participants with latest data
+				$this->maybe_update_load_chat_for_load( (int) $MY_INPUT['post_id'] );
+				
 				// Remove ETA records if status is final
 				if ( isset( $MY_INPUT['load_status'] ) ) {
 					$this->remove_eta_records_for_status( $result, $MY_INPUT['load_status'] );
@@ -6943,6 +6947,7 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 			'optimize_contacts_tables'      => 'optimize_contacts_tables',
 			'optimize_company_tables'       => 'optimize_company_tables',
 			'optimize_shipper_tables'       => 'optimize_shipper_tables',
+			'create_load_chat'              => 'create_load_chat',
 		];
 		
 		foreach ( $actions as $ajax_action => $method ) {
@@ -7004,6 +7009,288 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 			// Return informative message
 			$message = $is_high_priority ? 'Set up high priority' : 'High priority removed';
 			wp_send_json_success( array( 'message' => $message ) );
+		}
+	}
+	
+	/**
+	 * Create load chat via webhook
+	 */
+	public function create_load_chat() {
+		if ( ! defined( 'DOING_AJAX' ) || ! DOING_AJAX ) {
+			return;
+		}
+		
+		// Check permissions
+		if ( ! current_user_can( 'administrator' ) ) {
+			wp_send_json_error( array( 'message' => 'Insufficient permissions' ) );
+			return;
+		}
+		
+		$load_id = sanitize_text_field( $_POST['load_id'] ?? '' );
+		$title = sanitize_text_field( $_POST['title'] ?? '' );
+		$company = sanitize_text_field( $_POST['company'] ?? '' );
+		$participants_json = stripslashes( $_POST['participants'] ?? '[]' );
+		
+		if ( empty( $load_id ) || empty( $title ) || empty( $company ) ) {
+			wp_send_json_error( array( 'message' => 'Missing required fields: load_id, title, or company' ) );
+			return;
+		}
+		
+		$participants = json_decode( $participants_json, true );
+		if ( json_last_error() !== JSON_ERROR_NONE ) {
+			wp_send_json_error( array( 'message' => 'Invalid JSON format for participants: ' . json_last_error_msg() ) );
+			return;
+		}
+		
+		// Get webhook URL and API key from options
+		$create_chat_url = get_option( 'tms_chat_create_url', 'https://odyssea-beckend.onrender.com/v1/create_load_chat' );
+		$chat_api_key = get_option( 'tms_chat_api_key', '' );
+		
+		// Use the function from chat-sync-admin.php if available, otherwise create inline
+		if ( function_exists( 'tms_test_create_chat' ) ) {
+			$result = tms_test_create_chat( $load_id, $title, $company, $participants, $create_chat_url, $chat_api_key );
+		} else {
+			// Inline implementation
+			if ( class_exists( 'TMSLogger' ) ) {
+				TMSLogger::log_to_file( '[CREATE] Creating chat - Load ID: ' . $load_id . ', Title: ' . $title . ', Company: ' . $company, 'chat-sync' );
+			}
+			
+			$payload = array(
+				'load_id' => $load_id,
+				'title' => $title,
+				'company' => $company,
+				'participants' => $participants
+			);
+			
+			$headers = array(
+				'Content-Type' => 'application/json',
+				'User-Agent' => 'TMS-Statistics/1.0'
+			);
+			
+			if ( ! empty( $chat_api_key ) ) {
+				$headers['x-api-key'] = $chat_api_key;
+			}
+			
+			$args = array(
+				'method' => 'POST',
+				'timeout' => 30,
+				'headers' => $headers,
+				'body' => json_encode( $payload )
+			);
+			
+			$response = wp_remote_post( $create_chat_url, $args );
+			
+			if ( is_wp_error( $response ) ) {
+				$error_msg = 'Webhook request failed: ' . $response->get_error_message();
+				if ( class_exists( 'TMSLogger' ) ) {
+					TMSLogger::log_to_file( '[ERROR] ' . $error_msg, 'chat-sync' );
+				}
+				$result = array(
+					'success' => false,
+					'error' => $error_msg
+				);
+			} else {
+				$response_code = wp_remote_retrieve_response_code( $response );
+				$response_body = wp_remote_retrieve_body( $response );
+				
+				if ( $response_code >= 200 && $response_code < 300 ) {
+					if ( class_exists( 'TMSLogger' ) ) {
+						TMSLogger::log_to_file( '[SUCCESS] Create chat successful - Response Code: ' . $response_code . ', Body: ' . $response_body, 'chat-sync' );
+					}
+					$result = array(
+						'success' => true,
+						'response_code' => $response_code,
+						'response_body' => $response_body
+					);
+				} else {
+					$error_msg = 'Webhook returned error code: ' . $response_code;
+					if ( class_exists( 'TMSLogger' ) ) {
+						TMSLogger::log_to_file( '[ERROR] ' . $error_msg . ' - Body: ' . $response_body, 'chat-sync' );
+					}
+					$result = array(
+						'success' => false,
+						'error' => $error_msg,
+						'response_body' => $response_body
+					);
+				}
+			}
+		}
+		
+		if ( ! empty( $result['success'] ) ) {
+			// Mark chat as created for this load to avoid duplicates
+			$this->update_post_meta_data( (int) $load_id, array( 'chat_created' => 1 ) );
+			
+			wp_send_json_success(
+				array(
+					'message' => 'Chat created',
+					'reload'  => false,
+				)
+			);
+		}
+		
+		// Build human-friendly error message
+		$display_message = $result['error'] ?? 'Failed to create chat';
+		
+		if ( ! empty( $result['response_body'] ) && is_string( $result['response_body'] ) ) {
+			$decoded_body = json_decode( $result['response_body'], true );
+			if ( json_last_error() === JSON_ERROR_NONE && ! empty( $decoded_body['message'] ) ) {
+				$display_message = $decoded_body['message'];
+			}
+		}
+		
+		wp_send_json_error(
+			array(
+				'message' => $display_message,
+			)
+		);
+	}
+	
+	/**
+	 * Sync existing load chat (update participants) after load update.
+	 *
+	 * This is called after a successful add_load() update. It only runs if the load
+	 * already has a chat_created flag set in its meta.
+	 *
+	 * @param int $post_id Load (report) ID.
+	 *
+	 * @return void
+	 */
+	protected function maybe_update_load_chat_for_load( $post_id ) {
+		if ( ! $post_id ) {
+			return;
+		}
+
+		// Debug log: function entry
+		if ( class_exists( 'TMSLogger' ) ) {
+			TMSLogger::log_to_file(
+				'[UPDATE] maybe_update_load_chat_for_load called for load ' . $post_id,
+				'chat-sync'
+			);
+		}
+
+		// Load current report meta
+		$report = $this->get_report_by_id( $post_id );
+		if ( ! is_array( $report ) || empty( $report['meta'] ) ) {
+			return;
+		}
+
+		$meta         = get_field_value( $report, 'meta' );
+		$chat_created = get_field_value( $meta, 'chat_created' );
+
+		// Only sync if a chat has been created before
+		if ( empty( $chat_created ) ) {
+			if ( class_exists( 'TMSLogger' ) ) {
+				TMSLogger::log_to_file(
+					'[UPDATE] Skip chat update for load ' . $post_id . ' - chat_created meta is empty',
+					'chat-sync'
+				);
+			}
+			return;
+		}
+
+		// Build full chat context (participants based on current dispatcher, drivers, etc.)
+		$helper       = new TMSReportsHelper();
+		$chat_context = $helper->get_load_chat_context( $meta, $this->project );
+		$participants = isset( $chat_context['participants'] ) ? $chat_context['participants'] : array();
+
+		if ( empty( $participants ) ) {
+			if ( class_exists( 'TMSLogger' ) ) {
+				TMSLogger::log_to_file(
+					'[UPDATE] Skip chat update for load ' . $post_id . ' - no participants in context',
+					'chat-sync'
+				);
+			}
+			return;
+		}
+
+		$update_chat_url = get_option(
+			'tms_chat_update_url',
+			'https://odyssea-beckend.onrender.com/v1/update_load_chat'
+		);
+		$chat_api_key    = get_option( 'tms_chat_api_key', '' );
+
+		// Prefer shared helper from chat-sync-admin if available
+		if ( function_exists( 'tms_test_update_chat' ) ) {
+			$result = tms_test_update_chat( (string) $post_id, $participants, $update_chat_url, $chat_api_key );
+
+			if ( isset( $result['success'] ) && $result['success'] ) {
+				if ( class_exists( 'TMSLogger' ) ) {
+					TMSLogger::log_to_file(
+						'[SUCCESS] Update chat successful (helper) for load ' . $post_id,
+						'chat-sync'
+					);
+				}
+			} else {
+				if ( class_exists( 'TMSLogger' ) ) {
+					$msg = isset( $result['error'] ) ? $result['error'] : 'Unknown error';
+					TMSLogger::log_to_file(
+						'[ERROR] Update chat failed (helper) for load ' . $post_id . ' - ' . $msg,
+						'chat-sync'
+					);
+				}
+			}
+
+			return;
+		}
+
+		// Inline implementation
+		if ( class_exists( 'TMSLogger' ) ) {
+			TMSLogger::log_to_file(
+				'[UPDATE] Updating chat (inline) - Load ID: ' . $post_id,
+				'chat-sync'
+			);
+		}
+
+		$payload = array(
+			'load_id'      => (string) $post_id,
+			'participants' => $participants,
+		);
+
+		$headers = array(
+			'Content-Type' => 'application/json',
+			'User-Agent'   => 'TMS-Statistics/1.0',
+		);
+
+		if ( ! empty( $chat_api_key ) ) {
+			$headers['x-api-key'] = $chat_api_key;
+		}
+
+		$args = array(
+			'method'  => 'POST',
+			'timeout' => 30,
+			'headers' => $headers,
+			'body'    => wp_json_encode( $payload ),
+		);
+
+		$response = wp_remote_post( $update_chat_url, $args );
+
+		if ( is_wp_error( $response ) ) {
+			$error_msg = 'Webhook request failed: ' . $response->get_error_message();
+			if ( class_exists( 'TMSLogger' ) ) {
+				TMSLogger::log_to_file( '[ERROR] ' . $error_msg, 'chat-sync' );
+			}
+
+			return;
+		}
+
+		$response_code = wp_remote_retrieve_response_code( $response );
+		$response_body = wp_remote_retrieve_body( $response );
+
+		if ( $response_code >= 200 && $response_code < 300 ) {
+			if ( class_exists( 'TMSLogger' ) ) {
+				TMSLogger::log_to_file(
+					'[SUCCESS] Update chat successful - Response Code: ' . $response_code . ', Body: ' . $response_body,
+					'chat-sync'
+				);
+			}
+		} else {
+			$error_msg = 'Webhook returned error code: ' . $response_code;
+			if ( class_exists( 'TMSLogger' ) ) {
+				TMSLogger::log_to_file(
+					'[ERROR] ' . $error_msg . ' - Body: ' . $response_body,
+					'chat-sync'
+				);
+			}
 		}
 	}
 	

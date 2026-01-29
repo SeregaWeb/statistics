@@ -232,7 +232,7 @@ $dispatchers_users = $TMSStatistics->get_dispatchers( $office_dispatcher, false,
                         </div>
 
                         <hr>
-
+                        <h3>Daytime schedule</h3>
                         <p class="text-muted text-small">7:30 AM - 4:30 PM EST</p>
 
                         <div class="tracking-statistics__wrapper align-items-start">

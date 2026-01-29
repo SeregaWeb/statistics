@@ -2764,6 +2764,13 @@ class TMSDrivers extends TMSDriversHelper {
 			$result   = $this->remove_one_image_in_db( $MY_INPUT );
 			
 			if ( $result === true ) {
+
+				// Sync driver update for project permissions
+				$driver_sync_data = $this->get_driver_sync_data( $MY_INPUT[ 'post_id' ] );
+				if ( $driver_sync_data ) {
+					$this->user_sync_api->sync_user( 'update', $driver_sync_data, 'driver' );
+				}
+
 				wp_send_json_success( [ 'message' => 'Remove success', 'data' => $MY_INPUT ] );
 			}
 			
@@ -3225,15 +3232,25 @@ class TMSDrivers extends TMSDriversHelper {
 	 * @return array Driver data for sync
 	 */
 	public function get_driver_sync_data( $driver_id ) {
+		if ( class_exists( 'TMSLogger' ) ) {
+			TMSLogger::log_to_file( '[SYNC] Getting driver sync data for driver_id: ' . $driver_id, 'driver-sync' );
+		}
+		
 		$driver_data = $this->get_driver_by_id( $driver_id );
 		
 		if ( ! $driver_data ) {
+			if ( class_exists( 'TMSLogger' ) ) {
+				TMSLogger::log_to_file( '[SYNC] Driver not found for driver_id: ' . $driver_id, 'driver-sync' );
+			}
 			return null;
 		}
 		
 		$meta = $driver_data[ 'meta' ];
 		
-		return array(
+		// Get project permissions
+		$permission_view = TMSCommonHelper::get_driver_project_permissions( $meta );
+		
+		$sync_data = array(
 			'driver_id'     => $driver_id,
 			'driver_status' => isset( $meta[ 'driver_status' ] ) ? $meta[ 'driver_status' ] : '',
 			'status_date'   => isset( $meta[ 'status_date' ] ) ? $meta[ 'status_date' ] : '',
@@ -3248,8 +3265,26 @@ class TMSDrivers extends TMSDriversHelper {
 			'driver_phone'  => isset( $meta[ 'driver_phone' ] ) ? $meta[ 'driver_phone' ] : '',
 			'home_location' => isset( $meta[ 'home_location' ] ) ? $meta[ 'home_location' ] : '',
 			'vehicle_type'  => isset( $meta[ 'vehicle_type' ] ) ? $meta[ 'vehicle_type' ] : '',
-			'vin'           => isset( $meta[ 'vin' ] ) ? $meta[ 'vin' ] : ''
+			'vin'           => isset( $meta[ 'vin' ] ) ? $meta[ 'vin' ] : '',
+			'permission_view' => $permission_view
 		);
+		
+		if ( class_exists( 'TMSLogger' ) ) {
+			$log_message = sprintf(
+				'[SYNC] Driver ID %d - Name: %s, Email: %s, Status: %s, Permission View: %s',
+				$driver_id,
+				$sync_data['driver_name'],
+				$sync_data['driver_email'],
+				$sync_data['driver_status'],
+				implode( ', ', $permission_view )
+			);
+			TMSLogger::log_to_file( $log_message, 'driver-sync' );
+			
+			// Log full sync data (can be verbose, but useful for debugging)
+			TMSLogger::log_to_file( '[SYNC] Full sync data: ' . json_encode( $sync_data, JSON_UNESCAPED_UNICODE ), 'driver-sync' );
+		}
+		
+		return $sync_data;
 	}
 	
 	public function add_driver() {
@@ -4242,6 +4277,12 @@ class TMSDrivers extends TMSDriversHelper {
 					) );
 					
 				}
+
+				// Sync driver update for project permissions
+				$driver_sync_data = $this->get_driver_sync_data( $data[ 'driver_id' ] );
+				if ( $driver_sync_data ) {
+					$this->user_sync_api->sync_user( 'update', $driver_sync_data, 'driver' );
+				}
 				
 				wp_send_json_success( [ 'message' => 'Driver successfully added', 'id_driver' => $result ] );
 			}
@@ -4415,6 +4456,12 @@ class TMSDrivers extends TMSDriversHelper {
 						'message'   => $changes,
 						'post_type' => 'driver',
 					) );
+				}
+
+				// Sync driver update for project permissions
+				$driver_sync_data = $this->get_driver_sync_data( $data[ 'driver_id' ] );
+				if ( $driver_sync_data ) {
+					$this->user_sync_api->sync_user( 'update', $driver_sync_data, 'driver' );
 				}
 
 				// Note: Email notification for payment_file is now sent from update_payment_information() method

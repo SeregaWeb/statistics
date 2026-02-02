@@ -8,6 +8,27 @@ interface TimezoneInfo {
     offset: number; // UTC offset in hours (e.g., -7 for PDT, -8 for PST)
 }
 
+/**
+ * Normalize date string for input[type="date"] (expects YYYY-MM-DD).
+ * If value is datetime like "2026-02-02 08:00:00", returns "2026-02-02".
+ */
+const normalizeDateForInput = (val: string | null | undefined): string => {
+    if (val == null || val === '') return '';
+    const s = val.trim();
+    const datePart = s.indexOf(' ') >= 0 ? s.split(/\s/)[0] : s;
+    return datePart.length >= 10 ? datePart.substring(0, 10) : datePart;
+};
+
+/**
+ * Normalize time string for input[type="time"] (expects HH:MM or HH:MM:SS).
+ * If value is "08:00:00", returns "08:00".
+ */
+const normalizeTimeForInput = (val: string | null | undefined): string => {
+    if (val == null || val === '') return '';
+    const s = val.trim();
+    return s.length > 5 ? s.substring(0, 5) : s;
+};
+
 const parseTimezone = (timezoneStr: string): TimezoneInfo | null => {
     if (!timezoneStr) return null;
     
@@ -110,14 +131,14 @@ const loadExistingEtaRecord = (loadId: string, etaType: string, isFlt: string, p
     .then((response) => response.json())
     .then((data) => {
         if (data.success && data.data.exists) {
-            // Fill form with existing data
+            // Fill form with existing data (normalized for input type="date" and type="time")
             const form = popup.querySelector('form') as HTMLFormElement;
             if (form) {
                 const dateInput = form.querySelector('input[name="date"]') as HTMLInputElement;
                 const timeInput = form.querySelector('input[name="time"]') as HTMLInputElement;
                 
-                if (dateInput) dateInput.value = data.data.date || '';
-                if (timeInput) timeInput.value = data.data.time || '';
+                if (dateInput) dateInput.value = normalizeDateForInput(data.data.date);
+                if (timeInput) timeInput.value = normalizeTimeForInput(data.data.time);
             }
             
             // Update location info with timezone from database (if available)
@@ -255,13 +276,13 @@ export const initEtaPopups = (): void => {
                 // Load existing data from database (for all users, not just current user)
                 loadExistingEtaRecord(loadId || '', etaType, isFlt, popup, state, timezone).then((data) => {
                     // After loading, check if record exists in DB
-                    // If no record exists in DB but shipper ETA is filled, use shipper ETA
+                    // If no record exists in DB but shipper ETA is filled, use shipper ETA (normalized for date/time inputs)
                     if (form && (!data || !data.success || !data.data.exists) && hasShipperEta) {
                         const dateInput = form.querySelector('input[name="date"]') as HTMLInputElement;
                         const timeInput = form.querySelector('input[name="time"]') as HTMLInputElement;
                         
-                        if (dateInput) dateInput.value = shipperEtaDate;
-                        if (timeInput) timeInput.value = shipperEtaTime;
+                        if (dateInput) dateInput.value = normalizeDateForInput(shipperEtaDate);
+                        if (timeInput) timeInput.value = normalizeTimeForInput(shipperEtaTime);
                     }
                     
                     // Re-enable submit button after data is loaded
@@ -278,18 +299,15 @@ export const initEtaPopups = (): void => {
                 updatePopupLocationInfo(popup, state, timezone);
                 
                 // Fill with data from button (for new ETA records)
-                // Priority: shipper ETA > current date/time
+                // Priority: shipper ETA > current date/time (normalized for input type="date" and type="time")
                 if (form) {
                     const dateInput = form.querySelector('input[name="date"]') as HTMLInputElement;
                     const timeInput = form.querySelector('input[name="time"]') as HTMLInputElement;
                     
-                    // Use shipper ETA if filled, otherwise use current date/time
-                    if (dateInput) {
-                        dateInput.value = hasShipperEta ? shipperEtaDate : (currentDate || '');
-                    }
-                    if (timeInput) {
-                        timeInput.value = hasShipperEta ? shipperEtaTime : (currentTime || '');
-                    }
+                    const dateValue = hasShipperEta ? shipperEtaDate : (currentDate || '');
+                    const timeValue = hasShipperEta ? shipperEtaTime : (currentTime || '');
+                    if (dateInput) dateInput.value = normalizeDateForInput(dateValue);
+                    if (timeInput) timeInput.value = normalizeTimeForInput(timeValue);
                 }
                 
                 // Show the popup immediately for new records

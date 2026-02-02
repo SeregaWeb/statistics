@@ -4781,6 +4781,32 @@ class TMSDrivers extends TMSDriversHelper {
 	}
 	
 	/**
+	 * Check if the given rater (by full name) has already rated this order number.
+	 * Used to show "you already rated" vs "Rate" button per user without changing DB schema.
+	 *
+	 * @param string $order_number Order number (reference_number).
+	 * @param string $rater_name   Full name of the user who may have rated (e.g. from get_user_full_name_by_id).
+	 * @return bool True if this rater has a rating for this order, false otherwise.
+	 */
+	public function has_rating_for_order_number_by_rater_name( $order_number, $rater_name ) {
+		global $wpdb;
+		
+		if ( empty( $order_number ) || $rater_name === null || trim( (string) $rater_name ) === '' ) {
+			return false;
+		}
+		
+		$table_name = $wpdb->prefix . $this->table_raiting;
+		
+		$count = $wpdb->get_var( $wpdb->prepare( "
+			SELECT COUNT(id)
+			FROM $table_name
+			WHERE order_number = %s AND name = %s
+		", sanitize_text_field( $order_number ), sanitize_text_field( $rater_name ) ) );
+		
+		return (int) $count > 0;
+	}
+	
+	/**
 	 * Get dispatcher rating statistics
 	 * Returns statistics for dispatchers showing total loads and rated loads count
 	 * 
@@ -6913,6 +6939,58 @@ class TMSDrivers extends TMSDriversHelper {
 		$result = $wpdb->update( $table_name, array( 'status' => $new_status ), array( 'id' => $notice_id ), array( '%d' ), array( '%d' ) );
 		
 		return $result !== false;
+	}
+
+	/**
+	 * Get dispatcher_initials (user ID) for a load by reference_number.
+	 * Checks regular reports first, then FLT. Returns null if load not found.
+	 *
+	 * @param string $reference_number Load reference number.
+	 * @return int|null Dispatcher user ID or null.
+	 */
+	public function get_load_dispatcher_by_reference( $reference_number ) {
+		global $wpdb;
+		$reference_number = trim( $reference_number );
+		if ( $reference_number === '' ) {
+			return null;
+		}
+		$current_user_id = get_current_user_id();
+		$current_project = get_field( 'current_select', 'user_' . $current_user_id );
+		if ( empty( $current_project ) ) {
+			$current_project = 'odysseia';
+		}
+		$current_project   = strtolower( $current_project );
+		$reports_table     = $wpdb->prefix . 'reports_' . $current_project;
+		$reports_meta      = $wpdb->prefix . 'reportsmeta_' . $current_project;
+		$reports_flt_table = $wpdb->prefix . 'reports_flt_' . $current_project;
+		$reports_flt_meta  = $wpdb->prefix . 'reportsmeta_flt_' . $current_project;
+		$q = $wpdb->prepare(
+			"SELECT disp.meta_value FROM {$reports_table} r
+			INNER JOIN {$reports_meta} ref ON r.id = ref.post_id AND ref.meta_key = 'reference_number' AND TRIM(ref.meta_value) = %s
+			LEFT JOIN {$reports_meta} disp ON r.id = disp.post_id AND disp.meta_key = 'dispatcher_initials'
+			LIMIT 1",
+			$reference_number
+		);
+		$dispatcher = $wpdb->get_var( $q );
+		if ( $dispatcher !== null && $dispatcher !== '' ) {
+			return (int) $dispatcher;
+		}
+		$flt_table_exists = $wpdb->get_var( $wpdb->prepare( "SHOW TABLES LIKE %s", $reports_flt_table ) );
+		if ( ! $flt_table_exists ) {
+			return null;
+		}
+		$q_flt = $wpdb->prepare(
+			"SELECT disp.meta_value FROM {$reports_flt_table} rf
+			INNER JOIN {$reports_flt_meta} ref ON rf.id = ref.post_id AND ref.meta_key = 'reference_number' AND TRIM(ref.meta_value) = %s
+			LEFT JOIN {$reports_flt_meta} disp ON rf.id = disp.post_id AND disp.meta_key = 'dispatcher_initials'
+			LIMIT 1",
+			$reference_number
+		);
+		$dispatcher_flt = $wpdb->get_var( $q_flt );
+		if ( $dispatcher_flt !== null && $dispatcher_flt !== '' ) {
+			return (int) $dispatcher_flt;
+		}
+		return null;
 	}
 	
 	/**

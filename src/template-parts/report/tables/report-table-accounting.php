@@ -28,6 +28,11 @@ $hide_billing_and_shipping = $TMSUsers->check_user_role_access( array(
 	'administrator'
 ), true );
 
+$show_button_viewer = $TMSUsers->check_user_role_access( array(
+	'accounting',
+	'administrator'
+), true );
+
 $my_team = $TMSUsers->check_group_access();
 
 $helper = new TMSReportsHelper();
@@ -84,6 +89,72 @@ if ( ! empty( $results ) ) : ?>
 			$unit_number_name        = esc_html( get_field_value( $meta, 'unit_number_name' ) );
 			$second_unit_number_name = esc_html( get_field_value( $meta, 'second_unit_number_name' ) );
 			$third_unit_number_name  = esc_html( get_field_value( $meta, 'third_unit_number_name' ) );
+
+			// Payment file preview: get driver IDs and payment_file URL for each driver
+			$driver_instance   = new TMSDrivers();
+			$attached_driver   = get_field_value( $meta, 'attached_driver' );
+			$attached_second   = get_field_value( $meta, 'attached_second_driver' );
+			$attached_third    = get_field_value( $meta, 'attached_third_driver' );
+			$payment_file_1    = null;
+			$payment_file_2    = null;
+			$payment_file_3    = null;
+			if ( ! empty( $attached_driver ) ) {
+				$driver_obj = $driver_instance->get_driver_by_id( (int) $attached_driver );
+				if ( $driver_obj ) {
+					$driver_meta = get_field_value( $driver_obj, 'meta' );
+					$pf_id       = get_field_value( $driver_meta, 'payment_file' );
+					if ( $pf_id ) {
+						$pf_arr = $driver_instance->process_file_attachment( $pf_id );
+						if ( ! empty( $pf_arr['url'] ) ) {
+							$payment_file_1 = array(
+								'url'                => $pf_arr['url'],
+								'is_image'           => wp_attachment_is_image( $pf_id ),
+								'account_type'       => get_field_value( $driver_meta, 'account_type' ),
+								'account_name'       => get_field_value( $driver_meta, 'account_name' ),
+								'payment_instruction' => get_field_value( $driver_meta, 'payment_instruction' ),
+							);
+						}
+					}
+				}
+			}
+			if ( ! empty( $attached_second ) ) {
+				$driver_obj = $driver_instance->get_driver_by_id( (int) $attached_second );
+				if ( $driver_obj ) {
+					$driver_meta = get_field_value( $driver_obj, 'meta' );
+					$pf_id       = get_field_value( $driver_meta, 'payment_file' );
+					if ( $pf_id ) {
+						$pf_arr = $driver_instance->process_file_attachment( $pf_id );
+						if ( ! empty( $pf_arr['url'] ) ) {
+							$payment_file_2 = array(
+								'url'                => $pf_arr['url'],
+								'is_image'           => wp_attachment_is_image( $pf_id ),
+								'account_type'       => get_field_value( $driver_meta, 'account_type' ),
+								'account_name'       => get_field_value( $driver_meta, 'account_name' ),
+								'payment_instruction' => get_field_value( $driver_meta, 'payment_instruction' ),
+							);
+						}
+					}
+				}
+			}
+			if ( ! empty( $attached_third ) ) {
+				$driver_obj = $driver_instance->get_driver_by_id( (int) $attached_third );
+				if ( $driver_obj ) {
+					$driver_meta = get_field_value( $driver_obj, 'meta' );
+					$pf_id       = get_field_value( $driver_meta, 'payment_file' );
+					if ( $pf_id ) {
+						$pf_arr = $driver_instance->process_file_attachment( $pf_id );
+						if ( ! empty( $pf_arr['url'] ) ) {
+							$payment_file_3 = array(
+								'url'                => $pf_arr['url'],
+								'is_image'           => wp_attachment_is_image( $pf_id ),
+								'account_type'       => get_field_value( $driver_meta, 'account_type' ),
+								'account_name'       => get_field_value( $driver_meta, 'account_name' ),
+								'payment_instruction' => get_field_value( $driver_meta, 'payment_instruction' ),
+							);
+						}
+					}
+				}
+			}
 			
 			$booked_rate_raw = get_field_value( $meta, 'booked_rate' );
 			$booked_rate     = esc_html( '$' . $helper->format_currency( $booked_rate_raw ) );
@@ -270,12 +341,48 @@ if ( ! empty( $results ) ) : ?>
 
                 <td>
                     <div class="d-flex flex-column">
-                        <p class="m-0"><?php echo $unit_number_name; ?></p>
+                        <p class="m-0 d-flex align-items-center gap-1">
+							<?php if ( $payment_file_1 && $show_button_viewer ): ?>
+                                <button type="button" class="btn btn-sm btn-outline-secondary p-0 px-1 js-payment-file-preview" title="<?php esc_attr_e( 'View payment file', 'wp-rock' ); ?>"
+                                        data-url="<?php echo esc_url( $payment_file_1['url'] ); ?>"
+                                        data-is-image="<?php echo $payment_file_1['is_image'] ? '1' : '0'; ?>"
+                                        data-driver-name="<?php echo esc_attr( $unit_number_name ); ?>"
+                                        data-account-type="<?php echo esc_attr( $payment_file_1['account_type'] ?? '' ); ?>"
+                                        data-account-name="<?php echo esc_attr( $payment_file_1['account_name'] ?? '' ); ?>"
+                                        data-payment-instruction="<?php echo esc_attr( $payment_file_1['payment_instruction'] ?? '' ); ?>"
+                                        aria-label="<?php esc_attr_e( 'View payment file', 'wp-rock' ); ?>">📄</button>
+							<?php endif; ?>
+                            <?php echo $unit_number_name; ?>
+                        </p>
 						<?php if ( $second_unit_number_name ): ?>
-                            <p class="m-0"><?php echo $second_unit_number_name; ?></p>
+                            <p class="m-0 d-flex align-items-center gap-1">
+								<?php if ( $payment_file_2 && $show_button_viewer ): ?>
+                                    <button type="button" class="btn btn-sm btn-outline-secondary p-0 px-1 js-payment-file-preview" title="<?php esc_attr_e( 'View payment file', 'wp-rock' ); ?>"
+                                            data-url="<?php echo esc_url( $payment_file_2['url'] ); ?>"
+                                            data-is-image="<?php echo $payment_file_2['is_image'] ? '1' : '0'; ?>"
+                                            data-driver-name="<?php echo esc_attr( $second_unit_number_name ); ?>"
+                                            data-account-type="<?php echo esc_attr( $payment_file_2['account_type'] ?? '' ); ?>"
+                                            data-account-name="<?php echo esc_attr( $payment_file_2['account_name'] ?? '' ); ?>"
+                                            data-payment-instruction="<?php echo esc_attr( $payment_file_2['payment_instruction'] ?? '' ); ?>"
+                                            aria-label="<?php esc_attr_e( 'View payment file', 'wp-rock' ); ?>">📄</button>
+								<?php endif; ?>
+                                <?php echo $second_unit_number_name; ?>
+                            </p>
 						<?php endif; ?>
 						<?php if ( $third_unit_number_name ): ?>
-                            <p class="m-0"><?php echo $third_unit_number_name; ?></p>
+                            <p class="m-0 d-flex align-items-center gap-1">
+								<?php if ( $payment_file_3 && $show_button_viewer ): ?>
+                                    <button type="button" class="btn btn-sm btn-outline-secondary p-0 px-1 js-payment-file-preview" title="<?php esc_attr_e( 'View payment file', 'wp-rock' ); ?>"
+                                            data-url="<?php echo esc_url( $payment_file_3['url'] ); ?>"
+                                            data-is-image="<?php echo $payment_file_3['is_image'] ? '1' : '0'; ?>"
+                                            data-driver-name="<?php echo esc_attr( $third_unit_number_name ); ?>"
+                                            data-account-type="<?php echo esc_attr( $payment_file_3['account_type'] ?? '' ); ?>"
+                                            data-account-name="<?php echo esc_attr( $payment_file_3['account_name'] ?? '' ); ?>"
+                                            data-payment-instruction="<?php echo esc_attr( $payment_file_3['payment_instruction'] ?? '' ); ?>"
+                                            aria-label="<?php esc_attr_e( 'View payment file', 'wp-rock' ); ?>">📄</button>
+								<?php endif; ?>
+                                <?php echo $third_unit_number_name; ?>
+                            </p>
 						<?php endif; ?>
                     </div>
                 </td>
@@ -344,7 +451,9 @@ if ( ! empty( $results ) ) : ?>
 
         </tbody>
     </table>
-	
+
+	<?php echo esc_html( get_template_part( TEMPLATE_PATH . 'popups/payment-file-preview', 'modal' ) ); ?>
+
 	<?php
 	
 	

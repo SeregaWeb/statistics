@@ -961,3 +961,47 @@ ul.result-search-el {
     height: 30px;
     width: 30px;
 }
+
+// Payment file preview modal: lock background scroll when open
+body.payment-file-modal-open {
+    overflow: hidden;
+    overscroll-behavior: none;
+}
+
+// Payment file preview modal (accounting table): 90vw x 90vh, only this modal
+#paymentFilePreviewModal.payment-file-preview-modal {
+    .modal-dialog {
+        max-width: 95vw;
+        height: 100vh;
+        width: 95vw;
+        margin: 0 auto;
+    }
+
+    .modal-content {
+        height: 98vh;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .modal-body.payment-file-preview-body {
+        flex: 1;
+        min-height: 0;
+        overflow: auto;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+
+        iframe {
+            width: 100%;
+            height: 100%;
+            min-height: 60vh;
+            border: none;
+        }
+
+        img {
+            max-height: 100%;
+            max-width: 100%;
+            object-fit: contain;
+        }
+    }
+}

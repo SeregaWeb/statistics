@@ -10283,6 +10283,7 @@ var DriverPopupForms = /*#__PURE__*/function () {
       var _this = this;
       this.handleRatingButtons();
       this.handleRatingForm();
+      this.handleLoadRatingButtons();
       this.handleNoticeForm();
       this.listenForPopupOpen();
       this.handleDriverPageRatingModal();
@@ -10408,7 +10409,14 @@ var DriverPopupForms = /*#__PURE__*/function () {
       var _this4 = this;
       document.addEventListener('submit', function (e) {
         var target = e.target;
-        if (!target || target.id !== 'ratingForm') {
+        if (!target) return;
+        if (target.id === 'loadRatingForm') {
+          e.preventDefault();
+          e.stopPropagation();
+          _this4.submitLoadRatingForm(target);
+          return;
+        }
+        if (target.id !== 'ratingForm') {
           return;
         }
         e.preventDefault();
@@ -10449,13 +10457,91 @@ var DriverPopupForms = /*#__PURE__*/function () {
       });
     }
   }, {
+    key: "handleLoadRatingButtons",
+    value: function handleLoadRatingButtons() {
+      var _this5 = this;
+      document.addEventListener('click', function (e) {
+        var target = e.target.closest('.load-rating-btn');
+        if (!target) return;
+        var button = target;
+        if (button.disabled) return;
+        e.preventDefault();
+        e.stopPropagation();
+        var rating = parseInt(button.dataset.rating || '0', 10);
+        var loadStatusEl = document.getElementById('loadRatingLoadStatus');
+        var loadStatus = loadStatusEl ? loadStatusEl.value : '';
+        if (loadStatus === 'cancelled' && rating > 2) {
+          (0,_info_messages__WEBPACK_IMPORTED_MODULE_0__.printMessage)('For Canceled loads you can set rating 1-2 only.', 'warning', 2500);
+          return;
+        }
+        var selectedInput = document.getElementById('loadRatingSelectedRating');
+        if (!selectedInput) return;
+        document.querySelectorAll('.load-rating-btn').forEach(function (b) {
+          return b.classList.remove('active');
+        });
+        button.classList.add('active');
+        selectedInput.value = String(rating);
+        if (!_this5.confirmHighestRating(rating, button, selectedInput)) {
+          document.querySelectorAll('.load-rating-btn').forEach(function (b) {
+            return b.classList.remove('active');
+          });
+          selectedInput.value = '';
+        }
+      });
+    }
+  }, {
+    key: "submitLoadRatingForm",
+    value: function submitLoadRatingForm(form) {
+      var _this6 = this;
+      var selectedInput = document.getElementById('loadRatingSelectedRating');
+      var selectedVal = selectedInput ? parseInt(selectedInput.value || '0', 10) : 0;
+      if (selectedVal < 1 || selectedVal > 5) {
+        (0,_info_messages__WEBPACK_IMPORTED_MODULE_0__.printMessage)('Please select a rating (1–5).', 'danger', 3000);
+        return;
+      }
+      var loadStatusEl = document.getElementById('loadRatingLoadStatus');
+      var loadStatus = loadStatusEl ? loadStatusEl.value : '';
+      if (loadStatus === 'cancelled' && selectedVal > 2) {
+        (0,_info_messages__WEBPACK_IMPORTED_MODULE_0__.printMessage)('For Canceled loads you can set rating 1-2 only.', 'danger', 3000);
+        return;
+      }
+      var formData = new FormData(form);
+      formData.set('action', 'add_driver_rating');
+      fetch(this.ajaxUrl, {
+        method: 'POST',
+        body: formData
+      }).then(function (response) {
+        if (!response.ok) throw new Error("HTTP error! status: ".concat(response.status));
+        return response.text().then(function (text) {
+          try {
+            return JSON.parse(text);
+          } catch (_a) {
+            (0,_info_messages__WEBPACK_IMPORTED_MODULE_0__.printMessage)('Failed to parse server response', 'danger', 3000);
+            throw new Error('Invalid JSON response');
+          }
+        });
+      }).then(function (data) {
+        if (data.success) {
+          _this6.showMessage('Rating added successfully!', 'success');
+          setTimeout(function () {
+            document.location.reload();
+          }, 800);
+        } else {
+          _this6.showMessage("Error: ".concat(data.data || 'Unknown error'), 'error');
+        }
+      }).catch(function (err) {
+        (0,_info_messages__WEBPACK_IMPORTED_MODULE_0__.printMessage)('Network error occurred', 'danger', 3000);
+        _this6.showMessage("Error: ".concat(err.message || 'Network error'), 'error');
+      });
+    }
+  }, {
     key: "setupRatingConstraints",
     value: function setupRatingConstraints() {
-      var _this5 = this;
+      var _this7 = this;
       var loadSelect = document.getElementById('loadNumber');
       if (!loadSelect) return;
       var applyState = function applyState() {
-        var canceled = _this5.isCanceledSelected();
+        var canceled = _this7.isCanceledSelected();
         var buttons = Array.from(document.querySelectorAll('.rating-btn'));
         buttons.forEach(function (btn) {
           var val = parseInt(btn.dataset.rating || '0', 10);
@@ -10512,7 +10598,7 @@ var DriverPopupForms = /*#__PURE__*/function () {
   }, {
     key: "handleNoticeForm",
     value: function handleNoticeForm() {
-      var _this6 = this;
+      var _this8 = this;
       var form = document.getElementById('noticeForm');
       if (!form) return;
       form.addEventListener('submit', function (e) {
@@ -10523,7 +10609,7 @@ var DriverPopupForms = /*#__PURE__*/function () {
           var existingDriverId = form.querySelector('input[name="driver_id"]');
           driverId = existingDriverId ? existingDriverId.value : null;
           if (!driverId) {
-            driverId = _this6.currentDriverId || _this6.getDriverIdFromPopup('driverNoticeName');
+            driverId = _this8.currentDriverId || _this8.getDriverIdFromPopup('driverNoticeName');
             if (driverIdField && driverId) {
               driverIdField.value = driverId;
             }
@@ -10533,7 +10619,7 @@ var DriverPopupForms = /*#__PURE__*/function () {
           var formData = new FormData(form);
           formData.set('driver_id', driverId);
           formData.set('action', 'add_driver_notice');
-          _this6.submitForm(formData, 'notice');
+          _this8.submitForm(formData, 'notice');
         } else {
           (0,_info_messages__WEBPACK_IMPORTED_MODULE_0__.printMessage)('No driver ID found!', 'danger', 3000);
           return;
@@ -10550,7 +10636,7 @@ var DriverPopupForms = /*#__PURE__*/function () {
   }, {
     key: "submitForm",
     value: function submitForm(formData, type) {
-      var _this7 = this;
+      var _this9 = this;
       fetch(this.ajaxUrl, {
         method: 'POST',
         body: formData
@@ -10568,13 +10654,13 @@ var DriverPopupForms = /*#__PURE__*/function () {
         });
       }).then(function (data) {
         if (data.success) {
-          _this7.handleSuccess(type);
+          _this9.handleSuccess(type);
         } else {
-          _this7.handleError(type, data.data || 'Unknown error');
+          _this9.handleError(type, data.data || 'Unknown error');
         }
       }).catch(function (error) {
         (0,_info_messages__WEBPACK_IMPORTED_MODULE_0__.printMessage)('Network error occurred', 'danger', 3000);
-        _this7.handleError(type, error.message || 'Network error');
+        _this9.handleError(type, error.message || 'Network error');
       });
     }
   }, {
@@ -10617,7 +10703,7 @@ var DriverPopupForms = /*#__PURE__*/function () {
   }, {
     key: "updatePopupData",
     value: function updatePopupData(type) {
-      var _this8 = this;
+      var _this10 = this;
       var driverId = this.currentDriverId || this.getDriverIdFromPopup(type === 'rating' ? 'driverRatingName' : 'driverNoticeName');
       if (!driverId) {
         console.error('No driver ID found for popup update');
@@ -10635,10 +10721,10 @@ var DriverPopupForms = /*#__PURE__*/function () {
       }).then(function (data) {
         if (data.success) {
           if (type === 'rating') {
-            _this8.updatePopupContent(type, data.data.ratings);
-            _this8.updateAvailableLoadsFromResponse(data.data.available_loads);
+            _this10.updatePopupContent(type, data.data.ratings);
+            _this10.updateAvailableLoadsFromResponse(data.data.available_loads);
           } else {
-            _this8.updatePopupContent(type, data.data);
+            _this10.updatePopupContent(type, data.data);
           }
         }
       }).catch(function (error) {
@@ -10690,13 +10776,13 @@ var DriverPopupForms = /*#__PURE__*/function () {
   }, {
     key: "handleDriverPageRatingModal",
     value: function handleDriverPageRatingModal() {
-      var _this9 = this;
+      var _this11 = this;
       var ratingModal = document.getElementById('ratingModal');
       var loadSelect = document.getElementById('loadNumber');
       var loadsInfo = document.getElementById('loadsInfo');
       if (ratingModal && loadSelect && loadsInfo) {
         ratingModal.addEventListener('show.bs.modal', function () {
-          _this9.loadAvailableLoadsForDriverPage(loadSelect, loadsInfo);
+          _this11.loadAvailableLoadsForDriverPage(loadSelect, loadsInfo);
         });
       }
     }
@@ -10744,7 +10830,7 @@ var DriverPopupForms = /*#__PURE__*/function () {
   }, {
     key: "handleAutoBlockExclude",
     value: function handleAutoBlockExclude() {
-      var _this10 = this;
+      var _this12 = this;
       var checkbox = document.getElementById('exclude-from-auto-block');
       if (!checkbox) {
         return;
@@ -10764,7 +10850,7 @@ var DriverPopupForms = /*#__PURE__*/function () {
         formData.append('action', 'update_driver_auto_block_exclude');
         formData.append('driver_id', driverId.toString());
         formData.append('exclude_from_auto_block', target.checked ? '1' : '0');
-        fetch(_this10.ajaxUrl, {
+        fetch(_this12.ajaxUrl, {
           method: 'POST',
           body: formData
         }).then(function (response) {
@@ -10789,7 +10875,7 @@ var DriverPopupForms = /*#__PURE__*/function () {
   }, {
     key: "loadDriverStatistics",
     value: function loadDriverStatistics(driverId) {
-      var _this11 = this;
+      var _this13 = this;
       var container = document.getElementById('driver-statistics-container');
       if (!container) {
         return;
@@ -10808,13 +10894,13 @@ var DriverPopupForms = /*#__PURE__*/function () {
         return response.json();
       }).then(function (data) {
         if (data.success) {
-          _this11.displayDriverStatistics(data.data);
+          _this13.displayDriverStatistics(data.data);
         } else {
-          _this11.showStatisticsError(data.data || 'Failed to load statistics');
+          _this13.showStatisticsError(data.data || 'Failed to load statistics');
         }
       }).catch(function (error) {
         console.error('Error loading driver statistics:', error);
-        _this11.showStatisticsError('Network error occurred');
+        _this13.showStatisticsError('Network error occurred');
       });
     }
   }, {
@@ -10956,9 +11042,16 @@ var DriverPopups = /*#__PURE__*/function () {
       var _this = this;
       document.addEventListener('click', function (e) {
         var target = e.target;
-        if (target.classList.contains('js-driver-rating-btn')) {
+        var button = target.closest('.js-driver-rating-btn');
+        if (button) {
           e.preventDefault();
-          _this.handleRatingClick(target);
+          _this.handleRatingClick(button);
+          return;
+        }
+        var loadRatingBtn = target.closest('.js-load-rating-btn');
+        if (loadRatingBtn) {
+          e.preventDefault();
+          _this.handleLoadRatingClick(loadRatingBtn);
         }
       });
       document.addEventListener('click', function (e) {
@@ -11030,6 +11123,58 @@ var DriverPopups = /*#__PURE__*/function () {
         document.dispatchEvent(new CustomEvent('tms:rating-popup-open'));
       } catch (e) {}
       this.loadDriverRatings(parseInt(driverId));
+    }
+  }, {
+    key: "handleLoadRatingClick",
+    value: function handleLoadRatingClick(button) {
+      var driverId = button.getAttribute('data-driver-id');
+      var driverName = button.getAttribute('data-driver-name');
+      var loadNumber = button.getAttribute('data-load-number');
+      var loadStatus = button.getAttribute('data-load-status') || '';
+      var popup = document.getElementById('load-rating-popup');
+      if (!driverId || !loadNumber) {
+        this.showMessage('Driver or load not found', 'danger');
+        return;
+      }
+      if (!popup) {
+        this.showMessage('Rating popup not found. Please refresh the page.', 'danger');
+        return;
+      }
+      var driverIdField = document.getElementById('loadRatingDriverId');
+      var loadNumberField = document.getElementById('loadRatingLoadNumber');
+      var loadStatusField = document.getElementById('loadRatingLoadStatus');
+      var loadDisplay = document.getElementById('loadRatingLoadDisplay');
+      var driverDisplay = document.getElementById('loadRatingDriverDisplay');
+      if (driverIdField) {
+        driverIdField.value = driverId;
+      }
+      if (loadNumberField) {
+        loadNumberField.value = loadNumber;
+      }
+      if (loadStatusField) {
+        loadStatusField.value = loadStatus;
+      }
+      if (loadDisplay) {
+        loadDisplay.textContent = loadNumber;
+      }
+      if (driverDisplay) {
+        driverDisplay.textContent = driverName || 'Driver';
+      }
+      var isCancelled = loadStatus === 'cancelled';
+      document.querySelectorAll('.load-rating-btn').forEach(function (btn) {
+        btn.classList.remove('active');
+        var val = parseInt(btn.getAttribute('data-rating') || '0', 10);
+        btn.disabled = isCancelled && val > 2;
+      });
+      var selectedRating = document.getElementById('loadRatingSelectedRating');
+      if (selectedRating) {
+        selectedRating.value = '';
+      }
+      var comments = document.getElementById('loadRatingComments');
+      if (comments) {
+        comments.value = '';
+      }
+      this.openPopup('#load-rating-popup');
     }
   }, {
     key: "revealMoreNotices",
@@ -11767,6 +11912,17 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _eta_timer__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./eta-timer */ "./src/js/components/eta-timer.ts");
 
 
+var normalizeDateForInput = function normalizeDateForInput(val) {
+  if (val == null || val === '') return '';
+  var s = val.trim();
+  var datePart = s.indexOf(' ') >= 0 ? s.split(/\s/)[0] : s;
+  return datePart.length >= 10 ? datePart.substring(0, 10) : datePart;
+};
+var normalizeTimeForInput = function normalizeTimeForInput(val) {
+  if (val == null || val === '') return '';
+  var s = val.trim();
+  return s.length > 5 ? s.substring(0, 5) : s;
+};
 var parseTimezone = function parseTimezone(timezoneStr) {
   if (!timezoneStr) return null;
   var match = timezoneStr.match(/\(UTC([+-]?\d+)\)/);
@@ -11841,8 +11997,8 @@ var loadExistingEtaRecord = function loadExistingEtaRecord(loadId, etaType, isFl
       if (form) {
         var dateInput = form.querySelector('input[name="date"]');
         var timeInput = form.querySelector('input[name="time"]');
-        if (dateInput) dateInput.value = data.data.date || '';
-        if (timeInput) timeInput.value = data.data.time || '';
+        if (dateInput) dateInput.value = normalizeDateForInput(data.data.date);
+        if (timeInput) timeInput.value = normalizeTimeForInput(data.data.time);
       }
       var dbTimezone = data.data.timezone || timezone;
       updatePopupLocationInfo(popup, state, dbTimezone);
@@ -11934,8 +12090,8 @@ var initEtaPopups = function initEtaPopups() {
           if (form && (!data || !data.success || !data.data.exists) && hasShipperEta) {
             var dateInput = form.querySelector('input[name="date"]');
             var timeInput = form.querySelector('input[name="time"]');
-            if (dateInput) dateInput.value = shipperEtaDate;
-            if (timeInput) timeInput.value = shipperEtaTime;
+            if (dateInput) dateInput.value = normalizeDateForInput(shipperEtaDate);
+            if (timeInput) timeInput.value = normalizeTimeForInput(shipperEtaTime);
           }
           if (form) {
             var _submitBtn = form.querySelector('button[type="submit"]');
@@ -11950,12 +12106,10 @@ var initEtaPopups = function initEtaPopups() {
         if (form) {
           var dateInput = form.querySelector('input[name="date"]');
           var timeInput = form.querySelector('input[name="time"]');
-          if (dateInput) {
-            dateInput.value = hasShipperEta ? shipperEtaDate : currentDate || '';
-          }
-          if (timeInput) {
-            timeInput.value = hasShipperEta ? shipperEtaTime : currentTime || '';
-          }
+          var dateValue = hasShipperEta ? shipperEtaDate : currentDate || '';
+          var timeValue = hasShipperEta ? shipperEtaTime : currentTime || '';
+          if (dateInput) dateInput.value = normalizeDateForInput(dateValue);
+          if (timeInput) timeInput.value = normalizeTimeForInput(timeValue);
         }
         popup.classList.add('active');
         document.body.classList.add('popup-open');
@@ -13435,6 +13589,153 @@ var moveDispatcher = function moveDispatcher(ajaxurl) {
     });
   }
 };
+
+/***/ }),
+
+/***/ "./src/js/components/payment-file-preview.ts":
+/*!***************************************************!*\
+  !*** ./src/js/components/payment-file-preview.ts ***!
+  \***************************************************/
+/***/ (function(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   initPaymentFilePreview: function() { return /* binding */ initPaymentFilePreview; }
+/* harmony export */ });
+var MODAL_ID = 'paymentFilePreviewModal';
+var IFRAME_ID = 'paymentFilePreviewIframe';
+var IMG_ID = 'paymentFilePreviewImg';
+var FALLBACK_ID = 'paymentFilePreviewFallback';
+var LINK_ID = 'paymentFilePreviewLink';
+var TITLE_ID = 'paymentFilePreviewModalLabel';
+var DRIVER_INFO_ID = 'paymentFilePreviewDriverInfo';
+var ACCOUNT_TYPE_ID = 'paymentFilePreviewAccountType';
+var ACCOUNT_NAME_ID = 'paymentFilePreviewAccountName';
+var PAYMENT_INSTRUCTION_ID = 'paymentFilePreviewPaymentInstruction';
+var BODY_LOCK_CLASS = 'payment-file-modal-open';
+function lockBodyScroll() {
+  document.body.classList.add(BODY_LOCK_CLASS);
+}
+function unlockBodyScroll() {
+  document.body.classList.remove(BODY_LOCK_CLASS);
+}
+function initPaymentFilePreview() {
+  var buttons = document.querySelectorAll('.js-payment-file-preview');
+  var modalEl = document.getElementById(MODAL_ID);
+  if (!buttons.length || !modalEl) return;
+  var iframe = document.getElementById(IFRAME_ID);
+  var img = document.getElementById(IMG_ID);
+  var fallback = document.getElementById(FALLBACK_ID);
+  var link = document.getElementById(LINK_ID);
+  var titleEl = document.getElementById(TITLE_ID);
+  var driverInfoEl = document.getElementById(DRIVER_INFO_ID);
+  var accountTypeEl = document.getElementById(ACCOUNT_TYPE_ID);
+  var accountNameEl = document.getElementById(ACCOUNT_NAME_ID);
+  var paymentInstructionEl = document.getElementById(PAYMENT_INSTRUCTION_ID);
+  if (!iframe || !img || !link) return;
+  var iframeEl = iframe;
+  var imgEl = img;
+  var linkEl = link;
+  var windowAny = window;
+  var BootstrapModal = typeof windowAny.bootstrap !== 'undefined' && windowAny.bootstrap.Modal;
+  var modalInstance = null;
+  if (BootstrapModal) {
+    modalInstance = BootstrapModal.getInstance(modalEl) || new BootstrapModal(modalEl);
+  }
+  function showPdf(url) {
+    iframeEl.src = url;
+    iframeEl.classList.remove('d-none');
+    imgEl.classList.add('d-none');
+    imgEl.removeAttribute('src');
+    if (fallback) fallback.classList.add('d-none');
+  }
+  function showImage(url) {
+    imgEl.src = url;
+    imgEl.classList.remove('d-none');
+    iframeEl.src = '';
+    iframeEl.classList.add('d-none');
+    if (fallback) fallback.classList.add('d-none');
+  }
+  function hideAll() {
+    iframeEl.src = '';
+    iframeEl.classList.add('d-none');
+    imgEl.removeAttribute('src');
+    imgEl.classList.add('d-none');
+    if (fallback) fallback.classList.remove('d-none');
+  }
+  buttons.forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var ds = btn.dataset;
+      var url = ds === null || ds === void 0 ? void 0 : ds.url;
+      var isImage = (ds === null || ds === void 0 ? void 0 : ds.isImage) === '1';
+      var driverName = (ds === null || ds === void 0 ? void 0 : ds.driverName) || '';
+      var accountType = (ds === null || ds === void 0 ? void 0 : ds.accountType) || '—';
+      var accountName = (ds === null || ds === void 0 ? void 0 : ds.accountName) || '—';
+      var paymentInstruction = (ds === null || ds === void 0 ? void 0 : ds.paymentInstruction) || '—';
+      if (!url) return;
+      if (titleEl) {
+        titleEl.textContent = driverName ? "Payment file \u2014 ".concat(driverName) : 'Payment file';
+      }
+      linkEl.href = url;
+      if (driverInfoEl) {
+        driverInfoEl.style.display = 'block';
+        if (accountTypeEl) accountTypeEl.textContent = accountType;
+        if (accountNameEl) accountNameEl.textContent = accountName;
+        if (paymentInstructionEl) paymentInstructionEl.textContent = paymentInstruction;
+      }
+      hideAll();
+      if (isImage) {
+        showImage(url);
+      } else {
+        showPdf(url);
+      }
+      if (modalInstance) {
+        lockBodyScroll();
+        modalInstance.show();
+      } else {
+        lockBodyScroll();
+        modalEl.classList.add('show');
+        modalEl.style.display = 'block';
+        modalEl.setAttribute('aria-hidden', 'false');
+        document.body.classList.add('modal-open');
+        var backdrop = document.createElement('div');
+        backdrop.className = 'modal-backdrop fade show';
+        backdrop.setAttribute('data-payment-preview-backdrop', '1');
+        document.body.appendChild(backdrop);
+        var removeFallback = function removeFallback() {
+          unlockBodyScroll();
+          hideAll();
+          iframeEl.src = '';
+          modalEl.classList.remove('show');
+          modalEl.style.display = 'none';
+          modalEl.setAttribute('aria-hidden', 'true');
+          document.body.classList.remove('modal-open');
+          var b = document.querySelector('[data-payment-preview-backdrop="1"]');
+          if (b) b.remove();
+        };
+        var dismissButtons = modalEl.querySelectorAll('[data-bs-dismiss="modal"]');
+        var _onceClose = function onceClose() {
+          removeFallback();
+          dismissButtons.forEach(function (el) {
+            return el.removeEventListener('click', _onceClose);
+          });
+          backdrop.removeEventListener('click', _onceClose);
+        };
+        dismissButtons.forEach(function (el) {
+          return el.addEventListener('click', _onceClose);
+        });
+        backdrop.addEventListener('click', _onceClose);
+      }
+    });
+  });
+  modalEl.addEventListener('hidden.bs.modal', function () {
+    unlockBodyScroll();
+    hideAll();
+    iframeEl.src = '';
+  });
+}
+
 
 /***/ }),
 
@@ -30151,51 +30452,53 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _components_chow_hidden_value__WEBPACK_IMPORTED_MODULE_18__ = __webpack_require__(/*! ./components/chow-hidden-value */ "./src/js/components/chow-hidden-value.ts");
 /* harmony import */ var _components_logs__WEBPACK_IMPORTED_MODULE_19__ = __webpack_require__(/*! ./components/logs */ "./src/js/components/logs.ts");
 /* harmony import */ var _components_bookmark__WEBPACK_IMPORTED_MODULE_20__ = __webpack_require__(/*! ./components/bookmark */ "./src/js/components/bookmark.ts");
-/* harmony import */ var _components_performance__WEBPACK_IMPORTED_MODULE_21__ = __webpack_require__(/*! ./components/performance */ "./src/js/components/performance.ts");
-/* harmony import */ var _components_tel_mask__WEBPACK_IMPORTED_MODULE_22__ = __webpack_require__(/*! ./components/tel-mask */ "./src/js/components/tel-mask.ts");
-/* harmony import */ var _components_stop_type__WEBPACK_IMPORTED_MODULE_23__ = __webpack_require__(/*! ./components/stop-type */ "./src/js/components/stop-type.ts");
-/* harmony import */ var _components_set_status_paid__WEBPACK_IMPORTED_MODULE_24__ = __webpack_require__(/*! ./components/set-status-paid */ "./src/js/components/set-status-paid.ts");
-/* harmony import */ var _components_send_email_chain__WEBPACK_IMPORTED_MODULE_25__ = __webpack_require__(/*! ./components/send-email-chain */ "./src/js/components/send-email-chain.ts");
-/* harmony import */ var _components_save_all_tracking__WEBPACK_IMPORTED_MODULE_26__ = __webpack_require__(/*! ./components/save-all-tracking */ "./src/js/components/save-all-tracking.ts");
-/* harmony import */ var _components_auto_submit_form__WEBPACK_IMPORTED_MODULE_27__ = __webpack_require__(/*! ./components/auto-submit-form */ "./src/js/components/auto-submit-form.ts");
-/* harmony import */ var _components_document_create_money_check__WEBPACK_IMPORTED_MODULE_28__ = __webpack_require__(/*! ./components/document-create-money-check */ "./src/js/components/document-create-money-check.ts");
-/* harmony import */ var _components_driver_core__WEBPACK_IMPORTED_MODULE_29__ = __webpack_require__(/*! ./components/driver-core */ "./src/js/components/driver-core.ts");
-/* harmony import */ var _components_trailer_core__WEBPACK_IMPORTED_MODULE_30__ = __webpack_require__(/*! ./components/trailer-core */ "./src/js/components/trailer-core.ts");
-/* harmony import */ var _components_vehicle_core__WEBPACK_IMPORTED_MODULE_31__ = __webpack_require__(/*! ./components/vehicle-core */ "./src/js/components/vehicle-core.ts");
-/* harmony import */ var _components_trailer_form_init__WEBPACK_IMPORTED_MODULE_32__ = __webpack_require__(/*! ./components/trailer-form-init */ "./src/js/components/trailer-form-init.ts");
-/* harmony import */ var _components_vehicle_form_init__WEBPACK_IMPORTED_MODULE_33__ = __webpack_require__(/*! ./components/vehicle-form-init */ "./src/js/components/vehicle-form-init.ts");
-/* harmony import */ var _components_contacts_contacts_init__WEBPACK_IMPORTED_MODULE_34__ = __webpack_require__(/*! ./components/contacts/contacts-init */ "./src/js/components/contacts/contacts-init.ts");
-/* harmony import */ var _components_move_dispatcher__WEBPACK_IMPORTED_MODULE_35__ = __webpack_require__(/*! ./components/move-dispatcher */ "./src/js/components/move-dispatcher.ts");
-/* harmony import */ var _components_search_driver_search_driver_core__WEBPACK_IMPORTED_MODULE_36__ = __webpack_require__(/*! ./components/search-driver/search-driver-core */ "./src/js/components/search-driver/search-driver-core.ts");
-/* harmony import */ var _components_driver_hold__WEBPACK_IMPORTED_MODULE_37__ = __webpack_require__(/*! ./components/driver-hold */ "./src/js/components/driver-hold.ts");
-/* harmony import */ var _components_common_hold_section__WEBPACK_IMPORTED_MODULE_38__ = __webpack_require__(/*! ./components/common/hold-section */ "./src/js/components/common/hold-section.ts");
-/* harmony import */ var _components_capabilities_filter__WEBPACK_IMPORTED_MODULE_39__ = __webpack_require__(/*! ./components/capabilities-filter */ "./src/js/components/capabilities-filter.ts");
-/* harmony import */ var _components_quick_status_update__WEBPACK_IMPORTED_MODULE_40__ = __webpack_require__(/*! ./components/quick-status-update */ "./src/js/components/quick-status-update.ts");
-/* harmony import */ var _components_eta_popup__WEBPACK_IMPORTED_MODULE_41__ = __webpack_require__(/*! ./components/eta-popup */ "./src/js/components/eta-popup.ts");
-/* harmony import */ var _components_eta_timer__WEBPACK_IMPORTED_MODULE_42__ = __webpack_require__(/*! ./components/eta-timer */ "./src/js/components/eta-timer.ts");
-/* harmony import */ var _components_rating_reminder_modal__WEBPACK_IMPORTED_MODULE_43__ = __webpack_require__(/*! ./components/rating-reminder-modal */ "./src/js/components/rating-reminder-modal.ts");
-/* harmony import */ var _components_drivers_rate__WEBPACK_IMPORTED_MODULE_44__ = __webpack_require__(/*! ./components/drivers-rate */ "./src/js/components/drivers-rate.ts");
-/* harmony import */ var _components_admin_rating_manager__WEBPACK_IMPORTED_MODULE_45__ = __webpack_require__(/*! ./components/admin-rating-manager */ "./src/js/components/admin-rating-manager.ts");
-/* harmony import */ var _components_charts_drivers_statistics_charts__WEBPACK_IMPORTED_MODULE_46__ = __webpack_require__(/*! ./components/charts/drivers-statistics-charts */ "./src/js/components/charts/drivers-statistics-charts.ts");
-/* harmony import */ var _components_charts_finance_statistics_charts__WEBPACK_IMPORTED_MODULE_47__ = __webpack_require__(/*! ./components/charts/finance-statistics-charts */ "./src/js/components/charts/finance-statistics-charts.ts");
-/* harmony import */ var _components_charts_source_statistics_charts__WEBPACK_IMPORTED_MODULE_48__ = __webpack_require__(/*! ./components/charts/source-statistics-charts */ "./src/js/components/charts/source-statistics-charts.ts");
-/* harmony import */ var _components_charts_home_location_map__WEBPACK_IMPORTED_MODULE_49__ = __webpack_require__(/*! ./components/charts/home-location-map */ "./src/js/components/charts/home-location-map.ts");
-/* harmony import */ var _components_charts_location_vehicle_charts__WEBPACK_IMPORTED_MODULE_50__ = __webpack_require__(/*! ./components/charts/location-vehicle-charts */ "./src/js/components/charts/location-vehicle-charts.ts");
-/* harmony import */ var _components_charts_loads_by_state_chart__WEBPACK_IMPORTED_MODULE_51__ = __webpack_require__(/*! ./components/charts/loads-by-state-chart */ "./src/js/components/charts/loads-by-state-chart.ts");
-/* harmony import */ var _components_charts_loads_by_route_chart__WEBPACK_IMPORTED_MODULE_52__ = __webpack_require__(/*! ./components/charts/loads-by-route-chart */ "./src/js/components/charts/loads-by-route-chart.ts");
-/* harmony import */ var _components_create_chat__WEBPACK_IMPORTED_MODULE_53__ = __webpack_require__(/*! ./components/create-chat */ "./src/js/components/create-chat.ts");
-/* harmony import */ var _components_drivers_statistics_tabs__WEBPACK_IMPORTED_MODULE_54__ = __webpack_require__(/*! ./components/drivers-statistics-tabs */ "./src/js/components/drivers-statistics-tabs.ts");
-/* harmony import */ var _components_quick_copy__WEBPACK_IMPORTED_MODULE_55__ = __webpack_require__(/*! ./components/quick-copy */ "./src/js/components/quick-copy.ts");
-/* harmony import */ var _components_driver_popups__WEBPACK_IMPORTED_MODULE_56__ = __webpack_require__(/*! ./components/driver-popups */ "./src/js/components/driver-popups.ts");
-/* harmony import */ var _components_driver_popup_forms__WEBPACK_IMPORTED_MODULE_57__ = __webpack_require__(/*! ./components/driver-popup-forms */ "./src/js/components/driver-popup-forms.ts");
-/* harmony import */ var _components_broker_popups__WEBPACK_IMPORTED_MODULE_58__ = __webpack_require__(/*! ./components/broker-popups */ "./src/js/components/broker-popups.ts");
-/* harmony import */ var _components_broker_popup_forms__WEBPACK_IMPORTED_MODULE_59__ = __webpack_require__(/*! ./components/broker-popup-forms */ "./src/js/components/broker-popup-forms.ts");
-/* harmony import */ var _components_driver_autocomplete__WEBPACK_IMPORTED_MODULE_60__ = __webpack_require__(/*! ./components/driver-autocomplete */ "./src/js/components/driver-autocomplete.ts");
-/* harmony import */ var _components_common_audio_helper__WEBPACK_IMPORTED_MODULE_61__ = __webpack_require__(/*! ./components/common/audio-helper */ "./src/js/components/common/audio-helper.ts");
-/* harmony import */ var _components_timer_control__WEBPACK_IMPORTED_MODULE_62__ = __webpack_require__(/*! ./components/timer-control */ "./src/js/components/timer-control.ts");
-/* harmony import */ var _components_timer_analytics__WEBPACK_IMPORTED_MODULE_63__ = __webpack_require__(/*! ./components/timer-analytics */ "./src/js/components/timer-analytics.ts");
-/* harmony import */ var _components_dark_mode_toggle__WEBPACK_IMPORTED_MODULE_64__ = __webpack_require__(/*! ./components/dark-mode-toggle */ "./src/js/components/dark-mode-toggle.ts");
-/* harmony import */ var _components_drivers_map__WEBPACK_IMPORTED_MODULE_65__ = __webpack_require__(/*! ./components/drivers-map */ "./src/js/components/drivers-map.ts");
+/* harmony import */ var _components_payment_file_preview__WEBPACK_IMPORTED_MODULE_21__ = __webpack_require__(/*! ./components/payment-file-preview */ "./src/js/components/payment-file-preview.ts");
+/* harmony import */ var _components_performance__WEBPACK_IMPORTED_MODULE_22__ = __webpack_require__(/*! ./components/performance */ "./src/js/components/performance.ts");
+/* harmony import */ var _components_tel_mask__WEBPACK_IMPORTED_MODULE_23__ = __webpack_require__(/*! ./components/tel-mask */ "./src/js/components/tel-mask.ts");
+/* harmony import */ var _components_stop_type__WEBPACK_IMPORTED_MODULE_24__ = __webpack_require__(/*! ./components/stop-type */ "./src/js/components/stop-type.ts");
+/* harmony import */ var _components_set_status_paid__WEBPACK_IMPORTED_MODULE_25__ = __webpack_require__(/*! ./components/set-status-paid */ "./src/js/components/set-status-paid.ts");
+/* harmony import */ var _components_send_email_chain__WEBPACK_IMPORTED_MODULE_26__ = __webpack_require__(/*! ./components/send-email-chain */ "./src/js/components/send-email-chain.ts");
+/* harmony import */ var _components_save_all_tracking__WEBPACK_IMPORTED_MODULE_27__ = __webpack_require__(/*! ./components/save-all-tracking */ "./src/js/components/save-all-tracking.ts");
+/* harmony import */ var _components_auto_submit_form__WEBPACK_IMPORTED_MODULE_28__ = __webpack_require__(/*! ./components/auto-submit-form */ "./src/js/components/auto-submit-form.ts");
+/* harmony import */ var _components_document_create_money_check__WEBPACK_IMPORTED_MODULE_29__ = __webpack_require__(/*! ./components/document-create-money-check */ "./src/js/components/document-create-money-check.ts");
+/* harmony import */ var _components_driver_core__WEBPACK_IMPORTED_MODULE_30__ = __webpack_require__(/*! ./components/driver-core */ "./src/js/components/driver-core.ts");
+/* harmony import */ var _components_trailer_core__WEBPACK_IMPORTED_MODULE_31__ = __webpack_require__(/*! ./components/trailer-core */ "./src/js/components/trailer-core.ts");
+/* harmony import */ var _components_vehicle_core__WEBPACK_IMPORTED_MODULE_32__ = __webpack_require__(/*! ./components/vehicle-core */ "./src/js/components/vehicle-core.ts");
+/* harmony import */ var _components_trailer_form_init__WEBPACK_IMPORTED_MODULE_33__ = __webpack_require__(/*! ./components/trailer-form-init */ "./src/js/components/trailer-form-init.ts");
+/* harmony import */ var _components_vehicle_form_init__WEBPACK_IMPORTED_MODULE_34__ = __webpack_require__(/*! ./components/vehicle-form-init */ "./src/js/components/vehicle-form-init.ts");
+/* harmony import */ var _components_contacts_contacts_init__WEBPACK_IMPORTED_MODULE_35__ = __webpack_require__(/*! ./components/contacts/contacts-init */ "./src/js/components/contacts/contacts-init.ts");
+/* harmony import */ var _components_move_dispatcher__WEBPACK_IMPORTED_MODULE_36__ = __webpack_require__(/*! ./components/move-dispatcher */ "./src/js/components/move-dispatcher.ts");
+/* harmony import */ var _components_search_driver_search_driver_core__WEBPACK_IMPORTED_MODULE_37__ = __webpack_require__(/*! ./components/search-driver/search-driver-core */ "./src/js/components/search-driver/search-driver-core.ts");
+/* harmony import */ var _components_driver_hold__WEBPACK_IMPORTED_MODULE_38__ = __webpack_require__(/*! ./components/driver-hold */ "./src/js/components/driver-hold.ts");
+/* harmony import */ var _components_common_hold_section__WEBPACK_IMPORTED_MODULE_39__ = __webpack_require__(/*! ./components/common/hold-section */ "./src/js/components/common/hold-section.ts");
+/* harmony import */ var _components_capabilities_filter__WEBPACK_IMPORTED_MODULE_40__ = __webpack_require__(/*! ./components/capabilities-filter */ "./src/js/components/capabilities-filter.ts");
+/* harmony import */ var _components_quick_status_update__WEBPACK_IMPORTED_MODULE_41__ = __webpack_require__(/*! ./components/quick-status-update */ "./src/js/components/quick-status-update.ts");
+/* harmony import */ var _components_eta_popup__WEBPACK_IMPORTED_MODULE_42__ = __webpack_require__(/*! ./components/eta-popup */ "./src/js/components/eta-popup.ts");
+/* harmony import */ var _components_eta_timer__WEBPACK_IMPORTED_MODULE_43__ = __webpack_require__(/*! ./components/eta-timer */ "./src/js/components/eta-timer.ts");
+/* harmony import */ var _components_rating_reminder_modal__WEBPACK_IMPORTED_MODULE_44__ = __webpack_require__(/*! ./components/rating-reminder-modal */ "./src/js/components/rating-reminder-modal.ts");
+/* harmony import */ var _components_drivers_rate__WEBPACK_IMPORTED_MODULE_45__ = __webpack_require__(/*! ./components/drivers-rate */ "./src/js/components/drivers-rate.ts");
+/* harmony import */ var _components_admin_rating_manager__WEBPACK_IMPORTED_MODULE_46__ = __webpack_require__(/*! ./components/admin-rating-manager */ "./src/js/components/admin-rating-manager.ts");
+/* harmony import */ var _components_charts_drivers_statistics_charts__WEBPACK_IMPORTED_MODULE_47__ = __webpack_require__(/*! ./components/charts/drivers-statistics-charts */ "./src/js/components/charts/drivers-statistics-charts.ts");
+/* harmony import */ var _components_charts_finance_statistics_charts__WEBPACK_IMPORTED_MODULE_48__ = __webpack_require__(/*! ./components/charts/finance-statistics-charts */ "./src/js/components/charts/finance-statistics-charts.ts");
+/* harmony import */ var _components_charts_source_statistics_charts__WEBPACK_IMPORTED_MODULE_49__ = __webpack_require__(/*! ./components/charts/source-statistics-charts */ "./src/js/components/charts/source-statistics-charts.ts");
+/* harmony import */ var _components_charts_home_location_map__WEBPACK_IMPORTED_MODULE_50__ = __webpack_require__(/*! ./components/charts/home-location-map */ "./src/js/components/charts/home-location-map.ts");
+/* harmony import */ var _components_charts_location_vehicle_charts__WEBPACK_IMPORTED_MODULE_51__ = __webpack_require__(/*! ./components/charts/location-vehicle-charts */ "./src/js/components/charts/location-vehicle-charts.ts");
+/* harmony import */ var _components_charts_loads_by_state_chart__WEBPACK_IMPORTED_MODULE_52__ = __webpack_require__(/*! ./components/charts/loads-by-state-chart */ "./src/js/components/charts/loads-by-state-chart.ts");
+/* harmony import */ var _components_charts_loads_by_route_chart__WEBPACK_IMPORTED_MODULE_53__ = __webpack_require__(/*! ./components/charts/loads-by-route-chart */ "./src/js/components/charts/loads-by-route-chart.ts");
+/* harmony import */ var _components_create_chat__WEBPACK_IMPORTED_MODULE_54__ = __webpack_require__(/*! ./components/create-chat */ "./src/js/components/create-chat.ts");
+/* harmony import */ var _components_drivers_statistics_tabs__WEBPACK_IMPORTED_MODULE_55__ = __webpack_require__(/*! ./components/drivers-statistics-tabs */ "./src/js/components/drivers-statistics-tabs.ts");
+/* harmony import */ var _components_quick_copy__WEBPACK_IMPORTED_MODULE_56__ = __webpack_require__(/*! ./components/quick-copy */ "./src/js/components/quick-copy.ts");
+/* harmony import */ var _components_driver_popups__WEBPACK_IMPORTED_MODULE_57__ = __webpack_require__(/*! ./components/driver-popups */ "./src/js/components/driver-popups.ts");
+/* harmony import */ var _components_driver_popup_forms__WEBPACK_IMPORTED_MODULE_58__ = __webpack_require__(/*! ./components/driver-popup-forms */ "./src/js/components/driver-popup-forms.ts");
+/* harmony import */ var _components_broker_popups__WEBPACK_IMPORTED_MODULE_59__ = __webpack_require__(/*! ./components/broker-popups */ "./src/js/components/broker-popups.ts");
+/* harmony import */ var _components_broker_popup_forms__WEBPACK_IMPORTED_MODULE_60__ = __webpack_require__(/*! ./components/broker-popup-forms */ "./src/js/components/broker-popup-forms.ts");
+/* harmony import */ var _components_driver_autocomplete__WEBPACK_IMPORTED_MODULE_61__ = __webpack_require__(/*! ./components/driver-autocomplete */ "./src/js/components/driver-autocomplete.ts");
+/* harmony import */ var _components_common_audio_helper__WEBPACK_IMPORTED_MODULE_62__ = __webpack_require__(/*! ./components/common/audio-helper */ "./src/js/components/common/audio-helper.ts");
+/* harmony import */ var _components_timer_control__WEBPACK_IMPORTED_MODULE_63__ = __webpack_require__(/*! ./components/timer-control */ "./src/js/components/timer-control.ts");
+/* harmony import */ var _components_timer_analytics__WEBPACK_IMPORTED_MODULE_64__ = __webpack_require__(/*! ./components/timer-analytics */ "./src/js/components/timer-analytics.ts");
+/* harmony import */ var _components_dark_mode_toggle__WEBPACK_IMPORTED_MODULE_65__ = __webpack_require__(/*! ./components/dark-mode-toggle */ "./src/js/components/dark-mode-toggle.ts");
+/* harmony import */ var _components_drivers_map__WEBPACK_IMPORTED_MODULE_66__ = __webpack_require__(/*! ./components/drivers-map */ "./src/js/components/drivers-map.ts");
+
 
 
 
@@ -30269,7 +30572,7 @@ function ready() {
   var linkEndurance = var_from_php.link_web_service_endurance;
   var linkMartlet = var_from_php.link_web_service_martlet;
   var hereApi = var_from_php.here_api_key;
-  (0,_components_search_driver_search_driver_core__WEBPACK_IMPORTED_MODULE_36__.initialSearchDriver)(var_from_php);
+  (0,_components_search_driver_search_driver_core__WEBPACK_IMPORTED_MODULE_37__.initialSearchDriver)(var_from_php);
   var useServices = {
     Odysseia: linkOdysseia,
     Endurance: linkEndurance,
@@ -30277,12 +30580,12 @@ function ready() {
   };
   var popupInstance = new _parts_popup_window__WEBPACK_IMPORTED_MODULE_2__["default"]();
   popupInstance.init();
-  _components_common_audio_helper__WEBPACK_IMPORTED_MODULE_61__["default"].getInstance();
-  var driverPopupForms = new _components_driver_popup_forms__WEBPACK_IMPORTED_MODULE_57__["default"](urlAjax);
-  var brokerPopupForms = new _components_broker_popup_forms__WEBPACK_IMPORTED_MODULE_59__["default"](urlAjax);
+  _components_common_audio_helper__WEBPACK_IMPORTED_MODULE_62__["default"].getInstance();
+  var driverPopupForms = new _components_driver_popup_forms__WEBPACK_IMPORTED_MODULE_58__["default"](urlAjax);
+  var brokerPopupForms = new _components_broker_popup_forms__WEBPACK_IMPORTED_MODULE_60__["default"](urlAjax);
   var singlePageBrokerUrl = (var_from_php === null || var_from_php === void 0 ? void 0 : var_from_php.single_page_broker) || '';
-  var brokerPopups = new _components_broker_popups__WEBPACK_IMPORTED_MODULE_58__["default"](urlAjax, singlePageBrokerUrl);
-  new _components_driver_autocomplete__WEBPACK_IMPORTED_MODULE_60__["default"](urlAjax, {
+  var brokerPopups = new _components_broker_popups__WEBPACK_IMPORTED_MODULE_59__["default"](urlAjax, singlePageBrokerUrl);
+  new _components_driver_autocomplete__WEBPACK_IMPORTED_MODULE_61__["default"](urlAjax, {
     unitInput: '.js-unit-number-input',
     dropdown: '.js-driver-dropdown',
     attachedDriverInput: 'input[name="attached_driver"]',
@@ -30291,7 +30594,7 @@ function ready() {
     nonceInput: '#driver-search-nonce',
     driverValueInput: '.js-driver-value'
   });
-  new _components_driver_autocomplete__WEBPACK_IMPORTED_MODULE_60__["default"](urlAjax, {
+  new _components_driver_autocomplete__WEBPACK_IMPORTED_MODULE_61__["default"](urlAjax, {
     unitInput: '.js-second-unit-number-input',
     dropdown: '.js-second-driver-dropdown',
     attachedDriverInput: 'input[name="attached_second_driver"]',
@@ -30299,7 +30602,7 @@ function ready() {
     unitNumberNameInput: 'input[name="second_unit_number_name"]',
     nonceInput: '#second-driver-search-nonce'
   });
-  new _components_driver_autocomplete__WEBPACK_IMPORTED_MODULE_60__["default"](urlAjax, {
+  new _components_driver_autocomplete__WEBPACK_IMPORTED_MODULE_61__["default"](urlAjax, {
     unitInput: '.js-third-unit-number-input',
     dropdown: '.js-third-driver-dropdown',
     attachedDriverInput: 'input[name="attached_third_driver"]',
@@ -30315,7 +30618,7 @@ function ready() {
     if (!wasVisible) {
       refererBlock.style.display = 'block';
     }
-    refererAutocomplete = new _components_driver_autocomplete__WEBPACK_IMPORTED_MODULE_60__["default"](urlAjax, {
+    refererAutocomplete = new _components_driver_autocomplete__WEBPACK_IMPORTED_MODULE_61__["default"](urlAjax, {
       unitInput: '.js-referer-unit-number-input',
       dropdown: '.js-referer-driver-dropdown',
       attachedDriverInput: '#referer_by',
@@ -30356,9 +30659,9 @@ function ready() {
       driverPopupForms.loadDriverStatistics(parseInt(driverIdInput.value));
     }
   }
-  new _components_timer_control__WEBPACK_IMPORTED_MODULE_62__.TimerControl(urlAjax);
-  new _components_timer_analytics__WEBPACK_IMPORTED_MODULE_63__.TimerAnalytics(urlAjax);
-  new _components_dark_mode_toggle__WEBPACK_IMPORTED_MODULE_64__["default"](urlAjax);
+  new _components_timer_control__WEBPACK_IMPORTED_MODULE_63__.TimerControl(urlAjax);
+  new _components_timer_analytics__WEBPACK_IMPORTED_MODULE_64__.TimerAnalytics(urlAjax);
+  new _components_dark_mode_toggle__WEBPACK_IMPORTED_MODULE_65__["default"](urlAjax);
   (0,_components_create_report__WEBPACK_IMPORTED_MODULE_4__.actionCreateReportInit)(urlAjax);
   (0,_components_create_report__WEBPACK_IMPORTED_MODULE_4__.createDraftPosts)(urlAjax);
   (0,_components_create_report__WEBPACK_IMPORTED_MODULE_4__.updateFilesReportInit)(urlAjax);
@@ -30379,42 +30682,43 @@ function ready() {
   (0,_components_create_report__WEBPACK_IMPORTED_MODULE_4__.quickEditInit)(urlAjax, '.js-quick-edit', 'quick_update_post');
   (0,_components_create_report__WEBPACK_IMPORTED_MODULE_4__.quickEditInit)(urlAjax, '.js-quick-edit-ar', 'quick_update_post_ar');
   (0,_components_bookmark__WEBPACK_IMPORTED_MODULE_20__.bookmarkInit)(urlAjax);
+  (0,_components_payment_file_preview__WEBPACK_IMPORTED_MODULE_21__.initPaymentFilePreview)();
   (0,_components_logs__WEBPACK_IMPORTED_MODULE_19__.logsInit)(urlAjax);
   (0,_components_logs__WEBPACK_IMPORTED_MODULE_19__.modalLogsInit)(urlAjax);
   (0,_components_create_report__WEBPACK_IMPORTED_MODULE_4__.quickEditTrackingStatus)(urlAjax);
-  (0,_components_performance__WEBPACK_IMPORTED_MODULE_21__.sendUpdatePerformance)(urlAjax);
-  (0,_components_send_email_chain__WEBPACK_IMPORTED_MODULE_25__.sendEmailChain)(urlAjax);
-  (0,_components_save_all_tracking__WEBPACK_IMPORTED_MODULE_26__.saveAllTracking)(urlAjax);
+  (0,_components_performance__WEBPACK_IMPORTED_MODULE_22__.sendUpdatePerformance)(urlAjax);
+  (0,_components_send_email_chain__WEBPACK_IMPORTED_MODULE_26__.sendEmailChain)(urlAjax);
+  (0,_components_save_all_tracking__WEBPACK_IMPORTED_MODULE_27__.saveAllTracking)(urlAjax);
   (0,_components_create_company__WEBPACK_IMPORTED_MODULE_5__.ActionDeleteCompanyInit)(urlAjax);
   (0,_components_create_shipper__WEBPACK_IMPORTED_MODULE_6__.ActionDeleteShipperInit)(urlAjax);
   (0,_components_driver_Info__WEBPACK_IMPORTED_MODULE_11__.initGetInfoDriver)(urlAjax, useServices);
-  (0,_components_driver_core__WEBPACK_IMPORTED_MODULE_29__.driversActions)(urlAjax);
-  (0,_components_trailer_core__WEBPACK_IMPORTED_MODULE_30__.trailersActions)(urlAjax);
-  (0,_components_trailer_form_init__WEBPACK_IMPORTED_MODULE_32__.initTrailerFormFields)();
-  (0,_components_vehicle_core__WEBPACK_IMPORTED_MODULE_31__.vehiclesActions)(urlAjax);
-  (0,_components_vehicle_form_init__WEBPACK_IMPORTED_MODULE_33__.initVehicleFormFields)();
+  (0,_components_driver_core__WEBPACK_IMPORTED_MODULE_30__.driversActions)(urlAjax);
+  (0,_components_trailer_core__WEBPACK_IMPORTED_MODULE_31__.trailersActions)(urlAjax);
+  (0,_components_trailer_form_init__WEBPACK_IMPORTED_MODULE_33__.initTrailerFormFields)();
+  (0,_components_vehicle_core__WEBPACK_IMPORTED_MODULE_32__.vehiclesActions)(urlAjax);
+  (0,_components_vehicle_form_init__WEBPACK_IMPORTED_MODULE_34__.initVehicleFormFields)();
   (0,_components_filter_clean__WEBPACK_IMPORTED_MODULE_16__.cleanUrlByFilterDriver)();
   (0,_components_filter_clean__WEBPACK_IMPORTED_MODULE_16__.cleanUrlByFilterDriverSearch)();
   (0,_components_filter_clean__WEBPACK_IMPORTED_MODULE_16__.cleanUrlByFilterDriverDocuments)();
   (0,_components_filter_clean__WEBPACK_IMPORTED_MODULE_16__.cleanUrlByFilterDriverInsurance)();
   (0,_components_driver_notes_edit__WEBPACK_IMPORTED_MODULE_17__.initDriverNotesEdit)(urlAjax);
-  (0,_components_driver_hold__WEBPACK_IMPORTED_MODULE_37__.driverHoldInit)(urlAjax);
-  (0,_components_driver_core__WEBPACK_IMPORTED_MODULE_29__.driverCoreInit)(urlAjax);
-  (0,_components_capabilities_filter__WEBPACK_IMPORTED_MODULE_39__.initCapabilitiesFilter)();
-  (0,_components_quick_status_update__WEBPACK_IMPORTED_MODULE_40__.initQuickStatusUpdate)(urlAjax);
-  (0,_components_eta_popup__WEBPACK_IMPORTED_MODULE_41__.initEtaPopups)();
-  (0,_components_eta_timer__WEBPACK_IMPORTED_MODULE_42__.initEtaTimers)();
-  (0,_components_rating_reminder_modal__WEBPACK_IMPORTED_MODULE_43__.initRatingReminderModal)();
-  (0,_components_drivers_rate__WEBPACK_IMPORTED_MODULE_44__.initDriversRate)();
-  (0,_components_admin_rating_manager__WEBPACK_IMPORTED_MODULE_45__.initAdminRatingManager)();
-  (0,_components_charts_drivers_statistics_charts__WEBPACK_IMPORTED_MODULE_46__.initDriversStatisticsCharts)();
-  (0,_components_charts_finance_statistics_charts__WEBPACK_IMPORTED_MODULE_47__.initFinanceStatisticsCharts)();
-  (0,_components_charts_source_statistics_charts__WEBPACK_IMPORTED_MODULE_48__.initSourceStatisticsCharts)();
-  (0,_components_drivers_statistics_tabs__WEBPACK_IMPORTED_MODULE_54__.initDriversStatisticsTabs)();
-  (0,_components_charts_location_vehicle_charts__WEBPACK_IMPORTED_MODULE_50__.initLocationVehicleCharts)();
-  (0,_components_charts_loads_by_state_chart__WEBPACK_IMPORTED_MODULE_51__.initLoadsByStateChartComponent)();
-  (0,_components_charts_loads_by_route_chart__WEBPACK_IMPORTED_MODULE_52__.initLoadsByRouteChartComponent)();
-  (0,_components_create_chat__WEBPACK_IMPORTED_MODULE_53__.initCreateChatForm)(urlAjax);
+  (0,_components_driver_hold__WEBPACK_IMPORTED_MODULE_38__.driverHoldInit)(urlAjax);
+  (0,_components_driver_core__WEBPACK_IMPORTED_MODULE_30__.driverCoreInit)(urlAjax);
+  (0,_components_capabilities_filter__WEBPACK_IMPORTED_MODULE_40__.initCapabilitiesFilter)();
+  (0,_components_quick_status_update__WEBPACK_IMPORTED_MODULE_41__.initQuickStatusUpdate)(urlAjax);
+  (0,_components_eta_popup__WEBPACK_IMPORTED_MODULE_42__.initEtaPopups)();
+  (0,_components_eta_timer__WEBPACK_IMPORTED_MODULE_43__.initEtaTimers)();
+  (0,_components_rating_reminder_modal__WEBPACK_IMPORTED_MODULE_44__.initRatingReminderModal)();
+  (0,_components_drivers_rate__WEBPACK_IMPORTED_MODULE_45__.initDriversRate)();
+  (0,_components_admin_rating_manager__WEBPACK_IMPORTED_MODULE_46__.initAdminRatingManager)();
+  (0,_components_charts_drivers_statistics_charts__WEBPACK_IMPORTED_MODULE_47__.initDriversStatisticsCharts)();
+  (0,_components_charts_finance_statistics_charts__WEBPACK_IMPORTED_MODULE_48__.initFinanceStatisticsCharts)();
+  (0,_components_charts_source_statistics_charts__WEBPACK_IMPORTED_MODULE_49__.initSourceStatisticsCharts)();
+  (0,_components_drivers_statistics_tabs__WEBPACK_IMPORTED_MODULE_55__.initDriversStatisticsTabs)();
+  (0,_components_charts_location_vehicle_charts__WEBPACK_IMPORTED_MODULE_51__.initLocationVehicleCharts)();
+  (0,_components_charts_loads_by_state_chart__WEBPACK_IMPORTED_MODULE_52__.initLoadsByStateChartComponent)();
+  (0,_components_charts_loads_by_route_chart__WEBPACK_IMPORTED_MODULE_53__.initLoadsByRouteChartComponent)();
+  (0,_components_create_chat__WEBPACK_IMPORTED_MODULE_54__.initCreateChatForm)(urlAjax);
   var homeLocationMapElement = document.getElementById('usaStatesMap');
   if (homeLocationMapElement) {
     var stateMapData = homeLocationMapElement.dataset.stateMapData;
@@ -30423,13 +30727,13 @@ function ready() {
     var geojsonSource = homeLocationMapElement.dataset.geojsonSource;
     if (stateMapData && maxCount && stateMarkersData && geojsonSource) {
       try {
-        (0,_components_charts_home_location_map__WEBPACK_IMPORTED_MODULE_49__.initHomeLocationMap)(JSON.parse(stateMapData), parseInt(maxCount, 10), JSON.parse(stateMarkersData), geojsonSource, 'usaStatesMap', 'mapInfoPanel');
+        (0,_components_charts_home_location_map__WEBPACK_IMPORTED_MODULE_50__.initHomeLocationMap)(JSON.parse(stateMapData), parseInt(maxCount, 10), JSON.parse(stateMarkersData), geojsonSource, 'usaStatesMap', 'mapInfoPanel');
       } catch (e) {
         console.error('Error initializing home location map:', e);
       }
     }
   }
-  window.initHomeLocationMap = _components_charts_home_location_map__WEBPACK_IMPORTED_MODULE_49__.initHomeLocationMap;
+  window.initHomeLocationMap = _components_charts_home_location_map__WEBPACK_IMPORTED_MODULE_50__.initHomeLocationMap;
   var loadsByStateMapElement = document.getElementById('loadsByStateMap');
   if (loadsByStateMapElement) {
     var loadsMapView = document.getElementById('loads-map-view');
@@ -30440,7 +30744,7 @@ function ready() {
       var _geojsonSource = loadsByStateMapElement.dataset.geojsonSource;
       if (_stateMapData && _maxCount && _stateMarkersData && _geojsonSource) {
         try {
-          (0,_components_charts_home_location_map__WEBPACK_IMPORTED_MODULE_49__.initHomeLocationMap)(JSON.parse(_stateMapData), parseInt(_maxCount, 10), JSON.parse(_stateMarkersData), _geojsonSource, 'loadsByStateMap', 'loadsByStateMapInfoPanel');
+          (0,_components_charts_home_location_map__WEBPACK_IMPORTED_MODULE_50__.initHomeLocationMap)(JSON.parse(_stateMapData), parseInt(_maxCount, 10), JSON.parse(_stateMarkersData), _geojsonSource, 'loadsByStateMap', 'loadsByStateMapInfoPanel');
         } catch (e) {
           console.error('Error initializing loads by state map:', e);
         }
@@ -30448,7 +30752,7 @@ function ready() {
     }
   }
   if (hereApi) {
-    new _components_drivers_map__WEBPACK_IMPORTED_MODULE_65__["default"](urlAjax, hereApi);
+    new _components_drivers_map__WEBPACK_IMPORTED_MODULE_66__["default"](urlAjax, hereApi);
   }
   (0,_components_create_report__WEBPACK_IMPORTED_MODULE_4__.additionalContactsInit)();
   (0,_components_create_report__WEBPACK_IMPORTED_MODULE_4__.addShipperPointInit)();
@@ -30470,27 +30774,27 @@ function ready() {
   (0,_components_input_helpers__WEBPACK_IMPORTED_MODULE_3__.quickPayMethod)();
   (0,_components_input_helpers__WEBPACK_IMPORTED_MODULE_3__.triggerCurrentTime)();
   (0,_components_create_report__WEBPACK_IMPORTED_MODULE_4__.triggerDisableBtnInit)();
-  (0,_components_stop_type__WEBPACK_IMPORTED_MODULE_23__.changeStopType)();
-  (0,_components_set_status_paid__WEBPACK_IMPORTED_MODULE_24__.setStatusPaid)();
-  (0,_components_tel_mask__WEBPACK_IMPORTED_MODULE_22__.telMaskInit)();
-  (0,_components_tel_mask__WEBPACK_IMPORTED_MODULE_22__.masksAllSite)();
+  (0,_components_stop_type__WEBPACK_IMPORTED_MODULE_24__.changeStopType)();
+  (0,_components_set_status_paid__WEBPACK_IMPORTED_MODULE_25__.setStatusPaid)();
+  (0,_components_tel_mask__WEBPACK_IMPORTED_MODULE_23__.telMaskInit)();
+  (0,_components_tel_mask__WEBPACK_IMPORTED_MODULE_23__.masksAllSite)();
   (0,_components_tab_helper__WEBPACK_IMPORTED_MODULE_7__.tabUrlUpdeter)();
   (0,_components_create_report__WEBPACK_IMPORTED_MODULE_4__.timeStrictChange)();
   (0,_components_toggle_blocks_init__WEBPACK_IMPORTED_MODULE_9__.toggleBlocksRadio)();
-  (0,_components_tel_mask__WEBPACK_IMPORTED_MODULE_22__.dateMaskInit)();
+  (0,_components_tel_mask__WEBPACK_IMPORTED_MODULE_23__.dateMaskInit)();
   (0,_components_input_helpers__WEBPACK_IMPORTED_MODULE_3__.dragAnDropInit)();
   (0,_components_input_helpers__WEBPACK_IMPORTED_MODULE_3__.unrequiderInit)();
-  (0,_components_common_hold_section__WEBPACK_IMPORTED_MODULE_38__.holdSectionInit)();
-  (0,_components_document_create_money_check__WEBPACK_IMPORTED_MODULE_28__.createDocumentInvoice)();
-  (0,_components_document_create_money_check__WEBPACK_IMPORTED_MODULE_28__.createDocumentInvoiceActions)(urlAjax);
-  (0,_components_document_create_money_check__WEBPACK_IMPORTED_MODULE_28__.createDocumentBolActions)(urlAjax);
-  (0,_components_document_create_money_check__WEBPACK_IMPORTED_MODULE_28__.createDocumentSettlementSummaryActions)(urlAjax);
-  (0,_components_move_dispatcher__WEBPACK_IMPORTED_MODULE_35__.moveDispatcher)(urlAjax);
-  (0,_components_contacts_contacts_init__WEBPACK_IMPORTED_MODULE_34__.initContactsHandler)(urlAjax);
+  (0,_components_common_hold_section__WEBPACK_IMPORTED_MODULE_39__.holdSectionInit)();
+  (0,_components_document_create_money_check__WEBPACK_IMPORTED_MODULE_29__.createDocumentInvoice)();
+  (0,_components_document_create_money_check__WEBPACK_IMPORTED_MODULE_29__.createDocumentInvoiceActions)(urlAjax);
+  (0,_components_document_create_money_check__WEBPACK_IMPORTED_MODULE_29__.createDocumentBolActions)(urlAjax);
+  (0,_components_document_create_money_check__WEBPACK_IMPORTED_MODULE_29__.createDocumentSettlementSummaryActions)(urlAjax);
+  (0,_components_move_dispatcher__WEBPACK_IMPORTED_MODULE_36__.moveDispatcher)(urlAjax);
+  (0,_components_contacts_contacts_init__WEBPACK_IMPORTED_MODULE_35__.initContactsHandler)(urlAjax);
   (0,_components_create_report__WEBPACK_IMPORTED_MODULE_4__.pinnedMessageInit)(urlAjax);
   (0,_components_create_report__WEBPACK_IMPORTED_MODULE_4__.addDeletePinnedHandler)(urlAjax);
   (0,_components_input_helpers__WEBPACK_IMPORTED_MODULE_3__.applyZipCodeMask)('.js-zip-code-mask');
-  (0,_components_auto_submit_form__WEBPACK_IMPORTED_MODULE_27__.initAutoSubmitForm)('.js-auto-submit-form');
+  (0,_components_auto_submit_form__WEBPACK_IMPORTED_MODULE_28__.initAutoSubmitForm)('.js-auto-submit-form');
   var preloaders = document.querySelectorAll('.js-preloader');
   preloaders && preloaders.forEach(function (item) {
     item.remove();

@@ -62,6 +62,7 @@ import { initDriverNotesEdit } from './components/driver-notes-edit';
 import { disabledValuesInSelectInit, showHiddenValueInit, legalDocumentExpirationInit } from './components/chow-hidden-value';
 import { logsInit, modalLogsInit } from './components/logs';
 import { bookmarkInit } from './components/bookmark';
+import { initPaymentFilePreview } from './components/payment-file-preview';
 import { sendUpdatePerformance } from './components/performance';
 import { dateMaskInit, masksAllSite, telMaskInit } from './components/tel-mask';
 import { changeStopType } from './components/stop-type';
@@ -280,6 +281,7 @@ function ready() {
     quickEditInit(urlAjax, '.js-quick-edit', 'quick_update_post');
     quickEditInit(urlAjax, '.js-quick-edit-ar', 'quick_update_post_ar');
     bookmarkInit(urlAjax);
+    initPaymentFilePreview();
     logsInit(urlAjax);
     modalLogsInit(urlAjax);
     quickEditTrackingStatus(urlAjax);

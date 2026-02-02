@@ -59,10 +59,17 @@ class DriverPopups {
         // Rating button clicks
         document.addEventListener('click', (e: Event) => {
             const target = e.target as HTMLElement;
-            
-            if (target.classList.contains('js-driver-rating-btn')) {
+            const button = target.closest('.js-driver-rating-btn');
+            if (button) {
                 e.preventDefault();
-                this.handleRatingClick(target);
+                this.handleRatingClick(button as HTMLElement);
+                return;
+            }
+            // Load rating button (from loads table – rate driver for specific load)
+            const loadRatingBtn = target.closest('.js-load-rating-btn');
+            if (loadRatingBtn) {
+                e.preventDefault();
+                this.handleLoadRatingClick(loadRatingBtn as HTMLElement);
             }
         });
 
@@ -164,6 +171,66 @@ class DriverPopups {
 
         // Load rating data
         this.loadDriverRatings(parseInt(driverId));
+    }
+
+    /**
+     * Open load-rating popup (from loads table) with fixed load + driver.
+     */
+    private handleLoadRatingClick(button: HTMLElement): void {
+        const driverId = button.getAttribute('data-driver-id');
+        const driverName = button.getAttribute('data-driver-name');
+        const loadNumber = button.getAttribute('data-load-number');
+        const loadStatus = button.getAttribute('data-load-status') || '';
+        const popup = document.getElementById('load-rating-popup');
+
+        if (!driverId || !loadNumber) {
+            this.showMessage('Driver or load not found', 'danger');
+            return;
+        }
+        if (!popup) {
+            this.showMessage('Rating popup not found. Please refresh the page.', 'danger');
+            return;
+        }
+
+        const driverIdField = document.getElementById('loadRatingDriverId') as HTMLInputElement | null;
+        const loadNumberField = document.getElementById('loadRatingLoadNumber') as HTMLInputElement | null;
+        const loadStatusField = document.getElementById('loadRatingLoadStatus') as HTMLInputElement | null;
+        const loadDisplay = document.getElementById('loadRatingLoadDisplay');
+        const driverDisplay = document.getElementById('loadRatingDriverDisplay');
+
+        if (driverIdField) {
+            driverIdField.value = driverId;
+        }
+        if (loadNumberField) {
+            loadNumberField.value = loadNumber;
+        }
+        if (loadStatusField) {
+            loadStatusField.value = loadStatus;
+        }
+        if (loadDisplay) {
+            loadDisplay.textContent = loadNumber;
+        }
+        if (driverDisplay) {
+            driverDisplay.textContent = driverName || 'Driver';
+        }
+
+        // Reset rating selection and comments; for cancelled loads disable buttons 3–5
+        const isCancelled = loadStatus === 'cancelled';
+        document.querySelectorAll<HTMLButtonElement>('.load-rating-btn').forEach((btn) => {
+            btn.classList.remove('active');
+            const val = parseInt(btn.getAttribute('data-rating') || '0', 10);
+            btn.disabled = isCancelled && val > 2;
+        });
+        const selectedRating = document.getElementById('loadRatingSelectedRating') as HTMLInputElement | null;
+        if (selectedRating) {
+            selectedRating.value = '';
+        }
+        const comments = document.getElementById('loadRatingComments') as HTMLTextAreaElement | null;
+        if (comments) {
+            comments.value = '';
+        }
+
+        this.openPopup('#load-rating-popup');
     }
 
     // Reveal more notices in chunks

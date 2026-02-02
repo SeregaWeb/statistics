@@ -20,6 +20,7 @@ class DriverPopupForms {
     private init(): void {
         this.handleRatingButtons();
         this.handleRatingForm();
+        this.handleLoadRatingButtons();
         this.handleNoticeForm();
         this.listenForPopupOpen();
         this.handleDriverPageRatingModal();
@@ -195,9 +196,18 @@ class DriverPopupForms {
         // Use event delegation to handle forms that may be created dynamically (e.g., in modals)
         document.addEventListener('submit', (e) => {
             const target = e.target as HTMLFormElement;
-            
+            if (!target) return;
+
+            // Load rating form (from loads table – fixed load + driver)
+            if (target.id === 'loadRatingForm') {
+                e.preventDefault();
+                e.stopPropagation();
+                this.submitLoadRatingForm(target);
+                return;
+            }
+
             // Check if this is the rating form
-            if (!target || target.id !== 'ratingForm') {
+            if (target.id !== 'ratingForm') {
                 return;
             }
             
@@ -253,6 +263,86 @@ class DriverPopupForms {
                 return;
             }
         });
+    }
+
+    /**
+     * Handle load-rating popup: click on rating buttons (1–5).
+     * For cancelled loads only 1–2 are allowed (buttons 3–5 are disabled in driver-popups.ts).
+     */
+    private handleLoadRatingButtons(): void {
+        document.addEventListener('click', (e: Event) => {
+            const target = (e.target as HTMLElement).closest('.load-rating-btn');
+            if (!target) return;
+            const button = target as HTMLButtonElement;
+            if (button.disabled) return;
+            e.preventDefault();
+            e.stopPropagation();
+            const rating = parseInt(button.dataset.rating || '0', 10);
+            const loadStatusEl = document.getElementById('loadRatingLoadStatus') as HTMLInputElement | null;
+            const loadStatus = loadStatusEl ? loadStatusEl.value : '';
+            if (loadStatus === 'cancelled' && rating > 2) {
+                printMessage('For Canceled loads you can set rating 1-2 only.', 'warning', 2500);
+                return;
+            }
+            const selectedInput = document.getElementById('loadRatingSelectedRating') as HTMLInputElement | null;
+            if (!selectedInput) return;
+            document.querySelectorAll<HTMLButtonElement>('.load-rating-btn').forEach((b) => b.classList.remove('active'));
+            button.classList.add('active');
+            selectedInput.value = String(rating);
+            if (!this.confirmHighestRating(rating, button, selectedInput)) {
+                document.querySelectorAll<HTMLButtonElement>('.load-rating-btn').forEach((b) => b.classList.remove('active'));
+                selectedInput.value = '';
+            }
+        });
+    }
+
+    /**
+     * Submit load-rating form (fixed load + driver); on success reload page so row updates.
+     */
+    private submitLoadRatingForm(form: HTMLFormElement): void {
+        const selectedInput = document.getElementById('loadRatingSelectedRating') as HTMLInputElement | null;
+        const selectedVal = selectedInput ? parseInt(selectedInput.value || '0', 10) : 0;
+        if (selectedVal < 1 || selectedVal > 5) {
+            printMessage('Please select a rating (1–5).', 'danger', 3000);
+            return;
+        }
+        const loadStatusEl = document.getElementById('loadRatingLoadStatus') as HTMLInputElement | null;
+        const loadStatus = loadStatusEl ? loadStatusEl.value : '';
+        if (loadStatus === 'cancelled' && selectedVal > 2) {
+            printMessage('For Canceled loads you can set rating 1-2 only.', 'danger', 3000);
+            return;
+        }
+        const formData = new FormData(form);
+        formData.set('action', 'add_driver_rating');
+        fetch(this.ajaxUrl, {
+            method: 'POST',
+            body: formData
+        })
+            .then((response) => {
+                if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                return response.text().then((text) => {
+                    try {
+                        return JSON.parse(text);
+                    } catch {
+                        printMessage('Failed to parse server response', 'danger', 3000);
+                        throw new Error('Invalid JSON response');
+                    }
+                });
+            })
+            .then((data) => {
+                if (data.success) {
+                    this.showMessage('Rating added successfully!', 'success');
+                    setTimeout(() => {
+                        document.location.reload();
+                    }, 800);
+                } else {
+                    this.showMessage(`Error: ${data.data || 'Unknown error'}`, 'error');
+                }
+            })
+            .catch((err) => {
+                printMessage('Network error occurred', 'danger', 3000);
+                this.showMessage(`Error: ${err.message || 'Network error'}`, 'error');
+            });
     }
 
     /**

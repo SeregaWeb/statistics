@@ -515,15 +515,7 @@ class TMSReports extends TMSReportsHelper {
 				ON main.id = delivery_location.post_id
 				AND delivery_location.meta_key = 'delivery_location'";
 		
-		// Add rating table JOIN if searching for "Not rated" or "Rated"
-		if ( $is_not_rated_search || $is_rated_search ) {
-			$table_rating = $wpdb->prefix . 'drivers_raiting';
-			$join_builder .= "
-			LEFT JOIN $table_rating AS rating
-				ON reference.meta_value = rating.order_number
-				AND reference.meta_value IS NOT NULL
-				AND reference.meta_value != ''";
-		}
+		// Do not add rating table JOIN — use EXISTS/NOT EXISTS in WHERE instead to avoid heavy JOIN and DB overload
 		
 		$join_builder .= "
 			WHERE 1=1";
@@ -655,14 +647,20 @@ class TMSReports extends TMSReportsHelper {
 			$where_values[]     = $args[ 'source' ];
 		}
 		
-		// Фильтрация по reference_number
+		// Фильтрация по reference_number (use EXISTS/NOT EXISTS instead of JOIN to avoid DB overload)
 		if ( ! empty( $args[ 'my_search' ] ) ) {
 			if ( $is_not_rated_search ) {
-				// Show only loads where reference_number is not in ratings table
-				$where_conditions[] = "(rating.order_number IS NULL AND reference.meta_value IS NOT NULL AND reference.meta_value != '')";
+				$table_rating = $wpdb->prefix . 'drivers_raiting';
+				// Show only loads where reference_number is not in ratings table (no JOIN — subquery is lighter)
+				$where_conditions[] = $wpdb->prepare(
+					"(reference.meta_value IS NOT NULL AND reference.meta_value != '' AND NOT EXISTS (SELECT 1 FROM $table_rating AS rt WHERE rt.order_number = reference.meta_value))"
+				);
 			} elseif ( $is_rated_search ) {
+				$table_rating = $wpdb->prefix . 'drivers_raiting';
 				// Show only loads where reference_number exists in ratings table
-				$where_conditions[] = "(rating.order_number IS NOT NULL AND reference.meta_value IS NOT NULL AND reference.meta_value != '')";
+				$where_conditions[] = $wpdb->prepare(
+					"(reference.meta_value IS NOT NULL AND reference.meta_value != '' AND EXISTS (SELECT 1 FROM $table_rating AS rt WHERE rt.order_number = reference.meta_value))"
+				);
 			} else {
 				// Regular search
 				$where_conditions[] = "(reference.meta_value LIKE %s OR unit_number.meta_value LIKE %s OR second_unit_number.meta_value LIKE %s OR third_unit_number.meta_value LIKE %s OR pick_up_location.meta_value LIKE %s OR delivery_location.meta_value LIKE %s)";

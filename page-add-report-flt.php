@@ -437,4 +437,7 @@ endif;
 
 do_action( 'wp_rock_after_page_content' );
 
+// Payment file preview modal (for Accounting tab)
+echo esc_html( get_template_part( TEMPLATE_PATH . 'popups/payment-file-preview', 'modal' ) );
+
 get_footer();

@@ -27,6 +27,17 @@ $add_shipper = $TMSUsers->check_user_role_access( array(
 	'nightshift_tracking',
 ), true );
 
+$rating_access = $TMSUsers->check_user_role_access( array(
+	'administrator',
+	'dispatcher',
+	'dispatcher-tl',
+	'tracking',
+	'tracking-tl',
+	'morning_tracking',
+	'nightshift_tracking',
+	'expedite_manager',
+), true );
+
 if ( $add_broker ):
 	echo esc_html( get_template_part( TEMPLATE_PATH . 'popups/report', 'popup-add-company' ) );
 endif;
@@ -38,6 +49,10 @@ endif;
 echo esc_html( get_template_part( TEMPLATE_PATH . 'popups/report', 'popup-add-contact' ) );
 echo esc_html( get_template_part( TEMPLATE_PATH . 'popups/report', 'popup-quick-edit' ) );
 echo esc_html( get_template_part( TEMPLATE_PATH . 'popups/report', 'popup-quick-edit-ar' ) );
+
+if ( $rating_access ) {
+	echo esc_html( get_template_part( TEMPLATE_PATH . 'popups/load', 'rating', array( 'rating_access' => $rating_access ) ) );
+}
 ?>
 
 <div class="message-container js-show-info-message"></div>

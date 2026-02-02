@@ -15,6 +15,8 @@ $driver_pay_statuses = $reports->get_driver_payment_statuses();
 $quick_pay_methods   = $reports->get_quick_pay_methods();
 
 $bank_payment_st = $driver_pay_st = $quick_pay_accounting = $quick_pay_method = $quick_pay_driver_amount = $driver_rate = null;
+$unit_number_name = null;
+$payment_file_1 = $payment_file_2 = $payment_file_3 = null;
 
 // Second driver variables
 $second_bank_payment_st = $second_driver_pay_st = $second_quick_pay_accounting = $second_quick_pay_method = $second_quick_pay_driver_amount = $second_driver_rate = null;
@@ -50,7 +52,74 @@ if ( $report_object ) {
 		$quick_pay_method        = get_field_value( $meta, 'quick_pay_method' );
 		$quick_pay_driver_amount = get_field_value( $meta, 'quick_pay_driver_amount' );
 		$driver_rate             = get_field_value( $meta, 'driver_rate' );
-		
+		$unit_number_name        = get_field_value( $meta, 'unit_number_name' );
+
+		// Payment file links: get driver IDs and payment_file URL for each driver
+		$driver_instance   = new TMSDrivers();
+		$attached_driver   = get_field_value( $meta, 'attached_driver' );
+		$attached_second   = get_field_value( $meta, 'attached_second_driver' );
+		$attached_third    = get_field_value( $meta, 'attached_third_driver' );
+		$payment_file_1    = null;
+		$payment_file_2    = null;
+		$payment_file_3    = null;
+		if ( ! empty( $attached_driver ) ) {
+			$driver_obj = $driver_instance->get_driver_by_id( (int) $attached_driver );
+			if ( $driver_obj ) {
+				$driver_meta = get_field_value( $driver_obj, 'meta' );
+				$pf_id       = get_field_value( $driver_meta, 'payment_file' );
+				if ( $pf_id ) {
+					$pf_arr = $driver_instance->process_file_attachment( $pf_id );
+					if ( ! empty( $pf_arr['url'] ) ) {
+						$payment_file_1 = array(
+							'url'                => $pf_arr['url'],
+							'is_image'           => wp_attachment_is_image( $pf_id ),
+							'account_type'       => get_field_value( $driver_meta, 'account_type' ),
+							'account_name'       => get_field_value( $driver_meta, 'account_name' ),
+							'payment_instruction' => get_field_value( $driver_meta, 'payment_instruction' ),
+						);
+					}
+				}
+			}
+		}
+		if ( ! empty( $attached_second ) ) {
+			$driver_obj = $driver_instance->get_driver_by_id( (int) $attached_second );
+			if ( $driver_obj ) {
+				$driver_meta = get_field_value( $driver_obj, 'meta' );
+				$pf_id       = get_field_value( $driver_meta, 'payment_file' );
+				if ( $pf_id ) {
+					$pf_arr = $driver_instance->process_file_attachment( $pf_id );
+					if ( ! empty( $pf_arr['url'] ) ) {
+						$payment_file_2 = array(
+							'url'                => $pf_arr['url'],
+							'is_image'           => wp_attachment_is_image( $pf_id ),
+							'account_type'       => get_field_value( $driver_meta, 'account_type' ),
+							'account_name'       => get_field_value( $driver_meta, 'account_name' ),
+							'payment_instruction' => get_field_value( $driver_meta, 'payment_instruction' ),
+						);
+					}
+				}
+			}
+		}
+		if ( ! empty( $attached_third ) ) {
+			$driver_obj = $driver_instance->get_driver_by_id( (int) $attached_third );
+			if ( $driver_obj ) {
+				$driver_meta = get_field_value( $driver_obj, 'meta' );
+				$pf_id       = get_field_value( $driver_meta, 'payment_file' );
+				if ( $pf_id ) {
+					$pf_arr = $driver_instance->process_file_attachment( $pf_id );
+					if ( ! empty( $pf_arr['url'] ) ) {
+						$payment_file_3 = array(
+							'url'                => $pf_arr['url'],
+							'is_image'           => wp_attachment_is_image( $pf_id ),
+							'account_type'       => get_field_value( $driver_meta, 'account_type' ),
+							'account_name'       => get_field_value( $driver_meta, 'account_name' ),
+							'payment_instruction' => get_field_value( $driver_meta, 'payment_instruction' ),
+						);
+					}
+				}
+			}
+		}
+
 		// Second driver data
 		$second_driver              = get_field_value( $meta, 'second_driver' );
 		$second_unit_number_name    = get_field_value( $meta, 'second_unit_number_name' );
@@ -78,11 +147,50 @@ $has_second_driver = ! empty( $second_driver ) || ! empty( $second_unit_number_n
 $has_third_driver = ! empty( $third_driver ) || ! empty( $third_unit_number_name );
 
 $full_view_only = get_field_value( $args, 'full_view_only' );
+$show_payment_file_viewer = $TMSUsers->check_user_role_access( array( 'accounting', 'administrator' ), true );
 
 ?>
 
 <h3 class="p-0 display-6 mb-4">Accounting info</h3>
 
+<div class="row mb-4">
+<?php if ( $show_payment_file_viewer && ( $payment_file_1 && ! empty( $payment_file_1['url'] ) || $payment_file_2 && ! empty( $payment_file_2['url'] ) || $payment_file_3 && ! empty( $payment_file_3['url'] ) ) ): ?>
+			<div class="col-12 mb-2">
+				<div class="container-uploads">
+					<?php
+					if ( $payment_file_1 && ! empty( $payment_file_1['url'] ) ) {
+						$card_args = array(
+							'payment_file' => $payment_file_1,
+							'driver_name'  => ! empty( $unit_number_name ) ? $unit_number_name : __( 'Driver 1', 'wp-rock' ),
+							'reports'      => $reports,
+						);
+						set_query_var( 'args', $card_args );
+						get_template_part( TEMPLATE_PATH . 'payment-file', 'card', $card_args );
+					}
+					if ( $payment_file_2 && ! empty( $payment_file_2['url'] ) ) {
+						$card_args = array(
+							'payment_file' => $payment_file_2,
+							'driver_name'  => ! empty( $second_unit_number_name ) ? $second_unit_number_name : __( 'Driver 2', 'wp-rock' ),
+							'reports'      => $reports,
+						);
+						set_query_var( 'args', $card_args );
+						get_template_part( TEMPLATE_PATH . 'payment-file', 'card', $card_args );
+					}
+					if ( $payment_file_3 && ! empty( $payment_file_3['url'] ) ) {
+						$card_args = array(
+							'payment_file' => $payment_file_3,
+							'driver_name'  => ! empty( $third_unit_number_name ) ? $third_unit_number_name : __( 'Driver 3', 'wp-rock' ),
+							'reports'      => $reports,
+						);
+						set_query_var( 'args', $card_args );
+						get_template_part( TEMPLATE_PATH . 'payment-file', 'card', $card_args );
+					}
+					?>
+				</div>
+			</div>
+		<?php endif; ?>
+
+</div>
 <form class="<?php echo ( $full_view_only ) ? '' : 'js-uploads-accounting' ?> d-grid">
 	
 	<?php if ( $project ): ?>

@@ -8,7 +8,7 @@ class TMSReportsFlt extends TMSReportsHelper {
 	
 	public $table_company = 'reports_company';
 	
-	public $per_page_loads = 100;
+	public $per_page_loads = 50;
 	public $user_emails    = array();
 	public $email_helper   = false;
 	public $project        = '';

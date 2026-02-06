@@ -6946,8 +6946,9 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 			'optimize_company_tables'       => 'optimize_company_tables',
 			'optimize_shipper_tables'       => 'optimize_shipper_tables',
 			'create_load_chat'              => 'create_load_chat',
+			'get_driver_stats_popup_html'   => 'ajax_get_driver_stats_popup_html',
 		];
-		
+
 		foreach ( $actions as $ajax_action => $method ) {
 			add_action( "wp_ajax_{$ajax_action}", [ $this, $method ] );
 			add_action( "wp_ajax_nopriv_{$ajax_action}", [ $this->helper, 'need_login' ] );
@@ -7142,7 +7143,42 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 			)
 		);
 	}
-	
+
+	/**
+	 * AJAX: return HTML for driver Statistics tab (used in popup from load tables).
+	 */
+	public function ajax_get_driver_stats_popup_html() {
+		if ( ! defined( 'DOING_AJAX' ) || ! DOING_AJAX ) {
+			return;
+		}
+		$driver_id = isset( $_POST['driver_id'] ) ? absint( $_POST['driver_id'] ) : 0;
+		if ( ! $driver_id ) {
+			wp_send_json_error( array( 'message' => 'Missing driver_id' ) );
+			return;
+		}
+		$driver_instance = new TMSDrivers();
+		$driver_obj      = $driver_instance->get_driver_by_id( $driver_id );
+		if ( ! $driver_obj || ! is_array( $driver_obj ) ) {
+			wp_send_json_error( array( 'message' => 'Driver not found' ) );
+			return;
+		}
+		$args = array(
+			'report_object' => $driver_obj,
+			'post_id'       => $driver_id,
+		);
+		ob_start();
+		$template_path = get_template_directory() . '/src/template-parts/report/tabs/driver-tab-stats-popup.php';
+		if ( file_exists( $template_path ) ) {
+			include $template_path;
+		} else {
+			ob_end_clean();
+			wp_send_json_error( array( 'message' => 'Template not found' ) );
+			return;
+		}
+		$html = ob_get_clean();
+		wp_send_json_success( array( 'html' => $html ) );
+	}
+
 	/**
 	 * Sync existing load chat (update participants) after load update.
 	 *

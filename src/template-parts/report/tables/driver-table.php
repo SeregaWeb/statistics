@@ -14,6 +14,11 @@ $is_archive    = get_field_value( $args, 'is_archive' );
 $access_copy_email = $TMSUsers->check_user_role_access( array( 'administrator', 'recruiter', 'recruiter-tl' ), true );
 $access_show_recruiter_bonus = $TMSUsers->check_user_role_access( array( 'administrator', 'recruiter', 'recruiter-tl', 'accounting', 'moderator' ), true );
 
+$show_payment_file_viewer = false;
+if ( $is_archive ) {
+	$show_payment_file_viewer = $TMSUsers->check_user_role_access( array( 'accounting', 'administrator' ), true );
+}
+
 if ( ! empty( $results ) ) : ?>
 	
 	<?php if ( $driverHelper->can_copy_driver_phones() && !$is_archive && !$is_draft ): ?>
@@ -111,6 +116,24 @@ if ( ! empty( $results ) ) : ?>
 				$status_text = "Need set status";
 			}
 			
+			// Payment file for archive: build preview data when is_archive
+			$payment_file_driver = null;
+			if ( $is_archive ) {
+				$pf_id = get_field_value( $meta, 'payment_file' );
+				if ( $pf_id ) {
+					$pf_arr = $drivers->process_file_attachment( $pf_id );
+					if ( ! empty( $pf_arr['url'] ) ) {
+						$payment_file_driver = array(
+							'url'                  => $pf_arr['url'],
+							'is_image'             => wp_attachment_is_image( $pf_id ),
+							'account_type'         => get_field_value( $meta, 'account_type' ),
+							'account_name'         => get_field_value( $meta, 'account_name' ),
+							'payment_instruction'  => get_field_value( $meta, 'payment_instruction' ),
+						);
+					}
+				}
+			}
+
 			// Get driver data for quick update button
 			$current_location = get_field_value( $meta, 'current_location' );
 			$current_city     = get_field_value( $meta, 'current_city' );
@@ -172,8 +195,18 @@ if ( ! empty( $results ) ) : ?>
                     </div>
                 </td>
                 <td>
-                    <div class="d-flex  flex-column">
-                        <div>
+                    <div class="d-flex flex-column">
+                        <div class="d-flex align-items-center gap-1">
+							<?php if ( $is_archive && $payment_file_driver && $show_payment_file_viewer ) : ?>
+                                <button type="button" class="btn btn-sm btn-outline-secondary p-0 px-1 js-payment-file-preview" title="<?php esc_attr_e( 'View payment file', 'wp-rock' ); ?>"
+                                        data-url="<?php echo esc_url( $payment_file_driver['url'] ); ?>"
+                                        data-is-image="<?php echo $payment_file_driver['is_image'] ? '1' : '0'; ?>"
+                                        data-driver-name="<?php echo esc_attr( '(' . $row['id'] . ') ' . $driver_name ); ?>"
+                                        data-account-type="<?php echo esc_attr( $payment_file_driver['account_type'] ?? '' ); ?>"
+                                        data-account-name="<?php echo esc_attr( $payment_file_driver['account_name'] ?? '' ); ?>"
+                                        data-payment-instruction="<?php echo esc_attr( $payment_file_driver['payment_instruction'] ?? '' ); ?>"
+                                        aria-label="<?php esc_attr_e( 'View payment file', 'wp-rock' ); ?>">📄</button>
+							<?php endif; ?>
 							<?php echo '(' . $row[ 'id' ] . ') ' . $driver_name; ?>
 							<?php echo $icons->get_flags( $languages ); ?>
 
@@ -353,7 +386,10 @@ if ( ! empty( $results ) ) : ?>
 	<?php get_template_part( TEMPLATE_PATH . 'popups/quick-status-update-modal' ); ?>
     <?php get_template_part( TEMPLATE_PATH . 'popups/driver-notice' ); ?>
     <?php get_template_part( TEMPLATE_PATH . 'popups/driver-raiting' ); ?>
-    <?php get_template_part( TEMPLATE_PATH . 'popups/remove-driver', 'modal', array() );?>
+    <?php get_template_part( TEMPLATE_PATH . 'popups/remove-driver', 'modal', array() ); ?>
+	<?php if ( $is_archive ) : ?>
+		<?php get_template_part( TEMPLATE_PATH . 'popups/payment-file-preview', 'modal' ); ?>
+	<?php endif; ?>
 
 <?php else : ?>
     <p>No drivers were found.</p>

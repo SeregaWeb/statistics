@@ -20,7 +20,7 @@ $items               = $Drivers->get_table_items( $args );
 
 $items[ 'is_archive' ] = true;
 
-$access = $TMSUsers->check_user_role_access( [ 'administrator', 'recruiter', 'recruiter-tl', 'hr_manager' ], true );
+$access = $TMSUsers->check_user_role_access( [ 'administrator', 'recruiter', 'recruiter-tl', 'hr_manager', 'accounting' ], true );
 
 ?>
     <div class="container-fluid">

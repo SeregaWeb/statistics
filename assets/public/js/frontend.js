@@ -6523,12 +6523,14 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */ });
 /* harmony import */ var _parts_popup_window__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ../parts/popup-window */ "./src/js/parts/popup-window.js");
 /* harmony import */ var _info_messages__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./info-messages */ "./src/js/components/info-messages.ts");
+/* harmony import */ var _file_delete_confirm__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./file-delete-confirm */ "./src/js/components/file-delete-confirm.ts");
 function _slicedToArray(r, e) { return _arrayWithHoles(r) || _iterableToArrayLimit(r, e) || _unsupportedIterableToArray(r, e) || _nonIterableRest(); }
 function _nonIterableRest() { throw new TypeError("Invalid attempt to destructure non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method."); }
 function _unsupportedIterableToArray(r, a) { if (r) { if ("string" == typeof r) return _arrayLikeToArray(r, a); var t = {}.toString.call(r).slice(8, -1); return "Object" === t && r.constructor && (t = r.constructor.name), "Map" === t || "Set" === t ? Array.from(r) : "Arguments" === t || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(t) ? _arrayLikeToArray(r, a) : void 0; } }
 function _arrayLikeToArray(r, a) { (null == a || a > r.length) && (a = r.length); for (var e = 0, n = Array(a); e < a; e++) n[e] = r[e]; return n; }
 function _iterableToArrayLimit(r, l) { var t = null == r ? null : "undefined" != typeof Symbol && r[Symbol.iterator] || r["@@iterator"]; if (null != t) { var e, n, i, u, a = [], f = !0, o = !1; try { if (i = (t = t.call(r)).next, 0 === l) { if (Object(t) !== t) return; f = !1; } else for (; !(f = (e = i.call(t)).done) && (a.push(e.value), a.length !== l); f = !0); } catch (r) { o = !0, n = r; } finally { try { if (!f && null != t.return && (u = t.return(), Object(u) !== u)) return; } finally { if (o) throw n; } } return a; } }
 function _arrayWithHoles(r) { if (Array.isArray(r)) return r; }
+
 
 
 function setUpTabInUrl(tab) {
@@ -6912,11 +6914,15 @@ var updateAccountingReportInit = function updateAccountingReportInit(ajaxUrl) {
   });
 };
 var removeOneFileInitial = function removeOneFileInitial(ajaxUrl) {
+  var DOCUMENT_FILE_FIELDS_REQUIRING_CONFIRM = new Set(['attached_files', 'attached_file_required', 'updated_rate_confirmation', 'proof_of_delivery']);
   var deleteForms = document.querySelectorAll('.js-remove-one');
   deleteForms && deleteForms.forEach(function (item) {
     item.addEventListener('submit', function (event) {
       event.preventDefault();
       var target = event.target;
+      if (!(0,_file_delete_confirm__WEBPACK_IMPORTED_MODULE_2__.confirmDeleteIfNeeded)(target, DOCUMENT_FILE_FIELDS_REQUIRING_CONFIRM)) {
+        return;
+      }
       var formData = new FormData(target);
       var flt = document.querySelector('input[name="flt"]');
       var action = flt ? 'delete_open_image_flt' : 'delete_open_image';
@@ -9023,6 +9029,7 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _create_report__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./create-report */ "./src/js/components/create-report.ts");
 /* harmony import */ var _disabled_btn_in_form__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./disabled-btn-in-form */ "./src/js/components/disabled-btn-in-form.ts");
 /* harmony import */ var _parts_popup_window__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ../parts/popup-window */ "./src/js/parts/popup-window.js");
+/* harmony import */ var _file_delete_confirm__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! ./file-delete-confirm */ "./src/js/components/file-delete-confirm.ts");
 function _slicedToArray(r, e) { return _arrayWithHoles(r) || _iterableToArrayLimit(r, e) || _unsupportedIterableToArray(r, e) || _nonIterableRest(); }
 function _nonIterableRest() { throw new TypeError("Invalid attempt to destructure non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method."); }
 function _iterableToArrayLimit(r, l) { var t = null == r ? null : "undefined" != typeof Symbol && r[Symbol.iterator] || r["@@iterator"]; if (null != t) { var e, n, i, u, a = [], f = !0, o = !1; try { if (i = (t = t.call(r)).next, 0 === l) { if (Object(t) !== t) return; f = !1; } else for (; !(f = (e = i.call(t)).done) && (a.push(e.value), a.length !== l); f = !0); } catch (r) { o = !0, n = r; } finally { try { if (!f && null != t.return && (u = t.return(), Object(u) !== u)) return; } finally { if (o) throw n; } } return a; } }
@@ -9030,6 +9037,7 @@ function _arrayWithHoles(r) { if (Array.isArray(r)) return r; }
 function _createForOfIteratorHelper(r, e) { var t = "undefined" != typeof Symbol && r[Symbol.iterator] || r["@@iterator"]; if (!t) { if (Array.isArray(r) || (t = _unsupportedIterableToArray(r)) || e && r && "number" == typeof r.length) { t && (r = t); var _n = 0, F = function F() {}; return { s: F, n: function n() { return _n >= r.length ? { done: !0 } : { done: !1, value: r[_n++] }; }, e: function e(r) { throw r; }, f: F }; } throw new TypeError("Invalid attempt to iterate non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method."); } var o, a = !0, u = !1; return { s: function s() { t = t.call(r); }, n: function n() { var r = t.next(); return a = r.done, r; }, e: function e(r) { u = !0, o = r; }, f: function f() { try { a || null == t.return || t.return(); } finally { if (u) throw o; } } }; }
 function _unsupportedIterableToArray(r, a) { if (r) { if ("string" == typeof r) return _arrayLikeToArray(r, a); var t = {}.toString.call(r).slice(8, -1); return "Object" === t && r.constructor && (t = r.constructor.name), "Map" === t || "Set" === t ? Array.from(r) : "Arguments" === t || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(t) ? _arrayLikeToArray(r, a) : void 0; } }
 function _arrayLikeToArray(r, a) { (null == a || a > r.length) && (a = r.length); for (var e = 0, n = Array(a); e < a; e++) n[e] = r[e]; return n; }
+
 
 
 
@@ -9204,6 +9212,7 @@ var updateDriverDocument = function updateDriverDocument(urlAjax) {
     });
   });
 };
+var DRIVER_FILE_FIELDS_REQUIRING_CONFIRM = new Set(['registration_file', 'gvwr_placard', 'payment_file', 'w9_file', 'ssn_file', 'ein_file', 'nec_file', 'nec_file_martlet', 'nec_file_endurance', 'hazmat_certificate_file', 'driving_record', 'legal_document', 'twic_file', 'martlet_coi', 'endurance_coi', 'martlet_ic_agreement', 'endurance_ic_agreement', 'motor_cargo_coi', 'auto_liability_coi', 'ic_agreement', 'canada_transition_file', 'immigration_file', 'background_file', 'interview_file', 'team_driver_driving_record', 'immigration_file_team_driver', 'legal_document_team_driver', 'canada_transition_file_team_driver', 'background_file_team_driver', 'hazmat_certificate_file_team_driver', 'twic_file_team_driver', 'tsa_file_team_driver', 'interview_martlet', 'interview_endurance']);
 var removeOneFileInitial = function removeOneFileInitial(ajaxUrl) {
   var deleteForms = document.querySelectorAll('.js-remove-one-driver');
   var deleteFormsNoFormBtn = document.querySelectorAll('.js-remove-one-no-form-btn');
@@ -9211,6 +9220,10 @@ var removeOneFileInitial = function removeOneFileInitial(ajaxUrl) {
     item.addEventListener('submit', function (event) {
       event.preventDefault();
       var target = event.target;
+      var container = target;
+      if (!(0,_file_delete_confirm__WEBPACK_IMPORTED_MODULE_4__.confirmDeleteIfNeeded)(container, DRIVER_FILE_FIELDS_REQUIRING_CONFIRM)) {
+        return;
+      }
       (0,_disabled_btn_in_form__WEBPACK_IMPORTED_MODULE_2__.disabledBtnInForm)(target);
       var formData = new FormData(target);
       var action = 'delete_open_image_driver';
@@ -9242,6 +9255,9 @@ var removeOneFileInitial = function removeOneFileInitial(ajaxUrl) {
       event.preventDefault();
       var parentDiv = button.closest('.js-remove-one-no-form');
       if (!parentDiv) return;
+      if (!(0,_file_delete_confirm__WEBPACK_IMPORTED_MODULE_4__.confirmDeleteIfNeeded)(parentDiv, DRIVER_FILE_FIELDS_REQUIRING_CONFIRM)) {
+        return;
+      }
       button.disabled = true;
       var formData = new FormData();
       var hiddenInputs = parentDiv.querySelectorAll('input[type="hidden"]');
@@ -9257,10 +9273,10 @@ var removeOneFileInitial = function removeOneFileInitial(ajaxUrl) {
       fetch(ajaxUrl, options).then(function (res) {
         return res.json();
       }).then(function (requestStatus) {
+        var _a;
         if (requestStatus.success) {
           (0,_info_messages__WEBPACK_IMPORTED_MODULE_0__.printMessage)(requestStatus.data.message, 'success', 8000);
-          button.disabled = false;
-          if (parentDiv.dataset && parentDiv.dataset.tab) {
+          if ((_a = parentDiv.dataset) === null || _a === void 0 ? void 0 : _a.tab) {
             (0,_create_report__WEBPACK_IMPORTED_MODULE_1__.setUpTabInUrl)(parentDiv.dataset.tab);
           }
           button.disabled = false;
@@ -10274,6 +10290,8 @@ var DriverPopupForms = /*#__PURE__*/function () {
     _classCallCheck(this, DriverPopupForms);
     this.currentDriverId = null;
     this.ratingButtonHandler = null;
+    this.statsPopupAbortController = null;
+    this.statsPopupPendingDriverId = null;
     this.ajaxUrl = ajaxUrl;
     this.init();
   }
@@ -10289,6 +10307,7 @@ var DriverPopupForms = /*#__PURE__*/function () {
       this.handleDriverPageRatingModal();
       this.setupRatingConstraints();
       this.handleAutoBlockExclude();
+      this.initDriverStatsPopup();
       document.addEventListener('tms:rating-popup-open', function () {
         _this.resetRatingUIState();
         var driverId = _this.getDriverIdFromPopup('driverRatingName');
@@ -10788,8 +10807,9 @@ var DriverPopupForms = /*#__PURE__*/function () {
     }
   }, {
     key: "loadAvailableLoadsForDriverPage",
-    value: function loadAvailableLoadsForDriverPage(loadSelect, loadsInfo) {
-      var driverIdInput = document.querySelector('input[name="driver_id"]');
+    value: function loadAvailableLoadsForDriverPage(loadSelect, loadsInfo, container) {
+      var scope = container || document;
+      var driverIdInput = scope.querySelector('input[name="driver_id"]');
       if (!driverIdInput || !driverIdInput.value) {
         loadsInfo.textContent = 'Driver ID not found';
         loadsInfo.className = 'text-danger';
@@ -10934,6 +10954,349 @@ var DriverPopupForms = /*#__PURE__*/function () {
       var container = document.getElementById('driver-statistics-container');
       if (!container) return;
       container.innerHTML = "\n            <div class=\"col-12\">\n                <div class=\"alert alert-danger\" role=\"alert\">\n                    <h5 class=\"alert-heading\">Error Loading Statistics</h5>\n                    <p>".concat(message, "</p>\n                    <button class=\"btn btn-outline-danger btn-sm\" onclick=\"location.reload()\">Retry</button>\n                </div>\n            </div>\n        ");
+    }
+  }, {
+    key: "initDriverStatsPopup",
+    value: function initDriverStatsPopup() {
+      var _this14 = this;
+      var getOrCreateModal = function getOrCreateModal() {
+        var modalEl = document.getElementById('js-driver-stats-modal');
+        var bodyEl = document.getElementById('js-driver-stats-modal-body');
+        if (!modalEl || !bodyEl) {
+          modalEl = document.createElement('div');
+          modalEl.className = 'modal fade';
+          modalEl.id = 'js-driver-stats-modal';
+          modalEl.setAttribute('tabindex', '-1');
+          modalEl.setAttribute('aria-labelledby', 'js-driver-stats-modal-label');
+          modalEl.setAttribute('aria-hidden', 'true');
+          modalEl.innerHTML = "\n                    <div class=\"modal-dialog modal-xl modal-dialog-scrollable\">\n                        <div class=\"modal-content\">\n                            <div class=\"modal-header\">\n                                <h5 class=\"modal-title\" id=\"js-driver-stats-modal-label\">Driver Statistics</h5>\n                                <button type=\"button\" class=\"btn-close\" data-bs-dismiss=\"modal\" aria-label=\"Close\"></button>\n                            </div>\n                            <div class=\"modal-body\" id=\"js-driver-stats-modal-body\"></div>\n                        </div>\n                    </div>\n                ";
+          document.body.appendChild(modalEl);
+          bodyEl = document.getElementById('js-driver-stats-modal-body');
+        }
+        return {
+          modalEl: modalEl,
+          bodyEl: bodyEl
+        };
+      };
+      var bindOverlayClose = function bindOverlayClose(modalEl) {
+        if (modalEl.hasAttribute('data-driver-stats-overlay-bound')) {
+          return;
+        }
+        modalEl.setAttribute('data-driver-stats-overlay-bound', 'true');
+        modalEl.addEventListener('click', function (e) {
+          var _a;
+          if (e.target !== modalEl) {
+            return;
+          }
+          var BootstrapModal = (_a = window.bootstrap) === null || _a === void 0 ? void 0 : _a.Modal;
+          if (BootstrapModal) {
+            var inst = BootstrapModal.getInstance(modalEl);
+            if (inst) {
+              inst.hide();
+            }
+          } else {
+            if (!modalEl.classList.contains('show')) {
+              return;
+            }
+            modalEl.classList.remove('show');
+            modalEl.style.display = 'none';
+            modalEl.setAttribute('aria-hidden', 'true');
+            document.body.classList.remove('modal-open');
+            var b = document.getElementById('js-driver-stats-modal-backdrop');
+            if (b) {
+              b.remove();
+            }
+          }
+        });
+      };
+      document.addEventListener('click', function (e) {
+        var _a, _b;
+        var trigger = e.target.closest('.js-driver-stats-trigger');
+        if (!trigger) {
+          return;
+        }
+        e.preventDefault();
+        e.stopPropagation();
+        e.stopImmediatePropagation();
+        var driverId = trigger.getAttribute('data-driver-id');
+        if (!driverId) {
+          return;
+        }
+        var _getOrCreateModal = getOrCreateModal(),
+          modalEl = _getOrCreateModal.modalEl,
+          bodyEl = _getOrCreateModal.bodyEl;
+        bindOverlayClose(modalEl);
+        bodyEl.innerHTML = "\n                <div class=\"text-center py-5\">\n                    <div class=\"spinner-border text-primary\" role=\"status\"><span class=\"visually-hidden\">Loading...</span></div>\n                    <p class=\"mt-2\">Loading driver statistics...</p>\n                </div>\n            ";
+        var BootstrapModal = (_a = window.bootstrap) === null || _a === void 0 ? void 0 : _a.Modal;
+        if (BootstrapModal) {
+          var modalInstance = BootstrapModal.getInstance(modalEl) || new BootstrapModal(modalEl);
+          requestAnimationFrame(function () {
+            modalInstance.show();
+          });
+        } else {
+          modalEl.classList.add('show');
+          modalEl.style.display = 'block';
+          modalEl.style.zIndex = '1056';
+          modalEl.setAttribute('aria-hidden', 'false');
+          document.body.classList.add('modal-open');
+          var backdrop = document.createElement('div');
+          backdrop.className = 'modal-backdrop fade show';
+          backdrop.id = 'js-driver-stats-modal-backdrop';
+          backdrop.style.zIndex = '1055';
+          document.body.appendChild(backdrop);
+          var _closeHandler = function closeHandler() {
+            var _a;
+            modalEl.classList.remove('show');
+            modalEl.style.display = 'none';
+            modalEl.setAttribute('aria-hidden', 'true');
+            document.body.classList.remove('modal-open');
+            var b = document.getElementById('js-driver-stats-modal-backdrop');
+            if (b) b.remove();
+            (_a = modalEl.querySelector('.btn-close')) === null || _a === void 0 ? void 0 : _a.removeEventListener('click', _closeHandler);
+            backdrop.removeEventListener('click', _closeHandler);
+          };
+          (_b = modalEl.querySelector('.btn-close')) === null || _b === void 0 ? void 0 : _b.addEventListener('click', _closeHandler);
+          backdrop.addEventListener('click', _closeHandler);
+        }
+        if (_this14.statsPopupAbortController) {
+          _this14.statsPopupAbortController.abort();
+        }
+        _this14.statsPopupAbortController = new AbortController();
+        _this14.statsPopupPendingDriverId = driverId;
+        var formData = new FormData();
+        formData.append('action', 'get_driver_stats_popup_html');
+        formData.append('driver_id', driverId);
+        var nonceEl = document.querySelector('#_wpnonce, input[name="_wpnonce"]');
+        if (nonceEl && nonceEl.value) {
+          formData.append('_wpnonce', nonceEl.value);
+        }
+        fetch(_this14.ajaxUrl, {
+          method: 'POST',
+          body: formData,
+          credentials: 'same-origin',
+          signal: _this14.statsPopupAbortController.signal
+        }).then(function (res) {
+          return res.json();
+        }).then(function (data) {
+          if (_this14.statsPopupPendingDriverId !== driverId) {
+            return;
+          }
+          if (data.success && data.data && data.data.html) {
+            bodyEl.innerHTML = data.data.html;
+            _this14.loadDriverStatistics(parseInt(driverId, 10));
+            _this14.initDriverStatsPopupViewSwitcher(bodyEl);
+          } else {
+            bodyEl.innerHTML = "<div class=\"alert alert-danger\">".concat(data.data && data.data.message || 'Failed to load statistics', "</div>");
+          }
+        }).catch(function (err) {
+          if (err.name === 'AbortError') {
+            return;
+          }
+          if (_this14.statsPopupPendingDriverId !== driverId) {
+            return;
+          }
+          bodyEl.innerHTML = '<div class="alert alert-danger">Network error</div>';
+        });
+      });
+    }
+  }, {
+    key: "applyPopupRatingConstraints",
+    value: function applyPopupRatingConstraints(container) {
+      var loadSelect = container.querySelector('.js-driver-stats-popup-load-select');
+      var canceled = !!(loadSelect && loadSelect.value === 'Canceled');
+      var buttons = Array.from(container.querySelectorAll('.js-driver-stats-popup-rating-btn'));
+      buttons.forEach(function (btn) {
+        var val = parseInt(btn.getAttribute('data-rating') || '0', 10);
+        var shouldDisable = canceled && val > 2;
+        btn.disabled = shouldDisable;
+        if (canceled && val > 2) {
+          btn.classList.remove('active');
+        }
+      });
+      var selectedInput = container.querySelector('.js-driver-stats-popup-selected-rating');
+      if (selectedInput && canceled) {
+        var current = parseInt(selectedInput.value || '0', 10);
+        if (current > 2) {
+          selectedInput.value = '';
+        }
+      }
+    }
+  }, {
+    key: "initDriverStatsPopupViewSwitcher",
+    value: function initDriverStatsPopupViewSwitcher(container) {
+      var _this15 = this;
+      var parent = container.parentElement;
+      if (parent) {
+        var clone = container.cloneNode(true);
+        if (container.id) {
+          clone.id = container.id;
+        }
+        parent.replaceChild(clone, container);
+        container = clone;
+      }
+      var root = container.querySelector('.js-driver-stats-popup-root');
+      if (!root) {
+        return;
+      }
+      var driverId = root.getAttribute('data-driver-id') || '';
+      var showStats = function showStats() {
+        var stats = container.querySelector('.js-driver-stats-popup-stats');
+        var rating = container.querySelector('.js-driver-stats-popup-rating-panel');
+        var notice = container.querySelector('.js-driver-stats-popup-notice-panel');
+        if (stats) stats.classList.remove('d-none');
+        if (rating) rating.classList.add('d-none');
+        if (notice) notice.classList.add('d-none');
+      };
+      var showRating = function showRating() {
+        var stats = container.querySelector('.js-driver-stats-popup-stats');
+        var rating = container.querySelector('.js-driver-stats-popup-rating-panel');
+        var notice = container.querySelector('.js-driver-stats-popup-notice-panel');
+        if (stats) stats.classList.add('d-none');
+        if (notice) notice.classList.add('d-none');
+        if (rating) rating.classList.remove('d-none');
+        var loadSelect = container.querySelector('.js-driver-stats-popup-load-select');
+        var loadsInfo = container.querySelector('.js-driver-stats-popup-loads-info');
+        if (loadSelect && loadsInfo) {
+          _this15.loadAvailableLoadsForDriverPage(loadSelect, loadsInfo, container);
+        }
+        _this15.applyPopupRatingConstraints(container);
+      };
+      var showNotice = function showNotice() {
+        var stats = container.querySelector('.js-driver-stats-popup-stats');
+        var rating = container.querySelector('.js-driver-stats-popup-rating-panel');
+        var notice = container.querySelector('.js-driver-stats-popup-notice-panel');
+        if (stats) stats.classList.add('d-none');
+        if (rating) rating.classList.add('d-none');
+        if (notice) notice.classList.remove('d-none');
+      };
+      var refreshPopupContent = function refreshPopupContent() {
+        var formData = new FormData();
+        formData.append('action', 'get_driver_stats_popup_html');
+        formData.append('driver_id', driverId);
+        fetch(_this15.ajaxUrl, {
+          method: 'POST',
+          body: formData,
+          credentials: 'same-origin'
+        }).then(function (res) {
+          return res.json();
+        }).then(function (data) {
+          if (data.success && data.data && data.data.html) {
+            container.innerHTML = data.data.html;
+            _this15.loadDriverStatistics(parseInt(driverId, 10));
+          }
+        }).catch(function () {});
+      };
+      container.addEventListener('click', function (e) {
+        var target = e.target;
+        if (target.closest('.js-driver-stats-popup-show-rating')) {
+          e.preventDefault();
+          showRating();
+          return;
+        }
+        if (target.closest('.js-driver-stats-popup-show-notice')) {
+          e.preventDefault();
+          showNotice();
+          return;
+        }
+        if (target.closest('.js-driver-stats-popup-back')) {
+          e.preventDefault();
+          showStats();
+          return;
+        }
+        var ratingBtn = target.closest('.js-driver-stats-popup-rating-btn');
+        if (ratingBtn) {
+          e.preventDefault();
+          var btn = ratingBtn;
+          if (btn.disabled) return;
+          var ratingVal = parseInt(ratingBtn.getAttribute('data-rating') || '0', 10);
+          var loadSelect = container.querySelector('.js-driver-stats-popup-load-select');
+          var isCanceled = !!(loadSelect && loadSelect.value === 'Canceled');
+          if (isCanceled && ratingVal > 2) {
+            (0,_info_messages__WEBPACK_IMPORTED_MODULE_0__.printMessage)('For Canceled loads you can set rating 1-2 only.', 'warning', 2500);
+            return;
+          }
+          var selectedInput = container.querySelector('.js-driver-stats-popup-selected-rating');
+          if (selectedInput) {
+            selectedInput.value = String(ratingVal);
+          }
+          container.querySelectorAll('.js-driver-stats-popup-rating-btn').forEach(function (b) {
+            return b.classList.remove('active');
+          });
+          ratingBtn.classList.add('active');
+        }
+      });
+      container.addEventListener('change', function (e) {
+        var target = e.target;
+        if (target.classList.contains('js-driver-stats-popup-load-select') || target.id === 'js-driver-stats-popup-load-number') {
+          _this15.applyPopupRatingConstraints(container);
+        }
+      });
+      container.addEventListener('submit', function (e) {
+        var form = e.target.closest('form');
+        if (!form) return;
+        var submitBtn = form.querySelector('button[type="submit"]');
+        if (form.classList.contains('js-driver-stats-popup-rating-form')) {
+          e.preventDefault();
+          var selectedInput = container.querySelector('.js-driver-stats-popup-selected-rating');
+          var ratingVal = selectedInput ? parseInt(selectedInput.value || '0', 10) : 0;
+          var loadSelect = container.querySelector('.js-driver-stats-popup-load-select');
+          var isCanceled = !!(loadSelect && loadSelect.value === 'Canceled');
+          if (ratingVal < 1 || ratingVal > 5) {
+            (0,_info_messages__WEBPACK_IMPORTED_MODULE_0__.printMessage)('Please select a rating (1–5).', 'danger', 3000);
+            return;
+          }
+          if (isCanceled && ratingVal > 2) {
+            (0,_info_messages__WEBPACK_IMPORTED_MODULE_0__.printMessage)('For Canceled loads you can set rating 1-2 only.', 'danger', 3000);
+            return;
+          }
+          if (submitBtn) submitBtn.disabled = true;
+          var formData = new FormData(form);
+          formData.set('action', 'add_driver_rating');
+          fetch(_this15.ajaxUrl, {
+            method: 'POST',
+            body: formData,
+            credentials: 'same-origin'
+          }).then(function (res) {
+            return res.json();
+          }).then(function (data) {
+            if (data.success) {
+              (0,_info_messages__WEBPACK_IMPORTED_MODULE_0__.printMessage)('Rating added successfully!', 'success', 3000);
+              refreshPopupContent();
+            } else {
+              if (submitBtn) submitBtn.disabled = false;
+              (0,_info_messages__WEBPACK_IMPORTED_MODULE_0__.printMessage)(data.data && data.data.message || 'Error adding rating', 'danger', 3000);
+            }
+          }).catch(function () {
+            if (submitBtn) submitBtn.disabled = false;
+            (0,_info_messages__WEBPACK_IMPORTED_MODULE_0__.printMessage)('Network error', 'danger', 3000);
+          });
+          return;
+        }
+        if (form.classList.contains('js-driver-stats-popup-notice-form')) {
+          e.preventDefault();
+          if (submitBtn) submitBtn.disabled = true;
+          var _formData = new FormData(form);
+          _formData.set('action', 'add_driver_notice');
+          fetch(_this15.ajaxUrl, {
+            method: 'POST',
+            body: _formData,
+            credentials: 'same-origin'
+          }).then(function (res) {
+            return res.json();
+          }).then(function (data) {
+            if (data.success) {
+              (0,_info_messages__WEBPACK_IMPORTED_MODULE_0__.printMessage)('Notice added successfully!', 'success', 3000);
+              refreshPopupContent();
+            } else {
+              if (submitBtn) submitBtn.disabled = false;
+              (0,_info_messages__WEBPACK_IMPORTED_MODULE_0__.printMessage)(data.data && data.data.message || 'Error adding notice', 'danger', 3000);
+            }
+          }).catch(function () {
+            if (submitBtn) submitBtn.disabled = false;
+            (0,_info_messages__WEBPACK_IMPORTED_MODULE_0__.printMessage)('Network error', 'danger', 3000);
+          });
+        }
+      });
     }
   }]);
 }();
@@ -12617,6 +12980,50 @@ observer.observe(document.body, {
   childList: true,
   subtree: true
 });
+
+/***/ }),
+
+/***/ "./src/js/components/file-delete-confirm.ts":
+/*!**************************************************!*\
+  !*** ./src/js/components/file-delete-confirm.ts ***!
+  \**************************************************/
+/***/ (function(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   confirmDeleteIfNeeded: function() { return /* binding */ confirmDeleteIfNeeded; },
+/* harmony export */   getDeleteConfirmMessage: function() { return /* binding */ getDeleteConfirmMessage; },
+/* harmony export */   getFileLabelFromContainer: function() { return /* binding */ getFileLabelFromContainer; },
+/* harmony export */   getImageFieldsValue: function() { return /* binding */ getImageFieldsValue; },
+/* harmony export */   shouldConfirmDelete: function() { return /* binding */ shouldConfirmDelete; }
+/* harmony export */ });
+var getImageFieldsValue = function getImageFieldsValue(container) {
+  var _a, _b;
+  var input = container.querySelector('input[name="image-fields"]');
+  return ((_b = (_a = input === null || input === void 0 ? void 0 : input.value) === null || _a === void 0 ? void 0 : _a.trim()) !== null && _b !== void 0 ? _b : '') || '';
+};
+var getFileLabelFromContainer = function getFileLabelFromContainer(container) {
+  var selector = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : '.required-label';
+  var _a, _b;
+  var label = container.querySelector(selector);
+  return ((_b = (_a = label === null || label === void 0 ? void 0 : label.textContent) === null || _a === void 0 ? void 0 : _a.trim()) !== null && _b !== void 0 ? _b : '') || '';
+};
+var getDeleteConfirmMessage = function getDeleteConfirmMessage(container) {
+  var fileName = getFileLabelFromContainer(container);
+  return fileName ? "Confirm delete file: ".concat(fileName, "?") : 'Confirm delete file?';
+};
+var shouldConfirmDelete = function shouldConfirmDelete(container, fieldsRequiringConfirm) {
+  var fieldsSet = fieldsRequiringConfirm instanceof Set ? fieldsRequiringConfirm : new Set(fieldsRequiringConfirm);
+  var fieldValue = getImageFieldsValue(container);
+  return fieldsSet.has(fieldValue);
+};
+var confirmDeleteIfNeeded = function confirmDeleteIfNeeded(container, fieldsRequiringConfirm) {
+  if (!shouldConfirmDelete(container, fieldsRequiringConfirm)) {
+    return true;
+  }
+  return window.confirm(getDeleteConfirmMessage(container));
+};
 
 /***/ }),
 
@@ -16790,7 +17197,9 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */ });
 /* harmony import */ var _info_messages__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./info-messages */ "./src/js/components/info-messages.ts");
 /* harmony import */ var _disabled_btn_in_form__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./disabled-btn-in-form */ "./src/js/components/disabled-btn-in-form.ts");
-/* harmony import */ var _parts_popup_window__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ../parts/popup-window */ "./src/js/parts/popup-window.js");
+/* harmony import */ var _file_delete_confirm__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./file-delete-confirm */ "./src/js/components/file-delete-confirm.ts");
+/* harmony import */ var _parts_popup_window__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ../parts/popup-window */ "./src/js/parts/popup-window.js");
+
 
 
 
@@ -16863,7 +17272,7 @@ var uploadFileTrailer = function uploadFileTrailer(ajaxUrl) {
         }
       }
       var action = 'upload_trailer_helper';
-      var popupInstance = new _parts_popup_window__WEBPACK_IMPORTED_MODULE_2__["default"]();
+      var popupInstance = new _parts_popup_window__WEBPACK_IMPORTED_MODULE_3__["default"]();
       var formData = new FormData(target);
       formData.append('action', action);
       var options = {
@@ -16913,12 +17322,16 @@ var uploadFileTrailer = function uploadFileTrailer(ajaxUrl) {
   });
 };
 var removeOneTrailerFile = function removeOneTrailerFile(ajaxUrl) {
+  var TRAILER_FILE_FIELDS_REQUIRING_CONFIRM = new Set(['license_plate_file', 'trailer_registration']);
   var deleteForms = document.querySelectorAll('.js-remove-one-trailer');
   var deleteFormsNoFormBtn = document.querySelectorAll('.js-remove-one-no-form-btn');
   deleteForms && deleteForms.forEach(function (item) {
     item.addEventListener('submit', function (event) {
       event.preventDefault();
       var target = event.target;
+      if (!(0,_file_delete_confirm__WEBPACK_IMPORTED_MODULE_2__.confirmDeleteIfNeeded)(target, TRAILER_FILE_FIELDS_REQUIRING_CONFIRM)) {
+        return;
+      }
       (0,_disabled_btn_in_form__WEBPACK_IMPORTED_MODULE_1__.disabledBtnInForm)(target);
       var formData = new FormData(target);
       var action = 'remove_one_trailer';
@@ -16959,6 +17372,9 @@ var removeOneTrailerFile = function removeOneTrailerFile(ajaxUrl) {
       if (!parentDiv) return;
       var isTrailer = parentDiv.classList.contains('js-remove-one-trailer') || parentDiv.querySelector('.js-remove-one-trailer') !== null;
       if (!isTrailer) return;
+      if (!(0,_file_delete_confirm__WEBPACK_IMPORTED_MODULE_2__.confirmDeleteIfNeeded)(parentDiv, TRAILER_FILE_FIELDS_REQUIRING_CONFIRM)) {
+        return;
+      }
       var btn = button;
       if (btn.disabled) return;
       btn.disabled = true;
@@ -17231,6 +17647,7 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _info_messages__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./info-messages */ "./src/js/components/info-messages.ts");
 /* harmony import */ var _disabled_btn_in_form__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./disabled-btn-in-form */ "./src/js/components/disabled-btn-in-form.ts");
 /* harmony import */ var _parts_popup_window__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ../parts/popup-window */ "./src/js/parts/popup-window.js");
+/* harmony import */ var _file_delete_confirm__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ./file-delete-confirm */ "./src/js/components/file-delete-confirm.ts");
 
 
 
@@ -17364,6 +17781,8 @@ var uploadFileVehicle = function uploadFileVehicle(ajaxUrl) {
     }, true);
   });
 };
+
+var VEHICLE_FILE_FIELDS_REQUIRING_CONFIRM = new Set(['vehicle_registration', 'fleet_registration_id_card']);
 var removeOneVehicleFile = function removeOneVehicleFile(ajaxUrl) {
   var deleteForms = document.querySelectorAll('.js-remove-one-vehicle');
   var deleteFormsNoFormBtn = document.querySelectorAll('.js-remove-one-no-form-btn');
@@ -17371,6 +17790,9 @@ var removeOneVehicleFile = function removeOneVehicleFile(ajaxUrl) {
     item.addEventListener('submit', function (event) {
       event.preventDefault();
       var target = event.target;
+      if (!(0,_file_delete_confirm__WEBPACK_IMPORTED_MODULE_3__.confirmDeleteIfNeeded)(target, VEHICLE_FILE_FIELDS_REQUIRING_CONFIRM)) {
+        return;
+      }
       (0,_disabled_btn_in_form__WEBPACK_IMPORTED_MODULE_1__.disabledBtnInForm)(target);
       var formData = new FormData(target);
       var action = 'remove_one_vehicle';
@@ -17418,6 +17840,9 @@ var removeOneVehicleFile = function removeOneVehicleFile(ajaxUrl) {
       if (!parentDiv) return;
       var isVehicle = parentDiv.classList.contains('js-remove-one-vehicle') || parentDiv.querySelector('.js-remove-one-vehicle') !== null;
       if (!isVehicle) return;
+      if (!(0,_file_delete_confirm__WEBPACK_IMPORTED_MODULE_3__.confirmDeleteIfNeeded)(parentDiv, VEHICLE_FILE_FIELDS_REQUIRING_CONFIRM)) {
+        return;
+      }
       var btn = button;
       if (btn.disabled) return;
       btn.disabled = true;

@@ -188,6 +188,16 @@ export const uploadFileVehicle = (ajaxUrl) => {
     });
 };
 
+import { confirmDeleteIfNeeded } from './file-delete-confirm';
+
+/**
+ * Field names (image-fields value) for which delete confirmation is required (vehicle files).
+ */
+const VEHICLE_FILE_FIELDS_REQUIRING_CONFIRM = new Set<string>([
+    'vehicle_registration',
+    'fleet_registration_id_card',
+]);
+
 /**
  * Remove one vehicle file
  */
@@ -201,6 +211,11 @@ export const removeOneVehicleFile = (ajaxUrl) => {
             item.addEventListener('submit', (event) => {
                 event.preventDefault();
                 const { target } = event;
+
+                if (!confirmDeleteIfNeeded(target as Element, VEHICLE_FILE_FIELDS_REQUIRING_CONFIRM)) {
+                    return;
+                }
+
                 // @ts-ignore
                 disabledBtnInForm(target);
                 // @ts-ignore
@@ -267,10 +282,14 @@ export const removeOneVehicleFile = (ajaxUrl) => {
                 if (!parentDiv) return;
 
                 // Check if this is a vehicle file
-                const isVehicle = parentDiv.classList.contains('js-remove-one-vehicle') || 
+                const isVehicle = parentDiv.classList.contains('js-remove-one-vehicle') ||
                     parentDiv.querySelector('.js-remove-one-vehicle') !== null;
-                
+
                 if (!isVehicle) return; // Skip if not a vehicle
+
+                if (!confirmDeleteIfNeeded(parentDiv, VEHICLE_FILE_FIELDS_REQUIRING_CONFIRM)) {
+                    return;
+                }
 
                 // Disable the button to prevent multiple clicks
                 const btn = button as HTMLButtonElement;

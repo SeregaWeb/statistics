@@ -409,6 +409,10 @@ if ( $dispatchers_view ) {
 										
 										if ( $TMSUsers->check_user_role_access( array( 'accounting' ), true ) ) {
 											$not_access_for_finance = false;
+
+											if ( $status_publish === 'removed' ) {
+												$not_access_for_finance = true;
+											}
 										}
 										
 										// If user can edit on hold, allow finance editing

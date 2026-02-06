@@ -32,8 +32,8 @@ body.dark-mode {
     }
 
     #main-wrapper .table tbody tr {
-        position: relative;
-        &:hover {
+        td {
+            position: relative;
             &::after {
                 content: '';
                 position: absolute;
@@ -41,13 +41,19 @@ body.dark-mode {
                 left: 0;
                 width: 100%;
                 height: 100%;
-                background-color: rgba(0, 0, 0, 0.2);
+                background-color: transparent;
                 z-index: 1;
                 pointer-events: none;
             }
+        }
 
+        &:hover {
             border-left: 4px solid $dark-accent;
-            
+
+            td::after {
+                background-color: rgba(0, 0, 0, 0.2);
+            }
+
             // Ensure dropdown-menu is above the overlay
             .dropdown-menu {
                 z-index: 1050 !important;

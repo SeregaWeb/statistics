@@ -116,7 +116,8 @@ if ( ! empty( $results ) ) :
 			$meta = get_field_value( $row, 'meta_data' );
 			$main = get_field_value( $row, 'main' );
 			
-			$pdlocations = $helper->get_locations_template( $row, 'tracking' );
+			$pdlocations = $helper->get_locations_template( $row, 'tracking', true, $TMSReports );
+
 
             $eta_data = $helper->get_eta_data( $row );
 
@@ -559,3 +560,18 @@ if ( ! empty( $results ) ) :
 <!-- ETA Popups -->
 <?php echo esc_html( get_template_part( TEMPLATE_PATH . 'popups/eta', 'pickup' ) ); ?>
 <?php echo esc_html( get_template_part( TEMPLATE_PATH . 'popups/eta', 'delivery' ) ); ?>
+
+<!-- Driver Statistics popup (opened from driver name in table) -->
+<div class="modal fade" id="js-driver-stats-modal" tabindex="-1" aria-labelledby="js-driver-stats-modal-label" aria-hidden="true">
+	<div class="modal-dialog modal-xl modal-dialog-scrollable">
+		<div class="modal-content">
+			<div class="modal-header">
+				<h5 class="modal-title" id="js-driver-stats-modal-label"><?php esc_html_e( 'Driver Statistics', 'wp-rock' ); ?></h5>
+				<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="<?php esc_attr_e( 'Close', 'wp-rock' ); ?>"></button>
+			</div>
+			<div class="modal-body" id="js-driver-stats-modal-body">
+				<div class="text-center py-4 text-muted"><?php esc_html_e( 'Click a driver name to load statistics.', 'wp-rock' ); ?></div>
+			</div>
+		</div>
+	</div>
+</div>

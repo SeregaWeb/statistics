@@ -271,7 +271,7 @@ $access_change_auto_block = $TMSUsers->check_user_role_access( array(
                 <h5 class="modal-title" id="ratingModalLabel"><?php echo esc_html( $driver_name ); ?> - Add Rating</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <form id="ratingForm">
+            <form id="ratingForm" class="js-driver-rating-form">
                 <div class="modal-body">
                     <input type="hidden" name="driver_id" value="<?php echo $post_id; ?>">
                     <?php wp_nonce_field( 'tms_add_rating', 'tms_rating_nonce' ); ?>
@@ -335,7 +335,7 @@ $access_change_auto_block = $TMSUsers->check_user_role_access( array(
                 <h5 class="modal-title" id="noticeModalLabel"><?php echo esc_html( $driver_name ); ?> - Add Notice</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <form id="noticeForm">
+            <form id="noticeForm" class="js-driver-notice-form">
                 <div class="modal-body">
                     <input type="hidden" name="driver_id" value="<?php echo $post_id; ?>">
                     <?php wp_nonce_field( 'tms_add_notice', 'tms_notice_nonce' ); ?>

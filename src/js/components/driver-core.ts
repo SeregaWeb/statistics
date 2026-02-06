@@ -4,6 +4,7 @@ import { printMessage } from './info-messages';
 import { setUpTabInUrl } from './create-report';
 import { disabledBtnInForm } from './disabled-btn-in-form';
 import Popup from '../parts/popup-window';
+import { confirmDeleteIfNeeded } from './file-delete-confirm';
 
 export const createDriver = (urlAjax) => {
     const form = document.querySelector('.js-create-driver');
@@ -218,6 +219,44 @@ export const updateDriverDocument = (urlAjax) => {
     });
 };
 
+/** Field names (image-fields value) for which delete confirmation is required (driver files). */
+const DRIVER_FILE_FIELDS_REQUIRING_CONFIRM = new Set([
+    'registration_file',
+    'gvwr_placard',
+    'payment_file',
+    'w9_file',
+    'ssn_file',
+    'ein_file',
+    'nec_file',
+    'nec_file_martlet',
+    'nec_file_endurance',
+    'hazmat_certificate_file',
+    'driving_record',
+    'legal_document',
+    'twic_file',
+    'martlet_coi',
+    'endurance_coi',
+    'martlet_ic_agreement',
+    'endurance_ic_agreement',
+    'motor_cargo_coi',
+    'auto_liability_coi',
+    'ic_agreement',
+    'canada_transition_file',
+    'immigration_file',
+    'background_file',
+    'interview_file',
+    'team_driver_driving_record',
+    'immigration_file_team_driver',
+    'legal_document_team_driver',
+    'canada_transition_file_team_driver',
+    'background_file_team_driver',
+    'hazmat_certificate_file_team_driver',
+    'twic_file_team_driver',
+    'tsa_file_team_driver',
+    'interview_martlet',
+    'interview_endurance',
+]);
+
 export const removeOneFileInitial = (ajaxUrl) => {
     const deleteForms = document.querySelectorAll('.js-remove-one-driver');
     const deleteFormsNoFormBtn = document.querySelectorAll('.js-remove-one-no-form-btn');
@@ -228,6 +267,12 @@ export const removeOneFileInitial = (ajaxUrl) => {
             item.addEventListener('submit', (event) => {
                 event.preventDefault();
                 const { target } = event;
+                const container = target as Element;
+
+                if (!confirmDeleteIfNeeded(container, DRIVER_FILE_FIELDS_REQUIRING_CONFIRM)) {
+                    return;
+                }
+
                 // @ts-ignore
                 disabledBtnInForm(target);
                 // @ts-ignore
@@ -270,10 +315,13 @@ export const removeOneFileInitial = (ajaxUrl) => {
         deleteFormsNoFormBtn.forEach((button) => {
             button.addEventListener('click', (event) => {
                 event.preventDefault();
-                
-                // Find the parent div with data
+
                 const parentDiv = button.closest('.js-remove-one-no-form');
                 if (!parentDiv) return;
+
+                if (!confirmDeleteIfNeeded(parentDiv, DRIVER_FILE_FIELDS_REQUIRING_CONFIRM)) {
+                    return;
+                }
 
                 // Disable the button (cast to HTMLButtonElement for type safety)
                 (button as HTMLButtonElement).disabled = true;
@@ -281,7 +329,7 @@ export const removeOneFileInitial = (ajaxUrl) => {
                 // Collect data from hidden inputs in the div
                 const formData = new FormData();
                 const hiddenInputs = parentDiv.querySelectorAll<HTMLInputElement>('input[type="hidden"]');
-                
+
                 hiddenInputs.forEach((input) => {
                     formData.append(input.name, input.value);
                 });
@@ -299,14 +347,10 @@ export const removeOneFileInitial = (ajaxUrl) => {
                     .then((requestStatus) => {
                         if (requestStatus.success) {
                             printMessage(requestStatus.data.message, 'success', 8000);
-                            // Re-enable button (cast to HTMLButtonElement for type safety)
-                            (button as HTMLButtonElement).disabled = false;
-                            // Update tab in URL if data-tab exists
-                            if ((parentDiv as HTMLElement).dataset && (parentDiv as HTMLElement).dataset.tab) {
+                            if ((parentDiv as HTMLElement).dataset?.tab) {
                                 // @ts-ignore
                                 setUpTabInUrl((parentDiv as HTMLElement).dataset.tab);
                             }
-                            // Re-enable button
                             (button as HTMLButtonElement).disabled = false;
                         } else {
                             (button as HTMLButtonElement).disabled = false;
@@ -315,7 +359,6 @@ export const removeOneFileInitial = (ajaxUrl) => {
                     })
                     .catch((error) => {
                         printMessage(`Request failed: ${error}`, 'danger', 8000);
-                        // Re-enable button
                         (button as HTMLButtonElement).disabled = false;
                         console.error('Request failed:', error);
                     });

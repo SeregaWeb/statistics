@@ -1774,55 +1774,76 @@ Kindly confirm once you've received this message." ) . "\n";
 		];
 	}
 	
+	/**
+	 * Driver names/phones block for load tables. Driver names are clickable and open Statistics popup.
+	 *
+	 * @param array $meta Load meta (must contain unit_number_name, attached_driver, etc.).
+	 * @return string HTML.
+	 */
 	function get_driver_tempate( $meta ) {
 		$unit_number_name = esc_html( get_field_value( $meta, 'unit_number_name' ) );
 		$driver_phone     = esc_html( get_field_value( $meta, 'driver_phone' ) );
 		$macropoint_set   = get_field_value( $meta, 'macropoint_set' );
 		$trucker_tools    = get_field_value( $meta, 'trucker_tools' );
-		
+		$attached_driver  = get_field_value( $meta, 'attached_driver' );
+
 		$second_unit_number_name = esc_html( get_field_value( $meta, 'second_unit_number_name' ) );
 		$second_driver_phone     = esc_html( get_field_value( $meta, 'second_driver_phone' ) );
+		$attached_second_driver  = get_field_value( $meta, 'attached_second_driver' );
+
 		$third_unit_number_name  = esc_html( get_field_value( $meta, 'third_unit_number_name' ) );
 		$third_driver_phone      = esc_html( get_field_value( $meta, 'third_driver_phone' ) );
-		$shared_with_client      = get_field_value( $meta, 'shared_with_client' );
+		$attached_third_driver   = get_field_value( $meta, 'attached_third_driver' );
+
+		$shared_with_client = get_field_value( $meta, 'shared_with_client' );
 		ob_start();
-		
+
 		$title = array();
-		
 		if ( $macropoint_set ) {
 			$title[] = 'MacroPoint set';
 		}
-		
 		if ( $trucker_tools ) {
 			$title[] = 'Trucker Tools set';
 		}
-		
 		$title_str = implode( ', ', $title );
-		
 		?>
         <div class="d-flex flex-column">
-            <p class="m-0"><?php echo $unit_number_name; ?></p>
+            <p class="m-0 d-inline-flex align-items-center " style="gap:2px;">
+				<?php if ( ! empty( $attached_driver ) ) : ?>
+					<button type="button" class="btn btn-link btn-sm p-0 text-start text-decoration-none js-driver-stats-trigger user-select-text" data-driver-id="<?php echo esc_attr( $attached_driver ); ?>"><?php echo esc_html( $unit_number_name ); ?></button>
+				<?php else : ?>
+					<?php echo esc_html( $unit_number_name ); ?>
+				<?php endif; ?>
+            </p>
 			<?php if ( $driver_phone ) { ?>
                 <span class="text-small relative <?php echo $shared_with_client ? 'text-primary'
 					: ''; ?> <?php echo $macropoint_set ? 'macropoint' : ''; ?> <?php echo $trucker_tools
-					? 'trucker_tools' : ''; ?>" title="<?php echo $title_str; ?>">
+					? 'trucker_tools' : ''; ?>" title="<?php echo esc_attr( $title_str ); ?>">
 				<?php echo $driver_phone; ?>
                 </span>
 			<?php } ?>
-			<?php if ( $second_unit_number_name && $second_driver_phone ): ?>
-                <p class=" m-0"><?php echo $second_unit_number_name; ?></p>
+			<?php if ( $second_unit_number_name || $second_driver_phone ) : ?>
+                <p class="m-0 d-inline-flex align-items-center " style="gap:2px;">
+				<?php if ( ! empty( $attached_second_driver ) ) : ?>
+					<button type="button" class="btn btn-link btn-sm p-0 text-start text-decoration-none js-driver-stats-trigger user-select-text" data-driver-id="<?php echo esc_attr( $attached_second_driver ); ?>"><?php echo esc_html( $second_unit_number_name ); ?></button>
+				<?php else : ?>
+					<?php echo esc_html( $second_unit_number_name ); ?>
+				<?php endif; ?>
+                </p>
 				<?php if ( $second_driver_phone ) { ?>
-                    <span class="text-small relative">
-                                <?php echo $second_driver_phone; ?>
-                            </span>
+                    <span class="text-small relative"><?php echo $second_driver_phone; ?></span>
 				<?php } ?>
 			<?php endif; ?>
-			<?php if ( $third_unit_number_name && $third_driver_phone ): ?>
-                <p class=" m-0"><?php echo $third_unit_number_name; ?></p>
+			<?php if ( $third_unit_number_name || $third_driver_phone ) : ?>
+                <p class="m-0 d-inline-flex align-items-center " style="gap:2px;">
+				<?php if ( ! empty( $attached_third_driver ) ) : ?>
+					<button type="button" class="btn btn-link btn-sm p-0 text-start text-decoration-none js-driver-stats-trigger user-select-text" data-driver-id="<?php echo esc_attr( $attached_third_driver ); ?>"><?php echo esc_html( $third_unit_number_name ); ?></button>
+				<?php else : ?>
+					<?php echo esc_html( $third_unit_number_name ); ?>
+				<?php endif; ?>
+                </p>
 				<?php if ( $third_driver_phone ) { ?>
-                    <span class="text-small relative">
-                                <?php echo $third_driver_phone; ?>
-                            </span>
+                    <span class="text-small relative"><?php echo $third_driver_phone; ?></span>
 				<?php } ?>
 			<?php endif; ?>
         </div>
@@ -2325,7 +2346,7 @@ Kindly confirm once you've received this message." ) . "\n";
 		// Даты с проверкой, чтобы избежать ошибок
 		$delivery_date_raw = get_field_value( $row, 'delivery_date' );
 		$pick_up_date_raw  = get_field_value( $row, 'pick_up_date' );
-		
+
 		$delivery_date = ! empty( $delivery_date_raw )
 			? esc_html( DateTime::createFromFormat( 'Y-m-d H:i:s', $delivery_date_raw )->format( 'm/d/Y' ) ) : '';
 		$pick_up_date  = ! empty( $pick_up_date_raw )
@@ -2429,17 +2450,22 @@ Kindly confirm once you've received this message." ) . "\n";
 					$tooltip = esc_attr( "Commodity: $commodity Weight: $weight" );
 					$address = esc_html( $val[ 'address' ] );
 					
-					// Получаем значения времени
+					// Time as HH:MM (no seconds)
 					$time_start  = get_field_value( $val, 'time_start' );
 					$time_end    = get_field_value( $val, 'time_end' );
 					$strict_time = get_field_value( $val, 'strict_time' );
-					
-					// Формируем строку времени
+					$format_time = function( $t ) {
+						if ( empty( $t ) ) {
+							return '';
+						}
+						$t = trim( (string) $t );
+						return ( strlen( $t ) >= 5 ) ? substr( $t, 0, 5 ) : $t;
+					};
 					$time_range = '';
 					if ( ! empty( $time_start ) ) {
-						$time_range = esc_html( $time_start );
-						if ( $strict_time === "false" && ! empty( $time_end ) ) {
-							$time_range .= ' - ' . esc_html( $time_end );
+						$time_range = esc_html( $format_time( $time_start ) );
+						if ( ! empty( $time_end ) && ( $strict_time === 'false' || $strict_time === '' || $strict_time == 0 ) ) {
+							$time_range .= ' - ' . esc_html( $format_time( $time_end ) );
 						} else {
 							$time_range .= ' - strict';
 						}

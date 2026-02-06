@@ -11,6 +11,8 @@ class DriverPopupForms {
     private ajaxUrl: string;
     private currentDriverId: string | null = null;
     private ratingButtonHandler: ((e: Event) => void) | null = null;
+    private statsPopupAbortController: AbortController | null = null;
+    private statsPopupPendingDriverId: string | null = null;
 
     constructor(ajaxUrl: string) {
         this.ajaxUrl = ajaxUrl;
@@ -26,6 +28,7 @@ class DriverPopupForms {
         this.handleDriverPageRatingModal();
         this.setupRatingConstraints();
         this.handleAutoBlockExclude();
+        this.initDriverStatsPopup();
 
         // Reset UI state on popup open and update currentDriverId
         document.addEventListener('tms:rating-popup-open', () => {
@@ -686,11 +689,12 @@ class DriverPopupForms {
     }
 
     /**
-     * Load available loads for driver page rating modal
+     * Load available loads for driver page rating modal (or popup form).
+     * @param container - optional; when provided, driver_id is searched inside this element.
      */
-    private loadAvailableLoadsForDriverPage(loadSelect: HTMLSelectElement, loadsInfo: HTMLElement): void {
-        // Get driver ID from hidden input in the form
-        const driverIdInput = document.querySelector('input[name="driver_id"]') as HTMLInputElement;
+    private loadAvailableLoadsForDriverPage(loadSelect: HTMLSelectElement, loadsInfo: HTMLElement, container?: HTMLElement): void {
+        const scope = container || document;
+        const driverIdInput = scope.querySelector('input[name="driver_id"]') as HTMLInputElement;
         
         if (!driverIdInput || !driverIdInput.value) {
             loadsInfo.textContent = 'Driver ID not found';
@@ -975,6 +979,365 @@ class DriverPopupForms {
                 </div>
             </div>
         `;
+    }
+
+    /**
+     * Init driver Statistics popup: click on .js-driver-stats-trigger loads stats HTML and opens modal.
+     * Modal is found by id or created dynamically so it works even when table is loaded via AJAX.
+     */
+    private initDriverStatsPopup(): void {
+        const getOrCreateModal = (): { modalEl: HTMLElement; bodyEl: HTMLElement } => {
+            let modalEl = document.getElementById('js-driver-stats-modal');
+            let bodyEl = document.getElementById('js-driver-stats-modal-body');
+            if (!modalEl || !bodyEl) {
+                modalEl = document.createElement('div');
+                modalEl.className = 'modal fade';
+                modalEl.id = 'js-driver-stats-modal';
+                modalEl.setAttribute('tabindex', '-1');
+                modalEl.setAttribute('aria-labelledby', 'js-driver-stats-modal-label');
+                modalEl.setAttribute('aria-hidden', 'true');
+                modalEl.innerHTML = `
+                    <div class="modal-dialog modal-xl modal-dialog-scrollable">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title" id="js-driver-stats-modal-label">Driver Statistics</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                            </div>
+                            <div class="modal-body" id="js-driver-stats-modal-body"></div>
+                        </div>
+                    </div>
+                `;
+                document.body.appendChild(modalEl);
+                bodyEl = document.getElementById('js-driver-stats-modal-body') as HTMLElement;
+            }
+            return { modalEl, bodyEl };
+        };
+
+        const bindOverlayClose = (modalEl: HTMLElement): void => {
+            if (modalEl.hasAttribute('data-driver-stats-overlay-bound')) {
+                return;
+            }
+            modalEl.setAttribute('data-driver-stats-overlay-bound', 'true');
+            modalEl.addEventListener('click', (e: MouseEvent) => {
+                if ((e.target as HTMLElement) !== modalEl) {
+                    return;
+                }
+                const BootstrapModal = (window as any).bootstrap?.Modal;
+                if (BootstrapModal) {
+                    const inst = BootstrapModal.getInstance(modalEl);
+                    if (inst) {
+                        inst.hide();
+                    }
+                } else {
+                    if (!modalEl.classList.contains('show')) {
+                        return;
+                    }
+                    modalEl.classList.remove('show');
+                    modalEl.style.display = 'none';
+                    modalEl.setAttribute('aria-hidden', 'true');
+                    document.body.classList.remove('modal-open');
+                    const b = document.getElementById('js-driver-stats-modal-backdrop');
+                    if (b) {
+                        b.remove();
+                    }
+                }
+            });
+        };
+
+        document.addEventListener('click', (e) => {
+            const trigger = (e.target as HTMLElement).closest('.js-driver-stats-trigger');
+            if (!trigger) {
+                return;
+            }
+            e.preventDefault();
+            e.stopPropagation();
+            e.stopImmediatePropagation();
+            const driverId = (trigger as HTMLElement).getAttribute('data-driver-id');
+            if (!driverId) {
+                return;
+            }
+            const { modalEl, bodyEl } = getOrCreateModal();
+            bindOverlayClose(modalEl);
+            bodyEl.innerHTML = `
+                <div class="text-center py-5">
+                    <div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading...</span></div>
+                    <p class="mt-2">Loading driver statistics...</p>
+                </div>
+            `;
+            const BootstrapModal = (window as any).bootstrap?.Modal;
+            if (BootstrapModal) {
+                const modalInstance = BootstrapModal.getInstance(modalEl) || new BootstrapModal(modalEl);
+                requestAnimationFrame(() => {
+                    modalInstance.show();
+                });
+            } else {
+                modalEl.classList.add('show');
+                modalEl.style.display = 'block';
+                modalEl.style.zIndex = '1056';
+                modalEl.setAttribute('aria-hidden', 'false');
+                document.body.classList.add('modal-open');
+                const backdrop = document.createElement('div');
+                backdrop.className = 'modal-backdrop fade show';
+                backdrop.id = 'js-driver-stats-modal-backdrop';
+                (backdrop as HTMLElement).style.zIndex = '1055';
+                document.body.appendChild(backdrop);
+                const closeHandler = (): void => {
+                    modalEl.classList.remove('show');
+                    modalEl.style.display = 'none';
+                    modalEl.setAttribute('aria-hidden', 'true');
+                    document.body.classList.remove('modal-open');
+                    const b = document.getElementById('js-driver-stats-modal-backdrop');
+                    if (b) b.remove();
+                    modalEl.querySelector('.btn-close')?.removeEventListener('click', closeHandler);
+                    backdrop.removeEventListener('click', closeHandler);
+                };
+                modalEl.querySelector('.btn-close')?.addEventListener('click', closeHandler);
+                backdrop.addEventListener('click', closeHandler);
+            }
+            if (this.statsPopupAbortController) {
+                this.statsPopupAbortController.abort();
+            }
+            this.statsPopupAbortController = new AbortController();
+            this.statsPopupPendingDriverId = driverId;
+
+            const formData = new FormData();
+            formData.append('action', 'get_driver_stats_popup_html');
+            formData.append('driver_id', driverId);
+            const nonceEl = document.querySelector('#_wpnonce, input[name="_wpnonce"]') as HTMLInputElement;
+            if (nonceEl && nonceEl.value) {
+                formData.append('_wpnonce', nonceEl.value);
+            }
+            fetch(this.ajaxUrl, {
+                method: 'POST',
+                body: formData,
+                credentials: 'same-origin',
+                signal: this.statsPopupAbortController.signal,
+            })
+                .then((res) => res.json())
+                .then((data) => {
+                    if (this.statsPopupPendingDriverId !== driverId) {
+                        return;
+                    }
+                    if (data.success && data.data && data.data.html) {
+                        bodyEl.innerHTML = data.data.html;
+                        this.loadDriverStatistics(parseInt(driverId, 10));
+                        this.initDriverStatsPopupViewSwitcher(bodyEl);
+                    } else {
+                        bodyEl.innerHTML = `<div class="alert alert-danger">${(data.data && data.data.message) || 'Failed to load statistics'}</div>`;
+                    }
+                })
+                .catch((err: Error) => {
+                    if (err.name === 'AbortError') {
+                        return;
+                    }
+                    if (this.statsPopupPendingDriverId !== driverId) {
+                        return;
+                    }
+                    bodyEl.innerHTML = '<div class="alert alert-danger">Network error</div>';
+                });
+        });
+    }
+
+    /**
+     * Popup-only: when load select is "Canceled", disable rating buttons 3–5 and clear selected rating if > 2.
+     */
+    private applyPopupRatingConstraints(container: HTMLElement): void {
+        const loadSelect = container.querySelector('.js-driver-stats-popup-load-select') as HTMLSelectElement;
+        const canceled = !!(loadSelect && loadSelect.value === 'Canceled');
+        const buttons = Array.from(container.querySelectorAll<HTMLButtonElement>('.js-driver-stats-popup-rating-btn'));
+        buttons.forEach((btn) => {
+            const val = parseInt(btn.getAttribute('data-rating') || '0', 10);
+            const shouldDisable = canceled && val > 2;
+            btn.disabled = shouldDisable;
+            if (canceled && val > 2) {
+                btn.classList.remove('active');
+            }
+        });
+        const selectedInput = container.querySelector('.js-driver-stats-popup-selected-rating') as HTMLInputElement;
+        if (selectedInput && canceled) {
+            const current = parseInt(selectedInput.value || '0', 10);
+            if (current > 2) {
+                selectedInput.value = '';
+            }
+        }
+    }
+
+    /**
+     * Popup-only: switch between stats / rating form / notice form and handle form submit with refresh.
+     * Queries panels from container each time so it works after refresh (no stale refs).
+     * Replaces container with a clone to drop previous click listeners and avoid duplicate requests.
+     */
+    private initDriverStatsPopupViewSwitcher(container: HTMLElement): void {
+        const parent = container.parentElement;
+        if (parent) {
+            const clone = container.cloneNode(true) as HTMLElement;
+            if (container.id) {
+                clone.id = container.id;
+            }
+            parent.replaceChild(clone, container);
+            container = clone;
+        }
+        const root = container.querySelector('.js-driver-stats-popup-root');
+        if (!root) {
+            return;
+        }
+        const driverId = (root as HTMLElement).getAttribute('data-driver-id') || '';
+
+        const showStats = (): void => {
+            const stats = container.querySelector('.js-driver-stats-popup-stats');
+            const rating = container.querySelector('.js-driver-stats-popup-rating-panel');
+            const notice = container.querySelector('.js-driver-stats-popup-notice-panel');
+            if (stats) (stats as HTMLElement).classList.remove('d-none');
+            if (rating) (rating as HTMLElement).classList.add('d-none');
+            if (notice) (notice as HTMLElement).classList.add('d-none');
+        };
+        const showRating = (): void => {
+            const stats = container.querySelector('.js-driver-stats-popup-stats');
+            const rating = container.querySelector('.js-driver-stats-popup-rating-panel');
+            const notice = container.querySelector('.js-driver-stats-popup-notice-panel');
+            if (stats) (stats as HTMLElement).classList.add('d-none');
+            if (notice) (notice as HTMLElement).classList.add('d-none');
+            if (rating) (rating as HTMLElement).classList.remove('d-none');
+            const loadSelect = container.querySelector('.js-driver-stats-popup-load-select') as HTMLSelectElement;
+            const loadsInfo = container.querySelector('.js-driver-stats-popup-loads-info') as HTMLElement;
+            if (loadSelect && loadsInfo) {
+                this.loadAvailableLoadsForDriverPage(loadSelect, loadsInfo, container);
+            }
+            this.applyPopupRatingConstraints(container);
+        };
+        const showNotice = (): void => {
+            const stats = container.querySelector('.js-driver-stats-popup-stats');
+            const rating = container.querySelector('.js-driver-stats-popup-rating-panel');
+            const notice = container.querySelector('.js-driver-stats-popup-notice-panel');
+            if (stats) (stats as HTMLElement).classList.add('d-none');
+            if (rating) (rating as HTMLElement).classList.add('d-none');
+            if (notice) (notice as HTMLElement).classList.remove('d-none');
+        };
+
+        const refreshPopupContent = (): void => {
+            const formData = new FormData();
+            formData.append('action', 'get_driver_stats_popup_html');
+            formData.append('driver_id', driverId);
+            fetch(this.ajaxUrl, {
+                method: 'POST',
+                body: formData,
+                credentials: 'same-origin',
+            })
+                .then((res) => res.json())
+                .then((data) => {
+                    if (data.success && data.data && data.data.html) {
+                        container.innerHTML = data.data.html;
+                        this.loadDriverStatistics(parseInt(driverId, 10));
+                    }
+                })
+                .catch(() => {});
+        };
+
+        container.addEventListener('click', (e) => {
+            const target = e.target as HTMLElement;
+            if (target.closest('.js-driver-stats-popup-show-rating')) {
+                e.preventDefault();
+                showRating();
+                return;
+            }
+            if (target.closest('.js-driver-stats-popup-show-notice')) {
+                e.preventDefault();
+                showNotice();
+                return;
+            }
+            if (target.closest('.js-driver-stats-popup-back')) {
+                e.preventDefault();
+                showStats();
+                return;
+            }
+            const ratingBtn = target.closest('.js-driver-stats-popup-rating-btn');
+            if (ratingBtn) {
+                e.preventDefault();
+                const btn = ratingBtn as HTMLButtonElement;
+                if (btn.disabled) return;
+                const ratingVal = parseInt((ratingBtn as HTMLElement).getAttribute('data-rating') || '0', 10);
+                const loadSelect = container.querySelector('.js-driver-stats-popup-load-select') as HTMLSelectElement;
+                const isCanceled = !!(loadSelect && loadSelect.value === 'Canceled');
+                if (isCanceled && ratingVal > 2) {
+                    printMessage('For Canceled loads you can set rating 1-2 only.', 'warning', 2500);
+                    return;
+                }
+                const selectedInput = container.querySelector('.js-driver-stats-popup-selected-rating') as HTMLInputElement;
+                if (selectedInput) {
+                    selectedInput.value = String(ratingVal);
+                }
+                container.querySelectorAll('.js-driver-stats-popup-rating-btn').forEach((b) => b.classList.remove('active'));
+                (ratingBtn as HTMLElement).classList.add('active');
+            }
+        });
+
+        container.addEventListener('change', (e) => {
+            const target = e.target as HTMLElement;
+            if (target.classList.contains('js-driver-stats-popup-load-select') || target.id === 'js-driver-stats-popup-load-number') {
+                this.applyPopupRatingConstraints(container);
+            }
+        });
+
+        container.addEventListener('submit', (e) => {
+            const form = (e.target as HTMLElement).closest('form');
+            if (!form) return;
+            const submitBtn = form.querySelector('button[type="submit"]') as HTMLButtonElement | null;
+            if (form.classList.contains('js-driver-stats-popup-rating-form')) {
+                e.preventDefault();
+                const selectedInput = container.querySelector('.js-driver-stats-popup-selected-rating') as HTMLInputElement;
+                const ratingVal = selectedInput ? parseInt(selectedInput.value || '0', 10) : 0;
+                const loadSelect = container.querySelector('.js-driver-stats-popup-load-select') as HTMLSelectElement;
+                const isCanceled = !!(loadSelect && loadSelect.value === 'Canceled');
+                if (ratingVal < 1 || ratingVal > 5) {
+                    printMessage('Please select a rating (1–5).', 'danger', 3000);
+                    return;
+                }
+                if (isCanceled && ratingVal > 2) {
+                    printMessage('For Canceled loads you can set rating 1-2 only.', 'danger', 3000);
+                    return;
+                }
+                if (submitBtn) submitBtn.disabled = true;
+                const formData = new FormData(form);
+                formData.set('action', 'add_driver_rating');
+                fetch(this.ajaxUrl, { method: 'POST', body: formData, credentials: 'same-origin' })
+                    .then((res) => res.json())
+                    .then((data) => {
+                        if (data.success) {
+                            printMessage('Rating added successfully!', 'success', 3000);
+                            refreshPopupContent();
+                        } else {
+                            if (submitBtn) submitBtn.disabled = false;
+                            printMessage((data.data && data.data.message) || 'Error adding rating', 'danger', 3000);
+                        }
+                    })
+                    .catch(() => {
+                        if (submitBtn) submitBtn.disabled = false;
+                        printMessage('Network error', 'danger', 3000);
+                    });
+                return;
+            }
+            if (form.classList.contains('js-driver-stats-popup-notice-form')) {
+                e.preventDefault();
+                if (submitBtn) submitBtn.disabled = true;
+                const formData = new FormData(form);
+                formData.set('action', 'add_driver_notice');
+                fetch(this.ajaxUrl, { method: 'POST', body: formData, credentials: 'same-origin' })
+                    .then((res) => res.json())
+                    .then((data) => {
+                        if (data.success) {
+                            printMessage('Notice added successfully!', 'success', 3000);
+                            refreshPopupContent();
+                        } else {
+                            if (submitBtn) submitBtn.disabled = false;
+                            printMessage((data.data && data.data.message) || 'Error adding notice', 'danger', 3000);
+                        }
+                    })
+                    .catch(() => {
+                        if (submitBtn) submitBtn.disabled = false;
+                        printMessage('Network error', 'danger', 3000);
+                    });
+            }
+        });
     }
 }
 

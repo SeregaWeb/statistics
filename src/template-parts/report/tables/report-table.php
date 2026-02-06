@@ -445,3 +445,18 @@ if ( $has_results ) :
     <p>No loads found.</p>
 <?php endif; ?>
 
+<!-- Driver Statistics popup (opened from driver name in table) -->
+<div class="modal fade" id="js-driver-stats-modal" tabindex="-1" aria-labelledby="js-driver-stats-modal-label" aria-hidden="true">
+	<div class="modal-dialog modal-xl modal-dialog-scrollable">
+		<div class="modal-content">
+			<div class="modal-header">
+				<h5 class="modal-title" id="js-driver-stats-modal-label"><?php esc_html_e( 'Driver Statistics', 'wp-rock' ); ?></h5>
+				<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="<?php esc_attr_e( 'Close', 'wp-rock' ); ?>"></button>
+			</div>
+			<div class="modal-body" id="js-driver-stats-modal-body">
+				<div class="text-center py-4 text-muted"><?php esc_html_e( 'Click a driver name to load statistics.', 'wp-rock' ); ?></div>
+			</div>
+		</div>
+	</div>
+</div>
+

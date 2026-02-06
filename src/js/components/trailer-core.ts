@@ -1,6 +1,7 @@
 // eslint-disable-next-line import/prefer-default-export
 import { printMessage } from './info-messages';
 import { disabledBtnInForm } from './disabled-btn-in-form';
+import { confirmDeleteIfNeeded } from './file-delete-confirm';
 import Popup from '../parts/popup-window';
 
 /**
@@ -170,6 +171,11 @@ export const uploadFileTrailer = (ajaxUrl) => {
  * Remove one trailer file
  */
 export const removeOneTrailerFile = (ajaxUrl) => {
+    const TRAILER_FILE_FIELDS_REQUIRING_CONFIRM = new Set<string>([
+        'license_plate_file',
+        'trailer_registration',
+    ]);
+
     const deleteForms = document.querySelectorAll('.js-remove-one-trailer');
     const deleteFormsNoFormBtn = document.querySelectorAll('.js-remove-one-no-form-btn');
 
@@ -179,6 +185,11 @@ export const removeOneTrailerFile = (ajaxUrl) => {
             item.addEventListener('submit', (event) => {
                 event.preventDefault();
                 const { target } = event;
+
+                if (!confirmDeleteIfNeeded(target as Element, TRAILER_FILE_FIELDS_REQUIRING_CONFIRM)) {
+                    return;
+                }
+
                 // @ts-ignore
                 disabledBtnInForm(target);
                 // @ts-ignore
@@ -235,10 +246,14 @@ export const removeOneTrailerFile = (ajaxUrl) => {
                 if (!parentDiv) return;
 
                 // Check if this is a trailer file
-                const isTrailer = parentDiv.classList.contains('js-remove-one-trailer') || 
+                const isTrailer = parentDiv.classList.contains('js-remove-one-trailer') ||
                     parentDiv.querySelector('.js-remove-one-trailer') !== null;
-                
+
                 if (!isTrailer) return; // Skip if not a trailer
+
+                if (!confirmDeleteIfNeeded(parentDiv, TRAILER_FILE_FIELDS_REQUIRING_CONFIRM)) {
+                    return;
+                }
 
                 // Disable the button to prevent multiple clicks
                 const btn = button as HTMLButtonElement;

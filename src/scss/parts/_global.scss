@@ -155,6 +155,7 @@ iframe {
     align-items: center;
     text-wrap: nowrap;
     gap: 4px;
+    user-select: text;
     &:before {
         content: '';
         display: inline-block;
@@ -165,6 +166,8 @@ iframe {
         height: 18px;
         border: 1px solid #000000;
         border-radius: 4px;
+        user-select: none;
+        pointer-events: none;
     }
 }
 
@@ -173,6 +176,7 @@ iframe {
     display: flex;
     align-items: center;
     text-wrap: nowrap;
+    user-select: text;
     gap: 4px;
     &:after {
         content: '';
@@ -182,6 +186,8 @@ iframe {
         background-size: contain;
         width: 18px;
         height: 18px;
+        user-select: none;
+        pointer-events: none;
     }
 }
 

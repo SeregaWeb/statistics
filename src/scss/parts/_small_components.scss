@@ -111,8 +111,10 @@
         }
 
         tbody tr {
-            position: relative;
-            &:hover {
+            border-left: 4px solid transparent;
+
+            td {
+                position: relative;
                 &::after {
                     content: '';
                     position: absolute;
@@ -120,21 +122,24 @@
                     left: 0;
                     width: 100%;
                     height: 100%;
-                    background-color: rgba(0, 0, 0, 0.1);
+                    background-color: transparent;
                     z-index: 1;
                     pointer-events: none;
                 }
+            }
 
+            &:hover {
                 border-left: 4px solid $primary;
-                
+
+                td::after {
+                    background-color: rgba(0, 0, 0, 0.1);
+                }
+
                 // Ensure dropdown-menu is above the overlay
                 .dropdown-menu {
                     z-index: 1050 !important;
                     position: relative;
                 }
-                // td:not(.driver-status) {
-                //     background-color: #ececec !important;
-                // }
             }
         }
     }
@@ -1004,4 +1009,10 @@ body.payment-file-modal-open {
             object-fit: contain;
         }
     }
+}
+
+// Allow selecting/copying text inside driver stats trigger button
+.user-select-text {
+    user-select: text;
+    -webkit-user-select: text;
 }

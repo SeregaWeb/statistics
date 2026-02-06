@@ -2,6 +2,7 @@
 import { Tab } from 'bootstrap';
 import Popup from '../parts/popup-window';
 import { printMessage } from './info-messages';
+import { confirmDeleteIfNeeded } from './file-delete-confirm';
 
 export function setUpTabInUrl(tab) {
     const url = new URL(window.location.href);
@@ -551,6 +552,13 @@ export const updateAccountingReportInit = (ajaxUrl) => {
  */
 
 export const removeOneFileInitial = (ajaxUrl) => {
+    const DOCUMENT_FILE_FIELDS_REQUIRING_CONFIRM = new Set<string>([
+        'attached_files',
+        'attached_file_required',
+        'updated_rate_confirmation',
+        'proof_of_delivery',
+    ]);
+
     const deleteForms = document.querySelectorAll('.js-remove-one');
 
     deleteForms &&
@@ -558,6 +566,9 @@ export const removeOneFileInitial = (ajaxUrl) => {
             item.addEventListener('submit', (event) => {
                 event.preventDefault();
                 const { target } = event;
+                if (!confirmDeleteIfNeeded(target as Element, DOCUMENT_FILE_FIELDS_REQUIRING_CONFIRM)) {
+                    return;
+                }
                 // @ts-ignore
                 const formData = new FormData(target);
                 const flt = document.querySelector('input[name="flt"]');

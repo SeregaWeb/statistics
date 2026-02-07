@@ -270,6 +270,106 @@ class TMSEta extends TMSReportsHelper {
         
         wp_send_json_error(['message' => 'Database error: ' . $wpdb->last_error]);
     }
+
+    /**
+     * Create or update ETA record from server-side (e.g. when load status changes to loaded-enroute).
+     * Uses current user and project if not provided.
+     *
+     * @param int    $load_id     Load post ID.
+     * @param string $eta_type    'pickup' or 'delivery'.
+     * @param string $date        Date Y-m-d.
+     * @param string $time        Time H:i (seconds optional).
+     * @param string $timezone    Timezone string.
+     * @param bool   $is_flt      Is FLT load.
+     * @param int|null    $user_id   User ID (default current user).
+     * @param string|null $project   Project (default from Reports).
+     * @param bool   $create_only If true, only insert when no record exists; never update existing.
+     * @return bool True on success.
+     */
+    public function create_or_update_eta_record( $load_id, $eta_type, $date, $time, $timezone, $is_flt, $user_id = null, $project = null, $create_only = false ) {
+        global $wpdb;
+
+        TMSLogger::log_to_file( '[ETA-auto] create_or_update_eta_record: called load_id=' . $load_id . ', eta_type=' . $eta_type . ', date=' . $date . ', time=' . $time . ', is_flt=' . ( $is_flt ? '1' : '0' ), 'eta-auto' );
+
+        if ( ! $load_id || ! $date || ! $time || ! $eta_type ) {
+            TMSLogger::log_to_file( '[ETA-auto] create_or_update_eta_record: validation fail (missing load_id/date/time/eta_type)', 'eta-auto' );
+            return false;
+        }
+
+        if ( $user_id === null ) {
+            $user_id = get_current_user_id();
+        }
+        if ( $project === null ) {
+            $reports = $is_flt ? new TMSReportsFlt() : new TMSReports();
+            $project = $reports->project ?: '';
+        }
+
+        TMSLogger::log_to_file( '[ETA-auto] create_or_update_eta_record: user_id=' . $user_id . ', project=' . $project, 'eta-auto' );
+
+        $timezone = $timezone ?: '';
+        if ( substr_count( trim( $time ), ':' ) === 1 ) {
+            $time = trim( $time ) . ':00';
+        }
+        $eta_datetime = $date . ' ' . trim( $time );
+        $table_name   = $wpdb->prefix . $this->table_name;
+
+        $existing_record = $wpdb->get_row( $wpdb->prepare(
+            "SELECT id, status FROM $table_name WHERE load_number = %s AND eta_type = %s AND is_flt = %d AND user_id = %d AND project = %s",
+            $load_id,
+            $eta_type,
+            $is_flt ? 1 : 0,
+            $user_id,
+            $project
+        ) );
+
+        if ( $existing_record ) {
+            if ( $create_only ) {
+                TMSLogger::log_to_file( '[ETA-auto] create_or_update_eta_record: record already exists (create_only), skip update id=' . $existing_record->id, 'eta-auto' );
+                return true;
+            }
+            TMSLogger::log_to_file( '[ETA-auto] create_or_update_eta_record: updating existing record id=' . $existing_record->id, 'eta-auto' );
+            $result = $wpdb->update(
+                $table_name,
+                [
+                    'eta_datetime' => $eta_datetime,
+                    'timezone'     => $timezone,
+                    'status'       => 'active',
+                    'user_id'      => $user_id,
+                    'project'      => $project,
+                    'updated_at'   => current_time( 'mysql' ),
+                ],
+                [ 'id' => $existing_record->id ],
+                [ '%s', '%s', '%s', '%d', '%s', '%s' ],
+                [ '%d' ]
+            );
+            if ( $result === false ) {
+                TMSLogger::log_to_file( '[ETA-auto] create_or_update_eta_record: update failed, last_error=' . $wpdb->last_error, 'eta-auto' );
+            }
+            return $result !== false;
+        }
+
+        TMSLogger::log_to_file( '[ETA-auto] create_or_update_eta_record: inserting new record', 'eta-auto' );
+        $result = $wpdb->insert(
+            $table_name,
+            [
+                'load_number'   => $load_id,
+                'eta_datetime'  => $eta_datetime,
+                'timezone'      => $timezone,
+                'status'        => 'active',
+                'user_id'       => $user_id,
+                'is_flt'        => $is_flt ? 1 : 0,
+                'project'       => $project,
+                'eta_type'      => $eta_type,
+            ],
+            [ '%s', '%s', '%s', '%s', '%d', '%d', '%s', '%s' ]
+        );
+        if ( $result === false ) {
+            TMSLogger::log_to_file( '[ETA-auto] create_or_update_eta_record: insert failed, last_error=' . $wpdb->last_error, 'eta-auto' );
+        } else {
+            TMSLogger::log_to_file( '[ETA-auto] create_or_update_eta_record: insert ok, id=' . $wpdb->insert_id, 'eta-auto' );
+        }
+        return $result !== false;
+    }
     
     /**
      * Get ETA record for specific load and type

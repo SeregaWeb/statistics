@@ -13060,6 +13060,8 @@ var cleanUrlByFilter = function cleanUrlByFilter() {
       var invoice = form.elements.namedItem('invoice');
       var office = form.elements.namedItem('office');
       var type = form.elements.namedItem('type');
+      var datePickup = form.elements.namedItem('date_pickup');
+      var dateDelivery = form.elements.namedItem('date_delivery');
       if (office === null || office === void 0 ? void 0 : office.value) params.append('office', office.value);
       if (fmonth === null || fmonth === void 0 ? void 0 : fmonth.value) params.append('fmonth', fmonth.value);
       if (fyear === null || fyear === void 0 ? void 0 : fyear.value) params.append('fyear', fyear.value);
@@ -13070,6 +13072,8 @@ var cleanUrlByFilter = function cleanUrlByFilter() {
       if (factoring === null || factoring === void 0 ? void 0 : factoring.value) params.append('factoring', factoring.value);
       if (invoice === null || invoice === void 0 ? void 0 : invoice.value) params.append('invoice', invoice.value);
       if (type === null || type === void 0 ? void 0 : type.value) params.append('type', type.value);
+      if (datePickup === null || datePickup === void 0 ? void 0 : datePickup.value) params.append('date_pickup', datePickup.value);
+      if (dateDelivery === null || dateDelivery === void 0 ? void 0 : dateDelivery.value) params.append('date_delivery', dateDelivery.value);
       window.location.href = "?".concat(params.toString());
     });
   }
@@ -15835,6 +15839,14 @@ var dateMaskInit = function dateMaskInit() {
     allowInput: true,
     defaultHour: 8,
     defaultMinute: 0
+  });
+  (0,flatpickr__WEBPACK_IMPORTED_MODULE_1__["default"])('.js-tracking-date-pickup', {
+    dateFormat: 'm/d/Y',
+    allowInput: true
+  });
+  (0,flatpickr__WEBPACK_IMPORTED_MODULE_1__["default"])('.js-tracking-date-delivery', {
+    dateFormat: 'm/d/Y',
+    allowInput: true
   });
 };
 var masksAllSite = function masksAllSite() {

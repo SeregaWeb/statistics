@@ -32,9 +32,7 @@ $access = $TMSUsers->check_user_role_access( [ 'administrator', 'recruiter', 're
 							echo $helper->message_top( 'error', 'Access only Administrator, recruiters and recruiters team leader have access to this page.' );
 						else:
 							
-							?>
-                            <h4 class="mb-3">Archived units</h4>
-							<?php
+                                   echo esc_html( get_template_part( TEMPLATE_PATH . 'filters/driver', 'filter-archive', array('title' => 'Archived units') ) );
 							
 							echo esc_html( get_template_part( TEMPLATE_PATH . 'tables/driver', 'table', $items ) );
 						endif; ?>

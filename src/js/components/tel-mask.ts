@@ -57,6 +57,16 @@ export const dateMaskInit = () => {
         defaultHour: 8, // Время по умолчанию: 8:00
         defaultMinute: 0,
     });
+
+    // Tracking filter: pickup and delivery date only (American format m/d/Y)
+    flatpickr('.js-tracking-date-pickup', {
+        dateFormat: 'm/d/Y',
+        allowInput: true,
+    });
+    flatpickr('.js-tracking-date-delivery', {
+        dateFormat: 'm/d/Y',
+        allowInput: true,
+    });
 };
 
 export const masksAllSite = () => {

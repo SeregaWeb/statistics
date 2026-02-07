@@ -19,6 +19,8 @@ export const cleanUrlByFilter = () => {
             const invoice = form.elements.namedItem('invoice') as HTMLInputElement | null;
             const office = form.elements.namedItem('office') as HTMLInputElement | null;
             const type = form.elements.namedItem('type') as HTMLInputElement | null;
+            const datePickup = form.elements.namedItem('date_pickup') as HTMLInputElement | null;
+            const dateDelivery = form.elements.namedItem('date_delivery') as HTMLInputElement | null;
 
             // Проверяем и добавляем параметры только если элементы существуют и не пусты
             if (office?.value) params.append('office', office.value);
@@ -31,7 +33,8 @@ export const cleanUrlByFilter = () => {
             if (factoring?.value) params.append('factoring', factoring.value);
             if (invoice?.value) params.append('invoice', invoice.value);
             if (type?.value) params.append('type', type.value);
-
+            if (datePickup?.value) params.append('date_pickup', datePickup.value);
+            if (dateDelivery?.value) params.append('date_delivery', dateDelivery.value);
             // Перенаправляем на URL с параметрами
             window.location.href = `?${params.toString()}`;
         });

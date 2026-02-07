@@ -1384,6 +1384,27 @@ class TMSReports extends TMSReportsHelper {
 		if ( isset( $args[ 'exclude_tbd' ] ) && ! empty( $args[ 'exclude_tbd' ] ) ) {
 			$where_conditions[] = "(tbd.meta_value IS NULL OR tbd.meta_value != '1')";
 		}
+
+		// Filter by pickup/delivery date only from locations table (reports_{project}_locations)
+		$date_pickup_raw   = ! empty( $args[ 'date_pickup' ] ) ? trim( $args[ 'date_pickup' ] ) : '';
+		$date_delivery_raw = ! empty( $args[ 'date_delivery' ] ) ? trim( $args[ 'date_delivery' ] ) : '';
+		if ( ! empty( $this->project ) && ( $date_pickup_raw || $date_delivery_raw ) ) {
+			$table_locations = $wpdb->prefix . 'reports_' . strtolower( $this->project ) . '_locations';
+			$parsed_pickup   = $this->parse_tracking_filter_datetime( $date_pickup_raw );
+			$parsed_delivery = $this->parse_tracking_filter_datetime( $date_delivery_raw );
+			if ( $parsed_pickup && ! $parsed_delivery ) {
+				$where_conditions[] = "main.id IN (SELECT load_id FROM $table_locations WHERE location_type = 'pickup' AND date IS NOT NULL AND DATE(date) = DATE(%s))";
+				$where_values[]     = $parsed_pickup;
+			} elseif ( $parsed_delivery && ! $parsed_pickup ) {
+				$where_conditions[] = "main.id IN (SELECT load_id FROM $table_locations WHERE location_type = 'delivery' AND date IS NOT NULL AND DATE(date) = DATE(%s))";
+				$where_values[]     = $parsed_delivery;
+			} elseif ( $parsed_pickup && $parsed_delivery ) {
+				$where_conditions[] = "main.id IN (SELECT load_id FROM $table_locations WHERE location_type = 'pickup' AND date IS NOT NULL AND DATE(date) = DATE(%s))";
+				$where_conditions[] = "main.id IN (SELECT load_id FROM $table_locations WHERE location_type = 'delivery' AND date IS NOT NULL AND DATE(date) = DATE(%s))";
+				$where_values[]     = $parsed_pickup;
+				$where_values[]     = $parsed_delivery;
+			}
+		}
 		
 		if ( $where_conditions ) {
 			$sql .= ' AND ' . implode( ' AND ', $where_conditions );
@@ -1397,6 +1418,23 @@ class TMSReports extends TMSReportsHelper {
 		$total_pages   = ceil( $total_records / $per_page );
 		
 		$offset = ( $current_page - 1 ) * $per_page;
+
+		// Sort by location date+time: at-pu/waiting-on-pu-date -> pickup; others -> delivery. No main-date fallback so location sort is consistent.
+		$table_locations_sort = ! empty( $this->project ) ? $wpdb->prefix . 'reports_' . strtolower( $this->project ) . '_locations' : '';
+		$sort_by_loc          = '';
+		if ( $table_locations_sort ) {
+			$subq_pickup   = "(SELECT CAST(CONCAT(DATE(l.date), ' ', COALESCE(l.time_start, '00:00:00')) AS DATETIME) FROM $table_locations_sort l WHERE l.load_id = main.id AND l.location_type = 'pickup' AND l.date IS NOT NULL ORDER BY l.order_index ASC LIMIT 1)";
+			$subq_delivery = "(SELECT CAST(CONCAT(DATE(l.date), ' ', COALESCE(l.time_start, '00:00:00')) AS DATETIME) FROM $table_locations_sort l WHERE l.load_id = main.id AND l.location_type = 'delivery' AND l.date IS NOT NULL ORDER BY l.order_index ASC LIMIT 1)";
+			$sort_by_loc   = "COALESCE(
+        CASE WHEN LOWER(load_status.meta_value) IN ('at-pu', 'waiting-on-pu-date') THEN $subq_pickup ELSE $subq_delivery END,
+        '9999-12-31 23:59:59'
+      )";
+		} else {
+			$sort_by_loc   = "CASE
+        WHEN LOWER(load_status.meta_value) IN ('at-pu', 'at-del', 'waiting-on-pu-date', 'waiting-on-rc', 'loaded-enroute') THEN COALESCE(main.pick_up_date, '9999-12-31 23:59:59')
+        ELSE COALESCE(main.delivery_date, '9999-12-31 23:59:59')
+      END";
+		}
 		
 		$sql            .= " ORDER BY
     CASE
@@ -1407,10 +1445,7 @@ class TMSReports extends TMSReportsHelper {
         WHEN LOWER(load_status.meta_value) = 'waiting-on-rc' THEN 5
         ELSE 6
     END,
-    CASE
-        WHEN LOWER(load_status.meta_value) IN ('at-pu', 'at-del', 'waiting-on-pu-date', 'waiting-on-rc', 'loaded-enroute') THEN COALESCE(main.pick_up_date, '9999-12-31 23:59:59')
-        ELSE COALESCE(main.delivery_date, '9999-12-31 23:59:59')
-    END $sort_order
+    $sort_by_loc $sort_order
     LIMIT %d, %d";
 		$where_values[] = $offset;
 		$where_values[] = $per_page;
@@ -5656,6 +5691,7 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 		
 		// Check if load_status was updated to final status and stop timer
 		if ( isset( $meta_data['load_status'] ) ) {
+			TMSLogger::log_to_file( '[ETA-auto] TMSReports update_post_meta_data: post_id=' . $post_id . ', load_status=' . $meta_data['load_status'], 'eta-auto' );
 			$final_statuses = array( 'delivered', 'tonu', 'cancelled', 'waiting-on-rc' );
 			if ( in_array( $meta_data['load_status'], $final_statuses ) ) {
 				$this->stop_timer_for_final_status( $post_id, $meta_data['load_status'], false );
@@ -5665,12 +5701,15 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 			$this->remove_eta_records_for_status( $post_id, $meta_data['load_status'] );
 		}
 		
-		// Check if load_status was updated to restart timer status and update timer
-		if ( isset( $meta_data['load_status'] ) ) {
-			$restart_timer_statuses = array( 'loaded-enroute', 'at-del' );
-			if ( in_array( $meta_data['load_status'], $restart_timer_statuses ) ) {
-				$this->update_timer_for_status_change( $post_id, $meta_data['load_status'], false );
-			}
+		// wp_timers: restart on loaded-enroute and at-del
+		$restart_timer_statuses = array( 'loaded-enroute', 'at-del' );
+		if ( isset( $meta_data['load_status'] ) && in_array( $meta_data['load_status'], $restart_timer_statuses ) ) {
+			$this->update_timer_for_status_change( $post_id, $meta_data['load_status'], false );
+		}
+		// ETA timer (wp_eta_records): auto-create delivery ETA when status becomes loaded-enroute
+		if ( isset( $meta_data['load_status'] ) && $meta_data['load_status'] === 'loaded-enroute' ) {
+			TMSLogger::log_to_file( '[ETA-auto] TMSReports: load_status=loaded-enroute, post_id=' . $post_id . ', table_meta=' . $wpdb->prefix . $this->table_meta . ', is_flt=false', 'eta-auto' );
+			$this->ensure_delivery_eta_for_loaded_enroute( $post_id, $wpdb->prefix . $this->table_meta, false );
 		}
 		
 		// Проверка на ошибки

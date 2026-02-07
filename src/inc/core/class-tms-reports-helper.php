@@ -1536,7 +1536,9 @@ Kindly confirm once you've received this message." ) . "\n";
 		$invoice           = trim( get_field_value( $_GET, 'invoice' ) ?? '' );
 		$office            = trim( get_field_value( $_GET, 'office' ) ?? '' );
 		$type              = trim( get_field_value( $_GET, 'type' ) ?? '' );
-		
+		$date_pickup       = trim( get_field_value( $_GET, 'date_pickup' ) ?? '' );
+		$date_delivery     = trim( get_field_value( $_GET, 'date_delivery' ) ?? '' );
+
 		if ( $default_office ) {
 			$args[ 'office' ] = $default_office;
 		}
@@ -1580,8 +1582,39 @@ Kindly confirm once you've received this message." ) . "\n";
 		if ( $type ) {
 			$args[ 'type' ] = $type;
 		}
-		
+
+		if ( $date_pickup ) {
+			$args[ 'date_pickup' ] = $date_pickup;
+		}
+		if ( $date_delivery ) {
+			$args[ 'date_delivery' ] = $date_delivery;
+		}
+
 		return $args;
+	}
+
+	/**
+	 * Parse tracking filter datetime (American format m/d/Y H:i or m/d/Y) to MySQL datetime Y-m-d H:i:s.
+	 *
+	 * @param string $str User input from filter.
+	 * @return string|null MySQL datetime or null if invalid.
+	 */
+	public function parse_tracking_filter_datetime( $str ) {
+		if ( empty( $str ) || ! is_string( $str ) ) {
+			return null;
+		}
+		$str = trim( $str );
+		$formats = array( 'm/d/Y H:i', 'n/j/Y G:i', 'm/d/Y', 'n/j/Y' );
+		foreach ( $formats as $fmt ) {
+			$dt = \DateTime::createFromFormat( $fmt, $str );
+			if ( $dt ) {
+				if ( strpos( $fmt, 'H' ) !== false || strpos( $fmt, 'G' ) !== false ) {
+					return $dt->format( 'Y-m-d H:i:s' );
+				}
+				return $dt->format( 'Y-m-d' ) . ' 00:00:00';
+			}
+		}
+		return null;
 	}
 	
 	function set_filter_params_arr( $args ) {
@@ -1971,6 +2004,56 @@ Kindly confirm once you've received this message." ) . "\n";
 			'shipper_eta_date' => $shipper_eta_date,
 			'shipper_eta_time' => $shipper_eta_time
 		];
+	}
+
+	/**
+	 * Ensure delivery ETA record exists when load status becomes loaded-enroute.
+	 * Creates ETA from delivery location: shipper_eta_date/shipper_eta_time or date/time, same as tracking table.
+	 *
+	 * @param int    $post_id         Load post ID.
+	 * @param string $table_meta_name Full meta table name (with prefix).
+	 * @param bool   $is_flt          Is FLT load.
+	 * @return void
+	 */
+	public function ensure_delivery_eta_for_loaded_enroute( $post_id, $table_meta_name, $is_flt ) {
+		global $wpdb;
+
+		TMSLogger::log_to_file( '[ETA-auto] ensure_delivery_eta: start post_id=' . $post_id . ', table=' . $table_meta_name . ', is_flt=' . ( $is_flt ? '1' : '0' ), 'eta-auto' );
+
+		$eta_manager = new TMSEta();
+		$existing    = $eta_manager->get_eta_record_for_display( $post_id, 'delivery', $is_flt );
+		if ( ! empty( $existing['exists'] ) ) {
+			TMSLogger::log_to_file( '[ETA-auto] ensure_delivery_eta: ETA already exists for post_id=' . $post_id . ', skip', 'eta-auto' );
+			return;
+		}
+
+		$meta_rows = $wpdb->get_results(
+			$wpdb->prepare( "SELECT meta_key, meta_value FROM {$table_meta_name} WHERE post_id = %d", $post_id ),
+			ARRAY_A
+		);
+		if ( empty( $meta_rows ) ) {
+			TMSLogger::log_to_file( '[ETA-auto] ensure_delivery_eta: no meta rows for post_id=' . $post_id . ', table=' . $table_meta_name, 'eta-auto' );
+			return;
+		}
+
+		$meta_assoc = array_column( $meta_rows, 'meta_value', 'meta_key' );
+		$row        = [ 'id' => $post_id, 'meta_data' => $meta_assoc ];
+		$eta_data   = $this->get_eta_data( $row );
+		$delivery   = $this->get_eta_display_data( $eta_data, 'delivery' );
+
+		$date = ! empty( $delivery['shipper_eta_date'] ) ? $delivery['shipper_eta_date'] : ( $delivery['date'] ?? '' );
+		$time = ! empty( $delivery['shipper_eta_time'] ) ? $delivery['shipper_eta_time'] : ( $delivery['time'] ?? '' );
+
+		TMSLogger::log_to_file( '[ETA-auto] ensure_delivery_eta: delivery data date=' . $date . ', time=' . $time . ', state=' . ( $delivery['state'] ?? '' ) . ', timezone=' . ( $delivery['timezone'] ?? '' ), 'eta-auto' );
+
+		if ( empty( $date ) || empty( $time ) ) {
+			TMSLogger::log_to_file( '[ETA-auto] ensure_delivery_eta: missing date or time, skip post_id=' . $post_id, 'eta-auto' );
+			return;
+		}
+
+		$timezone = ! empty( $delivery['timezone'] ) ? $delivery['timezone'] : $this->get_timezone_by_state( $delivery['state'] ?? '', $date );
+		$ok       = $eta_manager->create_or_update_eta_record( $post_id, 'delivery', $date, $time, $timezone, $is_flt, null, null, true );
+		TMSLogger::log_to_file( '[ETA-auto] ensure_delivery_eta: create_or_update_eta_record result=' . ( $ok ? 'ok' : 'fail' ) . ' post_id=' . $post_id, 'eta-auto' );
 	}
 
 	/**

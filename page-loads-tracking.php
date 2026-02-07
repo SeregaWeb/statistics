@@ -92,6 +92,24 @@ if ( $is_flt ) {
 	$items[ 'flt' ] = true;
 }
 
+// Counts for quick status filter buttons (same filters, per load_status)
+$quick_status_keys = array( '', 'waiting-on-pu-date', 'at-pu', 'loaded-enroute', 'at-del' );
+$quick_status_counts = array();
+foreach ( $quick_status_keys as $qsk ) {
+	$args_count = $args;
+	if ( $qsk === '' ) {
+		unset( $args_count['load_status'] );
+	} else {
+		$args_count['load_status'] = $qsk;
+	}
+	$res = $reports->get_table_items_tracking( $args_count );
+	$quick_status_counts[ $qsk ] = isset( $res['total_posts'] ) ? (int) $res['total_posts'] : 0;
+}
+// "All" count should include high priority loads (they are shown when no status filter)
+if ( ! empty( $high_priority_loads ) ) {
+	$quick_status_counts[''] += count( $high_priority_loads );
+}
+
 // Merge high priority loads at the beginning (only on first page)
 if ( $current_page === 1 && ! empty( $high_priority_loads ) ) {
 	$items[ 'results' ] = array_merge( $high_priority_loads, $items[ 'results' ] );
@@ -140,7 +158,7 @@ $items['project'] = $user_project;
                         ?>
                         
 						<?php
-						echo esc_html( get_template_part( TEMPLATE_PATH . 'filters/report', 'filter-tracking', array( 'my_team' => $my_team ) ) );
+						echo esc_html( get_template_part( TEMPLATE_PATH . 'filters/report', 'filter-tracking', array( 'my_team' => $my_team, 'quick_status_counts' => $quick_status_counts ) ) );
 						
 						echo esc_html( get_template_part( TEMPLATE_PATH . 'tables/report', 'table-tracking', $items ) );
 						?>

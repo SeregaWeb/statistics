@@ -161,12 +161,18 @@ if ( ! empty( $results ) ) : ?>
 			
 			$driver_rate_raw = get_field_value( $meta, 'driver_rate' );
 
-
+			// if (current_user_can('administrator')) {
+			// 	var_dump($driver_rate_raw);
+			// }
 			$sum_driver_rate_raw += $driver_rate_raw ;
 			
 			$additional_fees        = get_field_value( $meta, 'additional_fees' );
 			$additional_fees_val    = get_field_value( $meta, 'additional_fees_val' );
 			$additional_fees_driver = get_field_value( $meta, 'additional_fees_driver' );
+		
+			$cleaned_value          = str_replace( ',', '', $additional_fees_val );
+			$float_value            = floatval( $cleaned_value );
+			$sum_additional_fees_driver += is_numeric($float_value) ? $float_value : 0;
 			
 			$second_driver_rate_raw  = get_field_value( $meta, 'second_driver_rate' );
 			$second_driver           = get_field_value( $meta, 'second_driver' );
@@ -465,6 +471,8 @@ if ( ! empty( $results ) ) : ?>
 
      if (current_user_can('administrator')):
         echo '<p>Sum of driver rates: $' . $sum_driver_rate_raw . '</p>';
+	   echo '<p>Sum additional fees: $' . $sum_additional_fees_driver . '</p>';
+	   echo '<p>Sum driver rates - additional fees: $' . $sum_driver_rate_raw - $sum_additional_fees_driver . '</p>';
      endif;
 
 	?>

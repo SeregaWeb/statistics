@@ -3,13 +3,17 @@ $helper   = new TMSReportsHelper();
 $statuses = $helper->get_statuses();
 $dispatchers = $helper->get_dispatchers();
 
-$search      = get_field_value( $_GET, 'my_search' );
-$load_status = get_field_value( $_GET, 'load_status' );
-$type        = get_field_value( $_GET, 'type' );
-$dispatcher  = get_field_value( $_GET, 'dispatcher' );
+$search       = get_field_value( $_GET, 'my_search' );
+$load_status  = get_field_value( $_GET, 'load_status' );
+$type         = get_field_value( $_GET, 'type' );
+$dispatcher   = get_field_value( $_GET, 'dispatcher' );
+$date_pickup  = get_field_value( $_GET, 'date_pickup' );
+$date_delivery = get_field_value( $_GET, 'date_delivery' );
 
-$hide_status = get_field_value( $args, 'hide_status' );
-$my_team     = get_field_value( $args, 'my_team' );
+$hide_status         = get_field_value( $args, 'hide_status' );
+$my_team             = get_field_value( $args, 'my_team' );
+$quick_status_counts  = get_field_value( $args, 'quick_status_counts' );
+$quick_status_counts  = is_array( $quick_status_counts ) ? $quick_status_counts : array();
 
 $office  = get_field_value( $_GET, 'office' );
 $offices = $helper->get_offices_from_acf();
@@ -22,7 +26,40 @@ if ( is_array( $my_team ) && ! empty( $my_team ) ) {
 }
 ?>
 
+
+<?php
+		$quick_statuses = array(
+			''                   => 'All',
+			'waiting-on-pu-date' => 'Waiting on PU',
+			'at-pu'              => '@PU',
+			'loaded-enroute'     => 'Loaded & Enroute',
+			'at-del'             => '@DEL',
+		);
+		if ( ! $hide_status ) :
+			$base_url = get_the_permalink();
+			$get_copy = isset( $_GET ) ? array_filter( $_GET ) : array();
+			?>
+        <div class="d-flex flex-wrap gap-1 align-items-center">
+			<?php foreach ( $quick_statuses as $status_key => $label ) : ?>
+				<?php
+				$params = $get_copy;
+				if ( $status_key === '' ) {
+					unset( $params['load_status'] );
+				} else {
+					$params['load_status'] = $status_key;
+				}
+				$href = add_query_arg( $params, $base_url );
+				$active = (string) $load_status === (string) $status_key;
+				$count = isset( $quick_status_counts[ $status_key ] ) ? (int) $quick_status_counts[ $status_key ] : 0;
+				?>
+				<a href="<?php echo esc_url( $href ); ?>"
+				   class="btn btn-sm <?php echo $active ? 'btn-primary' : 'btn-outline-secondary'; ?>"><?php echo esc_html( $label ); ?> <span class="badge bg-secondary"><?php echo esc_html( $count ); ?></span></a>
+			<?php endforeach; ?>
+        </div>
+		<?php endif; ?>
+
 <nav class="navbar mb-5 mt-3 navbar-expand-lg navbar-light">
+
     <div class="container-fluid p-0">
         <a class="navbar-brand" href="#">Loads</a>
         <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNavDarkDropdown"
@@ -61,16 +98,36 @@ if ( is_array( $my_team ) && ! empty( $my_team ) ) {
 						<?php endforeach; ?>
 					<?php endif; ?>
                 </select>
+
+				<div class="d-flex align-items-center gap-1">
+					<input type="text"
+						   class="form-control form-control-sm js-tracking-date-pickup"
+						   name="date_pickup"
+						   placeholder="Pickup"
+						   value="<?php echo esc_attr( $date_pickup ); ?>"
+						   aria-label="Pickup date"
+						   autocomplete="off">
+				</div>
+				<div class="d-flex align-items-center gap-1">
+					<input type="text"
+						   class="form-control form-control-sm js-tracking-date-delivery"
+						   name="date_delivery"
+						   placeholder="Delivery"
+						   value="<?php echo esc_attr( $date_delivery ); ?>"
+						   aria-label="Delivery date"
+						   autocomplete="off">
+				</div>
 				
-				<?php if ( ! $hide_status ) : ?>
+				<?php if ( ! $hide_status && (!isset($_GET['load_status']) || $load_status !== 'at-del' && $load_status !== 'loaded-enroute' && $load_status !== 'at-pu' && $load_status !== 'waiting-on-pu-date' ) ) : ?>
                     <select class="form-select w-auto" name="load_status" aria-label=".form-select-sm example">
                         <option value="">Load status</option>
 						<?php if ( is_array( $statuses ) ): ?>
-							<?php foreach ( $statuses as $key => $val ): ?>
-                                <option value="<?php echo $key; ?>" <?php echo $load_status === $key ? 'selected'
-									: '' ?> >
-									<?php echo $val; ?>
-                                </option>
+							<?php foreach ( $statuses as $key => $val ): 
+                                
+                                if ($key !== 'at-del' && $key !== 'loaded-enroute' && $key !== 'at-pu' && $key !== 'waiting-on-pu-date') {
+                                    echo '<option value="' . $key . '" ' . ($load_status === $key ? 'selected' : '') . ' >' . $val . '</option>';
+                                }
+                                ?>
 							<?php endforeach; ?>
 						<?php endif; ?>
                     </select>

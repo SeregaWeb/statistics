@@ -53,7 +53,8 @@ if ( is_array( $my_team ) && ! empty( $my_team ) ) {
 				$count = isset( $quick_status_counts[ $status_key ] ) ? (int) $quick_status_counts[ $status_key ] : 0;
 				?>
 				<a href="<?php echo esc_url( $href ); ?>"
-				   class="btn btn-sm <?php echo $active ? 'btn-primary' : 'btn-outline-secondary'; ?>"><?php echo esc_html( $label ); ?> <span class="badge bg-secondary"><?php echo esc_html( $count ); ?></span></a>
+				   class="btn btn-sm <?php echo $active ? 'btn-primary' : 'btn-outline-secondary'; ?> js-tracking-quick-status"
+				   data-status-key="<?php echo esc_attr( $status_key ); ?>"><?php echo esc_html( $label ); ?> <span class="badge bg-secondary js-tracking-count"><?php echo esc_html( $count ); ?></span></a>
 			<?php endforeach; ?>
         </div>
 		<?php endif; ?>

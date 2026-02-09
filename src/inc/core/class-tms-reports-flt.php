@@ -1291,6 +1291,7 @@ class TMSReportsFlt extends TMSReportsHelper {
 		}
 
 		// Filter by pickup/delivery date only from locations table (reports_flt_{project}_locations)
+		// When both dates set: range (pickup and delivery date within [start, end]). When one: exact date.
 		$date_pickup_raw   = ! empty( $args[ 'date_pickup' ] ) ? trim( $args[ 'date_pickup' ] ) : '';
 		$date_delivery_raw = ! empty( $args[ 'date_delivery' ] ) ? trim( $args[ 'date_delivery' ] ) : '';
 		if ( ! empty( $this->project ) && ( $date_pickup_raw || $date_delivery_raw ) ) {
@@ -1304,10 +1305,14 @@ class TMSReportsFlt extends TMSReportsHelper {
 				$where_conditions[] = "main.id IN (SELECT load_id FROM $table_locations WHERE location_type = 'delivery' AND date IS NOT NULL AND DATE(date) = DATE(%s))";
 				$where_values[]     = $parsed_delivery;
 			} elseif ( $parsed_pickup && $parsed_delivery ) {
-				$where_conditions[] = "main.id IN (SELECT load_id FROM $table_locations WHERE location_type = 'pickup' AND date IS NOT NULL AND DATE(date) = DATE(%s))";
-				$where_conditions[] = "main.id IN (SELECT load_id FROM $table_locations WHERE location_type = 'delivery' AND date IS NOT NULL AND DATE(date) = DATE(%s))";
-				$where_values[]     = $parsed_pickup;
-				$where_values[]     = $parsed_delivery;
+				$range_start = strcmp( $parsed_pickup, $parsed_delivery ) <= 0 ? $parsed_pickup : $parsed_delivery;
+				$range_end   = strcmp( $parsed_pickup, $parsed_delivery ) <= 0 ? $parsed_delivery : $parsed_pickup;
+				$where_conditions[] = "main.id IN (SELECT load_id FROM $table_locations WHERE location_type = 'pickup' AND date IS NOT NULL AND DATE(date) BETWEEN DATE(%s) AND DATE(%s))";
+				$where_conditions[] = "main.id IN (SELECT load_id FROM $table_locations WHERE location_type = 'delivery' AND date IS NOT NULL AND DATE(date) BETWEEN DATE(%s) AND DATE(%s))";
+				$where_values[]     = $range_start;
+				$where_values[]     = $range_end;
+				$where_values[]     = $range_start;
+				$where_values[]     = $range_end;
 			}
 		}
 		

@@ -52,10 +52,13 @@ $blocked_update = $TMSUsers->check_user_role_access( array( 'driver_updates', 'e
 $access_timer = $TMSUsers->check_user_role_access( array( 'administrator', 'tracking-tl', 'tracking', 'morning_tracking', 'nightshift_tracking' ), true );
 $access_quick_comment = $TMSUsers->check_user_role_access( array( 'administrator', 'tracking-tl', 'tracking', 'morning_tracking', 'nightshift_tracking' ), true );
 
-if ( ! empty( $results ) ) :
-	$tools = $TMSReports->get_stat_tools();
-	
+$fragment_only = ! empty( $args['fragment_only'] );
+if ( ! empty( $results ) || $fragment_only ) :
+	if ( ! $fragment_only ) {
+		$tools = $TMSReports->get_stat_tools();
+	}
 	?>
+	<?php if ( ! $fragment_only ) : ?>
     <div class="d-flex justify-content-between align-items-center mb-3">
 		
 		
@@ -108,9 +111,11 @@ if ( ! empty( $results ) ) :
             <th scope="col"></th>
         </tr>
         </thead>
-        <tbody>
-		<?php 
+	<?php endif; ?>
+	<?php if ( ! $fragment_only ) : ?><tbody class="js-tracking-tbody"><?php endif; ?>
+		<?php
 		$row_index = 0;
+		if ( ! empty( $results ) ) :
 		foreach ( $results as $row ) :
 			$row_index++;
 			$meta = get_field_value( $row, 'meta_data' );
@@ -209,7 +214,7 @@ if ( ! empty( $results ) ) :
             $has_active_timer = $access_timer && ! $archive && $TMSReportsTimer->get_active_timer_for_load( $row['id'] );
             ?>
 
-            <tr class="<?php echo 'status-tracking-' . $status; ?> <?php echo $tbd ? 'tbd' : ''; ?>">
+            <tr class="<?php echo 'status-tracking-' . $status; ?> <?php echo $tbd ? 'tbd' : ''; ?> <?php echo $high_priority ? 'hight-priority' : ''; ?>" data-load-id="<?php echo (int) $row['id']; ?>">
 
                 <?php if ( $access_timer && !$archive ): ?>
                 <td class="js-timer-status-cell" data-load-id="<?php echo (int) $row['id']; ?>">
@@ -495,7 +500,7 @@ if ( ! empty( $results ) ) :
 									<?php echo $TMSReports->get_icon_hold(); ?>
                                 </button>
 								<?php if ( $has_active_timer ) : ?>
-									<button class="btn btn-sm d-flex align-items-center justify-content-center js-timer-quick-update"
+									<button class="btn btn-sm d-flex align-items-center justify-content-center js-timer-quick-update use-stroke"
 											data-id="<?php echo $row[ 'id' ]; ?>"
 											data-flt="<?php echo isset( $flt ) ? ( $flt ? '1' : '0' ) : '0'; ?>"
 											data-project="<?php echo esc_attr( $curent_project ); ?>"
@@ -523,10 +528,9 @@ if ( ! empty( $results ) ) :
                     </td>
 				<?php endif; ?>
             </tr>
-		
-		<?php endforeach; ?>
+		<?php endforeach; endif; ?>
 
-        </tbody>
+	<?php if ( ! $fragment_only ) : ?></tbody>
     </table>
 
     <div class="d-flex justify-content-between">
@@ -546,11 +550,15 @@ if ( ! empty( $results ) ) :
 		) ) );
 		?>
     </div>
+	<?php endif; ?>
 
 <?php else : ?>
+	<?php if ( ! $fragment_only ) : ?>
     <p>No reports found.</p>
+	<?php endif; ?>
 <?php endif; ?>
 
+<?php if ( ! $fragment_only ) : ?>
 <!-- Timer Control Modal -->
 <?php echo esc_html( get_template_part( TEMPLATE_PATH . 'popups/timer', 'control-modal' ) ); ?>
 
@@ -575,3 +583,4 @@ if ( ! empty( $results ) ) :
 		</div>
 	</div>
 </div>
+<?php endif; ?>

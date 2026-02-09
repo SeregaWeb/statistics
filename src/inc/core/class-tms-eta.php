@@ -590,9 +590,7 @@ class TMSEta extends TMSReportsHelper {
             } else {
                 error_log('Failed to schedule ETA notifications cron');
             }
-        } else {
-            error_log('ETA notifications cron already scheduled');
-        }
+        } 
     }
     
     /**

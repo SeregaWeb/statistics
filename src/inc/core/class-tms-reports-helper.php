@@ -1594,6 +1594,107 @@ Kindly confirm once you've received this message." ) . "\n";
 	}
 
 	/**
+	 * AJAX handler: returns current tracking state (counts + load_ids + tbody HTML) for real-time polling.
+	 * Expects filter params in POST (or GET): type, office, dispatcher, load_status, date_pickup, date_delivery, my_search, paged.
+	 */
+	public function ajax_get_tracking_live_state() {
+		$allowed = array( 'type', 'office', 'dispatcher', 'load_status', 'date_pickup', 'date_delivery', 'my_search', 'paged' );
+		foreach ( $allowed as $key ) {
+			if ( isset( $_POST[ $key ] ) ) {
+				$_GET[ $key ] = $_POST[ $key ];
+			}
+		}
+
+		$TMSUsers = new TMSUsers();
+		$office_dispatcher = get_field( 'work_location', 'user_' . get_current_user_id() );
+		$select_all_offices = $TMSUsers->check_user_role_access( array(
+			'tracking', 'tracking-tl', 'morning_tracking', 'nightshift_tracking',
+			'dispatcher-tl', 'expedite_manager', 'administrator', 'recruiter', 'recruiter-tl', 'hr_manager', 'moderator',
+		), true );
+		if ( ! $office_dispatcher || $select_all_offices ) {
+			$office_dispatcher = 'all';
+		}
+
+		$type   = isset( $_GET['type'] ) ? sanitize_text_field( $_GET['type'] ) : '';
+		$is_flt = ( $type === 'flt' );
+		$reports = $is_flt ? new TMSReportsFlt() : $this;
+
+		$args = array(
+			'status_post'    => 'publish',
+			'user_id'        => get_current_user_id(),
+			'sort_by'        => 'pick_up_date',
+			'exclude_status' => array( 'delivered', 'tonu', 'cancelled' ),
+			'exclude_tbd'    => true,
+		);
+		$args = $reports->set_filter_params( $args, $office_dispatcher );
+
+		$current_page = isset( $_GET['paged'] ) ? absint( $_GET['paged'] ) : 1;
+
+		$high_priority_args = $args;
+		unset( $high_priority_args['exclude_ids'] );
+		$all_high_priority = $reports->get_high_priority_loads( $high_priority_args );
+		$high_priority_ids = wp_list_pluck( $all_high_priority, 'id' );
+		if ( ! empty( $high_priority_ids ) ) {
+			$args['exclude_ids'] = $high_priority_ids;
+		}
+
+		$high_priority_loads = array();
+		if ( $current_page === 1 && ! empty( $all_high_priority ) ) {
+			$high_priority_loads = $all_high_priority;
+		}
+
+		$items = $reports->get_table_items_tracking( $args );
+		$items['page_type'] = 'tracking';
+		$items['hide_time_controls'] = true;
+		if ( $is_flt ) {
+			$items['flt'] = true;
+		}
+
+		$quick_status_keys = array( '', 'waiting-on-pu-date', 'at-pu', 'loaded-enroute', 'at-del' );
+		$quick_status_counts = array();
+		foreach ( $quick_status_keys as $qsk ) {
+			$args_count = $args;
+			if ( $qsk === '' ) {
+				unset( $args_count['load_status'] );
+			} else {
+				$args_count['load_status'] = $qsk;
+			}
+			$res = $reports->get_table_items_tracking( $args_count );
+			$quick_status_counts[ $qsk ] = isset( $res['total_posts'] ) ? (int) $res['total_posts'] : 0;
+		}
+		if ( ! empty( $high_priority_loads ) ) {
+			$quick_status_counts[''] += count( $high_priority_loads );
+		}
+
+		if ( $current_page === 1 && ! empty( $high_priority_loads ) ) {
+			$items['results'] = array_merge( $high_priority_loads, $items['results'] );
+			$items['high_priority_count'] = count( $high_priority_loads );
+			$items['total_posts'] = $items['total_posts'] + count( $high_priority_loads );
+			$per_page = $reports->per_page_loads;
+			$items['total_pages'] = ceil( $items['total_posts'] / $per_page );
+		} else {
+			$items['high_priority_count'] = 0;
+		}
+
+		$items['fragment_only'] = true;
+
+		if ( ! defined( 'TEMPLATE_PATH' ) ) {
+			define( 'TEMPLATE_PATH', 'src/template-parts/report/' );
+		}
+		ob_start();
+		get_template_part( TEMPLATE_PATH . 'tables/report', 'table-tracking', $items );
+		$rows_html = ob_get_clean();
+
+		$load_ids = array_map( 'intval', wp_list_pluck( $items['results'], 'id' ) );
+
+		wp_send_json_success( array(
+			'counts'    => $quick_status_counts,
+			'load_ids'  => $load_ids,
+			'rows_html' => $rows_html,
+		) );
+	}
+
+	/**
 	 * Parse tracking filter datetime (American format m/d/Y H:i or m/d/Y) to MySQL datetime Y-m-d H:i:s.
 	 *
 	 * @param string $str User input from filter.

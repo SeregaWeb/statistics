@@ -352,3 +352,10 @@ $color_direct_3: #ffdcdc;
         font-size: 12px;
     }
 }
+
+table {
+    .hight-priority {
+        background: gold;
+        background-image: repeating-linear-gradient(45deg, hsla(0, 0%, 100%, 0.15), hsla(0, 0%, 100%, .15) 15px, transparent 0, transparent 30px);
+    }
+}

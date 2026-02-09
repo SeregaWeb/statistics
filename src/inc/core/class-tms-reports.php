@@ -1386,6 +1386,7 @@ class TMSReports extends TMSReportsHelper {
 		}
 
 		// Filter by pickup/delivery date only from locations table (reports_{project}_locations)
+		// When both dates set: range (pickup and delivery date within [start, end]). When one: exact date.
 		$date_pickup_raw   = ! empty( $args[ 'date_pickup' ] ) ? trim( $args[ 'date_pickup' ] ) : '';
 		$date_delivery_raw = ! empty( $args[ 'date_delivery' ] ) ? trim( $args[ 'date_delivery' ] ) : '';
 		if ( ! empty( $this->project ) && ( $date_pickup_raw || $date_delivery_raw ) ) {
@@ -1399,10 +1400,14 @@ class TMSReports extends TMSReportsHelper {
 				$where_conditions[] = "main.id IN (SELECT load_id FROM $table_locations WHERE location_type = 'delivery' AND date IS NOT NULL AND DATE(date) = DATE(%s))";
 				$where_values[]     = $parsed_delivery;
 			} elseif ( $parsed_pickup && $parsed_delivery ) {
-				$where_conditions[] = "main.id IN (SELECT load_id FROM $table_locations WHERE location_type = 'pickup' AND date IS NOT NULL AND DATE(date) = DATE(%s))";
-				$where_conditions[] = "main.id IN (SELECT load_id FROM $table_locations WHERE location_type = 'delivery' AND date IS NOT NULL AND DATE(date) = DATE(%s))";
-				$where_values[]     = $parsed_pickup;
-				$where_values[]     = $parsed_delivery;
+				$range_start = strcmp( $parsed_pickup, $parsed_delivery ) <= 0 ? $parsed_pickup : $parsed_delivery;
+				$range_end   = strcmp( $parsed_pickup, $parsed_delivery ) <= 0 ? $parsed_delivery : $parsed_pickup;
+				$where_conditions[] = "main.id IN (SELECT load_id FROM $table_locations WHERE location_type = 'pickup' AND date IS NOT NULL AND DATE(date) BETWEEN DATE(%s) AND DATE(%s))";
+				$where_conditions[] = "main.id IN (SELECT load_id FROM $table_locations WHERE location_type = 'delivery' AND date IS NOT NULL AND DATE(date) BETWEEN DATE(%s) AND DATE(%s))";
+				$where_values[]     = $range_start;
+				$where_values[]     = $range_end;
+				$where_values[]     = $range_start;
+				$where_values[]     = $range_end;
 			}
 		}
 		
@@ -1603,27 +1608,9 @@ class TMSReports extends TMSReportsHelper {
         WHEN LOWER(load_status.meta_value) IN ('at-pu', 'at-del', 'waiting-on-pu-date', 'waiting-on-rc', 'loaded-enroute') THEN COALESCE(main.pick_up_date, '9999-12-31 23:59:59')
         ELSE COALESCE(main.delivery_date, '9999-12-31 23:59:59')
     END $sort_order";
-		
-		// Debug: log the SQL query
-		error_log( '=== get_high_priority_loads DEBUG ===' );
-		error_log( 'Table meta: ' . $table_meta );
-		error_log( 'SQL: ' . $sql );
-		error_log( 'Where conditions: ' . print_r( $where_conditions, true ) );
-		error_log( 'Where values: ' . print_r( $where_values, true ) );
-		
-		// Test simple query first
-		$test_simple = $wpdb->get_results( "SELECT main.id, `high_priority`.meta_value as hp FROM $table_main AS main INNER JOIN $table_meta AS `high_priority` ON main.id = `high_priority`.post_id AND `high_priority`.meta_key = 'high_priority' WHERE `high_priority`.meta_value = '1' LIMIT 5" );
-		error_log( 'Simple test query results: ' . print_r( $test_simple, true ) );
-		
+
 		$main_results = $wpdb->get_results( $wpdb->prepare( $sql, ...$where_values ), ARRAY_A );
-		
-		error_log( 'Results count: ' . count( $main_results ) );
-		if ( $wpdb->last_error ) {
-			error_log( 'DB Error: ' . $wpdb->last_error );
-		}
-		error_log( 'Last query: ' . $wpdb->last_query );
-		error_log( '=== END get_high_priority_loads DEBUG ===' );
-		
+
 		// Обработка метаданных
 		$post_ids  = wp_list_pluck( $main_results, 'id' );
 		$meta_data = [];
@@ -6986,6 +6973,7 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 			'optimize_shipper_tables'       => 'optimize_shipper_tables',
 			'create_load_chat'              => 'create_load_chat',
 			'get_driver_stats_popup_html'   => 'ajax_get_driver_stats_popup_html',
+			'get_tracking_live_state'       => 'ajax_get_tracking_live_state',
 		];
 
 		foreach ( $actions as $ajax_action => $method ) {

@@ -1628,6 +1628,12 @@ Kindly confirm once you've received this message." ) . "\n";
 		);
 		$args = $reports->set_filter_params( $args, $office_dispatcher );
 
+		$tracking_context = isset( $_POST['tracking_context'] ) ? sanitize_text_field( $_POST['tracking_context'] ) : '';
+		if ( $tracking_context === 'my_team' ) {
+			$args['my_team']        = $TMSUsers->check_group_access();
+			$args['exclude_status'] = array( 'delivered', 'tonu', 'cancelled', 'waiting-on-rc' );
+		}
+
 		$current_page = isset( $_GET['paged'] ) ? absint( $_GET['paged'] ) : 1;
 
 		$high_priority_args = $args;

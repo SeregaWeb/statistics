@@ -17252,8 +17252,16 @@ function updateCounts(counts) {
     }
   });
 }
+function getTrackingContext() {
+  var el = document.querySelector('.js-table-tracking');
+  var wrapper = el === null || el === void 0 ? void 0 : el.closest('[data-tracking-context]');
+  return ((wrapper === null || wrapper === void 0 ? void 0 : wrapper.getAttribute('data-tracking-context')) || '').trim();
+}
 function initTrackingLiveUpdate() {
   var _a;
+  if (document.querySelector('[data-tracking-live-update="false"]')) {
+    return;
+  }
   var table = document.querySelector('.js-table-tracking');
   var tbody = table === null || table === void 0 ? void 0 : table.querySelector('.js-tracking-tbody');
   var hasQuickStatus = document.querySelectorAll('.js-tracking-quick-status').length > 0;
@@ -17272,6 +17280,10 @@ function initTrackingLiveUpdate() {
     Object.keys(params).forEach(function (key) {
       formData.append(key, params[key]);
     });
+    var context = getTrackingContext();
+    if (context) {
+      formData.append('tracking_context', context);
+    }
     fetch(ajaxUrl, {
       method: 'POST',
       body: formData,

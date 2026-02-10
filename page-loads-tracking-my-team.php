@@ -68,8 +68,26 @@ $items = $reports->get_table_items_tracking( $args );
 
 $post_tp              = 'tracking';
 $items[ 'page_type' ] = $post_tp;
+$items['hide_time_controls'] = true;
 if ( $is_flt ) {
 	$items[ 'flt' ] = true;
+}
+
+// Counts for quick status filter buttons (same filters + my_team, per load_status)
+$quick_status_keys   = array( '', 'waiting-on-pu-date', 'at-pu', 'loaded-enroute', 'at-del' );
+$quick_status_counts = array();
+foreach ( $quick_status_keys as $qsk ) {
+	$args_count = $args;
+	if ( $qsk === '' ) {
+		unset( $args_count['load_status'] );
+	} else {
+		$args_count['load_status'] = $qsk;
+	}
+	$res = $reports->get_table_items_tracking( $args_count );
+	$quick_status_counts[ $qsk ] = isset( $res['total_posts'] ) ? (int) $res['total_posts'] : 0;
+}
+if ( ! empty( $high_priority_loads ) ) {
+	$quick_status_counts[''] += count( $high_priority_loads );
 }
 
 // Merge high priority loads at the beginning (only on first page)
@@ -112,7 +130,7 @@ $items['project'] = $user_project;
                         <h2><?php echo get_the_title(); ?></h2>
                         <p><?php echo get_the_excerpt(); ?></p>
                     </div>
-                    <div class="col-12">
+                    <div class="col-12" data-tracking-context="my_team">
                         
                         <?php if ( is_array( $my_team ) ): ?>
                             <?php
@@ -122,7 +140,7 @@ $items['project'] = $user_project;
                         
 						<?php
 						if ( is_array( $my_team ) ) {
-							echo esc_html( get_template_part( TEMPLATE_PATH . 'filters/report', 'filter-tracking', array( 'my_team' => $my_team ) ) );
+							echo esc_html( get_template_part( TEMPLATE_PATH . 'filters/report', 'filter-tracking', array( 'my_team' => $my_team, 'quick_status_counts' => $quick_status_counts ) ) );
 							echo esc_html( get_template_part( TEMPLATE_PATH . 'tables/report', 'table-tracking', $items ) );
 						} else {
 							echo $reports->message_top( 'error', 'Team not found' );

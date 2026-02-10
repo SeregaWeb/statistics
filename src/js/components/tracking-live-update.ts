@@ -53,7 +53,17 @@ function updateCounts( counts: Record<string, number> ): void {
 	} );
 }
 
+function getTrackingContext(): string {
+	const el = document.querySelector( '.js-table-tracking' );
+	const wrapper = el?.closest( '[data-tracking-context]' );
+	return ( wrapper?.getAttribute( 'data-tracking-context' ) || '' ).trim();
+}
+
 export function initTrackingLiveUpdate(): void {
+	if ( document.querySelector( '[data-tracking-live-update="false"]' ) ) {
+		return;
+	}
+
 	const table = document.querySelector( '.js-table-tracking' );
 	const tbody = table?.querySelector( '.js-tracking-tbody' );
 	const hasQuickStatus = document.querySelectorAll( '.js-tracking-quick-status' ).length > 0;
@@ -77,6 +87,10 @@ export function initTrackingLiveUpdate(): void {
 		Object.keys( params ).forEach( ( key ) => {
 			formData.append( key, params[ key ] );
 		} );
+		const context = getTrackingContext();
+		if ( context ) {
+			formData.append( 'tracking_context', context );
+		}
 
 		fetch( ajaxUrl, {
 			method: 'POST',

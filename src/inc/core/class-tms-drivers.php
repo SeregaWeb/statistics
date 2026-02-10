@@ -2029,7 +2029,6 @@ class TMSDrivers extends TMSDriversHelper {
 		
 		// var_dump($args); // Debug info - uncomment if needed
 		
-		
 		$per_page     = isset( $args[ 'per_page_loads' ] ) ? $args[ 'per_page_loads' ] : $this->per_page_loads;
 		$current_page = isset( $_GET[ 'paged' ] ) ? absint( $_GET[ 'paged' ] ) : 1;
 		$sort_by      = ! empty( $args[ 'sort_by' ] ) ? $args[ 'sort_by' ] : 'id';

@@ -26,6 +26,7 @@ class TMSDriversAPI {
     const ENDPOINT_DRIVER_LOADS = 'driver/loads';
     const ENDPOINT_LOAD_DETAIL = 'load';
     const ENDPOINT_USERS = 'users';
+    const ENDPOINT_DRIVER_SEARCH = 'driver/search';
 
     private $drivers;
     private $loads;
@@ -260,6 +261,64 @@ class TMSDriversAPI {
                     'default' => '',
                     'validate_callback' => function($param, $request, $key) {
                         return is_string($param);
+                    }
+                )
+            )
+        ));
+
+        // Driver search endpoint (same logic as page driver search: set_filter_params_search + get_table_items_search)
+        register_rest_route(self::API_NAMESPACE, '/' . self::ENDPOINT_DRIVER_SEARCH, array(
+            'methods' => 'GET',
+            'callback' => array($this, 'get_driver_search'),
+            'permission_callback' => array($this, 'check_api_permission'),
+            'args' => array(
+                'my_search' => array(
+                    'required' => false,
+                    'default' => '',
+                    'validate_callback' => function($param, $request, $key) {
+                        return is_string($param);
+                    }
+                ),
+                'extended_search' => array(
+                    'required' => false,
+                    'default' => '',
+                    'validate_callback' => function($param, $request, $key) {
+                        return is_string($param);
+                    }
+                ),
+                'radius' => array(
+                    'required' => false,
+                    'default' => '',
+                    'validate_callback' => function($param, $request, $key) {
+                        return is_string($param) || is_numeric($param);
+                    }
+                ),
+                'country' => array(
+                    'required' => false,
+                    'default' => '',
+                    'validate_callback' => function($param, $request, $key) {
+                        return is_string($param);
+                    }
+                ),
+                'capabilities' => array(
+                    'required' => false,
+                    'default' => '',
+                    'validate_callback' => function($param, $request, $key) {
+                        return is_string($param);
+                    }
+                ),
+                'paged' => array(
+                    'required' => false,
+                    'default' => 1,
+                    'validate_callback' => function($param, $request, $key) {
+                        return is_numeric($param) && $param > 0;
+                    }
+                ),
+                'per_page_loads' => array(
+                    'required' => false,
+                    'default' => 0,
+                    'validate_callback' => function($param, $request, $key) {
+                        return is_numeric($param) && $param >= 0 && $param <= 100;
                     }
                 )
             )
@@ -3393,6 +3452,78 @@ class TMSDriversAPI {
                 'api_error',
                 'An error occurred while fetching users: ' . $e->getMessage(),
                 array('status' => 500)
+            );
+        }
+    }
+
+    /**
+     * Driver search endpoint - same logic as page driver search (set_filter_params_search + get_table_items_search).
+     * Accepts same query params as the driver search page and returns results in the same structure.
+     *
+     * @param WP_REST_Request $request
+     * @return WP_REST_Response|WP_Error
+     */
+    public function get_driver_search( $request ) {
+        try {
+            $get_backup = $_GET;
+            $allowed    = array( 'my_search', 'extended_search', 'radius', 'country', 'capabilities', 'paged' );
+            foreach ( $allowed as $key ) {
+                $value = $request->get_param( $key );
+                if ( $value !== null && $value !== '' ) {
+                    if ( $key === 'capabilities' && is_string( $value ) ) {
+                        $value = array_filter( array_map( 'trim', explode( ',', $value ) ) );
+                    }
+                    $_GET[ $key ] = $value;
+                }
+            }
+            if ( $request->get_param( 'paged' ) === null || $request->get_param( 'paged' ) === '' ) {
+                $_GET['paged'] = 1;
+            }
+
+            $Drivers = new TMSDrivers();
+            $args    = array( 'status_post' => 'publish' );
+            $args    = $Drivers->set_filter_params_search( $args );
+            $per_page_param = $request->get_param( 'per_page_loads' );
+            if ( $per_page_param !== null && (int) $per_page_param > 0 ) {
+                $args['per_page_loads'] = (int) $per_page_param;
+            }
+            $items = $Drivers->get_table_items_search( $args );
+
+            $results = isset( $items['results'] ) ? $items['results'] : array();
+            $total   = isset( $items['total_posts'] ) ? (int) $items['total_posts'] : 0;
+            $pages   = isset( $items['total_pages'] ) ? (int) $items['total_pages'] : 0;
+            $current = isset( $items['current_pages'] ) ? (int) $items['current_pages'] : 1;
+
+            $data = array(
+                'results' => $results,
+                'pagination' => array(
+                    'current_page' => $current,
+                    'total_posts' => $total,
+                    'total_pages' => $pages,
+                ),
+            );
+            if ( ! empty( $items['has_distance_data'] ) && ! empty( $items['id_posts'] ) ) {
+                $data['has_distance_data'] = true;
+                $data['id_posts']         = $items['id_posts'];
+            }
+
+            $_GET = $get_backup;
+
+            return new WP_REST_Response( array(
+                'success' => true,
+                'data' => $data,
+                'timestamp' => current_time( 'mysql' ),
+                'api_version' => '1.0',
+            ), 200 );
+
+        } catch ( Exception $e ) {
+            if ( isset( $get_backup ) ) {
+                $_GET = $get_backup;
+            }
+            return new WP_Error(
+                'api_error',
+                'An error occurred while searching drivers: ' . $e->getMessage(),
+                array( 'status' => 500 )
             );
         }
     }

@@ -161,7 +161,7 @@ $USER_OBJECT = $TMSUser->get_account_info( $user_id );
 							echo $TMSUser->message_top( 'danger', $TMSUser->messages_prepare( 'user-not-found' ) );
 						} ?>
 
-                        <?php if (current_user_can('administrator')): ?>
+                        <?php if (current_user_can('administrator') || current_user_can('expedite_manager')): ?>
                             <ul class="nav nav-pills mb-3 mt-4" id="pills-tab" role="tablist">
                                 <li class="nav-item" role="presentation">
                                     <button class="nav-link active" id="pills-raiting-manager-tab" data-bs-toggle="pill" data-bs-target="#pills-raiting-manager" type="button" role="tab" aria-controls="pills-raiting-manager" aria-selected="true">Ratings manager</button>

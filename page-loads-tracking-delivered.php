@@ -72,7 +72,7 @@ $items['project'] = $user_project;
                         <p><?php echo get_the_excerpt(); ?></p>
 
                     </div>
-                    <div class="col-12">
+                    <div class="col-12" data-tracking-live-update="false">
                         
                         <?php
                         echo esc_html( get_template_part( TEMPLATE_PATH . 'common/flt', 'tabs', array( 'show_flt_tabs' => $show_flt_tabs, 'is_flt' => $is_flt ) ) );

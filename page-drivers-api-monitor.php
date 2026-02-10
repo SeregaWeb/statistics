@@ -68,6 +68,10 @@ $access = true;
                                                     <br><small class="text-muted">Get drivers list with pagination (default: 20 per page)</small>
                                                 </li>
                                                 <li class="list-group-item">
+                                                    <strong>GET</strong> <?php echo home_url('/wp-json/tms/v1/driver/search?my_search={address}&radius={miles}&paged={page}&capabilities={twic,lift_gate}'); ?>
+                                                    <br><small class="text-muted">Driver search (address/radius, extended search, capabilities; same logic as Driver Search page)</small>
+                                                </li>
+                                                <li class="list-group-item">
                                                     <strong>POST</strong> <?php echo home_url('/wp-json/tms/v1/driver/update?driver_id={driver_id}'); ?>
                                                     <br><small class="text-muted">Update driver data (current_location, contact, vehicle)</small>
                                                 </li>
@@ -732,6 +736,114 @@ curl -X GET \
                                                     </div>
                                                 </div>
                                                 
+                                                <!-- Driver Search API Section -->
+                                                <div class="card mb-4">
+                                                    <div class="card-header">
+                                                        <h5 class="mb-0">Driver Search API - Search Drivers (same as Driver Search page)</h5>
+                                                    </div>
+                                                    <div class="card-body">
+                                                        <p class="text-muted">Uses the same logic as the Driver Search page: filters by address/radius, extended search, country, and capabilities. Returns paginated results with the same structure as <code>get_table_items_search</code>.</p>
+                                                        
+                                                        <p><strong>Endpoint:</strong> <code>GET /wp-json/tms/v1/driver/search</code></p>
+                                                        
+                                                        <p><strong>Parameters (all optional):</strong></p>
+                                                        <ul>
+                                                            <li><code>my_search</code> - Address or place to search drivers near (triggers geocoding and distance filter with <code>radius</code>)</li>
+                                                            <li><code>extended_search</code> - Extended search filter (same as on Driver Search page)</li>
+                                                            <li><code>radius</code> - Radius in miles when using <code>my_search</code></li>
+                                                            <li><code>country</code> - Country filter</li>
+                                                            <li><code>capabilities</code> - Comma-separated list of required capabilities (e.g. <code>twic,lift_gate,hazmat_certificate</code>)</li>
+                                                            <li><code>paged</code> - Page number (default: 1)</li>
+                                                            <li><code>per_page_loads</code> - Number of results per page (1–100; if not set, uses theme default)</li>
+                                                        </ul>
+                                                        
+                                                        <p><strong>Example (by address + radius):</strong></p>
+                                                        <pre class="bg-light p-3 rounded" style="word-wrap: break-word; overflow-x: auto; white-space: pre-wrap;">
+curl -X GET \
+  "<?php echo home_url('/wp-json/tms/v1/driver/search?my_search=New York, NY&radius=100&paged=1'); ?>" \
+  -H "X-API-Key: tms_api_key_2024_driver_access" \
+  -H "Content-Type: application/json"
+                                                        </pre>
+                                                        
+                                                        <p><strong>Example (with capabilities):</strong></p>
+                                                        <pre class="bg-light p-3 rounded" style="word-wrap: break-word; overflow-x: auto; white-space: pre-wrap;">
+curl -X GET \
+  "<?php echo home_url('/wp-json/tms/v1/driver/search?capabilities=twic,lift_gate&paged=1'); ?>" \
+  -H "X-API-Key: tms_api_key_2024_driver_access" \
+  -H "Content-Type: application/json"
+                                                        </pre>
+                                                        
+                                                        <p><strong>Example Response:</strong></p>
+                                                        <pre class="bg-light p-3 rounded" style="word-wrap: break-word; overflow-x: auto; white-space: pre-wrap;">{
+  "success": true,
+  "data": {
+    "results": [
+      { "id": 3343, "meta_data": { ... }, ... }
+    ],
+    "pagination": {
+      "current_page": 1,
+      "total_posts": 42,
+      "total_pages": 3
+    },
+    "has_distance_data": true,
+    "id_posts": { "3343": 12.5, "3249": 25.3 }
+  },
+  "timestamp": "2026-01-06 12:00:00",
+  "api_version": "1.0"
+}</pre>
+                                                        
+                                                        <p><strong>Test Driver Search API:</strong></p>
+                                                        <div class="row">
+                                                            <div class="col-md-4">
+                                                                <div class="form-group mb-3">
+                                                                    <label for="test-my-search">Address (my_search):</label>
+                                                                    <input type="text" class="form-control" id="test-my-search" placeholder="e.g. New York, NY">
+                                                                </div>
+                                                            </div>
+                                                            <div class="col-md-2">
+                                                                <div class="form-group mb-3">
+                                                                    <label for="test-radius-search">Radius (miles):</label>
+                                                                    <input type="number" class="form-control" id="test-radius-search" placeholder="100" min="1">
+                                                                </div>
+                                                            </div>
+                                                            <div class="col-md-2">
+                                                                <div class="form-group mb-3">
+                                                                    <label for="test-paged-search">Page:</label>
+                                                                    <input type="number" class="form-control" id="test-paged-search" value="1" min="1">
+                                                                </div>
+                                                            </div>
+                                                            <div class="col-md-2">
+                                                                <div class="form-group mb-3">
+                                                                    <label for="test-per-page-loads-search">Per page (per_page_loads):</label>
+                                                                    <input type="number" class="form-control" id="test-per-page-loads-search" placeholder="e.g. 20" min="1" max="100">
+                                                                </div>
+                                                            </div>
+                                                            <div class="col-md-4">
+                                                                <div class="form-group mb-3">
+                                                                    <label for="test-capabilities-search">Capabilities (comma):</label>
+                                                                    <input type="text" class="form-control" id="test-capabilities-search" placeholder="twic, lift_gate">
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                        <div class="row">
+                                                            <div class="col-md-6">
+                                                                <div class="form-group mb-3">
+                                                                    <label for="test-extended-search">Extended search:</label>
+                                                                    <input type="text" class="form-control" id="test-extended-search" placeholder="Optional">
+                                                                </div>
+                                                            </div>
+                                                            <div class="col-md-6">
+                                                                <div class="form-group mb-3">
+                                                                    <label for="test-country-search">Country:</label>
+                                                                    <input type="text" class="form-control" id="test-country-search" placeholder="Optional">
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                        <button type="button" class="btn btn-primary btn-sm" onclick="testDriverSearchAPI()">Test Driver Search API</button>
+                                                        <div id="api-test-result-driver-search" class="mt-3"></div>
+                                                    </div>
+                                                </div>
+                                                
                                                 <!-- Load Detail API Section -->
                                                 <div class="card mb-4">
                                                     <div class="card-header">
@@ -1027,6 +1139,44 @@ curl -X GET \
                                 })
                                 .catch(error => {
                                     resultDiv.innerHTML = '<div class="alert alert-danger"><h6>Drivers List API Error:</h6><pre style="word-wrap: break-word; overflow-x: auto; white-space: pre-wrap;">' + error.message + '</pre></div>';
+                                });
+                            }
+                            
+                            function testDriverSearchAPI() {
+                                const resultDiv = document.getElementById('api-test-result-driver-search');
+                                const params = new URLSearchParams();
+                                const mySearch = document.getElementById('test-my-search').value;
+                                const radius = document.getElementById('test-radius-search').value;
+                                const paged = document.getElementById('test-paged-search').value;
+                                const perPageLoads = document.getElementById('test-per-page-loads-search').value;
+                                const capabilities = document.getElementById('test-capabilities-search').value.trim();
+                                const extendedSearch = document.getElementById('test-extended-search').value.trim();
+                                const country = document.getElementById('test-country-search').value.trim();
+                                if (mySearch) params.append('my_search', mySearch);
+                                if (radius) params.append('radius', radius);
+                                if (paged) params.append('paged', paged);
+                                if (perPageLoads) params.append('per_page_loads', perPageLoads);
+                                if (capabilities) params.append('capabilities', capabilities);
+                                if (extendedSearch) params.append('extended_search', extendedSearch);
+                                if (country) params.append('country', country);
+                                const url = '<?php echo home_url('/wp-json/tms/v1/driver/search'); ?>' + (params.toString() ? '?' + params.toString() : '');
+                                resultDiv.innerHTML = '<div class="alert alert-info">Testing Driver Search API...</div>';
+                                fetch(url, {
+                                    method: 'GET',
+                                    headers: {
+                                        'X-API-Key': 'tms_api_key_2024_driver_access',
+                                        'Content-Type': 'application/json'
+                                    }
+                                })
+                                .then(response => {
+                                    if (!response.ok) throw new Error('HTTP ' + response.status);
+                                    return response.json();
+                                })
+                                .then(data => {
+                                    resultDiv.innerHTML = '<div class="alert alert-success"><h6>Driver Search API Response:</h6><pre style="word-wrap: break-word; overflow-x: auto; white-space: pre-wrap;">' + JSON.stringify(data, null, 2) + '</pre></div>';
+                                })
+                                .catch(error => {
+                                    resultDiv.innerHTML = '<div class="alert alert-danger"><h6>Driver Search API Error:</h6><pre style="word-wrap: break-word; overflow-x: auto; white-space: pre-wrap;">' + error.message + '</pre></div>';
                                 });
                             }
                             

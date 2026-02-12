@@ -165,13 +165,13 @@ if ( ! empty( $results ) || $fragment_only ) :
 				$primary_driver_id   = (int) $attached_driver;
 				$primary_driver_name = $unit_number_name ?: '';
 			}
-			// Load is "rated" for everyone when the dispatcher who created the load has rated it
-			$dispatcher_name   = $dispatcher['full_name'] ?? '';
-			$dispatcher_rated  = $TMSDrivers->has_rating_for_order_number_by_rater_name( $reference_number, $dispatcher_name );
-			// Current user already rated — hide Rate button so they can't rate twice (secondary check)
+			// Load is "rated" for everyone when the dispatcher who created the load has rated it; one query for both raters
+			$dispatcher_name    = $dispatcher['full_name'] ?? '';
 			$current_user_info  = $helper->get_user_full_name_by_id( $current_user_id );
 			$current_user_name  = $current_user_info ? $current_user_info['full_name'] : '';
-			$current_user_rated = $TMSDrivers->has_rating_for_order_number_by_rater_name( $reference_number, $current_user_name );
+			$rated_by           = $TMSDrivers->get_raters_for_order_number( $reference_number, array( $dispatcher_name, $current_user_name ) );
+			$dispatcher_rated   = in_array( $dispatcher_name, $rated_by, true );
+			$current_user_rated = in_array( $current_user_name, $rated_by, true );
 			// Tracking: can rate if load's dispatcher is in my group (or user is administrator)
 			$can_rate_this_load = $TMSUsers->check_user_role_access( array( 'administrator' ), true )
 				|| $TMSUsers->check_user_in_my_group( $my_team, (int) $dispatcher_initials );

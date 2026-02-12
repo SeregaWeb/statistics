@@ -16,13 +16,67 @@ if ( ! isset( $_GET['testing'] ) || $_GET['testing'] != '1' ) {
 }
 
 // Check if user has permission
-if ( ! current_user_can( 'administrator' ) && ! current_user_can( 'manage_options' ) ) {
+if ( !current_user_can( 'administrator' ) ) {
 	wp_die( 'Access denied. Administrator only.' );
 }
 
 $site_url = site_url();
 $theme_url = get_template_directory_uri();
 $root_url = site_url(); // Use site_url for root-level files
+
+// Handle TMS test notifications generation
+$notifications_generated_message = '';
+if ( isset( $_GET['tms_generate_notifications'] ) && isset( $_GET['user_id'] ) && class_exists( 'TMSNotifications' ) ) {
+	$gen_user_id = absint( $_GET['user_id'] );
+	$gen_count   = isset( $_GET['count'] ) ? min( 50, max( 1, absint( $_GET['count'] ) ) ) : 10;
+
+	if ( $gen_user_id > 0 ) {
+		$projects   = array( 'Odysseia', 'Martlet', 'Endurance' );
+		$notifications = new TMSNotifications();
+		$created = 0;
+
+		for ( $i = 0; $i < $gen_count; $i++ ) {
+			$project        = $projects[ array_rand( $projects ) ];
+			$ref            = (string) wp_rand( 1000, 9999 );
+			$load_id        = wp_rand( 4000, 6000 );
+			$dispatcher_id  = wp_rand( 1, 50 );
+			$dispatcher_user = get_user_by( 'id', $dispatcher_id );
+			$dispatcher_name = $dispatcher_user
+				? trim( $dispatcher_user->first_name . ' ' . $dispatcher_user->last_name )
+				: 'Test Dispatcher';
+			if ( empty( trim( $dispatcher_name ) ) ) {
+				$dispatcher_name = $dispatcher_user ? $dispatcher_user->display_name : 'Test Dispatcher';
+			}
+
+			$title   = 'Add new load ' . $ref;
+			$message = "Project: {$project}\nDispatcher: {$dispatcher_name}";
+
+			$ids = $notifications->send( array(
+				'user_ids' => array( $gen_user_id ),
+				'type'     => 'load_created',
+				'title'    => $title,
+				'message'  => $message,
+				'data'     => array(
+					'load_id'          => $load_id,
+					'project'          => $project,
+					'reference_number' => $ref,
+					'dispatcher_id'    => $dispatcher_id,
+				),
+			) );
+			if ( ! empty( $ids ) ) {
+				$created += count( $ids );
+			}
+		}
+
+		$notifications_generated_message = sprintf(
+			'Generated %d notification(s) for user ID %d.',
+			$created,
+			$gen_user_id
+		);
+	} else {
+		$notifications_generated_message = 'Invalid user ID.';
+	}
+}
 
 // Define all test pages
 $test_pages = array(
@@ -400,6 +454,27 @@ foreach ( $all_test_pages as $name => $page ) {
 			<p><strong>Welcome to the Testing Center!</strong></p>
 			<p>This page provides centralized access to all test pages and debugging tools in the TMS Statistics system.</p>
 			<p><strong>Note:</strong> All test pages require administrator access.</p>
+		</div>
+		
+		<div class="info-box" style="margin-top: 20px;">
+			<h3 style="margin-top: 0;">TMS Notifications – generate test notifications</h3>
+			<p>Generate random <code>load_created</code> notifications for a user (for testing the notifications bell and list).</p>
+			<?php if ( $notifications_generated_message ) : ?>
+				<p style="margin: 10px 0; padding: 8px; background: #d4edda; border-radius: 4px; color: #155724;"><strong>Result:</strong> <?php echo esc_html( $notifications_generated_message ); ?></p>
+			<?php endif; ?>
+			<form method="get" action="" style="display: flex; flex-wrap: wrap; align-items: flex-end; gap: 12px; margin-top: 12px;">
+				<input type="hidden" name="testing" value="1">
+				<input type="hidden" name="tms_generate_notifications" value="1">
+				<div>
+					<label for="tms_notif_user_id" style="display: block; font-size: 12px; color: #646970; margin-bottom: 4px;">User ID</label>
+					<input type="number" id="tms_notif_user_id" name="user_id" value="<?php echo isset( $_GET['user_id'] ) ? esc_attr( (int) $_GET['user_id'] ) : '32'; ?>" min="1" style="width: 100px; padding: 8px;">
+				</div>
+				<div>
+					<label for="tms_notif_count" style="display: block; font-size: 12px; color: #646970; margin-bottom: 4px;">Count (1–50)</label>
+					<input type="number" id="tms_notif_count" name="count" value="<?php echo isset( $_GET['count'] ) ? esc_attr( (int) $_GET['count'] ) : '10'; ?>" min="1" max="50" style="width: 80px; padding: 8px;">
+				</div>
+				<button type="submit" class="test-link" style="margin-top: 0; cursor: pointer; border: none;">Generate</button>
+			</form>
 		</div>
 		
 		<div class="stats">

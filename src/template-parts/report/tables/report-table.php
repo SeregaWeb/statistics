@@ -124,21 +124,31 @@ if ( $has_results ) :
 		endforeach;
 		$array_date     = array_unique( $array_date );
 		$new_array_date = $TMSReports->get_profit_by_dates( $array_date, $office );
-		$index          = 0;
+
+		// Pre-fetch all companies/brokers by customer_id to avoid N+1 queries in the loop
+		$customer_ids = array();
+		foreach ( $results_list as $row ) {
+			$meta = get_field_value( $row, 'meta_data' );
+			$cid  = get_field_value( $meta, 'customer_id' );
+			if ( $cid !== '' && $cid !== null ) {
+				$customer_ids[] = (int) $cid;
+			}
+		}
+		$customer_ids    = array_unique( array_filter( $customer_ids ) );
+		$companies_by_id = $TMSBroker->get_companies_by_ids( $customer_ids );
+		$brokers_by_id   = $TMSBroker->get_brokers_data_by_ids( $customer_ids, $companies_by_id );
+
+		$index = 0;
 		foreach ( $results_list as $row ) :
 			$meta = get_field_value( $row, 'meta_data' );
 			$driver_with_macropoint = $TMSHelper->get_driver_tempate( $meta );
 			$pdlocations            = $helper->get_locations_template( $row );
 			$dispatcher_initials    = get_field_value( $meta, 'dispatcher_initials' );
 
-			$id_customer              = get_field_value( $meta, 'customer_id' );
-			$current_company          = $TMSBroker->get_company_by_id( $id_customer );
-
-			if ($current_company) {
-				$current_company_name = $current_company[0]->company_name;
-			} else {
-				$current_company_name = '';
-			}
+			$id_customer       = get_field_value( $meta, 'customer_id' );
+			$id_customer_int   = $id_customer !== '' && $id_customer !== null ? (int) $id_customer : 0;
+			$current_company   = isset( $companies_by_id[ $id_customer_int ] ) ? $companies_by_id[ $id_customer_int ] : null;
+			$current_company_name = $current_company ? ( isset( $current_company['company_name'] ) ? $current_company['company_name'] : '' ) : '';
 			
 			$dispatcher     = $helper->get_user_full_name_by_id( $dispatcher_initials );
 			$color_initials = $dispatcher ? get_field( 'initials_color', 'user_' . $dispatcher_initials ) : '#030303';
@@ -173,13 +183,14 @@ if ( $has_results ) :
 				$primary_driver_name = $unit_number_name ?: '';
 			}
 			
-			// Load is "rated" for everyone when the dispatcher who created the load has rated it
-			$dispatcher_name   = $dispatcher['full_name'] ?? '';
-			$dispatcher_rated  = $TMSDrivers->has_rating_for_order_number_by_rater_name( $reference_number, $dispatcher_name );
-			// Current user already rated — hide Rate button so they can't rate twice (secondary check)
+			// Load is "rated" for everyone when the dispatcher who created the load has rated it; one query for both raters
+			$dispatcher_name    = $dispatcher['full_name'] ?? '';
 			$current_user_info  = $helper->get_user_full_name_by_id( $current_user_id );
 			$current_user_name  = $current_user_info ? $current_user_info['full_name'] : '';
-			$current_user_rated = $TMSDrivers->has_rating_for_order_number_by_rater_name( $reference_number, $current_user_name );
+			$rated_by           = $TMSDrivers->get_raters_for_order_number( $reference_number, array( $dispatcher_name, $current_user_name ) );
+			$dispatcher_rated   = in_array( $dispatcher_name, $rated_by, true );
+			$current_user_rated = in_array( $current_user_name, $rated_by, true );
+			$has_rating         = $dispatcher_rated || $current_user_rated;
 			// Only the dispatcher who created the load can rate it (same as popup available_loads filter)
 			$is_dispatcher_role = $TMSUsers->check_user_role_access( array( 'dispatcher', 'dispatcher-tl', 'expedite_manager' ), true );
 			$can_rate_this_load = ! $is_dispatcher_role || ( (int) $dispatcher_initials === (int) $current_user_id );
@@ -238,7 +249,7 @@ if ( $has_results ) :
 			}
 			
 			$id_customer   = get_field_value( $meta, 'customer_id' );
-			$broker        = $TMSBroker->get_broker_and_link_by_id( $id_customer, false );
+			$broker        = isset( $brokers_by_id[ $id_customer_int ] ) ? $brokers_by_id[ $id_customer_int ] : array( 'template' => '', 'name' => 'N/A', 'mc' => 'N/A', 'platform' => '' );
 			$previous_date = $date_booked;
 			
 			$show_control = $TMSUsers->show_control_loads( $my_team, $current_user_id, $dispatcher_initials, $is_draft );

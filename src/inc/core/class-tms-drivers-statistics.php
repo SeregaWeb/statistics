@@ -17,10 +17,25 @@ class TMSDriversStatistics {
 	private $TMSDriversHelper;
 	private $TMSReportsHelper;
 	
+	const ROUTE_INDEXES_OPTION = 'tms_route_statistics_indexes_v1';
+
 	public function __construct() {
 		$this->TMSDrivers = new TMSDrivers();
 		$this->TMSDriversHelper = new TMSDriversHelper();
 		$this->TMSReportsHelper = new TMSReportsHelper();
+		$this->ensure_route_statistics_indexes();
+	}
+
+	/**
+	 * Run ALTER TABLE for route statistics indexes once per site (stored in option).
+	 * New tables get idx_route_stats from create_location_tables(); this handles existing tables.
+	 */
+	private function ensure_route_statistics_indexes() {
+		if ( get_option( self::ROUTE_INDEXES_OPTION, '' ) === 'yes' ) {
+			return;
+		}
+		$this->add_route_statistics_indexes();
+		update_option( self::ROUTE_INDEXES_OPTION, 'yes' );
 	}
 	
 	/**
@@ -366,14 +381,7 @@ class TMSDriversStatistics {
 		if ( ! in_array( $country, $valid_countries, true ) ) {
 			$country = 'USA';
 		}
-		
-		// Ensure indexes exist (run once, safe to call multiple times)
-		static $indexes_checked = false;
-		if ( ! $indexes_checked ) {
-			$this->add_route_statistics_indexes();
-			$indexes_checked = true;
-		}
-		
+
 		// Projects that use the regular reports_* tables
 		$projects = array( 'Odysseia', 'Martlet', 'Endurance' );
 		
@@ -462,33 +470,36 @@ class TMSDriversStatistics {
 			if ( ! empty( $pickup_where_conditions ) ) {
 				$pickup_where_sql = ' AND ' . implode( ' AND ', $pickup_where_conditions );
 			}
-			
+
+			// Same date filter for delivery subquery so it uses the index and does not full-scan
+			$delivery_where_sql = $pickup_where_sql;
+
 			// Build WHERE conditions for main query (country filter)
 			$main_where_conditions = array();
 			$main_params = array();
-			
+
 			// Country filter (apply to both pickup and delivery)
 			if ( $country !== 'ALL' ) {
 				$main_where_conditions[] = 'sp.country = %s AND sd.country = %s';
 				$main_params[] = $country;
 				$main_params[] = $country;
 			}
-			
+
 			$main_where_sql = '';
 			if ( ! empty( $main_where_conditions ) ) {
 				$main_where_sql = ' WHERE ' . implode( ' AND ', $main_where_conditions );
 			}
-			
-			// Combine all params (pickup params first, then main params)
-			$params = array_merge( $pickup_params, $main_params );
-			
+
+			// Params: pickup date (2), delivery date (2 if same filter), main (country 2)
+			if ( ! empty( $delivery_where_sql ) ) {
+				$params = array_merge( $pickup_params, $pickup_params, $main_params );
+			} else {
+				$params = array_merge( $pickup_params, $main_params );
+			}
+
 			/**
-			 * Highly optimized query using indexed subqueries.
-			 * Strategy:
-			 * 1. Use composite index (location_type, date, load_id) for fast filtering
-			 * 2. Get only first location per load_id to avoid cartesian product
-			 * 3. Join with shipper table using indexed lookups
-			 * 4. Filter by country after joins to reduce data early
+			 * Optimized query: both pickup and delivery subqueries use the same date range
+			 * so (location_type, date, load_id) index is used and delivery does not full-scan.
 			 */
 			$sql = "
 				SELECT 
@@ -524,6 +535,7 @@ class TMSDriversStatistics {
 						AND address_id IS NOT NULL
 						AND address_id != ''
 						AND date IS NOT NULL
+						$delivery_where_sql
 					GROUP BY load_id
 				) AS delivery_routes
 					ON pickup_routes.load_id = delivery_routes.load_id
@@ -855,7 +867,12 @@ class TMSDriversStatistics {
 					}
 				}
 			}
-			
+
+			// Update statistics when we added indexes so the optimizer uses them
+			if ( ! empty( $table_results['indexes_added'] ) ) {
+				$wpdb->query( "ANALYZE TABLE $table_locations" );
+			}
+
 			$results[] = $table_results;
 		}
 		
@@ -871,13 +888,14 @@ class TMSDriversStatistics {
 				ALTER TABLE $table_shipper ADD INDEX $shipper_index_name (id, state, country)
 			" );
 			if ( $result !== false ) {
+				$wpdb->query( "ANALYZE TABLE $table_shipper" );
 				$results[] = array(
 					'table' => $table_shipper,
 					'indexes_added' => array( $shipper_index_name ),
 				);
 			}
 		}
-		
+
 		return $results;
 	}
 }

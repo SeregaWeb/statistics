@@ -1126,6 +1126,9 @@ class TMSDrivers extends TMSDriversHelper {
 				// Drivers with updated_zipcode older than threshold or NULL
 				$where_conditions[] = "(main.updated_zipcode < %s OR main.updated_zipcode IS NULL)";
 				$where_values[]     = $threshold_datetime;
+				// Exclude blocked, out of service, exp documents, vocation
+				$where_conditions[] = "(driver_status.meta_value IS NULL OR driver_status.meta_value NOT IN ('blocked', 'banned', 'expired_documents', 'on_vocation'))";
+				
 			} elseif ( $args[ 'driver_status' ] === 'not_updated_1_day' ) {
 				// Filter for drivers not updated for 1 day (between 1 and 2 days ago, not NULL)
 				$ny_time_1_day = clone $ny_time;
@@ -1148,6 +1151,8 @@ class TMSDrivers extends TMSDriversHelper {
 				$where_conditions[] = "main.updated_zipcode < %s AND main.updated_zipcode >= %s";
 				$where_values[]     = $threshold_datetime_1;
 				$where_values[]     = $threshold_datetime_2;
+				// Exclude blocked, out of service, exp documents, vocation
+				$where_conditions[] = "(driver_status.meta_value IS NULL OR driver_status.meta_value NOT IN ('blocked', 'banned', 'expired_documents', 'on_vocation'))";
 			} elseif ( $args[ 'driver_status' ] === 'not_updated_week' ) {
 				// Filter for drivers not updated for 5-7 days (week)
 				$ny_time_5_days = clone $ny_time;
@@ -1160,6 +1165,8 @@ class TMSDrivers extends TMSDriversHelper {
 				$where_conditions[] = "(main.updated_zipcode < %s AND main.updated_zipcode >= %s)";
 				$where_values[]     = $ny_time_5_days->format( 'Y-m-d H:i:s' );
 				$where_values[]     = $ny_time_7_days->format( 'Y-m-d H:i:s' );
+				// Exclude blocked, out of service, exp documents, vocation
+				$where_conditions[] = "(driver_status.meta_value IS NULL OR driver_status.meta_value NOT IN ('blocked', 'banned', 'expired_documents', 'on_vocation'))";
 			} elseif ( $args[ 'driver_status' ] === 'not_updated_month' ) {
 				// Filter for drivers not updated for 30+ days (month) (only those with dates, not NULL)
 				$ny_time->modify( '-30 days' );
@@ -1167,6 +1174,8 @@ class TMSDrivers extends TMSDriversHelper {
 				
 				$where_conditions[] = "main.updated_zipcode < %s";
 				$where_values[]     = $threshold_datetime;
+				// Exclude blocked, out of service, exp documents, vocation
+				$where_conditions[] = "(driver_status.meta_value IS NULL OR driver_status.meta_value NOT IN ('blocked', 'banned', 'expired_documents', 'on_vocation'))";
 			} else {
 				// Regular driver_status filter
 				$where_conditions[] = "driver_status.meta_value = %s";
@@ -4517,20 +4526,34 @@ class TMSDrivers extends TMSDriversHelper {
 	
 	function insert_driver_rating( $driver_id, $name, $time, $reit, $message = '', $order_number = '' ) {
 		global $wpdb;
-		
+
 		$table_name = $wpdb->prefix . $this->table_raiting;
-		
+		$name_clean  = sanitize_text_field( $name );
+		$order_clean = sanitize_text_field( $order_number );
+
+		// One rating per (user name, order_number) - prevent duplicate ratings from same user for same load
+		if ( $order_clean !== '' && $order_clean !== 'Canceled' ) {
+			$exists = $wpdb->get_var( $wpdb->prepare(
+				"SELECT 1 FROM $table_name WHERE name = %s AND order_number = %s LIMIT 1",
+				$name_clean,
+				$order_clean
+			) );
+			if ( $exists ) {
+				return false;
+			}
+		}
+
 		$data = [
 			'driver_id'    => (int) $driver_id,
-			'name'         => sanitize_text_field( $name ),
+			'name'         => $name_clean,
 			'time'         => (int) $time,
 			'reit'         => (int) $reit,
 			'message'      => sanitize_textarea_field( $message ),
-			'order_number' => sanitize_text_field( $order_number ),
+			'order_number' => $order_clean,
 		];
-		
+
 		$formats = [ '%d', '%s', '%d', '%d', '%s', '%s' ];
-		
+
 		return $wpdb->insert( $table_name, $data, $formats );
 	}
 	
@@ -4804,7 +4827,47 @@ class TMSDrivers extends TMSDriversHelper {
 		
 		return (int) $count > 0;
 	}
-	
+
+	/**
+	 * Get which of the given rater names have already rated this order number (one query).
+	 * Use this instead of multiple has_rating_for_order_number_by_rater_name() calls per row.
+	 *
+	 * @param string $order_number Order number (reference_number).
+	 * @param array  $rater_names  Full names to check (e.g. [ dispatcher_name, current_user_name ]). Empty strings are skipped.
+	 * @return array Subset of $rater_names that have a rating for this order (e.g. [ 'John Doe' ]).
+	 */
+	public function get_raters_for_order_number( $order_number, array $rater_names ) {
+		global $wpdb;
+
+		if ( empty( $order_number ) ) {
+			return array();
+		}
+
+		$rater_names = array_unique( array_filter( array_map( 'trim', array_map( 'strval', $rater_names ) ) ) );
+		if ( empty( $rater_names ) ) {
+			return array();
+		}
+
+		$order_clean   = sanitize_text_field( $order_number );
+		$cache_key     = 'tms_drv_raters_' . md5( $order_clean );
+		$cached_names  = get_transient( $cache_key );
+		if ( is_array( $cached_names ) ) {
+			return array_values( array_intersect( $rater_names, $cached_names ) );
+		}
+
+		$table_name = $wpdb->prefix . $this->table_raiting;
+		$query      = $wpdb->prepare(
+			"SELECT DISTINCT name FROM $table_name WHERE order_number = %s",
+			$order_clean
+		);
+		$names = $wpdb->get_col( $query ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		$names = is_array( $names ) ? $names : array();
+
+		set_transient( $cache_key, $names, HOUR_IN_SECONDS );
+
+		return array_values( array_intersect( $rater_names, $names ) );
+	}
+
 	/**
 	 * Get dispatcher rating statistics
 	 * Returns statistics for dispatchers showing total loads and rated loads count
@@ -6884,8 +6947,14 @@ class TMSDrivers extends TMSDriversHelper {
 		$user_name       = $user_info ? $user_info[ 'full_name' ] : 'Unknown User';
 		
 		$time = current_time( 'timestamp' );
-		
-		return $this->insert_driver_rating( $driver_id, $user_name, $time, $rating, $comments, $load_number );
+
+		$result = $this->insert_driver_rating( $driver_id, $user_name, $time, $rating, $comments, $load_number );
+
+		if ( $result && $load_number !== '' ) {
+			delete_transient( 'tms_drv_raters_' . md5( sanitize_text_field( $load_number ) ) );
+		}
+
+		return $result;
 	}
 	
 	/**
@@ -7537,8 +7606,8 @@ class TMSDrivers extends TMSDriversHelper {
 	public function admin_get_driver_ratings() {
 		if ( defined( 'DOING_AJAX' ) && DOING_AJAX ) {
 			// Check if user is administrator
-			if ( ! current_user_can( 'administrator' ) ) {
-				wp_send_json_error( [ 'message' => 'Access denied. Administrator privileges required.' ] );
+			if ( ! current_user_can( 'administrator' ) && ! current_user_can( 'expedite_manager' ) ) {
+				wp_send_json_error( [ 'message' => 'Access denied. Administrator or Expedite Manager privileges required.' ] );
 				return;
 			}
 			
@@ -7605,8 +7674,8 @@ class TMSDrivers extends TMSDriversHelper {
 	public function admin_delete_driver_ratings() {
 		if ( defined( 'DOING_AJAX' ) && DOING_AJAX ) {
 			// Check if user is administrator
-			if ( ! current_user_can( 'administrator' ) ) {
-				wp_send_json_error( [ 'message' => 'Access denied. Administrator privileges required.' ] );
+			if ( ! current_user_can( 'administrator' ) && ! current_user_can( 'expedite_manager' ) ) {
+				wp_send_json_error( [ 'message' => 'Access denied. Administrator or Expedite Manager privileges required.' ] );
 				return;
 			}
 			
@@ -11284,43 +11353,18 @@ class TMSDrivers extends TMSDriversHelper {
 	 */
 	public function search_drivers_by_unit_number( $unit_number ) {
 		global $wpdb;
-		
-		error_log( "=== SEARCH DRIVERS BY UNIT DEBUG ===" );
-		error_log( "Searching for driver ID: $unit_number" );
-		
-		$current_user_id = get_current_user_id();
-		$current_project = get_field( 'current_select', 'user_' . $current_user_id );
-		
-		if ( empty( $current_project ) ) {
-			$current_project = 'odysseia';
-		}
-		
-		// Convert to lowercase for table names
-		$current_project = strtolower( $current_project );
-		
-		error_log( "Current user ID: $current_user_id" );
-		error_log( "Current project: $current_project" );
-		
-		$drivers_table = $wpdb->prefix . $this->table_main;
+
+		$drivers_table     = $wpdb->prefix . $this->table_main;
 		$drivers_meta_table = $wpdb->prefix . $this->table_meta;
-		
-		error_log( "Drivers table: $drivers_table" );
-		error_log( "Drivers meta table: $drivers_meta_table" );
-		
-		// Check if drivers table exists
-		$drivers_table_exists = $wpdb->get_var( $wpdb->prepare( "SHOW TABLES LIKE %s", $drivers_table ) );
-		$drivers_meta_exists = $wpdb->get_var( $wpdb->prepare( "SHOW TABLES LIKE %s", $drivers_meta_table ) );
-		
-		error_log( "Drivers table exists: " . ($drivers_table_exists ? 'YES' : 'NO') );
-		error_log( "Drivers meta table exists: " . ($drivers_meta_exists ? 'YES' : 'NO') );
-		
-		if ( !$drivers_table_exists || !$drivers_meta_exists ) {
-			error_log( "Tables don't exist, returning empty array" );
+
+		$drivers_table_exists = $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $drivers_table ) );
+		$drivers_meta_exists = $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $drivers_meta_table ) );
+		if ( ! $drivers_table_exists || ! $drivers_meta_exists ) {
 			return array();
 		}
-		
-		// Search for drivers by ID (unit_number is actually driver ID)
-		$query = "
+
+		$like_param = $unit_number . '%';
+		$query      = "
 			SELECT 
 				d.id as driver_id,
 				dm_name.meta_value as driver_name,
@@ -11334,46 +11378,21 @@ class TMSDrivers extends TMSDriversHelper {
 			AND (dm_status.meta_value IS NULL OR dm_status.meta_value NOT IN ('blocked', 'banned', 'expired_documents'))
 			ORDER BY dm_name.meta_value ASC
 		";
-		
-		error_log( "Query: $query" );
-		$like_param = $unit_number . '%';
-		error_log( "Query param (LIKE): $like_param" );
-		
-		// First, let's check if there are any drivers starting with this ID prefix
-		$test_query = "SELECT COUNT(*) as count FROM {$drivers_table} WHERE CAST(id AS CHAR) LIKE %s";
-		$test_count = $wpdb->get_var( $wpdb->prepare( $test_query, $like_param ) );
-		error_log( "Drivers with ID prefix '$unit_number': $test_count" );
-		
-		// Check what meta keys exist
-		$all_meta_keys = $wpdb->get_results( "SELECT meta_key, COUNT(*) as count FROM {$drivers_meta_table} GROUP BY meta_key ORDER BY count DESC" );
-		error_log( "Meta keys in drivers_meta table: " . print_r( $all_meta_keys, true ) );
-		
-		// Check what driver IDs exist
-		$all_drivers = $wpdb->get_results( "SELECT id FROM {$drivers_table} LIMIT 10" );
-		error_log( "Sample driver IDs in database: " . print_r( $all_drivers, true ) );
-		
-		// Check what statuses exist
-		$all_statuses = $wpdb->get_results( "SELECT meta_value, COUNT(*) as count FROM {$drivers_meta_table} WHERE meta_key = 'driver_status' GROUP BY meta_value" );
-		error_log( "Driver statuses in database: " . print_r( $all_statuses, true ) );
-		
 		$results = $wpdb->get_results( $wpdb->prepare( $query, $like_param ) );
-		
-		error_log( "Query results: " . print_r( $results, true ) );
-		
+
 		$drivers = array();
-		foreach ( $results as $result ) {
-			$drivers[] = array(
-				'driver_id' => $result->driver_id,
-				'driver_name' => $result->driver_name,
-				'unit_number' => $result->unit_number,
-				'phone' => $result->phone,
-				'display_name' => "({$result->unit_number}) {$result->driver_name}"
-			);
+		if ( is_array( $results ) ) {
+			foreach ( $results as $result ) {
+				$drivers[] = array(
+					'driver_id'     => $result->driver_id,
+					'driver_name'   => $result->driver_name,
+					'unit_number'   => $result->unit_number,
+					'phone'         => $result->phone,
+					'display_name'  => "({$result->unit_number}) {$result->driver_name}",
+				);
+			}
 		}
-		
-		error_log( "Final drivers array: " . print_r( $drivers, true ) );
-		error_log( "=== END SEARCH DRIVERS BY UNIT DEBUG ===" );
-		
+
 		return $drivers;
 	}
 

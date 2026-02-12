@@ -3910,6 +3910,67 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 			$result = $this->update_post_status_in_db( $MY_INPUT );
 			
 			if ( $result ) {
+
+				$load = $this->get_report_by_id( $MY_INPUT[ 'post_id' ] );
+				$meta = get_field_value( $load, 'meta' );
+				
+				// Dispatcher user ID assigned to this load.
+				$dispatcher_id    = (int) get_field_value( $meta, 'dispatcher_initials' );
+				$reference_number = get_field_value( $meta, 'reference_number' );
+				
+				// Get all tracking users (tracking, tracking-tl, nightshift_tracking, morning_tracking)
+				// where this dispatcher is in their my_team.
+				$tracking_user_ids = array();
+				if ( $dispatcher_id > 0 ) {
+					$tracking_user_ids = $this->get_tracking_team_user_ids_by_dispatcher( $dispatcher_id );
+				}
+				
+				if ( ! empty( $tracking_user_ids ) && class_exists( 'TMSNotifications' ) ) {
+					$notifications    = new TMSNotifications();
+					$dispatcher_name  = $this->get_user_full_name_by_id( $dispatcher_id );
+					$dispatcher_label = is_array( $dispatcher_name ) && isset( $dispatcher_name['full_name'] )
+						? $dispatcher_name['full_name']
+						: '';
+					$reference_label  = $reference_number ?: '';
+					$project_label    = isset( $MY_INPUT['project'] ) ? $MY_INPUT['project'] : '';
+					
+					$title   = sprintf( 'Add new load %s', $reference_label );
+					$message = sprintf(
+						"Project: %s\nDispatcher: %s",
+						$project_label,
+						$dispatcher_label
+					);
+					
+					$notifications->send(
+						array(
+							'type'     => 'load_created',
+							'title'    => $title,
+							'message'  => $message,
+							'data'     => array(
+								'load_id'          => (int) $MY_INPUT['post_id'],
+								'project'          => $project_label,
+								'reference_number' => $reference_label,
+								'dispatcher_id'    => $dispatcher_id,
+							),
+							'user_ids' => $tracking_user_ids,
+						)
+					);
+
+					// File-based debug log for notifications.
+					if ( class_exists( 'TMSLogger' ) ) {
+						$log_message = sprintf(
+							'load_created: load_id=%d; project=%s; dispatcher_id=%d; reference=%s; recipients=[%s]',
+							(int) $MY_INPUT['post_id'],
+							$project_label,
+							$dispatcher_id,
+							$reference_label,
+							implode( ',', array_map( 'intval', $tracking_user_ids ) )
+						);
+
+						TMSLogger::log_to_file( $log_message, 'notifications-tracking' );
+					}
+				}
+				
 				wp_send_json_success( [ 'message' => 'Load successfully loaded', 'data' => $MY_INPUT ] );
 			}
 			
@@ -5858,13 +5919,14 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 			    INDEX idx_order_index (order_index),
 			    INDEX idx_load_order (load_id, location_type, order_index),
 			    INDEX idx_created_at (created_at),
-			    INDEX idx_updated_at (updated_at)
+			    INDEX idx_updated_at (updated_at),
+			    INDEX idx_route_stats (location_type, date, load_id)
 			) $charset_collate;";
-			
+
 			dbDelta( $sql );
 		}
 	}
-	
+
 	/**
 	 * Import locations from JSON to new location tables
 	 * 
@@ -6505,12 +6567,14 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 			}
 			
 			// 4. Добавляем составные индексы для частых запросов
+			// Важно: индексы ниже покрывают тяжёлые выборки по статусу и датам (loads + фильтры по date_booked / load_problem).
 			$indexes_to_add = array(
-				'idx_date_booked_status' => '(date_booked, status_post)',
-				'idx_pick_up_delivery'   => '(pick_up_date, delivery_date)',
-				'idx_user_status'        => '(user_id_added, status_post)',
-				'idx_created_status'     => '(date_created, status_post)',
-				'idx_status_post'        => '(status_post)'
+				// Основной для тяжёлого запроса: status_post + date_booked
+				'idx_status_post_date_booked' => '(status_post, date_booked)',
+				'idx_pick_up_delivery'        => '(pick_up_date, delivery_date)',
+				'idx_user_status'             => '(user_id_added, status_post)',
+				'idx_created_status'          => '(date_created, status_post)',
+				'idx_status_post'             => '(status_post)'
 			);
 			
 			foreach ( $indexes_to_add as $index_name => $index_columns ) {

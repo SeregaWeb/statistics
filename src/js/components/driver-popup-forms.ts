@@ -259,8 +259,8 @@ class DriverPopupForms {
                 
                 // Add action for AJAX
                 formData.set('action', 'add_driver_rating');
-                
-                this.submitForm(formData, 'rating');
+
+                this.submitForm(formData, 'rating', target);
             } else {
                 printMessage('No driver ID found!', 'danger', 3000);
                 return;
@@ -315,6 +315,10 @@ class DriverPopupForms {
             printMessage('For Canceled loads you can set rating 1-2 only.', 'danger', 3000);
             return;
         }
+        const submitBtn = form.querySelector<HTMLButtonElement>('button[type="submit"]') ||
+            form.querySelector<HTMLInputElement>('input[type="submit"]');
+        if (submitBtn) submitBtn.disabled = true;
+
         const formData = new FormData(form);
         formData.set('action', 'add_driver_rating');
         fetch(this.ajaxUrl, {
@@ -339,10 +343,12 @@ class DriverPopupForms {
                         document.location.reload();
                     }, 800);
                 } else {
+                    if (submitBtn) submitBtn.disabled = false;
                     this.showMessage(`Error: ${data.data || 'Unknown error'}`, 'error');
                 }
             })
             .catch((err) => {
+                if (submitBtn) submitBtn.disabled = false;
                 printMessage('Network error occurred', 'danger', 3000);
                 this.showMessage(`Error: ${err.message || 'Network error'}`, 'error');
             });
@@ -459,8 +465,8 @@ class DriverPopupForms {
                 
                 // Add action for AJAX
                 formData.set('action', 'add_driver_notice');
-                
-                this.submitForm(formData, 'notice');
+
+                this.submitForm(formData, 'notice', form);
             } else {
                 printMessage('No driver ID found!', 'danger', 3000);
                 return;
@@ -480,8 +486,18 @@ class DriverPopupForms {
 
     /**
      * Submit form via AJAX
+     * @param submittedForm If provided, the submit button is taken from this form (avoids wrong form when duplicate ids exist, e.g. ratingForm in tab)
      */
-    private submitForm(formData: FormData, type: 'rating' | 'notice'): void {
+    private submitForm(formData: FormData, type: 'rating' | 'notice', submittedForm?: HTMLFormElement | null): void {
+        const form = submittedForm ?? (document.getElementById(type === 'rating' ? 'ratingForm' : 'noticeForm') as HTMLFormElement | null);
+        const submitBtn = form
+            ? (form.querySelector<HTMLButtonElement>('button[type="submit"]') ||
+               form.querySelector<HTMLInputElement>('input[type="submit"]'))
+            : null;
+        if (submitBtn) {
+            submitBtn.disabled = true;
+        }
+
         fetch(this.ajaxUrl, {
             method: 'POST',
             body: formData
@@ -490,7 +506,7 @@ class DriverPopupForms {
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
-            
+
             return response.text().then(text => {
                 try {
                     return JSON.parse(text);
@@ -504,10 +520,12 @@ class DriverPopupForms {
             if (data.success) {
                 this.handleSuccess(type);
             } else {
+                if (submitBtn) submitBtn.disabled = false;
                 this.handleError(type, data.data || 'Unknown error');
             }
         })
         .catch(error => {
+            if (submitBtn) submitBtn.disabled = false;
             printMessage('Network error occurred', 'danger', 3000);
             this.handleError(type, error.message || 'Network error');
         });

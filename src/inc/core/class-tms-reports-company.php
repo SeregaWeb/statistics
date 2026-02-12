@@ -213,7 +213,92 @@ class TMSReportsCompany extends TMSReportsHelper {
 		
 		return $results;
 	}
-	
+
+	/**
+	 * Fetch multiple companies by IDs in one query (for report tables to avoid N+1).
+	 * Does not replace get_company_by_id / get_broker_and_link_by_id used elsewhere.
+	 *
+	 * @param array $ids Company IDs.
+	 * @return array Keyed by id: [ id => row_assoc ], row has company_name, mc_number, set_up_platform, etc.
+	 */
+	public function get_companies_by_ids( array $ids ) {
+		global $wpdb;
+
+		$ids = array_filter( array_map( 'absint', $ids ) );
+		if ( empty( $ids ) ) {
+			return array();
+		}
+
+		$ids        = array_unique( $ids );
+		$table      = $wpdb->prefix . $this->table_main;
+		$placeholders = implode( ',', array_fill( 0, count( $ids ), '%d' ) );
+		$query      = $wpdb->prepare( "SELECT * FROM $table WHERE id IN ($placeholders)", $ids );
+		$rows       = $wpdb->get_results( $query, ARRAY_A ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+
+		$by_id = array();
+		if ( is_array( $rows ) ) {
+			foreach ( $rows as $row ) {
+				if ( isset( $row['id'] ) ) {
+					$by_id[ (int) $row['id'] ] = $row;
+				}
+			}
+		}
+		return $by_id;
+	}
+
+	/**
+	 * Broker data (template, name, mc, platform) for multiple company IDs in one query.
+	 * Same structure as get_broker_and_link_by_id( $id, false ) for use in report tables.
+	 *
+	 * @param array        $ids Company IDs.
+	 * @param array|null   $companies_by_id Optional. Pre-fetched result of get_companies_by_ids(); if passed, no DB query.
+	 * @return array Keyed by id: [ id => [ 'template' => ..., 'name' => ..., 'mc' => ..., 'platform' => ... ] ].
+	 */
+	public function get_brokers_data_by_ids( array $ids, $companies_by_id = null ) {
+		global $global_options;
+
+		$ids       = array_unique( array_filter( array_map( 'absint', $ids ) ) );
+		$companies = ( is_array( $companies_by_id ) ) ? $companies_by_id : $this->get_companies_by_ids( $ids );
+		$ling_brocker_single = get_field_value( $global_options, 'single_page_broker' );
+		$result = array();
+
+		foreach ( $ids as $id ) {
+			$id = (int) $id;
+			$broker_name = 'N/A';
+			$broker_mc   = 'N/A';
+			$platform    = '';
+
+			if ( isset( $companies[ $id ] ) && ! empty( $companies[ $id ] ) ) {
+				$row = $companies[ $id ];
+				$broker_name = ! empty( $row['company_name'] ) ? $row['company_name'] : 'N/A';
+				$broker_mc   = ! empty( $row['mc_number'] ) ? $row['mc_number'] : 'N/A';
+				$platform    = isset( $row['set_up_platform'] ) ? $row['set_up_platform'] : '';
+			}
+
+			$template = '<div class="d-flex flex-column">';
+			if ( ! isset( $companies[ $id ] ) || empty( $companies[ $id ] ) ) {
+				$template .= '<span class="text-small text-danger">This broker has been deleted</span>';
+			} else {
+				if ( $broker_name !== 'N/A' ) {
+					$template .= '<a class="m-0" href="' . esc_url( $ling_brocker_single . '?broker_id=' . $id ) . '">' . esc_html( $broker_name ) . '</a>';
+				} else {
+					$template .= '<p class="m-0">' . esc_html( $broker_name ) . '</p>';
+				}
+				$template .= '<span class="text-small">' . esc_html( $broker_mc ) . '</span>';
+			}
+			$template .= '</div>';
+
+			$result[ $id ] = array(
+				'template' => $template,
+				'name'     => $broker_name,
+				'mc'       => $broker_mc,
+				'platform' => $platform,
+			);
+		}
+
+		return $result;
+	}
+
 	public function search_company_in_db( $search_term ) {
 		global $wpdb;
 		

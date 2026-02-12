@@ -355,7 +355,11 @@ $color_direct_3: #ffdcdc;
 
 table {
     .hight-priority {
-        background: gold;
-        background-image: repeating-linear-gradient(45deg, hsla(0, 0%, 100%, 0.15), hsla(0, 0%, 100%, .15) 15px, transparent 0, transparent 30px);
+        background: #f8eba6;
+        background-image: repeating-linear-gradient(45deg, hsla(0, 0%, 100%, 0.15), hsla(0, 0%, 100%, .15) 15px, transparent 0, transparent 30px); 
+    
+        td {
+            background-color: transparent !important;
+        }
     }
 }

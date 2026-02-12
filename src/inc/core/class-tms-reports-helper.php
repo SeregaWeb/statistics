@@ -481,6 +481,52 @@ class TMSReportsHelper extends TMSReportsIcons {
 	}
 
 	/**
+	 * Get tracking users (all tracking-related roles) where given dispatcher is in their my_team.
+	 *
+	 * Roles included:
+	 * - tracking
+	 * - tracking-tl
+	 * - nightshift_tracking
+	 * - morning_tracking
+	 *
+	 * @param int $dispatcher_id Dispatcher user ID.
+	 *
+	 * @return int[] Array of user IDs.
+	 */
+	function get_tracking_team_user_ids_by_dispatcher( $dispatcher_id ) {
+		$dispatcher_id = (int) $dispatcher_id;
+
+		if ( $dispatcher_id <= 0 ) {
+			return array();
+		}
+
+		$args = array(
+			'role__in'   => array( 'tracking', 'tracking-tl', 'nightshift_tracking', 'morning_tracking' ),
+			'meta_query' => array(
+				array(
+					'key'     => 'my_team',
+					'value'   => '"' . $dispatcher_id . '"',
+					// Match serialized array element with this user ID.
+					'compare' => 'LIKE',
+				),
+			),
+			'fields'     => 'ID',
+		);
+
+		$query    = new WP_User_Query( $args );
+		$user_ids = $query->get_results();
+
+		if ( empty( $user_ids ) || ! is_array( $user_ids ) ) {
+			return array();
+		}
+
+		$user_ids = array_map( 'intval', $user_ids );
+		$user_ids = array_values( array_unique( $user_ids ) );
+
+		return $user_ids;
+	}
+
+	/**
 	 * Get expedite managers for the current user
 	 * 
 	 * @param int|null $user_id User ID, defaults to current user

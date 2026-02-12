@@ -2836,6 +2836,11 @@ class TMSGenerateDocument extends TMSReports {
 		global $wpdb;
 		
 		$table_name = $wpdb->prefix . 'settlement_summary';
+		// Run CREATE/OPTIMIZE only once; skip if table already exists (avoids slow queries on every request).
+		if ( $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $table_name ) ) === $table_name ) {
+			return;
+		}
+		
 		$charset_collate = $wpdb->get_charset_collate();
 		
 		// Create table with optimized structure for large datasets (1M+ records)
@@ -3740,6 +3745,11 @@ class TMSGenerateDocument extends TMSReports {
 		global $wpdb;
 		
 		$table_name = $wpdb->prefix . 'settlement_parsing_progress';
+		// Run CREATE only once; skip if table already exists (avoids slow queries on every request).
+		if ( $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $table_name ) ) === $table_name ) {
+			return;
+		}
+		
 		$charset_collate = $wpdb->get_charset_collate();
 		
 		$sql = "CREATE TABLE $table_name (

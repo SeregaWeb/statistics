@@ -10468,7 +10468,7 @@ var DriverPopupForms = /*#__PURE__*/function () {
         if (driverId) {
           var formData = new FormData(target);
           formData.set('action', 'add_driver_rating');
-          _this4.submitForm(formData, 'rating');
+          _this4.submitForm(formData, 'rating', target);
         } else {
           (0,_info_messages__WEBPACK_IMPORTED_MODULE_0__.printMessage)('No driver ID found!', 'danger', 3000);
           return;
@@ -10524,6 +10524,8 @@ var DriverPopupForms = /*#__PURE__*/function () {
         (0,_info_messages__WEBPACK_IMPORTED_MODULE_0__.printMessage)('For Canceled loads you can set rating 1-2 only.', 'danger', 3000);
         return;
       }
+      var submitBtn = form.querySelector('button[type="submit"]') || form.querySelector('input[type="submit"]');
+      if (submitBtn) submitBtn.disabled = true;
       var formData = new FormData(form);
       formData.set('action', 'add_driver_rating');
       fetch(this.ajaxUrl, {
@@ -10546,9 +10548,11 @@ var DriverPopupForms = /*#__PURE__*/function () {
             document.location.reload();
           }, 800);
         } else {
+          if (submitBtn) submitBtn.disabled = false;
           _this6.showMessage("Error: ".concat(data.data || 'Unknown error'), 'error');
         }
       }).catch(function (err) {
+        if (submitBtn) submitBtn.disabled = false;
         (0,_info_messages__WEBPACK_IMPORTED_MODULE_0__.printMessage)('Network error occurred', 'danger', 3000);
         _this6.showMessage("Error: ".concat(err.message || 'Network error'), 'error');
       });
@@ -10638,7 +10642,7 @@ var DriverPopupForms = /*#__PURE__*/function () {
           var formData = new FormData(form);
           formData.set('driver_id', driverId);
           formData.set('action', 'add_driver_notice');
-          _this8.submitForm(formData, 'notice');
+          _this8.submitForm(formData, 'notice', form);
         } else {
           (0,_info_messages__WEBPACK_IMPORTED_MODULE_0__.printMessage)('No driver ID found!', 'danger', 3000);
           return;
@@ -10654,8 +10658,13 @@ var DriverPopupForms = /*#__PURE__*/function () {
     }
   }, {
     key: "submitForm",
-    value: function submitForm(formData, type) {
+    value: function submitForm(formData, type, submittedForm) {
       var _this9 = this;
+      var form = submittedForm !== null && submittedForm !== void 0 ? submittedForm : document.getElementById(type === 'rating' ? 'ratingForm' : 'noticeForm');
+      var submitBtn = form ? form.querySelector('button[type="submit"]') || form.querySelector('input[type="submit"]') : null;
+      if (submitBtn) {
+        submitBtn.disabled = true;
+      }
       fetch(this.ajaxUrl, {
         method: 'POST',
         body: formData
@@ -10675,9 +10684,11 @@ var DriverPopupForms = /*#__PURE__*/function () {
         if (data.success) {
           _this9.handleSuccess(type);
         } else {
+          if (submitBtn) submitBtn.disabled = false;
           _this9.handleError(type, data.data || 'Unknown error');
         }
       }).catch(function (error) {
+        if (submitBtn) submitBtn.disabled = false;
         (0,_info_messages__WEBPACK_IMPORTED_MODULE_0__.printMessage)('Network error occurred', 'danger', 3000);
         _this9.handleError(type, error.message || 'Network error');
       });
@@ -17204,7 +17215,9 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   initTrackingLiveUpdate: function() { return /* binding */ initTrackingLiveUpdate; }
 /* harmony export */ });
+/* harmony import */ var _create_report__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./create-report */ "./src/js/components/create-report.ts");
 function _typeof(o) { "@babel/helpers - typeof"; return _typeof = "function" == typeof Symbol && "symbol" == typeof Symbol.iterator ? function (o) { return typeof o; } : function (o) { return o && "function" == typeof Symbol && o.constructor === Symbol && o !== Symbol.prototype ? "symbol" : typeof o; }, _typeof(o); }
+
 var POLL_INTERVAL_MS = 20000;
 function getCurrentParams() {
   var params = {};
@@ -17257,8 +17270,7 @@ function getTrackingContext() {
   var wrapper = el === null || el === void 0 ? void 0 : el.closest('[data-tracking-context]');
   return ((wrapper === null || wrapper === void 0 ? void 0 : wrapper.getAttribute('data-tracking-context')) || '').trim();
 }
-function initTrackingLiveUpdate() {
-  var _a;
+function initTrackingLiveUpdate(ajaxUrl) {
   if (document.querySelector('[data-tracking-live-update="false"]')) {
     return;
   }
@@ -17268,7 +17280,6 @@ function initTrackingLiveUpdate() {
   if (!table || !tbody || !hasQuickStatus) {
     return;
   }
-  var ajaxUrl = (_a = window.var_from_php) === null || _a === void 0 ? void 0 : _a.ajax_url;
   if (!ajaxUrl) {
     return;
   }
@@ -17305,6 +17316,8 @@ function initTrackingLiveUpdate() {
         var currentIds = getCurrentLoadIds(tbody);
         if (!arraysEqual(currentIds, newLoadIds)) {
           tbody.innerHTML = rows_html;
+          (0,_create_report__WEBPACK_IMPORTED_MODULE_0__.quickEditTrackingStatus)(ajaxUrl);
+          (0,_create_report__WEBPACK_IMPORTED_MODULE_0__.triggerDisableBtnInit)();
         }
       }
     }).catch(function () {});
@@ -31367,7 +31380,7 @@ function ready() {
   (0,_components_create_report__WEBPACK_IMPORTED_MODULE_4__.addDeletePinnedHandler)(urlAjax);
   (0,_components_input_helpers__WEBPACK_IMPORTED_MODULE_3__.applyZipCodeMask)('.js-zip-code-mask');
   (0,_components_auto_submit_form__WEBPACK_IMPORTED_MODULE_29__.initAutoSubmitForm)('.js-auto-submit-form');
-  (0,_components_tracking_live_update__WEBPACK_IMPORTED_MODULE_28__.initTrackingLiveUpdate)();
+  (0,_components_tracking_live_update__WEBPACK_IMPORTED_MODULE_28__.initTrackingLiveUpdate)(urlAjax);
   var preloaders = document.querySelectorAll('.js-preloader');
   preloaders && preloaders.forEach(function (item) {
     item.remove();

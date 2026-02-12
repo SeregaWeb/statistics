@@ -440,7 +440,7 @@ function ready() {
     // Initialize auto-submit forms for statistics pages
     // These forms will automatically submit when select values change
     initAutoSubmitForm('.js-auto-submit-form');
-    initTrackingLiveUpdate();
+    initTrackingLiveUpdate(urlAjax);
 
     // Remove preloader
     const preloaders = document.querySelectorAll('.js-preloader');

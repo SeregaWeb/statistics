@@ -367,6 +367,9 @@ body.dark-mode {
         .hight-priority {
             background: #001c28 !important;
             background-image: repeating-linear-gradient(45deg, hsla(0, 0%, 100%, .05), hsla(0, 0%, 100%, .05) 15px, transparent 0, transparent 30px) !important;
+            td {
+                background-color: transparent !important;
+            }
         }
     }
 }

@@ -589,16 +589,49 @@ class TMSLogs extends TMSReports {
 	}
 	
 	
+	/**
+	 * Check if log table already has expected schema (id BIGINT UNSIGNED). Skip dbDelta if yes to avoid ALTER on every request.
+	 *
+	 * @param string $log_table_name Full table name.
+	 * @return bool True if table needs creation/update (run dbDelta), false if schema already ok.
+	 */
+	private function log_table_needs_creation( $log_table_name ) {
+		global $wpdb;
+
+		$exists = $wpdb->get_var( $wpdb->prepare(
+			'SELECT 1 FROM information_schema.tables WHERE table_schema = %s AND table_name = %s LIMIT 1',
+			DB_NAME,
+			$log_table_name
+		) );
+		if ( ! $exists ) {
+			return true;
+		}
+
+		$col = $wpdb->get_row( $wpdb->prepare(
+			"SHOW COLUMNS FROM `{$log_table_name}` WHERE Field = %s",
+			'id'
+		) );
+		if ( ! $col || ! isset( $col->Type ) ) {
+			return true;
+		}
+		$type_lower = strtolower( $col->Type );
+
+		return ( strpos( $type_lower, 'bigint' ) === false || strpos( $type_lower, 'unsigned' ) === false );
+	}
+
 	public function create_log_tables() {
 		global $wpdb;
-		
+
 		$tables = $this->tms_tables;
-		
+
 		// Создаем оптимизированные обычные таблицы логов
 		foreach ( $tables as $val ) {
 			$log_table_name  = $wpdb->prefix . 'reports_logs_' . strtolower( $val );
+			if ( ! $this->log_table_needs_creation( $log_table_name ) ) {
+				continue;
+			}
 			$charset_collate = $wpdb->get_charset_collate();
-			
+
 			$sql = "CREATE TABLE $log_table_name (
             id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
             id_load INT UNSIGNED NOT NULL,
@@ -620,15 +653,18 @@ class TMSLogs extends TMSReports {
             INDEX idx_load_user (id_load, id_user),
             INDEX idx_role_date (user_role, log_date)
         ) $charset_collate;";
-			
+
 			dbDelta( $sql );
 		}
-		
+
 		// Создаем оптимизированные FLT таблицы логов
 		foreach ( $tables as $val ) {
 			$log_table_name  = $wpdb->prefix . 'reports_logs_flt_' . strtolower( $val );
+			if ( ! $this->log_table_needs_creation( $log_table_name ) ) {
+				continue;
+			}
 			$charset_collate = $wpdb->get_charset_collate();
-			
+
 			$sql = "CREATE TABLE $log_table_name (
             id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
             id_load INT UNSIGNED NOT NULL,
@@ -650,15 +686,16 @@ class TMSLogs extends TMSReports {
             INDEX idx_load_user (id_load, id_user),
             INDEX idx_role_date (user_role, log_date)
         ) $charset_collate;";
-			
+
 			dbDelta( $sql );
 		}
-		
+
 		// Создаем оптимизированную таблицу логов водителей
-		$log_table_name  = $wpdb->prefix . 'drivers_logs';
-		$charset_collate = $wpdb->get_charset_collate();
-		
-		$sql = "CREATE TABLE $log_table_name (
+		$log_table_name = $wpdb->prefix . 'drivers_logs';
+		if ( $this->log_table_needs_creation( $log_table_name ) ) {
+			$charset_collate = $wpdb->get_charset_collate();
+
+			$sql = "CREATE TABLE $log_table_name (
             id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
             id_load INT UNSIGNED NOT NULL,
             id_user INT UNSIGNED NOT NULL,
@@ -679,7 +716,8 @@ class TMSLogs extends TMSReports {
             INDEX idx_load_user (id_load, id_user),
             INDEX idx_role_date (user_role, log_date)
         ) $charset_collate;";
-		
-		dbDelta( $sql );
+
+			dbDelta( $sql );
+		}
 	}
 }

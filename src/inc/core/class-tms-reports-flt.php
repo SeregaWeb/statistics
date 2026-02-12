@@ -5649,23 +5649,40 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 			) $charset_collate;";
 			
 			dbDelta( $sql );
-			
-			// Создаем оптимизированную мета-таблицу с BIGINT и правильными индексами
-			$sql = "CREATE TABLE $table_meta_name (
-		        id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-		        post_id BIGINT UNSIGNED NOT NULL,
-		        meta_key VARCHAR(255) NOT NULL,
-		        meta_value TEXT,
-		        PRIMARY KEY (id),
-                INDEX idx_post_id (post_id),
-         		INDEX idx_meta_key (meta_key),
-         		INDEX idx_meta_key_value (meta_key, meta_value(191)),
-         		INDEX idx_post_meta_key (post_id, meta_key),
-         		INDEX idx_meta_value (meta_value(100)),
-         		INDEX idx_key_value (meta_key, meta_value(100))
-    		) $charset_collate;";
-			
-			dbDelta( $sql );
+
+			// Meta table: run dbDelta only if table missing or post_id not already BIGINT UNSIGNED (avoids ALTER on every request)
+			$table_meta_exists = $wpdb->get_var( $wpdb->prepare(
+				'SELECT 1 FROM information_schema.tables WHERE table_schema = %s AND table_name = %s LIMIT 1',
+				DB_NAME,
+				$table_meta_name
+			) );
+			$post_id_already_ok = false;
+			if ( $table_meta_exists ) {
+				$col = $wpdb->get_row( $wpdb->prepare(
+					"SHOW COLUMNS FROM `{$table_meta_name}` WHERE Field = %s",
+					'post_id'
+				) );
+				if ( $col && isset( $col->Type ) ) {
+					$type_lower = strtolower( $col->Type );
+					$post_id_already_ok = ( strpos( $type_lower, 'bigint' ) !== false && strpos( $type_lower, 'unsigned' ) !== false );
+				}
+			}
+			if ( ! $post_id_already_ok ) {
+				$sql = "CREATE TABLE $table_meta_name (
+			        id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+			        post_id BIGINT UNSIGNED NOT NULL,
+			        meta_key VARCHAR(255) NOT NULL,
+			        meta_value TEXT,
+			        PRIMARY KEY (id),
+	                INDEX idx_post_id (post_id),
+	         		INDEX idx_meta_key (meta_key),
+	         		INDEX idx_meta_key_value (meta_key, meta_value(191)),
+	         		INDEX idx_post_meta_key (post_id, meta_key),
+	         		INDEX idx_meta_value (meta_value(100)),
+	         		INDEX idx_key_value (meta_key, meta_value(100))
+	    		) $charset_collate;";
+				dbDelta( $sql );
+			}
 		}
 	}
 	

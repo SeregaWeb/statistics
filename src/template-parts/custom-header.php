@@ -18,6 +18,17 @@ $curent_tables = get_field( 'current_select', 'user_' . $user_id );
 
 $TMSUsers = new TMSUsers();
 
+$show_notifications_button = $TMSUsers->check_user_role_access(
+	array(
+		'administrator',
+		'tracking',
+		'tracking-tl',
+		'nightshift_tracking',
+		'morning_tracking',
+	),
+	true
+);
+
 $modal_rated = $TMSUsers->check_user_role_access( array(
 	'dispatcher',
 	'dispatcher-tl',
@@ -96,6 +107,350 @@ $logout_url = wp_logout_url( ! empty( $login_link ) ? $login_link : home_url() )
         </div>
     </div>
 </header>
+
+<?php if ( $show_notifications_button ) : ?>
+	<button
+		type="button"
+		class="btn btn-primary tms-notifications-toggle"
+		id="tms-notifications-toggle"
+		aria-label="Notifications"
+		style="position: fixed; right: 20px; bottom: 20px; z-index: 1050; border-radius: 999px; display: flex; align-items: center; justify-content: center; width: 52px; height: 52px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);"
+	>
+		<span class="tms-notifications-icon" aria-hidden="true">
+			<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+				<path d="M12 22C10.9 22 10 21.1 10 20H14C14 21.1 13.1 22 12 22Z" fill="currentColor"/>
+				<path d="M18 16V11C18 7.93 16.36 5.36 13.5 4.68V4C13.5 3.17 12.83 2.5 12 2.5C11.17 2.5 10.5 3.17 10.5 4V4.68C7.64 5.36 6 7.92 6 11V16L4.71 17.29C4.08 17.92 4.52 19 5.41 19H18.59C19.48 19 19.92 17.92 19.29 17.29L18 16Z" fill="currentColor"/>
+			</svg>
+		</span>
+		<span
+			class="tms-notifications-badge"
+			id="tms-notifications-badge"
+			style="position: absolute; top: 2px; right: 2px; min-width: 22px; height: 22px; padding: 0 6px; border-radius: 50%; background-color: #dc3545; color: #fff; font-size: 12px; font-weight: 700; display: none; align-items: center; justify-content: center; line-height: 1; box-shadow: 0 1px 3px rgba(0,0,0,0.3);"
+		></span>
+	</button>
+
+	<div
+		id="tms-notifications-panel"
+		class="tms-notifications-panel"
+		style="position: fixed; right: 20px; bottom: 80px; z-index: 1050; width: 420px; max-height: 560px; background: #ffffff; border-radius: 8px; box-shadow: 0 6px 18px rgba(0,0,0,0.2); display: none; overflow: hidden;"
+	>
+		<div style="padding: 8px 12px; border-bottom: 1px solid #e5e5e5; display: flex; align-items: center; justify-content: space-between;">
+			<strong style="font-size: 14px;">Notifications</strong>
+			<button type="button" id="tms-notifications-close" class="btn btn-sm btn-light" style="padding: 2px 6px; font-size: 12px;">×</button>
+		</div>
+		<div id="tms-notifications-list" style="max-height: 460px; overflow-y: auto; padding: 8px 12px;"></div>
+		<div id="tms-notifications-footer" style="padding: 6px 12px; border-top: 1px solid #e5e5e5; display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap;">
+			<button type="button" id="tms-notifications-load-older" class="btn btn-sm btn-outline-secondary" style="font-size: 12px; display: none;">Load older</button>
+			<button type="button" id="tms-notifications-mark-all" class="btn btn-sm btn-outline-secondary" style="font-size: 12px;">Mark all read</button>
+		</div>
+	</div>
+
+	<?php
+		$notifications_endpoint       = esc_url_raw( rest_url( 'tms/v1/notifications' ) );
+		$notifications_read_endpoint  = esc_url_raw( rest_url( 'tms/v1/notifications/read' ) );
+		$notifications_read_all_url   = esc_url_raw( rest_url( 'tms/v1/notifications/read-all' ) );
+		$notifications_nonce         = wp_create_nonce( 'wp_rest' );
+
+		// Initial notifications in PHP so badge and list are correct on first paint (no wait for JS).
+		$notifications_initial = array(
+			'items'        => array(),
+			'unread_count' => 0,
+			'total_count'  => 0,
+			'has_more'     => false,
+		);
+		if ( $user_id > 0 ) {
+			$tms_notifications   = new TMSNotifications();
+			$limit               = 20;
+			$page                = 1;
+			$result              = $tms_notifications->get_user_notifications( $user_id, $limit, false, $page );
+			$notifications_initial['items']       = $result['items'];
+			$notifications_initial['unread_count'] = (int) $result['unread_count'];
+			$notifications_initial['total_count'] = (int) $result['total_count'];
+			$notifications_initial['has_more']     = ( ( $page * $limit ) < (int) $result['total_count'] );
+		}
+		$notifications_initial_json = wp_json_encode( $notifications_initial );
+	?>
+	<script>
+	(function() {
+		const toggleBtn = document.getElementById('tms-notifications-toggle');
+		const badgeEl = document.getElementById('tms-notifications-badge');
+		const panelEl = document.getElementById('tms-notifications-panel');
+		const listEl = document.getElementById('tms-notifications-list');
+		const closeBtn = document.getElementById('tms-notifications-close');
+		const markAllBtn = document.getElementById('tms-notifications-mark-all');
+		const loadOlderBtn = document.getElementById('tms-notifications-load-older');
+
+		if (!toggleBtn || !badgeEl || !panelEl || !listEl) {
+			return;
+		}
+
+		const apiListUrl = '<?php echo $notifications_endpoint; ?>';
+		const apiReadUrl = '<?php echo $notifications_read_endpoint; ?>';
+		const apiReadAllUrl = '<?php echo $notifications_read_all_url; ?>';
+		const restNonce = '<?php echo esc_js( $notifications_nonce ); ?>';
+
+		// Initial state from PHP (no wait for first JS request).
+		const initialData = <?php echo $notifications_initial_json; ?>;
+
+		function getHeaders(includeJson) {
+			const h = {
+				'Accept': 'application/json',
+				'X-WP-Nonce': restNonce
+			};
+			if (includeJson) {
+				h['Content-Type'] = 'application/json';
+			}
+			return h;
+		}
+
+		let notificationsCache = Array.isArray(initialData.items) ? initialData.items : [];
+		let totalNotificationsCount = typeof initialData.total_count === 'number' ? initialData.total_count : 0;
+		let currentNotificationsPage = 1;
+		let hasMorePagesFromServer = initialData.has_more === true;
+		let currentUnreadCount = typeof initialData.unread_count === 'number' ? initialData.unread_count : 0;
+		let isPanelOpen = false;
+
+		function setBadge(unreadCount) {
+			if (unreadCount && unreadCount > 0) {
+				badgeEl.style.display = 'flex';
+				badgeEl.textContent = unreadCount > 99 ? '99' : String(unreadCount);
+			} else {
+				badgeEl.style.display = 'none';
+				badgeEl.textContent = '';
+			}
+		}
+
+		const MARK_ALL_READ_BTN_LABEL = 'Mark all read';
+
+		function setMarkAllReadButtonLoading(loading) {
+			if (!markAllBtn) {
+				return;
+			}
+			markAllBtn.disabled = loading;
+			markAllBtn.textContent = loading ? 'Marking...' : MARK_ALL_READ_BTN_LABEL;
+		}
+
+		function updateMarkAllReadButton() {
+			if (!markAllBtn) {
+				return;
+			}
+			markAllBtn.style.display = currentUnreadCount > 0 ? 'block' : 'none';
+			if (markAllBtn.style.display !== 'none') {
+				markAllBtn.textContent = markAllBtn.disabled ? 'Marking...' : MARK_ALL_READ_BTN_LABEL;
+			}
+		}
+
+		// Apply initial state from PHP so badge is correct on first paint.
+		setBadge(currentUnreadCount);
+		updateMarkAllReadButton();
+
+		function renderNotifications(items) {
+			if (!Array.isArray(items) || items.length === 0) {
+				listEl.innerHTML = '<p class="mb-0 text-muted" style="font-size: 13px;">No notifications.</p>';
+				return;
+			}
+
+			const html = items.map(function(item) {
+				const id = item.id;
+				const title = item.title || '';
+				const message = item.message || '';
+				const createdAt = item.created_at || '';
+				const isRead = !!item.read_at;
+
+				return (
+					'<div class="tms-notification-item" data-notification-id="' + id + '" ' +
+					'style="padding: 6px 0; border-bottom: 1px solid #f1f1f1; cursor: pointer; ' +
+					(isRead ? 'opacity:0.7;' : 'font-weight:500;') + '">' +
+						'<div style="font-size: 13px;">' + title.replace(/</g, '&lt;').replace(/>/g, '&gt;') + '</div>' +
+						(message ? '<div style="font-size: 12px; color:#555; white-space:pre-line;">' + message.replace(/</g, '&lt;').replace(/>/g, '&gt;') + '</div>' : '') +
+						(createdAt ? '<div style="font-size: 11px; color:#999; margin-top:2px;">' + createdAt + '</div>' : '') +
+					'</div>'
+				);
+			}).join('');
+
+			listEl.innerHTML = html;
+		}
+
+		const LOAD_OLDER_BTN_LABEL = 'Load older';
+
+		function setLoadOlderButtonLoading(loading) {
+			if (!loadOlderBtn) {
+				return;
+			}
+			loadOlderBtn.disabled = loading;
+			loadOlderBtn.textContent = loading ? 'Loading...' : LOAD_OLDER_BTN_LABEL;
+		}
+
+		function fetchNotifications(page, append) {
+			page = page || 1;
+			append = !!append;
+
+			const url = apiListUrl + (apiListUrl.indexOf('?') !== -1 ? '&' : '?') + 'per_page=20&page=' + page;
+			fetch(url, {
+				method: 'GET',
+				credentials: 'same-origin',
+				headers: getHeaders(false)
+			})
+			.then(function(response) {
+				if (!response.ok) {
+					throw new Error('HTTP ' + response.status);
+				}
+				return response.json();
+			})
+			.then(function(payload) {
+				if (!payload || !payload.success) {
+					return;
+				}
+
+				const items = Array.isArray(payload.data) ? payload.data : [];
+				const unreadCount = typeof payload.unread_count === 'number' ? payload.unread_count : 0;
+				const totalCount = typeof payload.total_count === 'number' ? payload.total_count : 0;
+				currentUnreadCount = unreadCount;
+				// Update has_more from server only when appending or when we still think there are more pages.
+				// When user already loaded all (hasMorePagesFromServer false), polling must not bring the button back.
+				if (append || hasMorePagesFromServer) {
+					hasMorePagesFromServer = payload.has_more === true;
+				}
+
+				if (append) {
+					notificationsCache = notificationsCache.concat(items);
+					if (items.length === 0) {
+						totalNotificationsCount = notificationsCache.length;
+						hasMorePagesFromServer = false;
+					}
+				} else {
+					notificationsCache = items;
+					currentNotificationsPage = 1;
+				}
+				if (totalCount >= 0) {
+					totalNotificationsCount = totalCount;
+				}
+				if (page > 1) {
+					currentNotificationsPage = page;
+				}
+
+				setBadge(unreadCount);
+				updateMarkAllReadButton();
+				if (isPanelOpen) {
+					renderNotifications(notificationsCache);
+					updateLoadOlderButton();
+				}
+				setLoadOlderButtonLoading(false);
+			})
+			.catch(function() {
+				setLoadOlderButtonLoading(false);
+			});
+		}
+
+		function updateLoadOlderButton() {
+			if (!loadOlderBtn) {
+				return;
+			}
+			// Rely on PHP has_more: hide button as soon as server says no more pages
+			if (hasMorePagesFromServer) {
+				loadOlderBtn.style.display = 'block';
+				loadOlderBtn.textContent = loadOlderBtn.disabled ? 'Loading...' : LOAD_OLDER_BTN_LABEL;
+			} else {
+				loadOlderBtn.style.display = 'none';
+			}
+		}
+
+		function markRead(ids) {
+			if (!ids || !ids.length) {
+				return;
+			}
+
+			fetch(apiReadUrl, {
+				method: 'POST',
+				credentials: 'same-origin',
+				headers: getHeaders(true),
+				body: JSON.stringify({ ids: ids })
+			})
+			.then(function() {
+				fetchNotifications();
+			})
+			.catch(function() {});
+		}
+
+		function markAllRead() {
+			setMarkAllReadButtonLoading(true);
+			fetch(apiReadAllUrl, {
+				method: 'POST',
+				credentials: 'same-origin',
+				headers: getHeaders(true),
+				body: '{}'
+			})
+			.then(function() {
+				fetchNotifications();
+			})
+			.catch(function() {})
+			.finally(function() {
+				setMarkAllReadButtonLoading(false);
+			});
+		}
+
+		function openPanel() {
+			isPanelOpen = true;
+			panelEl.style.display = 'block';
+			renderNotifications(notificationsCache);
+			updateLoadOlderButton();
+			updateMarkAllReadButton();
+		}
+
+		function closePanel() {
+			isPanelOpen = false;
+			panelEl.style.display = 'none';
+		}
+
+		toggleBtn.addEventListener('click', function() {
+			if (isPanelOpen) {
+				closePanel();
+			} else {
+				openPanel();
+			}
+		});
+
+		if (closeBtn) {
+			closeBtn.addEventListener('click', function() {
+				closePanel();
+			});
+		}
+
+		if (loadOlderBtn) {
+			loadOlderBtn.addEventListener('click', function() {
+				if (!hasMorePagesFromServer || loadOlderBtn.disabled) {
+					return;
+				}
+				const nextPage = currentNotificationsPage + 1;
+				setLoadOlderButtonLoading(true);
+				fetchNotifications(nextPage, true);
+			});
+		}
+
+		if (markAllBtn) {
+			markAllBtn.addEventListener('click', function() {
+				markAllRead();
+			});
+		}
+
+		listEl.addEventListener('click', function(event) {
+			var item = event.target.closest('.tms-notification-item');
+			if (!item) {
+				return;
+			}
+			var idAttr = item.getAttribute('data-notification-id');
+			var id = idAttr ? parseInt(idAttr, 10) : 0;
+			if (id > 0) {
+				markRead([id]);
+			}
+		});
+
+		// Initial fetch and periodic polling.
+		fetchNotifications();
+		setInterval(fetchNotifications, 60000); // 1 minute
+	})();
+	</script>
+<?php endif; ?>
 
 <?php 
 // Alert banner for administrators

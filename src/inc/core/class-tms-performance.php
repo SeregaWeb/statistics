@@ -135,7 +135,12 @@ class TMSReportsPerformance extends TMSReportsHelper {
 	public function create_table_performance() {
 		global $wpdb;
 		
-		$table_name      = $wpdb->prefix . $this->table_main;
+		$table_name = $wpdb->prefix . $this->table_main;
+		// Run CREATE/OPTIMIZE only once; skip if table already exists (avoids slow queries on every request).
+		if ( $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $table_name ) ) === $table_name ) {
+			return;
+		}
+		
 		$charset_collate = $wpdb->get_charset_collate();
 		
 		// Create table with optimized structure for large datasets (500k+ records)
@@ -175,7 +180,12 @@ class TMSReportsPerformance extends TMSReportsHelper {
 	public function create_table_performance_flt() {
 		global $wpdb;
 		
-		$table_name      = $wpdb->prefix . 'reports_performance_flt';
+		$table_name = $wpdb->prefix . 'reports_performance_flt';
+		// Run CREATE/OPTIMIZE only once; skip if table already exists (avoids slow queries on every request).
+		if ( $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $table_name ) ) === $table_name ) {
+			return;
+		}
+		
 		$charset_collate = $wpdb->get_charset_collate();
 		
 		// Create table with optimized structure for large datasets (500k+ records)

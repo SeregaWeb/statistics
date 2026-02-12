@@ -55,6 +55,7 @@ require THEME_DIR . '/src/inc/core/class-tms-trailers.php';
 require THEME_DIR . '/src/inc/core/class-tms-vehicles.php';
 require THEME_DIR . '/src/inc/core/class-dark-mode.php';
 require THEME_DIR . '/src/inc/core/class-tms-user-sync-api.php';
+require THEME_DIR . '/src/inc/core/class-tms-notifications.php';
 require THEME_DIR . '/src/inc/hooks/user-sync-hooks.php';
 require THEME_DIR . '/src/inc/admin/user-sync-admin.php';
 require THEME_DIR . '/src/inc/admin/chat-sync-admin.php';
@@ -87,6 +88,137 @@ require THEME_DIR . '/src/inc/custom-hooks.php';
 require THEME_DIR . '/src/inc/custom-shortcodes.php';
 require THEME_DIR . '/src/inc/class-mobile-detect.php';
 require THEME_DIR . '/src/inc/admin-cache-manager.php';
+
+/**
+ * REST API: Notifications endpoints.
+ */
+add_action(
+	'rest_api_init',
+	function () {
+		register_rest_route(
+			'tms/v1',
+			'/notifications',
+			array(
+				'methods'             => 'GET',
+				'callback'            => function ( WP_REST_Request $request ) {
+					$user_id = get_current_user_id();
+
+					if ( ! $user_id ) {
+						return new WP_Error(
+							'not_logged_in',
+							'Authentication required.',
+							array( 'status' => 401 )
+						);
+					}
+
+					$limit       = (int) $request->get_param( 'per_page' );
+					$limit       = $limit > 0 ? min( $limit, 50 ) : 20;
+					$page        = max( 1, (int) $request->get_param( 'page' ) );
+					$status      = $request->get_param( 'status' );
+					$only_unread = ( 'unread' === $status );
+
+					$notifications = new TMSNotifications();
+					$result        = $notifications->get_user_notifications( $user_id, $limit, $only_unread, $page );
+
+					$total_count = (int) $result['total_count'];
+					$has_more    = ( ( $page * $limit ) < $total_count );
+
+					return new WP_REST_Response(
+						array(
+							'success'       => true,
+							'data'          => $result['items'],
+							'unread_count'  => $result['unread_count'],
+							'total_count'   => $total_count,
+							'has_more'      => $has_more,
+						),
+						200
+					);
+				},
+				'permission_callback' => function () {
+					return is_user_logged_in();
+				},
+			)
+		);
+
+		register_rest_route(
+			'tms/v1',
+			'/notifications/read',
+			array(
+				'methods'             => 'POST',
+				'callback'            => function ( WP_REST_Request $request ) {
+					$user_id = get_current_user_id();
+
+					if ( ! $user_id ) {
+						return new WP_Error(
+							'not_logged_in',
+							'Authentication required.',
+							array( 'status' => 401 )
+						);
+					}
+
+					$body = $request->get_json_params();
+					$ids  = isset( $body['ids'] ) && is_array( $body['ids'] ) ? $body['ids'] : array();
+
+					if ( empty( $ids ) ) {
+						return new WP_Error(
+							'invalid_request',
+							'No notification IDs provided.',
+							array( 'status' => 400 )
+						);
+					}
+
+					$notifications = new TMSNotifications();
+					$updated       = $notifications->mark_notifications_read( $user_id, $ids );
+
+					return new WP_REST_Response(
+						array(
+							'success'       => true,
+							'updated_count' => $updated,
+						),
+						200
+					);
+				},
+				'permission_callback' => function () {
+					return is_user_logged_in();
+				},
+			)
+		);
+
+		register_rest_route(
+			'tms/v1',
+			'/notifications/read-all',
+			array(
+				'methods'             => 'POST',
+				'callback'            => function ( WP_REST_Request $request ) {
+					$user_id = get_current_user_id();
+
+					if ( ! $user_id ) {
+						return new WP_Error(
+							'not_logged_in',
+							'Authentication required.',
+							array( 'status' => 401 )
+						);
+					}
+
+					$notifications = new TMSNotifications();
+					$updated       = $notifications->mark_all_notifications_read( $user_id );
+
+					return new WP_REST_Response(
+						array(
+							'success'       => true,
+							'updated_count' => $updated,
+						),
+						200
+					);
+				},
+				'permission_callback' => function () {
+					return is_user_logged_in();
+				},
+			)
+		);
+	},
+	10
+);
 
 function disable_canonical_redirect_for_paged( $redirect_url ) {
 	if ( is_paged() && strpos( $redirect_url, '/page/' ) !== false ) {

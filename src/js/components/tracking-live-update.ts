@@ -3,6 +3,8 @@
  * update badges and tbody without full page reload.
  */
 
+import { quickEditTrackingStatus, triggerDisableBtnInit } from './create-report';
+
 const POLL_INTERVAL_MS = 20000; // 20 seconds
 
 function getCurrentParams(): Record<string, string> {
@@ -59,7 +61,7 @@ function getTrackingContext(): string {
 	return ( wrapper?.getAttribute( 'data-tracking-context' ) || '' ).trim();
 }
 
-export function initTrackingLiveUpdate(): void {
+export function initTrackingLiveUpdate(ajaxUrl: string): void {
 	if ( document.querySelector( '[data-tracking-live-update="false"]' ) ) {
 		return;
 	}
@@ -73,7 +75,6 @@ export function initTrackingLiveUpdate(): void {
 	}
 
 	// eslint-disable-next-line @typescript-eslint/no-explicit-any
-	const ajaxUrl = ( window as any ).var_from_php?.ajax_url;
 	if ( ! ajaxUrl ) {
 		return;
 	}
@@ -112,6 +113,10 @@ export function initTrackingLiveUpdate(): void {
 					const currentIds = getCurrentLoadIds( tbody );
 					if ( ! arraysEqual( currentIds, newLoadIds ) ) {
 						tbody.innerHTML = rows_html;
+
+						// Re-initialize tracking status forms and buttons for newly rendered rows.
+						quickEditTrackingStatus( ajaxUrl );
+						triggerDisableBtnInit();
 					}
 				}
 			} )

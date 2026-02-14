@@ -15,7 +15,10 @@ class TMSVehicles {
 	
 	public function init() {
 		$this->ajax_actions();
-		$this->create_tables();
+
+		if ( current_user_can( 'administrator' ) ) {
+			$this->create_tables();
+		}
 	}
 	
 	public function ajax_actions() {
@@ -132,7 +135,61 @@ class TMSVehicles {
 		
 		return null;
 	}
-	
+
+	/**
+	 * Get multiple vehicles by IDs in one query (avoids N+1).
+	 *
+	 * @param array $ids Array of vehicle IDs (integers).
+	 * @return array Keyed by ID: [ id => array( 'main' => ..., 'meta' => ... ), ... ]
+	 */
+	public function get_vehicles_by_ids( array $ids ) {
+		global $wpdb;
+
+		$ids = array_filter( array_map( 'absint', $ids ) );
+		if ( empty( $ids ) ) {
+			return array();
+		}
+
+		$ids         = array_unique( $ids );
+		$table_main  = $wpdb->prefix . $this->table_main;
+		$table_meta  = $wpdb->prefix . $this->table_meta;
+		$placeholders = implode( ',', array_fill( 0, count( $ids ), '%d' ) );
+
+		$query  = $wpdb->prepare(
+			"SELECT main.*, meta.meta_key, meta.meta_value
+			FROM $table_main AS main
+			LEFT JOIN $table_meta AS meta ON main.id = meta.post_id
+			WHERE main.id IN ($placeholders)",
+			$ids
+		);
+		$results = $wpdb->get_results( $query );
+
+		if ( empty( $results ) ) {
+			return array();
+		}
+
+		$by_id = array();
+		foreach ( $results as $row ) {
+			$id = (int) $row->id;
+			if ( ! isset( $by_id[ $id ] ) ) {
+				$by_id[ $id ] = array(
+					'main' => array(),
+					'meta' => array(),
+				);
+			}
+			if ( empty( $by_id[ $id ]['main'] ) ) {
+				$main = (array) $row;
+				unset( $main['meta_key'], $main['meta_value'] );
+				$by_id[ $id ]['main'] = $main;
+			}
+			if ( ! empty( $row->meta_key ) && isset( $row->meta_value ) ) {
+				$by_id[ $id ]['meta'][ $row->meta_key ] = $row->meta_value;
+			}
+		}
+
+		return $by_id;
+	}
+
 	/**
 	 * Get all vehicles with pagination
 	 *
@@ -188,15 +245,17 @@ class TMSVehicles {
 		";
 		
 		$total = $wpdb->get_var( $total_sql );
-		
+
+		$ids    = wp_list_pluck( $vehicles, 'id' );
+		$by_id  = $this->get_vehicles_by_ids( $ids );
 		$result = array();
 		foreach ( $vehicles as $vehicle ) {
-			$vehicle_data = $this->get_vehicle_by_id( $vehicle[ 'id' ] );
-			if ( $vehicle_data ) {
-				$result[] = $vehicle_data;
+			$id = isset( $vehicle['id'] ) ? (int) $vehicle['id'] : 0;
+			if ( $id && isset( $by_id[ $id ] ) ) {
+				$result[] = $by_id[ $id ];
 			}
 		}
-		
+
 		return array(
 			'vehicles' => $result,
 			'total' => intval( $total ),

@@ -39,6 +39,17 @@ $args  = $reports->set_filter_params( $args );
 $items = $reports->get_table_items_billing_shortpay( $args );
 $stats = $reports->get_shortpay_stats_by_broker( $args );
 
+// Pre-fetch brokers for Total tab (same approach as report-table-billing-shortpay) to avoid N+1.
+$TMSBroker        = new TMSReportsCompany();
+$stats_broker_ids = array();
+if ( is_array( $stats ) && ! empty( $stats ) ) {
+	$stats_broker_ids = array_unique( array_filter( array_map( function( $row ) {
+		return isset( $row['customer_id'] ) ? (int) $row['customer_id'] : 0;
+	}, $stats ) ) );
+}
+$companies_by_id_stats = ! empty( $stats_broker_ids ) ? $TMSBroker->get_companies_by_ids( $stats_broker_ids ) : array();
+$brokers_by_id_stats   = ! empty( $stats_broker_ids ) ? $TMSBroker->get_brokers_data_by_ids( $stats_broker_ids, $companies_by_id_stats ) : array();
+
 $post_tp              = 'accounting';
 $items[ 'page_type' ] = $post_tp;
 if ( $is_flt ) {
@@ -90,7 +101,6 @@ if ( $is_flt ) {
                                  aria-labelledby="pills-update-tab">
 
                                 <?php $link_broker = get_field_value( $global_options, 'single_page_broker' ) ?? ''; ?>
-                                <?php $TMSBroker = new TMSReportsCompany(); ?>
 
                                 <table class="table mb-5 mt-5 w-100">
                                     <thead>
@@ -113,7 +123,7 @@ if ( $is_flt ) {
                                         foreach ( $stats as $row ) :
                                             $company_total = 0;
                                             $id_broker     = intval( $row['customer_id'] );
-                                            $broker_data   = $TMSBroker->get_broker_and_link_by_id( $id_broker, false ) ?: [];
+                                            $broker_data   = isset( $brokers_by_id_stats[ $id_broker ] ) ? $brokers_by_id_stats[ $id_broker ] : array();
                                             $name          = $broker_data['name'] ?? '';
                                             $mc            = $broker_data['mc'] ?? '';
                                             $charge_back_v = floatval( $row['charge_back_total'] );

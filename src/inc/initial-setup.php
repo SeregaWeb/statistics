@@ -10,15 +10,68 @@ global $global_options;
 const TIME_AVAILABLE_DRIVER = '-12 hours';
 
 if ( function_exists( 'get_fields' ) ) {
+	// Determine ACF options key (with locale support)
 	if ( function_exists( 'pll_current_language' ) ) {
 		// @codingStandardsIgnoreStart
 		$locale = get_locale();
 		// @codingStandardsIgnoreEnd
-		$global_options = get_fields( 'theme-general-settings_' . $locale );
+		$options_key = 'theme-general-settings_' . $locale;
 	} else {
-		$global_options = get_fields( 'theme-general-settings' );
+		$options_key = 'theme-general-settings';
+	}
+
+	// Build transient key and try to load cached options
+	$global_options_transient_key = 'tms_global_options_' . md5( $options_key );
+	$cached_global_options        = get_transient( $global_options_transient_key );
+
+	if ( false !== $cached_global_options && is_array( $cached_global_options ) ) {
+		$global_options = $cached_global_options;
+	} else {
+		$global_options = get_fields( $options_key );
+		if ( is_array( $global_options ) ) {
+			set_transient( $global_options_transient_key, $global_options, DAY_IN_SECONDS );
+			if ( class_exists( 'TMSLogger' ) ) {
+				TMSLogger::log_to_file( 'Written to cache (1 day). Key: ' . $options_key, 'global-options-cache' );
+			}
+		}
 	}
 }
+
+/**
+ * Clear cached global ACF options when any ACF options page is updated.
+ */
+function tms_clear_global_options_cache( $post_id ) {
+	// Only run when ACF is active
+	if ( ! function_exists( 'get_fields' ) ) {
+		return;
+	}
+
+	$option_keys = array( 'theme-general-settings' );
+
+	// Add locale-specific keys if Polylang is available
+	if ( function_exists( 'pll_languages_list' ) ) {
+		$languages_locales = pll_languages_list(
+			array(
+				'fields' => 'locale',
+			)
+		);
+
+		if ( is_array( $languages_locales ) ) {
+			foreach ( $languages_locales as $locale ) {
+				$option_keys[] = 'theme-general-settings_' . $locale;
+			}
+		}
+	}
+
+	foreach ( $option_keys as $options_key ) {
+		$transient_key = 'tms_global_options_' . md5( $options_key );
+		delete_transient( $transient_key );
+	}
+	if ( class_exists( 'TMSLogger' ) ) {
+		TMSLogger::log_to_file( 'Cache cleared (ACF save_post). Post/options ID: ' . $post_id, 'global-options-cache' );
+	}
+}
+add_action( 'acf/save_post', 'tms_clear_global_options_cache', 20 );
 
 show_admin_bar( false );
 

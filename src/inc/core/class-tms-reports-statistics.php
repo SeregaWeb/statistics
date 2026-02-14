@@ -749,10 +749,17 @@ class  TMSStatistics extends TMSReportsHelper {
 		if ( $office !== 'all' ) {
 			$sql .= " AND office_dispatcher.meta_value = %s";
 		}
-		
-		// Prepare query with necessary joins for each meta field
-		$query = $wpdb->prepare( $sql, $year, $month, $office );
-		// Execute the query
+
+		// Pass only the args that match placeholders in the query (2 when year/month set, +1 when office filter).
+		$prepare_args = array();
+		if ( $year !== 'all' && $month !== 'all' ) {
+			$prepare_args[] = $year;
+			$prepare_args[] = $month;
+		}
+		if ( $office !== 'all' ) {
+			$prepare_args[] = $office;
+		}
+		$query = ! empty( $prepare_args ) ? $wpdb->prepare( $sql, ...$prepare_args ) : $sql;
 		$results = $wpdb->get_results( $query, ARRAY_A );
 		
 		// Show report IDs for administrators
@@ -831,6 +838,7 @@ class  TMSStatistics extends TMSReportsHelper {
 			'total_profit'                  => 0.00,
 			'total_driver_rate'             => 0.00,
 			'total_second_driver_rate'      => 0.00,
+			'total_third_driver_rate'       => 0.00,
 			'total_true_profit'             => 0.00,
 			'total_booked_rate_modify'      => 0.00,
 			'total_processing_fees'         => 0.00,
@@ -850,6 +858,7 @@ class  TMSStatistics extends TMSReportsHelper {
 			$monthly_stats[ 'total_profit' ]                  = $results[ 0 ][ 'total_profit' ] ?? 0.00;
 			$monthly_stats[ 'total_driver_rate' ]             = $results[ 0 ][ 'total_driver_rate' ] ?? 0.00;
 			$monthly_stats[ 'total_second_driver_rate' ]      = $results[ 0 ][ 'total_second_driver_rate' ] ?? 0.00;
+			$monthly_stats[ 'total_third_driver_rate' ]       = $results[ 0 ][ 'total_third_driver_rate' ] ?? 0.00;
 			$monthly_stats[ 'total_true_profit' ]             = $results[ 0 ][ 'total_true_profit' ] ?? 0.00;
 			$monthly_stats[ 'total_booked_rate_modify' ]      = $results[ 0 ][ 'total_booked_rate_modify' ] ?? 0.00;
 			$monthly_stats[ 'total_processing_fees' ]         = $results[ 0 ][ 'total_processing_fees' ] ?? 0.00;

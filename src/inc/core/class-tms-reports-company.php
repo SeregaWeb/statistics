@@ -19,8 +19,10 @@ class TMSReportsCompany extends TMSReportsHelper {
 	}
 	
 	public function init() {
-		add_action( 'after_setup_theme', array( $this, 'create_table_company' ) );
-		add_action( 'after_setup_theme', array( $this, 'remove_mc_number_unique_constraint' ) );
+		if ( current_user_can( 'administrator' ) ) {
+			add_action( 'after_setup_theme', array( $this, 'create_table_company' ) );
+			add_action( 'after_setup_theme', array( $this, 'remove_mc_number_unique_constraint' ) );
+		}
 		
 		//TODO update after create / set index db up speed
 //		add_action( 'after_setup_theme', array( $this, 'update_table_company_with_indexes' ) );
@@ -1090,13 +1092,27 @@ class TMSReportsCompany extends TMSReportsHelper {
 	
 	public function create_table_company() {
 		global $wpdb;
-		
+
 		$table_name      = $wpdb->prefix . $this->table_main;
 		$charset_collate = $wpdb->get_charset_collate();
-		
 		$table_meta_name = $wpdb->prefix . $this->table_meta;
-		
-		$sql = "CREATE TABLE $table_name (
+
+		// Main table: run dbDelta only if table missing or key column id not already mediumint/int (avoids ALTER on every request)
+		$main_ok = false;
+		$main_exists = $wpdb->get_var( $wpdb->prepare(
+			'SELECT 1 FROM information_schema.tables WHERE table_schema = %s AND table_name = %s LIMIT 1',
+			DB_NAME,
+			$table_name
+		) );
+		if ( $main_exists ) {
+			$col = $wpdb->get_row( $wpdb->prepare( "SHOW COLUMNS FROM `{$table_name}` WHERE Field = %s", 'id' ), OBJECT );
+			if ( $col && isset( $col->Type ) ) {
+				$t = strtolower( (string) $col->Type );
+				$main_ok = ( strpos( $t, 'mediumint' ) !== false || strpos( $t, 'int' ) !== false );
+			}
+		}
+		if ( ! $main_ok ) {
+			$sql = "CREATE TABLE $table_name (
         id mediumint(9) NOT NULL AUTO_INCREMENT,
         company_name varchar(255) NOT NULL,
         country varchar(255) NOT NULL,
@@ -1129,9 +1145,25 @@ class TMSReportsCompany extends TMSReportsHelper {
         INDEX idx_email (email),
         INDEX idx_latitude_longitude (latitude, longitude)
     ) $charset_collate;";
-		dbDelta( $sql );
-		
-		$sql = "CREATE TABLE $table_meta_name (
+			dbDelta( $sql );
+		}
+
+		// Meta table: run dbDelta only if table missing or post_id not already int type
+		$meta_ok = false;
+		$meta_exists = $wpdb->get_var( $wpdb->prepare(
+			'SELECT 1 FROM information_schema.tables WHERE table_schema = %s AND table_name = %s LIMIT 1',
+			DB_NAME,
+			$table_meta_name
+		) );
+		if ( $meta_exists ) {
+			$col = $wpdb->get_row( $wpdb->prepare( "SHOW COLUMNS FROM `{$table_meta_name}` WHERE Field = %s", 'post_id' ), OBJECT );
+			if ( $col && isset( $col->Type ) ) {
+				$t = strtolower( (string) $col->Type );
+				$meta_ok = ( strpos( $t, 'mediumint' ) !== false || strpos( $t, 'int' ) !== false );
+			}
+		}
+		if ( ! $meta_ok ) {
+			$sql = "CREATE TABLE $table_meta_name (
 		        id mediumint(9) NOT NULL AUTO_INCREMENT,
 		        post_id mediumint(9) NOT NULL,
 		        meta_key longtext,
@@ -1141,13 +1173,28 @@ class TMSReportsCompany extends TMSReportsHelper {
          		INDEX idx_meta_key (meta_key(191)),
          		INDEX idx_meta_key_value (meta_key(191), meta_value(191))
     		) $charset_collate;";
-		
-		dbDelta( $sql );
-		
-		// Create brokers notice table
+			dbDelta( $sql );
+		}
+
+		// Brokers notice table: run dbDelta only if table missing or id/broker_id not already BIGINT UNSIGNED
 		$table_notice_name = $wpdb->prefix . $this->table_notice;
-		
-		$sql_notice = "CREATE TABLE $table_notice_name (
+		$notice_ok = false;
+		$notice_exists = $wpdb->get_var( $wpdb->prepare(
+			'SELECT 1 FROM information_schema.tables WHERE table_schema = %s AND table_name = %s LIMIT 1',
+			DB_NAME,
+			$table_notice_name
+		) );
+		if ( $notice_exists ) {
+			$cols = $wpdb->get_results( "SHOW COLUMNS FROM `{$table_notice_name}` WHERE Field IN ('id','broker_id')", OBJECT_K );
+			if ( ! empty( $cols['id'] ) && ! empty( $cols['broker_id'] ) ) {
+				$t_id  = strtolower( (string) $cols['id']->Type );
+				$t_bid = strtolower( (string) $cols['broker_id']->Type );
+				$notice_ok = ( strpos( $t_id, 'bigint' ) !== false && strpos( $t_id, 'unsigned' ) !== false )
+					&& ( strpos( $t_bid, 'bigint' ) !== false && strpos( $t_bid, 'unsigned' ) !== false );
+			}
+		}
+		if ( ! $notice_ok ) {
+			$sql_notice = "CREATE TABLE $table_notice_name (
 		id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
 		broker_id BIGINT UNSIGNED DEFAULT NULL,
 		name VARCHAR(255) NOT NULL,
@@ -1158,9 +1205,8 @@ class TMSReportsCompany extends TMSReportsHelper {
 		PRIMARY KEY  (id),
 		KEY idx_broker_id (broker_id)
 	) $charset_collate;";
-		
-		dbDelta( $sql_notice );
-		
+			dbDelta( $sql_notice );
+		}
 	}
 	
 	/**

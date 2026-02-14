@@ -33,7 +33,22 @@ $hide_billing_and_shipping = $TMSUsers->check_user_role_access( array( 'billing'
 $my_team     = $TMSUsers->check_group_access() ?: [];
 $report_data = [];
 
-if ( ! empty( $results ) ) :?>
+$results_list = is_array( $results ) ? $results : array();
+if ( ! empty( $results_list ) ) {
+	$customer_ids = array();
+	foreach ( $results_list as $row ) {
+		$meta_row = get_field_value( $row, 'meta_data' );
+		$cid      = get_field_value( $meta_row, 'customer_id' );
+		if ( $cid !== '' && $cid !== null ) {
+			$customer_ids[] = (int) $cid;
+		}
+	}
+	$customer_ids    = array_unique( array_filter( $customer_ids ) );
+	$companies_by_id = $TMSBroker->get_companies_by_ids( $customer_ids );
+	$brokers_by_id   = $TMSBroker->get_brokers_data_by_ids( $customer_ids, $companies_by_id );
+}
+
+if ( ! empty( $results_list ) ) :?>
 
 
     <table class="table mb-5 w-100">
@@ -58,7 +73,7 @@ if ( ! empty( $results ) ) :?>
         </tr>
         </thead>
         <tbody>
-		<?php foreach ( $results as $row ) :
+		<?php foreach ( $results_list as $row ) :
 			
 			$meta = get_field_value( $row, 'meta_data' ) ?? [];
 			$pdlocations = $helper->get_locations_template( $row ) ?: [];
@@ -114,19 +129,14 @@ if ( ! empty( $results ) ) :?>
 			
 			$booked_price_class = $helper->get_modify_class( $meta, 'modify_price' ) ?? '';
 			
-			$id_customer          = get_field_value( $meta, 'customer_id' );
-			$template_broker_data = $TMSBroker->get_broker_and_link_by_id( $id_customer, false ) ?: [];
-			
+			$id_customer          = (int) ( get_field_value( $meta, 'customer_id' ) ?? 0 );
+			$template_broker_data = isset( $brokers_by_id[ $id_customer ] ) ? $brokers_by_id[ $id_customer ] : array();
+
 			$template_broker = $template_broker_data[ 'template' ] ?? 'N/A';
 			$broker_name     = $template_broker_data[ 'name' ] ?? 'N/A';
 			$broker_mc       = $template_broker_data[ 'mc' ] ?? 'N/A';
-			
-			$current_company = $TMSBroker->get_company_by_id( $id_customer );
-			if ( $current_company ) {
-				$current_company_name = $current_company[0]->company_name;
-			} else {
-				$current_company_name = '';
-			}
+
+			$current_company_name = isset( $companies_by_id[ $id_customer ]['company_name'] ) ? $companies_by_id[ $id_customer ]['company_name'] : '';
 			
 			$all_paid = 0;
 			if ( $invoice_status !== 'in-processing' && $invoice_status !== 'paid' ) {

@@ -24,7 +24,11 @@ class TMSDrivers extends TMSDriversHelper {
 	
 	public function init() {
 		$this->ajax_actions();
-		$this->create_tables();
+
+		if ( current_user_can( 'administrator' ) ) {
+			$this->create_tables();
+		}
+		
 		$this->init_cron();
 		
 		// Принудительно запускаем cron при каждом запросе (для тестирования)
@@ -6387,13 +6391,29 @@ class TMSDrivers extends TMSDriversHelper {
 	
 	function register_driver_tables() {
 		global $wpdb;
-		
+
 		$charset_collate = $wpdb->get_charset_collate();
-		
-		$table_rating = $wpdb->prefix . $this->table_raiting;
-		$table_notice = $wpdb->prefix . $this->table_notice;
-		
-		$sql_rating = "CREATE TABLE $table_rating (
+		$table_rating    = $wpdb->prefix . $this->table_raiting;
+		$table_notice    = $wpdb->prefix . $this->table_notice;
+
+		// Rating table: run dbDelta only if table missing or id/driver_id not already BIGINT UNSIGNED
+		$rating_ok = false;
+		$rating_exists = $wpdb->get_var( $wpdb->prepare(
+			'SELECT 1 FROM information_schema.tables WHERE table_schema = %s AND table_name = %s LIMIT 1',
+			DB_NAME,
+			$table_rating
+		) );
+		if ( $rating_exists ) {
+			$cols = $wpdb->get_results( "SHOW COLUMNS FROM `{$table_rating}` WHERE Field IN ('id','driver_id')", OBJECT_K );
+			if ( ! empty( $cols['id'] ) && ! empty( $cols['driver_id'] ) ) {
+				$t_id  = strtolower( (string) $cols['id']->Type );
+				$t_did = strtolower( (string) $cols['driver_id']->Type );
+				$rating_ok = ( strpos( $t_id, 'bigint' ) !== false && strpos( $t_id, 'unsigned' ) !== false )
+					&& ( strpos( $t_did, 'bigint' ) !== false && strpos( $t_did, 'unsigned' ) !== false );
+			}
+		}
+		if ( ! $rating_ok ) {
+			$sql_rating = "CREATE TABLE $table_rating (
 		id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
 		driver_id BIGINT UNSIGNED DEFAULT NULL,
 		name VARCHAR(255) NOT NULL,
@@ -6404,8 +6424,27 @@ class TMSDrivers extends TMSDriversHelper {
 		PRIMARY KEY  (id),
 		KEY idx_driver_id (driver_id)
 	) $charset_collate;";
-		
-		$sql_notice = "CREATE TABLE $table_notice (
+			dbDelta( $sql_rating );
+		}
+
+		// Notice table: run dbDelta only if table missing or id/driver_id not already BIGINT UNSIGNED
+		$notice_ok = false;
+		$notice_exists = $wpdb->get_var( $wpdb->prepare(
+			'SELECT 1 FROM information_schema.tables WHERE table_schema = %s AND table_name = %s LIMIT 1',
+			DB_NAME,
+			$table_notice
+		) );
+		if ( $notice_exists ) {
+			$cols = $wpdb->get_results( "SHOW COLUMNS FROM `{$table_notice}` WHERE Field IN ('id','driver_id')", OBJECT_K );
+			if ( ! empty( $cols['id'] ) && ! empty( $cols['driver_id'] ) ) {
+				$t_id  = strtolower( (string) $cols['id']->Type );
+				$t_did = strtolower( (string) $cols['driver_id']->Type );
+				$notice_ok = ( strpos( $t_id, 'bigint' ) !== false && strpos( $t_id, 'unsigned' ) !== false )
+					&& ( strpos( $t_did, 'bigint' ) !== false && strpos( $t_did, 'unsigned' ) !== false );
+			}
+		}
+		if ( ! $notice_ok ) {
+			$sql_notice = "CREATE TABLE $table_notice (
 		id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
 		driver_id BIGINT UNSIGNED DEFAULT NULL,
 		name VARCHAR(255) NOT NULL,
@@ -6415,9 +6454,8 @@ class TMSDrivers extends TMSDriversHelper {
 		PRIMARY KEY  (id),
 		KEY idx_driver_id (driver_id)
 	) $charset_collate;";
-		
-		dbDelta( $sql_rating );
-		dbDelta( $sql_notice );
+			dbDelta( $sql_notice );
+		}
 	}
 	
 	/**
@@ -7774,13 +7812,19 @@ class TMSDrivers extends TMSDriversHelper {
 	 */
 	public function ajax_get_drivers_for_map() {
 		if ( defined( 'DOING_AJAX' ) && DOING_AJAX ) {
+			// Manually excluded driver IDs (hidden from map)
+			$excluded_driver_ids = array( 3343 );
+
 			// Check if driver_ids are provided (optimization - skip filtering)
 			$driver_ids = array();
 			if ( isset( $_POST['driver_ids'] ) && is_array( $_POST['driver_ids'] ) ) {
 				$driver_ids = array_map( 'absint', $_POST['driver_ids'] );
 				$driver_ids = array_filter( $driver_ids ); // Remove empty values
 			}
-			
+
+			// Apply manual exclusions
+			$driver_ids = array_values( array_diff( array_map( 'intval', $driver_ids ), $excluded_driver_ids ) );
+
 			// If we have driver IDs, use them directly (skip all filtering)
 			if ( ! empty( $driver_ids ) ) {
 				// Get full driver data for map
@@ -7994,6 +8038,7 @@ class TMSDrivers extends TMSDriversHelper {
 					
 					// Get driver IDs from filtered drivers
 					$driver_ids = array_keys( $valid_drivers );
+					$driver_ids = array_values( array_diff( array_map( 'intval', $driver_ids ), $excluded_driver_ids ) );
 				} else {
 					// No coordinates found, return empty
 					wp_send_json_success( array( 'drivers' => array() ) );
@@ -8173,6 +8218,7 @@ class TMSDrivers extends TMSDriversHelper {
 				} else {
 					$driver_ids = $wpdb->get_col( $query );
 				}
+				$driver_ids = array_values( array_diff( array_map( 'intval', (array) $driver_ids ), $excluded_driver_ids ) );
 			} else {
 				// No filters, get all drivers with coordinates
 				global $wpdb;
@@ -8194,8 +8240,9 @@ class TMSDrivers extends TMSDriversHelper {
 				";
 				
 				$driver_ids = $wpdb->get_col( $query );
+				$driver_ids = array_values( array_diff( array_map( 'intval', (array) $driver_ids ), $excluded_driver_ids ) );
 			}
-			
+
 			// If no driver IDs found, return empty array
 			if ( empty( $driver_ids ) ) {
 				wp_send_json_success( array( 'drivers' => array() ) );

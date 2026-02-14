@@ -146,12 +146,11 @@ $logout_url = wp_logout_url( ! empty( $login_link ) ? $login_link : home_url() )
 	</div>
 
 	<?php
-		$notifications_endpoint       = esc_url_raw( rest_url( 'tms/v1/notifications' ) );
-		$notifications_read_endpoint  = esc_url_raw( rest_url( 'tms/v1/notifications/read' ) );
-		$notifications_read_all_url   = esc_url_raw( rest_url( 'tms/v1/notifications/read-all' ) );
+		$notifications_endpoint      = esc_url_raw( rest_url( 'tms/v1/notifications' ) );
+		$notifications_read_endpoint = esc_url_raw( rest_url( 'tms/v1/notifications/read' ) );
+		$notifications_read_all_url  = esc_url_raw( rest_url( 'tms/v1/notifications/read-all' ) );
 		$notifications_nonce         = wp_create_nonce( 'wp_rest' );
 
-		// Initial notifications in PHP so badge and list are correct on first paint (no wait for JS).
 		$notifications_initial = array(
 			'items'        => array(),
 			'unread_count' => 0,
@@ -159,296 +158,25 @@ $logout_url = wp_logout_url( ! empty( $login_link ) ? $login_link : home_url() )
 			'has_more'     => false,
 		);
 		if ( $user_id > 0 ) {
-			$tms_notifications   = new TMSNotifications();
-			$limit               = 20;
-			$page                = 1;
-			$result              = $tms_notifications->get_user_notifications( $user_id, $limit, false, $page );
-			$notifications_initial['items']       = $result['items'];
+			$tms_notifications = new TMSNotifications();
+			$limit             = 20;
+			$page              = 1;
+			$result            = $tms_notifications->get_user_notifications( $user_id, $limit, false, $page );
+			$notifications_initial['items']        = $result['items'];
 			$notifications_initial['unread_count'] = (int) $result['unread_count'];
-			$notifications_initial['total_count'] = (int) $result['total_count'];
+			$notifications_initial['total_count']  = (int) $result['total_count'];
 			$notifications_initial['has_more']     = ( ( $page * $limit ) < (int) $result['total_count'] );
 		}
-		$notifications_initial_json = wp_json_encode( $notifications_initial );
-	?>
+		$tms_notifications_config = array(
+			'apiListUrl'  => $notifications_endpoint,
+			'apiReadUrl'  => $notifications_read_endpoint,
+			'apiReadAllUrl' => $notifications_read_all_url,
+			'restNonce'   => $notifications_nonce,
+			'initial'     => $notifications_initial,
+		);
+		?>
 	<script>
-	(function() {
-		const toggleBtn = document.getElementById('tms-notifications-toggle');
-		const badgeEl = document.getElementById('tms-notifications-badge');
-		const panelEl = document.getElementById('tms-notifications-panel');
-		const listEl = document.getElementById('tms-notifications-list');
-		const closeBtn = document.getElementById('tms-notifications-close');
-		const markAllBtn = document.getElementById('tms-notifications-mark-all');
-		const loadOlderBtn = document.getElementById('tms-notifications-load-older');
-
-		if (!toggleBtn || !badgeEl || !panelEl || !listEl) {
-			return;
-		}
-
-		const apiListUrl = '<?php echo $notifications_endpoint; ?>';
-		const apiReadUrl = '<?php echo $notifications_read_endpoint; ?>';
-		const apiReadAllUrl = '<?php echo $notifications_read_all_url; ?>';
-		const restNonce = '<?php echo esc_js( $notifications_nonce ); ?>';
-
-		// Initial state from PHP (no wait for first JS request).
-		const initialData = <?php echo $notifications_initial_json; ?>;
-
-		function getHeaders(includeJson) {
-			const h = {
-				'Accept': 'application/json',
-				'X-WP-Nonce': restNonce
-			};
-			if (includeJson) {
-				h['Content-Type'] = 'application/json';
-			}
-			return h;
-		}
-
-		let notificationsCache = Array.isArray(initialData.items) ? initialData.items : [];
-		let totalNotificationsCount = typeof initialData.total_count === 'number' ? initialData.total_count : 0;
-		let currentNotificationsPage = 1;
-		let hasMorePagesFromServer = initialData.has_more === true;
-		let currentUnreadCount = typeof initialData.unread_count === 'number' ? initialData.unread_count : 0;
-		let isPanelOpen = false;
-
-		function setBadge(unreadCount) {
-			if (unreadCount && unreadCount > 0) {
-				badgeEl.style.display = 'flex';
-				badgeEl.textContent = unreadCount > 99 ? '99' : String(unreadCount);
-			} else {
-				badgeEl.style.display = 'none';
-				badgeEl.textContent = '';
-			}
-		}
-
-		const MARK_ALL_READ_BTN_LABEL = 'Mark all read';
-
-		function setMarkAllReadButtonLoading(loading) {
-			if (!markAllBtn) {
-				return;
-			}
-			markAllBtn.disabled = loading;
-			markAllBtn.textContent = loading ? 'Marking...' : MARK_ALL_READ_BTN_LABEL;
-		}
-
-		function updateMarkAllReadButton() {
-			if (!markAllBtn) {
-				return;
-			}
-			markAllBtn.style.display = currentUnreadCount > 0 ? 'block' : 'none';
-			if (markAllBtn.style.display !== 'none') {
-				markAllBtn.textContent = markAllBtn.disabled ? 'Marking...' : MARK_ALL_READ_BTN_LABEL;
-			}
-		}
-
-		// Apply initial state from PHP so badge is correct on first paint.
-		setBadge(currentUnreadCount);
-		updateMarkAllReadButton();
-
-		function renderNotifications(items) {
-			if (!Array.isArray(items) || items.length === 0) {
-				listEl.innerHTML = '<p class="mb-0 text-muted" style="font-size: 13px;">No notifications.</p>';
-				return;
-			}
-
-			const html = items.map(function(item) {
-				const id = item.id;
-				const title = item.title || '';
-				const message = item.message || '';
-				const createdAt = item.created_at || '';
-				const isRead = !!item.read_at;
-
-				return (
-					'<div class="tms-notification-item" data-notification-id="' + id + '" ' +
-					'style="padding: 6px 0; border-bottom: 1px solid #f1f1f1; cursor: pointer; ' +
-					(isRead ? 'opacity:0.7;' : 'font-weight:500;') + '">' +
-						'<div style="font-size: 13px;">' + title.replace(/</g, '&lt;').replace(/>/g, '&gt;') + '</div>' +
-						(message ? '<div style="font-size: 12px; color:#555; white-space:pre-line;">' + message.replace(/</g, '&lt;').replace(/>/g, '&gt;') + '</div>' : '') +
-						(createdAt ? '<div style="font-size: 11px; color:#999; margin-top:2px;">' + createdAt + '</div>' : '') +
-					'</div>'
-				);
-			}).join('');
-
-			listEl.innerHTML = html;
-		}
-
-		const LOAD_OLDER_BTN_LABEL = 'Load older';
-
-		function setLoadOlderButtonLoading(loading) {
-			if (!loadOlderBtn) {
-				return;
-			}
-			loadOlderBtn.disabled = loading;
-			loadOlderBtn.textContent = loading ? 'Loading...' : LOAD_OLDER_BTN_LABEL;
-		}
-
-		function fetchNotifications(page, append) {
-			page = page || 1;
-			append = !!append;
-
-			const url = apiListUrl + (apiListUrl.indexOf('?') !== -1 ? '&' : '?') + 'per_page=20&page=' + page;
-			fetch(url, {
-				method: 'GET',
-				credentials: 'same-origin',
-				headers: getHeaders(false)
-			})
-			.then(function(response) {
-				if (!response.ok) {
-					throw new Error('HTTP ' + response.status);
-				}
-				return response.json();
-			})
-			.then(function(payload) {
-				if (!payload || !payload.success) {
-					return;
-				}
-
-				const items = Array.isArray(payload.data) ? payload.data : [];
-				const unreadCount = typeof payload.unread_count === 'number' ? payload.unread_count : 0;
-				const totalCount = typeof payload.total_count === 'number' ? payload.total_count : 0;
-				currentUnreadCount = unreadCount;
-				// Update has_more from server only when appending or when we still think there are more pages.
-				// When user already loaded all (hasMorePagesFromServer false), polling must not bring the button back.
-				if (append || hasMorePagesFromServer) {
-					hasMorePagesFromServer = payload.has_more === true;
-				}
-
-				if (append) {
-					notificationsCache = notificationsCache.concat(items);
-					if (items.length === 0) {
-						totalNotificationsCount = notificationsCache.length;
-						hasMorePagesFromServer = false;
-					}
-				} else {
-					notificationsCache = items;
-					currentNotificationsPage = 1;
-				}
-				if (totalCount >= 0) {
-					totalNotificationsCount = totalCount;
-				}
-				if (page > 1) {
-					currentNotificationsPage = page;
-				}
-
-				setBadge(unreadCount);
-				updateMarkAllReadButton();
-				if (isPanelOpen) {
-					renderNotifications(notificationsCache);
-					updateLoadOlderButton();
-				}
-				setLoadOlderButtonLoading(false);
-			})
-			.catch(function() {
-				setLoadOlderButtonLoading(false);
-			});
-		}
-
-		function updateLoadOlderButton() {
-			if (!loadOlderBtn) {
-				return;
-			}
-			// Rely on PHP has_more: hide button as soon as server says no more pages
-			if (hasMorePagesFromServer) {
-				loadOlderBtn.style.display = 'block';
-				loadOlderBtn.textContent = loadOlderBtn.disabled ? 'Loading...' : LOAD_OLDER_BTN_LABEL;
-			} else {
-				loadOlderBtn.style.display = 'none';
-			}
-		}
-
-		function markRead(ids) {
-			if (!ids || !ids.length) {
-				return;
-			}
-
-			fetch(apiReadUrl, {
-				method: 'POST',
-				credentials: 'same-origin',
-				headers: getHeaders(true),
-				body: JSON.stringify({ ids: ids })
-			})
-			.then(function() {
-				fetchNotifications();
-			})
-			.catch(function() {});
-		}
-
-		function markAllRead() {
-			setMarkAllReadButtonLoading(true);
-			fetch(apiReadAllUrl, {
-				method: 'POST',
-				credentials: 'same-origin',
-				headers: getHeaders(true),
-				body: '{}'
-			})
-			.then(function() {
-				fetchNotifications();
-			})
-			.catch(function() {})
-			.finally(function() {
-				setMarkAllReadButtonLoading(false);
-			});
-		}
-
-		function openPanel() {
-			isPanelOpen = true;
-			panelEl.style.display = 'block';
-			renderNotifications(notificationsCache);
-			updateLoadOlderButton();
-			updateMarkAllReadButton();
-		}
-
-		function closePanel() {
-			isPanelOpen = false;
-			panelEl.style.display = 'none';
-		}
-
-		toggleBtn.addEventListener('click', function() {
-			if (isPanelOpen) {
-				closePanel();
-			} else {
-				openPanel();
-			}
-		});
-
-		if (closeBtn) {
-			closeBtn.addEventListener('click', function() {
-				closePanel();
-			});
-		}
-
-		if (loadOlderBtn) {
-			loadOlderBtn.addEventListener('click', function() {
-				if (!hasMorePagesFromServer || loadOlderBtn.disabled) {
-					return;
-				}
-				const nextPage = currentNotificationsPage + 1;
-				setLoadOlderButtonLoading(true);
-				fetchNotifications(nextPage, true);
-			});
-		}
-
-		if (markAllBtn) {
-			markAllBtn.addEventListener('click', function() {
-				markAllRead();
-			});
-		}
-
-		listEl.addEventListener('click', function(event) {
-			var item = event.target.closest('.tms-notification-item');
-			if (!item) {
-				return;
-			}
-			var idAttr = item.getAttribute('data-notification-id');
-			var id = idAttr ? parseInt(idAttr, 10) : 0;
-			if (id > 0) {
-				markRead([id]);
-			}
-		});
-
-		// Initial fetch and periodic polling.
-		fetchNotifications();
-		setInterval(fetchNotifications, 60000); // 1 minute
-	})();
+		window.TMSNotificationsConfig = <?php echo wp_json_encode( $tms_notifications_config ); ?>;
 	</script>
 <?php endif; ?>
 

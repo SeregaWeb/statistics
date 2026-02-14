@@ -15,13 +15,13 @@ class TMSGenerateDocument extends TMSReports {
 	private $use_wordpress = true;
 	
 	private $logo                   = 'https://www.endurance-tms.com/wp-content/uploads/logos/odysseia.jpeg';
-	private $company_name           = 'ODYSSEIA INC';
+	public $company_name            = 'ODYSSEIA INC';
 	private $company_phone          = '(800) 922-0760';
 	private $company_email          = 'accounting@odysseia.one';
 	private $company_address        = '521 S port Street';
 	private $company_sity_state_zip = 'Baltimore, MD, 21224';
-	private $company_mc             = '1287234';
-	private $company_dot            = '3690406';
+	public $company_mc              = '1287234';
+	public $company_dot             = '3690406';
 	
 	public function __construct( $use_wordpress = true ) {
 		

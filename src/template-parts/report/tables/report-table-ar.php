@@ -29,8 +29,22 @@ $hide_billing_and_shipping = $TMSUsers->check_user_role_access( array( 'billing'
 
 $my_team = $TMSUsers->check_group_access();
 
+$results_list = is_array( $results ) ? $results : array();
+if ( ! empty( $results_list ) ) {
+	$customer_ids   = array();
+	foreach ( $results_list as $row ) {
+		$meta_row = get_field_value( $row, 'meta_data' );
+		$cid      = get_field_value( $meta_row, 'customer_id' );
+		if ( $cid !== '' && $cid !== null ) {
+			$customer_ids[] = (int) $cid;
+		}
+	}
+	$customer_ids    = array_unique( array_filter( $customer_ids ) );
+	$companies_by_id = $TMSBroker->get_companies_by_ids( $customer_ids );
+	$brokers_by_id   = $TMSBroker->get_brokers_data_by_ids( $customer_ids, $companies_by_id );
+}
 
-if ( ! empty( $results ) ) : ?>
+if ( ! empty( $results_list ) ) : ?>
 
     <div class="w-100 mb-3">
         <button class="btn btn-outline-primary js-open-popup-activator" data-href="#popup_quick_edit_arr">Quick edit
@@ -53,7 +67,7 @@ if ( ! empty( $results ) ) : ?>
         </tr>
         </thead>
         <tbody>
-		<?php foreach ( $results as $row ) :
+		<?php foreach ( $results_list as $row ) :
 			$meta = get_field_value( $row, 'meta_data' );
 			$main = get_field_value( $row, 'main' );
 			
@@ -84,15 +98,11 @@ if ( ! empty( $results ) ) : ?>
 			
 			$ar_status          = get_field_value( $meta, 'ar_status' );
 			$booked_price_class = $helper->get_modify_class( $meta, 'modify_price' );
-			$id_customer        = get_field_value( $meta, 'customer_id' );
-			$template_broker    = $TMSBroker->get_broker_and_link_by_id( $id_customer );
-			
-			$current_company = $TMSBroker->get_company_by_id( $id_customer );
-			if ( $current_company ) {
-				$current_company_name = $current_company[0]->company_name;
-			} else {
-				$current_company_name = '';
-			}
+			$id_customer = (int) ( get_field_value( $meta, 'customer_id' ) ?? 0 );
+			$broker_data = isset( $brokers_by_id[ $id_customer ] ) ? $brokers_by_id[ $id_customer ] : array();
+			$template_broker = $broker_data['template'] ?? 'N/A';
+
+			$current_company_name = isset( $companies_by_id[ $id_customer ]['company_name'] ) ? $companies_by_id[ $id_customer ]['company_name'] : '';
 			?>
 
             <tr class="">

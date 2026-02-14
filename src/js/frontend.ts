@@ -70,6 +70,7 @@ import { setStatusPaid } from './components/set-status-paid';
 import { sendEmailChain } from './components/send-email-chain';
 import { saveAllTracking } from './components/save-all-tracking';
 import { initTrackingLiveUpdate } from './components/tracking-live-update';
+import { initLiveReloadNotification } from './components/live-reload-notification';
 import { initAutoSubmitForm } from './components/auto-submit-form';
 import {
     createDocumentBolActions,
@@ -441,6 +442,7 @@ function ready() {
     // These forms will automatically submit when select values change
     initAutoSubmitForm('.js-auto-submit-form');
     initTrackingLiveUpdate(urlAjax);
+    initLiveReloadNotification();
 
     // Remove preloader
     const preloaders = document.querySelectorAll('.js-preloader');

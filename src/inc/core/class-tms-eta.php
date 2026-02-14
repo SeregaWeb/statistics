@@ -11,7 +11,9 @@ class TMSEta extends TMSReportsHelper {
     }
     
     public function init() {
-        $this->create_table();
+        if ( current_user_can( 'administrator' ) ) {
+            $this->create_table();
+        }
         $this->ajax_actions();
         
         // Schedule cron after WordPress is fully loaded

@@ -13,8 +13,11 @@ class TMSContacts extends TMSDriversHelper {
 	}
 	
 	public function init() {
-		$this->table_contacts_init();
-		$this->table_contacts_additional_init();
+		// Run table creation/update only for admins to avoid unnecessary DB load for all users.
+		if ( current_user_can( 'administrator' ) ) {
+			$this->table_contacts_init();
+			$this->table_contacts_additional_init();
+		}
 		$this->ajax_actions();
 	}
 	
@@ -380,51 +383,50 @@ class TMSContacts extends TMSDriversHelper {
 	
 	public function table_contacts_additional_init() {
 		global $wpdb;
-		$charset_collate  = $wpdb->get_charset_collate();
 		$additional_table = $wpdb->prefix . $this->additional_contact;
-		
-		$sql_additional = "CREATE TABLE $additional_table (
-		id mediumint(9) NOT NULL AUTO_INCREMENT,
-		contact_id mediumint(9) NOT NULL,
-		contact_name varchar(255) DEFAULT '',
-		contact_phone varchar(50) DEFAULT '',
-		contact_ext varchar(50) DEFAULT '',
-		contact_email varchar(255) DEFAULT '',
-		PRIMARY KEY  (id),
-		KEY idx_contact_id (contact_id)
-	) $charset_collate;";
-		
-		dbDelta( $sql_additional );
+		if ( $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $additional_table ) ) !== $additional_table ) {
+			$charset_collate  = $wpdb->get_charset_collate();
+			$sql_additional   = "CREATE TABLE $additional_table (
+			id mediumint(9) NOT NULL AUTO_INCREMENT,
+			contact_id mediumint(9) NOT NULL,
+			contact_name varchar(255) DEFAULT '',
+			contact_phone varchar(50) DEFAULT '',
+			contact_ext varchar(50) DEFAULT '',
+			contact_email varchar(255) DEFAULT '',
+			PRIMARY KEY  (id),
+			KEY idx_contact_id (contact_id)
+		) $charset_collate;";
+			dbDelta( $sql_additional );
+		}
 	}
 	
 	public function table_contacts_init() {
 		global $wpdb;
-		
-		$table_name      = $wpdb->prefix . $this->table_main;
-		$charset_collate = $wpdb->get_charset_collate();
-		
-		$sql = "CREATE TABLE $table_name (
-		id mediumint(9) NOT NULL AUTO_INCREMENT,
-		user_id_added mediumint(9) NOT NULL,
-		date_created datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
-		company_id mediumint(9) NOT NULL,
-		name varchar(255) NOT NULL,
-		office_number varchar(50) DEFAULT '',
-		direct_number varchar(50) DEFAULT '',
-		direct_ext varchar(50) DEFAULT '',
-		email varchar(255) NOT NULL,
-		support_contact varchar(255) DEFAULT '',
-		support_phone varchar(50) DEFAULT '',
-		support_ext varchar(50) DEFAULT '',
-		support_email varchar(255) DEFAULT '',
-		PRIMARY KEY  (id),
-		KEY idx_date_created (date_created),
-		KEY idx_company_id (company_id),
-		KEY idx_email (email)
-	) $charset_collate;";
-		
-		dbDelta( $sql );
-		
+
+		$table_name = $wpdb->prefix . $this->table_main;
+		if ( $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $table_name ) ) !== $table_name ) {
+			$charset_collate = $wpdb->get_charset_collate();
+			$sql             = "CREATE TABLE $table_name (
+			id mediumint(9) NOT NULL AUTO_INCREMENT,
+			user_id_added mediumint(9) NOT NULL,
+			date_created datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+			company_id mediumint(9) NOT NULL,
+			name varchar(255) NOT NULL,
+			office_number varchar(50) DEFAULT '',
+			direct_number varchar(50) DEFAULT '',
+			direct_ext varchar(50) DEFAULT '',
+			email varchar(255) NOT NULL,
+			support_contact varchar(255) DEFAULT '',
+			support_phone varchar(50) DEFAULT '',
+			support_ext varchar(50) DEFAULT '',
+			support_email varchar(255) DEFAULT '',
+			PRIMARY KEY  (id),
+			KEY idx_date_created (date_created),
+			KEY idx_company_id (company_id),
+			KEY idx_email (email)
+		) $charset_collate;";
+			dbDelta( $sql );
+		}
 	}
 	
 	/**

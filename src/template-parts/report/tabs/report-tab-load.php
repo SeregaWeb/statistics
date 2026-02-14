@@ -61,6 +61,11 @@ $additional_fees_val     = '';
 $additional_fees_driver  = '';
 $instructions_str        = '';
 
+$exclusive_access = false;
+$meta             = array();
+$unit_number      = '';
+$second_unit_number = '';
+$third_unit_number  = '';
 
 $processing_fees   = 0;
 $type_pay_method   = '';
@@ -1081,7 +1086,7 @@ $read_only = $TMSUsers->check_read_only( $post_status );
 
             <div class="mb-5 col-12 col-xl-8">
                 <label for="notes" class="form-label">Notes</label>
-                <textarea name="notes" class="form-control"><?php echo stripslashes( $notes ); ?></textarea>
+                <textarea name="notes" class="form-control"><?php echo stripslashes( (string) ( $notes ?? '' ) ); ?></textarea>
             </div>
 		
 		<?php endif; ?>

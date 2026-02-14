@@ -22,7 +22,9 @@ class TMSReportsTimer extends TMSReports {
 
     public function init() {
           // Initialize tables
-          $this->create_tables();
+          if ( current_user_can( 'administrator' ) ) {
+            $this->create_tables();
+          }
           
           $this->ajax_actions();
     }
@@ -47,12 +49,25 @@ class TMSReportsTimer extends TMSReports {
 	 */
 	public function create_tables() {
 		global $wpdb;
-		
+
 		$charset_collate = $wpdb->get_charset_collate();
-		
-		// Table: timers
+
+		// Table: timers — run dbDelta only if table missing or id not already bigint (avoids ALTER on every request)
 		$table_timers = $wpdb->prefix . $this->table_timers;
-		$sql_timers = "CREATE TABLE $table_timers (
+		$timers_ok    = false;
+		$timers_exists = $wpdb->get_var( $wpdb->prepare(
+			'SELECT 1 FROM information_schema.tables WHERE table_schema = %s AND table_name = %s LIMIT 1',
+			DB_NAME,
+			$table_timers
+		) );
+		if ( $timers_exists ) {
+			$col = $wpdb->get_row( $wpdb->prepare( "SHOW COLUMNS FROM `{$table_timers}` WHERE Field = %s", 'id' ), OBJECT );
+			if ( $col && isset( $col->Type ) ) {
+				$timers_ok = ( strpos( strtolower( (string) $col->Type ), 'bigint' ) !== false );
+			}
+		}
+		if ( ! $timers_ok ) {
+			$sql_timers = "CREATE TABLE $table_timers (
 			id bigint(20) NOT NULL AUTO_INCREMENT,
 			id_load bigint(20) NOT NULL,
 			id_user bigint(20) NOT NULL,
@@ -83,10 +98,25 @@ class TMSReportsTimer extends TMSReports {
 			KEY idx_load_project (id_load, project),
 			KEY idx_dispatcher_project (dispatcher_id, project)
 		) $charset_collate;";
-		
-		// Table: timer_logs
+			dbDelta( $sql_timers );
+		}
+
+		// Table: timer_logs — run dbDelta only if table missing or id not already bigint
 		$table_timer_logs = $wpdb->prefix . $this->table_timer_logs;
-		$sql_timer_logs = "CREATE TABLE $table_timer_logs (
+		$logs_ok          = false;
+		$logs_exists      = $wpdb->get_var( $wpdb->prepare(
+			'SELECT 1 FROM information_schema.tables WHERE table_schema = %s AND table_name = %s LIMIT 1',
+			DB_NAME,
+			$table_timer_logs
+		) );
+		if ( $logs_exists ) {
+			$col = $wpdb->get_row( $wpdb->prepare( "SHOW COLUMNS FROM `{$table_timer_logs}` WHERE Field = %s", 'id' ), OBJECT );
+			if ( $col && isset( $col->Type ) ) {
+				$logs_ok = ( strpos( strtolower( (string) $col->Type ), 'bigint' ) !== false );
+			}
+		}
+		if ( ! $logs_ok ) {
+			$sql_timer_logs = "CREATE TABLE $table_timer_logs (
 			id bigint(20) NOT NULL AUTO_INCREMENT,
 			id_load bigint(20) NOT NULL,
 			id_user bigint(20) NOT NULL,
@@ -111,10 +141,25 @@ class TMSReportsTimer extends TMSReports {
 			KEY idx_load_action (id_load, action),
 			KEY idx_dispatcher_project (dispatcher_id, project)
 		) $charset_collate;";
-		
-		// Table: timer_analytics
+			dbDelta( $sql_timer_logs );
+		}
+
+		// Table: timer_analytics — run dbDelta only if table missing or id not already bigint
 		$table_timer_analytics = $wpdb->prefix . 'timer_analytics';
-		$sql_timer_analytics = "CREATE TABLE $table_timer_analytics (
+		$analytics_ok          = false;
+		$analytics_exists      = $wpdb->get_var( $wpdb->prepare(
+			'SELECT 1 FROM information_schema.tables WHERE table_schema = %s AND table_name = %s LIMIT 1',
+			DB_NAME,
+			$table_timer_analytics
+		) );
+		if ( $analytics_exists ) {
+			$col = $wpdb->get_row( $wpdb->prepare( "SHOW COLUMNS FROM `{$table_timer_analytics}` WHERE Field = %s", 'id' ), OBJECT );
+			if ( $col && isset( $col->Type ) ) {
+				$analytics_ok = ( strpos( strtolower( (string) $col->Type ), 'bigint' ) !== false );
+			}
+		}
+		if ( ! $analytics_ok ) {
+			$sql_timer_analytics = "CREATE TABLE $table_timer_analytics (
 			id bigint(20) NOT NULL AUTO_INCREMENT,
 			id_user bigint(20) NOT NULL,
 			date_analytics date NOT NULL,
@@ -138,11 +183,8 @@ class TMSReportsTimer extends TMSReports {
 			KEY idx_user_date (id_user, date_analytics),
 			KEY idx_project_date (project, date_analytics)
 		) $charset_collate;";
-		
-		// Execute table creation
-		dbDelta( $sql_timers );
-		dbDelta( $sql_timer_logs );
-		dbDelta( $sql_timer_analytics );
+			dbDelta( $sql_timer_analytics );
+		}
 		
 		// Add dispatcher_id column to existing timers table if it doesn't exist
 		$this->add_dispatcher_id_column();

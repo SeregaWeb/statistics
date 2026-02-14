@@ -5,7 +5,7 @@
 
 import { quickEditTrackingStatus, triggerDisableBtnInit } from './create-report';
 
-const POLL_INTERVAL_MS = 20000; // 20 seconds
+const POLL_INTERVAL_MS = 90000; // 90 seconds
 
 function getCurrentParams(): Record<string, string> {
 	const params: Record<string, string> = {};

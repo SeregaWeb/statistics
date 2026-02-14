@@ -11,7 +11,7 @@ $current_pages = get_field_value( $args, 'current_pages' );
 $is_draft      = get_field_value( $args, 'is_draft' );
 $is_archive    = get_field_value( $args, 'is_archive' );
 
-$access_copy_email = $TMSUsers->check_user_role_access( array( 'administrator', 'recruiter', 'recruiter-tl' ), true );
+$access_copy_email = $TMSUsers->check_user_role_access( array( 'administrator', 'recruiter', 'recruiter-tl', 'driver_updates' ), true );
 $access_show_recruiter_bonus = $TMSUsers->check_user_role_access( array( 'administrator', 'recruiter', 'recruiter-tl', 'accounting', 'moderator' ), true );
 
 $show_payment_file_viewer = false;

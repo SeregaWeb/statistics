@@ -226,7 +226,7 @@ class TMSDriversStatistics {
 		foreach ( $projects as $project ) {
 			$project_lower = strtolower( $project );
 			$table_locations = $wpdb->prefix . 'reports_' . $project_lower . '_locations';
-			
+		
 			// Skip if locations table does not exist
 			$check_table = $wpdb->get_var( $wpdb->prepare(
 				"SHOW TABLES LIKE %s",
@@ -374,12 +374,22 @@ class TMSDriversStatistics {
 	 */
 	public function get_loads_route_statistics( $country = 'USA', $year = null, $month = null ) {
 		global $wpdb;
-		
+
 		// Normalize and validate country
 		$country = strtoupper( trim( $country ) );
 		$valid_countries = array( 'USA', 'CANADA', 'MEXICO', 'ALL' );
 		if ( ! in_array( $country, $valid_countries, true ) ) {
 			$country = 'USA';
+		}
+
+		// Try to return cached statistics first
+		$cache_year  = ( null === $year || '' === $year ) ? 'all' : (string) (int) $year;
+		$cache_month = ( null === $month || '' === $month ) ? 'all' : (string) (int) $month;
+		$cache_key   = 'tms_route_stats_' . md5( $country . '|' . $cache_year . '|' . $cache_month );
+
+		$cached_result = get_transient( $cache_key );
+		if ( false !== $cached_result && is_array( $cached_result ) ) {
+			return $cached_result;
 		}
 
 		// Projects that use the regular reports_* tables
@@ -401,17 +411,6 @@ class TMSDriversStatistics {
 			
 			if ( $check_table !== $table_locations ) {
 				continue;
-			}
-			
-			// Build WHERE conditions
-			$where_conditions = array();
-			$params = array();
-			
-			// Country filter (apply to both pickup and delivery)
-			if ( $country !== 'ALL' ) {
-				$where_conditions[] = 'sp.country = %s AND sd.country = %s';
-				$params[] = $country;
-				$params[] = $country;
 			}
 			
 			// Build date filter for efficient index usage (using date range instead of YEAR/MONTH functions)
@@ -456,11 +455,10 @@ class TMSDriversStatistics {
 				}
 			}
 			
-			// Build WHERE conditions for pickup subquery
+			// Build WHERE conditions for pickup query
 			$pickup_where_conditions = array();
-			$pickup_params = array();
-			
-			// Add date filter if exists (only for pickup subquery)
+			$pickup_params          = array();
+
 			if ( ! empty( $date_filter ) ) {
 				$pickup_where_conditions[] = $date_filter;
 				$pickup_params = array_merge( $pickup_params, $date_params );
@@ -470,116 +468,178 @@ class TMSDriversStatistics {
 			if ( ! empty( $pickup_where_conditions ) ) {
 				$pickup_where_sql = ' AND ' . implode( ' AND ', $pickup_where_conditions );
 			}
-
-			// Same date filter for delivery subquery so it uses the index and does not full-scan
+			// Same date filter for delivery query so it uses the index and does not full-scan
 			$delivery_where_sql = $pickup_where_sql;
 
-			// Build WHERE conditions for main query (country filter)
-			$main_where_conditions = array();
-			$main_params = array();
-
-			// Country filter (apply to both pickup and delivery)
-			if ( $country !== 'ALL' ) {
-				$main_where_conditions[] = 'sp.country = %s AND sd.country = %s';
-				$main_params[] = $country;
-				$main_params[] = $country;
-			}
-
-			$main_where_sql = '';
-			if ( ! empty( $main_where_conditions ) ) {
-				$main_where_sql = ' WHERE ' . implode( ' AND ', $main_where_conditions );
-			}
-
-			// Params: pickup date (2), delivery date (2 if same filter), main (country 2)
-			if ( ! empty( $delivery_where_sql ) ) {
-				$params = array_merge( $pickup_params, $pickup_params, $main_params );
-			} else {
-				$params = array_merge( $pickup_params, $main_params );
-			}
-
-			/**
-			 * Optimized query: both pickup and delivery subqueries use the same date range
-			 * so (location_type, date, load_id) index is used and delivery does not full-scan.
-			 */
-			$sql = "
+			// 1) Fetch pickup routes: load_id -> pickup_shipper_id (CAST(address_id AS UNSIGNED))
+			$sql_pickup = "
 				SELECT 
-					sp.state AS pickup_state,
-					sp.country AS pickup_country,
-					sd.state AS delivery_state,
-					sd.country AS delivery_country,
-					COUNT(DISTINCT pickup_routes.load_id) AS count
-				FROM (
-					SELECT 
-						load_id,
-						MIN(id) AS location_id
-					FROM $table_locations
-					WHERE location_type = 'pickup'
-						AND address_id IS NOT NULL
-						AND address_id != ''
-						AND date IS NOT NULL
-						$pickup_where_sql
-					GROUP BY load_id
-				) AS pickup_routes
-				INNER JOIN $table_locations AS lp
-					ON pickup_routes.location_id = lp.id
-				INNER JOIN $table_shipper AS sp 
-					ON lp.address_id = CAST(sp.id AS CHAR)
-					AND sp.state IS NOT NULL
-					AND sp.state != ''
-				INNER JOIN (
-					SELECT 
-						load_id,
-						MIN(id) AS location_id
-					FROM $table_locations
-					WHERE location_type = 'delivery'
-						AND address_id IS NOT NULL
-						AND address_id != ''
-						AND date IS NOT NULL
-						$delivery_where_sql
-					GROUP BY load_id
-				) AS delivery_routes
-					ON pickup_routes.load_id = delivery_routes.load_id
-				INNER JOIN $table_locations AS ld
-					ON delivery_routes.location_id = ld.id
-				INNER JOIN $table_shipper AS sd
-					ON ld.address_id = CAST(sd.id AS CHAR)
-					AND sd.state IS NOT NULL
-					AND sd.state != ''
-				$main_where_sql
-				GROUP BY sp.state, sp.country, sd.state, sd.country
+					load_id,
+					MIN(CAST(address_id AS UNSIGNED)) AS shipper_id
+				FROM $table_locations FORCE INDEX (idx_route_stats)
+				WHERE location_type = 'pickup'
+					AND address_id IS NOT NULL
+					AND address_id != ''
+					AND date IS NOT NULL
+					$pickup_where_sql
+				GROUP BY load_id
 			";
-			
-			$rows = empty( $params ) 
-				? $wpdb->get_results( $sql, ARRAY_A )
-				: $wpdb->get_results( $wpdb->prepare( $sql, $params ), ARRAY_A );
-			
-			if ( empty( $rows ) ) {
+
+			$pickup_rows = empty( $pickup_params )
+				? $wpdb->get_results( $sql_pickup, ARRAY_A )
+				: $wpdb->get_results( $wpdb->prepare( $sql_pickup, $pickup_params ), ARRAY_A );
+
+			if ( empty( $pickup_rows ) ) {
 				continue;
 			}
-			
-			foreach ( $rows as $row ) {
-				$pickup_state = strtoupper( trim( (string) $row['pickup_state'] ) );
-				$delivery_state = strtoupper( trim( (string) $row['delivery_state'] ) );
-				$pickup_country = strtoupper( trim( (string) $row['pickup_country'] ) );
-				$delivery_country = strtoupper( trim( (string) $row['delivery_country'] ) );
-				
+
+			$pickup_by_load = array();
+			foreach ( $pickup_rows as $row ) {
+				$load_id    = (int) $row['load_id'];
+				$shipper_id = (int) $row['shipper_id'];
+
+				if ( $load_id <= 0 || $shipper_id <= 0 ) {
+					continue;
+				}
+
+				// For safety use the minimum shipper_id per load (already aggregated in SQL)
+				$pickup_by_load[ $load_id ] = $shipper_id;
+			}
+
+			if ( empty( $pickup_by_load ) ) {
+				continue;
+			}
+
+			// 2) Fetch delivery routes: load_id -> delivery_shipper_id (CAST(address_id AS UNSIGNED))
+			$sql_delivery = "
+				SELECT 
+					load_id,
+					MIN(CAST(address_id AS UNSIGNED)) AS shipper_id
+				FROM $table_locations FORCE INDEX (idx_route_stats)
+				WHERE location_type = 'delivery'
+					AND address_id IS NOT NULL
+					AND address_id != ''
+					AND date IS NOT NULL
+					$delivery_where_sql
+				GROUP BY load_id
+			";
+
+			$delivery_rows = empty( $pickup_params )
+				? $wpdb->get_results( $sql_delivery, ARRAY_A )
+				: $wpdb->get_results( $wpdb->prepare( $sql_delivery, $pickup_params ), ARRAY_A );
+
+			if ( empty( $delivery_rows ) ) {
+				continue;
+			}
+
+			$delivery_by_load = array();
+			foreach ( $delivery_rows as $row ) {
+				$load_id    = (int) $row['load_id'];
+				$shipper_id = (int) $row['shipper_id'];
+
+				if ( $load_id <= 0 || $shipper_id <= 0 ) {
+					continue;
+				}
+
+				$delivery_by_load[ $load_id ] = $shipper_id;
+			}
+
+			if ( empty( $delivery_by_load ) ) {
+				continue;
+			}
+
+			// 3) Keep only loads that have both pickup and delivery
+			$load_ids = array_intersect( array_keys( $pickup_by_load ), array_keys( $delivery_by_load ) );
+
+			if ( empty( $load_ids ) ) {
+				continue;
+			}
+
+			// Collect unique shipper IDs for this project
+			$shipper_ids = array();
+			foreach ( $load_ids as $load_id ) {
+				$shipper_ids[] = $pickup_by_load[ $load_id ];
+				$shipper_ids[] = $delivery_by_load[ $load_id ];
+			}
+
+			$shipper_ids = array_values( array_unique( array_map( 'intval', $shipper_ids ) ) );
+
+			if ( empty( $shipper_ids ) ) {
+				continue;
+			}
+
+			// Fetch shipper data in one query
+			$placeholders = implode( ',', array_fill( 0, count( $shipper_ids ), '%d' ) );
+			$sql_shippers = "
+				SELECT id, state, country
+				FROM $table_shipper
+				WHERE id IN ($placeholders)
+					AND state IS NOT NULL
+					AND state != ''
+			";
+
+			$shippers_rows = $wpdb->get_results(
+				$wpdb->prepare( $sql_shippers, $shipper_ids ),
+				ARRAY_A
+			);
+
+			if ( empty( $shippers_rows ) ) {
+				continue;
+			}
+
+			$shippers_by_id = array();
+			foreach ( $shippers_rows as $row ) {
+				$shippers_by_id[ (int) $row['id'] ] = array(
+					'state'   => strtoupper( trim( (string) $row['state'] ) ),
+					'country' => strtoupper( trim( (string) $row['country'] ) ),
+				);
+			}
+
+			if ( empty( $shippers_by_id ) ) {
+				continue;
+			}
+
+			// 4) Aggregate statistics by route in PHP
+			foreach ( $load_ids as $load_id ) {
+				$pickup_shipper_id   = $pickup_by_load[ $load_id ];
+				$delivery_shipper_id = $delivery_by_load[ $load_id ];
+
+				if ( ! isset( $shippers_by_id[ $pickup_shipper_id ], $shippers_by_id[ $delivery_shipper_id ] ) ) {
+					continue;
+				}
+
+				$pickup_info   = $shippers_by_id[ $pickup_shipper_id ];
+				$delivery_info = $shippers_by_id[ $delivery_shipper_id ];
+
+				$pickup_state     = $pickup_info['state'];
+				$pickup_country   = $pickup_info['country'];
+				$delivery_state   = $delivery_info['state'];
+				$delivery_country = $delivery_info['country'];
+
 				if ( $pickup_state === '' || $delivery_state === '' ) {
 					continue;
 				}
-				
+
+				// Apply country filter here (instead of SQL joins)
+				if ( $country !== 'ALL' ) {
+					if ( $pickup_country !== $country || $delivery_country !== $country ) {
+						continue;
+					}
+				}
+
 				$key = $pickup_country . '|' . $pickup_state . '|' . $delivery_country . '|' . $delivery_state;
-				
+
 				if ( ! isset( $aggregated[ $key ] ) ) {
 					$aggregated[ $key ] = array(
-						'pickup_state'   => $pickup_state,
-						'pickup_country' => $pickup_country,
+						'pickup_state'     => $pickup_state,
+						'pickup_country'   => $pickup_country,
 						'delivery_state'   => $delivery_state,
 						'delivery_country' => $delivery_country,
-						'count'   => 0,
+						'count'            => 0,
 					);
 				}
-				
-				$aggregated[ $key ]['count'] += (int) $row['count'];
+
+				$aggregated[ $key ]['count']++;
 			}
 		}
 		
@@ -619,7 +679,9 @@ class TMSDriversStatistics {
 				return $b['count'] <=> $a['count'];
 			}
 		);
-		
+
+		set_transient( $cache_key, $result, HOUR_IN_SECONDS );
+
 		return $result;
 	}
 	

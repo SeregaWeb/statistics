@@ -16,7 +16,9 @@ class TMSLogs extends TMSReports {
 	}
 	
 	public function init() {
-		$this->create_log_tables();
+		if ( current_user_can( 'administrator' ) ) {
+			$this->create_log_tables();
+		}
 		$this->ajax_actions();
 	}
 	

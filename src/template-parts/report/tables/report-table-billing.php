@@ -28,8 +28,23 @@ $my_team = $TMSUsers->check_group_access();
 
 $helper = new TMSReportsHelper();
 
-if ( ! empty( $results ) ) : ?>
-	
+$results_list = is_array( $results ) ? $results : array();
+
+if ( ! empty( $results_list ) ) : ?>
+	<?php
+	// Pre-fetch companies and brokers by customer_id to avoid N+1 (same as report-table.php)
+	$customer_ids = array();
+	foreach ( $results_list as $row ) {
+		$meta_row = get_field_value( $row, 'meta_data' );
+		$cid      = get_field_value( $meta_row, 'customer_id' );
+		if ( $cid !== '' && $cid !== null ) {
+			$customer_ids[] = (int) $cid;
+		}
+	}
+	$customer_ids    = array_unique( array_filter( $customer_ids ) );
+	$companies_by_id = $TMSBroker->get_companies_by_ids( $customer_ids );
+	$brokers_by_id   = $TMSBroker->get_brokers_data_by_ids( $customer_ids, $companies_by_id );
+	?>
 	<?php if ( $hide_billing_and_shipping ): ?>
         <div class="w-100 mb-3">
             <button class="btn btn-outline-primary js-open-popup-activator" data-href="#popup_quick_edit">Quick edit
@@ -54,7 +69,7 @@ if ( ! empty( $results ) ) : ?>
         </thead>
         <tbody>
 		<?php
-		foreach ( $results as $row ) :
+		foreach ( $results_list as $row ) :
 			$meta = get_field_value( $row, 'meta_data' );
 			$main = get_field_value( $row, 'main' );
 			
@@ -104,16 +119,13 @@ if ( ! empty( $results ) ) : ?>
 			$driver_pay_status = $helper->get_label_by_key( $driver_pay_status, 'driver_payment_statuses' );
 			
 			$now_show = ( $factoring_status_row === 'paid' );
-			
+
 			$id_customer     = get_field_value( $meta, 'customer_id' );
-			$template_broker = $TMSBroker->get_broker_and_link_by_id( $id_customer );
-			
-			$current_company = $TMSBroker->get_company_by_id( $id_customer );
-			if ( $current_company ) {
-				$current_company_name = $current_company[0]->company_name;
-			} else {
-				$current_company_name = '';
-			}
+			$id_customer_int = ( $id_customer !== '' && $id_customer !== null ) ? (int) $id_customer : 0;
+			$broker          = isset( $brokers_by_id[ $id_customer_int ] ) ? $brokers_by_id[ $id_customer_int ] : array( 'template' => '', 'name' => 'N/A', 'mc' => 'N/A', 'platform' => '' );
+			$template_broker = $broker['template'];
+			$current_company = ( $id_customer_int && isset( $companies_by_id[ $id_customer_int ] ) ) ? $companies_by_id[ $id_customer_int ] : null;
+			$current_company_name = ( $current_company && isset( $current_company['company_name'] ) ) ? $current_company['company_name'] : '';
 			?>
 
             <tr class="factoring-color-<?php echo $factoring_class; ?> <?php echo $tbd ? 'tbd' : ''; ?>">

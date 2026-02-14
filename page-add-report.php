@@ -17,10 +17,13 @@ $disabled_tabs  = 'disabled';
 $report_object  = '';
 $status_publish = 'draft';
 $print_status   = false;
-$head_message   = '';
-$post_id        = isset( $_GET[ 'post_id' ] ) ? $_GET[ 'post_id' ] : false;
-$meta           = null;
-$project        = $reports->project;
+$head_message     = '';
+$post_id          = isset( $_GET[ 'post_id' ] ) ? $_GET[ 'post_id' ] : false;
+$meta             = null;
+$reference_number = '';
+$project          = $reports->project;
+$current_user_id     = get_current_user_id();
+
 
 if ( $post_id && is_numeric( $post_id ) ) {
 	$report_object = $reports->get_report_by_id( $_GET[ 'post_id' ] );
@@ -67,7 +70,6 @@ if ( $TMSUsers->check_user_role_access( array(
 	$dispatcher_initials = get_field_value( $meta, 'dispatcher_initials' );
 	$user_id_added       = get_field_value( $main, 'user_id_added' );
 	$my_team             = $TMSUsers->check_group_access();
-	$current_user_id     = get_current_user_id();
 	
 	if ( $current_user_id === intval( $user_id_added ) || intval( $dispatcher_initials ) === intval( $current_user_id ) ) {
 		$access         = true;
@@ -107,7 +109,6 @@ if ( $TMSUsers->check_user_role_access( array( 'dispatcher' ), true ) && isset( 
 	$user_id_added       = get_field_value( $main, 'user_id_added' );
 	
 	if ( is_array( $report_object ) ) {
-		$current_user_id = get_current_user_id();
 		if ( intval( $user_id_added ) === $current_user_id || intval( $dispatcher_initials ) === $current_user_id ) {
 			$access         = true;
 			$full_only_view = false;
@@ -458,7 +459,7 @@ $logshowcontent = isset( $_COOKIE[ 'logshow' ] ) && + $_COOKIE[ 'logshow' ] !== 
 							} else {
 								echo esc_html( get_template_part( TEMPLATE_PATH . 'report', 'logs', array(
 									'post_id' => $post_id,
-									'user_id' => get_current_user_id(),
+									'user_id' => $current_user_id,
 									'project' => $reports->project,
 									'meta'    => $meta,
 								) ) );

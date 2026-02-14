@@ -382,844 +382,110 @@ class TMSReportsFlt extends TMSReportsHelper {
 	 *
 	 * @return array
 	 */
+	/**
+	 * Get table items and filter. Delegates to TMSReportsHelper with table names (FLT: no rating search, no location search).
+	 *
+	 * @param array $args Filter args.
+	 * @return array
+	 */
 	public function get_table_items( $args = array() ) {
 		global $wpdb;
-		
-		$table_main   = $wpdb->prefix . $this->table_main;
-		$table_meta   = $wpdb->prefix . $this->table_meta;
-		$per_page     = isset( $args[ 'per_page_loads' ] ) ? $args[ 'per_page_loads' ] : $this->per_page_loads;
-		$current_page = isset( $_GET[ 'paged' ] ) ? absint( $_GET[ 'paged' ] ) : 1;
-		$sort_by      = ! empty( $args[ 'sort_by' ] ) ? $args[ 'sort_by' ] : 'date_booked';
-		$sort_order   = ! empty( $args[ 'sort_order' ] ) && strtolower( $args[ 'sort_order' ] ) == 'asc' ? 'ASC'
-			: 'DESC';
-		
-		$join_builder = "
-			FROM $table_main AS main
-			LEFT JOIN $table_meta AS dispatcher
-				ON main.id = dispatcher.post_id
-				AND dispatcher.meta_key = 'dispatcher_initials'
-			LEFT JOIN $table_meta AS reference
-				ON main.id = reference.post_id
-				AND reference.meta_key = 'reference_number'
-			LEFT JOIN $table_meta AS unit_number
-				ON main.id = unit_number.post_id
-				AND unit_number.meta_key = 'unit_number_name'
-			LEFT JOIN $table_meta AS second_unit_number
-				ON main.id = second_unit_number.post_id
-				AND second_unit_number.meta_key = 'second_unit_number_name'
-			LEFT JOIN $table_meta AS third_unit_number
-				ON main.id = third_unit_number.post_id
-				AND third_unit_number.meta_key = 'third_unit_number_name'
-			LEFT JOIN $table_meta AS load_status
-				ON main.id = load_status.post_id
-				AND load_status.meta_key = 'load_status'
-			LEFT JOIN $table_meta AS driver_rate
-				ON main.id = driver_rate.post_id
-				AND driver_rate.meta_key = 'driver_rate'
-			LEFT JOIN $table_meta AS second_driver_rate
-				ON main.id = second_driver_rate.post_id
-				AND second_driver_rate.meta_key = 'second_driver_rate'
-			LEFT JOIN $table_meta AS source
-				ON main.id = source.post_id
-				AND source.meta_key = 'source'
-			LEFT JOIN $table_meta AS invoiced_proof
-				ON main.id = invoiced_proof.post_id
-				AND invoiced_proof.meta_key = 'invoiced_proof'
-			LEFT JOIN $table_meta AS office_dispatcher
-				ON main.id = office_dispatcher.post_id
-				AND office_dispatcher.meta_key = 'office_dispatcher'
-			LEFT JOIN $table_meta AS customer_id
-				ON main.id = customer_id.post_id
-				AND customer_id.meta_key = 'customer_id'
-			LEFT JOIN $table_meta AS driver_pay_statuses
-				ON main.id = driver_pay_statuses.post_id
-				AND driver_pay_statuses.meta_key = 'driver_pay_statuses'
-			LEFT JOIN $table_meta AS factoring_status
-				ON main.id = factoring_status.post_id
-				AND factoring_status.meta_key = 'factoring_status'
-			LEFT JOIN $table_meta AS tbd
-				ON main.id = tbd.post_id
-				AND tbd.meta_key = 'tbd'
-			WHERE 1=1";
-		
-		// Основной запрос
-		$sql = "SELECT main.*,
-			dispatcher.meta_value AS dispatcher_initials_value,
-			reference.meta_value AS reference_number_value,
-			unit_number.meta_value AS unit_number_value,
-			second_unit_number.meta_value AS second_unit_number_value,
-			third_unit_number.meta_value AS third_unit_number_value
-	" . $join_builder;
-		
-		$where_conditions = array();
-		$where_values     = array();
-		
-		// Фильтрация по статусу
-		if ( ! empty( $args[ 'customer_id' ] ) && $args[ 'customer_id' ] !== 'all' ) {
-			$where_conditions[] = "customer_id.meta_value = %s";
-			$where_values[]     = $args[ 'customer_id' ];
-		}
-		// Фильтрация по статусу
-		if ( ! empty( $args[ 'office' ] ) && $args[ 'office' ] !== 'all' ) {
-			$where_conditions[] = "office_dispatcher.meta_value = %s";
-			$where_values[]     = $args[ 'office' ];
-		}
-		
-		if ( ! empty( $args[ 'status_post' ] ) ) {
-			$where_conditions[] = "main.status_post = %s";
-			$where_values[]     = $args[ 'status_post' ];
-		}
-		
-		if ( isset( $args[ 'exclude_empty_rate' ] ) && $args[ 'exclude_empty_rate' ] ) {
-			// Exclude loads where both driver rates are empty, null, or 0
-			// Include loads where at least one driver has a valid rate
-			$where_conditions[] = "(
-				(driver_rate.meta_value IS NOT NULL AND driver_rate.meta_value != '' AND CAST(driver_rate.meta_value AS DECIMAL) > 0)
-				OR 
-				(second_driver_rate.meta_value IS NOT NULL AND second_driver_rate.meta_value != '' AND CAST(second_driver_rate.meta_value AS DECIMAL) > 0)
-			)";
-		}
-		
-		if ( isset( $args[ 'ar_problem' ] ) && $args[ 'ar_problem' ] ) {
-			$where_conditions[] = "main.load_problem IS NOT NULL";
-			$where_conditions[] = "DATEDIFF(NOW(), main.load_problem) > 50";
-		}
-		
-		// Фильтрация по dispatcher_initials
-		if ( ! empty( $args[ 'dispatcher' ] ) ) {
-			$where_conditions[] = "dispatcher.meta_value = %s";
-			$where_values[]     = $args[ 'dispatcher' ];
-		}
-		
-		if ( isset( $args[ 'user_id' ] ) && ! empty( $args[ 'user_id' ] ) ) {
-			$where_conditions[] = "(main.user_id_added = %s OR dispatcher.meta_value = %s )";
-			$where_values[]     = $args[ 'user_id' ];
-			$where_values[]     = $args[ 'user_id' ];
-		}
-		
-		if ( ! empty( $args[ 'load_status' ] ) ) {
-			$where_conditions[] = "load_status.meta_value = %s";
-			$where_values[]     = $args[ 'load_status' ];
-		}
-		
-		if ( isset( $args[ 'my_team' ] ) && ! empty( $args[ 'my_team' ] ) && is_array( $args[ 'my_team' ] ) ) {
-			$team_values        = array_map( 'esc_sql', (array) $args[ 'my_team' ] ); // Обрабатываем значения
-			$where_conditions[] = "dispatcher.meta_value IN ('" . implode( "','", $team_values ) . "')";
-		}
-		
-		if ( isset( $args[ 'exclude_status' ] ) && ! empty( $args[ 'exclude_status' ] ) ) {
-			$exclude_status = array_map( 'esc_sql', (array) $args[ 'exclude_status' ] );
-			
-			if ( isset( $args[ 'load_status' ] ) && $args[ 'load_status' ] === 'cancelled' ) {
-				$exclude_status = implode( "','", array_diff( $exclude_status, array( 'cancelled' ) ) );
-			} else {
-				$exclude_status = implode( "','", $exclude_status );
-			}
-			if ( ! empty( $exclude_status ) ) {
-				$where_conditions[] = "load_status.meta_value NOT IN ('" . $exclude_status . "')";
-			}
-		}
-		
-		
-		if ( isset( $args[ 'include_status' ] ) && ! empty( $args[ 'include_status' ] ) ) {
-			$include_status     = array_map( 'esc_sql', (array) $args[ 'include_status' ] );
-			$where_conditions[] = "load_status.meta_value IN ('" . implode( "','", $include_status ) . "')";
-		}
-		
-		if ( isset( $args[ 'exclude_paid' ] ) && ! empty( $args[ 'exclude_paid' ] ) ) {
-			// Условие для exclude_paid: показывать все записи, где значение не "paid" или оно отсутствует/пустое
-			$where_conditions[] = "(
-		        driver_pay_statuses.meta_value NOT IN ('paid')
-		        OR driver_pay_statuses.meta_value IS NULL
-		        OR driver_pay_statuses.meta_value = ''
-		    )";
-		}
-		
-		if ( isset( $args[ 'exclude_tbd' ] ) && ! empty( $args[ 'exclude_tbd' ] ) ) {
-			$where_conditions[] = "(tbd.meta_value IS NULL OR tbd.meta_value != '1')";
-		}
-		
-		if ( isset( $args[ 'include_paid' ] ) && ! empty( $args[ 'include_paid' ] ) ) {
-			// Условие для include_paid: показывать только записи, где значение "paid" и оно не пустое/не NULL
-			$where_conditions[] = "(
-        driver_pay_statuses.meta_value = 'paid'
-        AND driver_pay_statuses.meta_value IS NOT NULL
-        AND driver_pay_statuses.meta_value != ''
-    )";
-		}
-		
-		
-		if ( ! empty( $args[ 'invoice' ] ) ) {
-			if ( $args[ 'invoice' ] === 'invoiced' ) {
-				$where_conditions[] = "invoiced_proof.meta_value = %s";
-				$where_values[]     = '1';
-			} else {
-				$where_conditions[] = "(invoiced_proof.meta_value = %s OR invoiced_proof.meta_value IS NULL)";
-				$where_values[]     = '0';
-			}
-		}
-		
-		if ( ! empty( $args[ 'factoring' ] ) ) {
-			$where_conditions[] = "factoring_status.meta_value = %s";
-			$where_values[]     = $args[ 'factoring' ];
-		}
-		
-		if ( ! empty( $args[ 'source' ] ) ) {
-			$where_conditions[] = "source.meta_value = %s";
-			$where_values[]     = $args[ 'source' ];
-		}
-		
-		// Фильтрация по reference_number
-		if ( ! empty( $args[ 'my_search' ] ) ) {
-			$where_conditions[] = "(reference.meta_value LIKE %s OR unit_number.meta_value LIKE %s OR second_unit_number.meta_value LIKE %s OR third_unit_number.meta_value LIKE %s)";
-			$search_value       = '%' . $wpdb->esc_like( $args[ 'my_search' ] ) . '%';
-			$where_values[]     = $search_value;
-			$where_values[]     = $search_value;
-			$where_values[]     = $search_value;
-			$where_values[]     = $search_value;
-		}
-		
-		if ( ! empty( $args[ 'month' ] ) && ! empty( $args[ 'year' ] ) ) {
-			$where_conditions[] = "date_booked IS NOT NULL
-        AND YEAR(date_booked) = %d
-        AND MONTH(date_booked) = %d";
-			$where_values[]     = $args[ 'year' ];
-			$where_values[]     = $args[ 'month' ];
-		}
-		
-		// Фильтрация по только году
-		if ( ! empty( $args[ 'year' ] ) && empty( $args[ 'month' ] ) ) {
-			$where_conditions[] = "date_booked IS NOT NULL
-        AND YEAR(date_booked) = %d";
-			$where_values[]     = $args[ 'year' ];
-		}
-		
-		// Фильтрация по только месяцу
-		if ( ! empty( $args[ 'month' ] ) && empty( $args[ 'year' ] ) ) {
-			$where_conditions[] = "date_booked IS NOT NULL
-        AND MONTH(date_booked) = %d";
-			$where_values[]     = $args[ 'month' ];
-		}
-		
-		// Применяем фильтры к запросу
-		if ( ! empty( $where_conditions ) ) {
-			$sql .= ' AND ' . implode( ' AND ', $where_conditions );
-		}
-		
-		// Подсчёт общего количества записей с учётом фильтров
-		$total_records_sql = "SELECT COUNT(*)" . $join_builder;
-		if ( ! empty( $where_conditions ) ) {
-			$total_records_sql .= ' AND ' . implode( ' AND ', $where_conditions );
-		}
-		
-		$total_records = $wpdb->get_var( $wpdb->prepare( $total_records_sql, ...$where_values ) );
-		
-		// Вычисляем количество страниц
-		$total_pages = ceil( $total_records / $per_page );
-		
-		// Смещение для текущей страницы
-		$offset = ( $current_page - 1 ) * $per_page;
-		
-		// Добавляем сортировку и лимит для текущей страницы
-		$sql            .= " ORDER BY main.$sort_by $sort_order LIMIT %d, %d";
-		$where_values[] = $offset;
-		$where_values[] = $per_page;
-		
-		// Выполняем запрос
-		$main_results = $wpdb->get_results( $wpdb->prepare( $sql, ...$where_values ), ARRAY_A );
-		
-		// Собираем все ID записей для получения дополнительных метаданных
-		$post_ids = wp_list_pluck( $main_results, 'id' );
-		
-		// Если есть записи, получаем метаданные
-		$meta_data = array();
-		if ( ! empty( $post_ids ) ) {
-			$meta_sql     = "SELECT post_id, meta_key, meta_value
-					 FROM $table_meta
-					 WHERE post_id IN (" . implode( ',', array_map( 'absint', $post_ids ) ) . ")";
-			$meta_results = $wpdb->get_results( $meta_sql, ARRAY_A );
-			
-			// Преобразуем метаданные в ассоциативный массив по post_id
-			foreach ( $meta_results as $meta_row ) {
-				$post_id = $meta_row[ 'post_id' ];
-				if ( ! isset( $meta_data[ $post_id ] ) ) {
-					$meta_data[ $post_id ] = array();
-				}
-				$meta_data[ $post_id ][ $meta_row[ 'meta_key' ] ] = $meta_row[ 'meta_value' ];
-			}
-		}
-		
-		if ( is_array( $main_results ) && ! empty( $main_results ) ) {
-			// Объединяем основную таблицу с метаданными
-			foreach ( $main_results as &$result ) {
-				$post_id               = $result[ 'id' ];
-				$result[ 'meta_data' ] = isset( $meta_data[ $post_id ] ) ? $meta_data[ $post_id ] : array();
-			}
-		}
-		
-		return array(
-			'results'       => $main_results,
-			'total_pages'   => $total_pages,
-			'total_posts'   => $total_records,
-			'current_pages' => $current_page,
-		);
-	}
-	
-	public function get_table_items_billing( $args = array() ) {
-		global $wpdb;
-		
-		$table_main   = $wpdb->prefix . $this->table_main;
-		$table_meta   = $wpdb->prefix . $this->table_meta;
-		$per_page     = isset( $args[ 'per_page_loads' ] ) ? $args[ 'per_page_loads' ] : $this->per_page_loads;
-		$current_page = isset( $_GET[ 'paged' ] ) ? absint( $_GET[ 'paged' ] ) : 1;
-		$sort_by      = ! empty( $args[ 'sort_by' ] ) ? $args[ 'sort_by' ] : 'date_booked';
-		$sort_order   = ! empty( $args[ 'sort_order' ] ) && strtolower( $args[ 'sort_order' ] ) == 'asc' ? 'ASC'
-			: 'DESC';
-		
-		$join_builder = "
-			FROM $table_main AS main
-			LEFT JOIN $table_meta AS dispatcher ON main.id = dispatcher.post_id AND dispatcher.meta_key = 'dispatcher_initials'
-			LEFT JOIN $table_meta AS reference ON main.id = reference.post_id AND reference.meta_key = 'reference_number'
-			LEFT JOIN $table_meta AS unit_number ON main.id = unit_number.post_id AND unit_number.meta_key = 'unit_number_name'
-			LEFT JOIN $table_meta AS load_status ON main.id = load_status.post_id AND load_status.meta_key = 'load_status'
-			LEFT JOIN $table_meta AS invoiced_proof ON main.id = invoiced_proof.post_id AND invoiced_proof.meta_key = 'invoiced_proof'
-			LEFT JOIN $table_meta AS factoring_status ON main.id = factoring_status.post_id AND factoring_status.meta_key = 'factoring_status'
-			LEFT JOIN $table_meta AS processing ON main.id = processing.post_id AND processing.meta_key = 'processing'
-			WHERE 1=1
-		";
-		
-		// Основной запрос
-		$sql = "SELECT main.*,
-			dispatcher.meta_value AS dispatcher_initials_value,
-			reference.meta_value AS reference_number_value,
-			unit_number.meta_value AS unit_number_value
-	" . $join_builder;
-		
-		$where_conditions = array();
-		$where_values     = array();
-		
-		
-		$processing_values = array(
-			'factoring-delayed-advance',
-			'factoring-wire-transfer',
-			'unapplied-payment',
-			'direct'
-		);
-		
-		$placeholders       = implode( ', ', array_fill( 0, count( $processing_values ), '%s' ) );
-		$where_conditions[] = "(processing.meta_value NOT IN ($placeholders) OR processing.meta_value IS NULL OR processing.meta_value = '')";
-		$where_values       = array_merge( $where_values, $processing_values );
-		
-		if ( ! empty( $args[ 'status_post' ] ) ) {
-			$where_conditions[] = $wpdb->prepare( "main.status_post = %s", $args[ 'status_post' ] );
-		}
-		
-		// Фильтрация по dispatcher_initials
-		if ( ! empty( $args[ 'dispatcher' ] ) ) {
-			$where_conditions[] = $wpdb->prepare( "dispatcher.meta_value = %s", $args[ 'dispatcher' ] );
-		}
-		
-		if ( ! empty( $args[ 'load_status' ] ) ) {
-			$where_conditions[] = $wpdb->prepare( "load_status.meta_value = %s", $args[ 'load_status' ] );
-		}
-		
-		
-		if ( ! empty( $args[ 'exclude_factoring_status' ] ) ) {
-			$exclude_factoring_status = implode( "','", array_map( 'esc_sql', (array) $args[ 'exclude_factoring_status' ] ) );
-			$where_conditions[]       = "(
-				factoring_status.meta_value NOT IN ('$exclude_factoring_status')
-				OR factoring_status.meta_value IS NULL
-				OR factoring_status.meta_value = ''
-			)";
-		}
-		
-		if ( ! empty( $args[ 'include_factoring_status' ] ) ) {
-			$include_factoring_status = implode( "','", array_map( 'esc_sql', (array) $args[ 'include_factoring_status' ] ) );
-			$where_conditions[]       = "(
-				factoring_status.meta_value IN ('$include_factoring_status')
-				AND factoring_status.meta_value IS NOT NULL
-				AND factoring_status.meta_value != ''
-			)";
-		}
-		
-		if ( isset( $args[ 'exclude_status' ] ) && ! empty( $args[ 'exclude_status' ] ) ) {
-			$exclude_status = array_map( 'esc_sql', (array) $args[ 'exclude_status' ] );
-			
-			if ( isset( $args[ 'load_status' ] ) && $args[ 'load_status' ] === 'cancelled' ) {
-				$exclude_status = implode( "','", array_diff( $exclude_status, array( 'cancelled' ) ) );
-			} else {
-				$exclude_status = implode( "','", $exclude_status );
-			}
-			if ( ! empty( $exclude_status ) ) {
-				$where_conditions[] = "load_status.meta_value NOT IN ('" . $exclude_status . "')";
-			}
-		}
-		
-		
-		if ( isset( $args[ 'include_status' ] ) && ! empty( $args[ 'include_status' ] ) ) {
-			$include_status     = array_map( 'esc_sql', (array) $args[ 'include_status' ] );
-			$where_conditions[] = "load_status.meta_value IN ('" . implode( "','", $include_status ) . "')";
-		}
-		
-		if ( ! empty( $args[ 'invoice' ] ) ) {
-			if ( $args[ 'invoice' ] === 'invoiced' ) {
-				$where_conditions[] = "invoiced_proof.meta_value = %s";
-				$where_values[]     = '1';
-			} else {
-				$where_conditions[] = "(invoiced_proof.meta_value = %s OR invoiced_proof.meta_value IS NULL)";
-				$where_values[]     = '0';
-			}
-		}
-		
-		if ( ! empty( $args[ 'factoring' ] ) ) {
-			$where_conditions[] = "factoring_status.meta_value = %s";
-			$where_values[]     = $args[ 'factoring' ];
-		}
-		
-		if ( ! empty( $args[ 'my_search' ] ) ) {
-			$where_conditions[] = "(reference.meta_value LIKE %s OR unit_number.meta_value LIKE %s)";
-			$search_value       = '%' . $wpdb->esc_like( $args[ 'my_search' ] ) . '%';
-			$where_values[]     = $search_value;
-			$where_values[]     = $search_value;
-		}
-		
-		if ( ! empty( $args[ 'month' ] ) && ! empty( $args[ 'year' ] ) ) {
-			$where_conditions[] = "date_booked IS NOT NULL
-        AND YEAR(date_booked) = %d
-        AND MONTH(date_booked) = %d";
-			$where_values[]     = $args[ 'year' ];
-			$where_values[]     = $args[ 'month' ];
-		}
-		
-		if ( ! empty( $args[ 'year' ] ) && empty( $args[ 'month' ] ) ) {
-			$where_conditions[] = "date_booked IS NOT NULL
-        AND YEAR(date_booked) = %d";
-			$where_values[]     = $args[ 'year' ];
-		}
-		
-		if ( ! empty( $args[ 'month' ] ) && empty( $args[ 'year' ] ) ) {
-			$where_conditions[] = "date_booked IS NOT NULL
-        AND MONTH(date_booked) = %d";
-			$where_values[]     = $args[ 'month' ];
-		}
-		
-		if ( ! empty( $where_conditions ) ) {
-			$sql .= ' AND ' . implode( ' AND ', $where_conditions );
-		}
-		
-		$total_records_sql = "SELECT COUNT(*)" . $join_builder;
-		if ( ! empty( $where_conditions ) ) {
-			$total_records_sql .= ' AND ' . implode( ' AND ', $where_conditions );
-		}
-		
-		$total_records = $wpdb->get_var( $wpdb->prepare( $total_records_sql, ...$where_values ) );
-		
-		$total_pages = ceil( $total_records / $per_page );
-		
-		$offset = ( $current_page - 1 ) * $per_page;
-		
-		$sql .= "
-		    ORDER BY
-		        CASE
-		            WHEN LOWER(load_status.meta_value) = 'delivered' THEN 1
-		            WHEN LOWER(load_status.meta_value) = 'tonu' THEN 2
-		            ELSE 3
-		        END,
-		        main.$sort_by $sort_order LIMIT %d, %d
-		";
-		
-		$where_values[] = $offset;
-		$where_values[] = $per_page;
-		// Выполняем запрос
-		$main_results = $wpdb->get_results( $wpdb->prepare( $sql, ...$where_values ), ARRAY_A );
-		
-		// Собираем все ID записей для получения дополнительных метаданных
-		$post_ids = wp_list_pluck( $main_results, 'id' );
-		
-		// Если есть записи, получаем метаданные
-		$meta_data = array();
-		if ( ! empty( $post_ids ) ) {
-			$meta_sql     = "SELECT post_id, meta_key, meta_value
-					 FROM $table_meta
-					 WHERE post_id IN (" . implode( ',', array_map( 'absint', $post_ids ) ) . ")";
-			$meta_results = $wpdb->get_results( $meta_sql, ARRAY_A );
-			
-			// Преобразуем метаданные в ассоциативный массив по post_id
-			foreach ( $meta_results as $meta_row ) {
-				$post_id = $meta_row[ 'post_id' ];
-				if ( ! isset( $meta_data[ $post_id ] ) ) {
-					$meta_data[ $post_id ] = array();
-				}
-				$meta_data[ $post_id ][ $meta_row[ 'meta_key' ] ] = $meta_row[ 'meta_value' ];
-			}
-		}
-		
-		if ( is_array( $main_results ) && ! empty( $main_results ) ) {
-			// Объединяем основную таблицу с метаданными
-			foreach ( $main_results as &$result ) {
-				$post_id               = $result[ 'id' ];
-				$result[ 'meta_data' ] = isset( $meta_data[ $post_id ] ) ? $meta_data[ $post_id ] : array();
-			}
-		}
-		
-		return array(
-			'results'       => $main_results,
-			'total_pages'   => $total_pages,
-			'total_posts'   => $total_records,
-			'current_pages' => $current_page,
+		$args['per_page_loads'] = isset( $args['per_page_loads'] ) ? $args['per_page_loads'] : $this->per_page_loads;
+		return $this->get_table_items_internal(
+			$wpdb->prefix . $this->table_main,
+			$wpdb->prefix . $this->table_meta,
+			$args
 		);
 	}
 	
 	/**
-	 * Aggregate Charge back & Short pay totals by broker (no pagination)
+	 * Get table items for billing tab. Delegates to TMSReportsHelper with table names.
+	 *
+	 * @param array $args Filter args.
+	 * @return array
+	 */
+	public function get_table_items_billing( $args = array() ) {
+		global $wpdb;
+		$args['per_page_loads'] = isset( $args['per_page_loads'] ) ? $args['per_page_loads'] : $this->per_page_loads;
+		return $this->get_table_items_billing_internal(
+			$wpdb->prefix . $this->table_main,
+			$wpdb->prefix . $this->table_meta,
+			$args
+		);
+	}
+	
+	/**
+	 * Aggregate Charge back & Short pay totals by broker (no pagination). Delegates to TMSReportsHelper.
 	 *
 	 * @param array $args Same filters as in get_table_items_billing_shortpay
 	 * @return array Array of rows: [ 'customer_id' => int, 'charge_back_total' => float, 'short_pay_total' => float ]
 	 */
 	public function get_shortpay_stats_by_broker( $args = array() ) {
 		global $wpdb;
-
-		$table_main = $wpdb->prefix . $this->table_main;
-		$table_meta = $wpdb->prefix . $this->table_meta;
-
-		$join_builder = "
-			FROM $table_main AS main
-			LEFT JOIN $table_meta AS reference ON main.id = reference.post_id AND reference.meta_key = 'reference_number'
-			LEFT JOIN $table_meta AS unit_number ON main.id = unit_number.post_id AND unit_number.meta_key = 'unit_number_name'
-			LEFT JOIN $table_meta AS load_status ON main.id = load_status.post_id AND load_status.meta_key = 'load_status'
-			LEFT JOIN $table_meta AS invoiced_proof ON main.id = invoiced_proof.post_id AND invoiced_proof.meta_key = 'invoiced_proof'
-			LEFT JOIN $table_meta AS factoring_status ON main.id = factoring_status.post_id AND factoring_status.meta_key = 'factoring_status'
-			LEFT JOIN $table_meta AS processing ON main.id = processing.post_id AND processing.meta_key = 'processing'
-			LEFT JOIN $table_meta AS customer_id ON main.id = customer_id.post_id AND customer_id.meta_key = 'customer_id'
-			LEFT JOIN $table_meta AS short_pay ON main.id = short_pay.post_id AND short_pay.meta_key = 'short_pay'
-			LEFT JOIN $table_meta AS charge_back_rate ON main.id = charge_back_rate.post_id AND charge_back_rate.meta_key = 'charge_back_rate'
-			WHERE 1=1
-		";
-
-		$sql = "SELECT 
-			customer_id.meta_value AS customer_id,
-			SUM(CASE WHEN LOWER(factoring_status.meta_value) = 'charge-back' THEN 0 + COALESCE(charge_back_rate.meta_value, '0') ELSE 0 END) AS charge_back_total,
-			SUM(CASE WHEN LOWER(factoring_status.meta_value) = 'short-pay' THEN 0 + COALESCE(short_pay.meta_value, '0') ELSE 0 END) AS short_pay_total
-		" . $join_builder;
-
-		$where_conditions = array();
-		$where_values     = array();
-
-		if ( ! empty( $args['status_post'] ) ) {
-			$where_conditions[] = $wpdb->prepare( 'main.status_post = %s', $args['status_post'] );
-		}
-
-		if ( ! empty( $args['load_status'] ) ) {
-			$where_conditions[] = $wpdb->prepare( 'load_status.meta_value = %s', $args['load_status'] );
-		}
-
-		if ( ! empty( $args['exclude_factoring_status'] ) ) {
-			$exclude_factoring_status = implode( "','", array_map( 'esc_sql', (array) $args['exclude_factoring_status'] ) );
-			$where_conditions[]       = "(
-				factoring_status.meta_value NOT IN ('$exclude_factoring_status')
-				OR factoring_status.meta_value IS NULL
-				OR factoring_status.meta_value = ''
-			)";
-		}
-
-		if ( ! empty( $args['include_factoring_status'] ) ) {
-			$include_factoring_status = implode( "','", array_map( 'esc_sql', (array) $args['include_factoring_status'] ) );
-			$where_conditions[]       = "(
-				factoring_status.meta_value IN ('$include_factoring_status')
-				AND factoring_status.meta_value IS NOT NULL
-				AND factoring_status.meta_value != ''
-			)";
-		}
-
-		if ( isset( $args['exclude_status'] ) && ! empty( $args['exclude_status'] ) ) {
-			$exclude_status = array_map( 'esc_sql', (array) $args['exclude_status'] );
-			if ( isset( $args['load_status'] ) && $args['load_status'] === 'cancelled' ) {
-				$exclude_status = implode( "','", array_diff( $exclude_status, array( 'cancelled' ) ) );
-			} else {
-				$exclude_status = implode( "','", $exclude_status );
-			}
-			if ( ! empty( $exclude_status ) ) {
-				$where_conditions[] = "load_status.meta_value NOT IN ('" . $exclude_status . "')";
-			}
-		}
-
-		if ( isset( $args['include_status'] ) && ! empty( $args['include_status'] ) ) {
-			$include_status     = array_map( 'esc_sql', (array) $args['include_status'] );
-			$where_conditions[] = "load_status.meta_value IN ('" . implode( "','", $include_status ) . "')";
-		}
-
-		if ( ! empty( $args['invoice'] ) ) {
-			if ( $args['invoice'] === 'invoiced' ) {
-				$where_conditions[] = 'invoiced_proof.meta_value = %s';
-				$where_values[]     = '1';
-			} else {
-				$where_conditions[] = '(invoiced_proof.meta_value = %s OR invoiced_proof.meta_value IS NULL)';
-				$where_values[]     = '0';
-			}
-		}
-
-		if ( ! empty( $args['factoring'] ) ) {
-			$where_conditions[] = 'factoring_status.meta_value = %s';
-			$where_values[]     = $args['factoring'];
-		}
-
-		if ( ! empty( $args['my_search'] ) ) {
-			$where_conditions[] = '(reference.meta_value LIKE %s OR unit_number.meta_value LIKE %s)';
-			$search_value       = '%' . $wpdb->esc_like( $args['my_search'] ) . '%';
-			$where_values[]     = $search_value;
-			$where_values[]     = $search_value;
-		}
-
-		if ( ! empty( $args['month'] ) && ! empty( $args['year'] ) ) {
-			$where_conditions[] = "date_booked IS NOT NULL
-			AND YEAR(date_booked) = %d
-			AND MONTH(date_booked) = %d";
-			$where_values[]     = $args['year'];
-			$where_values[]     = $args['month'];
-		}
-
-		if ( ! empty( $args['year'] ) && empty( $args['month'] ) ) {
-			$where_conditions[] = "date_booked IS NOT NULL
-			AND YEAR(date_booked) = %d";
-			$where_values[]     = $args['year'];
-		}
-
-		if ( ! empty( $args['month'] ) && empty( $args['year'] ) ) {
-			$where_conditions[] = "date_booked IS NOT NULL
-			AND MONTH(date_booked) = %d";
-			$where_values[]     = $args['month'];
-		}
-
-		if ( ! empty( $where_conditions ) ) {
-			$sql .= ' AND ' . implode( ' AND ', $where_conditions );
-		}
-
-		$sql .= ' GROUP BY customer_id.meta_value';
-
-		$rows = $wpdb->get_results( $wpdb->prepare( $sql, ...$where_values ), ARRAY_A );
-		return is_array( $rows ) ? $rows : array();
-	}
-	
-	public function get_table_items_billing_shortpay( $args = array() ) {
-		global $wpdb;
-		
-		$table_main   = $wpdb->prefix . $this->table_main;
-		$table_meta   = $wpdb->prefix . $this->table_meta;
-		$per_page     = isset( $args[ 'per_page_loads' ] ) ? $args[ 'per_page_loads' ] : $this->per_page_loads;
-		$current_page = isset( $_GET[ 'paged' ] ) ? absint( $_GET[ 'paged' ] ) : 1;
-		$sort_by      = ! empty( $args[ 'sort_by' ] ) ? $args[ 'sort_by' ] : 'date_booked';
-		$sort_order   = ! empty( $args[ 'sort_order' ] ) && strtolower( $args[ 'sort_order' ] ) == 'asc' ? 'ASC'
-			: 'DESC';
-		
-		$join_builder = "
-			FROM $table_main AS main
-			LEFT JOIN $table_meta AS dispatcher ON main.id = dispatcher.post_id AND dispatcher.meta_key = 'dispatcher_initials'
-			LEFT JOIN $table_meta AS reference ON main.id = reference.post_id AND reference.meta_key = 'reference_number'
-			LEFT JOIN $table_meta AS unit_number ON main.id = unit_number.post_id AND unit_number.meta_key = 'unit_number_name'
-			LEFT JOIN $table_meta AS load_status ON main.id = load_status.post_id AND load_status.meta_key = 'load_status'
-			LEFT JOIN $table_meta AS invoiced_proof ON main.id = invoiced_proof.post_id AND invoiced_proof.meta_key = 'invoiced_proof'
-			LEFT JOIN $table_meta AS factoring_status ON main.id = factoring_status.post_id AND factoring_status.meta_key = 'factoring_status'
-			LEFT JOIN $table_meta AS processing ON main.id = processing.post_id AND processing.meta_key = 'processing'
-			WHERE 1=1
-		";
-		
-		// Основной запрос
-		$sql = "SELECT main.*,
-			dispatcher.meta_value AS dispatcher_initials_value,
-			reference.meta_value AS reference_number_value,
-			unit_number.meta_value AS unit_number_value
-	" . $join_builder;
-		
-		$where_conditions = array();
-		$where_values     = array();
-		
-		
-		if ( ! empty( $args[ 'status_post' ] ) ) {
-			$where_conditions[] = $wpdb->prepare( "main.status_post = %s", $args[ 'status_post' ] );
-		}
-		
-		// Фильтрация по dispatcher_initials
-		if ( ! empty( $args[ 'dispatcher' ] ) ) {
-			$where_conditions[] = $wpdb->prepare( "dispatcher.meta_value = %s", $args[ 'dispatcher' ] );
-		}
-		
-		if ( ! empty( $args[ 'load_status' ] ) ) {
-			$where_conditions[] = $wpdb->prepare( "load_status.meta_value = %s", $args[ 'load_status' ] );
-		}
-		
-		
-		if ( ! empty( $args[ 'exclude_factoring_status' ] ) ) {
-			$exclude_factoring_status = implode( "','", array_map( 'esc_sql', (array) $args[ 'exclude_factoring_status' ] ) );
-			$where_conditions[]       = "(
-				factoring_status.meta_value NOT IN ('$exclude_factoring_status')
-				OR factoring_status.meta_value IS NULL
-				OR factoring_status.meta_value = ''
-			)";
-		}
-		
-		if ( ! empty( $args[ 'include_factoring_status' ] ) ) {
-			$include_factoring_status = implode( "','", array_map( 'esc_sql', (array) $args[ 'include_factoring_status' ] ) );
-			$where_conditions[]       = "(
-				factoring_status.meta_value IN ('$include_factoring_status')
-				AND factoring_status.meta_value IS NOT NULL
-				AND factoring_status.meta_value != ''
-			)";
-		}
-		
-		if ( isset( $args[ 'exclude_status' ] ) && ! empty( $args[ 'exclude_status' ] ) ) {
-			$exclude_status = array_map( 'esc_sql', (array) $args[ 'exclude_status' ] );
-			
-			if ( isset( $args[ 'load_status' ] ) && $args[ 'load_status' ] === 'cancelled' ) {
-				$exclude_status = implode( "','", array_diff( $exclude_status, array( 'cancelled' ) ) );
-			} else {
-				$exclude_status = implode( "','", $exclude_status );
-			}
-			if ( ! empty( $exclude_status ) ) {
-				$where_conditions[] = "load_status.meta_value NOT IN ('" . $exclude_status . "')";
-			}
-		}
-		
-		
-		if ( isset( $args[ 'include_status' ] ) && ! empty( $args[ 'include_status' ] ) ) {
-			$include_status     = array_map( 'esc_sql', (array) $args[ 'include_status' ] );
-			$where_conditions[] = "load_status.meta_value IN ('" . implode( "','", $include_status ) . "')";
-		}
-		
-		if ( ! empty( $args[ 'invoice' ] ) ) {
-			if ( $args[ 'invoice' ] === 'invoiced' ) {
-				$where_conditions[] = "invoiced_proof.meta_value = %s";
-				$where_values[]     = '1';
-			} else {
-				$where_conditions[] = "(invoiced_proof.meta_value = %s OR invoiced_proof.meta_value IS NULL)";
-				$where_values[]     = '0';
-			}
-		}
-		
-		if ( ! empty( $args[ 'factoring' ] ) ) {
-			$where_conditions[] = "factoring_status.meta_value = %s";
-			$where_values[]     = $args[ 'factoring' ];
-		}
-		
-		if ( ! empty( $args[ 'my_search' ] ) ) {
-			$where_conditions[] = "(reference.meta_value LIKE %s OR unit_number.meta_value LIKE %s)";
-			$search_value       = '%' . $wpdb->esc_like( $args[ 'my_search' ] ) . '%';
-			$where_values[]     = $search_value;
-			$where_values[]     = $search_value;
-		}
-		
-		if ( ! empty( $args[ 'month' ] ) && ! empty( $args[ 'year' ] ) ) {
-			$where_conditions[] = "date_booked IS NOT NULL
-        AND YEAR(date_booked) = %d
-        AND MONTH(date_booked) = %d";
-			$where_values[]     = $args[ 'year' ];
-			$where_values[]     = $args[ 'month' ];
-		}
-		
-		if ( ! empty( $args[ 'year' ] ) && empty( $args[ 'month' ] ) ) {
-			$where_conditions[] = "date_booked IS NOT NULL
-        AND YEAR(date_booked) = %d";
-			$where_values[]     = $args[ 'year' ];
-		}
-		
-		if ( ! empty( $args[ 'month' ] ) && empty( $args[ 'year' ] ) ) {
-			$where_conditions[] = "date_booked IS NOT NULL
-        AND MONTH(date_booked) = %d";
-			$where_values[]     = $args[ 'month' ];
-		}
-		
-		if ( ! empty( $where_conditions ) ) {
-			$sql .= ' AND ' . implode( ' AND ', $where_conditions );
-		}
-		
-		$total_records_sql = "SELECT COUNT(*)" . $join_builder;
-		if ( ! empty( $where_conditions ) ) {
-			$total_records_sql .= ' AND ' . implode( ' AND ', $where_conditions );
-		}
-		
-		$total_records = $wpdb->get_var( $wpdb->prepare( $total_records_sql, ...$where_values ) );
-		
-		$total_pages = ceil( $total_records / $per_page );
-		
-		$offset = ( $current_page - 1 ) * $per_page;
-		
-		$sql .= "
-		    ORDER BY
-		        CASE
-		            WHEN LOWER(load_status.meta_value) = 'delivered' THEN 1
-		            WHEN LOWER(load_status.meta_value) = 'tonu' THEN 2
-		            ELSE 3
-		        END,
-		        main.$sort_by $sort_order LIMIT %d, %d
-		";
-		
-		$where_values[] = $offset;
-		$where_values[] = $per_page;
-		// Выполняем запрос
-		$main_results = $wpdb->get_results( $wpdb->prepare( $sql, ...$where_values ), ARRAY_A );
-		
-		// Собираем все ID записей для получения дополнительных метаданных
-		$post_ids = wp_list_pluck( $main_results, 'id' );
-		
-		// Если есть записи, получаем метаданные
-		$meta_data = array();
-		if ( ! empty( $post_ids ) ) {
-			$meta_sql     = "SELECT post_id, meta_key, meta_value
-					 FROM $table_meta
-					 WHERE post_id IN (" . implode( ',', array_map( 'absint', $post_ids ) ) . ")";
-			$meta_results = $wpdb->get_results( $meta_sql, ARRAY_A );
-			
-			// Преобразуем метаданные в ассоциативный массив по post_id
-			foreach ( $meta_results as $meta_row ) {
-				$post_id = $meta_row[ 'post_id' ];
-				if ( ! isset( $meta_data[ $post_id ] ) ) {
-					$meta_data[ $post_id ] = array();
-				}
-				$meta_data[ $post_id ][ $meta_row[ 'meta_key' ] ] = $meta_row[ 'meta_value' ];
-			}
-		}
-		
-		if ( is_array( $main_results ) && ! empty( $main_results ) ) {
-			// Объединяем основную таблицу с метаданными
-			foreach ( $main_results as &$result ) {
-				$post_id               = $result[ 'id' ];
-				$result[ 'meta_data' ] = isset( $meta_data[ $post_id ] ) ? $meta_data[ $post_id ] : array();
-			}
-		}
-		
-		return array(
-			'results'       => $main_results,
-			'total_pages'   => $total_pages,
-			'total_posts'   => $total_records,
-			'current_pages' => $current_page,
+		return $this->get_shortpay_stats_by_broker_internal(
+			$wpdb->prefix . $this->table_main,
+			$wpdb->prefix . $this->table_meta,
+			$args
 		);
 	}
-	
+
+	/**
+	 * Get table items for billing shortpay tab. Delegates to TMSReportsHelper with dynamic JOINs.
+	 *
+	 * @param array $args Filter args.
+	 * @return array
+	 */
+	public function get_table_items_billing_shortpay( $args = array() ) {
+		global $wpdb;
+		$args['per_page_loads'] = isset( $args['per_page_loads'] ) ? $args['per_page_loads'] : $this->per_page_loads;
+		return $this->get_table_items_billing_shortpay_internal(
+			$wpdb->prefix . $this->table_main,
+			$wpdb->prefix . $this->table_meta,
+			$args
+		);
+	}
+
 	public function get_table_items_tracking( $args = array() ) {
 		global $wpdb;
-		
+
 		$table_main   = $wpdb->prefix . $this->table_main;
 		$table_meta   = $wpdb->prefix . $this->table_meta;
 		$per_page     = $this->per_page_loads;
 		$current_page = isset( $_GET[ 'paged' ] ) ? absint( $_GET[ 'paged' ] ) : 1;
 		$sort_by      = $args[ 'sort_by' ] ?? 'date_booked';
 		$sort_order   = strtolower( $args[ 'sort_order' ] ?? 'desc' ) === 'asc' ? 'ASC' : 'DESC';
-		
-		$join_builder = "
-	    FROM $table_main AS main
-	    LEFT JOIN $table_meta AS dispatcher ON main.id = dispatcher.post_id AND dispatcher.meta_key = 'dispatcher_initials'
-	    LEFT JOIN $table_meta AS reference ON main.id = reference.post_id AND reference.meta_key = 'reference_number'
-	    LEFT JOIN $table_meta AS unit_number ON main.id = unit_number.post_id AND unit_number.meta_key = 'unit_number_name'
-	    LEFT JOIN $table_meta AS unit_phone ON main.id = unit_phone.post_id AND unit_phone.meta_key = 'driver_phone'
-	    LEFT JOIN $table_meta AS load_status ON main.id = load_status.post_id AND load_status.meta_key = 'load_status'
-	    LEFT JOIN $table_meta AS office_dispatcher
-					ON main.id = office_dispatcher.post_id
-					AND office_dispatcher.meta_key = 'office_dispatcher'
-	    LEFT JOIN $table_meta AS tbd
-					ON main.id = tbd.post_id
-					AND tbd.meta_key = 'tbd'
-	    WHERE 1=1
-	    ";
-		
+
+		// Dynamic JOINs: only add meta joins when needed for SELECT/WHERE/ORDER.
+		$joins_always   = array( 'dispatcher', 'reference', 'unit_number', 'load_status' );
+		$joins_optional = array();
+		if ( ! empty( $args[ 'my_search' ] ) ) {
+			$joins_optional[] = 'unit_phone';
+		}
+		if ( ! empty( $args[ 'office' ] ) && $args[ 'office' ] !== 'all' ) {
+			$joins_optional[] = 'office_dispatcher';
+		}
+		if ( ! empty( $args[ 'exclude_tbd' ] ) ) {
+			$joins_optional[] = 'tbd';
+		}
+		$required_joins = array_unique( array_merge( $joins_always, $joins_optional ) );
+		$meta_join_defs = array(
+			'dispatcher'        => 'dispatcher_initials',
+			'reference'         => 'reference_number',
+			'unit_number'       => 'unit_number_name',
+			'unit_phone'        => 'driver_phone',
+			'load_status'       => 'load_status',
+			'office_dispatcher' => 'office_dispatcher',
+			'tbd'               => 'tbd',
+		);
+		$join_builder = "\n\t    FROM $table_main AS main";
+		foreach ( $required_joins as $alias ) {
+			if ( isset( $meta_join_defs[ $alias ] ) ) {
+				$key = $meta_join_defs[ $alias ];
+				$join_builder .= "\n\t    LEFT JOIN $table_meta AS $alias ON main.id = $alias.post_id AND $alias.meta_key = '" . esc_sql( $key ) . "'";
+			}
+		}
+		$join_builder .= "\n\t    WHERE 1=1";
+
 		$sql = "SELECT main.*,
     dispatcher.meta_value AS dispatcher_initials_value,
     reference.meta_value AS reference_number_value,
@@ -2499,10 +1765,20 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 			'load_status'            => 'Load Status',
 			'load_type'              => 'Load Type',
 			'additional_contacts'    => 'Additional Contacts',
-			'attached_file_required' => 'Attached File Required'
+			'attached_file_required' => 'Attached File Required',
+			'certificate_of_nalysis' => 'Certificate of Analysis'
 		];
 		
 		if ( is_array( $meta ) ) {
+			$instructions_str       = str_replace( ' ', '', get_field_value( $meta, 'instructions' ) );
+			$instructions_val       = explode( ',', $instructions_str );
+	
+			$hemp_product = is_numeric(array_search( 'hemp-product', $instructions_val )) ? true : false;
+			if ( !$hemp_product ) {
+				$required_fields = array_diff_key( $required_fields, array_flip( [
+					'certificate_of_nalysis'
+				] ) );
+			}
 			$load_status = get_field_value( $meta, 'load_status' );
 			if ( $load_status == 'waiting-on-rc' ) {
 				$required_fields = array_diff_key( $required_fields, array_flip( [
@@ -2960,6 +2236,10 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 			
 			if ( ! empty( $_FILES[ 'screen_picture' ] ) ) {
 				$MY_INPUT[ 'screen_picture' ] = $this->upload_one_file( $_FILES[ 'screen_picture' ] );
+			}
+			
+			if ( ! empty( $_FILES[ 'certificate_of_nalysis' ] ) ) {
+				$MY_INPUT[ 'certificate_of_nalysis' ] = $this->upload_one_file( $_FILES[ 'certificate_of_nalysis' ] );
 			}
 			
 			if ( ! empty( $_FILES[ 'update_rate_confirmation' ] ) ) {
@@ -4036,7 +3316,8 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 					'screen_picture',
 					'attached_file_required',
 					'update_rate_confirmation',
-					'attached_files'
+					'attached_files',
+					'certificate_of_nalysis',
 				] ) ) {
 					// Если это множественные файлы (attached_files), разбиваем на массив
 					$files = explode( ',', $meta[ 'meta_value' ] );
@@ -4848,11 +4129,19 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 		} elseif ( empty( $new_freight_pictures ) ) {
 			$new_freight_pictures = $current_data[ 'freight_pictures' ];
 		}
+
+		// Use new single attachment ID if provided, otherwise keep existing value.
+		$new_certificate_of_nalysis = '';
+		if ( isset( $data['certificate_of_nalysis'] ) && $data['certificate_of_nalysis'] ) {
+			$new_certificate_of_nalysis = $data['certificate_of_nalysis'];
+		} elseif ( isset( $current_data['certificate_of_nalysis'] ) && $current_data['certificate_of_nalysis'] ) {
+			$new_certificate_of_nalysis = $current_data['certificate_of_nalysis'];
+		}
 		
 		// Используем переданные данные, если они есть, иначе оставляем текущие значения
 		$attached_files_required = ! empty( $data[ 'uploaded_file_required' ] ) ? $data[ 'uploaded_file_required' ]
 			: $current_data[ 'attached_file_required' ];
-		
+
 		$updated_rate_confirmation = ! empty( $data[ 'updated_rate_confirmation' ] )
 			? $data[ 'updated_rate_confirmation' ] : $current_data[ 'updated_rate_confirmation' ];
 		
@@ -4924,7 +4213,17 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 			'screen_picture'            => $updated_screen_picture,
 			'proof_of_delivery'         => $proof_of_delivery_picture,
 			'freight_pictures'          => $new_freight_pictures,
+			'certificate_of_nalysis'    => $new_certificate_of_nalysis,
 		);
+
+		if ( ! empty( $data[ 'certificate_of_nalysis' ] ) ) {
+			$this->log_controller->create_one_log( array(
+				'post_type' => 'reports_flt',
+				'user_id'   => $user_id,
+				'post_id'   => $data[ 'post_id' ],
+				'message'   => 'Added certificate of analysis'
+			) );
+		}
 		
 		if ( ! empty( $data[ 'proof_of_delivery' ] ) ) {
 			$current_time_est = $this->getCurrentTimeForAmerica();
@@ -5423,7 +4722,7 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 				// Удаляем указанный ID
 				$new_ids   = array_diff( $ids, array( $image_id ) );
 				$new_value = implode( ',', $new_ids );
-			} elseif ( $image_field === 'attached_file_required' || $image_field === 'updated_rate_confirmation' || $image_field === 'screen_picture' || $image_field === 'proof_of_delivery' ) {
+			} elseif ( $image_field === 'attached_file_required' || $image_field === 'updated_rate_confirmation' || $image_field === 'screen_picture' || $image_field === 'proof_of_delivery' || $image_field === 'certificate_of_nalysis' ) {
 				
 				if ( $image_field === 'attached_file_required' ) {
 					$select_emails = $this->email_helper->get_selected_emails( $this->user_emails, array(
@@ -5622,9 +4921,27 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 			$table_name      = $wpdb->prefix . 'reports_flt_' . strtolower( $val );
 			$table_meta_name = $wpdb->prefix . 'reportsmeta_flt_' . strtolower( $val );
 			$charset_collate = $wpdb->get_charset_collate();
-			
-			// Создаем оптимизированную основную таблицу с BIGINT и TIMESTAMP
-			$sql = "CREATE TABLE $table_name (
+
+			// Main table: run dbDelta only if table missing or key columns not already target types (avoids ALTER on every request)
+			$main_table_ok = false;
+			$main_exists   = $wpdb->get_var( $wpdb->prepare(
+				'SELECT 1 FROM information_schema.tables WHERE table_schema = %s AND table_name = %s LIMIT 1',
+				DB_NAME,
+				$table_name
+			) );
+			if ( $main_exists ) {
+				$cols = $wpdb->get_results( "SHOW COLUMNS FROM `{$table_name}` WHERE Field IN ('id','user_id_added','user_id_updated')", OBJECT_K );
+				if ( ! empty( $cols['id'] ) && ! empty( $cols['user_id_added'] ) && ! empty( $cols['user_id_updated'] ) ) {
+					$t_id   = strtolower( (string) $cols['id']->Type );
+					$t_add  = strtolower( (string) $cols['user_id_added']->Type );
+					$t_upd  = strtolower( (string) $cols['user_id_updated']->Type );
+					$main_table_ok = ( strpos( $t_id, 'bigint' ) !== false && strpos( $t_id, 'unsigned' ) !== false )
+						&& ( strpos( $t_add, 'int' ) !== false && strpos( $t_add, 'unsigned' ) !== false )
+						&& ( strpos( $t_upd, 'int' ) !== false && strpos( $t_upd, 'unsigned' ) !== false );
+				}
+			}
+			if ( ! $main_table_ok ) {
+				$sql = "CREATE TABLE $table_name (
 			    id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
 			    user_id_added INT UNSIGNED NOT NULL,
 			    date_created TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -5647,8 +4964,8 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 			    INDEX idx_created_status (date_created, status_post),
 			    INDEX idx_status_post (status_post)
 			) $charset_collate;";
-			
-			dbDelta( $sql );
+				dbDelta( $sql );
+			}
 
 			// Meta table: run dbDelta only if table missing or post_id not already BIGINT UNSIGNED (avoids ALTER on every request)
 			$table_meta_exists = $wpdb->get_var( $wpdb->prepare(
@@ -5692,14 +5009,31 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 	 */
 	public function create_location_tables() {
 		global $wpdb;
-		
-		$tables = $this->tms_tables;
+
+		$tables         = $this->tms_tables;
 		$charset_collate = $wpdb->get_charset_collate();
-		
+
 		foreach ( $tables as $val ) {
 			$table_name = $wpdb->prefix . 'reports_flt_' . strtolower( $val ) . '_locations';
-			
-			$sql = "CREATE TABLE $table_name (
+
+			// Run dbDelta only if table missing or key columns not already target types (avoids ALTER on every request)
+			$loc_table_ok = false;
+			$loc_exists   = $wpdb->get_var( $wpdb->prepare(
+				'SELECT 1 FROM information_schema.tables WHERE table_schema = %s AND table_name = %s LIMIT 1',
+				DB_NAME,
+				$table_name
+			) );
+			if ( $loc_exists ) {
+				$cols = $wpdb->get_results( "SHOW COLUMNS FROM `{$table_name}` WHERE Field IN ('id','load_id')", OBJECT_K );
+				if ( ! empty( $cols['id'] ) && ! empty( $cols['load_id'] ) ) {
+					$t_id    = strtolower( (string) $cols['id']->Type );
+					$t_load  = strtolower( (string) $cols['load_id']->Type );
+					$loc_table_ok = ( strpos( $t_id, 'bigint' ) !== false && strpos( $t_id, 'unsigned' ) !== false )
+						&& ( strpos( $t_load, 'bigint' ) !== false && strpos( $t_load, 'unsigned' ) !== false );
+				}
+			}
+			if ( ! $loc_table_ok ) {
+				$sql = "CREATE TABLE $table_name (
 			    id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
 			    load_id BIGINT UNSIGNED NOT NULL,
 			    location_type varchar(20) NOT NULL DEFAULT 'pickup',
@@ -5729,8 +5063,8 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 			    INDEX idx_created_at (created_at),
 			    INDEX idx_updated_at (updated_at)
 			) $charset_collate;";
-			
-			dbDelta( $sql );
+				dbDelta( $sql );
+			}
 		}
 	}
 	
@@ -6545,8 +5879,11 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 	 * @return void
 	 */
 	public function init() {
-		add_action( 'after_setup_theme', array( $this, 'create_table' ) );
-		add_action( 'after_setup_theme', array( $this, 'create_location_tables' ) );
+
+		if ( current_user_can( 'administrator' ) ) {
+			add_action( 'after_setup_theme', array( $this, 'create_table' ) );
+			add_action( 'after_setup_theme', array( $this, 'create_location_tables' ) );
+		}
 		
 		//TODO UPDATE DATABASE AFTER CREATE , up speed search in database (NOT delete)
 		//add_action( 'after_setup_theme', array( $this, 'update_tables_with_delivery_and_indexes' ) );

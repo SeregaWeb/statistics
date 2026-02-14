@@ -14,7 +14,10 @@ class TMSReportsShipper extends TMSReportsHelper {
 	}
 	
 	public function init() {
-		add_action( 'after_setup_theme', array( $this, 'create_table_shipper' ) );
+
+		if ( current_user_can( 'administrator' ) ) {
+			add_action( 'after_setup_theme', array( $this, 'create_table_shipper' ) );
+		}
 
 //		add_action( 'after_setup_theme', array( $this, 'update_table_shipper_with_indexes' ) );
 		

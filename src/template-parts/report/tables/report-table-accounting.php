@@ -37,8 +37,50 @@ $my_team = $TMSUsers->check_group_access();
 
 $helper = new TMSReportsHelper();
 
-if ( ! empty( $results ) ) : ?>
-	
+// Ensure $results is an array for foreach (same as report-table.php)
+$results_list = is_array( $results ) ? $results : array();
+
+if ( ! empty( $results_list ) ) : ?>
+	<?php
+		// Pre-fetch companies and drivers by IDs to avoid N+1 (single pass over results)
+		$customer_ids = array();
+		$driver_ids   = array();
+		
+		foreach ( $results_list as $row ) {
+			$meta_row = get_field_value( $row, 'meta_data' );
+			$cid      = get_field_value( $meta_row, 'customer_id' );
+			if ( $cid !== '' && $cid !== null ) {
+				$customer_ids[] = (int) $cid;
+			}
+			foreach ( array( 'attached_driver', 'attached_second_driver', 'attached_third_driver' ) as $key ) {
+				$did = get_field_value( $meta_row, $key );
+				if ( $did !== '' && $did !== null ) {
+					$driver_ids[] = (int) $did;
+				}
+			}
+		}
+
+		$customer_ids    = array_unique( array_filter( $customer_ids ) );
+		$companies_by_id = $TMSBroker->get_companies_by_ids( $customer_ids );
+		$driver_ids      = array_unique( array_filter( $driver_ids ) );
+		$driver_instance = new TMSDrivers();
+		$drivers_response = $driver_instance->get_drivers_by_ids( $driver_ids );
+		$drivers_by_id = array();
+		if ( ! empty( $drivers_response['results'] ) ) {
+			foreach ( $drivers_response['results'] as $r ) {
+				$id   = (int) $r['id'];
+				$main = $r;
+				unset( $main['meta_data'] );
+				$drivers_by_id[ $id ] = array(
+					'main' => $main,
+					'meta' => isset( $r['meta_data'] ) ? $r['meta_data'] : array(),
+				);
+			}
+		}
+
+		$sum_driver_rate_raw        = 0;
+		$sum_additional_fees_driver = 0;
+	?>
 	<?php if ( $hide_billing_and_shipping ): ?>
         <div class="w-100 mb-3">
             <button class="btn btn-outline-primary js-open-popup-activator" data-href="#popup_quick_edit">Quick edit
@@ -64,7 +106,7 @@ if ( ! empty( $results ) ) : ?>
         </tr>
         </thead>
         <tbody>
-		<?php foreach ( $results as $row ) :
+		<?php foreach ( $results_list as $row ) :
 			$meta = get_field_value( $row, 'meta_data' );
 			$main = get_field_value( $row, 'main' );
 			
@@ -90,68 +132,61 @@ if ( ! empty( $results ) ) : ?>
 			$second_unit_number_name = esc_html( get_field_value( $meta, 'second_unit_number_name' ) );
 			$third_unit_number_name  = esc_html( get_field_value( $meta, 'third_unit_number_name' ) );
 
-			// Payment file preview: get driver IDs and payment_file URL for each driver
-			$driver_instance   = new TMSDrivers();
+			// Payment file preview: use pre-fetched drivers (drivers_by_id)
 			$attached_driver   = get_field_value( $meta, 'attached_driver' );
 			$attached_second   = get_field_value( $meta, 'attached_second_driver' );
 			$attached_third    = get_field_value( $meta, 'attached_third_driver' );
 			$payment_file_1    = null;
 			$payment_file_2    = null;
 			$payment_file_3    = null;
-			if ( ! empty( $attached_driver ) ) {
-				$driver_obj = $driver_instance->get_driver_by_id( (int) $attached_driver );
-				if ( $driver_obj ) {
-					$driver_meta = get_field_value( $driver_obj, 'meta' );
-					$pf_id       = get_field_value( $driver_meta, 'payment_file' );
-					if ( $pf_id ) {
-						$pf_arr = $driver_instance->process_file_attachment( $pf_id );
-						if ( ! empty( $pf_arr['url'] ) ) {
-							$payment_file_1 = array(
-								'url'                => $pf_arr['url'],
-								'is_image'           => wp_attachment_is_image( $pf_id ),
-								'account_type'       => get_field_value( $driver_meta, 'account_type' ),
-								'account_name'       => get_field_value( $driver_meta, 'account_name' ),
-								'payment_instruction' => get_field_value( $driver_meta, 'payment_instruction' ),
-							);
-						}
+			if ( ! empty( $attached_driver ) && isset( $drivers_by_id[ (int) $attached_driver ] ) ) {
+				$driver_obj  = $drivers_by_id[ (int) $attached_driver ];
+				$driver_meta = get_field_value( $driver_obj, 'meta' );
+				$pf_id       = get_field_value( $driver_meta, 'payment_file' );
+				if ( $pf_id ) {
+					$pf_arr = $driver_instance->process_file_attachment( $pf_id );
+					if ( ! empty( $pf_arr['url'] ) ) {
+						$payment_file_1 = array(
+							'url'                => $pf_arr['url'],
+							'is_image'           => wp_attachment_is_image( $pf_id ),
+							'account_type'       => get_field_value( $driver_meta, 'account_type' ),
+							'account_name'       => get_field_value( $driver_meta, 'account_name' ),
+							'payment_instruction' => get_field_value( $driver_meta, 'payment_instruction' ),
+						);
 					}
 				}
 			}
-			if ( ! empty( $attached_second ) ) {
-				$driver_obj = $driver_instance->get_driver_by_id( (int) $attached_second );
-				if ( $driver_obj ) {
-					$driver_meta = get_field_value( $driver_obj, 'meta' );
-					$pf_id       = get_field_value( $driver_meta, 'payment_file' );
-					if ( $pf_id ) {
-						$pf_arr = $driver_instance->process_file_attachment( $pf_id );
-						if ( ! empty( $pf_arr['url'] ) ) {
-							$payment_file_2 = array(
-								'url'                => $pf_arr['url'],
-								'is_image'           => wp_attachment_is_image( $pf_id ),
-								'account_type'       => get_field_value( $driver_meta, 'account_type' ),
-								'account_name'       => get_field_value( $driver_meta, 'account_name' ),
-								'payment_instruction' => get_field_value( $driver_meta, 'payment_instruction' ),
-							);
-						}
+			if ( ! empty( $attached_second ) && isset( $drivers_by_id[ (int) $attached_second ] ) ) {
+				$driver_obj  = $drivers_by_id[ (int) $attached_second ];
+				$driver_meta = get_field_value( $driver_obj, 'meta' );
+				$pf_id       = get_field_value( $driver_meta, 'payment_file' );
+				if ( $pf_id ) {
+					$pf_arr = $driver_instance->process_file_attachment( $pf_id );
+					if ( ! empty( $pf_arr['url'] ) ) {
+						$payment_file_2 = array(
+							'url'                => $pf_arr['url'],
+							'is_image'           => wp_attachment_is_image( $pf_id ),
+							'account_type'       => get_field_value( $driver_meta, 'account_type' ),
+							'account_name'       => get_field_value( $driver_meta, 'account_name' ),
+							'payment_instruction' => get_field_value( $driver_meta, 'payment_instruction' ),
+						);
 					}
 				}
 			}
-			if ( ! empty( $attached_third ) ) {
-				$driver_obj = $driver_instance->get_driver_by_id( (int) $attached_third );
-				if ( $driver_obj ) {
-					$driver_meta = get_field_value( $driver_obj, 'meta' );
-					$pf_id       = get_field_value( $driver_meta, 'payment_file' );
-					if ( $pf_id ) {
-						$pf_arr = $driver_instance->process_file_attachment( $pf_id );
-						if ( ! empty( $pf_arr['url'] ) ) {
-							$payment_file_3 = array(
-								'url'                => $pf_arr['url'],
-								'is_image'           => wp_attachment_is_image( $pf_id ),
-								'account_type'       => get_field_value( $driver_meta, 'account_type' ),
-								'account_name'       => get_field_value( $driver_meta, 'account_name' ),
-								'payment_instruction' => get_field_value( $driver_meta, 'payment_instruction' ),
-							);
-						}
+			if ( ! empty( $attached_third ) && isset( $drivers_by_id[ (int) $attached_third ] ) ) {
+				$driver_obj  = $drivers_by_id[ (int) $attached_third ];
+				$driver_meta = get_field_value( $driver_obj, 'meta' );
+				$pf_id       = get_field_value( $driver_meta, 'payment_file' );
+				if ( $pf_id ) {
+					$pf_arr = $driver_instance->process_file_attachment( $pf_id );
+					if ( ! empty( $pf_arr['url'] ) ) {
+						$payment_file_3 = array(
+							'url'                => $pf_arr['url'],
+							'is_image'           => wp_attachment_is_image( $pf_id ),
+							'account_type'       => get_field_value( $driver_meta, 'account_type' ),
+							'account_name'       => get_field_value( $driver_meta, 'account_name' ),
+							'payment_instruction' => get_field_value( $driver_meta, 'payment_instruction' ),
+						);
 					}
 				}
 			}
@@ -170,7 +205,7 @@ if ( ! empty( $results ) ) : ?>
 			$additional_fees_val    = get_field_value( $meta, 'additional_fees_val' );
 			$additional_fees_driver = get_field_value( $meta, 'additional_fees_driver' );
 		
-			$cleaned_value          = str_replace( ',', '', $additional_fees_val );
+			$cleaned_value          = str_replace( ',', '', (string) ( $additional_fees_val ?? '' ) );
 			$float_value            = floatval( $cleaned_value );
 			$sum_additional_fees_driver += is_numeric($float_value) ? $float_value : 0;
 			
@@ -206,7 +241,7 @@ if ( ! empty( $results ) ) : ?>
 			}
 			
 			if ( $additional_fees && is_null( $additional_fees_driver ) ) {
-				$cleaned_value   = str_replace( ',', '', $additional_fees_val );
+				$cleaned_value   = str_replace( ',', '', (string) ( $additional_fees_val ?? '' ) );
 				$float_value     = floatval( $cleaned_value );
 				$driver_rate_raw = floatval( $driver_rate_raw ) - $float_value;
 			}
@@ -215,7 +250,7 @@ if ( ! empty( $results ) ) : ?>
 			if ( $second_driver ) {
 				
 				if ( $additional_fees && $additional_fees_driver ) {
-					$cleaned_value          = str_replace( ',', '', $additional_fees_val );
+					$cleaned_value          = str_replace( ',', '', (string) ( $additional_fees_val ?? '' ) );
 					$float_value            = floatval( $cleaned_value );
 					$second_driver_rate_raw = floatval( $second_driver_rate_raw ) - $float_value;
 				}
@@ -224,7 +259,7 @@ if ( ! empty( $results ) ) : ?>
 
 			if ( $third_driver ) {
 				if ( $additional_fees && $additional_fees_driver ) {
-					$cleaned_value          = str_replace( ',', '', $additional_fees_val );
+					$cleaned_value          = str_replace( ',', '', (string) ( $additional_fees_val ?? '' ) );
 					$float_value            = floatval( $cleaned_value );
 					$third_driver_rate_raw = floatval( $third_driver_rate_raw ) - $float_value;
 				}
@@ -242,8 +277,7 @@ if ( ! empty( $results ) ) : ?>
 			$show_control = $TMSUsers->show_control_loads( $my_team, $current_user_id, $dispatcher_initials, $is_draft );
 			
 			$status_class    = $load_status;
-			$factoring_class = strtolower( $factoring_status_row );
-			$factoring_class = str_replace( ' ', '-', $factoring_class );
+			$factoring_class = str_replace( ' ', '-', strtolower( (string) ( $factoring_status_row ?? '' ) ) );
 			
 			$bank_status       = get_field_value( $meta, 'bank_payment_status' );
 			$driver_pay_status = get_field_value( $meta, 'driver_pay_statuses' );
@@ -297,12 +331,9 @@ if ( ! empty( $results ) ) : ?>
 			$now_show = ( $factoring_status_row === 'paid' );
 			
 			$id_customer = get_field_value( $meta, 'customer_id' );
-			$current_company = $TMSBroker->get_company_by_id( $id_customer );
-			if ( $current_company ) {
-				$current_company_name = $current_company[0]->company_name;
-			} else {
-				$current_company_name = '';
-			}
+			$id_customer_int = $id_customer !== '' && $id_customer !== null ? (int) $id_customer : 0;
+			$current_company = $id_customer_int && isset( $companies_by_id[ $id_customer_int ] ) ? $companies_by_id[ $id_customer_int ] : null;
+			$current_company_name = ( $current_company && isset( $current_company['company_name'] ) ) ? $current_company['company_name'] : '';
 			?>
 
             <tr class="load-status-accounting-<?php echo $driver_pay_status; ?>">

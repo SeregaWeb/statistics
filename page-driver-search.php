@@ -18,7 +18,19 @@ $args     = array(
 
 $args = $Drivers->set_filter_params_search( $args );
 
-$items = $Drivers->get_table_items_search( $args );
+$my_search       = trim( get_field_value( $_GET, 'my_search' ) ?? '' );
+$extended_search = trim( get_field_value( $_GET, 'extended_search' ) ?? '' );
+$capabilities    = get_field_value( $_GET, 'capabilities' );
+
+$access_view = $TMSUsers->check_user_role_access( array( 'administrator', 'recruiter', 'recruiter-tl','hr_manager', 'driver_updates' ), true );
+
+
+if ( $access_view || ( $my_search || $extended_search || $capabilities ) ) {
+	$items = $Drivers->get_table_items_search( $args );
+} else {
+	$items = array();
+}
+
 
 // Make items available globally for driver-search-filter template
 global $driver_search_items;

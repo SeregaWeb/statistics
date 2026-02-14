@@ -13,8 +13,11 @@ class TMSReportsPerformance extends TMSReportsHelper {
 	}
 	
 	public function init() {
-		add_action( 'after_setup_theme', array( $this, 'create_table_performance' ) );
-		add_action( 'after_setup_theme', array( $this, 'create_table_performance_flt' ) );
+
+		if ( current_user_can( 'administrator' ) ) {
+			add_action( 'after_setup_theme', array( $this, 'create_table_performance' ) );
+			add_action( 'after_setup_theme', array( $this, 'create_table_performance_flt' ) );
+		}
 		
 		$this->ajax_actions();
 	}

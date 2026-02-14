@@ -21,10 +21,13 @@ $freight_pictures  = '';
 $update_rate_conf  = '';
 $screen_picture    = '';
 $proof_of_delivery = '';
-$reference_number  = '';
-$load_status       = '';
-$tbd               = false;
-$full_view_only    = false;
+$reference_number    = '';
+$load_status         = '';
+$tbd                 = false;
+$full_view_only      = false;
+$certificate_of_nalysis = '';
+$hemp_product        = false;
+$meta                = array();
 
 if ( $report_object ) {
 	$values = $report_object;
@@ -52,13 +55,41 @@ if ( $report_object ) {
 		$reference_number  = get_field_value( $meta, 'reference_number' );
 		$load_status       = get_field_value( $meta, 'load_status' );
 		
+        $certificate_of_nalysis = get_field_value( $meta, 'certificate_of_nalysis' );
+
 		$tbd = get_field_value( $meta, 'tbd' );
+
+        $instructions_str       = str_replace( ' ', '', get_field_value( $meta, 'instructions' ) );
+		$instructions_val       = explode( ',', $instructions_str );
+
+        $hemp_product = is_numeric(array_search( 'hemp-product', $instructions_val )) ? true : false;
 		
 		$required_file_arr    = false;
 		$others_files_arr     = false;
 		$update_rate_conf_arr = false;
 		$freight_pictures_arr = false;
-		
+
+		$certificate_of_nalysis_arr = false;
+
+        if ( ! empty( $certificate_of_nalysis ) ) {
+            $attachment_url = wp_get_attachment_url( $certificate_of_nalysis );
+            if ( wp_attachment_is_image( $certificate_of_nalysis ) ) {
+                $certificate_of_nalysis_arr = array(
+                    'id'  => $certificate_of_nalysis,
+                    'url' => $attachment_url,
+                );
+            } else {
+                $file_name = basename( $attachment_url );
+                
+                $certificate_of_nalysis_arr = array(
+                    'id'        => $certificate_of_nalysis,
+                    'url'       => $attachment_url,
+                    'file_name' => $file_name,
+                );
+            }
+        }
+
+
 		if ( ! empty( $required_file ) ) {
 			
 			$attachment_url = wp_get_attachment_url( $required_file );
@@ -211,7 +242,7 @@ if ( $report_object ) {
 // 	var_dump($proof_of_delivery_arr);
 // }
 
-if ( ( $others_files || $freight_pictures || $required_file || $screen_picture || $update_rate_conf || $proof_of_delivery ) && isset( $post_id ) ): ?>
+if ( ( $others_files || $freight_pictures || $required_file || $screen_picture || $update_rate_conf || $proof_of_delivery || $certificate_of_nalysis ) && isset( $post_id ) ): ?>
     <div class="container-uploads <?php echo $full_view_only ? "read-only" : '' ?>">
 		<?php
 		if ( isset( $required_file_arr ) && $required_file ): ?>
@@ -253,6 +284,42 @@ if ( ( $others_files || $freight_pictures || $required_file || $screen_picture |
                 </a>
             </form>
 		<?php endif;
+
+        if ( isset( $certificate_of_nalysis_arr ) && $certificate_of_nalysis ): ?>
+            <form class="js-remove-one card-upload certificate_of_nalysis">
+                <a class="view-document" target="_blank"
+                   href="<?php echo $certificate_of_nalysis_arr[ 'url' ]; ?>"><?php echo $reports->get_icon_view( 'view' ); ?></a>
+                <span class="required-label">Certificate of Analysis</span>
+                <figure class="card-upload__figure">
+                    <?php
+                    if (!$certificate_of_nalysis_arr[ 'url' ]){
+                        ?>
+                        <p class="text-danger" style="font-size: 18px;">Error uploaded</p>
+                        <?php
+                    } else {
+                        if ( ! isset( $certificate_of_nalysis_arr[ 'file_name' ] ) ) : ?>
+                            <img class="card-upload__img" src="<?php echo $certificate_of_nalysis_arr[ 'url' ] ?>" alt="img">
+                        <?php else: ?>
+                            <?php echo $reports->get_file_icon(); ?>
+                            <p><?php echo $certificate_of_nalysis_arr[ 'file_name' ]; ?></p>
+                        <?php endif;
+                    }?>
+                </figure>
+                <input type="hidden" name="image-id" value="<?php echo $certificate_of_nalysis_arr[ 'id' ]; ?>">
+                <input type="hidden" name="image-fields" value="certificate_of_nalysis">
+                <input type="hidden" name="post_id" value="<?php echo $post_id; ?>">
+                <input type="hidden" name="project" value="<?php echo $project; ?>">
+                <?php if ( ! $full_view_only ): ?>
+                    <button class="card-upload__btn card-upload__btn--remove" type="submit">
+                        <?php echo $reports->get_close_icon(); ?>
+                    </button>
+				<?php endif; ?>
+                <a class="card-upload__btn card-upload__btn--download" download
+                   href="<?php echo $certificate_of_nalysis_arr[ 'url' ]; ?>">
+					<?php echo $reports->get_download_icon(); ?>
+                </a>
+            </form>
+        <?php endif;
 		
 		if ( isset( $update_rate_conf_arr ) && $update_rate_conf ): ?>
             <form class="js-remove-one card-upload updated">
@@ -486,6 +553,23 @@ if ( ( $others_files || $freight_pictures || $required_file || $screen_picture |
                 </div>
             </div>
 		<?php endif; ?>
+
+        <?php if ( $hemp_product && ! $certificate_of_nalysis ): ?>
+            <div class="js-add-new-report order-2">
+                <div class="p-0 mb-2 col-12">
+                    <p class="h5">Certificate of Analysis
+                        <span class="required-star text-danger">*</span>
+                    </p>
+                    <label for="certificate_of_nalysis" required class="form-label">Attached file</label>
+                    <input type="file" name="certificate_of_nalysis"
+                           class="form-control js-control-uploads">
+                </div>
+
+                <div class="p-0 col-12 mb-3 mt-3 preview-photo js-preview-photo-upload">
+
+                </div>
+            </div>
+        <?php endif; ?>
 
         <div class="js-add-new-report order-2">
             <div class="p-0 mb-2 col-12">

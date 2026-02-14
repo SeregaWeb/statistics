@@ -557,6 +557,7 @@ export const removeOneFileInitial = (ajaxUrl) => {
         'attached_file_required',
         'updated_rate_confirmation',
         'proof_of_delivery',
+        'certificate_of_nalysis',
     ]);
 
     const deleteForms = document.querySelectorAll('.js-remove-one');

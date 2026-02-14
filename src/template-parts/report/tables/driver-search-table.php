@@ -15,6 +15,17 @@ $current_pages = get_field_value( $args, 'current_pages' );
 $is_draft      = get_field_value( $args, 'is_draft' );
 $add_new_load  = get_field_value( $global_options, 'add_new_driver' );
 
+$my_search       = trim( get_field_value( $_GET, 'my_search' ) ?? '' );
+$extended_search = trim( get_field_value( $_GET, 'extended_search' ) ?? '' );
+$capabilities    = get_field_value( $_GET, 'capabilities' );
+
+if ( $my_search || $extended_search || $capabilities ) {
+    $text_no_results = 'No drivers were found.';
+} else {
+	$text_no_results = 'Start your search';
+
+}
+
 // Debug: Show sorting result if we have filtered_drivers
 if ( isset( $args[ 'filtered_drivers' ] ) && ! empty( $args[ 'filtered_drivers' ] ) ) {
 	echo '<div style="background: #ffffcc; padding: 10px; margin: 10px 0; border: 1px solid #ffcc00; border-radius: 5px;">';
@@ -517,7 +528,7 @@ if ( ! empty( $results ) ) : ?>
 	?>
 
 <?php else : ?>
-    <p>No drivers were found.</p>
+    <p><?php echo $text_no_results; ?></p>
 <?php endif; ?>
 
 <?php get_template_part( TEMPLATE_PATH . 'popups/quick-status-update-modal' ); ?>

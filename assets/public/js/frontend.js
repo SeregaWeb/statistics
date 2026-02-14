@@ -6914,7 +6914,7 @@ var updateAccountingReportInit = function updateAccountingReportInit(ajaxUrl) {
   });
 };
 var removeOneFileInitial = function removeOneFileInitial(ajaxUrl) {
-  var DOCUMENT_FILE_FIELDS_REQUIRING_CONFIRM = new Set(['attached_files', 'attached_file_required', 'updated_rate_confirmation', 'proof_of_delivery']);
+  var DOCUMENT_FILE_FIELDS_REQUIRING_CONFIRM = new Set(['attached_files', 'attached_file_required', 'updated_rate_confirmation', 'proof_of_delivery', 'certificate_of_nalysis']);
   var deleteForms = document.querySelectorAll('.js-remove-one');
   deleteForms && deleteForms.forEach(function (item) {
     item.addEventListener('submit', function (event) {
@@ -13610,6 +13610,239 @@ function unrequiderInit() {
 
 /***/ }),
 
+/***/ "./src/js/components/live-reload-notification.ts":
+/*!*******************************************************!*\
+  !*** ./src/js/components/live-reload-notification.ts ***!
+  \*******************************************************/
+/***/ (function(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   initLiveReloadNotification: function() { return /* binding */ initLiveReloadNotification; }
+/* harmony export */ });
+var MARK_ALL_READ_BTN_LABEL = 'Mark all read';
+var LOAD_OLDER_BTN_LABEL = 'Load older';
+var INTERVAL_MS = 90000;
+function escapeHtml(s) {
+  return s.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+function getHeaders(restNonce, includeJson) {
+  var h = {
+    Accept: 'application/json',
+    'X-WP-Nonce': restNonce
+  };
+  if (includeJson) {
+    h['Content-Type'] = 'application/json';
+  }
+  return h;
+}
+function initLiveReloadNotification() {
+  var config = window.TMSNotificationsConfig;
+  if (!config) {
+    return;
+  }
+  var toggleBtn = document.getElementById('tms-notifications-toggle');
+  var badgeEl = document.getElementById('tms-notifications-badge');
+  var panelEl = document.getElementById('tms-notifications-panel');
+  var listEl = document.getElementById('tms-notifications-list');
+  var closeBtn = document.getElementById('tms-notifications-close');
+  var markAllBtn = document.getElementById('tms-notifications-mark-all');
+  var loadOlderBtn = document.getElementById('tms-notifications-load-older');
+  if (!toggleBtn || !badgeEl || !panelEl || !listEl) {
+    return;
+  }
+  var apiListUrl = config.apiListUrl,
+    apiReadUrl = config.apiReadUrl,
+    apiReadAllUrl = config.apiReadAllUrl,
+    restNonce = config.restNonce,
+    initialData = config.initial;
+  var notificationsCache = Array.isArray(initialData.items) ? initialData.items : [];
+  var totalNotificationsCount = typeof initialData.total_count === 'number' ? initialData.total_count : 0;
+  var currentNotificationsPage = 1;
+  var hasMorePagesFromServer = initialData.has_more === true;
+  var currentUnreadCount = typeof initialData.unread_count === 'number' ? initialData.unread_count : 0;
+  var isPanelOpen = false;
+  function setBadge(unreadCount) {
+    if (unreadCount && unreadCount > 0) {
+      badgeEl.style.display = 'flex';
+      badgeEl.textContent = unreadCount > 99 ? '99' : String(unreadCount);
+    } else {
+      badgeEl.style.display = 'none';
+      badgeEl.textContent = '';
+    }
+  }
+  function setMarkAllReadButtonLoading(loading) {
+    if (!markAllBtn) return;
+    markAllBtn.disabled = loading;
+    markAllBtn.textContent = loading ? 'Marking...' : MARK_ALL_READ_BTN_LABEL;
+  }
+  function updateMarkAllReadButton() {
+    if (!markAllBtn) return;
+    markAllBtn.style.display = currentUnreadCount > 0 ? 'block' : 'none';
+    if (markAllBtn.style.display !== 'none') {
+      markAllBtn.textContent = markAllBtn.disabled ? 'Marking...' : MARK_ALL_READ_BTN_LABEL;
+    }
+  }
+  setBadge(currentUnreadCount);
+  updateMarkAllReadButton();
+  function renderNotifications(items) {
+    if (!Array.isArray(items) || items.length === 0) {
+      listEl.innerHTML = '<p class="mb-0 text-muted" style="font-size: 13px;">No notifications.</p>';
+      return;
+    }
+    var html = items.map(function (item) {
+      var id = item.id;
+      var title = item.title || '';
+      var message = item.message || '';
+      var createdAt = item.created_at || '';
+      var isRead = !!item.read_at;
+      return '<div class="tms-notification-item" data-notification-id="' + id + '" style="padding: 6px 0; border-bottom: 1px solid #f1f1f1; cursor: pointer; ' + (isRead ? 'opacity:0.7;' : 'font-weight:500;') + '">' + '<div style="font-size: 13px;">' + escapeHtml(title) + '</div>' + (message ? '<div style="font-size: 12px; color:#555; white-space:pre-line;">' + escapeHtml(message) + '</div>' : '') + (createdAt ? '<div style="font-size: 11px; color:#999; margin-top:2px;">' + escapeHtml(createdAt) + '</div>' : '') + '</div>';
+    }).join('');
+    listEl.innerHTML = html;
+  }
+  function setLoadOlderButtonLoading(loading) {
+    if (!loadOlderBtn) return;
+    loadOlderBtn.disabled = loading;
+    loadOlderBtn.textContent = loading ? 'Loading...' : LOAD_OLDER_BTN_LABEL;
+  }
+  function fetchNotifications(pageArg, append) {
+    var page = pageArg !== null && pageArg !== void 0 ? pageArg : 1;
+    append = !!append;
+    var url = apiListUrl + (apiListUrl.indexOf('?') !== -1 ? '&' : '?') + 'per_page=20&page=' + page;
+    fetch(url, {
+      method: 'GET',
+      credentials: 'same-origin',
+      headers: getHeaders(restNonce, false)
+    }).then(function (response) {
+      if (!response.ok) {
+        throw new Error('HTTP ' + response.status);
+      }
+      return response.json();
+    }).then(function (payload) {
+      if (!payload || !payload.success) return;
+      var items = Array.isArray(payload.data) ? payload.data : [];
+      var unreadCount = typeof payload.unread_count === 'number' ? payload.unread_count : 0;
+      var totalCount = typeof payload.total_count === 'number' ? payload.total_count : 0;
+      currentUnreadCount = unreadCount;
+      if (append || hasMorePagesFromServer) {
+        hasMorePagesFromServer = payload.has_more === true;
+      }
+      if (append) {
+        notificationsCache = notificationsCache.concat(items);
+        if (items.length === 0) {
+          totalNotificationsCount = notificationsCache.length;
+          hasMorePagesFromServer = false;
+        }
+      } else {
+        notificationsCache = items;
+        currentNotificationsPage = 1;
+      }
+      if (totalCount >= 0) {
+        totalNotificationsCount = totalCount;
+      }
+      if (page > 1) {
+        currentNotificationsPage = page;
+      }
+      setBadge(unreadCount);
+      updateMarkAllReadButton();
+      if (isPanelOpen) {
+        renderNotifications(notificationsCache);
+        updateLoadOlderButton();
+      }
+      setLoadOlderButtonLoading(false);
+    }).catch(function () {
+      setLoadOlderButtonLoading(false);
+    });
+  }
+  function updateLoadOlderButton() {
+    if (!loadOlderBtn) return;
+    if (hasMorePagesFromServer) {
+      loadOlderBtn.style.display = 'block';
+      loadOlderBtn.textContent = loadOlderBtn.disabled ? 'Loading...' : LOAD_OLDER_BTN_LABEL;
+    } else {
+      loadOlderBtn.style.display = 'none';
+    }
+  }
+  function markRead(ids) {
+    if (!ids || !ids.length) return;
+    fetch(apiReadUrl, {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: getHeaders(restNonce, true),
+      body: JSON.stringify({
+        ids: ids
+      })
+    }).then(function () {
+      return fetchNotifications();
+    }).catch(function () {});
+  }
+  function markAllRead() {
+    setMarkAllReadButtonLoading(true);
+    fetch(apiReadAllUrl, {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: getHeaders(restNonce, true),
+      body: '{}'
+    }).then(function () {
+      return fetchNotifications();
+    }).catch(function () {}).finally(function () {
+      return setMarkAllReadButtonLoading(false);
+    });
+  }
+  function openPanel() {
+    isPanelOpen = true;
+    panelEl.style.display = 'block';
+    renderNotifications(notificationsCache);
+    updateLoadOlderButton();
+    updateMarkAllReadButton();
+  }
+  function closePanel() {
+    isPanelOpen = false;
+    panelEl.style.display = 'none';
+  }
+  toggleBtn.addEventListener('click', function () {
+    if (isPanelOpen) {
+      closePanel();
+    } else {
+      openPanel();
+    }
+  });
+  if (closeBtn) {
+    closeBtn.addEventListener('click', function () {
+      return closePanel();
+    });
+  }
+  if (loadOlderBtn) {
+    loadOlderBtn.addEventListener('click', function () {
+      if (!hasMorePagesFromServer || loadOlderBtn.disabled) return;
+      var nextPage = currentNotificationsPage + 1;
+      setLoadOlderButtonLoading(true);
+      fetchNotifications(nextPage, true);
+    });
+  }
+  if (markAllBtn) {
+    markAllBtn.addEventListener('click', function () {
+      return markAllRead();
+    });
+  }
+  listEl.addEventListener('click', function (event) {
+    var item = event.target.closest('.tms-notification-item');
+    if (!item) return;
+    var idAttr = item.getAttribute('data-notification-id');
+    var id = idAttr ? parseInt(idAttr, 10) : 0;
+    if (id > 0) {
+      markRead([id]);
+    }
+  });
+  fetchNotifications();
+  setInterval(function () {
+    return fetchNotifications();
+  }, INTERVAL_MS);
+}
+
+/***/ }),
+
 /***/ "./src/js/components/logs.ts":
 /*!***********************************!*\
   !*** ./src/js/components/logs.ts ***!
@@ -17218,7 +17451,7 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _create_report__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./create-report */ "./src/js/components/create-report.ts");
 function _typeof(o) { "@babel/helpers - typeof"; return _typeof = "function" == typeof Symbol && "symbol" == typeof Symbol.iterator ? function (o) { return typeof o; } : function (o) { return o && "function" == typeof Symbol && o.constructor === Symbol && o !== Symbol.prototype ? "symbol" : typeof o; }, _typeof(o); }
 
-var POLL_INTERVAL_MS = 20000;
+var POLL_INTERVAL_MS = 90000;
 function getCurrentParams() {
   var params = {};
   var search = window.location.search.replace(/^\?/, '');
@@ -31043,45 +31276,47 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _components_send_email_chain__WEBPACK_IMPORTED_MODULE_26__ = __webpack_require__(/*! ./components/send-email-chain */ "./src/js/components/send-email-chain.ts");
 /* harmony import */ var _components_save_all_tracking__WEBPACK_IMPORTED_MODULE_27__ = __webpack_require__(/*! ./components/save-all-tracking */ "./src/js/components/save-all-tracking.ts");
 /* harmony import */ var _components_tracking_live_update__WEBPACK_IMPORTED_MODULE_28__ = __webpack_require__(/*! ./components/tracking-live-update */ "./src/js/components/tracking-live-update.ts");
-/* harmony import */ var _components_auto_submit_form__WEBPACK_IMPORTED_MODULE_29__ = __webpack_require__(/*! ./components/auto-submit-form */ "./src/js/components/auto-submit-form.ts");
-/* harmony import */ var _components_document_create_money_check__WEBPACK_IMPORTED_MODULE_30__ = __webpack_require__(/*! ./components/document-create-money-check */ "./src/js/components/document-create-money-check.ts");
-/* harmony import */ var _components_driver_core__WEBPACK_IMPORTED_MODULE_31__ = __webpack_require__(/*! ./components/driver-core */ "./src/js/components/driver-core.ts");
-/* harmony import */ var _components_trailer_core__WEBPACK_IMPORTED_MODULE_32__ = __webpack_require__(/*! ./components/trailer-core */ "./src/js/components/trailer-core.ts");
-/* harmony import */ var _components_vehicle_core__WEBPACK_IMPORTED_MODULE_33__ = __webpack_require__(/*! ./components/vehicle-core */ "./src/js/components/vehicle-core.ts");
-/* harmony import */ var _components_trailer_form_init__WEBPACK_IMPORTED_MODULE_34__ = __webpack_require__(/*! ./components/trailer-form-init */ "./src/js/components/trailer-form-init.ts");
-/* harmony import */ var _components_vehicle_form_init__WEBPACK_IMPORTED_MODULE_35__ = __webpack_require__(/*! ./components/vehicle-form-init */ "./src/js/components/vehicle-form-init.ts");
-/* harmony import */ var _components_contacts_contacts_init__WEBPACK_IMPORTED_MODULE_36__ = __webpack_require__(/*! ./components/contacts/contacts-init */ "./src/js/components/contacts/contacts-init.ts");
-/* harmony import */ var _components_move_dispatcher__WEBPACK_IMPORTED_MODULE_37__ = __webpack_require__(/*! ./components/move-dispatcher */ "./src/js/components/move-dispatcher.ts");
-/* harmony import */ var _components_search_driver_search_driver_core__WEBPACK_IMPORTED_MODULE_38__ = __webpack_require__(/*! ./components/search-driver/search-driver-core */ "./src/js/components/search-driver/search-driver-core.ts");
-/* harmony import */ var _components_driver_hold__WEBPACK_IMPORTED_MODULE_39__ = __webpack_require__(/*! ./components/driver-hold */ "./src/js/components/driver-hold.ts");
-/* harmony import */ var _components_common_hold_section__WEBPACK_IMPORTED_MODULE_40__ = __webpack_require__(/*! ./components/common/hold-section */ "./src/js/components/common/hold-section.ts");
-/* harmony import */ var _components_capabilities_filter__WEBPACK_IMPORTED_MODULE_41__ = __webpack_require__(/*! ./components/capabilities-filter */ "./src/js/components/capabilities-filter.ts");
-/* harmony import */ var _components_quick_status_update__WEBPACK_IMPORTED_MODULE_42__ = __webpack_require__(/*! ./components/quick-status-update */ "./src/js/components/quick-status-update.ts");
-/* harmony import */ var _components_eta_popup__WEBPACK_IMPORTED_MODULE_43__ = __webpack_require__(/*! ./components/eta-popup */ "./src/js/components/eta-popup.ts");
-/* harmony import */ var _components_eta_timer__WEBPACK_IMPORTED_MODULE_44__ = __webpack_require__(/*! ./components/eta-timer */ "./src/js/components/eta-timer.ts");
-/* harmony import */ var _components_rating_reminder_modal__WEBPACK_IMPORTED_MODULE_45__ = __webpack_require__(/*! ./components/rating-reminder-modal */ "./src/js/components/rating-reminder-modal.ts");
-/* harmony import */ var _components_drivers_rate__WEBPACK_IMPORTED_MODULE_46__ = __webpack_require__(/*! ./components/drivers-rate */ "./src/js/components/drivers-rate.ts");
-/* harmony import */ var _components_admin_rating_manager__WEBPACK_IMPORTED_MODULE_47__ = __webpack_require__(/*! ./components/admin-rating-manager */ "./src/js/components/admin-rating-manager.ts");
-/* harmony import */ var _components_charts_drivers_statistics_charts__WEBPACK_IMPORTED_MODULE_48__ = __webpack_require__(/*! ./components/charts/drivers-statistics-charts */ "./src/js/components/charts/drivers-statistics-charts.ts");
-/* harmony import */ var _components_charts_finance_statistics_charts__WEBPACK_IMPORTED_MODULE_49__ = __webpack_require__(/*! ./components/charts/finance-statistics-charts */ "./src/js/components/charts/finance-statistics-charts.ts");
-/* harmony import */ var _components_charts_source_statistics_charts__WEBPACK_IMPORTED_MODULE_50__ = __webpack_require__(/*! ./components/charts/source-statistics-charts */ "./src/js/components/charts/source-statistics-charts.ts");
-/* harmony import */ var _components_charts_home_location_map__WEBPACK_IMPORTED_MODULE_51__ = __webpack_require__(/*! ./components/charts/home-location-map */ "./src/js/components/charts/home-location-map.ts");
-/* harmony import */ var _components_charts_location_vehicle_charts__WEBPACK_IMPORTED_MODULE_52__ = __webpack_require__(/*! ./components/charts/location-vehicle-charts */ "./src/js/components/charts/location-vehicle-charts.ts");
-/* harmony import */ var _components_charts_loads_by_state_chart__WEBPACK_IMPORTED_MODULE_53__ = __webpack_require__(/*! ./components/charts/loads-by-state-chart */ "./src/js/components/charts/loads-by-state-chart.ts");
-/* harmony import */ var _components_charts_loads_by_route_chart__WEBPACK_IMPORTED_MODULE_54__ = __webpack_require__(/*! ./components/charts/loads-by-route-chart */ "./src/js/components/charts/loads-by-route-chart.ts");
-/* harmony import */ var _components_create_chat__WEBPACK_IMPORTED_MODULE_55__ = __webpack_require__(/*! ./components/create-chat */ "./src/js/components/create-chat.ts");
-/* harmony import */ var _components_drivers_statistics_tabs__WEBPACK_IMPORTED_MODULE_56__ = __webpack_require__(/*! ./components/drivers-statistics-tabs */ "./src/js/components/drivers-statistics-tabs.ts");
-/* harmony import */ var _components_quick_copy__WEBPACK_IMPORTED_MODULE_57__ = __webpack_require__(/*! ./components/quick-copy */ "./src/js/components/quick-copy.ts");
-/* harmony import */ var _components_driver_popups__WEBPACK_IMPORTED_MODULE_58__ = __webpack_require__(/*! ./components/driver-popups */ "./src/js/components/driver-popups.ts");
-/* harmony import */ var _components_driver_popup_forms__WEBPACK_IMPORTED_MODULE_59__ = __webpack_require__(/*! ./components/driver-popup-forms */ "./src/js/components/driver-popup-forms.ts");
-/* harmony import */ var _components_broker_popups__WEBPACK_IMPORTED_MODULE_60__ = __webpack_require__(/*! ./components/broker-popups */ "./src/js/components/broker-popups.ts");
-/* harmony import */ var _components_broker_popup_forms__WEBPACK_IMPORTED_MODULE_61__ = __webpack_require__(/*! ./components/broker-popup-forms */ "./src/js/components/broker-popup-forms.ts");
-/* harmony import */ var _components_driver_autocomplete__WEBPACK_IMPORTED_MODULE_62__ = __webpack_require__(/*! ./components/driver-autocomplete */ "./src/js/components/driver-autocomplete.ts");
-/* harmony import */ var _components_common_audio_helper__WEBPACK_IMPORTED_MODULE_63__ = __webpack_require__(/*! ./components/common/audio-helper */ "./src/js/components/common/audio-helper.ts");
-/* harmony import */ var _components_timer_control__WEBPACK_IMPORTED_MODULE_64__ = __webpack_require__(/*! ./components/timer-control */ "./src/js/components/timer-control.ts");
-/* harmony import */ var _components_timer_analytics__WEBPACK_IMPORTED_MODULE_65__ = __webpack_require__(/*! ./components/timer-analytics */ "./src/js/components/timer-analytics.ts");
-/* harmony import */ var _components_dark_mode_toggle__WEBPACK_IMPORTED_MODULE_66__ = __webpack_require__(/*! ./components/dark-mode-toggle */ "./src/js/components/dark-mode-toggle.ts");
-/* harmony import */ var _components_drivers_map__WEBPACK_IMPORTED_MODULE_67__ = __webpack_require__(/*! ./components/drivers-map */ "./src/js/components/drivers-map.ts");
+/* harmony import */ var _components_live_reload_notification__WEBPACK_IMPORTED_MODULE_29__ = __webpack_require__(/*! ./components/live-reload-notification */ "./src/js/components/live-reload-notification.ts");
+/* harmony import */ var _components_auto_submit_form__WEBPACK_IMPORTED_MODULE_30__ = __webpack_require__(/*! ./components/auto-submit-form */ "./src/js/components/auto-submit-form.ts");
+/* harmony import */ var _components_document_create_money_check__WEBPACK_IMPORTED_MODULE_31__ = __webpack_require__(/*! ./components/document-create-money-check */ "./src/js/components/document-create-money-check.ts");
+/* harmony import */ var _components_driver_core__WEBPACK_IMPORTED_MODULE_32__ = __webpack_require__(/*! ./components/driver-core */ "./src/js/components/driver-core.ts");
+/* harmony import */ var _components_trailer_core__WEBPACK_IMPORTED_MODULE_33__ = __webpack_require__(/*! ./components/trailer-core */ "./src/js/components/trailer-core.ts");
+/* harmony import */ var _components_vehicle_core__WEBPACK_IMPORTED_MODULE_34__ = __webpack_require__(/*! ./components/vehicle-core */ "./src/js/components/vehicle-core.ts");
+/* harmony import */ var _components_trailer_form_init__WEBPACK_IMPORTED_MODULE_35__ = __webpack_require__(/*! ./components/trailer-form-init */ "./src/js/components/trailer-form-init.ts");
+/* harmony import */ var _components_vehicle_form_init__WEBPACK_IMPORTED_MODULE_36__ = __webpack_require__(/*! ./components/vehicle-form-init */ "./src/js/components/vehicle-form-init.ts");
+/* harmony import */ var _components_contacts_contacts_init__WEBPACK_IMPORTED_MODULE_37__ = __webpack_require__(/*! ./components/contacts/contacts-init */ "./src/js/components/contacts/contacts-init.ts");
+/* harmony import */ var _components_move_dispatcher__WEBPACK_IMPORTED_MODULE_38__ = __webpack_require__(/*! ./components/move-dispatcher */ "./src/js/components/move-dispatcher.ts");
+/* harmony import */ var _components_search_driver_search_driver_core__WEBPACK_IMPORTED_MODULE_39__ = __webpack_require__(/*! ./components/search-driver/search-driver-core */ "./src/js/components/search-driver/search-driver-core.ts");
+/* harmony import */ var _components_driver_hold__WEBPACK_IMPORTED_MODULE_40__ = __webpack_require__(/*! ./components/driver-hold */ "./src/js/components/driver-hold.ts");
+/* harmony import */ var _components_common_hold_section__WEBPACK_IMPORTED_MODULE_41__ = __webpack_require__(/*! ./components/common/hold-section */ "./src/js/components/common/hold-section.ts");
+/* harmony import */ var _components_capabilities_filter__WEBPACK_IMPORTED_MODULE_42__ = __webpack_require__(/*! ./components/capabilities-filter */ "./src/js/components/capabilities-filter.ts");
+/* harmony import */ var _components_quick_status_update__WEBPACK_IMPORTED_MODULE_43__ = __webpack_require__(/*! ./components/quick-status-update */ "./src/js/components/quick-status-update.ts");
+/* harmony import */ var _components_eta_popup__WEBPACK_IMPORTED_MODULE_44__ = __webpack_require__(/*! ./components/eta-popup */ "./src/js/components/eta-popup.ts");
+/* harmony import */ var _components_eta_timer__WEBPACK_IMPORTED_MODULE_45__ = __webpack_require__(/*! ./components/eta-timer */ "./src/js/components/eta-timer.ts");
+/* harmony import */ var _components_rating_reminder_modal__WEBPACK_IMPORTED_MODULE_46__ = __webpack_require__(/*! ./components/rating-reminder-modal */ "./src/js/components/rating-reminder-modal.ts");
+/* harmony import */ var _components_drivers_rate__WEBPACK_IMPORTED_MODULE_47__ = __webpack_require__(/*! ./components/drivers-rate */ "./src/js/components/drivers-rate.ts");
+/* harmony import */ var _components_admin_rating_manager__WEBPACK_IMPORTED_MODULE_48__ = __webpack_require__(/*! ./components/admin-rating-manager */ "./src/js/components/admin-rating-manager.ts");
+/* harmony import */ var _components_charts_drivers_statistics_charts__WEBPACK_IMPORTED_MODULE_49__ = __webpack_require__(/*! ./components/charts/drivers-statistics-charts */ "./src/js/components/charts/drivers-statistics-charts.ts");
+/* harmony import */ var _components_charts_finance_statistics_charts__WEBPACK_IMPORTED_MODULE_50__ = __webpack_require__(/*! ./components/charts/finance-statistics-charts */ "./src/js/components/charts/finance-statistics-charts.ts");
+/* harmony import */ var _components_charts_source_statistics_charts__WEBPACK_IMPORTED_MODULE_51__ = __webpack_require__(/*! ./components/charts/source-statistics-charts */ "./src/js/components/charts/source-statistics-charts.ts");
+/* harmony import */ var _components_charts_home_location_map__WEBPACK_IMPORTED_MODULE_52__ = __webpack_require__(/*! ./components/charts/home-location-map */ "./src/js/components/charts/home-location-map.ts");
+/* harmony import */ var _components_charts_location_vehicle_charts__WEBPACK_IMPORTED_MODULE_53__ = __webpack_require__(/*! ./components/charts/location-vehicle-charts */ "./src/js/components/charts/location-vehicle-charts.ts");
+/* harmony import */ var _components_charts_loads_by_state_chart__WEBPACK_IMPORTED_MODULE_54__ = __webpack_require__(/*! ./components/charts/loads-by-state-chart */ "./src/js/components/charts/loads-by-state-chart.ts");
+/* harmony import */ var _components_charts_loads_by_route_chart__WEBPACK_IMPORTED_MODULE_55__ = __webpack_require__(/*! ./components/charts/loads-by-route-chart */ "./src/js/components/charts/loads-by-route-chart.ts");
+/* harmony import */ var _components_create_chat__WEBPACK_IMPORTED_MODULE_56__ = __webpack_require__(/*! ./components/create-chat */ "./src/js/components/create-chat.ts");
+/* harmony import */ var _components_drivers_statistics_tabs__WEBPACK_IMPORTED_MODULE_57__ = __webpack_require__(/*! ./components/drivers-statistics-tabs */ "./src/js/components/drivers-statistics-tabs.ts");
+/* harmony import */ var _components_quick_copy__WEBPACK_IMPORTED_MODULE_58__ = __webpack_require__(/*! ./components/quick-copy */ "./src/js/components/quick-copy.ts");
+/* harmony import */ var _components_driver_popups__WEBPACK_IMPORTED_MODULE_59__ = __webpack_require__(/*! ./components/driver-popups */ "./src/js/components/driver-popups.ts");
+/* harmony import */ var _components_driver_popup_forms__WEBPACK_IMPORTED_MODULE_60__ = __webpack_require__(/*! ./components/driver-popup-forms */ "./src/js/components/driver-popup-forms.ts");
+/* harmony import */ var _components_broker_popups__WEBPACK_IMPORTED_MODULE_61__ = __webpack_require__(/*! ./components/broker-popups */ "./src/js/components/broker-popups.ts");
+/* harmony import */ var _components_broker_popup_forms__WEBPACK_IMPORTED_MODULE_62__ = __webpack_require__(/*! ./components/broker-popup-forms */ "./src/js/components/broker-popup-forms.ts");
+/* harmony import */ var _components_driver_autocomplete__WEBPACK_IMPORTED_MODULE_63__ = __webpack_require__(/*! ./components/driver-autocomplete */ "./src/js/components/driver-autocomplete.ts");
+/* harmony import */ var _components_common_audio_helper__WEBPACK_IMPORTED_MODULE_64__ = __webpack_require__(/*! ./components/common/audio-helper */ "./src/js/components/common/audio-helper.ts");
+/* harmony import */ var _components_timer_control__WEBPACK_IMPORTED_MODULE_65__ = __webpack_require__(/*! ./components/timer-control */ "./src/js/components/timer-control.ts");
+/* harmony import */ var _components_timer_analytics__WEBPACK_IMPORTED_MODULE_66__ = __webpack_require__(/*! ./components/timer-analytics */ "./src/js/components/timer-analytics.ts");
+/* harmony import */ var _components_dark_mode_toggle__WEBPACK_IMPORTED_MODULE_67__ = __webpack_require__(/*! ./components/dark-mode-toggle */ "./src/js/components/dark-mode-toggle.ts");
+/* harmony import */ var _components_drivers_map__WEBPACK_IMPORTED_MODULE_68__ = __webpack_require__(/*! ./components/drivers-map */ "./src/js/components/drivers-map.ts");
+
 
 
 
@@ -31157,7 +31392,7 @@ function ready() {
   var linkEndurance = var_from_php.link_web_service_endurance;
   var linkMartlet = var_from_php.link_web_service_martlet;
   var hereApi = var_from_php.here_api_key;
-  (0,_components_search_driver_search_driver_core__WEBPACK_IMPORTED_MODULE_38__.initialSearchDriver)(var_from_php);
+  (0,_components_search_driver_search_driver_core__WEBPACK_IMPORTED_MODULE_39__.initialSearchDriver)(var_from_php);
   var useServices = {
     Odysseia: linkOdysseia,
     Endurance: linkEndurance,
@@ -31165,12 +31400,12 @@ function ready() {
   };
   var popupInstance = new _parts_popup_window__WEBPACK_IMPORTED_MODULE_2__["default"]();
   popupInstance.init();
-  _components_common_audio_helper__WEBPACK_IMPORTED_MODULE_63__["default"].getInstance();
-  var driverPopupForms = new _components_driver_popup_forms__WEBPACK_IMPORTED_MODULE_59__["default"](urlAjax);
-  var brokerPopupForms = new _components_broker_popup_forms__WEBPACK_IMPORTED_MODULE_61__["default"](urlAjax);
+  _components_common_audio_helper__WEBPACK_IMPORTED_MODULE_64__["default"].getInstance();
+  var driverPopupForms = new _components_driver_popup_forms__WEBPACK_IMPORTED_MODULE_60__["default"](urlAjax);
+  var brokerPopupForms = new _components_broker_popup_forms__WEBPACK_IMPORTED_MODULE_62__["default"](urlAjax);
   var singlePageBrokerUrl = (var_from_php === null || var_from_php === void 0 ? void 0 : var_from_php.single_page_broker) || '';
-  var brokerPopups = new _components_broker_popups__WEBPACK_IMPORTED_MODULE_60__["default"](urlAjax, singlePageBrokerUrl);
-  new _components_driver_autocomplete__WEBPACK_IMPORTED_MODULE_62__["default"](urlAjax, {
+  var brokerPopups = new _components_broker_popups__WEBPACK_IMPORTED_MODULE_61__["default"](urlAjax, singlePageBrokerUrl);
+  new _components_driver_autocomplete__WEBPACK_IMPORTED_MODULE_63__["default"](urlAjax, {
     unitInput: '.js-unit-number-input',
     dropdown: '.js-driver-dropdown',
     attachedDriverInput: 'input[name="attached_driver"]',
@@ -31179,7 +31414,7 @@ function ready() {
     nonceInput: '#driver-search-nonce',
     driverValueInput: '.js-driver-value'
   });
-  new _components_driver_autocomplete__WEBPACK_IMPORTED_MODULE_62__["default"](urlAjax, {
+  new _components_driver_autocomplete__WEBPACK_IMPORTED_MODULE_63__["default"](urlAjax, {
     unitInput: '.js-second-unit-number-input',
     dropdown: '.js-second-driver-dropdown',
     attachedDriverInput: 'input[name="attached_second_driver"]',
@@ -31187,7 +31422,7 @@ function ready() {
     unitNumberNameInput: 'input[name="second_unit_number_name"]',
     nonceInput: '#second-driver-search-nonce'
   });
-  new _components_driver_autocomplete__WEBPACK_IMPORTED_MODULE_62__["default"](urlAjax, {
+  new _components_driver_autocomplete__WEBPACK_IMPORTED_MODULE_63__["default"](urlAjax, {
     unitInput: '.js-third-unit-number-input',
     dropdown: '.js-third-driver-dropdown',
     attachedDriverInput: 'input[name="attached_third_driver"]',
@@ -31203,7 +31438,7 @@ function ready() {
     if (!wasVisible) {
       refererBlock.style.display = 'block';
     }
-    refererAutocomplete = new _components_driver_autocomplete__WEBPACK_IMPORTED_MODULE_62__["default"](urlAjax, {
+    refererAutocomplete = new _components_driver_autocomplete__WEBPACK_IMPORTED_MODULE_63__["default"](urlAjax, {
       unitInput: '.js-referer-unit-number-input',
       dropdown: '.js-referer-driver-dropdown',
       attachedDriverInput: '#referer_by',
@@ -31244,9 +31479,9 @@ function ready() {
       driverPopupForms.loadDriverStatistics(parseInt(driverIdInput.value));
     }
   }
-  new _components_timer_control__WEBPACK_IMPORTED_MODULE_64__.TimerControl(urlAjax);
-  new _components_timer_analytics__WEBPACK_IMPORTED_MODULE_65__.TimerAnalytics(urlAjax);
-  new _components_dark_mode_toggle__WEBPACK_IMPORTED_MODULE_66__["default"](urlAjax);
+  new _components_timer_control__WEBPACK_IMPORTED_MODULE_65__.TimerControl(urlAjax);
+  new _components_timer_analytics__WEBPACK_IMPORTED_MODULE_66__.TimerAnalytics(urlAjax);
+  new _components_dark_mode_toggle__WEBPACK_IMPORTED_MODULE_67__["default"](urlAjax);
   (0,_components_create_report__WEBPACK_IMPORTED_MODULE_4__.actionCreateReportInit)(urlAjax);
   (0,_components_create_report__WEBPACK_IMPORTED_MODULE_4__.createDraftPosts)(urlAjax);
   (0,_components_create_report__WEBPACK_IMPORTED_MODULE_4__.updateFilesReportInit)(urlAjax);
@@ -31277,33 +31512,33 @@ function ready() {
   (0,_components_create_company__WEBPACK_IMPORTED_MODULE_5__.ActionDeleteCompanyInit)(urlAjax);
   (0,_components_create_shipper__WEBPACK_IMPORTED_MODULE_6__.ActionDeleteShipperInit)(urlAjax);
   (0,_components_driver_Info__WEBPACK_IMPORTED_MODULE_11__.initGetInfoDriver)(urlAjax, useServices);
-  (0,_components_driver_core__WEBPACK_IMPORTED_MODULE_31__.driversActions)(urlAjax);
-  (0,_components_trailer_core__WEBPACK_IMPORTED_MODULE_32__.trailersActions)(urlAjax);
-  (0,_components_trailer_form_init__WEBPACK_IMPORTED_MODULE_34__.initTrailerFormFields)();
-  (0,_components_vehicle_core__WEBPACK_IMPORTED_MODULE_33__.vehiclesActions)(urlAjax);
-  (0,_components_vehicle_form_init__WEBPACK_IMPORTED_MODULE_35__.initVehicleFormFields)();
+  (0,_components_driver_core__WEBPACK_IMPORTED_MODULE_32__.driversActions)(urlAjax);
+  (0,_components_trailer_core__WEBPACK_IMPORTED_MODULE_33__.trailersActions)(urlAjax);
+  (0,_components_trailer_form_init__WEBPACK_IMPORTED_MODULE_35__.initTrailerFormFields)();
+  (0,_components_vehicle_core__WEBPACK_IMPORTED_MODULE_34__.vehiclesActions)(urlAjax);
+  (0,_components_vehicle_form_init__WEBPACK_IMPORTED_MODULE_36__.initVehicleFormFields)();
   (0,_components_filter_clean__WEBPACK_IMPORTED_MODULE_16__.cleanUrlByFilterDriver)();
   (0,_components_filter_clean__WEBPACK_IMPORTED_MODULE_16__.cleanUrlByFilterDriverSearch)();
   (0,_components_filter_clean__WEBPACK_IMPORTED_MODULE_16__.cleanUrlByFilterDriverDocuments)();
   (0,_components_filter_clean__WEBPACK_IMPORTED_MODULE_16__.cleanUrlByFilterDriverInsurance)();
   (0,_components_driver_notes_edit__WEBPACK_IMPORTED_MODULE_17__.initDriverNotesEdit)(urlAjax);
-  (0,_components_driver_hold__WEBPACK_IMPORTED_MODULE_39__.driverHoldInit)(urlAjax);
-  (0,_components_driver_core__WEBPACK_IMPORTED_MODULE_31__.driverCoreInit)(urlAjax);
-  (0,_components_capabilities_filter__WEBPACK_IMPORTED_MODULE_41__.initCapabilitiesFilter)();
-  (0,_components_quick_status_update__WEBPACK_IMPORTED_MODULE_42__.initQuickStatusUpdate)(urlAjax);
-  (0,_components_eta_popup__WEBPACK_IMPORTED_MODULE_43__.initEtaPopups)();
-  (0,_components_eta_timer__WEBPACK_IMPORTED_MODULE_44__.initEtaTimers)();
-  (0,_components_rating_reminder_modal__WEBPACK_IMPORTED_MODULE_45__.initRatingReminderModal)();
-  (0,_components_drivers_rate__WEBPACK_IMPORTED_MODULE_46__.initDriversRate)();
-  (0,_components_admin_rating_manager__WEBPACK_IMPORTED_MODULE_47__.initAdminRatingManager)();
-  (0,_components_charts_drivers_statistics_charts__WEBPACK_IMPORTED_MODULE_48__.initDriversStatisticsCharts)();
-  (0,_components_charts_finance_statistics_charts__WEBPACK_IMPORTED_MODULE_49__.initFinanceStatisticsCharts)();
-  (0,_components_charts_source_statistics_charts__WEBPACK_IMPORTED_MODULE_50__.initSourceStatisticsCharts)();
-  (0,_components_drivers_statistics_tabs__WEBPACK_IMPORTED_MODULE_56__.initDriversStatisticsTabs)();
-  (0,_components_charts_location_vehicle_charts__WEBPACK_IMPORTED_MODULE_52__.initLocationVehicleCharts)();
-  (0,_components_charts_loads_by_state_chart__WEBPACK_IMPORTED_MODULE_53__.initLoadsByStateChartComponent)();
-  (0,_components_charts_loads_by_route_chart__WEBPACK_IMPORTED_MODULE_54__.initLoadsByRouteChartComponent)();
-  (0,_components_create_chat__WEBPACK_IMPORTED_MODULE_55__.initCreateChatForm)(urlAjax);
+  (0,_components_driver_hold__WEBPACK_IMPORTED_MODULE_40__.driverHoldInit)(urlAjax);
+  (0,_components_driver_core__WEBPACK_IMPORTED_MODULE_32__.driverCoreInit)(urlAjax);
+  (0,_components_capabilities_filter__WEBPACK_IMPORTED_MODULE_42__.initCapabilitiesFilter)();
+  (0,_components_quick_status_update__WEBPACK_IMPORTED_MODULE_43__.initQuickStatusUpdate)(urlAjax);
+  (0,_components_eta_popup__WEBPACK_IMPORTED_MODULE_44__.initEtaPopups)();
+  (0,_components_eta_timer__WEBPACK_IMPORTED_MODULE_45__.initEtaTimers)();
+  (0,_components_rating_reminder_modal__WEBPACK_IMPORTED_MODULE_46__.initRatingReminderModal)();
+  (0,_components_drivers_rate__WEBPACK_IMPORTED_MODULE_47__.initDriversRate)();
+  (0,_components_admin_rating_manager__WEBPACK_IMPORTED_MODULE_48__.initAdminRatingManager)();
+  (0,_components_charts_drivers_statistics_charts__WEBPACK_IMPORTED_MODULE_49__.initDriversStatisticsCharts)();
+  (0,_components_charts_finance_statistics_charts__WEBPACK_IMPORTED_MODULE_50__.initFinanceStatisticsCharts)();
+  (0,_components_charts_source_statistics_charts__WEBPACK_IMPORTED_MODULE_51__.initSourceStatisticsCharts)();
+  (0,_components_drivers_statistics_tabs__WEBPACK_IMPORTED_MODULE_57__.initDriversStatisticsTabs)();
+  (0,_components_charts_location_vehicle_charts__WEBPACK_IMPORTED_MODULE_53__.initLocationVehicleCharts)();
+  (0,_components_charts_loads_by_state_chart__WEBPACK_IMPORTED_MODULE_54__.initLoadsByStateChartComponent)();
+  (0,_components_charts_loads_by_route_chart__WEBPACK_IMPORTED_MODULE_55__.initLoadsByRouteChartComponent)();
+  (0,_components_create_chat__WEBPACK_IMPORTED_MODULE_56__.initCreateChatForm)(urlAjax);
   var homeLocationMapElement = document.getElementById('usaStatesMap');
   if (homeLocationMapElement) {
     var stateMapData = homeLocationMapElement.dataset.stateMapData;
@@ -31312,13 +31547,13 @@ function ready() {
     var geojsonSource = homeLocationMapElement.dataset.geojsonSource;
     if (stateMapData && maxCount && stateMarkersData && geojsonSource) {
       try {
-        (0,_components_charts_home_location_map__WEBPACK_IMPORTED_MODULE_51__.initHomeLocationMap)(JSON.parse(stateMapData), parseInt(maxCount, 10), JSON.parse(stateMarkersData), geojsonSource, 'usaStatesMap', 'mapInfoPanel');
+        (0,_components_charts_home_location_map__WEBPACK_IMPORTED_MODULE_52__.initHomeLocationMap)(JSON.parse(stateMapData), parseInt(maxCount, 10), JSON.parse(stateMarkersData), geojsonSource, 'usaStatesMap', 'mapInfoPanel');
       } catch (e) {
         console.error('Error initializing home location map:', e);
       }
     }
   }
-  window.initHomeLocationMap = _components_charts_home_location_map__WEBPACK_IMPORTED_MODULE_51__.initHomeLocationMap;
+  window.initHomeLocationMap = _components_charts_home_location_map__WEBPACK_IMPORTED_MODULE_52__.initHomeLocationMap;
   var loadsByStateMapElement = document.getElementById('loadsByStateMap');
   if (loadsByStateMapElement) {
     var loadsMapView = document.getElementById('loads-map-view');
@@ -31329,7 +31564,7 @@ function ready() {
       var _geojsonSource = loadsByStateMapElement.dataset.geojsonSource;
       if (_stateMapData && _maxCount && _stateMarkersData && _geojsonSource) {
         try {
-          (0,_components_charts_home_location_map__WEBPACK_IMPORTED_MODULE_51__.initHomeLocationMap)(JSON.parse(_stateMapData), parseInt(_maxCount, 10), JSON.parse(_stateMarkersData), _geojsonSource, 'loadsByStateMap', 'loadsByStateMapInfoPanel');
+          (0,_components_charts_home_location_map__WEBPACK_IMPORTED_MODULE_52__.initHomeLocationMap)(JSON.parse(_stateMapData), parseInt(_maxCount, 10), JSON.parse(_stateMarkersData), _geojsonSource, 'loadsByStateMap', 'loadsByStateMapInfoPanel');
         } catch (e) {
           console.error('Error initializing loads by state map:', e);
         }
@@ -31337,7 +31572,7 @@ function ready() {
     }
   }
   if (hereApi) {
-    new _components_drivers_map__WEBPACK_IMPORTED_MODULE_67__["default"](urlAjax, hereApi);
+    new _components_drivers_map__WEBPACK_IMPORTED_MODULE_68__["default"](urlAjax, hereApi);
   }
   (0,_components_create_report__WEBPACK_IMPORTED_MODULE_4__.additionalContactsInit)();
   (0,_components_create_report__WEBPACK_IMPORTED_MODULE_4__.addShipperPointInit)();
@@ -31369,18 +31604,19 @@ function ready() {
   (0,_components_tel_mask__WEBPACK_IMPORTED_MODULE_23__.dateMaskInit)();
   (0,_components_input_helpers__WEBPACK_IMPORTED_MODULE_3__.dragAnDropInit)();
   (0,_components_input_helpers__WEBPACK_IMPORTED_MODULE_3__.unrequiderInit)();
-  (0,_components_common_hold_section__WEBPACK_IMPORTED_MODULE_40__.holdSectionInit)();
-  (0,_components_document_create_money_check__WEBPACK_IMPORTED_MODULE_30__.createDocumentInvoice)();
-  (0,_components_document_create_money_check__WEBPACK_IMPORTED_MODULE_30__.createDocumentInvoiceActions)(urlAjax);
-  (0,_components_document_create_money_check__WEBPACK_IMPORTED_MODULE_30__.createDocumentBolActions)(urlAjax);
-  (0,_components_document_create_money_check__WEBPACK_IMPORTED_MODULE_30__.createDocumentSettlementSummaryActions)(urlAjax);
-  (0,_components_move_dispatcher__WEBPACK_IMPORTED_MODULE_37__.moveDispatcher)(urlAjax);
-  (0,_components_contacts_contacts_init__WEBPACK_IMPORTED_MODULE_36__.initContactsHandler)(urlAjax);
+  (0,_components_common_hold_section__WEBPACK_IMPORTED_MODULE_41__.holdSectionInit)();
+  (0,_components_document_create_money_check__WEBPACK_IMPORTED_MODULE_31__.createDocumentInvoice)();
+  (0,_components_document_create_money_check__WEBPACK_IMPORTED_MODULE_31__.createDocumentInvoiceActions)(urlAjax);
+  (0,_components_document_create_money_check__WEBPACK_IMPORTED_MODULE_31__.createDocumentBolActions)(urlAjax);
+  (0,_components_document_create_money_check__WEBPACK_IMPORTED_MODULE_31__.createDocumentSettlementSummaryActions)(urlAjax);
+  (0,_components_move_dispatcher__WEBPACK_IMPORTED_MODULE_38__.moveDispatcher)(urlAjax);
+  (0,_components_contacts_contacts_init__WEBPACK_IMPORTED_MODULE_37__.initContactsHandler)(urlAjax);
   (0,_components_create_report__WEBPACK_IMPORTED_MODULE_4__.pinnedMessageInit)(urlAjax);
   (0,_components_create_report__WEBPACK_IMPORTED_MODULE_4__.addDeletePinnedHandler)(urlAjax);
   (0,_components_input_helpers__WEBPACK_IMPORTED_MODULE_3__.applyZipCodeMask)('.js-zip-code-mask');
-  (0,_components_auto_submit_form__WEBPACK_IMPORTED_MODULE_29__.initAutoSubmitForm)('.js-auto-submit-form');
+  (0,_components_auto_submit_form__WEBPACK_IMPORTED_MODULE_30__.initAutoSubmitForm)('.js-auto-submit-form');
   (0,_components_tracking_live_update__WEBPACK_IMPORTED_MODULE_28__.initTrackingLiveUpdate)(urlAjax);
+  (0,_components_live_reload_notification__WEBPACK_IMPORTED_MODULE_29__.initLiveReloadNotification)();
   var preloaders = document.querySelectorAll('.js-preloader');
   preloaders && preloaders.forEach(function (item) {
     item.remove();

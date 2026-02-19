@@ -1,17 +1,39 @@
 <?php
 /**
- * Template Name: Page add driver
+ * Template Name: HR - Add driver FTL
  *
  * @package WP-rock
  * @since 4.4.0
  */
 
-// Initialize core classes
+ // Initialize core classes
 $driver       = new TMSDrivers();
 $helperDriver = new TMSDriversHelper();
 $helper       = new TMSReportsHelper();
 $TMSUsers     = new TMSUsers();
 $TMSReports   = new TMSReports();
+
+
+ $access = $TMSUsers->check_user_role_access( [
+	'administrator',
+	'recruiter',
+	'recruiter-tl',
+	'hr_manager',
+	'moderator',
+], true );
+
+$access_flt = get_field( 'flt', 'user_' . get_current_user_id() );
+$is_admin = current_user_can( 'administrator' );
+
+if ( ! $access_flt && ! $is_admin ) {
+	$access = false;
+}
+
+if ( ! $access ) {
+	wp_redirect( home_url() );
+	exit;
+}
+
 
 // Initialize default values
 $disabled_tabs   = 'disabled';
@@ -95,7 +117,7 @@ if ( $post_id && is_numeric( $post_id ) ) {
 	}
 	
 	// Check required fields for driver publication
-	$message_arr    = $driver->check_empty_fields( $post_id, $meta );
+	$message_arr    = $driver->check_empty_fields( $post_id, $meta, true );
 	$print_status   = true;
 	$status_type    = $message_arr['status'];
 	$status_message = $message_arr['message'];
@@ -286,21 +308,7 @@ if ( $dispatchers_view ) {
 										</button>
 									</li>
 
-									<li class="nav-item js-change-url-tab flex-grow-1" role="presentation">
-										<button class="nav-link w-100 <?php 
-											echo esc_attr( $disabled_tabs );
-											echo esc_attr( $helper->change_active_tab( 'pills-driver-vehicle-tab', 'show', $view_mode ) ); 
-										?>" 
-											id="pills-driver-vehicle-tab"
-											data-bs-toggle="pill"
-											data-bs-target="#pills-driver-vehicle" 
-											type="button" 
-											role="tab"
-											aria-controls="pills-driver-vehicle"
-											aria-selected="false">
-											Vehicle
-										</button>
-									</li>
+									
 
 									<li class="nav-item js-change-url-tab flex-grow-1" role="presentation">
 										<button class="nav-link w-100 <?php 
@@ -378,28 +386,14 @@ if ( $dispatchers_view ) {
 										role="tabpanel"
 										aria-labelledby="pills-driver-contact-tab">
 										<?php
-										echo esc_html( get_template_part( TEMPLATE_PATH . 'tabs/driver', 'tab-contact', array(
+										echo esc_html( get_template_part( TEMPLATE_PATH . 'tabs/driver', 'tab-contact-ftl', array(
 											'full_view_only' => $full_only_view,
 											'report_object'  => $driver_object,
-											'post_id'        => $post_id
+											'post_id'        => $post_id,
 										) ) );
 										?>
 									</div>
 
-									<div class="tab-pane fade <?php 
-										echo esc_attr( $helper->change_active_tab( 'pills-driver-vehicle-tab', 'show', $view_mode ) ); 
-									?>" 
-										id="pills-driver-vehicle" 
-										role="tabpanel"
-										aria-labelledby="pills-driver-vehicle-tab">
-										<?php
-										echo esc_html( get_template_part( TEMPLATE_PATH . 'tabs/driver', 'tab-information', array(
-											'full_view_only' => $full_only_view,
-											'report_object'  => $driver_object,
-											'post_id'        => $post_id
-										) ) );
-										?>
-									</div>
 
 									<div class="tab-pane fade <?php 
 										echo esc_attr( $helper->change_active_tab( 'pills-driver-finance-tab', 'show', $view_mode ) ); 
@@ -439,7 +433,7 @@ if ( $dispatchers_view ) {
 										role="tabpanel"
 										aria-labelledby="pills-driver-documents-tab">
 										<?php
-										echo esc_html( get_template_part( TEMPLATE_PATH . 'tabs/driver', 'tab-document', array(
+										echo esc_html( get_template_part( TEMPLATE_PATH . 'tabs/driver', 'tab-document-ftl', array(
 											'full_view_only' => $full_only_view,
 											'report_object'  => $driver_object,
 											'post_id'        => $post_id

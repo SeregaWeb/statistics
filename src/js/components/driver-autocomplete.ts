@@ -76,9 +76,12 @@ class DriverAutocomplete {
             this.selectedDriver = null;
         }
 
+        const ftlAttr = input.getAttribute('data-ftl');
+        const ftl = ftlAttr === '1' || ftlAttr === 'true';
+
         // Debounce search
         this.searchTimeout = setTimeout(() => {
-            this.searchDrivers(value);
+            this.searchDrivers(value, ftl);
         }, 300);
     }
 
@@ -92,7 +95,9 @@ class DriverAutocomplete {
         const input = document.querySelector(this.selectors.unitInput) as HTMLInputElement;
         if (input) {
             const currentValue = input.value.trim();
-            
+            const ftlAttr = input.getAttribute('data-ftl');
+            const ftl = ftlAttr === '1' || ftlAttr === 'true';
+
             // If field is empty but we have a selected driver, show cached results for last search
             if (!currentValue && this.selectedDriver && this.lastSearchTerm && this.searchCache.has(this.lastSearchTerm)) {
                 this.showDropdown(this.searchCache.get(this.lastSearchTerm)!);
@@ -101,7 +106,7 @@ class DriverAutocomplete {
                 if (this.searchCache.has(currentValue)) {
                     this.showDropdown(this.searchCache.get(currentValue)!);
                 } else {
-                    this.searchDrivers(currentValue);
+                    this.searchDrivers(currentValue, ftl);
                 }
             }
         }
@@ -148,15 +153,18 @@ class DriverAutocomplete {
         }
     }
 
-    private async searchDrivers(unitNumber: string): Promise<void> {
+    private async searchDrivers(unitNumber: string, ftl: boolean | undefined): Promise<void> {
         try {
             const nonceInput = document.getElementById(this.selectors.nonceInput.replace('#', '')) as HTMLInputElement;
             const nonce = nonceInput ? nonceInput.value : '';
 
-            const formData = new FormData();
+            const formData = new FormData(); 
             formData.append('action', 'search_drivers_by_unit');
             formData.append('unit_number', unitNumber);
             formData.append('nonce', nonce);
+            if (ftl) {
+                formData.append('ftl', '1');
+            } 
 
             const response = await fetch(this.ajaxUrl, {
                 method: 'POST',
@@ -318,16 +326,13 @@ class DriverAutocomplete {
         const unitNumberNameInput = document.querySelector(this.selectors.unitNumberNameInput) as HTMLInputElement;
         const phoneInput = this.selectors.phoneInput ? document.querySelector(this.selectors.phoneInput) as HTMLInputElement : null;
 
-        // For referer field, phoneInput might be empty, so we only require attachedDriverInput and unitNumberNameInput
+        // When phone field exists in DOM, require it to have value for restore (e.g. load form).
+        // When phone field is absent (e.g. vehicle-add page), restore with driver data only.
         const hasPhone = phoneInput && phoneInput.value;
-        const hasDriverData = attachedDriverInput && attachedDriverInput.value && 
+        const hasDriverData = attachedDriverInput && attachedDriverInput.value &&
             unitNumberNameInput && unitNumberNameInput.value;
-        
-        // If phone is required (not empty selector), both driver data and phone must exist
-        // If phone is optional (empty selector), only driver data is required
-        const shouldRestore = this.selectors.phoneInput 
-            ? (hasDriverData && hasPhone)
-            : hasDriverData;
+
+        const shouldRestore = hasDriverData && (!phoneInput || hasPhone);
 
         if (shouldRestore) {
             // Reconstruct driver object from existing data

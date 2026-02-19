@@ -179,15 +179,17 @@ export const modalLogsInit = (ajaxUrl) => {
                         printMessage(successMessage, 'success', 3000);
                         // @ts-ignore
                         target.reset();
-                        
+
                         if (isPinned) {
-                            // Handle pinned message response
-                            if (requestStatus.data.pinned) {
+                            // Handle pinned message response (pinned is an array)
+                            const pinnedList = requestStatus.data?.pinned;
+                            if (pinnedList && Array.isArray(pinnedList)) {
                                 const modalForLog = document.getElementById('addLogModal');
                                 const pinnedWrapper = modalForLog ? (modalForLog as any).targetPinnedWrapper as HTMLElement | undefined : undefined;
                                 if (pinnedWrapper) {
-                                    const { pinned } = requestStatus.data as any;
-                                    const pinnedHtml = `
+                                    let pinnedHtml = '';
+                                    pinnedList.forEach((pinned: { full_name?: string; time_pinned?: string; pinned_message?: string }) => {
+                                        pinnedHtml += `
                                     <div class="pinned-message">
                                         <div class="d-flex justify-content-between align-items-center pinned-message__header">
                                             <span class="d-flex align-items-center ">
@@ -202,6 +204,7 @@ export const modalLogsInit = (ajaxUrl) => {
                                             ${pinned.pinned_message || ''}
                                         </div>
                                     </div>`;
+                                    });
                                     pinnedWrapper.innerHTML = pinnedHtml;
                                 }
                             }

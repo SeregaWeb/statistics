@@ -580,7 +580,6 @@ class TMSDrivers extends TMSDriversHelper {
 					'canada_transition_file',
 					'immigration_file',
 					'background_file',
-					'interview_file',
 					'team_driver_driving_record',
 					'immigration_file_team_driver',
 					'legal_document_team_driver',
@@ -590,6 +589,7 @@ class TMSDrivers extends TMSDriversHelper {
 					'change_9_file_team_driver',
 					'interview_martlet',
 					'interview_endurance',
+					'driver_photo',
 
 				] ) ) {
 					// Если это множественные файлы (attached_files), разбиваем на массив
@@ -951,7 +951,7 @@ class TMSDrivers extends TMSDriversHelper {
 		return $args;
 	}
 	
-	public function get_table_items( $args = array() ) {
+	public function get_table_items( $args = array(), $ftl_driver = false ) {
 		global $wpdb;
 		
 		$table_main   = $wpdb->prefix . $this->table_main;
@@ -988,6 +988,8 @@ class TMSDrivers extends TMSDriversHelper {
 				ON main.id = mc.post_id AND mc.meta_key = 'mc_enabled'
 			LEFT JOIN $table_meta AS dot
 				ON main.id = dot.post_id AND dot.meta_key = 'dot_enabled'
+			LEFT JOIN $table_meta AS ftl_driver
+				ON main.id = ftl_driver.post_id AND ftl_driver.meta_key = 'ftl_driver'
 		";
 		
 		$where_conditions = array();
@@ -997,6 +999,13 @@ class TMSDrivers extends TMSDriversHelper {
 		$excluded_driver_ids = array( 3343 ); // Test driver(s) to exclude completely
 		if ( ! empty( $excluded_driver_ids ) ) {
 			$where_conditions[] = 'main.id NOT IN (' . implode( ',', array_map( 'absint', $excluded_driver_ids ) ) . ')';
+		}
+
+		if ( $ftl_driver ) {
+			$where_conditions[] = "ftl_driver.meta_value = %s";
+			$where_values[]     = '1';
+		} else {
+			$where_conditions[] = "ftl_driver.meta_value IS NULL";
 		}
 		
 		// Дополнительный LEFT JOIN по переданному полю
@@ -2873,6 +2882,7 @@ class TMSDrivers extends TMSDriversHelper {
 				'tsa_file_team_driver',
 				'interview_martlet',
 				'interview_endurance',
+				'driver_photo',
 			], true ) ) {
 				// Special handling for payment file - save to old payment file before checking
 				if ( $image_field === 'payment_file' ) {
@@ -3386,7 +3396,10 @@ class TMSDrivers extends TMSDriversHelper {
 				'mc_dot_human_tested'        => isset( $_POST[ 'mc_dot_human_tested' ] )
 					? sanitize_text_field( $_POST[ 'mc_dot_human_tested' ] ) : '',
 			);
-			
+
+			if ( isset( $_POST[ 'ftl_driver' ] ) && $_POST[ 'ftl_driver' ] === '1' ) {
+				$data[ 'ftl_driver' ] = '1';
+			}
 			// At this point, the data is sanitized and ready for further processing or saving to the database
 			$result = $this->add_driver_in_db( $data );
 			
@@ -3500,6 +3513,9 @@ class TMSDrivers extends TMSDriversHelper {
 					? sanitize_text_field( $_POST[ 'referer_name' ] ) : '',
 			);
 			
+			if ( isset( $_POST[ 'ftl_driver' ] ) && $_POST[ 'ftl_driver' ] === '1' ) {
+				$data[ 'ftl_driver' ] = '1';
+			}
 			// Debug: log referer fields
 			error_log( 'TMSDrivers update_driver_contact - referer_by: ' . ( $data[ 'referer_by' ] ?? 'NOT SET' ) );
 			error_log( 'TMSDrivers update_driver_contact - referer_name: ' . ( $data[ 'referer_name' ] ?? 'NOT SET' ) );
@@ -4385,6 +4401,7 @@ class TMSDrivers extends TMSDriversHelper {
 				'interview_martlet',
 				'interview_endurance',
 				'legal_document_owner',
+				'driver_photo',
 			);
 			
 			
@@ -4870,6 +4887,49 @@ class TMSDrivers extends TMSDriversHelper {
 		set_transient( $cache_key, $names, HOUR_IN_SECONDS );
 
 		return array_values( array_intersect( $rater_names, $names ) );
+	}
+
+	/**
+	 * Get raters per order number for many orders in one query (batch).
+	 * Returns [ order_number => [ name1, name2, ... ] ] — names that have a rating for that order.
+	 *
+	 * @param array $order_numbers List of order/reference numbers (raw, will be sanitized).
+	 * @return array<string, array>
+	 */
+	public function get_raters_for_order_numbers_batch( array $order_numbers ) {
+		global $wpdb;
+
+		$order_numbers = array_unique( array_filter( array_map( function( $n ) {
+			return sanitize_text_field( (string) $n );
+		}, $order_numbers ) ) );
+		if ( empty( $order_numbers ) ) {
+			return array();
+		}
+
+		$table_name   = $wpdb->prefix . $this->table_raiting;
+		$placeholders = implode( ',', array_fill( 0, count( $order_numbers ), '%s' ) );
+		$query        = $wpdb->prepare(
+			"SELECT order_number, name FROM $table_name WHERE order_number IN ($placeholders)",
+			$order_numbers
+		);
+		$rows = $wpdb->get_results( $query, ARRAY_A );
+
+		$by_order = array();
+		foreach ( $order_numbers as $on ) {
+			$by_order[ $on ] = array();
+		}
+		if ( is_array( $rows ) ) {
+			foreach ( $rows as $row ) {
+				$on = $row['order_number'];
+				if ( ! isset( $by_order[ $on ] ) ) {
+					$by_order[ $on ] = array();
+				}
+				if ( ! in_array( $row['name'], $by_order[ $on ], true ) ) {
+					$by_order[ $on ][] = $row['name'];
+				}
+			}
+		}
+		return $by_order;
 	}
 
 	/**
@@ -6959,6 +7019,65 @@ class TMSDrivers extends TMSDriversHelper {
 		}
 		
 		return $result;
+	}
+
+	/**
+	 * Get driver statistics (rating avg/count, notice count) for many drivers in 2 queries (batch).
+	 * Same structure as get_driver_statistics( $id, false ) per driver, without 'data' keys.
+	 *
+	 * @param int[] $driver_ids Driver IDs.
+	 * @return array<int, array{rating: array{avg_rating: float, count: int}, notice: array{count: int}}>
+	 */
+	public function get_driver_statistics_batch( array $driver_ids ) {
+		global $wpdb;
+
+		$driver_ids = array_unique( array_filter( array_map( 'absint', $driver_ids ) ) );
+		if ( empty( $driver_ids ) ) {
+			return array();
+		}
+
+		$rating_table = $wpdb->prefix . $this->table_raiting;
+		$notice_table = $wpdb->prefix . $this->table_notice;
+		$placeholders = implode( ',', array_fill( 0, count( $driver_ids ), '%d' ) );
+
+		$by_driver = array();
+		foreach ( $driver_ids as $did ) {
+			$by_driver[ $did ] = array(
+				'rating' => array( 'avg_rating' => 0, 'count' => 0, 'data' => array() ),
+				'notice' => array( 'count' => 0, 'data' => array() ),
+			);
+		}
+
+		$rating_query = $wpdb->prepare(
+			"SELECT driver_id, AVG(reit) AS avg_rating, COUNT(*) AS count FROM $rating_table WHERE driver_id IN ($placeholders) GROUP BY driver_id",
+			$driver_ids
+		);
+		$rating_rows = $wpdb->get_results( $rating_query, ARRAY_A );
+		if ( is_array( $rating_rows ) ) {
+			foreach ( $rating_rows as $r ) {
+				$did = (int) $r['driver_id'];
+				if ( isset( $by_driver[ $did ] ) ) {
+					$by_driver[ $did ]['rating']['avg_rating'] = round( (float) $r['avg_rating'], 2 );
+					$by_driver[ $did ]['rating']['count']      = (int) $r['count'];
+				}
+			}
+		}
+
+		$notice_query = $wpdb->prepare(
+			"SELECT driver_id, COUNT(*) AS count FROM $notice_table WHERE driver_id IN ($placeholders) GROUP BY driver_id",
+			$driver_ids
+		);
+		$notice_rows = $wpdb->get_results( $notice_query, ARRAY_A );
+		if ( is_array( $notice_rows ) ) {
+			foreach ( $notice_rows as $n ) {
+				$did = (int) $n['driver_id'];
+				if ( isset( $by_driver[ $did ] ) ) {
+					$by_driver[ $did ]['notice']['count'] = (int) $n['count'];
+				}
+			}
+		}
+
+		return $by_driver;
 	}
 	
 	/**
@@ -10468,7 +10587,7 @@ class TMSDrivers extends TMSDriversHelper {
 	 *
 	 * @return array Array with status and message
 	 */
-	public function check_empty_fields( $driver_id, $meta = false ) {
+	public function check_empty_fields( $driver_id, $meta = false , $ftl_driver = false ) {
 		global $wpdb;
 		
 		// Table for meta data
@@ -10512,6 +10631,33 @@ class TMSDrivers extends TMSDriversHelper {
 			// 'ssn'                 => 'SSN',
 			// 'address'             => 'Address',
 		];
+
+		if ( $ftl_driver ) {
+			$required_fields = [
+				'driver_name'                => 'Driver Name',
+				'driver_phone'               => 'Phone',
+				'driver_email'               => 'Email',
+				'interview_file'             => 'Interview File',
+				'home_location'              => 'Home Location',
+				'city'                       => 'City',
+				'dob'                        => 'Date of Birth',
+				'languages'                  => 'Languages',
+				'emergency_contact_name'     => 'Emergency Contact Name',
+				'emergency_contact_phone'    => 'Emergency Contact Phone',
+				'emergency_contact_relation' => 'Emergency Contact Relation',
+				'source'                     => 'Source',
+				'account_type'               => 'Account Type',
+				'account_name'               => 'Account Name',
+				'payment_instruction'        => 'Payment Instruction',
+				'w9_classification'          => 'W9 Classification',
+				'legal_document_type'        => 'Legal Document Type',
+				'nationality'                => 'Nationality',
+				// Add more required fields here as needed
+				'driver_licence'      => 'Driver License',
+				// 'ssn'                 => 'SSN',
+				// 'address'             => 'Address',
+			];
+		}
 		
 		// Form array of meta keys for validation
 		$meta_keys    = array_keys( $required_fields );
@@ -11386,8 +11532,10 @@ class TMSDrivers extends TMSDriversHelper {
 			wp_send_json_error( 'Unit number is required' );
 			return;
 		}
+
+		$ftl = isset( $_POST['ftl'] ) && $_POST['ftl'] === '1' ? true : false;
 		
-		$drivers = $this->search_drivers_by_unit_number( $unit_number );
+		$drivers = $this->search_drivers_by_unit_number( $unit_number, $ftl );
 		
 		wp_send_json_success( $drivers );
 	}
@@ -11398,7 +11546,7 @@ class TMSDrivers extends TMSDriversHelper {
 	 * @param string $unit_number Driver ID to search for
 	 * @return array Array of matching drivers
 	 */
-	public function search_drivers_by_unit_number( $unit_number ) {
+	public function search_drivers_by_unit_number( $unit_number, $ftl = false ) {
 		global $wpdb;
 
 		$drivers_table     = $wpdb->prefix . $this->table_main;
@@ -11411,6 +11559,9 @@ class TMSDrivers extends TMSDriversHelper {
 		}
 
 		$like_param = $unit_number . '%';
+		$ftl_condition = $ftl
+			? "AND dm_ftl.meta_value = '1'"
+			: "AND (dm_ftl.meta_value IS NULL OR dm_ftl.meta_value != '1')";
 		$query      = "
 			SELECT 
 				d.id as driver_id,
@@ -11421,8 +11572,10 @@ class TMSDrivers extends TMSDriversHelper {
 			LEFT JOIN {$drivers_meta_table} dm_name ON d.id = dm_name.post_id AND dm_name.meta_key = 'driver_name'
 			LEFT JOIN {$drivers_meta_table} dm_phone ON d.id = dm_phone.post_id AND dm_phone.meta_key = 'driver_phone'
 			LEFT JOIN {$drivers_meta_table} dm_status ON d.id = dm_status.post_id AND dm_status.meta_key = 'driver_status'
+			LEFT JOIN {$drivers_meta_table} dm_ftl ON d.id = dm_ftl.post_id AND dm_ftl.meta_key = 'ftl_driver'
 			WHERE CAST(d.id AS CHAR) LIKE %s
 			AND (dm_status.meta_value IS NULL OR dm_status.meta_value NOT IN ('blocked', 'banned', 'expired_documents'))
+			{$ftl_condition}
 			ORDER BY dm_name.meta_value ASC
 		";
 		$results = $wpdb->get_results( $wpdb->prepare( $query, $like_param ) );

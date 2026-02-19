@@ -43,12 +43,12 @@ $printer                 = get_field_value( $meta, 'printer' );
 $sleeper                 = get_field_value( $meta, 'sleeper' );
 $dock_high               = get_field_value( $meta, 'dock_high' );
 
-$dimension_arr = explode( '/', $dimensions );
+$dimension_arr = explode( '/', (string) ( $dimensions ?? '' ) );
 $dimensions_1  = $dimensions ? ( isset( $dimension_arr[ 0 ] ) ? $dimension_arr[ 0 ] : '' ) : '';
 $dimensions_2  = $dimensions ? ( isset( $dimension_arr[ 1 ] ) ? $dimension_arr[ 1 ] : '' ) : '';
 $dimensions_3  = $dimensions ? ( isset( $dimension_arr[ 2 ] ) ? $dimension_arr[ 2 ] : '' ) : '';
 
-$overall_dimensions_arr = explode( '/', $overall_dimensions );
+$overall_dimensions_arr = explode( '/', (string) ( $overall_dimensions ?? '' ) );
 $overall_dimensions_1   = $overall_dimensions ? ( isset( $overall_dimensions_arr[ 0 ] ) ? $overall_dimensions_arr[ 0 ]
 	: '' ) : '';
 $overall_dimensions_2   = $overall_dimensions ? ( isset( $overall_dimensions_arr[ 1 ] ) ? $overall_dimensions_arr[ 1 ]
@@ -57,7 +57,7 @@ $overall_dimensions_3   = $overall_dimensions ? ( isset( $overall_dimensions_arr
 	: '' ) : '';
 
 
-$side_door_arr = explode( '/', $side_door );
+$side_door_arr = explode( '/', (string) ( $side_door ?? '' ) );
 $side_door_1   = $side_door ? ( isset( $side_door_arr[ 0 ] ) ? $side_door_arr[ 0 ] : '' ) : '';
 $side_door_2   = $side_door ? ( isset( $side_door_arr[ 1 ] ) ? $side_door_arr[ 1 ] : '' ) : '';
 

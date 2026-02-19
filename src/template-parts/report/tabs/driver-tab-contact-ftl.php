@@ -38,23 +38,6 @@ $team_driver_languages_array = $team_driver_language_str ? explode( ',', $team_d
 
 $macro_point                = get_field_value( $meta, 'macro_point' );
 $trucker_tools              = get_field_value( $meta, 'trucker_tools' );
-$team_driver_enabled        = get_field_value( $meta, 'team_driver_enabled' );
-$team_driver_name           = get_field_value( $meta, 'team_driver_name' );
-$team_driver_phone          = get_field_value( $meta, 'team_driver_phone' );
-$team_driver_email          = get_field_value( $meta, 'team_driver_email' );
-$team_driver_dob            = get_field_value( $meta, 'team_driver_dob' );
-$team_driver_macro_point    = get_field_value( $meta, 'team_driver_macro_point' );
-$team_driver_trucker_tools  = get_field_value( $meta, 'team_driver_trucker_tools' );
-$owner_enabled              = get_field_value( $meta, 'owner_enabled' );
-$owner_name                 = get_field_value( $meta, 'owner_name' );
-$owner_phone                = get_field_value( $meta, 'owner_phone' );
-$owner_email                = get_field_value( $meta, 'owner_email' );
-$owner_dob                  = get_field_value( $meta, 'owner_dob' );
-$owner_type                 = get_field_value( $meta, 'owner_type' );
-$owner_macro_point          = get_field_value( $meta, 'owner_macro_point' );
-$owner_trucker_tools        = get_field_value( $meta, 'owner_trucker_tools' );
-$owner_van_proprietor       = get_field_value( $meta, 'owner_van_proprietor' );
-$owner_operator             = get_field_value( $meta, 'owner_operator' );
 $emergency_contact_name     = get_field_value( $meta, 'emergency_contact_name' );
 $emergency_contact_phone    = get_field_value( $meta, 'emergency_contact_phone' );
 $emergency_contact_relation = get_field_value( $meta, 'emergency_contact_relation' );
@@ -69,15 +52,11 @@ $referer_name               = get_field_value( $meta, 'referer_name' );
 $interview_file            = get_field_value( $meta, 'interview_file' );
 $interview_file_arr        = $driver->process_file_attachment( $interview_file );
 
-$mc_enabled          = get_field_value( $meta, 'mc_enabled' );
-$mc                  = get_field_value( $meta, 'mc' );
-$dot_enabled         = get_field_value( $meta, 'dot_enabled' );
-$dot                 = get_field_value( $meta, 'dot' );
-$mc_dot_human_tested = get_field_value( $meta, 'mc_dot_human_tested' );
-$clear_background    = get_field_value( $meta, 'clear_background' );
+$driver_photo = get_field_value( $meta, 'driver_photo' );
+$driver_photo_arr = $driver->process_file_attachment( $driver_photo );
 
-// Get clean_check_date from main table
-$clean_check_date = get_field_value( $main, 'clean_check_date' );
+
+
 
 $files = array(
 	array(
@@ -86,6 +65,12 @@ $files = array(
 		'full_only_view' => $full_only_view,
 		'post_id'        => $post_id,
     ), 
+    array(
+        'file_arr'       => $driver_photo_arr,
+        'file'           => $driver_photo,
+        'full_only_view' => $full_only_view,
+        'post_id'        => $post_id,
+    ),
 );
 
 $access_vehicle = $TMSUsers->check_user_role_access( [
@@ -99,7 +84,21 @@ $access_vehicle = $TMSUsers->check_user_role_access( [
 	'moderator',
 ], true );
 
+$total_images = count( $files );
 
+$files = array(
+	array(
+		'file_arr'       => $driver_photo_arr,
+		'file'           => $driver_photo,
+		'full_only_view' => $full_only_view,
+		'post_id'        => $post_id,
+		'class_name'     => 'driver-photo',
+		'field_name'     => 'driver_photo',
+		'field_label'    => 'Driver photo',
+        'delete_action'  => 'js-remove-one-driver',
+		'active_tab'     => 'pills-driver-contact-tab',
+	),
+);
 ?>
 
 <div class="container mt-4 pb-5">
@@ -113,6 +112,30 @@ $access_vehicle = $TMSUsers->check_user_role_access( [
             </div>
             <?php endif; ?>
         </div>
+
+
+        <div class="container-uploads <?php echo $full_only_view ? "read-only" : '' ?>">
+					
+					<?php
+					
+					foreach ( $files as $file ):
+						if ( isset( $file[ 'file_arr' ] ) && $file[ 'file' ] ):
+							echo esc_html( get_template_part( TEMPLATE_PATH . 'common/card', 'file', array(
+								'file_arr'       => $file[ 'file_arr' ],
+								'file'           => $file[ 'file' ],
+								'full_only_view' => $file[ 'full_only_view' ],
+								'post_id'        => $file[ 'post_id' ],
+								'class_name'     => $file[ 'class_name' ],
+								'field_name'     => $file[ 'field_name' ],
+								'field_label'    => $file[ 'field_label' ],
+								'delete_action'  => $file[ 'delete_action' ] ?? 'js-remove-one-driver',
+								'active_tab'     => $file[ 'active_tab' ] ?? 'pills-driver-contact-tab',
+							) ) );
+						endif;
+					endforeach; ?>
+
+
+        </div>
 	<?php if ( $full_only_view ): ?>
     <form>
 		<?php else: ?>
@@ -121,6 +144,8 @@ $access_vehicle = $TMSUsers->check_user_role_access( [
 			<?php if ( $post_id ): ?>
                 <input type="hidden" name="driver_id" value="<?php echo $post_id; ?>">
 			<?php endif; ?>
+
+            <input type="hidden" name="ftl_driver" value="1">
 
             <div class="row">
                 <div class="col-md-4 mb-3">
@@ -141,14 +166,22 @@ $access_vehicle = $TMSUsers->check_user_role_access( [
             </div>
 
             <div class="row">
-                <div class="col-md-4 mb-3">
-                    <label for="show_phone">Main contact</label>
-                    <select name="show_phone" class="form-control form-select">
-                        <option value="driver_phone" <?php echo $show_phone === 'driver_phone' ? 'selected' : ''; ?>>Driver phone</option>
-                        <option value="team_driver_phone" <?php echo $show_phone === 'team_driver_phone' ? 'selected' : ''; ?>>Team driver phone</option>
-                        <option value="owner_phone" <?php echo $show_phone === 'owner_phone' ? 'selected' : ''; ?>>Owner phone</option>
-                    </select>
+                <?php if ( !$driver_photo ):
+					// Driver photo 
+					$simple_upload_args = [
+						'full_only_view' => $full_only_view || !$post_id,
+						'field_name' => 'driver_photo',
+						'label'      => 'Driver photo',
+						'file_value' => $driver_photo,
+						'popup_id'   => 'popup_upload_driver_photo',
+						'col_class'  => 'col-12 col-md-6',
+					];
+					echo esc_html( get_template_part( TEMPLATE_PATH . 'common/simple', 'file-upload', $simple_upload_args ) );
+				endif; ?>
             </div>
+
+            <div class="row">
+            
 
             <div class="col-md-4 mb-3">
                     <label class="form-label">Second Driver Phone</label>
@@ -223,167 +256,6 @@ $access_vehicle = $TMSUsers->check_user_role_access( [
                                        for="language_<?php echo strtolower( $key ); ?>"><?php echo $language; ?></label>
                             </div>
 						<?php endforeach; ?>
-                    </div>
-                </div>
-            </div>
-
-            <h4 class="mt-4">Team Driver (Optional)</h4>
-            <div class="row">
-                <div class="col-md-6 mb-3">
-                    <div class="form-check form-switch">
-                        <input class="form-check-input js-toggle"
-                               data-block-toggle="js-team-driver" type="checkbox" id="teamDriverSwitch"
-							<?php echo $team_driver_enabled ? 'checked' : ''; ?>
-                               name="team_driver_enabled">
-                        <label class="form-check-label" for="teamDriverSwitch">Enable Team Driver</label>
-                    </div>
-                </div>
-            </div>
-
-            <div class="col-12 js-team-driver <?php echo $team_driver_enabled ? '' : 'd-none'; ?>">
-
-
-                <div class="row">
-                    <div class="col-md-12 p-0 mb-3">
-                        <label class="form-label">Team Driver Language</label>
-
-                        <div class="d-flex flex-wrap ">
-                            <?php foreach ( $languages as $key => $language ): ?>
-                                <div class="form-check form-switch w-25">
-                                    <input class="form-check-input" type="checkbox"
-                                        id="team_driver_language_<?php echo strtolower( $key ); ?>" name="team_driver_languages[]"
-                                        value="<?php echo $key; ?>" <?php echo in_array( $key, $team_driver_languages_array )
-                                        ? 'checked' : ''; ?>>
-                                    <label class="form-check-label"
-                                        for="team_driver_language_<?php echo strtolower( $key ); ?>"><?php echo $language; ?></label>
-                                </div>
-                            <?php endforeach; ?>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="row  border-1 border-primary border bg-light pt-3 pb-3 mb-3 rounded"
-                     id="team-driver-fields">
-                    <div class="col-md-4 mb-3">
-                        <label class="form-label">Team Driver Name</label>
-                        <input type="text" class="form-control" name="team_driver_name"
-                               value="<?php echo $team_driver_name; ?>">
-                    </div>
-                    <div class="col-md-4 mb-3">
-                        <label class="form-label">Team Driver Phone</label>
-                        <input type="tel" class="form-control js-tel-mask" name="team_driver_phone"
-                               value="<?php echo $team_driver_phone; ?>">
-                    </div>
-                    <div class="col-md-4 mb-3">
-                        <label class="form-label">Team Driver Email</label>
-                        <input type="email" class="form-control" name="team_driver_email"
-                               value="<?php echo ( $team_driver_email && $team_driver_email !== '-' )
-							       ? $team_driver_email : ''; ?>">
-                    </div>
-                    <div class="col-md-4 mb-3">
-                        <label class="form-label">Date of Birth</label>
-                        <input type="text" class="form-control js-new-format-date" name="team_driver_dob"
-                               value="<?php echo $team_driver_dob; ?>">
-                    </div>
-
-                    <div class="col-12"></div>
-
-                    <div class="col-md-6 mb-3">
-                        <div class="form-check form-switch">
-                            <input class="form-check-input" type="checkbox" id="teamDriverMacroPoint"
-                                   name="team_driver_macro_point" <?php echo $team_driver_macro_point ? 'checked'
-								: ''; ?> >
-                            <label class="form-check-label" for="teamDriverMacroPoint">MacroPoint</label>
-                        </div>
-                    </div>
-                    <div class="col-md-6 mb-3">
-                        <div class="form-check form-switch">
-                            <input class="form-check-input" type="checkbox" id="teamDriverTruckerTools"
-                                   name="team_driver_trucker_tools" <?php echo $team_driver_trucker_tools ? 'checked'
-								: ''; ?> >
-                            <label class="form-check-label" for="teamDriverTruckerTools">Trucker Tools</label>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <h4 class="mt-4">Owner (Optional)</h4>
-            <div class="row">
-                <div class="col-12 mb-3">
-                    <div class="form-check form-switch">
-                        <input class="form-check-input js-toggle"
-                               data-block-toggle="js-owner-driver" type="checkbox" id="ownerSwitch" name="owner_enabled"
-							<?php echo $owner_enabled ? 'checked' : ''; ?>>
-                        <label class="form-check-label" for="ownerSwitch">Enable Owner</label>
-                    </div>
-                </div>
-            </div>
-            <div class="col-12 js-owner-driver <?php echo $owner_enabled ? '' : 'd-none'; ?> ">
-                <div class="row border-1 border-primary border bg-light pt-3 pb-3 mb-3 rounded">
-                    <div class="col-md-4 mb-3 ">
-                        <label class="form-label">Owner Name</label>
-                        <input type="text" class="form-control" name="owner_name" value="<?php echo $owner_name; ?>">
-                    </div>
-                    <div class="col-md-4 mb-3">
-                        <label class="form-label">Owner Phone</label>
-                        <input type="tel" class="form-control js-tel-mask" name="owner_phone"
-                               value="<?php echo $owner_phone; ?>">
-                    </div>
-                    <div class="col-md-4 mb-3">
-                        <label class="form-label">Owner Email</label>
-                        <input type="email" class="form-control" name="owner_email"
-                               value="<?php echo ( $owner_email && $owner_email !== '-' ) ? $owner_email : ''; ?>">
-                    </div>
-                    <div class="col-md-6 mb-3">
-                        <label class="form-label">Date of Birth</label>
-                        <input type="text" class="form-control js-new-format-date" name="owner_dob"
-                               value="<?php echo $owner_dob; ?>">
-                    </div>
-                    <div class="col-md-6 mb-3">
-                        <label class="form-label">Type</label>
-
-                        <select class="form-control" name="owner_type">
-							<?php foreach ( $owner_type_options as $key => $label ): ?>
-                                <option value="<?php echo $key; ?>" <?php echo $owner_type === $key ? 'selected'
-									: ''; ?>>
-									<?php echo $label; ?>
-                                </option>
-							<?php endforeach; ?>
-                        </select>
-                    </div>
-                    <div class="col-md-6 mb-3">
-                        <div class="form-check form-switch">
-                            <input class="form-check-input" type="checkbox" id="ownerMacroPoint"
-                                   name="owner_macro_point"
-								<?php echo $owner_macro_point ? 'checked' : ''; ?>
-                            >
-                            <label class="form-check-label" for="ownerMacroPoint">MacroPoint</label>
-                        </div>
-                    </div>
-                    <div class="col-md-6 mb-3">
-                        <div class="form-check form-switch">
-                            <input class="form-check-input" type="checkbox" id="ownerTruckerTools"
-								<?php echo $owner_trucker_tools ? 'checked' : ''; ?>
-                                   name="owner_trucker_tools">
-                            <label class="form-check-label" for="ownerTruckerTools">Trucker Tools</label>
-                        </div>
-                    </div>
-
-                    <div class="col-md-6 mb-3">
-                        <div class="form-check form-switch">
-                            <input class="form-check-input" type="checkbox" id="ownerVanProprietor"
-								<?php echo $owner_van_proprietor ? 'checked' : ''; ?>
-                                   name="owner_van_proprietor">
-                            <label class="form-check-label" for="ownerVanProprietor">Van Proprietor</label>
-                        </div>
-                    </div>
-
-                    <div class="col-md-6 mb-3">
-                        <div class="form-check form-switch">
-                            <input class="form-check-input" type="checkbox" id="ownerOperator"
-								<?php echo $owner_operator ? 'checked' : ''; ?>
-                                   name="owner_operator">
-                            <label class="form-check-label" for="ownerOperator">Owner Operator</label>
-                        </div>
                     </div>
                 </div>
             </div>
@@ -589,56 +461,9 @@ $access_vehicle = $TMSUsers->check_user_role_access( [
                     </style>
                 </div>
 
-                <div class="col-12 mb-3">
-                    <div class="form-check form-switch">
-                        <input class="form-check-input js-toggle"
-                               data-block-toggle="js-mc-enabled" type="checkbox" id="mcSwitch" name="mc_enabled"
-							<?php echo $mc_enabled ? 'checked' : ''; ?>>
-                        <label class="form-check-label" for="mcSwitch">MC enabled</label>
-                    </div>
-                </div>
-
-                <div class="col-12 js-mc-enabled <?php echo $mc_enabled ? '' : 'd-none'; ?> ">
-                    <div class="row">
-                        <div class="col-md-4 mb-3 ">
-                            <label class="form-label">MC Number</label>
-                            <input type="text" class="form-control" name="mc" value="<?php echo $mc; ?>">
-                        </div>
-                    </div>
-                </div>
+                
             </div>
 
-            <div class="row">
-                <div class="col-12 mb-2">
-                    <div class="form-check form-switch">
-                        <input class="form-check-input js-toggle"
-                               data-block-toggle="js-dot-enabled" type="checkbox" id="dotSwitch" name="dot_enabled"
-							<?php echo $dot_enabled ? 'checked' : ''; ?>>
-                        <label class="form-check-label" for="dotSwitch">DOT enabled</label>
-                    </div>
-                </div>
-
-                <div class="col-12 js-dot-enabled <?php echo $dot_enabled ? '' : 'd-none'; ?> ">
-                    <div class="row">
-                        <div class="col-md-4 mb-3 ">
-                            <label class="form-label">DOT Number</label>
-                            <input type="text" class="form-control" name="dot" value="<?php echo $dot; ?>">
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="row">
-                <div class="col-12 mb-3">
-                    <div class="form-check form-switch">
-                        <input class="form-check-input "
-                               type="checkbox" id="mcDotHumanTestedSwitch" name="mc_dot_human_tested"
-							<?php echo $mc_dot_human_tested ? 'checked' : ''; ?>>
-                        <label class="form-check-label" for="mcDotHumanTestedSwitch">MC/DOT human tested ?</label>
-                    </div>
-                </div>
-
-            </div>
 
             <div class="row">
                 <div class="mb-4 col-12 col-md-6 col-xl-4">
@@ -707,6 +532,12 @@ $access_vehicle = $TMSUsers->check_user_role_access( [
             array(
                 'title'     => 'Upload Interview file',
                 'file_name' => 'interview_file',
+                'multiply'  => false,
+                'driver_id' => $post_id,
+            ),
+            array(
+                'title'     => 'Upload Driver photo',
+                'file_name' => 'driver_photo',
                 'multiply'  => false,
                 'driver_id' => $post_id,
             ),

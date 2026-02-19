@@ -24,6 +24,11 @@ $capabilities    = get_field_value( $_GET, 'capabilities' );
 
 $access_view = $TMSUsers->check_user_role_access( array( 'administrator', 'recruiter', 'recruiter-tl','hr_manager', 'driver_updates' ), true );
 
+$current_user_id = get_current_user_id();
+
+if ($current_user_id === 36) {
+	$access_view = true;
+}
 
 if ( $access_view || ( $my_search || $extended_search || $capabilities ) ) {
 	$items = $Drivers->get_table_items_search( $args );

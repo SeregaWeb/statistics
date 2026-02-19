@@ -532,6 +532,66 @@ class TMSEta extends TMSReportsHelper {
     }
     
     /**
+     * Get ETA records for display for multiple loads (batch, one query).
+     * Returns [ load_id => [ 'pickup' => record, 'delivery' => record ] ], same record format as get_eta_record_for_display.
+     *
+     * @param int[]  $load_ids Load/post IDs.
+     * @param bool   $is_flt   FLT report flag.
+     * @param string $project  Project slug.
+     * @return array<int, array{pickup: array, delivery: array}>
+     */
+    public function get_eta_records_for_display_batch( $load_ids, $is_flt = false, $project = null ) {
+        global $wpdb;
+        
+        $load_ids = array_filter( array_map( 'absint', (array) $load_ids ) );
+        if ( empty( $load_ids ) ) {
+            return [];
+        }
+        
+        if ( $project === null ) {
+            $reports  = $is_flt ? new TMSReportsFlt() : new TMSReports();
+            $project  = $reports->project ?: '';
+        }
+        
+        $table_name   = $wpdb->prefix . $this->table_name;
+        $placeholders = implode( ',', array_fill( 0, count( $load_ids ), '%d' ) );
+        $query        = $wpdb->prepare(
+            "SELECT * FROM $table_name 
+             WHERE load_number IN ($placeholders) AND eta_type IN ('pickup', 'delivery') AND is_flt = %d AND project = %s AND status = 'active'
+             ORDER BY load_number, eta_type, updated_at DESC, created_at DESC",
+            array_merge( $load_ids, [ (int) $is_flt, $project ] )
+        );
+        $rows = $wpdb->get_results( $query );
+        
+        $out = [];
+        foreach ( $load_ids as $lid ) {
+            $out[ $lid ] = [
+                'pickup'   => [ 'exists' => false ],
+                'delivery' => [ 'exists' => false ],
+            ];
+        }
+        
+        foreach ( $rows as $record ) {
+            $load_id = (int) $record->load_number;
+            $type    = $record->eta_type;
+            if ( ! isset( $out[ $load_id ][ $type ] ) || $out[ $load_id ][ $type ]['exists'] === false ) {
+                $datetime = new DateTime( $record->eta_datetime );
+                $out[ $load_id ][ $type ] = [
+                    'exists'       => true,
+                    'eta_datetime' => $record->eta_datetime,
+                    'date'         => $datetime->format( 'Y-m-d' ),
+                    'time'         => $datetime->format( 'H:i' ),
+                    'timezone'     => $record->timezone,
+                    'status'       => $record->status,
+                    'record_id'    => $record->id,
+                ];
+            }
+        }
+        
+        return $out;
+    }
+    
+    /**
      * AJAX handler to get ETA record for display (for all users)
      */
     public function get_eta_record_for_display_ajax() {

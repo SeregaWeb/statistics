@@ -138,6 +138,16 @@ if ( $has_results ) :
 		$companies_by_id = $TMSBroker->get_companies_by_ids( $customer_ids );
 		$brokers_by_id   = $TMSBroker->get_brokers_data_by_ids( $customer_ids, $companies_by_id );
 
+		$reference_numbers = array();
+		foreach ( $results_list as $r ) {
+			$m   = get_field_value( $r, 'meta_data' );
+			$ref = get_field_value( $m, 'reference_number' );
+			if ( $ref !== '' && $ref !== null ) {
+				$reference_numbers[] = $ref;
+			}
+		}
+		$raters_by_order = $TMSDrivers->get_raters_for_order_numbers_batch( $reference_numbers );
+
 		$index = 0;
 		foreach ( $results_list as $row ) :
 			$meta = get_field_value( $row, 'meta_data' );
@@ -161,8 +171,10 @@ if ( $has_results ) :
 			$date_booked_raw = get_field_value( $row, 'date_booked' );
 			$date_booked     = esc_html( date( 'm/d/Y', strtotime( $date_booked_raw ) ) );
 			
-			$reference_number = esc_html( get_field_value( $meta, 'reference_number' ) );
-			
+			$reference_number_raw = get_field_value( $meta, 'reference_number' );
+			$reference_number     = esc_html( $reference_number_raw );
+			$ref_for_lookup       = sanitize_text_field( (string) $reference_number_raw );
+
 			// Primary driver for rating: priority third > second > first (same as load context)
 			$attached_driver           = get_field_value( $meta, 'attached_driver' );
 			$attached_second_driver   = get_field_value( $meta, 'attached_second_driver' );
@@ -182,12 +194,12 @@ if ( $has_results ) :
 				$primary_driver_id   = (int) $attached_driver;
 				$primary_driver_name = $unit_number_name ?: '';
 			}
-			
-			// Load is "rated" for everyone when the dispatcher who created the load has rated it; one query for both raters
+
+			// Load is "rated" for everyone when the dispatcher who created the load has rated it (preloaded batch)
 			$dispatcher_name    = $dispatcher['full_name'] ?? '';
 			$current_user_info  = $helper->get_user_full_name_by_id( $current_user_id );
 			$current_user_name  = $current_user_info ? $current_user_info['full_name'] : '';
-			$rated_by           = $TMSDrivers->get_raters_for_order_number( $reference_number, array( $dispatcher_name, $current_user_name ) );
+			$rated_by           = array_values( array_intersect( array( $dispatcher_name, $current_user_name ), $raters_by_order[ $ref_for_lookup ] ?? array() ) );
 			$dispatcher_rated   = in_array( $dispatcher_name, $rated_by, true );
 			$current_user_rated = in_array( $current_user_name, $rated_by, true );
 			$has_rating         = $dispatcher_rated || $current_user_rated;

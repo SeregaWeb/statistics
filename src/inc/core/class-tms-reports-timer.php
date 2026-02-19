@@ -525,28 +525,90 @@ class TMSReportsTimer extends TMSReports {
 	
 	/**
 	 * Get active timer for a load (any user)
-	 * 
+	 *
 	 * @param int $id_load Load ID
 	 * @return array|false Timer data or false if not found
 	 */
 	public function get_active_timer_for_load( $id_load ) {
-		global $wpdb;
-		
-		$table_timers = $wpdb->prefix . $this->table_timers;
-		
-		$timer = $wpdb->get_row(
-			$wpdb->prepare(
-				"SELECT * FROM $table_timers 
-				WHERE id_load = %d AND status = 'active' 
-				ORDER BY create_timer DESC LIMIT 1",
-				$id_load
-			),
-			ARRAY_A
-		);
-		
-		return $timer ?: false;
+		$by_load = $this->get_active_timers_for_loads( array( (int) $id_load ) );
+		return isset( $by_load[ (int) $id_load ] ) ? $by_load[ (int) $id_load ] : false;
 	}
-	
+
+	/**
+	 * Get active timer (one per load, latest by create_timer) for many loads in one query.
+	 *
+	 * @param int[] $load_ids Load IDs.
+	 * @return array Keyed by id_load => timer row (ARRAY_A), only loads that have an active timer.
+	 */
+	public function get_active_timers_for_loads( array $load_ids ) {
+		global $wpdb;
+
+		$load_ids = array_unique( array_filter( array_map( 'absint', $load_ids ) ) );
+		if ( empty( $load_ids ) ) {
+			return array();
+		}
+
+		$table_timers = $wpdb->prefix . $this->table_timers;
+		$placeholders = implode( ',', array_fill( 0, count( $load_ids ), '%d' ) );
+		$query = $wpdb->prepare(
+			"SELECT t.* FROM $table_timers t
+			INNER JOIN (
+				SELECT id_load, MAX(create_timer) AS max_create
+				FROM $table_timers
+				WHERE id_load IN ($placeholders) AND status = 'active'
+				GROUP BY id_load
+			) last ON t.id_load = last.id_load AND t.create_timer = last.max_create
+			WHERE t.id_load IN ($placeholders) AND t.status = 'active'",
+			array_merge( $load_ids, $load_ids )
+		);
+		$rows = $wpdb->get_results( $query, ARRAY_A );
+
+		$by_load = array();
+		if ( is_array( $rows ) ) {
+			foreach ( $rows as $row ) {
+				$by_load[ (int) $row['id_load'] ] = $row;
+			}
+		}
+		return $by_load;
+	}
+
+	/**
+	 * Get paused timer (one per load, latest by create_timer) for many loads in one query.
+	 *
+	 * @param int[] $load_ids Load IDs.
+	 * @return array Keyed by id_load => timer row (ARRAY_A), only loads that have a paused timer.
+	 */
+	public function get_paused_timers_for_loads( array $load_ids ) {
+		global $wpdb;
+
+		$load_ids = array_unique( array_filter( array_map( 'absint', $load_ids ) ) );
+		if ( empty( $load_ids ) ) {
+			return array();
+		}
+
+		$table_timers = $wpdb->prefix . $this->table_timers;
+		$placeholders = implode( ',', array_fill( 0, count( $load_ids ), '%d' ) );
+		$query = $wpdb->prepare(
+			"SELECT t.* FROM $table_timers t
+			INNER JOIN (
+				SELECT id_load, MAX(create_timer) AS max_create
+				FROM $table_timers
+				WHERE id_load IN ($placeholders) AND status = 'paused'
+				GROUP BY id_load
+			) last ON t.id_load = last.id_load AND t.create_timer = last.max_create
+			WHERE t.id_load IN ($placeholders) AND t.status = 'paused'",
+			array_merge( $load_ids, $load_ids )
+		);
+		$rows = $wpdb->get_results( $query, ARRAY_A );
+
+		$by_load = array();
+		if ( is_array( $rows ) ) {
+			foreach ( $rows as $row ) {
+				$by_load[ (int) $row['id_load'] ] = $row;
+			}
+		}
+		return $by_load;
+	}
 	
 	/**
 	 * Pause a timer
@@ -1453,12 +1515,23 @@ class TMSReportsTimer extends TMSReports {
 	/**
 	 * Get timer status indicator for display in table
 	 *
-	 * @param int $id_load Load ID
+	 * @param int   $id_load                Load ID.
+	 * @param array $active_timers_by_load  Optional. Preloaded [ id_load => timer row ] from get_active_timers_for_loads().
+	 * @param array $paused_timers_by_load  Optional. Preloaded [ id_load => timer row ] from get_paused_timers_for_loads().
 	 * @return string HTML status indicator
 	 */
-	public function get_timer_status( $id_load ) {
-		$active_timer = $this->get_active_timer_for_load( $id_load );
-		$paused_timer = $this->get_paused_timer_for_load( $id_load );
+	public function get_timer_status( $id_load, $active_timers_by_load = null, $paused_timers_by_load = null ) {
+		$id_load = (int) $id_load;
+		if ( is_array( $active_timers_by_load ) ) {
+			$active_timer = isset( $active_timers_by_load[ $id_load ] ) ? $active_timers_by_load[ $id_load ] : false;
+		} else {
+			$active_timer = $this->get_active_timer_for_load( $id_load );
+		}
+		if ( is_array( $paused_timers_by_load ) ) {
+			$paused_timer = isset( $paused_timers_by_load[ $id_load ] ) ? $paused_timers_by_load[ $id_load ] : false;
+		} else {
+			$paused_timer = $this->get_paused_timer_for_load( $id_load );
+		}
 		
 		// Check if timer is paused
 		if ( $paused_timer ) {

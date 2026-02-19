@@ -2268,6 +2268,277 @@ Kindly confirm once you've received this message." ) . "\n";
 	}
 
 	/**
+	 * Get table items for tracking tab. Dynamic LEFT JOINs. Used by TMSReports and TMSReportsFlt.
+	 *
+	 * @param string $table_main        Full main table name (with prefix).
+	 * @param string $table_meta        Full meta table name (with prefix).
+	 * @param array  $args              Filter args (status_post, load_status, office, my_team, dispatcher, exclude_status, include_status, my_search, exclude_ids, exclude_tbd, date_pickup, date_delivery, etc.).
+	 * @param string $table_locations   Full locations table name (with prefix) for date filter and sort; empty to use main.pick_up_date/delivery_date.
+	 * @param int    $per_page          Items per page.
+	 * @return array { results, total_pages, total_posts, current_pages }
+	 */
+	/**
+	 * Build JOIN and WHERE for tracking list (shared by get_table_items_tracking_internal and get_tracking_quick_status_counts_internal).
+	 *
+	 * @param string $table_main      Full main table name.
+	 * @param string $table_meta      Full meta table name.
+	 * @param array  $args            Filter args (load_status is applied when present).
+	 * @param string $table_locations Full locations table name or empty.
+	 * @return array{join_builder: string, where_conditions: array, where_values: array}
+	 */
+	protected function build_tracking_list_base_sql( $table_main, $table_meta, $args, $table_locations = '' ) {
+		global $wpdb;
+
+		$joins_always   = array( 'dispatcher', 'reference', 'unit_number', 'load_status' );
+		$joins_optional  = array();
+		if ( ! empty( $args['my_search'] ) ) {
+			$joins_optional[] = 'unit_phone';
+		}
+		if ( ! empty( $args['office'] ) && $args['office'] !== 'all' ) {
+			$joins_optional[] = 'office_dispatcher';
+		}
+		if ( ! empty( $args['exclude_tbd'] ) ) {
+			$joins_optional[] = 'tbd';
+		}
+		$required_joins  = array_unique( array_merge( $joins_always, $joins_optional ) );
+		$meta_join_defs  = array(
+			'dispatcher'        => 'dispatcher_initials',
+			'reference'         => 'reference_number',
+			'unit_number'       => 'unit_number_name',
+			'unit_phone'        => 'driver_phone',
+			'load_status'       => 'load_status',
+			'office_dispatcher' => 'office_dispatcher',
+			'tbd'               => 'tbd',
+		);
+		$join_builder    = "\n\t    FROM $table_main AS main";
+		foreach ( $required_joins as $alias ) {
+			if ( isset( $meta_join_defs[ $alias ] ) ) {
+				$key          = $meta_join_defs[ $alias ];
+				$join_builder .= "\n\t    LEFT JOIN $table_meta AS $alias ON main.id = $alias.post_id AND $alias.meta_key = '" . esc_sql( $key ) . "'";
+			}
+		}
+		$join_builder .= "\n\t    WHERE 1=1";
+
+		$where_conditions = array();
+		$where_values     = array();
+		$add_condition    = function( $condition, $value ) use ( &$where_conditions, &$where_values ) {
+			$where_conditions[] = $condition;
+			$where_values[]     = $value;
+		};
+
+		if ( ! empty( $args['status_post'] ) ) {
+			$add_condition( 'main.status_post = %s', $args['status_post'] );
+		}
+		if ( ! empty( $args['load_status'] ) ) {
+			$add_condition( 'load_status.meta_value = %s', $args['load_status'] );
+		}
+		if ( ! empty( $args['office'] ) && $args['office'] !== 'all' ) {
+			$where_conditions[] = "office_dispatcher.meta_value = %s";
+			$where_values[]     = $args['office'];
+		}
+		if ( ! empty( $args['my_team'] ) && is_array( $args['my_team'] ) ) {
+			$team_values        = array_map( 'esc_sql', $args['my_team'] );
+			$where_conditions[] = "dispatcher.meta_value IN ('" . implode( "','", $team_values ) . "')";
+		}
+		if ( ! empty( $args['dispatcher'] ) ) {
+			$add_condition( 'dispatcher.meta_value = %s', $args['dispatcher'] );
+		}
+		if ( ! empty( $args['exclude_status'] ) ) {
+			$exclude_status     = array_map( 'esc_sql', (array) $args['exclude_status'] );
+			$where_conditions[] = "load_status.meta_value NOT IN ('" . implode( "','", $exclude_status ) . "')";
+		}
+		if ( ! empty( $args['include_status'] ) ) {
+			$include_status     = array_map( 'esc_sql', (array) $args['include_status'] );
+			$where_conditions[] = "load_status.meta_value IN ('" . implode( "','", $include_status ) . "')";
+		}
+		if ( ! empty( $args['my_search'] ) ) {
+			$search_value       = '%' . $wpdb->esc_like( $args['my_search'] ) . '%';
+			$where_conditions[] = "(reference.meta_value LIKE %s OR unit_number.meta_value LIKE %s OR unit_phone.meta_value LIKE %s)";
+			$where_values[]     = $search_value;
+			$where_values[]     = $search_value;
+			$where_values[]     = $search_value;
+		}
+		if ( ! empty( $args['exclude_ids'] ) && is_array( $args['exclude_ids'] ) ) {
+			$exclude_ids = array_map( 'absint', $args['exclude_ids'] );
+			$exclude_ids = array_filter( $exclude_ids );
+			if ( ! empty( $exclude_ids ) ) {
+				$where_conditions[] = "main.id NOT IN (" . implode( ',', $exclude_ids ) . ")";
+			}
+		}
+		if ( ! empty( $args['exclude_tbd'] ) ) {
+			$where_conditions[] = "(tbd.meta_value IS NULL OR tbd.meta_value != '1')";
+		}
+
+		$date_pickup_raw   = ! empty( $args['date_pickup'] ) ? trim( (string) $args['date_pickup'] ) : '';
+		$date_delivery_raw = ! empty( $args['date_delivery'] ) ? trim( (string) $args['date_delivery'] ) : '';
+		if ( $table_locations !== '' && ( $date_pickup_raw !== '' || $date_delivery_raw !== '' ) ) {
+			$parsed_pickup   = $this->parse_tracking_filter_datetime( $date_pickup_raw );
+			$parsed_delivery = $this->parse_tracking_filter_datetime( $date_delivery_raw );
+			if ( $parsed_pickup && ! $parsed_delivery ) {
+				$where_conditions[] = "main.id IN (SELECT load_id FROM $table_locations WHERE location_type = 'pickup' AND date IS NOT NULL AND DATE(date) = DATE(%s))";
+				$where_values[]     = $parsed_pickup;
+			} elseif ( $parsed_delivery && ! $parsed_pickup ) {
+				$where_conditions[] = "main.id IN (SELECT load_id FROM $table_locations WHERE location_type = 'delivery' AND date IS NOT NULL AND DATE(date) = DATE(%s))";
+				$where_values[]     = $parsed_delivery;
+			} elseif ( $parsed_pickup && $parsed_delivery ) {
+				$range_start = strcmp( $parsed_pickup, $parsed_delivery ) <= 0 ? $parsed_pickup : $parsed_delivery;
+				$range_end   = strcmp( $parsed_pickup, $parsed_delivery ) <= 0 ? $parsed_delivery : $parsed_pickup;
+				$where_conditions[] = "main.id IN (SELECT load_id FROM $table_locations WHERE location_type = 'pickup' AND date IS NOT NULL AND DATE(date) BETWEEN DATE(%s) AND DATE(%s))";
+				$where_conditions[] = "main.id IN (SELECT load_id FROM $table_locations WHERE location_type = 'delivery' AND date IS NOT NULL AND DATE(date) BETWEEN DATE(%s) AND DATE(%s))";
+				$where_values[]     = $range_start;
+				$where_values[]     = $range_end;
+				$where_values[]     = $range_start;
+				$where_values[]     = $range_end;
+			}
+		}
+
+		return array(
+			'join_builder'     => $join_builder,
+			'where_conditions' => $where_conditions,
+			'where_values'     => $where_values,
+		);
+	}
+
+	public function get_table_items_tracking_internal( $table_main, $table_meta, $args = array(), $table_locations = '', $per_page = 100 ) {
+		global $wpdb;
+
+		$current_page = isset( $_GET['paged'] ) ? absint( $_GET['paged'] ) : 1;
+		$sort_order   = strtolower( (string) ( $args['sort_order'] ?? 'desc' ) ) === 'asc' ? 'ASC' : 'DESC';
+
+		$base = $this->build_tracking_list_base_sql( $table_main, $table_meta, $args, $table_locations );
+		$join_builder     = $base['join_builder'];
+		$where_conditions = $base['where_conditions'];
+		$where_values     = $base['where_values'];
+
+		$sql = "SELECT main.*,
+    dispatcher.meta_value AS dispatcher_initials_value,
+    reference.meta_value AS reference_number_value,
+    unit_number.meta_value AS unit_number_value,
+    load_status.meta_value AS load_status_value
+    " . $join_builder;
+
+		if ( $table_locations !== '' ) {
+			// Insert LEFT JOINs before WHERE (JOINs must come before WHERE in SQL).
+			$first_pickup_sub  = "SELECT l.load_id, CAST(CONCAT(DATE(l.date), ' ', COALESCE(l.time_start, '00:00:00')) AS DATETIME) AS sort_date FROM $table_locations l INNER JOIN (SELECT load_id, MIN(order_index) AS oi FROM $table_locations WHERE location_type = 'pickup' AND date IS NOT NULL GROUP BY load_id) fp ON l.load_id = fp.load_id AND l.order_index = fp.oi AND l.location_type = 'pickup' AND l.date IS NOT NULL";
+			$first_delivery_sub = "SELECT l.load_id, CAST(CONCAT(DATE(l.date), ' ', COALESCE(l.time_start, '00:00:00')) AS DATETIME) AS sort_date FROM $table_locations l INNER JOIN (SELECT load_id, MIN(order_index) AS oi FROM $table_locations WHERE location_type = 'delivery' AND date IS NOT NULL GROUP BY load_id) fd ON l.load_id = fd.load_id AND l.order_index = fd.oi AND l.location_type = 'delivery' AND l.date IS NOT NULL";
+			$loc_joins = "\n\t    LEFT JOIN ($first_pickup_sub) AS _pu ON main.id = _pu.load_id\n\t    LEFT JOIN ($first_delivery_sub) AS _del ON main.id = _del.load_id";
+			$sql       = str_replace( ' WHERE 1=1', $loc_joins . ' WHERE 1=1', $sql );
+		}
+
+		if ( ! empty( $where_conditions ) ) {
+			$sql .= ' AND ' . implode( ' AND ', $where_conditions );
+		}
+
+		$total_records_sql = "SELECT COUNT(*) " . $join_builder . ( ! empty( $where_conditions ) ? ' AND ' . implode( ' AND ', $where_conditions ) : '' );
+		$total_records     = (int) $wpdb->get_var( $wpdb->prepare( $total_records_sql, ...$where_values ) );
+		$total_pages       = (int) ceil( $total_records / $per_page );
+		$offset            = ( $current_page - 1 ) * $per_page;
+
+		if ( $table_locations !== '' ) {
+			$sort_by_loc = "COALESCE(
+        CASE WHEN LOWER(load_status.meta_value) IN ('at-pu', 'waiting-on-pu-date') THEN _pu.sort_date ELSE _del.sort_date END,
+        '9999-12-31 23:59:59'
+      )";
+		} else {
+			$sort_by_loc = "CASE
+        WHEN LOWER(load_status.meta_value) IN ('at-pu', 'at-del', 'waiting-on-pu-date', 'waiting-on-rc', 'loaded-enroute') THEN COALESCE(main.pick_up_date, '9999-12-31 23:59:59')
+        ELSE COALESCE(main.delivery_date, '9999-12-31 23:59:59')
+      END";
+		}
+
+		$sql .= " ORDER BY
+    CASE
+        WHEN LOWER(load_status.meta_value) = 'at-pu' THEN 1
+        WHEN LOWER(load_status.meta_value) = 'at-del' THEN 2
+        WHEN LOWER(load_status.meta_value) = 'waiting-on-pu-date' THEN 3
+        WHEN LOWER(load_status.meta_value) = 'loaded-enroute' THEN 4
+        WHEN LOWER(load_status.meta_value) = 'waiting-on-rc' THEN 5
+        ELSE 6
+    END,
+    $sort_by_loc $sort_order
+    LIMIT %d, %d";
+		$where_values[] = $offset;
+		$where_values[] = $per_page;
+
+		$main_results = $wpdb->get_results( $wpdb->prepare( $sql, ...$where_values ), ARRAY_A );
+		$post_ids     = wp_list_pluck( $main_results, 'id' );
+		$meta_data    = array();
+
+		if ( ! empty( $post_ids ) ) {
+			$meta_sql     = "SELECT post_id, meta_key, meta_value FROM $table_meta WHERE post_id IN (" . implode( ',', array_map( 'absint', $post_ids ) ) . ")";
+			$meta_results = $wpdb->get_results( $meta_sql, ARRAY_A );
+			$meta_data    = array_reduce( $meta_results, function( $carry, $meta_row ) {
+				$carry[ $meta_row['post_id'] ][ $meta_row['meta_key'] ] = $meta_row['meta_value'];
+				return $carry;
+			}, array() );
+		}
+
+		foreach ( $main_results as &$result ) {
+			$result['meta_data'] = isset( $meta_data[ $result['id'] ] ) ? $meta_data[ $result['id'] ] : array();
+		}
+
+		return array(
+			'results'       => $main_results,
+			'total_pages'   => $total_pages,
+			'total_posts'   => $total_records,
+			'current_pages' => $current_page,
+		);
+	}
+
+	/**
+	 * Get counts for quick status filter buttons in one go (2 queries instead of 5× get_table_items_tracking).
+	 *
+	 * @param string $table_main      Full main table name.
+	 * @param string $table_meta      Full meta table name.
+	 * @param array  $args            Same filter args as get_table_items_tracking (load_status is ignored; base filters only).
+	 * @param string $table_locations Full locations table name or empty.
+	 * @param array  $status_keys     Keys to return counts for: '' for total, plus e.g. 'waiting-on-pu-date', 'at-pu', 'loaded-enroute', 'at-del'.
+	 * @return array<string, int> Keyed by status key (e.g. '' => total, 'at-pu' => count).
+	 */
+	public function get_tracking_quick_status_counts_internal( $table_main, $table_meta, $args, $table_locations = '', $status_keys = array() ) {
+		global $wpdb;
+
+		$args_base = $args;
+		unset( $args_base['load_status'] );
+		$base = $this->build_tracking_list_base_sql( $table_main, $table_meta, $args_base, $table_locations );
+		$join_builder     = $base['join_builder'];
+		$where_conditions = $base['where_conditions'];
+		$where_values     = $base['where_values'];
+
+		$out = array();
+		foreach ( $status_keys as $k ) {
+			$out[ $k ] = 0;
+		}
+
+		$where_sql = empty( $where_conditions ) ? '' : ' AND ' . implode( ' AND ', $where_conditions );
+
+		// Total count (no load_status filter).
+		if ( array_key_exists( '', $out ) ) {
+			$total_sql = "SELECT COUNT(*) " . $join_builder . $where_sql;
+			$out['']   = (int) $wpdb->get_var( $where_values ? $wpdb->prepare( $total_sql, ...$where_values ) : $total_sql );
+		}
+
+		$status_list = array_filter( $status_keys, function( $k ) {
+			return $k !== '';
+		} );
+		if ( empty( $status_list ) ) {
+			return $out;
+		}
+
+		// Per-status counts in one query (GROUP BY load_status.meta_value).
+		$placeholders = implode( ',', array_fill( 0, count( $status_list ), '%s' ) );
+		$group_sql    = "SELECT load_status.meta_value AS ls, COUNT(*) AS c " . $join_builder . $where_sql . " AND load_status.meta_value IN ($placeholders) GROUP BY load_status.meta_value";
+		$group_values = array_merge( $where_values, array_values( $status_list ) );
+		$rows         = $wpdb->get_results( $wpdb->prepare( $group_sql, ...$group_values ), ARRAY_A );
+		if ( is_array( $rows ) ) {
+			foreach ( $rows as $row ) {
+				$out[ $row['ls'] ] = (int) $row['c'];
+			}
+		}
+		return $out;
+	}
+
+	/**
 	 * Aggregate Charge back & Short pay totals by broker (no pagination). Used by TMSReports and TMSReportsFlt.
 	 *
 	 * @param string $table_main Full main table name (with prefix).
@@ -2871,15 +3142,80 @@ Kindly confirm once you've received this message." ) . "\n";
 	}
 
 	/**
+	 * Pre-fetch latitude, longitude, timezone for many address IDs (shipper then company) in one query each.
+	 *
+	 * @param int[] $address_ids Address IDs (shipper or company id).
+	 * @return array Keyed by id => [ 'latitude' =>, 'longitude' =>, 'timezone' => ].
+	 */
+	public function get_shipper_company_geo_by_address_ids( array $address_ids ) {
+		global $wpdb;
+
+		$address_ids = array_unique( array_filter( array_map( 'absint', $address_ids ) ) );
+		if ( empty( $address_ids ) ) {
+			return array();
+		}
+
+		$placeholders = implode( ',', array_fill( 0, count( $address_ids ), '%d' ) );
+		$shipper_table = $wpdb->prefix . 'reports_shipper';
+		$company_table = $wpdb->prefix . 'reports_company';
+
+		$by_id = array();
+		$shipper_rows = $wpdb->get_results(
+			$wpdb->prepare(
+				"SELECT id, latitude, longitude, timezone FROM $shipper_table WHERE id IN ($placeholders)",
+				$address_ids
+			),
+			ARRAY_A
+		);
+		if ( is_array( $shipper_rows ) ) {
+			foreach ( $shipper_rows as $r ) {
+				$id = (int) $r['id'];
+				$by_id[ $id ] = array(
+					'latitude'  => ! empty( $r['latitude'] ) ? floatval( $r['latitude'] ) : null,
+					'longitude' => ! empty( $r['longitude'] ) ? floatval( $r['longitude'] ) : null,
+					'timezone'  => ! empty( $r['timezone'] ) ? $r['timezone'] : null,
+				);
+			}
+		}
+		$missing_ids = array_diff( $address_ids, array_keys( $by_id ) );
+		if ( ! empty( $missing_ids ) ) {
+			$missing_ids = array_values( $missing_ids );
+			$ph = implode( ',', array_fill( 0, count( $missing_ids ), '%d' ) );
+			$company_rows = $wpdb->get_results(
+				$wpdb->prepare(
+					"SELECT id, latitude, longitude, timezone FROM $company_table WHERE id IN ($ph)",
+					$missing_ids
+				),
+				ARRAY_A
+			);
+			if ( is_array( $company_rows ) ) {
+				foreach ( $company_rows as $r ) {
+					$id = (int) $r['id'];
+					$by_id[ $id ] = array(
+						'latitude'  => ! empty( $r['latitude'] ) ? floatval( $r['latitude'] ) : null,
+						'longitude' => ! empty( $r['longitude'] ) ? floatval( $r['longitude'] ) : null,
+						'timezone'  => ! empty( $r['timezone'] ) ? $r['timezone'] : null,
+					);
+				}
+			}
+		}
+		return $by_id;
+	}
+
+	/**
 	 * Extract ETA data for popup display
 	 * Gets date, time_start, and state from short_address
 	 * Attempts to get coordinates from shipper/company tables for accurate timezone determination
+	 *
+	 * @param array      $eta_data          From get_eta_data().
+	 * @param string     $type              'delivery' or 'pick_up'.
+	 * @param array|null $geo_by_address_id Optional. Pre-fetched from get_shipper_company_geo_by_address_ids(); keyed by address_id.
 	 */
-	function get_eta_display_data($eta_data, $type = 'delivery') {
-		$location_data = isset($eta_data[$type][0]) ? $eta_data[$type][0] : null;
-		
-		if (!$location_data) {
-			return [
+	function get_eta_display_data( $eta_data, $type = 'delivery', $geo_by_address_id = null ) {
+		$location_data = isset( $eta_data[ $type ][0] ) ? $eta_data[ $type ][0] : null;
+
+		if ( ! $location_data ) {
+			return array(
 				'date' => '',
 				'time' => '',
 				'state' => '',
@@ -2887,67 +3223,68 @@ Kindly confirm once you've received this message." ) . "\n";
 				'latitude' => null,
 				'longitude' => null,
 				'shipper_eta_date' => '',
-				'shipper_eta_time' => ''
-			];
+				'shipper_eta_time' => '',
+			);
 		}
 
 		// Extract state from short_address (e.g., "Nikolaev AL" -> "AL")
 		$short_address = $location_data['short_address'] ?? '';
 		$state = '';
-		if ($short_address) {
-			$parts = explode(' ', trim($short_address));
-			$state = end($parts); // Get last part (state)
+		if ( $short_address ) {
+			$parts = explode( ' ', trim( $short_address ) );
+			$state = end( $parts );
 		}
 
-		// Get date from location data
 		$date = $location_data['date'] ?? '';
-		
-		// Get ETA date and time from shipper form if filled
 		$shipper_eta_date = $location_data['eta_date'] ?? '';
 		$shipper_eta_time = $location_data['eta_time'] ?? '';
-		
-		// Try to get timezone and coordinates from shipper/company tables using address_id
-		$latitude = null;
+
+		$latitude  = null;
 		$longitude = null;
-		$timezone = null;
-		$address_id = isset($location_data['address_id']) ? intval($location_data['address_id']) : 0;
-		
-		if ($address_id > 0) {
-			global $wpdb;
-			
-			// Try to get timezone and coordinates from shipper table
-			$shipper_table = $wpdb->prefix . 'reports_shipper';
-			$shipper_data = $wpdb->get_row($wpdb->prepare(
-				"SELECT latitude, longitude, timezone FROM $shipper_table WHERE id = %d",
-				$address_id
-			), ARRAY_A);
-			
-			if ($shipper_data) {
-				if (!empty($shipper_data['latitude']) && !empty($shipper_data['longitude'])) {
-					$latitude = floatval($shipper_data['latitude']);
-					$longitude = floatval($shipper_data['longitude']);
-				}
-				if (!empty($shipper_data['timezone'])) {
-					$timezone = $shipper_data['timezone'];
-				}
-			} else {
-				// Try to get timezone and coordinates from company table
-				$company_table = $wpdb->prefix . 'reports_company';
-				$company_data = $wpdb->get_row($wpdb->prepare(
-					"SELECT latitude, longitude, timezone FROM $company_table WHERE id = %d",
+		$timezone  = null;
+		$address_id = isset( $location_data['address_id'] ) ? (int) $location_data['address_id'] : 0;
+
+		if ( $address_id > 0 ) {
+			$use_prefetched = is_array( $geo_by_address_id );
+			if ( $use_prefetched && isset( $geo_by_address_id[ $address_id ] ) ) {
+				$geo = $geo_by_address_id[ $address_id ];
+				$latitude  = $geo['latitude'] ?? null;
+				$longitude = $geo['longitude'] ?? null;
+				$timezone  = $geo['timezone'] ?? null;
+			} elseif ( ! $use_prefetched ) {
+				// Single-call mode: query shipper then company.
+				global $wpdb;
+				$shipper_table = $wpdb->prefix . 'reports_shipper';
+				$shipper_data = $wpdb->get_row( $wpdb->prepare(
+					"SELECT latitude, longitude, timezone FROM $shipper_table WHERE id = %d",
 					$address_id
-				), ARRAY_A);
-				
-				if ($company_data) {
-					if (!empty($company_data['latitude']) && !empty($company_data['longitude'])) {
-						$latitude = floatval($company_data['latitude']);
-						$longitude = floatval($company_data['longitude']);
+				), ARRAY_A );
+				if ( $shipper_data ) {
+					if ( ! empty( $shipper_data['latitude'] ) && ! empty( $shipper_data['longitude'] ) ) {
+						$latitude  = floatval( $shipper_data['latitude'] );
+						$longitude = floatval( $shipper_data['longitude'] );
 					}
-					if (!empty($company_data['timezone'])) {
-						$timezone = $company_data['timezone'];
+					if ( ! empty( $shipper_data['timezone'] ) ) {
+						$timezone = $shipper_data['timezone'];
+					}
+				} else {
+					$company_table = $wpdb->prefix . 'reports_company';
+					$company_data = $wpdb->get_row( $wpdb->prepare(
+						"SELECT latitude, longitude, timezone FROM $company_table WHERE id = %d",
+						$address_id
+					), ARRAY_A );
+					if ( $company_data ) {
+						if ( ! empty( $company_data['latitude'] ) && ! empty( $company_data['longitude'] ) ) {
+							$latitude  = floatval( $company_data['latitude'] );
+							$longitude = floatval( $company_data['longitude'] );
+						}
+						if ( ! empty( $company_data['timezone'] ) ) {
+							$timezone = $company_data['timezone'];
+						}
 					}
 				}
 			}
+			// When $use_prefetched and address_id not in map: leave latitude/longitude/timezone as null; get_timezone_by_state used below.
 		}
 
 		// If timezone is not in DB, fallback to state-based calculation (no API calls)
@@ -3391,7 +3728,7 @@ Kindly confirm once you've received this message." ) . "\n";
 		return $date;
 	}
 	
-	function get_locations_template( $row, $template = 'default', $use_db = false, $reports_object = null ) {
+	function get_locations_template( $row, $template = 'default', $use_db = false, $reports_object = null, $db_locations_by_load = null ) {
 		$meta = get_field_value( $row, 'meta_data' );
 		
 		// Даты с проверкой, чтобы избежать ошибок
@@ -3407,7 +3744,11 @@ Kindly confirm once you've received this message." ) . "\n";
 		
 		// Get locations from database or JSON
 		if ( $use_db && $reports_object && method_exists( $reports_object, 'get_locations_from_db' ) && ! empty( $load_id ) ) {
-			$db_locations = $reports_object->get_locations_from_db( $load_id );
+			if ( is_array( $db_locations_by_load ) && isset( $db_locations_by_load[ $load_id ] ) ) {
+				$db_locations = $db_locations_by_load[ $load_id ];
+			} else {
+				$db_locations = $reports_object->get_locations_from_db( $load_id );
+			}
 			$pick_up = isset( $db_locations['pickup'] ) ? $db_locations['pickup'] : array();
 			$delivery = isset( $db_locations['delivery'] ) ? $db_locations['delivery'] : array();
 		} else {
@@ -3448,7 +3789,66 @@ Kindly confirm once you've received this message." ) . "\n";
 			'proof_of_delivery_time' => $proof_of_delivery_time,
 		];
 	}
-	
+
+	/**
+	 * Get locations from database for multiple loads in one query (batch).
+	 * Shared implementation for TMSReports and TMSReportsFlt.
+	 *
+	 * @param int[] $load_ids Load IDs.
+	 * @param string $project Project slug.
+	 * @param bool   $is_flt  True for FLT table (reports_flt_*).
+	 * @return array<int, array{pickup: array, delivery: array}> Keyed by load_id, same structure as get_locations_from_db() per load.
+	 */
+	public function get_locations_from_db_batch( $load_ids, $project, $is_flt = false ) {
+		global $wpdb;
+
+		$load_ids = array_unique( array_filter( array_map( 'absint', (array) $load_ids ) ) );
+		if ( empty( $load_ids ) || empty( $project ) ) {
+			return array();
+		}
+
+		$project_lower   = strtolower( $project );
+		$table_prefix    = $is_flt ? 'reports_flt_' : 'reports_';
+		$table_locations = $wpdb->prefix . $table_prefix . $project_lower . '_locations';
+		$placeholders    = implode( ',', array_fill( 0, count( $load_ids ), '%d' ) );
+		$query           = $wpdb->prepare(
+			"SELECT * FROM $table_locations WHERE load_id IN ($placeholders) ORDER BY load_id, location_type, order_index ASC",
+			$load_ids
+		);
+		$locations = $wpdb->get_results( $query, ARRAY_A );
+
+		$result = array();
+		foreach ( $load_ids as $lid ) {
+			$result[ $lid ] = array( 'pickup' => array(), 'delivery' => array() );
+		}
+		foreach ( $locations as $location ) {
+			$load_id = (int) $location['load_id'];
+			if ( ! isset( $result[ $load_id ] ) ) {
+				continue;
+			}
+			$loc_data = array(
+				'db_id'         => $location['id'],
+				'address_id'    => $location['address_id'],
+				'address'       => $location['address'],
+				'short_address' => $location['short_address'],
+				'contact'       => $location['contact'],
+				'date'          => $location['date'],
+				'info'          => $location['info'],
+				'type'          => $location['type'],
+				'time_start'    => $location['time_start'],
+				'time_end'      => $location['time_end'],
+				'strict_time'   => $location['strict_time'],
+				'eta_date'      => $location['eta_date'],
+				'eta_time'      => $location['eta_time'],
+			);
+			if ( $location['location_type'] === 'pickup' ) {
+				$result[ $load_id ]['pickup'][] = $loc_data;
+			} else {
+				$result[ $load_id ]['delivery'][] = $loc_data;
+			}
+		}
+		return $result;
+	}
 	
 	function template_location( $data ) {
 		$TMSShipper = new TMSReportsShipper();

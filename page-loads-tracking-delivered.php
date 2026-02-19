@@ -41,6 +41,7 @@ $args = array(
 );
 
 $args  = $reports->set_filter_params( $args );
+
 $items = $reports->get_table_items_tracking( $args );
 
 $post_tp              = 'tracking';

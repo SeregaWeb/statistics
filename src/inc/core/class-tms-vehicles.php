@@ -191,6 +191,57 @@ class TMSVehicles {
 	}
 
 	/**
+	 * Get vehicles by driver IDs (attached_driver). One vehicle per driver; keyed by driver_id.
+	 *
+	 * @param array $driver_ids Array of driver IDs (attached_driver in vehicles_meta).
+	 * @return array Keyed by driver_id: [ driver_id => array( 'main' => ..., 'meta' => ... ), ... ]
+	 */
+	public function get_vehicles_by_driver_ids( array $driver_ids ) {
+		global $wpdb;
+
+		$driver_ids = array_filter( array_map( 'absint', $driver_ids ) );
+		if ( empty( $driver_ids ) ) {
+			return array();
+		}
+
+		$table_meta = $wpdb->prefix . $this->table_meta;
+		$placeholders = implode( ',', array_fill( 0, count( $driver_ids ), '%s' ) );
+
+		$query = $wpdb->prepare(
+			"SELECT post_id AS vehicle_id, meta_value AS driver_id
+			FROM $table_meta
+			WHERE meta_key = 'attached_driver' AND meta_value IN ($placeholders)",
+			$driver_ids
+		);
+		$rows = $wpdb->get_results( $query );
+
+		if ( empty( $rows ) ) {
+			return array();
+		}
+
+		$driver_to_vehicle = array();
+		foreach ( $rows as $row ) {
+			$driver_id = (int) $row->driver_id;
+			$vehicle_id = (int) $row->vehicle_id;
+			if ( ! isset( $driver_to_vehicle[ $driver_id ] ) ) {
+				$driver_to_vehicle[ $driver_id ] = $vehicle_id;
+			}
+		}
+
+		$vehicle_ids = array_values( array_unique( $driver_to_vehicle ) );
+		$vehicles_by_id = $this->get_vehicles_by_ids( $vehicle_ids );
+
+		$by_driver = array();
+		foreach ( $driver_to_vehicle as $driver_id => $vehicle_id ) {
+			if ( isset( $vehicles_by_id[ $vehicle_id ] ) ) {
+				$by_driver[ $driver_id ] = $vehicles_by_id[ $vehicle_id ];
+			}
+		}
+
+		return $by_driver;
+	}
+
+	/**
 	 * Get all vehicles with pagination
 	 *
 	 * @param array $args
@@ -378,6 +429,9 @@ class TMSVehicles {
 			'fleet_registration_id_card',
 			'annual_vehicle_inspection',
 			'dot_inspection',
+			'unit_number',
+			'unit_number_name',
+			'attached_driver',
 		);
 		
 		foreach ( $meta_fields as $field ) {

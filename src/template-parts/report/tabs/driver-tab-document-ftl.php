@@ -305,7 +305,7 @@ $files = array(
 		'post_id'        => $post_id,
 		'class_name'     => 'ic-agreement',
 		'field_name'     => 'ic_agreement',
-		'field_label'    => 'IC agreement',
+		'field_label'    => 'Odysseia agreement',
 		'delete_action'  => 'js-remove-one-driver',
 		'active_tab'     => 'pills-driver-documents-tab',
 	),
@@ -316,7 +316,7 @@ $files = array(
 		'post_id'        => $post_id,
 		'class_name'     => 'martlet-ic-agreement',
 		'field_name'     => 'martlet_ic_agreement',
-		'field_label'    => 'Martlet Express IC agreement',
+		'field_label'    => 'Martlet Express agreement',
 		'delete_action'  => 'js-remove-one-driver',
 		'active_tab'     => 'pills-driver-documents-tab',
 	),
@@ -327,7 +327,7 @@ $files = array(
 		'post_id'        => $post_id,
 		'class_name'     => 'endurance-ic-agreement',
 		'field_name'     => 'endurance_ic_agreement',
-		'field_label'    => 'Endurance Transport IC agreement',
+		'field_label'    => 'Endurance Transport agreement',
 		'delete_action'  => 'js-remove-one-driver',
 		'active_tab'     => 'pills-driver-documents-tab',
 	),
@@ -1572,7 +1572,7 @@ $access_vehicle = $TMSUsers->check_user_role_access( [
 				$simple_upload_args = [
 					'full_only_view' => $full_only_view,
 					'field_name' => 'ic_agreement',
-					'label'      => 'Odysseia IC agreement',
+					'label'      => 'Odysseia agreement',
 					'file_value' => $ic_agreement,
 					'popup_id'   => 'popup_upload_ic_agreement',
 					'col_class'  => 'col-12 col-md-6'
@@ -1587,7 +1587,7 @@ $access_vehicle = $TMSUsers->check_user_role_access( [
 				// Martlet Express IC agreement
 				$file_upload_args = [
 					'field_name'    => 'martlet_ic_agreement',
-					'label'         => 'Martlet Express IC agreement',
+					'label'         => 'Martlet Express agreement',
 					'toggle_block'  => 'js-martlet-ic-agreement-files',
 					'checkbox_name' => 'martlet_ic_agreement_on',
 					'checkbox_id'   => 'martlet-ic-agreement',
@@ -1611,7 +1611,7 @@ $access_vehicle = $TMSUsers->check_user_role_access( [
 				// Endurance Transport IC agreement
 				$file_upload_args = [
 					'field_name'    => 'endurance_ic_agreement',
-					'label'         => 'Endurance Transport IC agreement',
+					'label'         => 'Endurance Transport agreement',
 					'toggle_block'  => 'js-endurance-ic-agreement-files',
 					'checkbox_name' => 'endurance_ic_agreement_on',
 					'checkbox_id'   => 'endurance-ic-agreement',
@@ -1632,170 +1632,6 @@ $access_vehicle = $TMSUsers->check_user_role_access( [
 				?>
 
                 <div class='col-12'></div>
-
-                <!-- Insurance -->
-                <div class="col-12 col-md-6 mb-3">
-                    <label class="form-label">Insured</label>
-                    <select name="insured" class="form-control form-select">
-						<?php foreach ( $insuredOptions as $value => $label ) : ?>
-                            <option value="<?php echo $value ?>" <?php echo $insured === $value ? 'selected' : ''; ?>>
-								<?php echo $label ?>
-                            </option>
-						<?php endforeach; ?>
-                    </select>
-                </div>
-
-                <div class="col-12 mb-3">
-                    <h4>Automobile Liability</h4>
-                    <div class="row">
-                        <div class="col-12 col-md-6 mb-2">
-                            <label class="form-label">Policy number</label>
-                            <input type="text" class="form-control" value="<?php echo $auto_liability_policy; ?>"
-                                   name="auto_liability_policy">
-                        </div>
-                        <div class="col-12 col-md-6 mb-2">
-                            <label class="form-label">Expiration date</label>
-                            <input type="text" class="form-control js-new-format-date" name="auto_liability_expiration"
-                                   value="<?php echo $auto_liability_expiration; ?>">
-                        </div>
-
-                        <div class="col-12 col-md-6 mb-2">
-                            <label class="form-label">Insurer</label>
-                            <input type="text" class="form-control" value="<?php echo $auto_liability_insurer; ?>"
-                                   name="auto_liability_insurer">
-                        </div>
-						
-						<?php
-						// Odysseia COI
-						$simple_upload_args = [
-							'full_only_view' => $full_only_view,
-							'field_name' => 'auto_liability_coi',
-							'label'      => 'Odysseia COI',
-							'file_value' => $auto_liability_coi,
-							'popup_id'   => 'popup_upload_auto_liability_coi',
-							'col_class'  => 'col-12 col-md-6 mb-2'
-						];
-						echo esc_html( get_template_part( TEMPLATE_PATH . 'common/simple', 'file-upload', $simple_upload_args ) );
-						?>
-
-
-                
-                        <?php
-                        // Martlet Express COI
-                        $file_upload_args = [
-                            'full_only_view' => $full_only_view,
-                            'field_name'    => 'martlet_coi',
-                            'label'         => 'Martlet Express COI',
-                            'toggle_block'  => 'js-martlet-coi-files',
-                            'checkbox_name' => 'martlet_coi_on',
-                            'checkbox_id'   => 'martlet-coi',
-                            'expired_date'  => 1,
-                            'is_checked'    => $martlet_coi_on,
-                            'file_value'    => $martlet_coi,
-                            'popup_id'      => 'popup_upload_martlet_coi',
-                            'expired_date_name' => 'martlet_coi_expired_date',
-                            'expired_date_id' => 'martlet-coi-expired-date',
-                            'expired_date_class' => 'js-new-format-date',
-                            'expired_date_label' => 'Expired date (Martlet Express)',
-                            'expired_date_placeholder' => 'Expired date',
-                            'expired_date_value' => $martlet_coi_expired_date
-                        ];
-                        echo esc_html( get_template_part( TEMPLATE_PATH . 'common/file', 'upload-block-and-interview', $file_upload_args ) );
-                        ?>
-                            
-						
-						<?php
-						// Endurance Transport COI
-						$file_upload_args = [
-							'full_only_view' => $full_only_view,
-							'field_name'    => 'endurance_coi',
-							'label'         => 'Endurance Transport COI',
-							'toggle_block'  => 'js-endurance-coi-files',
-							'checkbox_name' => 'endurance_coi_on',
-							'checkbox_id'   => 'endurance-coi',
-                            'expired_date'  => 1,
-							'is_checked'    => $endurance_coi_on,
-							'file_value'    => $endurance_coi,
-							'popup_id'      => 'popup_upload_endurance_coi',
-                            'expired_date_name' => 'endurance_coi_expired_date',
-                            'expired_date_id' => 'endurance-coi-expired-date',
-                            'expired_date_class' => 'js-new-format-date w-100',
-                            'expired_date_label' => 'Expired date (Endurance Transport)',
-                            'expired_date_placeholder' => 'Expired date',
-                            'expired_date_value' => $endurance_coi_expired_date
-						];
-						echo esc_html( get_template_part( TEMPLATE_PATH . 'common/file', 'upload-block-and-interview', $file_upload_args ) );
-						?>
-
-                    </div>
-                </div>
-
-                <div class="col-12 mb-3">
-                    <h4>Motor Truck Cargo</h4>
-
-                    <div class="row">
-                        <div class="col-12 col-md-6 mb-2">
-                            <label class="form-label">Policy number</label>
-                            <input type="text" class="form-control" value="<?php echo $motor_cargo_policy; ?>"
-                                   name="motor_cargo_policy">
-                        </div>
-                        <div class="col-12 col-md-6 mb-2">
-                            <label class="form-label">Expiration date</label>
-                            <input type="text" class="form-control js-new-format-date" name="motor_cargo_expiration"
-                                   value="<?php echo $motor_cargo_expiration; ?>">
-                        </div>
-                        <div class="col-12 col-md-6 mb-2">
-                            <label class="form-label">Insurer</label>
-                            <input type="text" class="form-control" value="<?php echo $motor_cargo_insurer; ?>"
-                                   name="motor_cargo_insurer">
-                        </div>
-						<?php
-						// Motor Cargo COI
-						$simple_upload_args = [
-							'full_only_view' => $full_only_view,
-							'field_name' => 'motor_cargo_coi',
-							'label'      => 'Motor Cargo COI',
-							'file_value' => $motor_cargo_coi,
-							'popup_id'   => 'popup_upload_motor_cargo_coi',
-							'col_class'  => 'col-12 col-md-6'
-						];
-						echo esc_html( get_template_part( TEMPLATE_PATH . 'common/simple', 'file-upload', $simple_upload_args ) );
-						?>
-                    </div>
-                </div>
-
-
-			<h4 class="">Insurance agent (Optional)</h4>
-            <div class="row">
-                <div class="col-12 mb-3">
-                    <div class="form-check form-switch">
-                        <input class="form-check-input js-toggle"
-                               data-block-toggle="js-insurance-agent-driver" type="checkbox" id="insuranceAgentSwitch" name="insurance_agent_enabled"
-							<?php echo $insurance_agent_enabled ? 'checked' : ''; ?>>
-                        <label class="form-check-label" for="insuranceAgentSwitch">Enable Insurance Agent</label>
-                    </div>
-                </div>
-            </div>
-
-            <div class="col-12 js-insurance-agent-driver <?php echo $insurance_agent_enabled ? '' : 'd-none'; ?> ">
-                <div class="row border-1 border-primary border bg-light pt-3 pb-3 mb-3 rounded">
-                    <div class="col-md-4 mb-3">
-                        <label class="form-label">Insurance Agent Name</label>
-                        <input type="text" class="form-control" name="insurance_agent_name" value="<?php echo $insurance_agent_name; ?>">
-                    </div>
-            
-                    <div class="col-md-4 mb-3">
-                    <label class="form-label">Insurance Agent Phone</label>
-                    <input type="tel" class="form-control js-tel-mask" name="insurance_agent_phone" value="<?php echo $insurance_agent_phone; ?>">
-                    </div>
-                    <div class="col-md-4 mb-3">
-                        <label class="form-label">Insurance Agent Email</label>
-                        <input type="email" class="form-control" name="insurance_agent_email" value="<?php echo $insurance_agent_email; ?>">
-                    </div>
-                </div>
-            </div>
-
-                <div class="col-12"></div>
 
                 <!-- Status & Cancellation -->
                 <div class="col-6 mb-3">
@@ -1910,19 +1746,19 @@ $access_vehicle = $TMSUsers->check_user_role_access( [
 				'driver_id' => $post_id,
 			),
 			array(
-				'title'     => 'Upload Odysseia IC agreement',
+				'title'     => 'Upload Odysseia agreement',
 				'file_name' => 'ic_agreement',
 				'multiply'  => false,
 				'driver_id' => $post_id,
 			),
 			array(
-				'title'     => 'Upload Martlet Express IC agreement',
+				'title'     => 'Upload Martlet Express agreement',
 				'file_name' => 'martlet_ic_agreement',
 				'multiply'  => false,
 				'driver_id' => $post_id,
 			),
 			array(
-				'title'     => 'Upload Endurance Transport IC agreement',
+				'title'     => 'Upload Endurance Transport agreement',
 				'file_name' => 'endurance_ic_agreement',
 				'multiply'  => false,
 				'driver_id' => $post_id,

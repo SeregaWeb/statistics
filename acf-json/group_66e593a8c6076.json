@@ -481,6 +481,22 @@
             "return_format": "url"
         },
         {
+            "key": "field_699468d7b6814",
+            "label": "Add new driver (FTL)",
+            "name": "add_new_driver_ftl",
+            "aria-label": "",
+            "type": "link",
+            "instructions": "this link need for driver (FTL) draft edit",
+            "required": 1,
+            "conditional_logic": 0,
+            "wrapper": {
+                "width": "",
+                "class": "",
+                "id": ""
+            },
+            "return_format": "url"
+        },
+        {
             "key": "field_692ecf8fa94b5",
             "label": "Add new trailer",
             "name": "add_new_trailer",
@@ -1637,5 +1653,5 @@
     "active": true,
     "description": "",
     "show_in_rest": 0,
-    "modified": 1768306406
+    "modified": 1771333895
 }

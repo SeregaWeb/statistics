@@ -142,7 +142,7 @@ $is_hold = $driver_status === 'on_hold';
                     <div class="row">
                         <div class="col-12 mb-3">
                                 <label class="form-label">Notes</label>
-                                <textarea class="form-control js-notes" name="notes" rows="3" placeholder="Add notes about this status update..."><?php echo esc_html(trim($notes)); ?></textarea>
+                                <textarea class="form-control js-notes" name="notes" rows="3" placeholder="Add notes about this status update..."><?php echo esc_html( trim( (string) ( $notes ?? '' ) ) ); ?></textarea>
                         </div>
                     </div>
 

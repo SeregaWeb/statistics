@@ -114,14 +114,63 @@ if ( ! empty( $results ) || $fragment_only ) :
 	<?php endif; ?>
 	<?php if ( ! $fragment_only ) : ?><tbody class="js-tracking-tbody"><?php endif; ?>
 		<?php
-		$row_index = 0;
-		if ( ! empty( $results ) ) :
-		foreach ( $results as $row ) :
+		$row_index         = 0;
+		$results_list      = is_array( $results ) ? $results : array();
+		$logs_last_by_post   = array();
+		$companies_by_id    = array();
+		$brokers_by_id      = array();
+		$active_timers_by_load = array();
+		$paused_timers_by_load = array();
+		$geo_by_address_id    = array();
+		$eta_records_by_load   = array();
+		$db_locations_by_load  = array();
+		$raters_by_order        = array();
+		if ( ! empty( $results_list ) ) {
+			$post_ids = array_filter( array_map( 'absint', wp_list_pluck( $results_list, 'id' ) ) );
+			$logs_last_by_post    = $logs->get_last_logs_by_posts( $post_ids, $flt ? 'reports_flt' : 'report' );
+			$active_timers_by_load = $TMSReportsTimer->get_active_timers_for_loads( $post_ids );
+			$paused_timers_by_load = $TMSReportsTimer->get_paused_timers_for_loads( $post_ids );
+			$db_locations_by_load  = $TMSReports->get_locations_from_db_batch( $post_ids );
+			$eta_address_ids = array();
+			foreach ( $results_list as $r ) {
+				$eta = $helper->get_eta_data( $r );
+				foreach ( array( 'pick_up', 'delivery' ) as $loc_type ) {
+					if ( ! empty( $eta[ $loc_type ][0]['address_id'] ) ) {
+						$eta_address_ids[] = (int) $eta[ $loc_type ][0]['address_id'];
+					}
+				}
+			}
+			$eta_address_ids    = array_unique( array_filter( $eta_address_ids ) );
+			$geo_by_address_id  = $helper->get_shipper_company_geo_by_address_ids( $eta_address_ids );
+			$customer_ids = array();
+			foreach ( $results_list as $r ) {
+				$m = get_field_value( $r, 'meta_data' );
+				$cid = get_field_value( $m, 'customer_id' );
+				if ( $cid !== '' && $cid !== null ) {
+					$customer_ids[] = (int) $cid;
+				}
+			}
+			$customer_ids    = array_unique( array_filter( $customer_ids ) );
+			$companies_by_id = $TMSBroker->get_companies_by_ids( $customer_ids );
+			$brokers_by_id   = $TMSBroker->get_brokers_data_by_ids( $customer_ids, $companies_by_id );
+			$eta_records_by_load = $eta_manager->get_eta_records_for_display_batch( $post_ids, $flt, $TMSReports->project );
+			$reference_numbers  = array();
+			foreach ( $results_list as $r ) {
+				$m   = get_field_value( $r, 'meta_data' );
+				$ref = get_field_value( $m, 'reference_number' );
+				if ( $ref !== '' && $ref !== null ) {
+					$reference_numbers[] = $ref;
+				}
+			}
+			$raters_by_order = $TMSDrivers->get_raters_for_order_numbers_batch( $reference_numbers );
+		}
+		if ( ! empty( $results_list ) ) :
+		foreach ( $results_list as $row ) :
 			$row_index++;
 			$meta = get_field_value( $row, 'meta_data' );
 			$main = get_field_value( $row, 'main' );
 			
-			$pdlocations = $helper->get_locations_template( $row, 'tracking', true, $TMSReports );
+			$pdlocations = $helper->get_locations_template( $row, 'tracking', true, $TMSReports, $db_locations_by_load );
 
 
             $eta_data = $helper->get_eta_data( $row );
@@ -144,7 +193,9 @@ if ( ! empty( $results ) || $fragment_only ) :
 			$date_booked_raw = get_field_value( $row, 'date_booked' );
 			$date_booked     = esc_html( date( 'm/d/Y', strtotime( $date_booked_raw ) ) );
 			
-			$reference_number = esc_html( get_field_value( $meta, 'reference_number' ) );
+			$reference_number_raw = get_field_value( $meta, 'reference_number' );
+			$reference_number     = esc_html( $reference_number_raw );
+			$ref_for_lookup       = sanitize_text_field( (string) $reference_number_raw );
 
 			// Primary driver for rating: priority third > second > first (same as report-table)
 			$attached_driver          = get_field_value( $meta, 'attached_driver' );
@@ -165,11 +216,11 @@ if ( ! empty( $results ) || $fragment_only ) :
 				$primary_driver_id   = (int) $attached_driver;
 				$primary_driver_name = $unit_number_name ?: '';
 			}
-			// Load is "rated" for everyone when the dispatcher who created the load has rated it; one query for both raters
+			// Load is "rated" for everyone when the dispatcher who created the load has rated it (preloaded batch)
 			$dispatcher_name    = $dispatcher['full_name'] ?? '';
 			$current_user_info  = $helper->get_user_full_name_by_id( $current_user_id );
 			$current_user_name  = $current_user_info ? $current_user_info['full_name'] : '';
-			$rated_by           = $TMSDrivers->get_raters_for_order_number( $reference_number, array( $dispatcher_name, $current_user_name ) );
+			$rated_by           = array_values( array_intersect( array( $dispatcher_name, $current_user_name ), $raters_by_order[ $ref_for_lookup ] ?? array() ) );
 			$dispatcher_rated   = in_array( $dispatcher_name, $rated_by, true );
 			$current_user_rated = in_array( $current_user_name, $rated_by, true );
 			// Tracking: can rate if load's dispatcher is in my group (or user is administrator)
@@ -182,15 +233,10 @@ if ( ! empty( $results ) || $fragment_only ) :
 			
 			$show_control = $TMSUsers->show_control_loads( $my_team, $current_user_id, $dispatcher_initials, $is_draft );
 			
-			$id_customer     = get_field_value( $meta, 'customer_id' );
-			$template_broker = $TMSBroker->get_broker_and_link_by_id( $id_customer );
-			
-			$current_company = $TMSBroker->get_company_by_id( $id_customer );
-			if ( $current_company ) {
-				$current_company_name = $current_company[0]->company_name;
-			} else {
-				$current_company_name = '';
-			}
+			$id_customer      = (int) ( get_field_value( $meta, 'customer_id' ) ?? 0 );
+			$broker_data      = isset( $brokers_by_id[ $id_customer ] ) ? $brokers_by_id[ $id_customer ] : array();
+			$template_broker  = isset( $broker_data['template'] ) ? $broker_data['template'] : 'N/A';
+			$current_company_name = isset( $companies_by_id[ $id_customer ]['company_name'] ) ? $companies_by_id[ $id_customer ]['company_name'] : '';
 			
 			$instructions_raw = get_field_value( $meta, 'instructions' );
 			$instructions     = $helper->get_label_by_key( $instructions_raw, 'instructions' );
@@ -202,7 +248,7 @@ if ( ! empty( $results ) || $fragment_only ) :
 				$disable_status = true;
 			}
 			
-			$tmpl = $logs->get_last_log_by_post( $row[ 'id' ], $flt ? 'reports_flt' : 'report' );
+			$tmpl = isset( $logs_last_by_post[ (int) $row['id'] ] ) ? $logs_last_by_post[ (int) $row['id'] ] : '';
 			
 			$now_show = ( $factoring_status_row === 'paid' );
 			
@@ -211,14 +257,14 @@ if ( ! empty( $results ) || $fragment_only ) :
 
             <?php
             // Determine if there is an active timer for this load (used to show quick update button)
-            $has_active_timer = $access_timer && ! $archive && $TMSReportsTimer->get_active_timer_for_load( $row['id'] );
+            $has_active_timer = $access_timer && ! $archive && isset( $active_timers_by_load[ (int) $row['id'] ] );
             ?>
 
             <tr class="<?php echo 'status-tracking-' . $status; ?> <?php echo $tbd ? 'tbd' : ''; ?> <?php echo $high_priority ? 'hight-priority' : ''; ?>" data-load-id="<?php echo (int) $row['id']; ?>">
 
                 <?php if ( $access_timer && !$archive ): ?>
                 <td class="js-timer-status-cell" data-load-id="<?php echo (int) $row['id']; ?>">
-                    <?php echo $TMSReportsTimer->get_timer_status( $row[ 'id' ] ); ?>
+                    <?php echo $TMSReportsTimer->get_timer_status( $row['id'], $active_timers_by_load, $paused_timers_by_load ); ?>
                 </td>
                 <?php endif; ?>
 
@@ -255,11 +301,10 @@ if ( ! empty( $results ) || $fragment_only ) :
 
                     if ($load_status !== 'loaded-enroute' && $load_status !== 'at-del' && $load_status !== 'at-pu' && $load_status !== 'waiting-on-rc' && $load_status !== 'delivered' && $load_status !== 'tonu' && $load_status !== 'cancelled'):
 
-                    $helper = new TMSReportsHelper();
-                    $eta_data = $helper->get_eta_data($row);
-                    $pickup_data = $helper->get_eta_display_data($eta_data, 'pick_up');
-                    // Get ETA record for display (for all users)
-                    $pickup_eta_record = $eta_manager->get_eta_record_for_display($row['id'], 'pickup', $flt, $TMSReports->project);
+                    $eta_data = $helper->get_eta_data( $row );
+                    $pickup_data = $helper->get_eta_display_data( $eta_data, 'pick_up', $geo_by_address_id );
+                    // ETA record for display (preloaded in batch)
+                    $pickup_eta_record = isset( $eta_records_by_load[ $row['id'] ]['pickup'] ) ? $eta_records_by_load[ $row['id'] ]['pickup'] : array( 'exists' => false );
                     $pickup_button_class = $pickup_eta_record['exists'] ? 'btn-success' : 'btn-outline-primary';
                     
                     // Use ETA record data if exists, otherwise use location data
@@ -334,10 +379,10 @@ if ( ! empty( $results ) || $fragment_only ) :
                     <?php 
 
                 if ($load_status !== 'delivered' && $load_status !== 'waiting-on-rc' && $load_status !== 'tonu' && $load_status !== 'cancelled'):
-                    $delivery_data = $helper->get_eta_display_data($eta_data, 'delivery');
+                    $delivery_data = $helper->get_eta_display_data( $eta_data, 'delivery', $geo_by_address_id );
                     
-                    // Get ETA record for display (for all users)
-                    $delivery_eta_record = $eta_manager->get_eta_record_for_display($row['id'], 'delivery', $flt, $TMSReports->project);
+                    // ETA record for display (preloaded in batch)
+                    $delivery_eta_record = isset( $eta_records_by_load[ $row['id'] ]['delivery'] ) ? $eta_records_by_load[ $row['id'] ]['delivery'] : array( 'exists' => false );
                     $delivery_button_class = $delivery_eta_record['exists'] ? 'btn-success' : 'btn-outline-primary';
                     
                     // Use ETA record data if exists, otherwise use location data

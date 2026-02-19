@@ -15,12 +15,15 @@ if ( ! empty( $pinned_messages_json ) ) {
 		// get_field_value already applies stripslashes, but we need wp_unslash for consistency
 		$pinned_messages_json_clean = wp_unslash( $pinned_messages_json );
 		
-		// Try to unserialize (new format using PHP serialize)
-		$unserialized = @unserialize( $pinned_messages_json_clean );
-		if ( $unserialized !== false && is_array( $unserialized ) ) {
-			// New format: serialized PHP array
-			$pinned_messages = $unserialized;
-		} else {
+		// Try unserialize only if string looks like PHP serialized data (avoids Notice on plain text like "false")
+		$looks_serialized = preg_match( '/^[aOsibNdCr]:\d+:/', $pinned_messages_json_clean );
+		if ( $looks_serialized ) {
+			$unserialized = @unserialize( $pinned_messages_json_clean );
+			if ( $unserialized !== false && is_array( $unserialized ) ) {
+				$pinned_messages = $unserialized;
+			}
+		}
+		if ( empty( $pinned_messages ) ) {
 			// Try JSON format (for backward compatibility with old data)
 			$trimmed = trim( $pinned_messages_json_clean );
 			if ( ! empty( $trimmed ) && ( $trimmed[0] === '[' || $trimmed[0] === '{' ) ) {

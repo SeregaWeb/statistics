@@ -85,6 +85,7 @@ if ( $current_page === 1 && ! empty( $all_high_priority ) ) {
 }
 
 $items                = $reports->get_table_items_tracking( $args );
+
 $post_tp              = 'tracking';
 $items[ 'page_type' ] = $post_tp;
 $items['hide_time_controls'] = true;
@@ -92,19 +93,10 @@ if ( $is_flt ) {
 	$items[ 'flt' ] = true;
 }
 
-// Counts for quick status filter buttons (same filters, per load_status)
-$quick_status_keys = array( '', 'waiting-on-pu-date', 'at-pu', 'loaded-enroute', 'at-del' );
-$quick_status_counts = array();
-foreach ( $quick_status_keys as $qsk ) {
-	$args_count = $args;
-	if ( $qsk === '' ) {
-		unset( $args_count['load_status'] );
-	} else {
-		$args_count['load_status'] = $qsk;
-	}
-	$res = $reports->get_table_items_tracking( $args_count );
-	$quick_status_counts[ $qsk ] = isset( $res['total_posts'] ) ? (int) $res['total_posts'] : 0;
-}
+// Counts for quick status filter buttons (2 queries instead of 5× get_table_items_tracking)
+$quick_status_keys   = array( '', 'waiting-on-pu-date', 'at-pu', 'loaded-enroute', 'at-del' );
+$quick_status_counts = $reports->get_tracking_quick_status_counts( $args, $quick_status_keys );
+
 // "All" count should include high priority loads (they are shown when no status filter)
 if ( ! empty( $high_priority_loads ) ) {
 	$quick_status_counts[''] += count( $high_priority_loads );

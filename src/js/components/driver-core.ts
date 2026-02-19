@@ -255,6 +255,7 @@ const DRIVER_FILE_FIELDS_REQUIRING_CONFIRM = new Set([
     'tsa_file_team_driver',
     'interview_martlet',
     'interview_endurance',
+    'driver_photo',
 ]);
 
 export const removeOneFileInitial = (ajaxUrl) => {

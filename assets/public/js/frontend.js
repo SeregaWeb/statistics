@@ -8584,8 +8584,10 @@ var DriverAutocomplete = /*#__PURE__*/function () {
       if (this.selectedDriver) {
         this.selectedDriver = null;
       }
+      var ftlAttr = input.getAttribute('data-ftl');
+      var ftl = ftlAttr === '1' || ftlAttr === 'true';
       this.searchTimeout = setTimeout(function () {
-        _this2.searchDrivers(value);
+        _this2.searchDrivers(value, ftl);
       }, 300);
     }
   }, {
@@ -8602,13 +8604,15 @@ var DriverAutocomplete = /*#__PURE__*/function () {
       var input = document.querySelector(this.selectors.unitInput);
       if (input) {
         var currentValue = input.value.trim();
+        var ftlAttr = input.getAttribute('data-ftl');
+        var ftl = ftlAttr === '1' || ftlAttr === 'true';
         if (!currentValue && this.selectedDriver && this.lastSearchTerm && this.searchCache.has(this.lastSearchTerm)) {
           this.showDropdown(this.searchCache.get(this.lastSearchTerm));
         } else if (currentValue) {
           if (this.searchCache.has(currentValue)) {
             this.showDropdown(this.searchCache.get(currentValue));
           } else {
-            this.searchDrivers(currentValue);
+            this.searchDrivers(currentValue, ftl);
           }
         }
       }
@@ -8655,7 +8659,7 @@ var DriverAutocomplete = /*#__PURE__*/function () {
     }
   }, {
     key: "searchDrivers",
-    value: function searchDrivers(unitNumber) {
+    value: function searchDrivers(unitNumber, ftl) {
       return __awaiter(this, void 0, void 0, /*#__PURE__*/_regeneratorRuntime().mark(function _callee() {
         var nonceInput, nonce, formData, response, data;
         return _regeneratorRuntime().wrap(function _callee$(_context) {
@@ -8668,16 +8672,19 @@ var DriverAutocomplete = /*#__PURE__*/function () {
               formData.append('action', 'search_drivers_by_unit');
               formData.append('unit_number', unitNumber);
               formData.append('nonce', nonce);
-              _context.next = 9;
+              if (ftl) {
+                formData.append('ftl', '1');
+              }
+              _context.next = 10;
               return fetch(this.ajaxUrl, {
                 method: 'POST',
                 body: formData
               });
-            case 9:
+            case 10:
               response = _context.sent;
-              _context.next = 12;
+              _context.next = 13;
               return response.json();
-            case 12:
+            case 13:
               data = _context.sent;
               if (data.success) {
                 this.searchCache.set(unitNumber, data.data);
@@ -8688,18 +8695,18 @@ var DriverAutocomplete = /*#__PURE__*/function () {
                 this.lastSearchTerm = unitNumber;
                 this.hideDropdown();
               }
-              _context.next = 20;
+              _context.next = 21;
               break;
-            case 16:
-              _context.prev = 16;
+            case 17:
+              _context.prev = 17;
               _context.t0 = _context["catch"](0);
               console.error('Error searching drivers:', _context.t0);
               this.hideDropdown();
-            case 20:
+            case 21:
             case "end":
               return _context.stop();
           }
-        }, _callee, this, [[0, 16]]);
+        }, _callee, this, [[0, 17]]);
       }));
     }
   }, {
@@ -8821,7 +8828,7 @@ var DriverAutocomplete = /*#__PURE__*/function () {
       var phoneInput = this.selectors.phoneInput ? document.querySelector(this.selectors.phoneInput) : null;
       var hasPhone = phoneInput && phoneInput.value;
       var hasDriverData = attachedDriverInput && attachedDriverInput.value && unitNumberNameInput && unitNumberNameInput.value;
-      var shouldRestore = this.selectors.phoneInput ? hasDriverData && hasPhone : hasDriverData;
+      var shouldRestore = hasDriverData && (!phoneInput || hasPhone);
       if (shouldRestore) {
         var driver = {
           driver_id: attachedDriverInput.value,
@@ -9212,7 +9219,7 @@ var updateDriverDocument = function updateDriverDocument(urlAjax) {
     });
   });
 };
-var DRIVER_FILE_FIELDS_REQUIRING_CONFIRM = new Set(['registration_file', 'gvwr_placard', 'payment_file', 'w9_file', 'ssn_file', 'ein_file', 'nec_file', 'nec_file_martlet', 'nec_file_endurance', 'hazmat_certificate_file', 'driving_record', 'legal_document', 'twic_file', 'martlet_coi', 'endurance_coi', 'martlet_ic_agreement', 'endurance_ic_agreement', 'motor_cargo_coi', 'auto_liability_coi', 'ic_agreement', 'canada_transition_file', 'immigration_file', 'background_file', 'interview_file', 'team_driver_driving_record', 'immigration_file_team_driver', 'legal_document_team_driver', 'canada_transition_file_team_driver', 'background_file_team_driver', 'hazmat_certificate_file_team_driver', 'twic_file_team_driver', 'tsa_file_team_driver', 'interview_martlet', 'interview_endurance']);
+var DRIVER_FILE_FIELDS_REQUIRING_CONFIRM = new Set(['registration_file', 'gvwr_placard', 'payment_file', 'w9_file', 'ssn_file', 'ein_file', 'nec_file', 'nec_file_martlet', 'nec_file_endurance', 'hazmat_certificate_file', 'driving_record', 'legal_document', 'twic_file', 'martlet_coi', 'endurance_coi', 'martlet_ic_agreement', 'endurance_ic_agreement', 'motor_cargo_coi', 'auto_liability_coi', 'ic_agreement', 'canada_transition_file', 'immigration_file', 'background_file', 'interview_file', 'team_driver_driving_record', 'immigration_file_team_driver', 'legal_document_team_driver', 'canada_transition_file_team_driver', 'background_file_team_driver', 'hazmat_certificate_file_team_driver', 'twic_file_team_driver', 'tsa_file_team_driver', 'interview_martlet', 'interview_endurance', 'driver_photo']);
 var removeOneFileInitial = function removeOneFileInitial(ajaxUrl) {
   var deleteForms = document.querySelectorAll('.js-remove-one-driver');
   var deleteFormsNoFormBtn = document.querySelectorAll('.js-remove-one-no-form-btn');
@@ -13978,17 +13985,21 @@ var modalLogsInit = function modalLogsInit(ajaxUrl) {
     fetch(ajaxUrl, options).then(function (res) {
       return res.json();
     }).then(function (requestStatus) {
+      var _a;
       if (requestStatus.success) {
         var successMessage = isPinned ? 'Pinned message added successfully' : 'Log message added successfully';
         (0,_info_messages__WEBPACK_IMPORTED_MODULE_0__.printMessage)(successMessage, 'success', 3000);
         target.reset();
         if (isPinned) {
-          if (requestStatus.data.pinned) {
+          var pinnedList = (_a = requestStatus.data) === null || _a === void 0 ? void 0 : _a.pinned;
+          if (pinnedList && Array.isArray(pinnedList)) {
             var modalForLog = document.getElementById('addLogModal');
             var pinnedWrapper = modalForLog ? modalForLog.targetPinnedWrapper : undefined;
             if (pinnedWrapper) {
-              var pinned = requestStatus.data.pinned;
-              var pinnedHtml = "\n                                    <div class=\"pinned-message\">\n                                        <div class=\"d-flex justify-content-between align-items-center pinned-message__header\">\n                                            <span class=\"d-flex align-items-center \">\n                                                <svg fill=\"#000000\" width=\"18px\" height=\"18px\" viewBox=\"0 0 32 32\" version=\"1.1\" xmlns=\"http://www.w3.org/2000/svg\">\n                                                    <path d=\"M18.973 17.802l-7.794-4.5c-0.956-0.553-2.18-0.225-2.732 0.731-0.552 0.957-0.224 2.18 0.732 2.732l7.793 4.5c0.957 0.553 2.18 0.225 2.732-0.732 0.554-0.956 0.226-2.179-0.731-2.731zM12.545 12.936l6.062 3.5 2.062-5.738-4.186-2.416-3.938 4.654zM8.076 27.676l5.799-7.044-2.598-1.5-3.201 8.544zM23.174 7.525l-5.195-3c-0.718-0.414-1.635-0.169-2.049 0.549-0.415 0.718-0.168 1.635 0.549 2.049l5.196 3c0.718 0.414 1.635 0.169 2.049-0.549s0.168-1.635-0.55-2.049z\"></path>\n                                                </svg>\n                                                ".concat(pinned.full_name || '', "\n                                            </span>\n                                            <span>").concat(pinned.time_pinned || '', "</span>\n                                        </div>\n                                        <div class=\"pinned-message__content\">\n                                            ").concat(pinned.pinned_message || '', "\n                                        </div>\n                                    </div>");
+              var pinnedHtml = '';
+              pinnedList.forEach(function (pinned) {
+                pinnedHtml += "\n                                    <div class=\"pinned-message\">\n                                        <div class=\"d-flex justify-content-between align-items-center pinned-message__header\">\n                                            <span class=\"d-flex align-items-center \">\n                                                <svg fill=\"#000000\" width=\"18px\" height=\"18px\" viewBox=\"0 0 32 32\" version=\"1.1\" xmlns=\"http://www.w3.org/2000/svg\">\n                                                    <path d=\"M18.973 17.802l-7.794-4.5c-0.956-0.553-2.18-0.225-2.732 0.731-0.552 0.957-0.224 2.18 0.732 2.732l7.793 4.5c0.957 0.553 2.18 0.225 2.732-0.732 0.554-0.956 0.226-2.179-0.731-2.731zM12.545 12.936l6.062 3.5 2.062-5.738-4.186-2.416-3.938 4.654zM8.076 27.676l5.799-7.044-2.598-1.5-3.201 8.544zM23.174 7.525l-5.195-3c-0.718-0.414-1.635-0.169-2.049 0.549-0.415 0.718-0.168 1.635 0.549 2.049l5.196 3c0.718 0.414 1.635 0.169 2.049-0.549s0.168-1.635-0.55-2.049z\"></path>\n                                                </svg>\n                                                ".concat(pinned.full_name || '', "\n                                            </span>\n                                            <span>").concat(pinned.time_pinned || '', "</span>\n                                        </div>\n                                        <div class=\"pinned-message__content\">\n                                            ").concat(pinned.pinned_message || '', "\n                                        </div>\n                                    </div>");
+              });
               pinnedWrapper.innerHTML = pinnedHtml;
             }
           }

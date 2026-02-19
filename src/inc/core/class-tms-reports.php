@@ -497,215 +497,36 @@ class TMSReports extends TMSReportsHelper {
 		);
 	}
 
+	/**
+	 * Get table items for tracking tab. Delegates to TMSReportsHelper::get_table_items_tracking_internal.
+	 *
+	 * @param array $args Filter args.
+	 * @return array
+	 */
 	public function get_table_items_tracking( $args = array() ) {
 		global $wpdb;
-
-		$table_main   = $wpdb->prefix . $this->table_main;
-		$table_meta   = $wpdb->prefix . $this->table_meta;
-		$per_page     = $this->per_page_loads;
-		$current_page = isset( $_GET[ 'paged' ] ) ? absint( $_GET[ 'paged' ] ) : 1;
-		$sort_by      = $args[ 'sort_by' ] ?? 'date_booked';
-		$sort_order   = strtolower( $args[ 'sort_order' ] ?? 'desc' ) === 'asc' ? 'ASC' : 'DESC';
-
-		// Dynamic JOINs: only add meta joins when needed for SELECT/WHERE/ORDER.
-		$joins_always   = array( 'dispatcher', 'reference', 'unit_number', 'load_status' );
-		$joins_optional = array();
-		if ( ! empty( $args[ 'my_search' ] ) ) {
-			$joins_optional[] = 'unit_phone';
-		}
-		if ( ! empty( $args[ 'office' ] ) && $args[ 'office' ] !== 'all' ) {
-			$joins_optional[] = 'office_dispatcher';
-		}
-		if ( ! empty( $args[ 'exclude_tbd' ] ) ) {
-			$joins_optional[] = 'tbd';
-		}
-		$required_joins = array_unique( array_merge( $joins_always, $joins_optional ) );
-		$meta_join_defs = array(
-			'dispatcher'        => 'dispatcher_initials',
-			'reference'         => 'reference_number',
-			'unit_number'       => 'unit_number_name',
-			'unit_phone'        => 'driver_phone',
-			'load_status'       => 'load_status',
-			'office_dispatcher' => 'office_dispatcher',
-			'tbd'               => 'tbd',
-		);
-		$join_builder = "\n\t    FROM $table_main AS main";
-		foreach ( $required_joins as $alias ) {
-			if ( isset( $meta_join_defs[ $alias ] ) ) {
-				$key = $meta_join_defs[ $alias ];
-				$join_builder .= "\n\t    LEFT JOIN $table_meta AS $alias ON main.id = $alias.post_id AND $alias.meta_key = '" . esc_sql( $key ) . "'";
-			}
-		}
-		$join_builder .= "\n\t    WHERE 1=1";
-
-		$sql = "SELECT main.*,
-    dispatcher.meta_value AS dispatcher_initials_value,
-    reference.meta_value AS reference_number_value,
-    unit_number.meta_value AS unit_number_value,
-    load_status.meta_value AS load_status_value
-    " . $join_builder;
-		
-		// Условия WHERE
-		$where_conditions = [];
-		$where_values     = [];
-		
-		// Вспомогательная функция для формирования условий
-		$add_condition = function( $condition, $value ) use ( &$where_conditions, &$where_values ) {
-			$where_conditions[] = $condition;
-			$where_values[]     = $value;
-		};
-		
-		if ( ! empty( $args[ 'status_post' ] ) ) {
-			$add_condition( "main.status_post = %s", $args[ 'status_post' ] );
-		}
-		
-		if ( ! empty( $args[ 'load_status' ] ) ) {
-			$add_condition( "load_status.meta_value = %s", $args[ 'load_status' ] );
-		}
-		
-		if ( ! empty( $args[ 'office' ] ) && $args[ 'office' ] !== 'all' ) {
-			$where_conditions[] = "office_dispatcher.meta_value = %s";
-			$where_values[]     = $args[ 'office' ];
-		}
-		
-		if ( ! empty( $args[ 'my_team' ] ) && is_array( $args[ 'my_team' ] ) ) {
-			$team_values        = esc_sql( $args[ 'my_team' ] );
-			$where_conditions[] = "dispatcher.meta_value IN ('" . implode( "','", $team_values ) . "')";
-		}
-		
-		if ( ! empty( $args[ 'dispatcher' ] ) ) {
-			$add_condition( "dispatcher.meta_value = %s", $args[ 'dispatcher' ] );
-		}
-		
-		if ( ! empty( $args[ 'exclude_status' ] ) ) {
-			$exclude_status     = esc_sql( (array) $args[ 'exclude_status' ] );
-			$where_conditions[] = "load_status.meta_value NOT IN ('" . implode( "','", $exclude_status ) . "')";
-		}
-		
-		if ( ! empty( $args[ 'include_status' ] ) ) {
-			$include_status     = esc_sql( (array) $args[ 'include_status' ] );
-			$where_conditions[] = "load_status.meta_value IN ('" . implode( "','", $include_status ) . "')";
-		}
-		
-		if ( ! empty( $args[ 'my_search' ] ) ) {
-			$search_value       = '%' . $wpdb->esc_like( $args[ 'my_search' ] ) . '%';
-			$where_conditions[] = "(reference.meta_value LIKE %s OR unit_number.meta_value LIKE %s OR unit_phone.meta_value LIKE %s)";
-			$where_values[]     = $search_value;
-			$where_values[]     = $search_value;
-			$where_values[]     = $search_value;
-		}
-		
-		// Exclude specific IDs (e.g., high priority loads that are shown separately)
-		if ( ! empty( $args[ 'exclude_ids' ] ) && is_array( $args[ 'exclude_ids' ] ) ) {
-			$exclude_ids = array_map( 'absint', $args[ 'exclude_ids' ] );
-			if ( ! empty( $exclude_ids ) ) {
-				$where_conditions[] = "main.id NOT IN (" . implode( ',', $exclude_ids ) . ")";
-			}
-		}
-		
-		// Exclude TBD loads
-		if ( isset( $args[ 'exclude_tbd' ] ) && ! empty( $args[ 'exclude_tbd' ] ) ) {
-			$where_conditions[] = "(tbd.meta_value IS NULL OR tbd.meta_value != '1')";
-		}
-
-		// Filter by pickup/delivery date only from locations table (reports_{project}_locations)
-		// When both dates set: range (pickup and delivery date within [start, end]). When one: exact date.
-		$date_pickup_raw   = ! empty( $args[ 'date_pickup' ] ) ? trim( $args[ 'date_pickup' ] ) : '';
-		$date_delivery_raw = ! empty( $args[ 'date_delivery' ] ) ? trim( $args[ 'date_delivery' ] ) : '';
-		if ( ! empty( $this->project ) && ( $date_pickup_raw || $date_delivery_raw ) ) {
-			$table_locations = $wpdb->prefix . 'reports_' . strtolower( $this->project ) . '_locations';
-			$parsed_pickup   = $this->parse_tracking_filter_datetime( $date_pickup_raw );
-			$parsed_delivery = $this->parse_tracking_filter_datetime( $date_delivery_raw );
-			if ( $parsed_pickup && ! $parsed_delivery ) {
-				$where_conditions[] = "main.id IN (SELECT load_id FROM $table_locations WHERE location_type = 'pickup' AND date IS NOT NULL AND DATE(date) = DATE(%s))";
-				$where_values[]     = $parsed_pickup;
-			} elseif ( $parsed_delivery && ! $parsed_pickup ) {
-				$where_conditions[] = "main.id IN (SELECT load_id FROM $table_locations WHERE location_type = 'delivery' AND date IS NOT NULL AND DATE(date) = DATE(%s))";
-				$where_values[]     = $parsed_delivery;
-			} elseif ( $parsed_pickup && $parsed_delivery ) {
-				$range_start = strcmp( $parsed_pickup, $parsed_delivery ) <= 0 ? $parsed_pickup : $parsed_delivery;
-				$range_end   = strcmp( $parsed_pickup, $parsed_delivery ) <= 0 ? $parsed_delivery : $parsed_pickup;
-				$where_conditions[] = "main.id IN (SELECT load_id FROM $table_locations WHERE location_type = 'pickup' AND date IS NOT NULL AND DATE(date) BETWEEN DATE(%s) AND DATE(%s))";
-				$where_conditions[] = "main.id IN (SELECT load_id FROM $table_locations WHERE location_type = 'delivery' AND date IS NOT NULL AND DATE(date) BETWEEN DATE(%s) AND DATE(%s))";
-				$where_values[]     = $range_start;
-				$where_values[]     = $range_end;
-				$where_values[]     = $range_start;
-				$where_values[]     = $range_end;
-			}
-		}
-		
-		if ( $where_conditions ) {
-			$sql .= ' AND ' . implode( ' AND ', $where_conditions );
-		}
-		
-		// Подсчет общего количества записей
-		$total_records_sql = "SELECT COUNT(*) " . $join_builder . ( $where_conditions
-				? ' AND ' . implode( ' AND ', $where_conditions ) : '' );
-		
-		$total_records = $wpdb->get_var( $wpdb->prepare( $total_records_sql, ...$where_values ) );
-		$total_pages   = ceil( $total_records / $per_page );
-		
-		$offset = ( $current_page - 1 ) * $per_page;
-
-		// Sort by location date+time: at-pu/waiting-on-pu-date -> pickup; others -> delivery. No main-date fallback so location sort is consistent.
-		$table_locations_sort = ! empty( $this->project ) ? $wpdb->prefix . 'reports_' . strtolower( $this->project ) . '_locations' : '';
-		$sort_by_loc          = '';
-		if ( $table_locations_sort ) {
-			$subq_pickup   = "(SELECT CAST(CONCAT(DATE(l.date), ' ', COALESCE(l.time_start, '00:00:00')) AS DATETIME) FROM $table_locations_sort l WHERE l.load_id = main.id AND l.location_type = 'pickup' AND l.date IS NOT NULL ORDER BY l.order_index ASC LIMIT 1)";
-			$subq_delivery = "(SELECT CAST(CONCAT(DATE(l.date), ' ', COALESCE(l.time_start, '00:00:00')) AS DATETIME) FROM $table_locations_sort l WHERE l.load_id = main.id AND l.location_type = 'delivery' AND l.date IS NOT NULL ORDER BY l.order_index ASC LIMIT 1)";
-			$sort_by_loc   = "COALESCE(
-        CASE WHEN LOWER(load_status.meta_value) IN ('at-pu', 'waiting-on-pu-date') THEN $subq_pickup ELSE $subq_delivery END,
-        '9999-12-31 23:59:59'
-      )";
-		} else {
-			$sort_by_loc   = "CASE
-        WHEN LOWER(load_status.meta_value) IN ('at-pu', 'at-del', 'waiting-on-pu-date', 'waiting-on-rc', 'loaded-enroute') THEN COALESCE(main.pick_up_date, '9999-12-31 23:59:59')
-        ELSE COALESCE(main.delivery_date, '9999-12-31 23:59:59')
-      END";
-		}
-		
-		$sql            .= " ORDER BY
-    CASE
-        WHEN LOWER(load_status.meta_value) = 'at-pu' THEN 1
-        WHEN LOWER(load_status.meta_value) = 'at-del' THEN 2
-        WHEN LOWER(load_status.meta_value) = 'waiting-on-pu-date' THEN 3
-        WHEN LOWER(load_status.meta_value) = 'loaded-enroute' THEN 4
-        WHEN LOWER(load_status.meta_value) = 'waiting-on-rc' THEN 5
-        ELSE 6
-    END,
-    $sort_by_loc $sort_order
-    LIMIT %d, %d";
-		$where_values[] = $offset;
-		$where_values[] = $per_page;
-		$main_results   = $wpdb->get_results( $wpdb->prepare( $sql, ...$where_values ), ARRAY_A );
-		
-		// Обработка метаданных
-		$post_ids  = wp_list_pluck( $main_results, 'id' );
-		$meta_data = [];
-		
-		if ( $post_ids ) {
-			$meta_sql     = "SELECT post_id, meta_key, meta_value FROM $table_meta WHERE post_id IN (" . implode( ',', array_map( 'absint', $post_ids ) ) . ")";
-			$meta_results = $wpdb->get_results( $meta_sql, ARRAY_A );
-			
-			$meta_data = array_reduce( $meta_results, function( $carry, $meta_row ) {
-				$carry[ $meta_row[ 'post_id' ] ][ $meta_row[ 'meta_key' ] ] = $meta_row[ 'meta_value' ];
-				
-				return $carry;
-			}, [] );
-		}
-		
-		foreach ( $main_results as &$result ) {
-			$result[ 'meta_data' ] = $meta_data[ $result[ 'id' ] ] ?? [];
-		}
-		
-		return [
-			'results'       => $main_results,
-			'total_pages'   => $total_pages,
-			'total_posts'   => $total_records,
-			'current_pages' => $current_page,
-		];
+		$table_main       = $wpdb->prefix . $this->table_main;
+		$table_meta       = $wpdb->prefix . $this->table_meta;
+		$per_page         = $this->per_page_loads;
+		$table_locations  = ! empty( $this->project ) ? $wpdb->prefix . 'reports_' . strtolower( $this->project ) . '_locations' : '';
+		return $this->get_table_items_tracking_internal( $table_main, $table_meta, $args, $table_locations, $per_page );
 	}
-	
+
+	/**
+	 * Get counts for quick status filter buttons (2 queries instead of 5× get_table_items_tracking).
+	 *
+	 * @param array $args        Same filter args as get_table_items_tracking.
+	 * @param array $status_keys Keys for counts: '' for total, plus 'waiting-on-pu-date', 'at-pu', 'loaded-enroute', 'at-del'.
+	 * @return array<string, int>
+	 */
+	public function get_tracking_quick_status_counts( $args = array(), $status_keys = array() ) {
+		global $wpdb;
+		$table_main      = $wpdb->prefix . $this->table_main;
+		$table_meta      = $wpdb->prefix . $this->table_meta;
+		$table_locations = ! empty( $this->project ) ? $wpdb->prefix . 'reports_' . strtolower( $this->project ) . '_locations' : '';
+		return $this->get_tracking_quick_status_counts_internal( $table_main, $table_meta, $args, $table_locations, $status_keys );
+	}
+
 	/**
 	 * Get high priority loads for tracking pages
 	 * Returns loads with high_priority = 1, excluding 'delivered' status
@@ -5429,6 +5250,18 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 		// No need to reverse anymore
 		
 		return $result;
+	}
+
+	/**
+	 * Get locations from database for multiple loads in one query (batch).
+	 *
+	 * @param int[]  $load_ids Load IDs.
+	 * @param string $project  Optional. Project slug; defaults to $this->project.
+	 * @param bool   $is_flt   Optional. Unused in this class; for signature compatibility.
+	 * @return array<int, array{pickup: array, delivery: array}> Keyed by load_id, same structure as get_locations_from_db() per load.
+	 */
+	public function get_locations_from_db_batch( $load_ids, $project = null, $is_flt = false ) {
+		return parent::get_locations_from_db_batch( $load_ids, $project !== null ? $project : $this->project, false );
 	}
 	
 	/**

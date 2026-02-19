@@ -280,40 +280,56 @@ class TMSLogs extends TMSReports {
 	}
 	
 	
-	public function get_last_log_by_post( $post_id, $post_type = 'report' ) {
+	/**
+	 * Get last log (by id) per load for many post IDs in one query. Returns map id_load => HTML card.
+	 *
+	 * @param int[] $post_ids  Load IDs.
+	 * @param string $post_type 'report' or 'reports_flt'.
+	 * @return array Keyed by id_load (int), value is HTML from generate_log_card or ''.
+	 */
+	public function get_last_logs_by_posts( array $post_ids, $post_type = 'report' ) {
 		global $wpdb;
-		
-		// Определяем таблицу логов для текущего проекта
+
+		$post_ids = array_unique( array_filter( array_map( 'absint', $post_ids ) ) );
+		if ( empty( $post_ids ) ) {
+			return array();
+		}
+
 		$logs_table = $this->get_table_by_post_type( $post_type );
-		
-		// Проверяем, существует ли таблица
-		if ( $wpdb->get_var( "SHOW TABLES LIKE '$logs_table'" ) !== $logs_table ) {
-			return 'Logs table does not exist for the current project.';
+		if ( $wpdb->get_var( $wpdb->prepare( "SHOW TABLES LIKE %s", $logs_table ) ) !== $logs_table ) {
+			return array_fill_keys( $post_ids, '' );
 		}
-		
-		// SQL-запрос для получения последнего добавленного лога
-		$query = $wpdb->prepare( "
-	        SELECT id, id_user, user_name, user_role, log_priority, log_date, log_text
-	        FROM $logs_table
-	        WHERE id_load = %d
-	        ORDER BY log_date DESC
-	        LIMIT 1
-	    ", $post_id );
-		
-		$log = $wpdb->get_row( $query );
-		
-		// Проверяем, найден ли лог
-		if ( ! $log ) {
-			return '';
+
+		$placeholders = implode( ',', array_fill( 0, count( $post_ids ), '%d' ) );
+		$query        = $wpdb->prepare(
+			"SELECT l.id, l.id_load, l.id_user, l.user_name, l.user_role, l.log_priority, l.log_date, l.log_text
+			FROM $logs_table l
+			INNER JOIN (
+				SELECT id_load, MAX(id) AS max_id FROM $logs_table WHERE id_load IN ($placeholders) GROUP BY id_load
+			) last ON l.id_load = last.id_load AND l.id = last.max_id
+			WHERE l.id_load IN ($placeholders)",
+			array_merge( $post_ids, $post_ids )
+		);
+		$rows = $wpdb->get_results( $query );
+
+		$by_post = array_fill_keys( $post_ids, '' );
+		if ( is_array( $rows ) ) {
+			foreach ( $rows as $log ) {
+				$id_load = (int) $log->id_load;
+				$by_post[ $id_load ] = $this->generate_log_card( array(
+					'role'    => $log->user_role,
+					'name'    => $log->user_name,
+					'date'    => $log->log_date,
+					'message' => $log->log_text,
+				) );
+			}
 		}
-		
-		// Генерируем карточку лога с помощью вашей функции
-		return $this->generate_log_card( [
-			'role'    => $log->user_role,
-			'name'    => $log->user_name,
-			'date'    => $log->log_date,
-			'message' => $log->log_text,
-		] );
+		return $by_post;
+	}
+
+	public function get_last_log_by_post( $post_id, $post_type = 'report' ) {
+		$by_post = $this->get_last_logs_by_posts( array( (int) $post_id ), $post_type );
+		return isset( $by_post[ (int) $post_id ] ) ? $by_post[ (int) $post_id ] : '';
 	}
 	
 	

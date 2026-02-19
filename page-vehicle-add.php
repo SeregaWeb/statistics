@@ -87,6 +87,13 @@ if ( ! empty( $dot_inspection ) ) {
 	}
 }
 
+$unit_number_name       = get_field_value( $meta, 'unit_number_name' );
+		// Extract unit number from unit_number_name (e.g., "(77) Daniel Jecson" -> "77")
+		$unit_number = '';
+		if ( !empty( $unit_number_name ) && preg_match( '/^\((\d+)\)/', $unit_number_name, $matches ) ) {
+			$unit_number = $matches[1];
+		}
+
 // Count total images
 $total_images = 0;
 if ( ! empty( $vehicle_registration ) ) {
@@ -424,8 +431,32 @@ get_header(); ?>
 			echo esc_html( get_template_part( TEMPLATE_PATH . 'common/simple', 'file-upload', $simple_upload_args ) );
 			?>
 		</div>
+
 		
 		<div class="row">
+
+			<div class="mb-2 col-12 col-md-6 col-xl-4">
+                    <label for="unit_number" class="form-label">Unit Number</label>
+                    <div class="position-relative">
+				<input type="text" id="unit_number" name="unit_number"
+						value="<?php echo ! empty( $unit_number_name ) ? '' : esc_attr( $unit_number ); ?>"
+						placeholder="<?php echo ! empty( $unit_number_name ) ? 'Selected: ' . esc_attr( $unit_number_name ) : 'Enter unit number...'; ?>"
+						data-ftl='1'
+						class="form-control js-unit-number-input" autocomplete="off">
+				<div class="js-driver-dropdown dropdown-menu w-100" style="display: none; max-height: 200px; overflow-y: auto; position: absolute; top: 100%; left: 0; z-index: 1000; background: white; border: 1px solid #ccc; border-radius: 4px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+					<!-- Driver options will be populated here -->
+				</div>
+			</div>
+				
+				
+				<!-- Hidden fields -->
+				<input type="hidden" name="attached_driver" value="<?php echo get_field_value( $meta, 'attached_driver' ); ?>">
+				<input type="hidden" name="unit_number_name" value="<?php echo $unit_number_name; ?>">
+				<input type="hidden" name="old_unit_number_name" value="<?php echo $unit_number_name; ?>">
+				<input type="hidden" id="driver-search-nonce" value="<?php echo wp_create_nonce('driver_search_nonce'); ?>">
+			</div>
+
+
 			<div class="col-md-6 mb-3">
 				<label class="form-label">Registration Expiration Date</label>
 				<input type="date" class="form-control" name="registration_expiration_date" 

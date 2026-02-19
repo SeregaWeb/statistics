@@ -4,6 +4,7 @@ $helper       = new TMSReportsHelper();
 $icons        = new TMSReportsIcons();
 $driverHelper = new TMSDriversHelper();
 $TMSUsers     = new TMSUsers();
+$TMSVehicles  = new TMSVehicles();
 
 $results       = get_field_value( $args, 'results' );
 $total_pages   = get_field_value( $args, 'total_pages' );
@@ -23,6 +24,7 @@ if ( ! empty( $results ) ) : ?>
 	<?php
 		$driver_ids              = array_filter( array_map( 'absint', wp_list_pluck( $results, 'id' ) ) );
 		$driver_statistics_by_id  = ! empty( $driver_ids ) ? $drivers->get_driver_statistics_batch( $driver_ids ) : array();
+		$vehicles_by_driver_id    = ! empty( $driver_ids ) ? $TMSVehicles->get_vehicles_by_driver_ids( $driver_ids ) : array();
 		$driver_stats_default     = array(
 			'rating' => array( 'avg_rating' => 0, 'count' => 0, 'data' => array() ),
 			'notice' => array( 'count' => 0, 'data' => array() ),
@@ -49,7 +51,6 @@ if ( ! empty( $results ) ) : ?>
         <thead>
         <tr>
             <th scope="col">Date hired</th>
-            <th scope="col">Recruiter</th>
             <th scope="col">Driver</th>
             <th scope="col">Vehicle</th>
             <th scope="col">Home location</th>
@@ -94,20 +95,9 @@ if ( ! empty( $results ) ) : ?>
 			
 			
 			$date_hired    = get_field_value( $row, 'date_created' );
-			$user_id_added = get_field_value( $row, 'user_id_added' );
 			$date_hired    = esc_html( date( 'm/d/Y', strtotime( $date_hired ) ) );
 			
-			$user_recruiter = $helper->get_user_full_name_by_id( $user_id_added );
-			$color_initials = $user_recruiter ? get_field( 'initials_color', 'user_' . $user_id_added ) : '#030303';
-			$user_recruiter = $user_recruiter ?: [ 'full_name' => 'User not found', 'initials' => 'NF' ];
 
-//			if ( $user_recruiter[ 'initials' ] === 'NF' ) {
-//				$drivers->update_user_id_added( $row[ 'id' ], '68' );
-//			}
-//
-//			if ( $date_hired == '11/30/-0001' ) {
-//				$drivers->update_date_created( $row[ 'id' ] );
-//			}
             $show_controls   = true;
 			$driver_status = trim( $driver_status );
 			$is_hold = $driver_status === 'on_hold';
@@ -190,18 +180,6 @@ if ( ! empty( $results ) ) : ?>
             <tr class="<?php echo $class_hide; ?>" data-driver-id="<?php echo $row[ 'id' ]; ?>">
                 <td><?php echo $date_hired; ?></td>
                 <td>
-
-                    <div class="d-flex  flex-row align-items-center">
-                        <p class="m-0">
-                            <span data-bs-toggle="tooltip" data-bs-placement="top"
-                                  title="<?php echo $user_recruiter[ 'full_name' ]; ?>"
-                                  class="initials-circle" style="background-color: <?php echo $color_initials; ?>">
-                                <?php echo esc_html( $user_recruiter[ 'initials' ] ); ?>
-                            </span>
-                        </p>
-                    </div>
-                </td>
-                <td>
                     <div class="d-flex flex-column">
                         <div class="d-flex align-items-center gap-1">
 							<?php if ( $is_archive && $payment_file_driver && $show_payment_file_viewer ) : ?>
@@ -231,15 +209,30 @@ if ( ! empty( $results ) ) : ?>
                     </div>
                 </td>
                 <td>
-                    <div class="d-flex  flex-column">
-						<?php echo $driverHelper->vehicle[ $vehicle_type ] ?? ''; ?>
-                        <span class="text-small">
-                            <?php
-                            echo $vehicle_model;
-                            echo ' ' . $vehicle_make;
-                            echo ' ' . $vehicle_year;
-                            ?>
-                        </span>
+                    <div class="d-flex flex-column">
+						<?php
+						$attached_vehicle = isset( $vehicles_by_driver_id[ $row['id'] ] ) ? $vehicles_by_driver_id[ $row['id'] ] : null;
+						if ( $attached_vehicle ) {
+							$v_meta   = get_field_value( $attached_vehicle, 'meta' );
+							$v_type   = get_field_value( $v_meta, 'vehicle_type' );
+							$v_make   = get_field_value( $v_meta, 'make' );
+							$v_model  = get_field_value( $v_meta, 'model' );
+							$v_year   = get_field_value( $v_meta, 'vehicle_year' );
+							echo $driverHelper->vehicle[ $v_type ] ?? esc_html( ucfirst( str_replace( '-', ' ', $v_type ) ) );
+							?>
+                            <span class="text-small">
+                                <?php echo esc_html( trim( $v_make . ' ' . $v_model . ' ' . $v_year ) ); ?>
+                            </span>
+						<?php } else { ?>
+							<?php echo $driverHelper->vehicle[ $vehicle_type ] ?? ''; ?>
+                            <span class="text-small">
+                                <?php
+                                echo $vehicle_model;
+                                echo ' ' . $vehicle_make;
+                                echo ' ' . $vehicle_year;
+                                ?>
+                            </span>
+						<?php } ?>
                     </div>
                 </td>
                 <td><?php echo $city . ', ' . $home_location; ?></td>

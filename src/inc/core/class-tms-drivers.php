@@ -903,13 +903,16 @@ class TMSDrivers extends TMSDriversHelper {
 		if ( $driver_status ) {
 			$args[ 'driver_status' ] = $driver_status;
 		}
-		
-		if ( $document_type ) {
-			$args[ 'document_type' ] = $document_type;
-		}
-		
-		if ( $document_status ) {
-			$args[ 'document_status' ] = $document_status;
+
+		// Do not apply document filters for draft drivers (they may have no documents yet).
+		$is_draft_list = ! empty( $args['status_post'] ) && $args['status_post'] === 'draft';
+		if ( ! $is_draft_list ) {
+			if ( $document_type ) {
+				$args[ 'document_type' ] = $document_type;
+			}
+			if ( $document_status ) {
+				$args[ 'document_status' ] = $document_status;
+			}
 		}
 		
 		if ( $date_filter ) {
@@ -1002,10 +1005,10 @@ class TMSDrivers extends TMSDriversHelper {
 		}
 
 		if ( $ftl_driver ) {
-			$where_conditions[] = "ftl_driver.meta_value = %s";
-			$where_values[]     = '1';
+			// Accept common truthy values: '1', 'on', 'yes' (checkbox may be stored differently).
+			$where_conditions[] = "(ftl_driver.meta_value IS NOT NULL AND ftl_driver.meta_value != '' AND ftl_driver.meta_value IN ('1', 'on', 'yes'))";
 		} else {
-			$where_conditions[] = "ftl_driver.meta_value IS NULL";
+			$where_conditions[] = "(ftl_driver.meta_value IS NULL OR ftl_driver.meta_value = '' OR ftl_driver.meta_value NOT IN ('1', 'on', 'yes'))";
 		}
 		
 		// Дополнительный LEFT JOIN по переданному полю
@@ -1055,6 +1058,7 @@ class TMSDrivers extends TMSDriversHelper {
 		}
 		
 		if ( ! empty( $args[ 'recruiter' ] ) ) {
+
 			$where_conditions[] = "main.user_id_added = %s";
 			$where_values[]     = $args[ 'recruiter' ];
 		}
@@ -1215,7 +1219,7 @@ class TMSDrivers extends TMSDriversHelper {
 			$count_sql .= ' AND ' . implode( ' AND ', $where_conditions );
 		}
 		$count_sql .= " ORDER BY main.$sort_by $sort_order";
-		
+
 		$all_results   = $wpdb->get_results( $wpdb->prepare( $count_sql, ...$where_values ), ARRAY_A );
 		$total_records = count( $all_results );
 		
@@ -2200,6 +2204,8 @@ class TMSDrivers extends TMSDriversHelper {
 				ON main.id = clear_background.post_id AND clear_background.meta_key = 'clear_background'
 			LEFT JOIN $table_meta AS vin
 				ON main.id = vin.post_id AND vin.meta_key = 'vin'
+			LEFT JOIN $table_meta AS ftl_driver
+				ON main.id = ftl_driver.post_id AND ftl_driver.meta_key = 'ftl_driver'
 		";
 		
 		// Add JOINs for capabilities filtering
@@ -2246,6 +2252,9 @@ class TMSDrivers extends TMSDriversHelper {
 		if ( ! empty( $excluded_driver_ids ) ) {
 			$where_conditions[] = 'main.id NOT IN (' . implode( ',', array_map( 'absint', $excluded_driver_ids ) ) . ')';
 		}
+
+		// Exclude FTL drivers from search results (same logic as get_table_items with $ftl_driver = false)
+		$where_conditions[] = "ftl_driver.meta_value IS NULL";
 		
 		// Add capabilities filtering conditions
         if ( ! empty( $args[ 'capabilities' ] ) && is_array( $args[ 'capabilities' ] ) ) {
@@ -8524,8 +8533,10 @@ class TMSDrivers extends TMSDriversHelper {
 		LEFT JOIN $table_meta lat ON main.id = lat.post_id AND lat.meta_key = 'latitude'
 		LEFT JOIN $table_meta lng ON main.id = lng.post_id AND lng.meta_key = 'longitude'
 		LEFT JOIN $table_meta status ON main.id = status.post_id AND status.meta_key = 'driver_status'
+		LEFT JOIN $table_meta ftl_driver ON main.id = ftl_driver.post_id AND ftl_driver.meta_key = 'ftl_driver'
 		WHERE 1=1
 		AND main.status_post = 'publish'
+		AND ftl_driver.meta_value IS NULL
 		";
 		
 		if ( ! $all ) {
@@ -8554,7 +8565,7 @@ class TMSDrivers extends TMSDriversHelper {
 			$b = $ny_time->format( 'Y-m-d H:i:s' );
 			$query_start    .= "AND main.updated_zipcode >= '" . $b . "'";
 			
-			// Add UNION for banned drivers if only_updated is true
+			// Add UNION for banned drivers if only_updated is true (exclude FTL here too)
 			$query_end .= "
 			UNION SELECT
 			main.id as post_id,
@@ -8566,8 +8577,10 @@ class TMSDrivers extends TMSDriversHelper {
 			LEFT JOIN $table_meta lat ON main.id = lat.post_id AND lat.meta_key = 'latitude'
 			LEFT JOIN $table_meta lng ON main.id = lng.post_id AND lng.meta_key = 'longitude'
 			LEFT JOIN $table_meta status ON main.id = status.post_id AND status.meta_key = 'driver_status'
+			LEFT JOIN $table_meta ftl_driver ON main.id = ftl_driver.post_id AND ftl_driver.meta_key = 'ftl_driver'
 			WHERE status.meta_value = 'banned'
 			AND main.status_post = 'publish'
+			AND ftl_driver.meta_value IS NULL
 			AND lat.meta_value != ''
 			AND lng.meta_value != ''
 			";
@@ -11574,6 +11587,7 @@ class TMSDrivers extends TMSDriversHelper {
 			LEFT JOIN {$drivers_meta_table} dm_status ON d.id = dm_status.post_id AND dm_status.meta_key = 'driver_status'
 			LEFT JOIN {$drivers_meta_table} dm_ftl ON d.id = dm_ftl.post_id AND dm_ftl.meta_key = 'ftl_driver'
 			WHERE CAST(d.id AS CHAR) LIKE %s
+			AND d.status_post = 'publish'
 			AND (dm_status.meta_value IS NULL OR dm_status.meta_value NOT IN ('blocked', 'banned', 'expired_documents'))
 			{$ftl_condition}
 			ORDER BY dm_name.meta_value ASC

@@ -68,7 +68,8 @@ export const updateDriverContact = (urlAjax) => {
             body: formData,
         };
 
-        const nextTargetTab = 'pills-driver-vehicle-tab';
+        const ftlDriver = (target.querySelector('input[name="ftl_driver"]') as HTMLInputElement)?.value;
+        const nextTargetTab = ftlDriver === '1' ? 'pills-driver-finance-tab' : 'pills-driver-vehicle-tab';
 
         fetch(urlAjax, options)
             .then((res) => res.json())

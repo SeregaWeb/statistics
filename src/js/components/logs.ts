@@ -2,42 +2,40 @@ import { printMessage } from './info-messages';
 import { updateStatusPost } from './create-report';
 
 // eslint-disable-next-line import/prefer-default-export
-export const logsInit = (ajaxUrl) => {
-    const userLog = document.querySelector('.js-log-message');
+export const logsInit = (ajaxUrl: string): void => {
+    const userLog = document.querySelector<HTMLFormElement>('.js-log-message');
 
-    userLog &&
-        userLog.addEventListener('submit', (event) => {
+    if (userLog && !userLog.dataset.logsBound) {
+        userLog.dataset.logsBound = '1';
+        userLog.addEventListener('submit', (event: Event) => {
             event.preventDefault();
             const { target } = event;
-            // @ts-ignore
+            if (!(target instanceof HTMLFormElement)) return;
+
             const form = new FormData(target);
             const action = 'add_user_log';
-            // @ts-ignore
             form.append('action', action);
 
-            const logContainer = document.querySelector('.js-log-container');
-
-            const options = {
+            const options: RequestInit = {
                 method: 'POST',
                 body: form,
             };
 
             // Disable submit button to prevent double submission
-            const submitButton = (target as HTMLFormElement).querySelector('button[type="submit"]') as HTMLButtonElement;
+            const submitButton = target.querySelector('button[type="submit"]') as HTMLButtonElement | null;
             if (submitButton) {
                 submitButton.disabled = true;
             }
 
-            // @ts-ignore
             target.setAttribute('disabled', 'disabled');
             fetch(ajaxUrl, options)
-                .then((res) => res.json())
+                .then((res) => res.json()) 
                 .then((requestStatus) => {
+                    // Re-query container in case DOM was re-rendered (e.g. tracking live update).
+                    const logContainer = document.querySelector('.js-log-container');
                     if (requestStatus.success && logContainer) {
                         logContainer.innerHTML = requestStatus.data.template + logContainer.innerHTML;
-                        // @ts-ignore
                         target.removeAttribute('disabled');
-                        // @ts-ignore
                         target.reset();
                     } else {
                         printMessage(requestStatus.data.message, 'danger', 8000);
@@ -46,7 +44,6 @@ export const logsInit = (ajaxUrl) => {
                 .catch((error) => {
                     printMessage(`Request failed: ${error}`, 'danger', 8000);
                     console.error('Request failed:', error);
-                    // @ts-ignore
                     target.removeAttribute('disabled');
                 })
                 .finally(() => {
@@ -56,53 +53,63 @@ export const logsInit = (ajaxUrl) => {
                     }
                 });
         });
+    }
 
-    const btns = document.querySelectorAll('.js-hide-logs');
+    const btns = document.querySelectorAll<HTMLElement>('.js-hide-logs');
 
-    btns &&
-        btns.forEach((item) => {
-            item.addEventListener('click', (event) => {
-                event.preventDefault();
-                const { target } = event;
-                if (target instanceof HTMLElement) {
-                    const wrap = target.closest('.js-logs-wrap');
+    btns.forEach((item) => {
+        if (item.dataset.logsToggleBound) {
+            return;
+        }
+        item.dataset.logsToggleBound = '1';
 
-                    if (!wrap) return;
-                    const content = wrap.querySelector('.js-logs-content');
-                    const container = wrap.querySelector('.js-logs-container');
-                    console.log('target', target);
+        item.addEventListener('click', (event: Event) => {
+            event.preventDefault();
+            const { target } = event;
+            if (target instanceof HTMLElement) {
+                const wrap = target.closest('.js-logs-wrap');
 
-                    if (!content) return;
-                    content.classList.toggle('col-lg-9');
-                    content.classList.toggle('col-lg-11');
+                if (!wrap) return;
+                const content = wrap.querySelector('.js-logs-content');
+                const container = wrap.querySelector('.js-logs-container');
+                console.log('target', target);
 
-                    if (!container) return;
-                    container.classList.toggle('col-lg-3');
-                    container.classList.toggle('col-lg-1');
-                    container.classList.toggle('hidden-logs');
+                if (!content) return;
+                content.classList.toggle('col-lg-9');
+                content.classList.toggle('col-lg-11');
 
-                    let val = 0;
-                    if (container.classList.contains('hidden-logs')) {
-                        val = 1;
-                    }
-                    document.cookie = `logshow=${val}; path=/; max-age=86400`;
+                if (!container) return;
+                container.classList.toggle('col-lg-3');
+                container.classList.toggle('col-lg-1');
+                container.classList.toggle('hidden-logs');
+
+                let val = 0;
+                if (container.classList.contains('hidden-logs')) {
+                    val = 1;
                 }
-            });
+                document.cookie = `logshow=${val}; path=/; max-age=86400`;
+            }
         });
+    });
 };
 
 // Function to handle modal log message form
-export const modalLogsInit = (ajaxUrl) => {
+export const modalLogsInit = (ajaxUrl: string): void => {
     // Handle opening modal and setting post ID
-    const openModalButtons = document.querySelectorAll('.js-open-log-modal');
+    const openModalButtons = document.querySelectorAll<HTMLElement>('.js-open-log-modal');
     
     openModalButtons.forEach((button) => {
-        button.addEventListener('click', (event) => {
+        if (button.dataset.logModalBound) {
+            return;
+        }
+        button.dataset.logModalBound = '1';
+
+        button.addEventListener('click', (event: Event) => {
             const target = event.currentTarget as HTMLElement;
             const postId = target.getAttribute('data-post-id');
             
             if (postId) {
-                const modalPostIdInput = document.getElementById('modal_post_id') as HTMLInputElement;
+                const modalPostIdInput = document.getElementById('modal_post_id') as HTMLInputElement | null;
                 if (modalPostIdInput) {
                     modalPostIdInput.value = postId;
                 }
@@ -127,14 +134,21 @@ export const modalLogsInit = (ajaxUrl) => {
     });
 
     // Handle modal form submission
-    const modalLogForm = document.querySelector('.js-log-message-modal');
+    const modalLogForm = document.querySelector<HTMLFormElement>('.js-log-message-modal');
     
-    modalLogForm &&
-        modalLogForm.addEventListener('submit', (event) => {
+    if (modalLogForm && !modalLogForm.dataset.logsModalBound) {
+        modalLogForm.dataset.logsModalBound = '1';
+        modalLogForm.addEventListener('submit', (event: Event) => {
             event.preventDefault();
             const { target } = event;
             // @ts-ignore
             const form = new FormData(target);
+            
+            // Ensure post_id is taken from hidden input in the modal
+            const modalPostIdInput = document.getElementById('modal_post_id') as HTMLInputElement | null;
+            if (modalPostIdInput && modalPostIdInput.value) {
+                form.set('post_id', modalPostIdInput.value);
+            }
             
             // Check if pinned message checkbox is checked (renamed to is_pinned)
             const pinnedCheckbox = (target as HTMLFormElement).querySelector('input[name="is_pinned"]') as HTMLInputElement;
@@ -291,7 +305,8 @@ export const modalLogsInit = (ajaxUrl) => {
                     }
                 });
         });
-};
+    };
+}
 
 // Helper function to force close modal and restore scroll
 function forceCloseModal(modal: HTMLElement) {

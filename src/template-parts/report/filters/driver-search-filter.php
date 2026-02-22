@@ -48,7 +48,8 @@ $driver_capabilities = array(
 
 ?>
 
-<nav class="navbar mb-5 mt-3 navbar-expand-lg navbar-light">
+<div class="navbar-sticky-custom d-flex flex-column ">
+<nav class="navbar navbar-expand-lg navbar-light">
     <div class="container-fluid p-0">
         <div class="d-flex justify-content-between align-items-start w-100">
         
@@ -170,7 +171,7 @@ if ( isset( $driver_search_items['all_filtered_driver_ids'] ) && ! empty( $drive
 $add_new_driver = get_field_value( $global_options, 'add_new_driver' );
 $driver_profile_url = $add_new_driver ? $add_new_driver : '';
 ?>
-
+</div>
 <!-- Drivers Map Modal -->
 <div class="modal fade" id="driversMapModal" tabindex="-1" aria-labelledby="driversMapModalLabel" aria-hidden="true" 
      data-driver-ids="<?php echo esc_attr( json_encode( $all_filtered_driver_ids ) ); ?>"

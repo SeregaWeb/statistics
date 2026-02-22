@@ -2911,6 +2911,30 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 			$result = $this->update_post_status_in_db( $MY_INPUT );
 			
 			if ( $result ) {
+				$load = $this->get_report_by_id( $MY_INPUT['post_id'] );
+				if ( $load ) {
+					$meta             = get_field_value( $load, 'meta' );
+					$dispatcher_id    = (int) get_field_value( $meta, 'dispatcher_initials' );
+					$reference_number = get_field_value( $meta, 'reference_number' );
+					$reference_label  = $reference_number ?: '';
+					$project_label    = isset( $MY_INPUT['project'] ) ? $MY_INPUT['project'] : '';
+					$dispatcher_name  = $this->get_user_full_name_by_id( $dispatcher_id );
+					$dispatcher_label = is_array( $dispatcher_name ) && isset( $dispatcher_name['full_name'] ) ? $dispatcher_name['full_name'] : '';
+
+					$this->send_tracking_notification_for_load(
+						'load_created',
+						sprintf( 'Add new load %s', $reference_label ),
+						sprintf( "Project: %s\nDispatcher: %s", $project_label, $dispatcher_label ),
+						array(
+							'load_id'          => (int) $MY_INPUT['post_id'],
+							'project'          => $project_label,
+							'reference_number' => $reference_label,
+							'dispatcher_id'    => $dispatcher_id,
+						),
+						$dispatcher_id
+					);
+				}
+
 				wp_send_json_success( [ 'message' => 'Load successfully loaded', 'data' => $MY_INPUT ] );
 			}
 			
@@ -5453,219 +5477,54 @@ WHERE meta_pickup.meta_key = 'pick_up_location'
 	}
 	
 	public function add_pinned_message_flt() {
-		
-		if ( defined( 'DOING_AJAX' ) && DOING_AJAX ) {
-			
-			if ( isset( $_POST[ 'project' ] ) && $_POST[ 'project' ] !== $this->project ) {
-				wp_send_json_error( [
-					'message' => 'You have changed the project
-					need to switch back, current project - ' . $this->project . ' previous - ' . $_POST[ 'project' ]
-				] );
-			}
-			
-			$user_id        = intval( $_POST[ 'user_id' ] ?? 0 );
-			$post_id        = intval( $_POST[ 'post_id' ] ?? 0 );
-			// Use wp_unslash to remove slashes and sanitize properly
-			$pinned_message = sanitize_textarea_field( wp_unslash( $_POST[ 'pinned_message' ] ?? '' ) );
-			
-			if ( ! $user_id || ! $post_id || ! $pinned_message ) {
-				wp_send_json_error( array( 'message' => 'Need fill data' ) );
-			}
-			
-			// Get existing pinned messages
-			global $wpdb;
-			$table_meta = $wpdb->prefix . $this->table_meta;
-			$existing_json = $wpdb->get_var( $wpdb->prepare(
-				"SELECT meta_value FROM $table_meta WHERE post_id = %d AND meta_key = 'message_pinned'",
-				$post_id
-			) );
-			
-			// Parse existing messages or create new array
-			$pinned_messages = array();
-			if ( ! empty( $existing_json ) ) {
-				// Remove slashes that were added by wp_slash during save
-				$existing_json = wp_unslash( $existing_json );
-				
-				// Try to unserialize (new format using PHP serialize)
-				$unserialized = @unserialize( $existing_json );
-				if ( $unserialized !== false && is_array( $unserialized ) ) {
-					// New format: serialized PHP array
-					$pinned_messages = $unserialized;
-				} else {
-					// Try JSON format (for backward compatibility with old data)
-					$decoded = json_decode( $existing_json, true );
-					if ( json_last_error() === JSON_ERROR_NONE && is_array( $decoded ) && ! empty( $decoded ) ) {
-						// JSON format: convert to array
-						$pinned_messages = $decoded;
-					} else {
-						// Old format: single message, convert to array
-						$time_pinned_old = $wpdb->get_var( $wpdb->prepare(
-							"SELECT meta_value FROM $table_meta WHERE post_id = %d AND meta_key = 'time_pinned'",
-							$post_id
-						) );
-						$user_pinned_id_old = $wpdb->get_var( $wpdb->prepare(
-							"SELECT meta_value FROM $table_meta WHERE post_id = %d AND meta_key = 'user_pinned_id'",
-							$post_id
-						) );
-						if ( ! empty( $existing_json ) && ! empty( $time_pinned_old ) && ! empty( $user_pinned_id_old ) ) {
-							$pinned_messages[] = array(
-								'user_pinned_id' => intval( $user_pinned_id_old ),
-								'time_pinned'    => intval( $time_pinned_old ),
-								'message_pinned' => $existing_json,
-							);
-						}
-					}
-				}
-			}
-			
-			// Check if we've reached the maximum (3 messages)
-			if ( count( $pinned_messages ) >= 3 ) {
-				wp_send_json_error( array( 'message' => 'Maximum 3 pinned messages allowed. Please delete one before adding a new one.' ) );
-				return;
-			}
-			
-			// Add new message
-			$new_message = array(
-				'user_pinned_id' => $user_id,
-				'time_pinned'    => time(),
-				'message_pinned' => $pinned_message,
-			);
-			$pinned_messages[] = $new_message;
-			
-			// Save as serialized PHP array (more reliable than JSON for user content with special characters)
-			// Use wp_slash to ensure proper escaping for WordPress database
-			$serialized_string = serialize( $pinned_messages );
-			$pinned_array = array(
-				'message_pinned' => wp_slash( $serialized_string ),
-			);
-			
-			if ( $this->update_post_meta_data( $post_id, $pinned_array ) ) {
-				$userHelper  = new TMSUsers();
-				$name_user   = $userHelper->get_user_full_name_by_id( $user_id );
-				$time_pinned = date( 'm/d/Y H:i', $new_message[ 'time_pinned' ] );
-
-				$this->log_controller->create_one_log( array(
-					'post_type' => 'reports_flt',
-					'user_id' => $user_id,
-					'post_id' => $post_id,
-					'message' => 'Pinned message: ' . $pinned_message
-				) );
-				
-				// Return all pinned messages for display
-				$pinned_for_response = array();
-				foreach ( $pinned_messages as $index => $msg ) {
-					$msg_user = $userHelper->get_user_full_name_by_id( $msg[ 'user_pinned_id' ] );
-					$pinned_for_response[] = array(
-						'index'         => $index,
-						'full_name'     => $msg_user[ 'full_name' ],
-						'time_pinned'   => date( 'm/d/Y H:i', $msg[ 'time_pinned' ] ),
-						'pinned_message' => $msg[ 'message_pinned' ],
-						'id'            => $post_id,
-					);
-				}
-				
-				wp_send_json_success( array(
-					'message' => 'Message pinned',
-					'pinned'  => $pinned_for_response,
-				) );
-			}
-			wp_send_json_error( array( 'message', 'something went wrong' ) );
+		if ( ! defined( 'DOING_AJAX' ) || ! DOING_AJAX ) {
+			return;
 		}
+		if ( isset( $_POST['project'] ) && $_POST['project'] !== $this->project ) {
+			wp_send_json_error( array(
+				'message' => 'You have changed the project need to switch back, current project - ' . $this->project . ' previous - ' . $_POST['project'],
+			) );
+		}
+		$user_id        = (int) ( $_POST['user_id'] ?? 0 );
+		$post_id        = (int) ( $_POST['post_id'] ?? 0 );
+		$pinned_message = sanitize_textarea_field( wp_unslash( $_POST['pinned_message'] ?? '' ) );
+		if ( ! $user_id || ! $post_id || ! $pinned_message ) {
+			wp_send_json_error( array( 'message' => 'Need fill data' ) );
+		}
+		$helper = new TMSReportsHelper();
+		$result = $helper->add_pinned_message_for_reports( $this, $user_id, $post_id, $pinned_message, 'reports_flt' );
+		if ( empty( $result['success'] ) ) {
+			wp_send_json_error( array( 'message' => $result['error'] ?? 'something went wrong' ) );
+		}
+		wp_send_json_success( array(
+			'message' => 'Message pinned',
+			'pinned'  => $result['pinned_for_response'],
+		) );
 	}
 	
 	public function delete_pinned_message_flt() {
-		if ( defined( 'DOING_AJAX' ) && DOING_AJAX ) {
-			
-			if ( isset( $_POST[ 'project' ] ) && $_POST[ 'project' ] !== $this->project ) {
-				wp_send_json_error( [
-					'message' => 'You have changed the project
-					need to switch back, current project - ' . $this->project . ' previous - ' . $_POST[ 'project' ]
-				] );
-			}
-			
-			$post_id = intval( $_POST[ 'id' ] ?? 0 );
-			$message_index = intval( $_POST[ 'message_index' ] ?? -1 );
-			
-			if ( ! $post_id ) {
-				wp_send_json_error( [ 'message' => 'No post_id provided' ] );
-			}
-			
-			if ( $message_index < 0 ) {
-				wp_send_json_error( [ 'message' => 'No message index provided' ] );
-			}
-			
-			// Get existing pinned messages
-			global $wpdb;
-			$table_meta = $wpdb->prefix . $this->table_meta;
-			$existing_json = $wpdb->get_var( $wpdb->prepare(
-				"SELECT meta_value FROM $table_meta WHERE post_id = %d AND meta_key = 'message_pinned'",
-				$post_id
-			) );
-			
-			$pinned_messages = array();
-			if ( ! empty( $existing_json ) ) {
-				// Remove slashes that were added by wp_slash during save
-				$existing_json = wp_unslash( $existing_json );
-				
-				// Try to unserialize (new format using PHP serialize)
-				$unserialized = @unserialize( $existing_json );
-				if ( $unserialized !== false && is_array( $unserialized ) ) {
-					// New format: serialized PHP array
-					$pinned_messages = $unserialized;
-				} else {
-					// Try JSON format (for backward compatibility with old data)
-					$decoded = json_decode( $existing_json, true );
-					if ( json_last_error() === JSON_ERROR_NONE && is_array( $decoded ) ) {
-						// JSON format: convert to array
-						$pinned_messages = $decoded;
-					} else {
-						// Old format: single message, convert to array for deletion
-						$time_pinned_old = $wpdb->get_var( $wpdb->prepare(
-							"SELECT meta_value FROM $table_meta WHERE post_id = %d AND meta_key = 'time_pinned'",
-							$post_id
-						) );
-						$user_pinned_id_old = $wpdb->get_var( $wpdb->prepare(
-							"SELECT meta_value FROM $table_meta WHERE post_id = %d AND meta_key = 'user_pinned_id'",
-							$post_id
-						) );
-						if ( ! empty( $existing_json ) && ! empty( $time_pinned_old ) && ! empty( $user_pinned_id_old ) ) {
-							$pinned_messages[] = array(
-								'user_pinned_id' => intval( $user_pinned_id_old ),
-								'time_pinned'    => intval( $time_pinned_old ),
-								'message_pinned' => $existing_json,
-							);
-						}
-					}
-				}
-			}
-			
-			// Check if index is valid
-			if ( ! isset( $pinned_messages[ $message_index ] ) ) {
-				wp_send_json_error( [ 'message' => 'Invalid message index' ] );
-			}
-			
-			// Remove message at index
-			unset( $pinned_messages[ $message_index ] );
-			$pinned_messages = array_values( $pinned_messages ); // Re-index array
-			
-			// Save updated array (or empty if no messages left)
-			if ( empty( $pinned_messages ) ) {
-				$pinned_array = array(
-				'message_pinned' => '',
-				);
-			} else {
-				// Save as serialized PHP array
-				$serialized_string = serialize( $pinned_messages );
-				$pinned_array = array(
-					'message_pinned' => wp_slash( $serialized_string ),
-				);
-			}
-			
-			if ( $this->update_post_meta_data( $post_id, $pinned_array ) ) {
-				wp_send_json_success( [ 'message' => 'Pinned message deleted' ] );
-			}
-			wp_send_json_error( [ 'message' => 'Something went wrong' ] );
+		if ( ! defined( 'DOING_AJAX' ) || ! DOING_AJAX ) {
+			return;
 		}
+		if ( isset( $_POST['project'] ) && $_POST['project'] !== $this->project ) {
+			wp_send_json_error( array(
+				'message' => 'You have changed the project need to switch back, current project - ' . $this->project . ' previous - ' . $_POST['project'],
+			) );
+		}
+		$post_id       = (int) ( $_POST['id'] ?? 0 );
+		$message_index = (int) ( $_POST['message_index'] ?? -1 );
+		if ( ! $post_id ) {
+			wp_send_json_error( array( 'message' => 'No post_id provided' ) );
+		}
+		if ( $message_index < 0 ) {
+			wp_send_json_error( array( 'message' => 'No message index provided' ) );
+		}
+		$helper = new TMSReportsHelper();
+		$result = $helper->delete_pinned_message_for_reports( $this, $post_id, $message_index );
+		if ( empty( $result['success'] ) ) {
+			wp_send_json_error( array( 'message' => $result['error'] ?? 'Something went wrong' ) );
+		}
+		wp_send_json_success( array( 'message' => 'Pinned message deleted' ) );
 	}
 	
 	// INIT Actions

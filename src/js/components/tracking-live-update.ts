@@ -4,6 +4,7 @@
  */
 
 import { quickEditTrackingStatus, triggerDisableBtnInit } from './create-report';
+import { logsInit, modalLogsInit } from './logs';
 
 const POLL_INTERVAL_MS = 90000; // 90 seconds
 
@@ -117,6 +118,9 @@ export function initTrackingLiveUpdate(ajaxUrl: string): void {
 						// Re-initialize tracking status forms and buttons for newly rendered rows.
 						quickEditTrackingStatus( ajaxUrl );
 						triggerDisableBtnInit();
+						// Re-initialize logs handlers in case log form/logs and modal triggers are inside re-rendered area.
+						logsInit( ajaxUrl );
+						modalLogsInit( ajaxUrl );
 					}
 				}
 			} )

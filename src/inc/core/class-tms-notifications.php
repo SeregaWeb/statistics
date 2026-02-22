@@ -460,6 +460,39 @@ class TMSNotifications {
 	}
 
 	/**
+	 * Delete all notifications for a specific user.
+	 *
+	 * @param int $user_id User ID.
+	 *
+	 * @return int Number of deleted rows.
+	 */
+	public function delete_all_for_user( $user_id ) {
+		global $wpdb;
+
+		$this->maybe_create_table();
+
+		$table_name = $this->get_table_name();
+		$user_id    = (int) $user_id;
+
+		if ( $user_id <= 0 ) {
+			return 0;
+		}
+
+		$sql = $wpdb->prepare(
+			"DELETE FROM {$table_name} WHERE user_id = %d",
+			$user_id
+		);
+
+		$deleted = $wpdb->query( $sql ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+
+		if ( false === $deleted ) {
+			return 0;
+		}
+
+		return (int) $deleted;
+	}
+
+	/**
 	 * Cleanup old notifications in batches.
 	 *
 	 * This method is designed to be called periodically (for example from WP-Cron)

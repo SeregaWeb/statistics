@@ -330,6 +330,21 @@ class TMSVehicles {
 		if ( ! $user_id ) {
 			wp_send_json_error( array( 'message' => 'User not logged in' ) );
 		}
+
+		$attached_driver = isset( $_POST['attached_driver'] ) ? trim( (string) $_POST['attached_driver'] ) : '';
+		if ( $attached_driver !== '' && is_numeric( $attached_driver ) ) {
+			$conflict = $this->get_vehicle_already_using_driver( (int) $attached_driver, 0 );
+			if ( $conflict && is_array( $conflict ) ) {
+				$make  = isset( $conflict['make'] ) ? (string) $conflict['make'] : '';
+				$model = isset( $conflict['model'] ) ? (string) $conflict['model'] : '';
+				$year  = isset( $conflict['year'] ) ? (string) $conflict['year'] : '';
+				$label = trim( $make . ' ' . $model . ' ' . $year );
+				$label = $label !== '' ? $label : 'ID ' . ( isset( $conflict['vehicle_id'] ) ? (int) $conflict['vehicle_id'] : 0 );
+				wp_send_json_error( array(
+					'message' => 'This driver is already assigned to vehicle (' . $label . '). One driver can only be assigned to one vehicle.',
+				) );
+			}
+		}
 		
 		$table_main = $wpdb->prefix . $this->table_main;
 		$table_meta = $wpdb->prefix . $this->table_meta;
@@ -374,6 +389,21 @@ class TMSVehicles {
 		if ( ! $vehicle_id ) {
 			wp_send_json_error( array( 'message' => 'Vehicle ID is required' ) );
 		}
+
+		$attached_driver = isset( $_POST['attached_driver'] ) ? trim( (string) $_POST['attached_driver'] ) : '';
+		if ( $attached_driver !== '' && is_numeric( $attached_driver ) ) {
+			$conflict = $this->get_vehicle_already_using_driver( (int) $attached_driver, $vehicle_id );
+			if ( $conflict && is_array( $conflict ) ) {
+				$make  = isset( $conflict['make'] ) ? (string) $conflict['make'] : '';
+				$model = isset( $conflict['model'] ) ? (string) $conflict['model'] : '';
+				$year  = isset( $conflict['year'] ) ? (string) $conflict['year'] : '';
+				$label = trim( $make . ' ' . $model . ' ' . $year );
+				$label = $label !== '' ? $label : 'ID ' . ( isset( $conflict['vehicle_id'] ) ? (int) $conflict['vehicle_id'] : 0 );
+				wp_send_json_error( array(
+					'message' => 'This driver is already assigned to vehicle (' . $label . '). One driver can only be assigned to one vehicle.',
+				) );
+			}
+		}
 		
 		$user_id = get_current_user_id();
 		$table_main = $wpdb->prefix . $this->table_main;
@@ -398,6 +428,48 @@ class TMSVehicles {
 		) );
 	}
 	
+	/**
+	 * Check if driver is already assigned to another vehicle. One driver = one vehicle.
+	 *
+	 * @param int $driver_id          Attached driver ID.
+	 * @param int $exclude_vehicle_id Optional. Vehicle ID to exclude (current vehicle when editing).
+	 * @return array|null Null if driver is free; else array with keys vehicle_id, make, model, year for the conflicting vehicle.
+	 */
+	private function get_vehicle_already_using_driver( $driver_id, $exclude_vehicle_id = 0 ) {
+		global $wpdb;
+
+		$driver_id = (int) $driver_id;
+		if ( $driver_id <= 0 ) {
+			return null;
+		}
+
+		$table_meta  = $wpdb->prefix . $this->table_meta;
+		$exclude_sql = $exclude_vehicle_id > 0 ? $wpdb->prepare( ' AND post_id != %d', $exclude_vehicle_id ) : '';
+
+		$other_vehicle_id = $wpdb->get_var(
+			$wpdb->prepare(
+				"SELECT post_id FROM $table_meta WHERE meta_key = 'attached_driver' AND meta_value = %s" . $exclude_sql,
+				(string) $driver_id
+			)
+		);
+
+		if ( ! $other_vehicle_id ) {
+			return null;
+		}
+
+		$other_vehicle_id = (int) $other_vehicle_id;
+		$make             = $wpdb->get_var( $wpdb->prepare( "SELECT meta_value FROM $table_meta WHERE post_id = %d AND meta_key = 'make'", $other_vehicle_id ) );
+		$model            = $wpdb->get_var( $wpdb->prepare( "SELECT meta_value FROM $table_meta WHERE post_id = %d AND meta_key = 'model'", $other_vehicle_id ) );
+		$year             = $wpdb->get_var( $wpdb->prepare( "SELECT meta_value FROM $table_meta WHERE post_id = %d AND meta_key = 'vehicle_year'", $other_vehicle_id ) );
+
+		return array(
+			'vehicle_id' => $other_vehicle_id,
+			'make'       => $make !== null && $make !== '' ? (string) $make : '',
+			'model'      => $model !== null && $model !== '' ? (string) $model : '',
+			'year'       => $year !== null && $year !== '' ? (string) $year : '',
+		);
+	}
+
 	/**
 	 * Save vehicle meta data
 	 *

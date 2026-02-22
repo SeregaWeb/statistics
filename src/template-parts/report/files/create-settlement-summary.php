@@ -8,6 +8,7 @@ $access = $TMSUsers->check_user_role_access( [
 	'accounting',
 	'moderator',
 	'billing',
+	'tracking-tl',
 ], true );
 
 $access_csv_parser = $TMSUsers->check_user_role_access( [

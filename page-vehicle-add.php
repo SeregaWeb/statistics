@@ -434,9 +434,17 @@ get_header(); ?>
 
 		
 		<div class="row">
+			<div class="col-md-4 mb-3">
+				<label class="form-label">Registration Expiration Date</label>
+				<input type="date" class="form-control" name="registration_expiration_date" 
+					value="<?php echo esc_attr( get_field_value( $meta, 'registration_expiration_date' ) ); ?>">
+			</div>
+		</div>
 
-			<div class="mb-2 col-12 col-md-6 col-xl-4">
-                    <label for="unit_number" class="form-label">Unit Number</label>
+		<div class="row">
+			
+		<div class="mb-2 col-12 col-md-6 col-xl-4">
+                    <label for="unit_number" class="form-label h4">Assign driver</label>
                     <div class="position-relative">
 				<input type="text" id="unit_number" name="unit_number"
 						value="<?php echo ! empty( $unit_number_name ) ? '' : esc_attr( $unit_number ); ?>"
@@ -455,15 +463,7 @@ get_header(); ?>
 				<input type="hidden" name="old_unit_number_name" value="<?php echo $unit_number_name; ?>">
 				<input type="hidden" id="driver-search-nonce" value="<?php echo wp_create_nonce('driver_search_nonce'); ?>">
 			</div>
-
-
-			<div class="col-md-6 mb-3">
-				<label class="form-label">Registration Expiration Date</label>
-				<input type="date" class="form-control" name="registration_expiration_date" 
-					value="<?php echo esc_attr( get_field_value( $meta, 'registration_expiration_date' ) ); ?>">
-			</div>
-		</div>
-		
+		</div>		
 		<?php if ( $vehicle_id && ! $full_only_view ): ?>
 			<div class="row mt-4">
 				<div class="col-12 d-flex justify-content-end">

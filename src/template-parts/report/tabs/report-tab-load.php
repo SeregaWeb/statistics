@@ -698,6 +698,7 @@ $read_only = $TMSUsers->check_read_only( $post_status );
                 <div class="position-relative">
                     <input type="text" id="unit_number" name="unit_number" <?php echo $tbd ? 'readonly' : ''; ?>
                            value="<?php echo $unit_number; ?>" class="form-control js-unit-number-input" 
+                           <?php echo $flt ? 'data-ftl="1"' : ''; ?>
                            placeholder="Enter unit number..." autocomplete="off">
                     <div class="js-driver-dropdown dropdown-menu w-100" style="display: none; max-height: 200px; overflow-y: auto; position: absolute; top: 100%; left: 0; z-index: 1000; background: white; border: 1px solid #ccc; border-radius: 4px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
                         <!-- Driver options will be populated here -->
@@ -827,6 +828,7 @@ $read_only = $TMSUsers->check_read_only( $post_status );
                         <label for="second_unit_number" class="form-label">Second Unit Number</label>
                         <div class="position-relative">
                             <input type="text" id="second_unit_number" name="second_unit_number" 
+                                    <?php echo $flt ? 'data-ftl="1"' : ''; ?>
                                    value="<?php echo $second_unit_number; ?>" class="form-control js-second-unit-number-input" 
                                    placeholder="Enter unit number..." autocomplete="off">
                             <div class="js-second-driver-dropdown dropdown-menu w-100" style="display: none; max-height: 200px; overflow-y: auto; position: absolute; top: 100%; left: 0; z-index: 1000; background: white; border: 1px solid #ccc; border-radius: 4px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
@@ -897,6 +899,7 @@ $read_only = $TMSUsers->check_read_only( $post_status );
                         <div class="position-relative">
                             <input type="text" id="third_unit_number" name="third_unit_number" 
                                    value="<?php echo $third_unit_number; ?>" class="form-control js-third-unit-number-input" 
+                                   <?php echo $flt ? 'data-ftl="1"' : ''; ?>
                                    placeholder="Enter unit number..." autocomplete="off">
                             <div class="js-third-driver-dropdown dropdown-menu w-100" style="display: none; max-height: 200px; overflow-y: auto; position: absolute; top: 100%; left: 0; z-index: 1000; background: white; border: 1px solid #ccc; border-radius: 4px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
                                 <!-- Driver options will be populated here -->

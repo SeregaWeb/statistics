@@ -59,6 +59,41 @@ $args = array(
 
 $vehicles_data = $vehicle->get_vehicles( $args );
 
+// Batch-load drivers for attached_driver (one query for all vehicles on the page)
+$drivers_by_id = array();
+if ( ! empty( $vehicles_data['vehicles'] ) ) {
+	$driver_ids = array();
+	foreach ( $vehicles_data['vehicles'] as $vehicle_item ) {
+		$item_meta = get_field_value( $vehicle_item, 'meta' );
+		$item_meta = is_array( $item_meta ) ? $item_meta : array();
+		$attached  = get_field_value( $item_meta, 'attached_driver' );
+		if ( ! empty( $attached ) && is_numeric( $attached ) ) {
+			$driver_ids[] = (int) $attached;
+		}
+	}
+	$driver_ids = array_unique( array_filter( $driver_ids ) );
+	if ( ! empty( $driver_ids ) ) {
+		$drivers        = new TMSDrivers();
+		$drivers_list   = $drivers->get_drivers_by_ids( $driver_ids );
+		$driver_results = isset( $drivers_list['results'] ) && is_array( $drivers_list['results'] ) ? $drivers_list['results'] : array();
+		foreach ( $driver_results as $dr ) {
+			$meta       = get_field_value( $dr, 'meta_data' );
+			$meta       = is_array( $meta ) ? $meta : array();
+			$did        = isset( $dr['id'] ) ? (int) $dr['id'] : 0;
+			$show_phone = get_field_value( $meta, 'show_phone' );
+			$show_phone = ( $show_phone && in_array( $show_phone, array( 'driver_phone', 'team_driver_phone', 'owner_phone' ), true ) ) ? $show_phone : 'driver_phone';
+			$drivers_by_id[ $did ] = array(
+				'id'           => $did,
+				'driver_name'  => get_field_value( $meta, 'driver_name' ) ?: '',
+				'driver_phone' => get_field_value( $meta, $show_phone ) ?: '',
+				'driver_email' => get_field_value( $meta, 'driver_email' ) ?: '',
+			);
+		}
+	}
+}
+
+$access_copy_email = $TMSUsers->check_user_role_access( array( 'administrator', 'recruiter', 'recruiter-tl', 'driver_updates' ), true );
+
 get_header(); ?>
 
 <div class="container">
@@ -71,7 +106,7 @@ get_header(); ?>
 	<div class="row mt-3">
 		<div class="col-12">
 			<div class="card">
-				<div class="card-header">
+				<div class="card-header navbar-sticky-custom">
 					<div class="row">
 						<div class="col-md-6">
 							<?php if ( $can_add_new_vehicle && $can_create_edit ): ?>
@@ -104,6 +139,7 @@ get_header(); ?>
 										<th>Model</th>
 										<th>Year</th>
 										<th>VIN</th>
+										<th>Driver</th>
 										<th>Plates</th>
 										<th>License State</th>
 										<th>Plates Status</th>
@@ -114,8 +150,9 @@ get_header(); ?>
 								<tbody>
 									<?php foreach ( $vehicles_data['vehicles'] as $vehicle_item ): ?>
 										<?php
-										$item_main = get_field_value( $vehicle_item, 'main' );
-										$item_meta = get_field_value( $vehicle_item, 'meta' );
+										$item_main  = get_field_value( $vehicle_item, 'main' );
+										$item_meta  = get_field_value( $vehicle_item, 'meta' );
+										$item_meta  = is_array( $item_meta ) ? $item_meta : array();
 										$vehicle_id = get_field_value( $item_main, 'id' );
 										
 										// Prepare vehicle capabilities array
@@ -132,6 +169,28 @@ get_header(); ?>
 											<td><?php echo esc_html( get_field_value( $item_meta, 'model' ) ); ?></td>
 											<td><?php echo esc_html( get_field_value( $item_meta, 'vehicle_year' ) ); ?></td>
 											<td><?php echo esc_html( get_field_value( $item_meta, 'vin' ) ); ?></td>
+											<td>
+												<?php
+												$attached_driver_id = get_field_value( $item_meta, 'attached_driver' );
+												$attached_driver_id = ! empty( $attached_driver_id ) && is_numeric( $attached_driver_id ) ? (int) $attached_driver_id : 0;
+												$driver_info       = $attached_driver_id && isset( $drivers_by_id[ $attached_driver_id ] ) ? $drivers_by_id[ $attached_driver_id ] : null;
+												if ( $driver_info && is_array( $driver_info ) ) :
+													?>
+													<div class="d-flex flex-column">
+														<div class="d-flex align-items-center gap-1">
+															<?php echo '(' . (int) $driver_info['id'] . ') ' . esc_html( $driver_info['driver_name'] ); ?>
+														</div>
+														<?php if ( ! empty( $driver_info['driver_phone'] ) ) : ?>
+															<span class="text-small driver-phone" data-phone="<?php echo esc_attr( $driver_info['driver_phone'] ); ?>"><?php echo esc_html( $driver_info['driver_phone'] ); ?></span>
+														<?php endif; ?>
+														<?php if ( $access_copy_email && ! empty( $driver_info['driver_email'] ) ) : ?>
+															<span class="text-small driver-email" data-email="<?php echo esc_attr( $driver_info['driver_email'] ); ?>"><?php echo esc_html( $driver_info['driver_email'] ); ?></span>
+														<?php endif; ?>
+													</div>
+												<?php else : ?>
+													—
+												<?php endif; ?>
+											</td>
 											<td><?php echo esc_html( get_field_value( $item_meta, 'plates' ) ); ?></td>
 											<td><?php echo esc_html( get_field_value( $item_meta, 'license_state' ) ); ?></td>
 											<td><?php echo esc_html( get_field_value( $item_meta, 'plates_status' ) ); ?></td>

@@ -71,7 +71,7 @@ get_header(); ?>
 	<div class="row mt-3">
 		<div class="col-12">
 			<div class="card">
-				<div class="card-header">
+				<div class="card-header navbar-sticky-custom">
 					<div class="row">
 						<div class="col-md-6">
 							<?php if ( $can_add_new_trailer && $can_create_edit ): ?>

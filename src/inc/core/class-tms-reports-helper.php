@@ -535,6 +535,55 @@ class TMSReportsHelper extends TMSReportsIcons {
 	}
 
 	/**
+	 * Send notification to tracking team for a load (by dispatcher) and optionally log.
+	 * Use this instead of duplicating TMSNotifications + TMSLogger logic in reports/reports_flt.
+	 *
+	 * @param string $type                Notification type (e.g. 'load_created', 'pinned_message_added').
+	 * @param string $title               Title.
+	 * @param string $message             Message body.
+	 * @param array  $data                Data payload (load_id, project, reference_number, etc.).
+	 * @param int    $dispatcher_id       Dispatcher user ID (used to resolve tracking team recipients).
+	 * @param int[]  $exclude_user_ids    Optional. User IDs to exclude from recipients (e.g. user who pinned).
+	 * @return void
+	 */
+	public function send_tracking_notification_for_load( $type, $title, $message, $data, $dispatcher_id, $exclude_user_ids = array() ) {
+		$dispatcher_id    = (int) $dispatcher_id;
+		$exclude_user_ids = array_map( 'intval', (array) $exclude_user_ids );
+		$tracking_user_ids = array();
+		if ( $dispatcher_id > 0 ) {
+			$tracking_user_ids = $this->get_tracking_team_user_ids_by_dispatcher( $dispatcher_id );
+		}
+		$tracking_user_ids = array_values( array_diff( array_map( 'intval', $tracking_user_ids ), $exclude_user_ids ) );
+
+		if ( empty( $tracking_user_ids ) || ! class_exists( 'TMSNotifications' ) ) {
+			return;
+		}
+
+		$notifications = new TMSNotifications();
+		$notifications->send(
+			array(
+				'type'     => $type,
+				'title'    => $title,
+				'message'  => $message,
+				'data'     => $data,
+				'user_ids' => $tracking_user_ids,
+			)
+		);
+
+		if ( class_exists( 'TMSLogger' ) ) {
+			$log_message = sprintf(
+				'%s: load_id=%s; project=%s; reference=%s; recipients=[%s]',
+				$type,
+				isset( $data['load_id'] ) ? (int) $data['load_id'] : '',
+				isset( $data['project'] ) ? $data['project'] : '',
+				isset( $data['reference_number'] ) ? $data['reference_number'] : '',
+				implode( ',', array_map( 'intval', $tracking_user_ids ) )
+			);
+			TMSLogger::log_to_file( $log_message, 'notifications-tracking' );
+		}
+	}
+
+	/**
 	 * Get expedite managers for the current user
 	 * 
 	 * @param int|null $user_id User ID, defaults to current user
@@ -3078,46 +3127,54 @@ Kindly confirm once you've received this message." ) . "\n";
 			$title[] = 'Trucker Tools set';
 		}
 		$title_str = implode( ', ', $title );
+
 		?>
         <div class="d-flex flex-column">
-            <p class="m-0 d-inline-flex align-items-center " style="gap:2px;">
-				<?php if ( ! empty( $attached_driver ) ) : ?>
-					<button type="button" class="btn btn-link btn-sm p-0 text-start text-decoration-none js-driver-stats-trigger user-select-text" data-driver-id="<?php echo esc_attr( $attached_driver ); ?>"><?php echo esc_html( $unit_number_name ); ?></button>
-				<?php else : ?>
-					<?php echo esc_html( $unit_number_name ); ?>
+
+	     <?php if ($unit_numver_name = 'TBD') { ?>
+			<p class="m-0 d-inline-flex align-items-center " style="gap:2px;">
+				<?php echo esc_html( $unit_number_name ); ?>
+			</p>
+			<?php } else { ?>
+				<p class="m-0 d-inline-flex align-items-center " style="gap:2px;">
+						<?php if ( ! empty( $attached_driver ) ) : ?>
+							<button type="button" class="btn btn-link btn-sm p-0 text-start text-decoration-none js-driver-stats-trigger user-select-text" data-driver-id="<?php echo esc_attr( $attached_driver ); ?>"><?php echo esc_html( $unit_number_name ); ?></button>
+						<?php else : ?>
+							<?php echo esc_html( $unit_number_name ); ?>
+						<?php endif; ?>
+				</p>
+				<?php if ( $driver_phone ) { ?>
+				<span class="text-small relative <?php echo $shared_with_client ? 'text-primary'
+						: ''; ?> <?php echo $macropoint_set ? 'macropoint' : ''; ?> <?php echo $trucker_tools
+						? 'trucker_tools' : ''; ?>" title="<?php echo esc_attr( $title_str ); ?>">
+					<?php echo $driver_phone; ?>
+				</span>
+				<?php } ?>
+				<?php if ( $second_unit_number_name || $second_driver_phone ) : ?>
+				<p class="m-0 d-inline-flex align-items-center " style="gap:2px;">
+					<?php if ( ! empty( $attached_second_driver ) ) : ?>
+						<button type="button" class="btn btn-link btn-sm p-0 text-start text-decoration-none js-driver-stats-trigger user-select-text" data-driver-id="<?php echo esc_attr( $attached_second_driver ); ?>"><?php echo esc_html( $second_unit_number_name ); ?></button>
+					<?php else : ?>
+						<?php echo esc_html( $second_unit_number_name ); ?>
+					<?php endif; ?>
+				</p>
+					<?php if ( $second_driver_phone ) { ?>
+					<span class="text-small relative"><?php echo $second_driver_phone; ?></span>
+					<?php } ?>
 				<?php endif; ?>
-            </p>
-			<?php if ( $driver_phone ) { ?>
-                <span class="text-small relative <?php echo $shared_with_client ? 'text-primary'
-					: ''; ?> <?php echo $macropoint_set ? 'macropoint' : ''; ?> <?php echo $trucker_tools
-					? 'trucker_tools' : ''; ?>" title="<?php echo esc_attr( $title_str ); ?>">
-				<?php echo $driver_phone; ?>
-                </span>
+				<?php if ( $third_unit_number_name || $third_driver_phone ) : ?>
+				<p class="m-0 d-inline-flex align-items-center " style="gap:2px;">
+					<?php if ( ! empty( $attached_third_driver ) ) : ?>
+						<button type="button" class="btn btn-link btn-sm p-0 text-start text-decoration-none js-driver-stats-trigger user-select-text" data-driver-id="<?php echo esc_attr( $attached_third_driver ); ?>"><?php echo esc_html( $third_unit_number_name ); ?></button>
+					<?php else : ?>
+						<?php echo esc_html( $third_unit_number_name ); ?>
+					<?php endif; ?>
+				</p>
+					<?php if ( $third_driver_phone ) { ?>
+					<span class="text-small relative"><?php echo $third_driver_phone; ?></span>
+					<?php } ?>
+				<?php endif; ?>
 			<?php } ?>
-			<?php if ( $second_unit_number_name || $second_driver_phone ) : ?>
-                <p class="m-0 d-inline-flex align-items-center " style="gap:2px;">
-				<?php if ( ! empty( $attached_second_driver ) ) : ?>
-					<button type="button" class="btn btn-link btn-sm p-0 text-start text-decoration-none js-driver-stats-trigger user-select-text" data-driver-id="<?php echo esc_attr( $attached_second_driver ); ?>"><?php echo esc_html( $second_unit_number_name ); ?></button>
-				<?php else : ?>
-					<?php echo esc_html( $second_unit_number_name ); ?>
-				<?php endif; ?>
-                </p>
-				<?php if ( $second_driver_phone ) { ?>
-                    <span class="text-small relative"><?php echo $second_driver_phone; ?></span>
-				<?php } ?>
-			<?php endif; ?>
-			<?php if ( $third_unit_number_name || $third_driver_phone ) : ?>
-                <p class="m-0 d-inline-flex align-items-center " style="gap:2px;">
-				<?php if ( ! empty( $attached_third_driver ) ) : ?>
-					<button type="button" class="btn btn-link btn-sm p-0 text-start text-decoration-none js-driver-stats-trigger user-select-text" data-driver-id="<?php echo esc_attr( $attached_third_driver ); ?>"><?php echo esc_html( $third_unit_number_name ); ?></button>
-				<?php else : ?>
-					<?php echo esc_html( $third_unit_number_name ); ?>
-				<?php endif; ?>
-                </p>
-				<?php if ( $third_driver_phone ) { ?>
-                    <span class="text-small relative"><?php echo $third_driver_phone; ?></span>
-				<?php } ?>
-			<?php endif; ?>
         </div>
 		<?php
 		return ob_get_clean();
@@ -4487,6 +4544,211 @@ Kindly confirm once you've received this message." ) . "\n";
 		error_log( '=== handle_booked_rate_change COMPLETED ===' );
 		
 		return true;
+	}
+
+	/**
+	 * Add a pinned message for a post (shared logic for reports and reports_flt).
+	 *
+	 * @param object $reports_instance Instance of TMSReports or TMSReportsFlt (must have table_meta, update_post_meta_data, log_controller).
+	 * @param int    $user_id          User ID.
+	 * @param int    $post_id          Post ID (load id).
+	 * @param string $pinned_message   Message text.
+	 * @param string $post_type        Post type for log (e.g. 'reports' or 'reports_flt').
+	 * @return array{success: bool, error?: string, pinned_for_response?: array}
+	 */
+	public function add_pinned_message_for_reports( $reports_instance, $user_id, $post_id, $pinned_message, $post_type = '' ) {
+		global $wpdb;
+
+		$table_meta    = $wpdb->prefix . $reports_instance->table_meta;
+		$user_id       = (int) $user_id;
+		$post_id       = (int) $post_id;
+		$pinned_message = sanitize_textarea_field( wp_unslash( $pinned_message ) );
+
+		$existing_json = $wpdb->get_var(
+			$wpdb->prepare(
+				"SELECT meta_value FROM $table_meta WHERE post_id = %d AND meta_key = 'message_pinned'",
+				$post_id
+			)
+		);
+
+		$pinned_messages = array();
+		if ( ! empty( $existing_json ) ) {
+			$existing_json = wp_unslash( $existing_json );
+			$unserialized  = @unserialize( $existing_json );
+			if ( $unserialized !== false && is_array( $unserialized ) ) {
+				$pinned_messages = $unserialized;
+			} else {
+				$decoded = json_decode( $existing_json, true );
+				if ( json_last_error() === JSON_ERROR_NONE && is_array( $decoded ) && ! empty( $decoded ) ) {
+					$pinned_messages = $decoded;
+				} else {
+					$time_pinned_old    = $wpdb->get_var( $wpdb->prepare( "SELECT meta_value FROM $table_meta WHERE post_id = %d AND meta_key = 'time_pinned'", $post_id ) );
+					$user_pinned_id_old = $wpdb->get_var( $wpdb->prepare( "SELECT meta_value FROM $table_meta WHERE post_id = %d AND meta_key = 'user_pinned_id'", $post_id ) );
+					if ( ! empty( $existing_json ) && ! empty( $time_pinned_old ) && ! empty( $user_pinned_id_old ) ) {
+						$pinned_messages[] = array(
+							'user_pinned_id' => (int) $user_pinned_id_old,
+							'time_pinned'    => (int) $time_pinned_old,
+							'message_pinned' => $existing_json,
+						);
+					}
+				}
+			}
+		}
+
+		if ( count( $pinned_messages ) >= 3 ) {
+			return array(
+				'success' => false,
+				'error'   => 'Maximum 3 pinned messages allowed. Please delete one before adding a new one.',
+			);
+		}
+
+		$new_message = array(
+			'user_pinned_id' => $user_id,
+			'time_pinned'    => time(),
+			'message_pinned' => $pinned_message,
+		);
+		$pinned_messages[] = $new_message;
+
+		$serialized_string = serialize( $pinned_messages );
+		$pinned_array      = array(
+			'message_pinned' => wp_slash( $serialized_string ),
+		);
+
+		if ( ! $reports_instance->update_post_meta_data( $post_id, $pinned_array ) ) {
+			return array(
+				'success' => false,
+				'error'   => 'something went wrong',
+			);
+		}
+
+		$user_helper         = new TMSUsers();
+		$pinned_for_response = array();
+		foreach ( $pinned_messages as $index => $msg ) {
+			$msg_user = $user_helper->get_user_full_name_by_id( (int) $msg['user_pinned_id'] );
+			$pinned_for_response[] = array(
+				'index'          => $index,
+				'full_name'      => $msg_user['full_name'],
+				'time_pinned'    => date( 'm/d/Y H:i', (int) $msg['time_pinned'] ),
+				'pinned_message' => $msg['message_pinned'],
+				'id'             => $post_id,
+			);
+		}
+
+		if ( isset( $reports_instance->log_controller ) && $reports_instance->log_controller ) {
+			$log_data = array(
+				'user_id' => $user_id,
+				'post_id' => $post_id,
+				'message' => 'Pinned message: ' . $pinned_message,
+			);
+			if ( $post_type ) {
+				$log_data['post_type'] = $post_type;
+			}
+			$reports_instance->log_controller->create_one_log( $log_data );
+		}
+
+		// Notify tracking team (same recipients as load_created), excluding the user who pinned.
+		$load = $reports_instance->get_report_by_id( $post_id );
+		if ( $load ) {
+			$meta             = get_field_value( $load, 'meta' );
+			$dispatcher_id    = (int) get_field_value( $meta, 'dispatcher_initials' );
+			$reference_number = get_field_value( $meta, 'reference_number' );
+			$reference_label  = $reference_number ?: (string) $post_id;
+			$project_label    = isset( $reports_instance->project ) ? $reports_instance->project : '';
+			$pinned_by        = $reports_instance->get_user_full_name_by_id( $user_id );
+			$pinned_by_label  = is_array( $pinned_by ) && isset( $pinned_by['full_name'] ) ? $pinned_by['full_name'] : '';
+
+			$reports_instance->send_tracking_notification_for_load(
+				'pinned_message_added',
+				sprintf( 'Pinned message on load %s', $reference_label ),
+				sprintf( "Project: %s\nPinned by: %s\nMessage: %s", $project_label, $pinned_by_label, wp_trim_words( $pinned_message, 15 ) ),
+				array(
+					'load_id'           => $post_id,
+					'project'           => $project_label,
+					'reference_number'  => $reference_label,
+					'pinned_by_user_id' => $user_id,
+				),
+				$dispatcher_id,
+				array( $user_id )
+			);
+		}
+
+		return array(
+			'success'             => true,
+			'pinned_for_response' => $pinned_for_response,
+		);
+	}
+
+	/**
+	 * Delete a pinned message by index (shared logic for reports and reports_flt).
+	 *
+	 * @param object $reports_instance Instance of TMSReports or TMSReportsFlt.
+	 * @param int    $post_id          Post ID (load id).
+	 * @param int    $message_index    Index of the message to remove.
+	 * @return array{success: bool, error?: string}
+	 */
+	public function delete_pinned_message_for_reports( $reports_instance, $post_id, $message_index ) {
+		global $wpdb;
+
+		$table_meta    = $wpdb->prefix . $reports_instance->table_meta;
+		$post_id       = (int) $post_id;
+		$message_index = (int) $message_index;
+
+		$existing_json = $wpdb->get_var(
+			$wpdb->prepare(
+				"SELECT meta_value FROM $table_meta WHERE post_id = %d AND meta_key = 'message_pinned'",
+				$post_id
+			)
+		);
+
+		$pinned_messages = array();
+		if ( ! empty( $existing_json ) ) {
+			$existing_json = wp_unslash( $existing_json );
+			$unserialized  = @unserialize( $existing_json );
+			if ( $unserialized !== false && is_array( $unserialized ) ) {
+				$pinned_messages = $unserialized;
+			} else {
+				$decoded = json_decode( $existing_json, true );
+				if ( json_last_error() === JSON_ERROR_NONE && is_array( $decoded ) ) {
+					$pinned_messages = $decoded;
+				} else {
+					$time_pinned_old    = $wpdb->get_var( $wpdb->prepare( "SELECT meta_value FROM $table_meta WHERE post_id = %d AND meta_key = 'time_pinned'", $post_id ) );
+					$user_pinned_id_old = $wpdb->get_var( $wpdb->prepare( "SELECT meta_value FROM $table_meta WHERE post_id = %d AND meta_key = 'user_pinned_id'", $post_id ) );
+					if ( ! empty( $existing_json ) && ! empty( $time_pinned_old ) && ! empty( $user_pinned_id_old ) ) {
+						$pinned_messages[] = array(
+							'user_pinned_id' => (int) $user_pinned_id_old,
+							'time_pinned'    => (int) $time_pinned_old,
+							'message_pinned' => $existing_json,
+						);
+					}
+				}
+			}
+		}
+
+		if ( ! isset( $pinned_messages[ $message_index ] ) ) {
+			return array(
+				'success' => false,
+				'error'   => 'Invalid message index',
+			);
+		}
+
+		unset( $pinned_messages[ $message_index ] );
+		$pinned_messages = array_values( $pinned_messages );
+
+		if ( empty( $pinned_messages ) ) {
+			$pinned_array = array( 'message_pinned' => '' );
+		} else {
+			$serialized_string = serialize( $pinned_messages );
+			$pinned_array      = array( 'message_pinned' => wp_slash( $serialized_string ) );
+		}
+
+		if ( ! $reports_instance->update_post_meta_data( $post_id, $pinned_array ) ) {
+			return array(
+				'success' => false,
+				'error'   => 'Something went wrong',
+			);
+		}
+
+		return array( 'success' => true );
 	}
 
 }

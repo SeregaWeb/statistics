@@ -1,10 +1,11 @@
 .site-header {
-    position: relative;
     top: 0;
     left: 0;
-    z-index: $zindex-sticky;
+    z-index: 1021;
     width: 100%;
-
+    position: sticky;
+    background: #ffffff;
+    
     &__absolute {
         position: absolute;
     }
@@ -289,3 +290,27 @@
     }
 }
 
+.tms-notifications-toggle.tms-notifications-attention {
+    .tms-notifications-icon svg {
+        animation: tms-bell-attention 1.2s ease-in-out infinite;
+        transform-origin: 50% 0;
+    }
+}
+
+@keyframes tms-bell-attention {
+    0% { transform: rotate(0deg); }
+    10% { transform: rotate(-12deg); }
+    20% { transform: rotate(10deg); }
+    30% { transform: rotate(-8deg); }
+    40% { transform: rotate(6deg); }
+    50% { transform: rotate(-4deg); }
+    60% { transform: rotate(2deg); }
+    70%, 100% { transform: rotate(0deg); }
+}
+
+.navbar-sticky-custom {
+    position: sticky;
+    top: 74px;
+    z-index: 1020;
+    background: #ffffff;
+}

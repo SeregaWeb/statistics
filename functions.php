@@ -216,6 +216,75 @@ add_action(
 				},
 			)
 		);
+
+		register_rest_route(
+			'tms/v1',
+			'/notifications/clear-all',
+			array(
+				'methods'             => 'POST',
+				'callback'            => function ( WP_REST_Request $request ) {
+					$user_id = get_current_user_id();
+
+					if ( ! $user_id ) {
+						return new WP_Error(
+							'not_logged_in',
+							'Authentication required.',
+							array( 'status' => 401 )
+						);
+					}
+
+					$notifications = new TMSNotifications();
+					$deleted       = $notifications->delete_all_for_user( $user_id );
+
+					return new WP_REST_Response(
+						array(
+							'success'       => true,
+							'deleted_count' => $deleted,
+						),
+						200
+					);
+				},
+				'permission_callback' => function () {
+					return is_user_logged_in();
+				},
+			)
+		);
+
+		// Per-user notification sound mute (user meta: tms_notifications_sound_muted).
+		register_rest_route(
+			'tms/v1',
+			'/notifications/sound-muted',
+			array(
+				'methods'             => 'POST',
+				'callback'            => function ( WP_REST_Request $request ) {
+					$user_id = get_current_user_id();
+
+					if ( ! $user_id ) {
+						return new WP_Error(
+							'not_logged_in',
+							'Authentication required.',
+							array( 'status' => 401 )
+						);
+					}
+
+					$body  = $request->get_json_params();
+					$muted = isset( $body['muted'] ) ? (bool) $body['muted'] : false;
+
+					update_user_meta( $user_id, 'tms_notifications_sound_muted', $muted ? '1' : '' );
+
+					return new WP_REST_Response(
+						array(
+							'success' => true,
+							'muted'   => $muted,
+						),
+						200
+					);
+				},
+				'permission_callback' => function () {
+					return is_user_logged_in();
+				},
+			)
+		);
 	},
 	10
 );

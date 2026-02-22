@@ -2,7 +2,11 @@
 
 global $global_options;
 
-$add_new_load = get_field_value( $global_options, 'add_new_driver' );
+$args_drivers_ftl = get_field_value( $args, 'drivers_ftl' );
+
+
+$add_new_load = $args_drivers_ftl ? get_field_value( $global_options, 'add_new_driver_ftl' ) : get_field_value( $global_options, 'add_new_driver' );
+
 $id           = get_field_value( $args, 'id' );
 $is_draft     = get_field_value( $args, 'is_draft' );
 $is_archive   = get_field_value( $args, 'is_archive' );

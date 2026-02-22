@@ -47,7 +47,7 @@ $driver_capabilities = array(
 
 ?>
 
-<nav class="navbar mb-5 mt-3 navbar-expand-lg navbar-light">
+<nav class="navbar navbar-sticky-custom mb-5 mt-3 navbar-expand-lg navbar-light">
     <div class="container-fluid p-0">
         <a class="navbar-brand" href="#"><?php echo $title; ?></a>
         <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNavDarkDropdown"

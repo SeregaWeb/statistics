@@ -366,6 +366,7 @@ if ( ! empty( $results ) ) : ?>
 							'id'       => $row[ 'id' ],
 							'is_draft' => $is_draft,
 							'is_archive' => $is_archive,
+                            'drivers_ftl' => true,
 						] ) ); ?>
                     </div>
                 </td>

@@ -31,6 +31,10 @@ body.dark-mode {
         }
     }
 
+    .navbar-sticky-custom{
+        background-color: $dark-bg-primary;
+    }
+
     #main-wrapper .table tbody tr {
         td {
             position: relative;
@@ -90,6 +94,78 @@ body.dark-mode {
         background-color: $dark-bg-secondary;
         .modal-title {
             color: $dark-text-primary;
+        }
+    }
+
+    /* TMS Notifications panel */
+    .tms-notifications-panel {
+        background-color: $dark-bg-secondary;
+        box-shadow: 0 6px 18px rgba(0, 0, 0, 0.5);
+
+        .tms-notifications-panel__header {
+            border-bottom-color: $dark-border;
+        }
+
+        .tms-notifications-panel__title {
+            color: $dark-text-primary;
+        }
+
+        .tms-notifications-panel__list {
+            color: $dark-text-primary;
+        }
+
+        .tms-notification-item {
+            border-bottom-color: $dark-border;
+
+            &__title {
+                color: $dark-text-primary;
+            }
+
+            &__message {
+                color: $dark-text-secondary;
+            }
+
+            &__date {
+                color: $dark-text-secondary;
+            }
+        }
+
+        .tms-notifications-panel__footer {
+            border-top-color: $dark-border;
+        }
+
+        .btn-light {
+            background-color: $dark-bg-tertiary;
+            border-color: $dark-border;
+            color: $dark-text-primary;
+
+            &:hover {
+                background-color: darken($dark-bg-tertiary, 5%);
+                border-color: $dark-border;
+                color: $dark-text-primary;
+            }
+        }
+
+        .btn-outline-secondary {
+            border-color: $dark-border;
+            color: $dark-text-secondary;
+
+            &:hover {
+                background-color: $dark-bg-tertiary;
+                border-color: $dark-border;
+                color: $dark-text-primary;
+            }
+        }
+
+        .btn-outline-danger {
+            border-color: $dark-error;
+            color: $dark-error;
+
+            &:hover {
+                background-color: rgba($dark-error, 0.2);
+                border-color: $dark-error;
+                color: $dark-error;
+            }
         }
     }
 

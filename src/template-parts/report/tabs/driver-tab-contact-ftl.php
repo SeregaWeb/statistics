@@ -513,12 +513,12 @@ $files = array(
                                 class="btn btn-dark js-next-tab">Previous
                         </button>
 						<?php if ( $full_only_view ): ?>
-                            <button type="button" data-tab-id="pills-driver-vehicle-tab"
+                            <button type="button" data-tab-id="pills-driver-finance-tab"
                                     class="btn btn-primary js-next-tab">Next
                             </button>
 						<?php else: ?>
                             <button type="submit" class="btn btn-primary js-submit-and-next-tab"
-                                    data-tab-id="pills-driver-vehicle-tab">
+                                    data-tab-id="pills-driver-finance-tab">
                                 Next
                             </button>
 						<?php endif; ?>

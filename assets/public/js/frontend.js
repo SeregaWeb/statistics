@@ -9088,6 +9088,7 @@ var updateDriverContact = function updateDriverContact(urlAjax) {
   console.log('form', form);
   if (!form) return;
   form.addEventListener('submit', function (e) {
+    var _a;
     e.preventDefault();
     console.log('form click');
     var target = e.target;
@@ -9098,7 +9099,8 @@ var updateDriverContact = function updateDriverContact(urlAjax) {
       method: 'POST',
       body: formData
     };
-    var nextTargetTab = 'pills-driver-vehicle-tab';
+    var ftlDriver = (_a = target.querySelector('input[name="ftl_driver"]')) === null || _a === void 0 ? void 0 : _a.value;
+    var nextTargetTab = ftlDriver === '1' ? 'pills-driver-finance-tab' : 'pills-driver-vehicle-tab';
     fetch(urlAjax, options).then(function (res) {
       return res.json();
     }).then(function (requestStatus) {
@@ -13629,8 +13631,13 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */   initLiveReloadNotification: function() { return /* binding */ initLiveReloadNotification; }
 /* harmony export */ });
 var MARK_ALL_READ_BTN_LABEL = 'Mark all read';
+var CLEAR_ALL_BTN_LABEL = 'Clear all';
 var LOAD_OLDER_BTN_LABEL = 'Load older';
 var INTERVAL_MS = 90000;
+var LS_KEY_SOUND_MUTED = 'tms_notifications_sound_muted';
+var LS_KEY_REFRESH = 'tms_notifications_refresh';
+var SOUND_ICON_ON = '<svg width="18" height="18" viewBox="0 0 1920 1920" xmlns="http://www.w3.org/2000/svg" fill="currentColor"><path fill-rule="evenodd" d="M1185.928 1581.176c0 124.575-101.309 225.883-225.883 225.883-124.574 0-225.882-101.308-225.882-225.883h451.765ZM960.045 225.882c342.438 0 621.177 278.626 621.177 621.177v395.294c0 86.739 32.753 165.91 86.4 225.882H252.356c53.76-59.971 86.513-139.143 86.513-225.882V847.059c0-342.55 278.626-621.177 621.176-621.177Zm734.118 1016.47V847.06c0-385.694-299.294-702.268-677.647-731.294V0H903.575v115.765c-378.466 29.026-677.647 345.6-677.647 731.294v395.294c0 124.574-101.309 225.882-225.883 225.882v112.941h621.177c0 186.805 151.906 338.824 338.823 338.824 186.805 0 338.824-152.019 338.824-338.824h621.176v-112.94c-124.574 0-225.882-101.309-225.882-225.883Z"/></svg>';
+var SOUND_ICON_MUTED = '<svg width="18" height="18" viewBox="0 0 1920 1920" xmlns="http://www.w3.org/2000/svg" fill="currentColor"><path fill-rule="evenodd" d="m1505.845 72.093-187.52 223.467c-44.16-32.64-93.333-61.013-147.2-83.947-67.84-27.626-138.773-43.84-211.093-49.386V53H853.365v109.333c-357.44 27.414-640 326.4-640 690.667v373.333c0 56.427-22.72 111.574-62.293 151.04-39.467 39.574-94.613 62.294-151.04 62.294v106.666h269.333L119.18 1725.427l81.706 68.48L1587.552 140.573l-81.707-68.48ZM1479.467 462.6C1558.293 577.587 1600 712.627 1600 853v373.333c0 117.654 95.68 213.334 213.333 213.334 29.44 0 53.334 23.893 53.334 53.333 0 29.44-23.894 53.333-53.334 53.333h-586.666c0 176.427-143.574 320-320 320-176.427 0-320-143.573-320-320V1493c0-29.44 23.893-53.333 53.333-53.333h935.04c-50.773-56.64-81.707-131.414-81.707-213.334V853c0-118.72-35.2-232.96-101.76-330.027ZM1120 1546.333H693.333c0 117.654 95.68 213.334 213.334 213.334 117.653 0 213.333-95.68 213.333-213.334Zm-213.301-1280c77.12 0 152.426 14.827 223.253 43.734 43.733 18.666 83.84 41.813 119.573 67.626L358.86 1439.667h-120c51.733-58.027 81.173-134.827 81.173-213.334V853c0-323.413 263.253-586.667 586.667-586.667Z"/></svg>';
 function escapeHtml(s) {
   return s.replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
@@ -13655,28 +13662,88 @@ function initLiveReloadNotification() {
   var listEl = document.getElementById('tms-notifications-list');
   var closeBtn = document.getElementById('tms-notifications-close');
   var markAllBtn = document.getElementById('tms-notifications-mark-all');
+  var clearAllBtn = document.getElementById('tms-notifications-clear-all');
   var loadOlderBtn = document.getElementById('tms-notifications-load-older');
+  var soundToggleBtn = document.getElementById('tms-notifications-sound-toggle');
   if (!toggleBtn || !badgeEl || !panelEl || !listEl) {
     return;
   }
   var apiListUrl = config.apiListUrl,
     apiReadUrl = config.apiReadUrl,
     apiReadAllUrl = config.apiReadAllUrl,
+    apiClearAllUrl = config.apiClearAllUrl,
+    apiSoundMutedUrl = config.apiSoundMutedUrl,
     restNonce = config.restNonce,
-    initialData = config.initial;
+    initialData = config.initial,
+    soundUrl = config.soundUrl,
+    initialSoundMuted = config.soundMuted,
+    soundMutedLabelMute = config.soundMutedLabelMute,
+    soundMutedLabelUnmute = config.soundMutedLabelUnmute;
   var notificationsCache = Array.isArray(initialData.items) ? initialData.items : [];
   var totalNotificationsCount = typeof initialData.total_count === 'number' ? initialData.total_count : 0;
   var currentNotificationsPage = 1;
   var hasMorePagesFromServer = initialData.has_more === true;
   var currentUnreadCount = typeof initialData.unread_count === 'number' ? initialData.unread_count : 0;
   var isPanelOpen = false;
+  var hasFetchedFromServerOnce = false;
+  var soundMuted = initialSoundMuted === true;
+  try {
+    var stored = localStorage.getItem(LS_KEY_SOUND_MUTED);
+    if (stored === '1') {
+      soundMuted = true;
+    } else if (stored === '0' || stored === '') {
+      soundMuted = false;
+    }
+  } catch (e) {}
+  var notificationAudio = null;
+  if (typeof soundUrl === 'string' && soundUrl) {
+    try {
+      notificationAudio = new Audio(soundUrl);
+    } catch (e) {
+      notificationAudio = null;
+    }
+  }
+  console.log('[TMS Notifications] init: soundMuted=', soundMuted, 'initialSoundMuted=', initialSoundMuted, 'hasAudio=', !!notificationAudio);
+  function playNotificationSound() {
+    console.log('[TMS Notifications] playNotificationSound called: soundMuted=', soundMuted, 'hasAudio=', !!notificationAudio);
+    if (soundMuted || !notificationAudio) {
+      console.log('[TMS Notifications] playNotificationSound SKIP (muted or no audio)');
+      return;
+    }
+    console.log('[TMS Notifications] playNotificationSound PLAYING');
+    try {
+      var cloned = notificationAudio.cloneNode(true);
+      void cloned.play().catch(function () {
+        return null;
+      });
+    } catch (e) {}
+  }
+  function updateSoundToggleButton() {
+    var btn = document.getElementById('tms-notifications-sound-toggle');
+    if (!btn) return;
+    var iconWrap = btn.querySelector('.tms-notifications-sound-icon');
+    var title = soundMuted ? soundMutedLabelUnmute || 'Unmute sound' : soundMutedLabelMute || 'Mute sound';
+    btn.setAttribute('title', title);
+    btn.setAttribute('aria-label', title);
+    btn.classList.remove('btn-outline-danger', 'btn-outline-secondary');
+    btn.classList.add(soundMuted ? 'btn-outline-danger' : 'btn-outline-secondary');
+    if (iconWrap) {
+      iconWrap.innerHTML = soundMuted ? SOUND_ICON_MUTED : SOUND_ICON_ON;
+    }
+  }
   function setBadge(unreadCount) {
     if (unreadCount && unreadCount > 0) {
       badgeEl.style.display = 'flex';
       badgeEl.textContent = unreadCount > 99 ? '99' : String(unreadCount);
+      if (toggleBtn) {
+        toggleBtn.classList.add('tms-notifications-attention');
+      }
     } else {
       badgeEl.style.display = 'none';
       badgeEl.textContent = '';
+      if (toggleBtn) {
+        toggleBtn.classList.remove('tms-notifications-attention');
+      }
     }
   }
   function setMarkAllReadButtonLoading(loading) {
@@ -13691,8 +13758,17 @@ function initLiveReloadNotification() {
       markAllBtn.textContent = markAllBtn.disabled ? 'Marking...' : MARK_ALL_READ_BTN_LABEL;
     }
   }
+  function updateClearAllButton() {
+    if (!clearAllBtn) return;
+    var hasAny = notificationsCache.length > 0 || totalNotificationsCount > 0;
+    clearAllBtn.style.display = hasAny ? 'block' : 'none';
+    if (clearAllBtn.style.display !== 'none') {
+      clearAllBtn.textContent = clearAllBtn.disabled ? 'Clearing...' : CLEAR_ALL_BTN_LABEL;
+    }
+  }
   setBadge(currentUnreadCount);
   updateMarkAllReadButton();
+  updateClearAllButton();
   function renderNotifications(items) {
     if (!Array.isArray(items) || items.length === 0) {
       listEl.innerHTML = '<p class="mb-0 text-muted" style="font-size: 13px;">No notifications.</p>';
@@ -13704,7 +13780,7 @@ function initLiveReloadNotification() {
       var message = item.message || '';
       var createdAt = item.created_at || '';
       var isRead = !!item.read_at;
-      return '<div class="tms-notification-item" data-notification-id="' + id + '" style="padding: 6px 0; border-bottom: 1px solid #f1f1f1; cursor: pointer; ' + (isRead ? 'opacity:0.7;' : 'font-weight:500;') + '">' + '<div style="font-size: 13px;">' + escapeHtml(title) + '</div>' + (message ? '<div style="font-size: 12px; color:#555; white-space:pre-line;">' + escapeHtml(message) + '</div>' : '') + (createdAt ? '<div style="font-size: 11px; color:#999; margin-top:2px;">' + escapeHtml(createdAt) + '</div>' : '') + '</div>';
+      return '<div class="tms-notification-item" data-notification-id="' + id + '" style="padding: 6px 0; border-bottom: 1px solid #f1f1f1; cursor: pointer; ' + (isRead ? 'opacity:0.7;' : 'font-weight:500;') + '">' + '<div class="tms-notification-item__title">' + escapeHtml(title) + '</div>' + (message ? '<div class="tms-notification-item__message text-muted">' + escapeHtml(message) + '</div>' : '') + (createdAt ? '<div class="tms-notification-item__date text-muted">' + escapeHtml(createdAt) + '</div>' : '') + '</div>';
     }).join('');
     listEl.innerHTML = html;
   }
@@ -13731,6 +13807,7 @@ function initLiveReloadNotification() {
       var items = Array.isArray(payload.data) ? payload.data : [];
       var unreadCount = typeof payload.unread_count === 'number' ? payload.unread_count : 0;
       var totalCount = typeof payload.total_count === 'number' ? payload.total_count : 0;
+      var prevUnreadCount = currentUnreadCount;
       currentUnreadCount = unreadCount;
       if (append || hasMorePagesFromServer) {
         hasMorePagesFromServer = payload.has_more === true;
@@ -13751,8 +13828,21 @@ function initLiveReloadNotification() {
       if (page > 1) {
         currentNotificationsPage = page;
       }
+      var willPlaySound = hasFetchedFromServerOnce && unreadCount > prevUnreadCount;
+      var tabVisible = typeof document.visibilityState !== 'undefined' && document.visibilityState === 'visible';
+      console.log('[TMS Notifications] fetch result: hasFetchedOnce=', hasFetchedFromServerOnce, 'prevUnread=', prevUnreadCount, 'unreadCount=', unreadCount, 'soundMuted=', soundMuted, 'willPlaySound=', willPlaySound, 'tabVisible=', tabVisible);
+      if (willPlaySound && tabVisible) {
+        playNotificationSound();
+      }
+      if (unreadCount > prevUnreadCount) {
+        try {
+          localStorage.setItem(LS_KEY_REFRESH, Date.now().toString());
+        } catch (err) {}
+      }
+      hasFetchedFromServerOnce = true;
       setBadge(unreadCount);
       updateMarkAllReadButton();
+      updateClearAllButton();
       if (isPanelOpen) {
         renderNotifications(notificationsCache);
         updateLoadOlderButton();
@@ -13784,6 +13874,11 @@ function initLiveReloadNotification() {
       return fetchNotifications();
     }).catch(function () {});
   }
+  function setClearAllButtonLoading(loading) {
+    if (!clearAllBtn) return;
+    clearAllBtn.disabled = loading;
+    clearAllBtn.textContent = loading ? 'Clearing...' : CLEAR_ALL_BTN_LABEL;
+  }
   function markAllRead() {
     setMarkAllReadButtonLoading(true);
     fetch(apiReadAllUrl, {
@@ -13797,12 +13892,27 @@ function initLiveReloadNotification() {
       return setMarkAllReadButtonLoading(false);
     });
   }
+  function clearAll() {
+    if (!apiClearAllUrl) return;
+    setClearAllButtonLoading(true);
+    fetch(apiClearAllUrl, {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: getHeaders(restNonce, true),
+      body: '{}'
+    }).then(function () {
+      return fetchNotifications();
+    }).catch(function () {}).finally(function () {
+      return setClearAllButtonLoading(false);
+    });
+  }
   function openPanel() {
     isPanelOpen = true;
     panelEl.style.display = 'block';
     renderNotifications(notificationsCache);
     updateLoadOlderButton();
     updateMarkAllReadButton();
+    updateClearAllButton();
   }
   function closePanel() {
     isPanelOpen = false;
@@ -13833,6 +13943,49 @@ function initLiveReloadNotification() {
       return markAllRead();
     });
   }
+  if (clearAllBtn && apiClearAllUrl) {
+    clearAllBtn.addEventListener('click', function () {
+      return clearAll();
+    });
+  }
+  if (soundToggleBtn && apiSoundMutedUrl) {
+    soundToggleBtn.addEventListener('click', function () {
+      soundMuted = !soundMuted;
+      console.log('[TMS Notifications] mute toggled: soundMuted=', soundMuted);
+      updateSoundToggleButton();
+      try {
+        localStorage.setItem(LS_KEY_SOUND_MUTED, soundMuted ? '1' : '0');
+      } catch (e) {}
+      fetch(apiSoundMutedUrl, {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: getHeaders(restNonce, true),
+        body: JSON.stringify({
+          muted: soundMuted
+        })
+      }).catch(function () {
+        soundMuted = !soundMuted;
+        updateSoundToggleButton();
+        try {
+          localStorage.setItem(LS_KEY_SOUND_MUTED, soundMuted ? '1' : '0');
+        } catch (err) {}
+      });
+    });
+  }
+  try {
+    window.addEventListener('storage', function (e) {
+      if (e.key === LS_KEY_SOUND_MUTED && e.newValue !== null) {
+        var muted = e.newValue === '1';
+        if (muted !== soundMuted) {
+          soundMuted = muted;
+          updateSoundToggleButton();
+        }
+      }
+      if (e.key === LS_KEY_REFRESH && e.newValue !== null) {
+        fetchNotifications();
+      }
+    });
+  } catch (err) {}
   listEl.addEventListener('click', function (event) {
     var item = event.target.closest('.tms-notification-item');
     if (!item) return;
@@ -13866,44 +14019,52 @@ __webpack_require__.r(__webpack_exports__);
 
 var logsInit = function logsInit(ajaxUrl) {
   var userLog = document.querySelector('.js-log-message');
-  userLog && userLog.addEventListener('submit', function (event) {
-    event.preventDefault();
-    var target = event.target;
-    var form = new FormData(target);
-    var action = 'add_user_log';
-    form.append('action', action);
-    var logContainer = document.querySelector('.js-log-container');
-    var options = {
-      method: 'POST',
-      body: form
-    };
-    var submitButton = target.querySelector('button[type="submit"]');
-    if (submitButton) {
-      submitButton.disabled = true;
-    }
-    target.setAttribute('disabled', 'disabled');
-    fetch(ajaxUrl, options).then(function (res) {
-      return res.json();
-    }).then(function (requestStatus) {
-      if (requestStatus.success && logContainer) {
-        logContainer.innerHTML = requestStatus.data.template + logContainer.innerHTML;
-        target.removeAttribute('disabled');
-        target.reset();
-      } else {
-        (0,_info_messages__WEBPACK_IMPORTED_MODULE_0__.printMessage)(requestStatus.data.message, 'danger', 8000);
-      }
-    }).catch(function (error) {
-      (0,_info_messages__WEBPACK_IMPORTED_MODULE_0__.printMessage)("Request failed: ".concat(error), 'danger', 8000);
-      console.error('Request failed:', error);
-      target.removeAttribute('disabled');
-    }).finally(function () {
+  if (userLog && !userLog.dataset.logsBound) {
+    userLog.dataset.logsBound = '1';
+    userLog.addEventListener('submit', function (event) {
+      event.preventDefault();
+      var target = event.target;
+      if (!(target instanceof HTMLFormElement)) return;
+      var form = new FormData(target);
+      var action = 'add_user_log';
+      form.append('action', action);
+      var options = {
+        method: 'POST',
+        body: form
+      };
+      var submitButton = target.querySelector('button[type="submit"]');
       if (submitButton) {
-        submitButton.disabled = false;
+        submitButton.disabled = true;
       }
+      target.setAttribute('disabled', 'disabled');
+      fetch(ajaxUrl, options).then(function (res) {
+        return res.json();
+      }).then(function (requestStatus) {
+        var logContainer = document.querySelector('.js-log-container');
+        if (requestStatus.success && logContainer) {
+          logContainer.innerHTML = requestStatus.data.template + logContainer.innerHTML;
+          target.removeAttribute('disabled');
+          target.reset();
+        } else {
+          (0,_info_messages__WEBPACK_IMPORTED_MODULE_0__.printMessage)(requestStatus.data.message, 'danger', 8000);
+        }
+      }).catch(function (error) {
+        (0,_info_messages__WEBPACK_IMPORTED_MODULE_0__.printMessage)("Request failed: ".concat(error), 'danger', 8000);
+        console.error('Request failed:', error);
+        target.removeAttribute('disabled');
+      }).finally(function () {
+        if (submitButton) {
+          submitButton.disabled = false;
+        }
+      });
     });
-  });
+  }
   var btns = document.querySelectorAll('.js-hide-logs');
-  btns && btns.forEach(function (item) {
+  btns.forEach(function (item) {
+    if (item.dataset.logsToggleBound) {
+      return;
+    }
+    item.dataset.logsToggleBound = '1';
     item.addEventListener('click', function (event) {
       event.preventDefault();
       var target = event.target;
@@ -13932,6 +14093,10 @@ var logsInit = function logsInit(ajaxUrl) {
 var modalLogsInit = function modalLogsInit(ajaxUrl) {
   var openModalButtons = document.querySelectorAll('.js-open-log-modal');
   openModalButtons.forEach(function (button) {
+    if (button.dataset.logModalBound) {
+      return;
+    }
+    button.dataset.logModalBound = '1';
     button.addEventListener('click', function (event) {
       var target = event.currentTarget;
       var postId = target.getAttribute('data-post-id');
@@ -13958,115 +14123,123 @@ var modalLogsInit = function modalLogsInit(ajaxUrl) {
     });
   });
   var modalLogForm = document.querySelector('.js-log-message-modal');
-  modalLogForm && modalLogForm.addEventListener('submit', function (event) {
-    event.preventDefault();
-    var target = event.target;
-    var form = new FormData(target);
-    var pinnedCheckbox = target.querySelector('input[name="is_pinned"]');
-    var isPinned = pinnedCheckbox && pinnedCheckbox.checked;
-    if (isPinned) {
-      var messageTextarea = target.querySelector('#logMessageTextarea');
-      var messageValue = messageTextarea ? messageTextarea.value : '';
-      form.set('pinned_message', messageValue);
-    }
-    var fltInput = target.querySelector('input[name="flt"]');
-    var isFlt = !!(fltInput && fltInput.value);
-    var action = isPinned ? isFlt ? 'add_pinned_message_flt' : 'add_pinned_message' : 'add_user_log';
-    form.append('action', action);
-    var options = {
-      method: 'POST',
-      body: form
-    };
-    var submitButton = target.querySelector('button[type="submit"]');
-    if (submitButton) {
-      submitButton.disabled = true;
-      submitButton.textContent = 'Sending...';
-    }
-    fetch(ajaxUrl, options).then(function (res) {
-      return res.json();
-    }).then(function (requestStatus) {
-      var _a;
-      if (requestStatus.success) {
-        var successMessage = isPinned ? 'Pinned message added successfully' : 'Log message added successfully';
-        (0,_info_messages__WEBPACK_IMPORTED_MODULE_0__.printMessage)(successMessage, 'success', 3000);
-        target.reset();
-        if (isPinned) {
-          var pinnedList = (_a = requestStatus.data) === null || _a === void 0 ? void 0 : _a.pinned;
-          if (pinnedList && Array.isArray(pinnedList)) {
-            var modalForLog = document.getElementById('addLogModal');
-            var pinnedWrapper = modalForLog ? modalForLog.targetPinnedWrapper : undefined;
-            if (pinnedWrapper) {
-              var pinnedHtml = '';
-              pinnedList.forEach(function (pinned) {
-                pinnedHtml += "\n                                    <div class=\"pinned-message\">\n                                        <div class=\"d-flex justify-content-between align-items-center pinned-message__header\">\n                                            <span class=\"d-flex align-items-center \">\n                                                <svg fill=\"#000000\" width=\"18px\" height=\"18px\" viewBox=\"0 0 32 32\" version=\"1.1\" xmlns=\"http://www.w3.org/2000/svg\">\n                                                    <path d=\"M18.973 17.802l-7.794-4.5c-0.956-0.553-2.18-0.225-2.732 0.731-0.552 0.957-0.224 2.18 0.732 2.732l7.793 4.5c0.957 0.553 2.18 0.225 2.732-0.732 0.554-0.956 0.226-2.179-0.731-2.731zM12.545 12.936l6.062 3.5 2.062-5.738-4.186-2.416-3.938 4.654zM8.076 27.676l5.799-7.044-2.598-1.5-3.201 8.544zM23.174 7.525l-5.195-3c-0.718-0.414-1.635-0.169-2.049 0.549-0.415 0.718-0.168 1.635 0.549 2.049l5.196 3c0.718 0.414 1.635 0.169 2.049-0.549s0.168-1.635-0.55-2.049z\"></path>\n                                                </svg>\n                                                ".concat(pinned.full_name || '', "\n                                            </span>\n                                            <span>").concat(pinned.time_pinned || '', "</span>\n                                        </div>\n                                        <div class=\"pinned-message__content\">\n                                            ").concat(pinned.pinned_message || '', "\n                                        </div>\n                                    </div>");
-              });
-              pinnedWrapper.innerHTML = pinnedHtml;
-            }
-          }
-        } else {
-          var _modalForLog = document.getElementById('addLogModal');
-          if (_modalForLog && _modalForLog.targetLogWrapper && requestStatus.data.template) {
-            var logWrapper = _modalForLog.targetLogWrapper;
-            logWrapper.innerHTML = requestStatus.data.template;
-          } else {
-            var logContainer = document.querySelector('.js-log-container');
-            if (logContainer && requestStatus.data.template) {
-              logContainer.innerHTML = requestStatus.data.template;
-            }
-          }
-        }
-        var modal = document.getElementById('addLogModal');
-        if (modal) {
-          try {
-            if (window.bootstrap && window.bootstrap.Modal) {
-              var bootstrapModal = window.bootstrap.Modal.getInstance(modal);
-              if (bootstrapModal) {
-                bootstrapModal.hide();
-              } else {
-                var newModal = new window.bootstrap.Modal(modal);
-                newModal.hide();
+  if (modalLogForm && !modalLogForm.dataset.logsModalBound) {
+    modalLogForm.dataset.logsModalBound = '1';
+    modalLogForm.addEventListener('submit', function (event) {
+      event.preventDefault();
+      var target = event.target;
+      var form = new FormData(target);
+      var modalPostIdInput = document.getElementById('modal_post_id');
+      if (modalPostIdInput && modalPostIdInput.value) {
+        form.set('post_id', modalPostIdInput.value);
+      }
+      var pinnedCheckbox = target.querySelector('input[name="is_pinned"]');
+      var isPinned = pinnedCheckbox && pinnedCheckbox.checked;
+      if (isPinned) {
+        var messageTextarea = target.querySelector('#logMessageTextarea');
+        var messageValue = messageTextarea ? messageTextarea.value : '';
+        form.set('pinned_message', messageValue);
+      }
+      var fltInput = target.querySelector('input[name="flt"]');
+      var isFlt = !!(fltInput && fltInput.value);
+      var action = isPinned ? isFlt ? 'add_pinned_message_flt' : 'add_pinned_message' : 'add_user_log';
+      form.append('action', action);
+      var options = {
+        method: 'POST',
+        body: form
+      };
+      var submitButton = target.querySelector('button[type="submit"]');
+      if (submitButton) {
+        submitButton.disabled = true;
+        submitButton.textContent = 'Sending...';
+      }
+      fetch(ajaxUrl, options).then(function (res) {
+        return res.json();
+      }).then(function (requestStatus) {
+        var _a;
+        if (requestStatus.success) {
+          var successMessage = isPinned ? 'Pinned message added successfully' : 'Log message added successfully';
+          (0,_info_messages__WEBPACK_IMPORTED_MODULE_0__.printMessage)(successMessage, 'success', 3000);
+          target.reset();
+          if (isPinned) {
+            var pinnedList = (_a = requestStatus.data) === null || _a === void 0 ? void 0 : _a.pinned;
+            if (pinnedList && Array.isArray(pinnedList)) {
+              var modalForLog = document.getElementById('addLogModal');
+              var pinnedWrapper = modalForLog ? modalForLog.targetPinnedWrapper : undefined;
+              if (pinnedWrapper) {
+                var pinnedHtml = '';
+                pinnedList.forEach(function (pinned) {
+                  pinnedHtml += "\n                                    <div class=\"pinned-message\">\n                                        <div class=\"d-flex justify-content-between align-items-center pinned-message__header\">\n                                            <span class=\"d-flex align-items-center \">\n                                                <svg fill=\"#000000\" width=\"18px\" height=\"18px\" viewBox=\"0 0 32 32\" version=\"1.1\" xmlns=\"http://www.w3.org/2000/svg\">\n                                                    <path d=\"M18.973 17.802l-7.794-4.5c-0.956-0.553-2.18-0.225-2.732 0.731-0.552 0.957-0.224 2.18 0.732 2.732l7.793 4.5c0.957 0.553 2.18 0.225 2.732-0.732 0.554-0.956 0.226-2.179-0.731-2.731zM12.545 12.936l6.062 3.5 2.062-5.738-4.186-2.416-3.938 4.654zM8.076 27.676l5.799-7.044-2.598-1.5-3.201 8.544zM23.174 7.525l-5.195-3c-0.718-0.414-1.635-0.169-2.049 0.549-0.415 0.718-0.168 1.635 0.549 2.049l5.196 3c0.718 0.414 1.635 0.169 2.049-0.549s0.168-1.635-0.55-2.049z\"></path>\n                                                </svg>\n                                                ".concat(pinned.full_name || '', "\n                                            </span>\n                                            <span>").concat(pinned.time_pinned || '', "</span>\n                                        </div>\n                                        <div class=\"pinned-message__content\">\n                                            ").concat(pinned.pinned_message || '', "\n                                        </div>\n                                    </div>");
+                });
+                pinnedWrapper.innerHTML = pinnedHtml;
               }
+            }
+          } else {
+            var _modalForLog = document.getElementById('addLogModal');
+            if (_modalForLog && _modalForLog.targetLogWrapper && requestStatus.data.template) {
+              var logWrapper = _modalForLog.targetLogWrapper;
+              logWrapper.innerHTML = requestStatus.data.template;
             } else {
+              var logContainer = document.querySelector('.js-log-container');
+              if (logContainer && requestStatus.data.template) {
+                logContainer.innerHTML = requestStatus.data.template;
+              }
+            }
+          }
+          var modal = document.getElementById('addLogModal');
+          if (modal) {
+            try {
+              if (window.bootstrap && window.bootstrap.Modal) {
+                var bootstrapModal = window.bootstrap.Modal.getInstance(modal);
+                if (bootstrapModal) {
+                  bootstrapModal.hide();
+                } else {
+                  var newModal = new window.bootstrap.Modal(modal);
+                  newModal.hide();
+                }
+              } else {
+                forceCloseModal(modal);
+              }
+            } catch (error) {
+              console.log('Error closing modal:', error);
               forceCloseModal(modal);
             }
-          } catch (error) {
-            console.log('Error closing modal:', error);
-            forceCloseModal(modal);
           }
+          var modalRef = document.getElementById('addLogModal');
+          if (modalRef) {
+            if (modalRef.targetLogWrapper) {
+              delete modalRef.targetLogWrapper;
+            }
+            if (modalRef.targetPinnedWrapper) {
+              delete modalRef.targetPinnedWrapper;
+            }
+          }
+          setTimeout(function () {
+            document.body.classList.remove('modal-open');
+            document.body.style.overflow = '';
+            document.body.style.paddingRight = '';
+            document.documentElement.style.overflow = '';
+            document.documentElement.style.paddingRight = '';
+            var remainingBackdrops = document.querySelectorAll('.modal-backdrop');
+            remainingBackdrops.forEach(function (backdrop) {
+              return backdrop.remove();
+            });
+          }, 100);
+        } else {
+          (0,_info_messages__WEBPACK_IMPORTED_MODULE_0__.printMessage)(requestStatus.data.message, 'danger', 8000);
         }
-        var modalRef = document.getElementById('addLogModal');
-        if (modalRef) {
-          if (modalRef.targetLogWrapper) {
-            delete modalRef.targetLogWrapper;
-          }
-          if (modalRef.targetPinnedWrapper) {
-            delete modalRef.targetPinnedWrapper;
-          }
+      }).catch(function (error) {
+        (0,_info_messages__WEBPACK_IMPORTED_MODULE_0__.printMessage)("Request failed: ".concat(error), 'danger', 8000);
+        console.error('Request failed:', error);
+      }).finally(function () {
+        if (submitButton) {
+          submitButton.disabled = false;
+          submitButton.textContent = 'Send';
         }
-        setTimeout(function () {
-          document.body.classList.remove('modal-open');
-          document.body.style.overflow = '';
-          document.body.style.paddingRight = '';
-          document.documentElement.style.overflow = '';
-          document.documentElement.style.paddingRight = '';
-          var remainingBackdrops = document.querySelectorAll('.modal-backdrop');
-          remainingBackdrops.forEach(function (backdrop) {
-            return backdrop.remove();
-          });
-        }, 100);
-      } else {
-        (0,_info_messages__WEBPACK_IMPORTED_MODULE_0__.printMessage)(requestStatus.data.message, 'danger', 8000);
-      }
-    }).catch(function (error) {
-      (0,_info_messages__WEBPACK_IMPORTED_MODULE_0__.printMessage)("Request failed: ".concat(error), 'danger', 8000);
-      console.error('Request failed:', error);
-    }).finally(function () {
-      if (submitButton) {
-        submitButton.disabled = false;
-        submitButton.textContent = 'Send';
-      }
+      });
     });
-  });
+  }
+  ;
 };
 function forceCloseModal(modal) {
   modal.classList.remove('show');
@@ -17460,7 +17633,9 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */   initTrackingLiveUpdate: function() { return /* binding */ initTrackingLiveUpdate; }
 /* harmony export */ });
 /* harmony import */ var _create_report__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./create-report */ "./src/js/components/create-report.ts");
+/* harmony import */ var _logs__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./logs */ "./src/js/components/logs.ts");
 function _typeof(o) { "@babel/helpers - typeof"; return _typeof = "function" == typeof Symbol && "symbol" == typeof Symbol.iterator ? function (o) { return typeof o; } : function (o) { return o && "function" == typeof Symbol && o.constructor === Symbol && o !== Symbol.prototype ? "symbol" : typeof o; }, _typeof(o); }
+
 
 var POLL_INTERVAL_MS = 90000;
 function getCurrentParams() {
@@ -17562,6 +17737,8 @@ function initTrackingLiveUpdate(ajaxUrl) {
           tbody.innerHTML = rows_html;
           (0,_create_report__WEBPACK_IMPORTED_MODULE_0__.quickEditTrackingStatus)(ajaxUrl);
           (0,_create_report__WEBPACK_IMPORTED_MODULE_0__.triggerDisableBtnInit)();
+          (0,_logs__WEBPACK_IMPORTED_MODULE_1__.logsInit)(ajaxUrl);
+          (0,_logs__WEBPACK_IMPORTED_MODULE_1__.modalLogsInit)(ajaxUrl);
         }
       }
     }).catch(function () {});
